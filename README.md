@@ -1,5 +1,7 @@
 # Combined Autonomous Coding Agent
 
+[![Robust CI](https://github.com/process-failed-successfully/combined-autonomous-coding/actions/workflows/ci.yml/badge.svg)](https://github.com/process-failed-successfully/combined-autonomous-coding/actions/workflows/ci.yml)
+
 This project provides a unified interface for running autonomous coding agents using either the **Gemini CLI** or the **Cursor Agent**. It runs securely within a Docker container to ensure isolation and safety.
 
 ## 🚀 Quick Start
@@ -68,6 +70,33 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
   ```
 - **Git Issues**: The container is configured to handle git ownership issues automatically.
 - **Streaming**: By default, the agent streams its "thought process" capability. Use `--no-stream` if you prefer a cleaner, buffered output.
+
+## 🧪 Quality Assurance & CI
+
+This repository uses **GitHub Actions** for robust Continuous Integration.
+
+### Local Testing
+
+You can run the same checks locally using the test script:
+
+```bash
+./run_tests.sh
+```
+
+This runs:
+
+1. **Flake8** (Linting)
+2. **Mypy** (Type Checking)
+3. **Bandit** (Security Scan)
+4. **Unit Tests**
+
+### Automated Checks
+
+On every push and PR, the CI pipeline performs:
+
+- Python checks (Lint, Type, Security, Test)
+- Docker Build verification
+- **Trivy** Container Security Scanning
 
 ## 🏗️ Architecture
 

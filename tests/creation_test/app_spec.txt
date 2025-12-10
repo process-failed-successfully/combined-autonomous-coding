@@ -1,0 +1,26 @@
+# Data Processor App
+
+## Goal
+Build a simple python script that processes user data.
+
+## Input Data
+The file `input.csv` will be provided in the root directory.
+Format: Name,Age,City
+Example:
+Alice,30,New York
+Bob,25,Los Angeles
+
+## Requirements
+
+1. **Script Name**: Create a python script named `processor.py`.
+2. **Functionality**:
+   - Read `input.csv`.
+   - Calculate the average age of people for each city.
+   - Sort the cities alphabetically.
+3. **Output**:
+   - Write the result to `output.json`.
+   - Format: `{"City": average_age, ...}`
+   - Example matches for input above: `{"Los Angeles": 25.0, "New York": 30.0}`
+
+## Execution
+The script should be runnable via `python3 processor.py`.

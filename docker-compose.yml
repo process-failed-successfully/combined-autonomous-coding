@@ -1,0 +1,28 @@
+
+services:
+  agent:
+    build: .
+    volumes:
+      # Mount the project root to /app
+      - ..:/app
+      # Mount agent configurations if they exist (optional, docker handles missing source dirs by creating them on host usually, but we want to map existing)
+      # We rely on the wrapper script to handle existence or docker compose warning suppression?
+      # Actually, let's map precise paths.
+      - ${HOME}/.gemini:/root/.gemini
+      - ${HOME}/.config:/root/.config
+      # Mount cursor configuration
+      - ${HOME}/.cursor:/root/.cursor
+
+      # Mount current workspace
+      - ${WORKSPACE_DIR}:/workspace
+    
+    command: ["python3", "/app/combined-autonomous-coding/main.py"]
+
+    working_dir: /workspace
+
+    # Environment variables can be passed from host
+    environment:
+      - OPENAI_API_KEY
+      - GEMINI_API_KEY
+      - ANTHROPIC_API_KEY
+      # Add others as needed

@@ -74,11 +74,55 @@ def parse_args():
         help="Disable streaming output"
     )
     
+    # Manager Arguments
+    parser.add_argument(
+        "--manager-frequency", 
+        type=int, 
+        default=10, 
+        help="How often the manager agent runs (default: 10 iterations)"
+    )
+    
+    parser.add_argument(
+        "--manager-model", 
+        type=str, 
+        help="Model to use for the manager agent"
+    )
+    
+    parser.add_argument(
+        "--manager-first", 
+        action="store_true", 
+        help="Run the manager agent before the first coding session"
+    )
+
+    parser.add_argument(
+        "--dashboard",
+        action="store_true",
+        help="Run the standalone dashboard server"
+    )
+    
+    parser.add_argument(
+        "--dashboard-url",
+        default="http://localhost:7654",
+        help="URL of the dashboard server (default: http://localhost:7654)"
+    )
+
     return parser.parse_args()
 
 async def main():
     args = parse_args()
     
+    # Dashboard Mode
+    if args.dashboard:
+        from ui.server import start_server
+        # We start it in foreground for this mode, or keep main alive
+        server, _ = start_server(port=7654)
+        # Keep alive
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            sys.exit(0)
+            
     # Setup Logger
     # We might want to log to a file in the project directory, but we need to ensure it exists first
     args.project_dir.mkdir(parents=True, exist_ok=True)
@@ -97,7 +141,10 @@ async def main():
         verbose=args.verbose,
         stream_output=not args.no_stream,
         spec_file=args.spec,
-        verify_creation=args.verify_creation
+        verify_creation=args.verify_creation,
+        manager_frequency=args.manager_frequency,
+        manager_model=args.manager_model,
+        run_manager_first=args.manager_first
     )
     
     # Function to resolve spec file
@@ -114,12 +161,17 @@ async def main():
         logger.error("Error: --spec argument is required for new projects! (or place 'app_spec.txt' in directory)")
         sys.exit(1)
         
+    # Initialize Agent Client
+    from shared.agent_client import AgentClient
+    agent_id = f"{args.agent}-{args.project_dir.name}"
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
+    
     # Dispatch
     try:
         if args.agent == "gemini":
-            await run_gemini(config)
+            await run_gemini(config, agent_client=client)
         elif args.agent == "cursor":
-            await run_cursor(config)
+             await run_cursor(config, agent_client=client)
     except KeyboardInterrupt:
         logger.info("\nExecution interrupted by user.")
         sys.exit(0)

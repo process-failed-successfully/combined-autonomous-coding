@@ -34,6 +34,11 @@ class Config:
     stream_output: bool = True
     spec_file: Optional[Path] = None
     verify_creation: bool = False
+    
+    # Manager Configuration
+    manager_frequency: int = 10
+    manager_model: Optional[str] = None
+    run_manager_first: bool = False
 
     def __post_init__(self):
         if self.model is None:

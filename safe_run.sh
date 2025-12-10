@@ -10,7 +10,7 @@ mkdir -p ~/.gemini
 mkdir -p ~/.cursor
 
 # Set workspace directory for docker-compose
-export WORKSPACE_DIR="$(pwd)"
+export WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 
 echo "Launching Agent in Container..."
 
@@ -37,8 +37,20 @@ fi
 # Run with docker compose
 # We use -f to point to the compose file in this directory
 # We assume we run from the project root usually, but here we enforce context
-if [ -z "$CMD" ]; then
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm agent
+# Run with docker compose
+# We use -f to point to the compose file in this directory
+# We assume we run from the project root usually, but here we enforce context
+if [[ "$CMD" == *"--dashboard"* ]]; then
+    # If running dashboard, we need to expose ports
+    if [ -z "$CMD" ]; then
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --service-ports --rm agent
+    else
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --service-ports --rm agent $CMD
+    fi
 else
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm agent $CMD
+    if [ -z "$CMD" ]; then
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm agent
+    else
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm agent $CMD
+    fi
 fi

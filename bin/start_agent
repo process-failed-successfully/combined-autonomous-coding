@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Resolve the absolute path of the repository root
+# We use readlink -f to handle if this script is symlinked (e.g. in /usr/local/bin)
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
+echo "🤖 Starting Agent in current directory..."
+
+# Capture the current working directory as the workspace
+export WORKSPACE_DIR="$(pwd)"
+
+# Pass all arguments to main.py
+# Default to gemini agent
+cd "$REPO_ROOT"
+./safe_run.sh "$@"

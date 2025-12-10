@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Resolve the absolute path of the repository root
+# We use readlink -f to handle if this script is symlinked (e.g. in /usr/local/bin)
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+DASHBOARD_URL="http://localhost:7654"
+
+# Check if Dashboard is running via simple curl
+if curl --output /dev/null --silent --head --fail "$DASHBOARD_URL/api/dashboard"; then
+    echo "✅ Dashboard is ALREADY running at $DASHBOARD_URL"
+    exit 0
+fi
+
+echo "🚀 Starting Dashboard at $DASHBOARD_URL..."
+echo "Press Ctrl+C to stop."
+
+# Capture the current working directory as the workspace
+export WORKSPACE_DIR="$(pwd)"
+
+# Run from Repo Root
+cd "$REPO_ROOT"
+./safe_run.sh --dashboard --dashboard-url "$DASHBOARD_URL"

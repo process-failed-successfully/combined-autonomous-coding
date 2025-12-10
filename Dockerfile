@@ -51,8 +51,8 @@ RUN git config --global --add safe.directory '*'
 WORKDIR /app
 
 # Copy requirements if any (currently none, but good practice)
-# COPY requirements.txt .
-# RUN pip install -r requirements.txt
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 # We don't copy the code here because we bind mount it for development/execution
 # COPY . /app

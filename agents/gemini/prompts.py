@@ -6,7 +6,7 @@ Prompt Loading Utilities for Gemini
 import shutil
 from pathlib import Path
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
+PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
 
 def load_prompt(name: str) -> str:
     """Load a prompt template from the prompts directory."""
@@ -20,6 +20,10 @@ def get_initializer_prompt() -> str:
 def get_coding_prompt() -> str:
     """Load the coding agent prompt."""
     return load_prompt("coding_prompt")
+
+def get_manager_prompt() -> str:
+    """Load the manager agent prompt."""
+    return load_prompt("manager_prompt")
 
 def copy_spec_to_project(project_dir: Path, custom_spec_path: Path = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""

@@ -1,4 +1,3 @@
-
 services:
   agent:
     build: .
@@ -15,10 +14,13 @@ services:
 
       # Mount current workspace
       - ${WORKSPACE_DIR}:/workspace
-    
+
     command: ["python3", "/app/combined-autonomous-coding/main.py"]
 
     working_dir: /workspace
+
+    ports:
+      - "7654:7654"
 
     # Environment variables can be passed from host
     environment:

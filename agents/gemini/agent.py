@@ -14,7 +14,8 @@ from typing import Optional, Any, Dict, List
 
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config
-from .prompts import get_initializer_prompt, get_coding_prompt, copy_spec_to_project
+from shared.utils import get_file_tree, process_response_blocks, log_startup_config
+from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, copy_spec_to_project
 
 logger = logging.getLogger(__name__)
 
@@ -292,7 +293,7 @@ RECENT ACTIONS:
         return "error", str(e), []
 
 
-async def run_autonomous_agent(config: Config) -> None:
+async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = None) -> None:
     """
     Run the autonomous agent loop.
     """
@@ -318,9 +319,47 @@ async def run_autonomous_agent(config: Config) -> None:
     iteration = 0
     consecutive_errors = 0
     recent_history = []
+    has_run_manager_first = False
+
+    # Mark as running
+    if agent_client:
+        agent_client.report_state(is_running=True, current_task="Initializing")
 
     while True:
+        # Check Control State
+        if agent_client:
+            ctl = agent_client.poll_commands()
+            
+            if ctl.stop_requested:
+                logger.info("Stop requested by user.")
+                # Report stop before breaking
+                agent_client.report_state(is_running=False, current_task="Stopped")
+                break
+                
+            if ctl.pause_requested:
+                agent_client.report_state(is_paused=True, current_task="Paused")
+                logger.info("Agent Paused. Waiting for resume...")
+                while True:
+                    await asyncio.sleep(1)
+                    ctl = agent_client.poll_commands()
+                    if ctl.stop_requested:
+                         return
+                    if not ctl.pause_requested:
+                         break
+                agent_client.report_state(is_paused=False)
+                logger.info("Agent Resumed.")
+
+            if ctl.skip_requested:
+                agent_client.clear_skip()
+                logger.info("Skipping iteration as requested.")
+                continue
+
         iteration += 1
+        
+        # Update State
+        if agent_client:
+            agent_client.report_state(iteration=iteration, current_task="Preparing Prompt")
+
         if config.max_iterations and iteration > config.max_iterations:
             logger.info(f"\nReached max iterations ({config.max_iterations})")
             break
@@ -334,26 +373,76 @@ async def run_autonomous_agent(config: Config) -> None:
         print_session_header(iteration, is_first_run)
 
         # Choose prompt
+        # Choose prompt
+        using_manager = False
+
         if is_first_run:
             prompt = get_initializer_prompt()
             # Note: We don't flip is_first_run to False until we get a success
         else:
-            prompt = get_coding_prompt()
+            # Check for Manager Triggers
+            should_run_manager = False
+            manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
+            
+            if manager_trigger_path.exists():
+                logger.info("Manager triggered by TRIGGER_MANAGER file.")
+                should_run_manager = True
+                try:
+                    manager_trigger_path.unlink()
+                except OSError:
+                    pass
+            elif config.run_manager_first and not has_run_manager_first:
+                logger.info("Manager triggered by --manager-first flag.")
+                should_run_manager = True
+                has_run_manager_first = True
+            elif iteration > 0 and iteration % config.manager_frequency == 0:
+                logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
+                should_run_manager = True
+            
+            if should_run_manager:
+                prompt = get_manager_prompt()
+                using_manager = True
+            else:
+                prompt = get_coding_prompt()
 
         # Run session
+        if agent_client:
+            agent_client.report_state(current_task=f"Executing {'Manager' if using_manager else 'Agent'}")
+
+        original_model = config.model
+        if using_manager and config.manager_model:
+            config.model = config.manager_model
+            logger.info(f"Switched to Manager Model: {config.model}")
+
         status, response, new_actions = await run_agent_session(client, prompt, recent_history)
+
+        if using_manager and config.manager_model:
+            config.model = original_model
+            logger.info(f"Restored Agent Model: {config.model}")
 
         if new_actions:
              recent_history.extend(new_actions)
              recent_history = recent_history[-10:] # Keep last 10 actions
+             if agent_client:
+                 agent_client.report_state(last_log=[str(a) for a in recent_history])
 
         if status == "continue":
             consecutive_errors = 0
             is_first_run = False # Successful run, next run is coding
             
+            if agent_client:
+                agent_client.report_state(current_task="Waiting (Auto-Continue)")
+
             logger.info(f"Agent will auto-continue in {config.auto_continue_delay}s...")
             log_progress_summary(config.project_dir, config.progress_file_path)
-            await asyncio.sleep(config.auto_continue_delay)
+            
+            # Interruptible sleep
+            sleep_steps = int(config.auto_continue_delay * 10)
+            for _ in range(sleep_steps):
+                await asyncio.sleep(0.1)
+                # Check interruption
+                if agent_client and agent_client.poll_commands().stop_requested:
+                    break
             
         elif status == "error":
             consecutive_errors += 1

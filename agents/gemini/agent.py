@@ -57,6 +57,9 @@ class GeminiClient:
         # Ensure we ask for TEXT output for better streaming
         cmd = ["gemini", "--output-format", "text", "--approval-mode", "yolo"]
         
+        if self.config.model and self.config.model != "auto":
+            cmd.extend(["--model", self.config.model])
+        
         env = os.environ.copy()
         
         # Run in subprocess, passing PROMPT via stdin to avoid shell arg limits
@@ -320,6 +323,12 @@ async def run_autonomous_agent(config: Config) -> None:
         iteration += 1
         if config.max_iterations and iteration > config.max_iterations:
             logger.info(f"\nReached max iterations ({config.max_iterations})")
+            break
+
+        if (config.project_dir / "COMPLETED").exists():
+            logger.info("\n" + "=" * 50)
+            logger.info("  PROJECT COMPLETED (Found COMPLETED file)")
+            logger.info("=" * 50)
             break
 
         print_session_header(iteration, is_first_run)

@@ -300,6 +300,12 @@ async def run_autonomous_agent(config: Config) -> None:
             logger.info(f"\nReached max iterations ({config.max_iterations})")
             break
 
+        if (config.project_dir / "COMPLETED").exists():
+            logger.info("\n" + "=" * 50)
+            logger.info("  PROJECT COMPLETED (Found COMPLETED file)")
+            logger.info("=" * 50)
+            break
+
         print_session_header(iteration, is_first_run)
 
         # Choose prompt

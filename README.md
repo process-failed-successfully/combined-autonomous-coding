@@ -46,7 +46,7 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
 | `--agent [gemini\|cursor]` | Select the AI agent to use.                                                 | `gemini`                |
 | `--spec [path]`            | Path to your application specification file. Required for new projects.     | `app_spec.txt`          |
 | `--project-dir [path]`     | Target directory for the project.                                           | Current Directory (`.`) |
-| `--model [name]`           | Override the default model (e.g., `gemini-1.5-pro` or `claude-3-5-sonnet`). | Agent Default           |
+| `--model [name]`           | Override the default model (e.g., `gemini-1.5-pro` or `claude-3-5-sonnet`). | `auto`                  |
 | `--max-iterations [N]`     | Limit the number of agent loops.                                            | Unlimited               |
 | `--no-stream`              | **Disable** real-time streaming output (useful for logs).                   | Streaming Enabled       |
 | `--verbose`                | Enable debug logging.                                                       | `False`                 |

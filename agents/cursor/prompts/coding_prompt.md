@@ -3,6 +3,15 @@
 You are continuing work on a long-running autonomous development task using the Cursor CLI.
 This is a FRESH context window - you have no memory of previous sessions.
 
+### CRITICAL: CONTAINER AWARENESS
+
+You are running inside a **Docker container**.
+
+- **No GUI:** You have no graphical user interface. You cannot run apps that require a display (e.g., standard Chrome, desktop apps).
+- **Ephemeral Environment:** While the workspace is mounted, system-level changes (installing apt packages) may not persist across restarts unless added to the Dockerfile.
+- **Limited Permissions:** You are running as a non-root user and do not have `sudo` access.
+- **Browser Automation:** Use headless browsers if automation is required.
+
 ### STEP 1: GET YOUR BEARINGS (MANDATORY)
 
 Start by orienting yourself:
@@ -159,7 +168,18 @@ Before context fills up:
 2. Update cursor_progress.txt
 3. Update feature_list.json if tests verified
 4. Ensure no uncommitted changes
-5. Leave app in working state (no broken features)
+5. Ensure no uncommitted changes
+6. Leave app in working state (no broken features)
+
+### STEP 11: PROJECT COMPLETION
+
+**IF AND ONLY IF** all features in `feature_list.json` have `"passes": true` and you have verified the entire application:
+
+1. Create a file named `COMPLETED` in the root directory.
+   ```bash
+   touch COMPLETED
+   ```
+2. This will signal the system to stop the loop.
 
 ---
 

@@ -3,6 +3,15 @@
 You are the first agent in a long-running autonomous development process.
 Your job is to set up the foundation for all future coding agents.
 
+### CRITICAL: CONTAINER AWARENESS
+
+You are running inside a **Docker container**.
+
+- **No GUI:** You have no graphical user interface. You cannot run apps that require a display (e.g., standard Chrome, desktop apps).
+- **Ephemeral Environment:** While the workspace is mounted, system-level changes (installing apt packages) may not persist across restarts unless added to the Dockerfile.
+- **Limited Permissions:** You are running as a non-root user and do not have `sudo` access.
+- **Browser Automation:** Use headless browsers if automation is required.
+
 ### TASKS
 
 1. **Read Requirements**:

@@ -53,17 +53,33 @@ def get_file_tree(root_dir: Path) -> str:
             text=True
         )
         if result.returncode == 0 and result.stdout:
-            tree_str = "Project Files:\n"
-            for line in result.stdout.splitlines():
-                tree_str += f"- {line}\n"
+            lines = result.stdout.splitlines()
+            if len(lines) > 400:
+                tree_str = f"Project Files (Truncated first 400 of {len(lines)}): \n"
+                for line in lines[:400]:
+                    tree_str += f"- {line}\n"
+                tree_str += f"\n... and {len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
+            else:
+                tree_str = "Project Files:\n"
+                for line in lines:
+                    tree_str += f"- {line}\n"
         else:
             # Fallback to simple walk
             tree_str = "Project Files (System):\n"
+            files = []
             for path in root_dir.rglob("*"):
-                if path.is_file() and not any(p.name.startswith(".")
-                                              for p in path.parents) and not path.name.startswith("."):
+                if path.is_file() and not any(p.name.startswith(".") for p in path.parents) and not path.name.startswith("."):
                     rel_path = path.relative_to(root_dir)
-                    tree_str += f"- {rel_path}\n"
+                    files.append(str(rel_path))
+            
+            if len(files) > 400:
+                 tree_str = f"Project Files (System - Truncated first 400 of {len(files)}):\n"
+                 for f in files[:400]:
+                     tree_str += f"- {f}\n"
+                 tree_str += f"\n... and {len(files) - 400} more files."
+            else:
+                 for f in files:
+                     tree_str += f"- {f}\n"
     except Exception as e:
         tree_str = f"Error generating file tree: {e}"
 

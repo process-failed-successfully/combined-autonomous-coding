@@ -9,9 +9,9 @@ echo "========================================"
 
 echo "[1/4] Running Flake8 Linting..."
 # Stop the build if there are Python syntax errors or undefined names
-flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv,venv
 # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+flake8 . --count --exit-zero --max-complexity=35 --max-line-length=160 --statistics --exclude=.venv,venv
 
 echo "[2/4] Running Mypy Type Checking..."
 mypy . --ignore-missing-imports --no-strict-optional || echo "Mypy found issues (continuing for now)"

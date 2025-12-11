@@ -1,5 +1,4 @@
 
-import asyncio
 import json
 import shutil
 import subprocess
@@ -17,13 +16,14 @@ EXPECTED_OUTPUT = {
     "Tokyo": 100.0
 }
 
+
 def run_agent(agent_type):
     """Run the agent."""
     test_dir_agent = TEST_DIR / agent_type
     if test_dir_agent.exists():
         shutil.rmtree(test_dir_agent)
     test_dir_agent.mkdir(parents=True)
-    
+
     # Copy input files
     shutil.copy(SOURCE_DIR / "input.csv", test_dir_agent / "input.csv")
 
@@ -40,11 +40,13 @@ def run_agent(agent_type):
     ]
     print(f"Running {agent_type} agent: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=False) # We don't verify return code as agent might hit max iterations
+        # We don't verify return code as agent might hit max iterations
+        subprocess.run(cmd, check=False)
     except KeyboardInterrupt:
         print("\nAgent execution interrupted by user. Proceeding to verification...")
-    
+
     return test_dir_agent
+
 
 def verify_output(test_dir):
     """Verify the output.json."""
@@ -52,11 +54,11 @@ def verify_output(test_dir):
     if not output_file.exists():
         print(f"FAIL: output.json was not created in {test_dir}.")
         return False
-    
+
     try:
         data = json.loads(output_file.read_text())
         print(f"Generated Output in {test_dir}: {data}")
-        
+
         # Check equality with tolerance for floats
         matches = True
         for city, avg in EXPECTED_OUTPUT.items():
@@ -66,13 +68,15 @@ def verify_output(test_dir):
             elif abs(data[city] - avg) > 0.1:
                 print(f"FAIL: Wrong average for {city}. Expected {avg}, got {data[city]}")
                 matches = False
-        
+
         if len(data) != len(EXPECTED_OUTPUT):
-             print(f"FAIL: Output has {len(data)} cities, expected {len(EXPECTED_OUTPUT)}")
-             matches = False
+            print(
+                f"FAIL: Output has {len(data)} cities, expected {len(EXPECTED_OUTPUT)}")
+            matches = False
 
         if matches:
-            print(f"SUCCESS: Output for {test_dir.name} matches expected data.")
+            print(
+                f"SUCCESS: Output for {test_dir.name} matches expected data.")
             return True
         else:
             return False
@@ -80,6 +84,7 @@ def verify_output(test_dir):
     except Exception as e:
         print(f"FAIL: Error reading/parsing output in {test_dir}: {e}")
         return False
+
 
 if __name__ == "__main__":
     if TEST_DIR.exists():
@@ -91,7 +96,7 @@ if __name__ == "__main__":
         test_dir = run_agent(agent)
         success = verify_output(test_dir)
         results.append(success)
-    
+
     if all(results):
         print("\nALL TESTS PASSED")
         sys.exit(0)

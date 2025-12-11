@@ -23,18 +23,18 @@ DEFAULT_BASH_TIMEOUT = 120.0
 class Config:
     """Application Configuration."""
     project_dir: Path
-    agent_type: str = "gemini" # 'gemini' or 'cursor'
+    agent_type: str = "gemini"  # 'gemini' or 'cursor'
     model: Optional[str] = None
     max_iterations: Optional[int] = None
     auto_continue_delay: int = DEFAULT_AUTO_CONTINUE_DELAY
     max_consecutive_errors: int = DEFAULT_MAX_CONSECUTIVE_ERRORS
-    timeout: float = DEFAULT_GEMINI_TIMEOUT # Generic timeout for the active agent
+    timeout: float = DEFAULT_GEMINI_TIMEOUT  # Generic timeout for the active agent
     bash_timeout: float = DEFAULT_BASH_TIMEOUT
     verbose: bool = False
     stream_output: bool = True
     spec_file: Optional[Path] = None
     verify_creation: bool = False
-    
+
     # Manager Configuration
     manager_frequency: int = 10
     manager_model: Optional[str] = None
@@ -56,7 +56,8 @@ class Config:
         # We can use a shared progress file or specific ones.
         # To maintain compatibility with existing prompts, we might need specific names
         # or update the prompts to use a generic name.
-        # For now, let's stick to agent-specific names to match current prompts.
+        # For now, let's stick to agent-specific names to match current
+        # prompts.
         if self.agent_type == "gemini":
             return self.project_dir / "gemini_progress.txt"
         else:

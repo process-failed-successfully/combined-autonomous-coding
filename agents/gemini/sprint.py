@@ -273,7 +273,12 @@ class SprintManager:
 
     async def execute_sprint(self):
         """Main execution loop."""
+        iteration = 0
         while len(self.completed_tasks) + len(self.failed_tasks) < len(self.plan.tasks):
+            iteration += 1
+            if self.agent_client:
+                self.agent_client.report_state(iteration=iteration)
+
             # Check for runnable tasks
             runnable = []
             for task in self.plan.tasks:

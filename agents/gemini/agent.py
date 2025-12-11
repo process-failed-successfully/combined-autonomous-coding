@@ -245,17 +245,17 @@ async def run_autonomous_agent(config: Config,
             logger.info(f"\nReached max iterations ({config.max_iterations})")
             break
 
+        if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+            logger.info("\n" + "=" * 50)
+            logger.info("  PROJECT SIGNED OFF")
+            logger.info("=" * 50)
+            break
+
         if (config.project_dir / "COMPLETED").exists():
-            if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
-                logger.info("\n" + "=" * 50)
-                logger.info("  PROJECT COMPLETED & SIGNED OFF")
-                logger.info("=" * 50)
-                break
-            else:
-                logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
-                should_run_manager = True
-                # Ensure we force manager execution in the next block logic
-                # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
+            logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
+            should_run_manager = True
+            # Ensure we force manager execution in the next block logic
+            # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
 
         print_session_header(iteration, is_first_run)
 
@@ -286,6 +286,18 @@ async def run_autonomous_agent(config: Config,
                 logger.info(
                     f"Manager triggered by frequency (Iteration {iteration}).")
                 should_run_manager = True
+
+            # Auto-trigger Manager if all features are passing
+            if not should_run_manager and config.feature_list_path.exists():
+                try:
+                    features = json.loads(config.feature_list_path.read_text())
+                    total = len(features)
+                    passing = sum(1 for f in features if f.get("passes", False))
+                    if total > 0 and passing == total:
+                        logger.info("All features passed. Triggering Manager for potential sign-off.")
+                        should_run_manager = True
+                except Exception:
+                     pass
 
             if should_run_manager:
                 prompt = get_manager_prompt()

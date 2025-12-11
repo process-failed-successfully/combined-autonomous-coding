@@ -78,7 +78,7 @@ If you have addressed the blockers, overwrite the file with empty content or a n
 The agents may create a `COMPLETED` file when they think they are done.
 **You must review their work before the project is officially finished.**
 
-1.  **If you are triggered and `COMPLETED` exists:**
+1.  **If you are triggered and `COMPLETED` exists OR all features in `feature_list.json` pass:**
     - **VALIDATE**: Check `feature_list.json` (are all features passing?), `gemini_progress.txt`, and verify the work.
     - **APPROVE**: If everything looks good, write a file named `PROJECT_SIGNED_OFF` with a brief summary of the project.
       ```write:PROJECT_SIGNED_OFF

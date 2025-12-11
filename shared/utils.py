@@ -304,6 +304,16 @@ async def process_response_blocks(response_text: str,
         elif in_block:
             block_content.append(line)
 
+        # Early termination check
+        # If the project is signed off (e.g. by a write block we just processed), stop immediately.
+        # This prevents the agent from hallucinating subsequent turns in one go.
+        if (project_dir / "PROJECT_SIGNED_OFF").exists():
+             if status_callback:
+                 status_callback("Project Signed Off. Stopping execution of further blocks.")
+             execution_log += "\n[System] Project Signed Off. Stopping execution.\n"
+             break
+
+
     return execution_log, executed_actions
 
 def log_system_health() -> str:

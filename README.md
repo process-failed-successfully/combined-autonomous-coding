@@ -98,6 +98,47 @@ On every push and PR, the CI pipeline performs:
 - Docker Build verification
 - **Trivy** Container Security Scanning
 
+## 🔄 Process Workflow
+
+The system follows a rigorous **"Agent-Manager"** workflow to ensure high-quality output. The Manager acts as both a periodic reviewer and a final gatekeeper.
+
+```mermaid
+flowchart TD
+    Start[Start Project] --> Init[Initialize Project & Spec]
+    Init --> AgentLoop
+
+    subgraph Agent Process
+        AgentLoop[Agent Analysis & Execution]
+        AgentLoop --> CheckTrigger{Manager Triggered?}
+        CheckTrigger -- "No" --> CheckDone{Is work done?}
+        CheckDone -- No --> AgentLoop
+        CheckDone -- Yes (Creates COMPLETED) --> CheckSignOff{Is Signed Off?}
+    end
+
+    CheckTrigger -- "Yes (Periodic/Manual)" --> ManagerStart
+    CheckSignOff -- Yes --> Finish[Project Verified & Complete]
+    CheckSignOff -- No --> ManagerStart
+
+    subgraph Manager Process
+        ManagerStart[Manager Review]
+        ManagerStart --> Validation{Validation}
+        Validation -- "Directives / Correction" --> AgentLoop
+        Validation -- "Approved (Sign-off)" --> SignOff[Create PROJECT_SIGNED_OFF]
+        Validation -- "Rejected (Not Done)" --> Reject[Delete COMPLETED &\nWrite Directives]
+    end
+
+    SignOff --> AgentLoop
+    Reject --> AgentLoop
+```
+
+### Manager Triggers
+
+The Manager Agent is invoked in three ways:
+
+1.  **Periodic Review**: Automatically runs every **X iterations** (configurable) to check progress, answer questions, and unblock the coding agent.
+2.  **Manual Trigger**: The coding agent can explicitly request a review if it gets stuck.
+3.  **Final Sign-off**: When the agent marks work as `COMPLETED`, the Manager **must** review and sign off (`PROJECT_SIGNED_OFF`) before the system accepts it as finished.
+
 ## 🏗️ Architecture
 
 - **`main.py`**: Entry point that dispatches to the selected agent.

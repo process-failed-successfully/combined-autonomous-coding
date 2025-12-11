@@ -118,15 +118,9 @@ class CursorClient:
                     sys.stdout.write(text)
                     sys.stdout.flush()
                 if status_callback:
-                    # We can't send every chunk, but maybe every line or periodically?
-                    # For now let's just show we are alive.
-                    # Use a non-blocking way if possible, or simple check?
-                    # Since this is a callback, we can't easily throttle without state.
-                    # But we can just send "Generating..." and rely on the server/client loop to handle it or debounce.
-                    # Actually better to just set a flag or update a counter in the outer scope?
-                    # Let's just call it. The report_state is threaded/async?
-                    # agent_client.report_state uses a thread executor.
-                    status_callback("Cursor Generating...")
+                    # Stream output to status callback
+                    # We pass current_task to ensure the user knows it's active
+                    status_callback(current_task="Cursor Generating...", output_line=text)
 
             def on_stderr(text):
                 if self.config.stream_output:
@@ -141,30 +135,50 @@ class CursorClient:
                     process.stderr, on_stderr, stderr_buf))
             ]
 
-            timeout = self.config.timeout
+            timeout_counter = self.config.timeout
+            last_stdout_len = 0
+            last_stderr_len = 0
 
             while True:
-                done, pending = await asyncio.wait(tasks, timeout=timeout)
+                # Wait for a short interval to check activity
+                # We use a shorter wait here to frequently check for output flow
+                done, pending = await asyncio.wait(tasks, timeout=5.0)
 
                 if not pending:
                     break
 
-                # Check for activity (files or output)
+                # Check for Output Activity (Streaming)
+                current_stdout_len = len(stdout_buf)
+                current_stderr_len = len(stderr_buf)
+
+                if current_stdout_len > last_stdout_len or current_stderr_len > last_stderr_len:
+                    # We have activity! Reset timeout counter
+                    # But we don't reset the *loop* timeout, we just don't decrement the counter
+                    # Actually, we should probably implement a custom timeout counter since asyncio.wait argument is a max wait.
+                    # Let's simplify: execution continues as long as we have output OR file activity.
+                    timeout_counter = self.config.timeout
+                    last_stdout_len = current_stdout_len
+                    last_stderr_len = current_stderr_len
+                    continue
+                
+                # No output activity this interval. Decrement counter.
+                timeout_counter -= 5.0
+
+                if timeout_counter > 0:
+                    continue
+
+                # Timeout exceeded? Check file activity as last resort.
                 from shared.utils import has_recent_activity
-
-                # We can also check if our buffers are growing?
-                # But has_recent_activity checks filesystem.
-
                 if has_recent_activity(self.config.project_dir, seconds=60):
                     logger.info(
                         "Agent timeout exceeded, but file activity detected. Extending wait by 60s...")
                     status_callback(
                         "Waiting (File Activity Detected)...") if status_callback else None
-                    timeout = 60.0
+                    timeout_counter = 60.0
                     continue
                 else:
                     logger.error(
-                        f"Cursor Agent CLI timed out ({self.config.timeout}s) and no recent file activity.")
+                        f"Cursor Agent CLI timed out ({self.config.timeout}s) and no recent output or file activity.")
                     process.kill()
                     raise asyncio.TimeoutError
 
@@ -261,17 +275,35 @@ RECENT ACTIONS:
             f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
 
         # Define callback to update dashboard status
-        def status_update(msg):
-            if client.agent_client:
-                client.agent_client.report_state(current_task=msg)
+        # We maintain a strictly local log for the current turn to display live generation
+        current_turn_log = []
+        
+        def status_update(current_task=None, output_line=None):
+            if not client.agent_client:
+                return
+            
+            updates = {}
+            if current_task:
+                updates["current_task"] = current_task
+            
+            if output_line:
+                # Clean up the line a bit (remove strict newlines for the list, 
+                # but keep them if the UI expects them. Let's strip trailing)
+                clean_line = output_line.rstrip()
+                if clean_line:
+                    current_turn_log.append(clean_line)
+                    # Show last 30 lines of live output
+                    updates["last_log"] = current_turn_log[-30:]
+            
+            client.agent_client.report_state(**updates)
 
         if client.agent_client:
             client.agent_client.report_state(
                 current_task="Sending Prompt to Agent")
 
-            # Also recover logs if they are empty from a restart?
-            # No, we can't easily recover history from disk here without parsing logs.
-            # But we can at least show we are starting.
+        # Also recover logs if they are empty from a restart?
+        # No, we can't easily recover history from disk here without parsing logs.
+        # But we can at least show we are starting.
 
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
 
@@ -316,7 +348,7 @@ RECENT ACTIONS:
             logger.info("Processing response blocks...")
 
             # Define callback to update dashboard status
-            def status_update(msg):
+            def block_status_update(msg):
                 if client.agent_client:
                     client.agent_client.report_state(current_task=msg)
 
@@ -324,7 +356,7 @@ RECENT ACTIONS:
                 response_text,
                 client.config.project_dir,
                 client.config.bash_timeout,
-                status_callback=status_update
+                status_callback=block_status_update
             )
 
             if log:
@@ -428,10 +460,14 @@ async def run_autonomous_agent(
             break
 
         if (config.project_dir / "COMPLETED").exists():
-            logger.info("\n" + "=" * 50)
-            logger.info("  PROJECT COMPLETED (Found COMPLETED file)")
-            logger.info("=" * 50)
-            break
+            if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+                logger.info("\n" + "=" * 50)
+                logger.info("  PROJECT COMPLETED & SIGNED OFF")
+                logger.info("=" * 50)
+                break
+            else:
+                logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
+                should_run_manager = True
 
         print_session_header(iteration, is_first_run)
 
@@ -471,8 +507,7 @@ async def run_autonomous_agent(
         # Run session
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {
-                    'Manager' if using_manager else 'Agent'}")
+                current_task=f"Executing {'Manager' if using_manager else 'Agent'}")
 
         original_model = config.model
         if using_manager and config.manager_model:
@@ -515,13 +550,11 @@ async def run_autonomous_agent(
         elif status == "error":
             consecutive_errors += 1
             logger.error(
-                f"Session encountered an error (Attempt {consecutive_errors}/{
-                    config.max_consecutive_errors}).")
+                f"Session encountered an error (Attempt {consecutive_errors}/{config.max_consecutive_errors}).")
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
-                    f"Too many consecutive errors ({
-                        config.max_consecutive_errors}). Stopping execution.")
+                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution.")
                 break
 
             logger.info("Retrying in 10 seconds...")

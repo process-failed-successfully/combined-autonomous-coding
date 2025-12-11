@@ -6,6 +6,7 @@ function App() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const fetchAgents = async () => {
     try {
@@ -33,6 +34,10 @@ function App() {
     } catch (e) {
       console.error(e);
     }
+  };
+  
+  const toggleFocus = (id: string) => {
+      setFocusedId(curr => curr === id ? null : id);
   };
 
   useEffect(() => {
@@ -92,9 +97,17 @@ function App() {
             </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {agents.map(agent => (
-                <AgentCard key={agent.id} agent={agent} onControl={handleControl} />
+        <div className={`grid gap-6 ${focusedId ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+            {agents
+              .filter(agent => !focusedId || agent.id === focusedId)
+              .map(agent => (
+                <AgentCard 
+                    key={agent.id} 
+                    agent={agent} 
+                    onControl={handleControl} 
+                    isFocused={focusedId === agent.id}
+                    onToggleFocus={() => toggleFocus(agent.id)}
+                />
             ))}
         </div>
 

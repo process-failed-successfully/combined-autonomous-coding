@@ -128,21 +128,39 @@ class GeminiClient:
             ]
 
             # Wait loop with activity check
-            timeout = self.config.timeout
-            # start_wait removed
+            timeout_counter = self.config.timeout
+            last_stdout_len = 0
+            last_stderr_len = 0
 
             while True:
-                # Wait for tasks to complete or timeout
-                done, pending = await asyncio.wait(tasks, timeout=timeout)
+                # Wait for tasks to complete or short timeout
+                done, pending = await asyncio.wait(tasks, timeout=5.0)
 
                 if not pending:
                     break
+
+                # Check for Output Activity (Streaming)
+                current_stdout_len = len(stdout_buf)
+                current_stderr_len = len(stderr_buf)
+
+                if current_stdout_len > last_stdout_len or current_stderr_len > last_stderr_len:
+                    # Activity detected, reset timeout
+                    timeout_counter = self.config.timeout
+                    last_stdout_len = current_stdout_len
+                    last_stderr_len = current_stderr_len
+                    continue
+                
+                # No output, decrement
+                timeout_counter -= 5.0
+
+                if timeout_counter > 0:
+                    continue
 
                 from shared.utils import has_recent_activity
                 if has_recent_activity(self.config.project_dir, seconds=60):
                     logger.info(
                         "Agent timeout exceeded, but file activity detected. Extending wait by 60s...")
-                    timeout = 60.0  # Wait another minute
+                    timeout_counter = 60.0  # Wait another minute
                     continue
                 else:
                     logger.error(
@@ -277,10 +295,7 @@ RECENT ACTIONS:
             # Detailed diagnostics
             if "promptFeedback" in result:
                 logger.warning(
-                    f"Prompt Feedback: {
-                        json.dumps(
-                            result['promptFeedback'],
-                            indent=2)}")
+                    f"Prompt Feedback: {json.dumps(result['promptFeedback'], indent=2)}")
 
             if "candidates" in result:
                 for i, candidate in enumerate(result["candidates"]):
@@ -292,10 +307,7 @@ RECENT ACTIONS:
                     safety_ratings = candidate.get('safetyRatings')
                     if safety_ratings:
                         logger.warning(
-                            f"Candidate {i} safety ratings: {
-                                json.dumps(
-                                    safety_ratings,
-                                    indent=2)}")
+                            f"Candidate {i} safety ratings: {json.dumps(safety_ratings, indent=2)}")
 
         # Execute any blocks found in the response
         executed_actions = []
@@ -389,10 +401,16 @@ async def run_autonomous_agent(config: Config,
             break
 
         if (config.project_dir / "COMPLETED").exists():
-            logger.info("\n" + "=" * 50)
-            logger.info("  PROJECT COMPLETED (Found COMPLETED file)")
-            logger.info("=" * 50)
-            break
+            if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+                logger.info("\n" + "=" * 50)
+                logger.info("  PROJECT COMPLETED & SIGNED OFF")
+                logger.info("=" * 50)
+                break
+            else:
+                logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
+                should_run_manager = True
+                # Ensure we force manager execution in the next block logic
+                # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
 
         print_session_header(iteration, is_first_run)
 
@@ -433,8 +451,7 @@ async def run_autonomous_agent(config: Config,
         # Run session
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {
-                    'Manager' if using_manager else 'Agent'}")
+                current_task=f"Executing {'Manager' if using_manager else 'Agent'}")
 
         original_model = config.model
         if using_manager and config.manager_model:
@@ -477,13 +494,11 @@ async def run_autonomous_agent(config: Config,
         elif status == "error":
             consecutive_errors += 1
             logger.error(
-                f"Session encountered an error (Attempt {consecutive_errors}/{
-                    config.max_consecutive_errors}).")
+                f"Session encountered an error (Attempt {consecutive_errors}/{config.max_consecutive_errors}).")
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
-                    f"Too many consecutive errors ({
-                        config.max_consecutive_errors}). Stopping execution.")
+                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution.")
                 break
 
             logger.info("Retrying in 10 seconds...")

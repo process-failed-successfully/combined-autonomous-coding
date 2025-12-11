@@ -69,3 +69,22 @@ If you have addressed the blockers, overwrite the file with empty content or a n
 - Do not write code implementation (unless it's a small snippet to unblock).
 - Focus on _process_ and _decisions_.
 - You are leading the team. Take charge.
+
+### PROJECT COMPLETION & SIGN-OFF
+
+The agents may create a `COMPLETED` file when they think they are done.
+**You must review their work before the project is officially finished.**
+
+1.  **If you are triggered and `COMPLETED` exists:**
+    - **VALIDATE**: Check `feature_list.json` (are all features passing?), `gemini_progress.txt`, and verify the work.
+    - **APPROVE**: If everything looks good, write a file named `PROJECT_SIGNED_OFF` with a brief congratulatory message.
+      ```write:PROJECT_SIGNED_OFF
+      Approved by Manager. Great work!
+      ```
+    - **REJECT**: If there are missing features or bugs, **DELETE** the `COMPLETED` file and write `manager_directives.txt` explaining what needs to be fixed.
+      ```bash
+      rm COMPLETED
+      ```
+      ```write:manager_directives.txt
+      Rejection: Feature X is still failing. Please fix it.
+      ```

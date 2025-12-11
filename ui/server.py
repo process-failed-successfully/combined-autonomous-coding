@@ -7,10 +7,10 @@ import time
 import re
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional
-import os
+from typing import Dict, List
 
 # --- Data Structures ---
+
 
 @dataclass
 class AgentState:
@@ -22,9 +22,11 @@ class AgentState:
     last_log: List[str] = field(default_factory=list)
     last_heartbeat: float = 0.0
 
+
 @dataclass
 class AgentQueue:
     commands: List[str] = field(default_factory=list)
+
 
 class DashboardState:
     def __init__(self, persistence_file: str = "dashboard_state.json"):
@@ -37,16 +39,17 @@ class DashboardState:
 
         # Start background saver
         self.running = True
-        self.saver_thread = threading.Thread(target=self._background_saver, daemon=True)
+        self.saver_thread = threading.Thread(
+            target=self._background_saver, daemon=True)
         self.saver_thread.start()
 
     def _background_saver(self):
         while self.running:
             time.sleep(1)
-            
+
             # Run cleanup every iteration (every 1s is fine, or modulo it)
             self._cleanup_stale_agents()
-            
+
             with self.lock:
                 if not self.dirty:
                     continue
@@ -65,16 +68,17 @@ class DashboardState:
         threshold = 30
         now = time.time()
         to_remove = []
-        
+
         with self.lock:
             for agent_id, agent in self.agents.items():
                 # If last_heartbeat is 0, it might be new, but we init with time.time() usually?
                 # Actually AgentState default is 0.0. Let's assume we update it on first heartbeat.
                 # If it's 0.0, we probably shouldn't kill it immediately unless it's really old persistence data?
                 # Let's say if (now - last_heartbeat) > threshold
-                if agent.last_heartbeat > 0 and (now - agent.last_heartbeat) > threshold:
+                if agent.last_heartbeat > 0 and (
+                        now - agent.last_heartbeat) > threshold:
                     to_remove.append(agent_id)
-            
+
             for agent_id in to_remove:
                 print(f"Removing stale agent: {agent_id}")
                 del self.agents[agent_id]
@@ -86,8 +90,8 @@ class DashboardState:
         with self.lock:
             if agent_id not in self.agents:
                 self.agents[agent_id] = AgentState(id=agent_id)
-                self.queues[agent_id] = AgentQueue() # Init queue
-            
+                self.queues[agent_id] = AgentQueue()  # Init queue
+
             agent = self.agents[agent_id]
             for k, v in data.items():
                 if hasattr(agent, k):
@@ -99,14 +103,14 @@ class DashboardState:
         with self.lock:
             if agent_id in self.queues:
                 cmds = self.queues[agent_id].commands
-                self.queues[agent_id].commands = [] # Clear after reading
+                self.queues[agent_id].commands = []  # Clear after reading
                 return cmds
             return []
 
     def queue_command(self, agent_id: str, command: str):
         with self.lock:
             if agent_id not in self.queues:
-                 self.queues[agent_id] = AgentQueue()
+                self.queues[agent_id] = AgentQueue()
             self.queues[agent_id].commands.append(command)
 
     def get_all_agents(self) -> List[dict]:
@@ -135,8 +139,9 @@ class DashboardState:
 
 # --- Server Handler ---
 
+
 class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
-    
+
     def __init__(self, *args, db_state=None, **kwargs):
         self.db_state = db_state
         # Serve from React Build Dir
@@ -154,7 +159,7 @@ class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/dashboard':
             self._send_json(self.db_state.get_all_agents())
             return
-            
+
         # API: Poll Commands for Agent
         # /api/agents/{id}/commands
         match = re.match(r'/api/agents/([^/]+)/commands', self.path)
@@ -194,17 +199,22 @@ class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         self.send_error(404)
 
+
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     pass
 
+
 def start_server(port=8000, persistence_file="dashboard_state.json"):
     db_state = DashboardState(persistence_file)
-    handler = lambda *args, **kwargs: DashboardRequestHandler(*args, db_state=db_state, **kwargs)
+
+    def handler(*args, **kwargs):
+        return DashboardRequestHandler(*args, db_state=db_state, **kwargs)
     server = ThreadedHTTPServer(('0.0.0.0', port), handler)
     print(f"Dashboard running on http://0.0.0.0:{port}")
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
     return server, db_state
+
 
 if __name__ == "__main__":
     s, _ = start_server()

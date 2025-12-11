@@ -19,6 +19,28 @@ echo "Press Ctrl+C to stop."
 # Capture the current working directory as the workspace
 export WORKSPACE_DIR="$(pwd)"
 
+# Ensure frontend is built
+FRONTEND_DIR="$REPO_ROOT/ui/frontend"
+if [ ! -f "$FRONTEND_DIR/dist/index.html" ]; then
+    echo "📦 Frontend build not found. Building frontend..."
+    # Store current dir to return later if needed, though we cd to REPO_ROOT next anyway
+    pushd "$FRONTEND_DIR" > /dev/null
+    
+    if command -v npm >/dev/null 2>&1; then
+        echo "Installing dependencies..."
+        npm install
+        echo "Building frontend..."
+        npm run build
+    else
+        echo "❌ Error: npm is not installed. Cannot build frontend."
+        echo "Please install nodejs and npm to run the dashboard."
+        exit 1
+    fi
+    
+    popd > /dev/null
+    echo "✅ Frontend built successfully."
+fi
+
 # Run from Repo Root
 cd "$REPO_ROOT"
 ./safe_run.sh "$@" --dashboard-only --dashboard-url "$DASHBOARD_URL"

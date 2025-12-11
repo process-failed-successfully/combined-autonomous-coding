@@ -25,9 +25,8 @@ def log_startup_config(config: 'Config', logger: logging.Logger):
     logger.info("=" * 50)
     logger.info(f"  Project Dir  : {config.project_dir.resolve()}")
     logger.info(f"  Model        : {config.model}")
-    logger.info(
-        f"  Iterations   : {
-            config.max_iterations if config.max_iterations else 'Unlimited'}")
+    iterations_str = config.max_iterations if config.max_iterations else 'Unlimited'
+    logger.info(f"  Iterations   : {iterations_str}")
 
     if config.spec_file:
         logger.info(f"  Spec File    : {config.spec_file}")

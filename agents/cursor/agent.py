@@ -164,8 +164,7 @@ class CursorClient:
                     continue
                 else:
                     logger.error(
-                        f"Cursor Agent CLI timed out ({
-                            self.config.timeout}s) and no recent file activity.")
+                        f"Cursor Agent CLI timed out ({self.config.timeout}s) and no recent file activity.")
                     process.kill()
                     raise asyncio.TimeoutError
 

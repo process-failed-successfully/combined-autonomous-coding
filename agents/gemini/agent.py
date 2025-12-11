@@ -39,16 +39,20 @@ class GeminiClient:
                 "Paris": 30.0,
                 "Tokyo": 100.0
             }
+            mock_json = json.dumps(mock_content, indent=4)
             return {
                 "candidates": [
                     {
                         "content": {
                             "parts": [
                                 {
-                                    "text": f"I will create the output.json file.\n```write:output.json\n{
-                                        json.dumps(
-                                            mock_content,
-                                            indent=4)}\n```"}]}}]}
+                                    "text": f"I will create the output.json file.\n```write:output.json\n{mock_json}\n```"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
 
         # We assume 'gemini' is in the PATH.
         # Ensure we ask for TEXT output for better streaming
@@ -142,8 +146,7 @@ class GeminiClient:
                     continue
                 else:
                     logger.error(
-                        f"Gemini CLI timed out ({
-                            self.config.timeout}s) and no recent file activity.")
+                        f"Gemini CLI timed out ({self.config.timeout}s) and no recent file activity.")
                     process.kill()
                     raise asyncio.TimeoutError
 

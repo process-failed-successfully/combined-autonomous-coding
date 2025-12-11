@@ -32,7 +32,29 @@ class DashboardState:
         self.queues: Dict[str, AgentQueue] = {}
         self.persistence_file = Path(persistence_file)
         self.lock = threading.Lock()
+        self.dirty = False
         self._load()
+
+        # Start background saver
+        self.running = True
+        self.saver_thread = threading.Thread(target=self._background_saver, daemon=True)
+        self.saver_thread.start()
+
+    def _background_saver(self):
+        while self.running:
+            time.sleep(1)
+            with self.lock:
+                if not self.dirty:
+                    continue
+                # Snapshot data while locked
+                data = {k: asdict(v) for k, v in self.agents.items()}
+                self.dirty = False
+
+            # Save to disk outside lock
+            try:
+                self.persistence_file.write_text(json.dumps(data, indent=2))
+            except Exception as e:
+                print(f"Error saving state: {e}")
 
     def update_agent(self, agent_id: str, data: dict):
         with self.lock:
@@ -45,7 +67,7 @@ class DashboardState:
                 if hasattr(agent, k):
                     setattr(agent, k, v)
             agent.last_heartbeat = time.time()
-            self._save()
+            self.dirty = True
 
     def get_agent_commands(self, agent_id: str) -> List[str]:
         with self.lock:
@@ -66,9 +88,11 @@ class DashboardState:
             return [asdict(a) for a in self.agents.values()]
 
     def _save(self):
-        # Throttle? For now, just save.
+        # Immediate save (used for shutdown or forced save)
         try:
-            data = {k: asdict(v) for k, v in self.agents.items()}
+            with self.lock:
+                data = {k: asdict(v) for k, v in self.agents.items()}
+                self.dirty = False
             self.persistence_file.write_text(json.dumps(data, indent=2))
         except Exception as e:
             print(f"Error saving state: {e}")

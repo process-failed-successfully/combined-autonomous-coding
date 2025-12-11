@@ -2,6 +2,7 @@
 import requests
 import time
 import socket
+import concurrent.futures
 from dataclasses import asdict
 from typing import List, Optional
 from shared.state import AgentState, AgentControl # We'll reuse these dataclasses effectively
@@ -15,11 +16,15 @@ class AgentClient:
         self.dashboard_url = dashboard_url.rstrip("/")
         # We maintain a local control state
         self.local_control = AgentControl()
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def report_state(self, **kwargs):
         """
-        Send state update to dashboard.
+        Send state update to dashboard (non-blocking).
         """
+        self._executor.submit(self._do_report_state, kwargs)
+
+    def _do_report_state(self, kwargs):
         try:
             url = f"{self.dashboard_url}/api/agents/{self.agent_id}/heartbeat"
             requests.post(url, json=kwargs, timeout=2) # Short timeout

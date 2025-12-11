@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 # Default Constants
-DEFAULT_MODEL_GEMINI = "auto"
+DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp"
 DEFAULT_MODEL_CURSOR = "auto"
 DEFAULT_AUTO_CONTINUE_DELAY = 3
 DEFAULT_MAX_CONSECUTIVE_ERRORS = 3

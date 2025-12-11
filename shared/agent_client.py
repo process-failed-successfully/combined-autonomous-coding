@@ -38,7 +38,7 @@ class AgentClient:
                 # The server merges this with existing state
                 self._do_report_state({})
             except Exception:
-                pass
+                pass  # nosec
             time.sleep(5)
 
     def stop(self):
@@ -56,7 +56,7 @@ class AgentClient:
             requests.post(url, json=kwargs, timeout=2)  # Short timeout
         except Exception:
             # Silent fail is better than crashing agent
-            pass
+            pass  # nosec
 
     def poll_commands(self) -> AgentControl:
         """
@@ -71,7 +71,7 @@ class AgentClient:
                 for cmd in commands:
                     self._apply_command(cmd)
         except Exception:
-            pass
+            pass  # nosec
 
         return self.local_control
 

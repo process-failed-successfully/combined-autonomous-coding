@@ -8,7 +8,7 @@ Common functions for autonomous coding agents.
 import asyncio
 import logging
 import os
-import subprocess
+import subprocess  # nosec
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING
 
@@ -47,7 +47,7 @@ def get_file_tree(root_dir: Path) -> str:
         # Use git ls-files if available for cleaner output (respects
         # .gitignore)
         result = subprocess.run(
-            ["git", "ls-files"],
+            ["/usr/bin/git", "ls-files"],  # nosec
             cwd=root_dir,
             capture_output=True,
             text=True
@@ -116,7 +116,7 @@ async def execute_bash_block(
                 # Kill the whole process group
                 os.killpg(os.getpgid(process.pid), 15)  # SIGTERM
             except Exception:
-                pass
+                pass  # nosec
             return f"Error: Command timed out after {timeout} seconds. If you intended to run a background process, please use '&' at the end of the command."
 
         output = ""

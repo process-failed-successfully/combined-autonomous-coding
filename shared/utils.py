@@ -10,7 +10,10 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shared.config import Config
 
 logger = logging.getLogger(__name__)
 

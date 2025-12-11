@@ -71,6 +71,11 @@ needs to be built.
 - Order features by priority: fundamental features first
 - ALL tests start with "passes": false
 - Cover every feature in the spec exhaustively
+- Cover all unit and integration tests
+- Cover all edge cases
+- Cover all error states
+- Cover all performance requirements
+- Cover all security requirements
 
 **CRITICAL INSTRUCTION:**
 IT IS CATASTROPHIC TO REMOVE OR EDIT FEATURES IN FUTURE SESSIONS.

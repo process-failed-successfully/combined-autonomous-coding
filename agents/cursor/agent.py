@@ -76,7 +76,22 @@ class CursorClient:
         if self.config.model:
             cmd.extend(["--model", self.config.model])
 
-        env = os.environ.copy()
+        # Create a filtered environment to avoid hitting ARG_MAX on macOS
+        # We start with a clean dict and copy only essential or safe variables
+        env = {}
+        safe_keys = {
+            "PATH", "HOME", "USER", "SHELL", "TERM", "TMPDIR",
+            "LANG", "LC_ALL", "LC_CTYPE", "DISPLAY", "XAUTHORITY",
+            "SSH_AUTH_SOCK", "SSH_AGENT_PID",
+            "WORKSPACE_DIR", "PROJECT_NAME",
+             # Node/NPM related
+            "NODE_ENV", "NVM_DIR"
+        }
+
+        for k, v in os.environ.items():
+            if k in safe_keys or k.startswith("CURSOR_") or k.startswith("XDG_") or k.startswith("npm_"):
+                env[k] = v
+
         env["NO_OPEN_BROWSER"] = "1"
 
         try:

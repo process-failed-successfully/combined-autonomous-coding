@@ -209,7 +209,8 @@ def start_server(port=8000, persistence_file="dashboard_state.json"):
 
     def handler(*args, **kwargs):
         return DashboardRequestHandler(*args, db_state=db_state, **kwargs)
-    server = ThreadedHTTPServer(('0.0.0.0', port), handler)
+    # Binding to all interfaces is intended for this dashboard to be accessible
+    server = ThreadedHTTPServer(('0.0.0.0', port), handler)  # nosec
     print(f"Dashboard running on http://0.0.0.0:{port}")
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()

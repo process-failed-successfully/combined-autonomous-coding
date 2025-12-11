@@ -42,8 +42,8 @@ install: $(VENV)/bin/activate
 	@echo "Dependencies installed."
 
 # Run tests (CI Check)
-.PHONY: test
-test:
+.PHONY: test test-all
+test test-all:
 	@# Ensure run_tests.sh is executable
 	@chmod +x run_tests.sh
 	@# Run run_tests.sh with the venv path explicitly added to PATH

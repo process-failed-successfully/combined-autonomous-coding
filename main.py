@@ -113,6 +113,12 @@ def parse_args():
         help="URL of the dashboard server (default: http://localhost:7654)"
     )
 
+    parser.add_argument(
+        "--login",
+        action="store_true",
+        help="Run the agent in login/authentication mode (exit after login)"
+    )
+
     return parser.parse_args()
 
 
@@ -178,7 +184,8 @@ async def main():
         verify_creation=args.verify_creation,
         manager_frequency=args.manager_frequency,
         manager_model=args.manager_model,
-        run_manager_first=args.manager_first
+        run_manager_first=args.manager_first,
+        login_mode=args.login
     )
 
     # Function to resolve spec file

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional, Any, Dict, List
 
 from shared.config import Config
-from shared.utils import get_file_tree, process_response_blocks, log_startup_config
+from shared.utils import get_file_tree, process_response_blocks, log_startup_config, log_system_health
 from shared.agent_client import AgentClient
 from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, copy_spec_to_project
 
@@ -187,10 +187,19 @@ class CursorClient:
             stderr = "".join(stderr_buf).encode()
 
             if process.returncode != 0:
-                logger.error(
-                    f"Cursor process exited with code {process.returncode}")
+                error_msg = f"Cursor process exited with code {process.returncode}"
+                logger.error(error_msg)
+                
                 if stderr:
                     logger.error(f"STDERR: {stderr.decode()}")
+
+                # Special handling for SIGTERM (143) to identify it clearly
+                if process.returncode == 143 or process.returncode == -15:
+                    health_info = log_system_health()
+                    raise Exception(f"Cursor Agent received SIGTERM (Exit 143). This may be due to OOM or external termination. {health_info} {error_msg}")
+                
+                # For other errors, we also raise so the agent loop can retry
+                raise Exception(error_msg)
 
         except Exception as e:
             logger.exception(f"Unexpected error running Cursor Agent: {e}")
@@ -391,11 +400,22 @@ async def run_autonomous_agent(
 
     # Initialize Client
     client = CursorClient(config)
-    # Store agent client on cursor client if we wanted to pass it down deeper,
-    # but for now we keep it local or attached to client for easier access in run_agent_session if we passed it there.
-    # Let's attach it to CursorClient for convenience if we refactor run_agent_session to use it,
-    # BUT run_agent_session takes client.
     setattr(client, "agent_client", agent_client)
+
+    # Login Mode
+    if config.login_mode:
+        logger.info("Starting Cursor Login Flow...")
+        import subprocess
+        try:
+            # cursor-agent login
+            subprocess.run(["cursor-agent", "login"], check=False)
+        except FileNotFoundError:
+            logger.error("Cursor Agent CLI not found.")
+        except Exception as e:
+            logger.error(f"Error during login: {e}")
+        return
+
+    # Check state
 
     # Check state
     is_first_run = not config.feature_list_path.exists()

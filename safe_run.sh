@@ -50,7 +50,7 @@ fi
 
 # Detect if port 7654 is already busy (e.g. by start_dashboard)
 # We check if any process is listening on 7654
-if lsof -i :7654 > /dev/null 2>&1 || ss -lptn 'sport = :7654' | grep -q 7654; then
+if lsof -i :7654 > /dev/null 2>&1 || (command -v ss >/dev/null 2>&1 && ss -lptn 'sport = :7654' | grep -q 7654) || (command -v netstat >/dev/null 2>&1 && netstat -an | grep 7654 | grep -i LISTEN > /dev/null 2>&1); then
     PORT_BUSY=true
 else
     PORT_BUSY=false

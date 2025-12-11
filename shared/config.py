@@ -39,6 +39,7 @@ class Config:
     manager_frequency: int = 10
     manager_model: Optional[str] = None
     run_manager_first: bool = False
+    login_mode: bool = False
 
     def __post_init__(self):
         if self.model is None:

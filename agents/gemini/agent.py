@@ -338,6 +338,23 @@ async def run_autonomous_agent(config: Config,
     # Initialize Client
     client = GeminiClient(config)
 
+    # Login Mode
+    if config.login_mode:
+        logger.info("Starting Gemini Login Flow...")
+        import subprocess
+        try:
+            # We attempt to run 'gemini login'. If it doesn't exist, we'll catch it.
+            # We use subprocess.run to allow interactive login if supported by the CLI.
+            result = subprocess.run(["gemini", "login"], check=False)
+            if result.returncode != 0:
+                 logger.warning("'gemini login' finished with errors or is not supported.")
+                 logger.info("If you need to authenticate, please check 'gemini --help'.")
+        except FileNotFoundError:
+            logger.error("Gemini CLI not found.")
+        except Exception as e:
+            logger.error(f"Error during login: {e}")
+        return
+
     # Check state
     is_first_run = not config.feature_list_path.exists()
 

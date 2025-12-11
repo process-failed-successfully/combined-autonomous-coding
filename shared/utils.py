@@ -289,3 +289,37 @@ async def process_response_blocks(response_text: str,
             block_content.append(line)
 
     return execution_log, executed_actions
+
+def log_system_health() -> str:
+    """Logs current system health (memory, load) for debugging crashes and returns it."""
+    health_info = []
+    try:
+        # Check memory
+        try:
+            with open("/proc/meminfo", "r") as f:
+                meminfo = f.read()
+                # Extract MemAvailable
+                for line in meminfo.splitlines():
+                    if "MemAvailable" in line:
+                        msg = f"[System Health] {line}"
+                        logger.info(msg)
+                        health_info.append(msg)
+                        break
+        except Exception:
+            pass
+
+        # Check load average
+        try:
+            with open("/proc/loadavg", "r") as f:
+                load = f.read().strip()
+                msg = f"[System Health] Load Average: {load}"
+                logger.info(msg)
+                health_info.append(msg)
+        except Exception:
+            pass
+            
+    except Exception as e:
+        logger.warning(f"Failed to log system health: {e}")
+        return f"Failed to retrieve system health: {e}"
+        
+    return "; ".join(health_info)

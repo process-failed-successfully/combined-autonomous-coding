@@ -3,6 +3,7 @@ import requests
 import time
 import socket
 import concurrent.futures
+import threading
 from dataclasses import asdict
 from typing import List, Optional
 from shared.state import AgentState, AgentControl # We'll reuse these dataclasses effectively
@@ -17,6 +18,27 @@ class AgentClient:
         # We maintain a local control state
         self.local_control = AgentControl()
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        
+        # Background Heartbeat
+        self._stop_event = threading.Event()
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        self._heartbeat_thread.start()
+
+    def _heartbeat_loop(self):
+        """
+        Sends a heartbeat every 5 seconds to keep the agent 'online'.
+        """
+        while not self._stop_event.is_set():
+            try:
+                # We send a minimal heartbeat, just to update the timestamp
+                # The server merges this with existing state
+                self._do_report_state({}) 
+            except Exception:
+                pass
+            time.sleep(5)
+
+    def stop(self):
+        self._stop_event.set()
 
     def report_state(self, **kwargs):
         """
@@ -61,3 +83,4 @@ class AgentClient:
 
     def clear_skip(self):
         self.local_control.skip_requested = False
+

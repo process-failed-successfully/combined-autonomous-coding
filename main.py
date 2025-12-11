@@ -10,6 +10,7 @@ import argparse
 import asyncio
 import logging
 import sys
+import os
 from pathlib import Path
 
 from shared.config import Config
@@ -95,9 +96,15 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--dashboard",
+        "--no-dashboard",
         action="store_true",
-        help="Run the standalone dashboard server"
+        help="Disable the standalone dashboard server (enabled by default)"
+    )
+    
+    parser.add_argument(
+        "--dashboard-only",
+        action="store_true",
+        help="Run ONLY the dashboard server (no agent)"
     )
     
     parser.add_argument(
@@ -112,25 +119,48 @@ async def main():
     args = parse_args()
     
     # Dashboard Mode
-    if args.dashboard:
+    # By default we start the dashboard unless explicitly disabled
+    if args.dashboard_only:
+        # Exclusive Mode: Start server and block
         from ui.server import start_server
-        # We start it in foreground for this mode, or keep main alive
-        server, _ = start_server(port=7654)
-        # Keep alive
         try:
+            start_server(port=7654)
+            # Block forever
             while True:
                 await asyncio.sleep(1)
         except KeyboardInterrupt:
             sys.exit(0)
+        except OSError as e:
+            # If port is busy in exclusive mode, it's an error
+            print(f"Error starting dashboard: {e}")
+            sys.exit(1)
+
+    if not args.no_dashboard:
+        # Default Mode: Try to start server, but proceed if it fails (graceful degradation)
+        try:
+            from ui.server import start_server
+            # We start it in foreground for this mode, or keep main alive
+            server, _ = start_server(port=7654)
+            # Server runs in daemon thread, so we can proceed to run agent.
+        except OSError:
+            # Assume port is busy, meaning dashboard is already running
+            pass
             
     # Setup Logger
     # We might want to log to a file in the project directory, but we need to ensure it exists first
     args.project_dir.mkdir(parents=True, exist_ok=True)
     
-    log_file = args.project_dir / f"{args.agent}_agent_debug.log"
+    if args.dashboard_only:
+        log_file = args.project_dir / "dashboard_server.log"
+    else:
+        log_file = args.project_dir / f"{args.agent}_agent_debug.log"
+        
     logger = setup_logger(log_file=log_file, verbose=args.verbose)
     
-    logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+    if args.dashboard_only:
+         logger.info(f"Starting Dashboard Server on port 7654")
+    else:
+         logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     
     # Create Config
     config = Config(
@@ -163,7 +193,12 @@ async def main():
         
     # Initialize Agent Client
     from shared.agent_client import AgentClient
-    agent_id = f"{args.agent}-{args.project_dir.name}"
+    
+    project_name = os.environ.get("PROJECT_NAME")
+    if not project_name:
+        project_name = args.project_dir.resolve().name
+        
+    agent_id = f"{args.agent}-{project_name}"
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
     
     # Dispatch

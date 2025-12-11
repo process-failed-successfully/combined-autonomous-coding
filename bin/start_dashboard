@@ -21,4 +21,4 @@ export WORKSPACE_DIR="$(pwd)"
 
 # Run from Repo Root
 cd "$REPO_ROOT"
-./safe_run.sh --dashboard --dashboard-url "$DASHBOARD_URL"
+./safe_run.sh "$@" --dashboard-only --dashboard-url "$DASHBOARD_URL"

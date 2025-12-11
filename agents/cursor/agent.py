@@ -27,7 +27,7 @@ class CursorClient:
         self.config = config
         self.agent_client: Optional[Any] = None
 
-    async def run_command(self, prompt: str, cwd: Path) -> Dict[str, Any]:
+    async def run_command(self, prompt: str, cwd: Path, status_callback=None) -> Dict[str, Any]:
         """
         Run a cursor-agent CLI command and return the parsed JSON output.
         """
@@ -114,7 +114,17 @@ class CursorClient:
                 if self.config.stream_output:
                     sys.stdout.write(text)
                     sys.stdout.flush()
-            
+                if status_callback:
+                    # We can't send every chunk, but maybe every line or periodically?
+                    # For now let's just show we are alive.
+                    # Use a non-blocking way if possible, or simple check?
+                    # Since this is a callback, we can't easily throttle without state.
+                    # But we can just send "Generating..." and rely on the server/client loop to handle it or debounce.
+                    # Actually better to just set a flag or update a counter in the outer scope?
+                    # Let's just call it. The report_state is threaded/async? 
+                    # agent_client.report_state uses a thread executor.
+                    status_callback("Cursor Generating...")
+
             def on_stderr(text):
                  if self.config.stream_output:
                     sys.stderr.write(text)
@@ -134,9 +144,15 @@ class CursorClient:
                 if not pending:
                     break
                 
+                # Check for activity (files or output)
                 from shared.utils import has_recent_activity
+                
+                # We can also check if our buffers are growing?
+                # But has_recent_activity checks filesystem.
+                
                 if has_recent_activity(self.config.project_dir, seconds=60):
                     logger.info("Agent timeout exceeded, but file activity detected. Extending wait by 60s...")
+                    status_callback("Waiting (File Activity Detected)...") if status_callback else None
                     timeout = 60.0
                     continue
                 else:
@@ -232,12 +248,25 @@ RECENT ACTIONS:
         # We append a reminder to use the code block format and tool usage
         augmented_prompt = prompt + f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
 
+        # Define callback to update dashboard status
+        def status_update(msg):
+            if client.agent_client:
+                client.agent_client.report_state(current_task=msg)
+
         if client.agent_client:
-             client.agent_client.report_state(last_log=[f"Sending prompt to Cursor Agent:\n{prompt[:200]}..."])
+             client.agent_client.report_state(current_task="Sending Prompt to Agent")
+             
+             # Also recover logs if they are empty from a restart?
+             # No, we can't easily recover history from disk here without parsing logs.
+             # But we can at least show we are starting.
 
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
         
-        result = await client.run_command(augmented_prompt, client.config.project_dir)
+        result = await client.run_command(
+            augmented_prompt, 
+            client.config.project_dir, 
+            status_callback=status_update
+        )
         
         response_text = ""
         # Handle result structure from Cursor API
@@ -259,7 +288,7 @@ RECENT ACTIONS:
         if response_text:
             logger.info("Received response from Cursor Agent.")
             if client.agent_client:
-                 client.agent_client.report_state(last_log=[f"Received response ({len(response_text)} chars). Processing..."])
+                 client.agent_client.report_state(current_task="Processing Response")
             # Only log full response in debug
             logger.debug(f"Response:\n{response_text}")
         else:
@@ -270,11 +299,24 @@ RECENT ACTIONS:
         executed_actions = []
         if response_text:
             logger.info("Processing response blocks...")
-            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout)
+            
+            # Define callback to update dashboard status
+            def status_update(msg):
+                if client.agent_client:
+                    client.agent_client.report_state(current_task=msg)
+            
+            log, actions = await process_response_blocks(
+                response_text, 
+                client.config.project_dir, 
+                client.config.bash_timeout,
+                status_callback=status_update
+            )
+            
             if log:
                 logger.info("Execution Log updated.")
-                if client.agent_client:
-                    client.agent_client.report_state(last_log=[f"Execution Log:\n{log}"])
+                # We do NOT report the full execution log to the dashboard to avoid overwriting history
+                # if client.agent_client:
+                #    client.agent_client.report_state(last_log=[f"Execution Log:\n{log}"])
             executed_actions = actions
         
         return "continue", response_text, executed_actions
@@ -283,8 +325,9 @@ RECENT ACTIONS:
 
     except Exception as e:
         logger.exception("Error during agent session")
+        # Do not overwrite history with error
         if client.agent_client:
-            client.agent_client.report_state(last_log=[f"Session Error: {e}"])
+            client.agent_client.report_state(current_task=f"Error: {e}")
         return "error", str(e), []
 
 

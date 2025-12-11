@@ -15,7 +15,7 @@ services:
       # Mount current workspace
       - ${WORKSPACE_DIR}:/workspace
 
-    command: ["python3", "/app/combined-autonomous-coding/main.py"]
+    command: [ "python3", "/app/combined-autonomous-coding/main.py" ]
 
     working_dir: /workspace
 
@@ -27,4 +27,8 @@ services:
       - OPENAI_API_KEY
       - GEMINI_API_KEY
       - ANTHROPIC_API_KEY
+      - PROJECT_NAME
       # Add others as needed
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

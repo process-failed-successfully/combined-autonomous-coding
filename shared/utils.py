@@ -94,6 +94,7 @@ async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) ->
             cwd=cwd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            stdin=asyncio.subprocess.DEVNULL, # Prevent interactive hangs
             env=os.environ.copy(),
             preexec_fn=os.setsid  # Create a process group so we can kill the whole tree
         )
@@ -185,7 +186,7 @@ async def execute_search_block(query: str, cwd: Path) -> str:
         return str(e)
 
 
-async def process_response_blocks(response_text: str, project_dir: Path, bash_timeout: float = 120.0) -> Tuple[str, List[str]]:
+async def process_response_blocks(response_text: str, project_dir: Path, bash_timeout: float = 120.0, status_callback=None) -> Tuple[str, List[str]]:
     """
     Parse the response text for code blocks and execute them.
     Supported blocks:
@@ -222,18 +223,22 @@ async def process_response_blocks(response_text: str, project_dir: Path, bash_ti
                 # End of block
                 content = "\n".join(block_content)
                 if block_type == "bash":
+                    if status_callback: status_callback(f"Running Bash: {content[:50]}...")
                     output = await execute_bash_block(content, project_dir, timeout=bash_timeout)
                     execution_log += f"\n> {content}\n{output}\n"
                     executed_actions.append(f"Ran Bash: {content}")
                 elif block_type == "write":
+                    if status_callback: status_callback(f"Writing File: {block_arg}")
                     output = execute_write_block(block_arg, content, project_dir)
                     execution_log += f"\n> Write {block_arg}\n{output}\n"
                     executed_actions.append(f"Wrote File: {block_arg}")
                 elif block_type == "read":
+                    if status_callback: status_callback(f"Reading File: {block_arg}")
                     output = execute_read_block(block_arg, project_dir)
                     execution_log += f"\n> Read {block_arg}\n{output}\n"
                     executed_actions.append(f"Read File: {block_arg}")
                 elif block_type == "search":
+                    if status_callback: status_callback(f"Searching: {block_arg}")
                     output = await execute_search_block(block_arg, project_dir)
                     execution_log += f"\n> Search {block_arg}\n{output}\n"
                     executed_actions.append(f"Searched: {block_arg}")

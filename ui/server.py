@@ -43,6 +43,10 @@ class DashboardState:
     def _background_saver(self):
         while self.running:
             time.sleep(1)
+            
+            # Run cleanup every iteration (every 1s is fine, or modulo it)
+            self._cleanup_stale_agents()
+            
             with self.lock:
                 if not self.dirty:
                     continue
@@ -55,6 +59,28 @@ class DashboardState:
                 self.persistence_file.write_text(json.dumps(data, indent=2))
             except Exception as e:
                 print(f"Error saving state: {e}")
+
+    def _cleanup_stale_agents(self):
+        # Remove agents that haven't heartbeat in 30 seconds
+        threshold = 30
+        now = time.time()
+        to_remove = []
+        
+        with self.lock:
+            for agent_id, agent in self.agents.items():
+                # If last_heartbeat is 0, it might be new, but we init with time.time() usually?
+                # Actually AgentState default is 0.0. Let's assume we update it on first heartbeat.
+                # If it's 0.0, we probably shouldn't kill it immediately unless it's really old persistence data?
+                # Let's say if (now - last_heartbeat) > threshold
+                if agent.last_heartbeat > 0 and (now - agent.last_heartbeat) > threshold:
+                    to_remove.append(agent_id)
+            
+            for agent_id in to_remove:
+                print(f"Removing stale agent: {agent_id}")
+                del self.agents[agent_id]
+                if agent_id in self.queues:
+                    del self.queues[agent_id]
+                self.dirty = True
 
     def update_agent(self, agent_id: str, data: dict):
         with self.lock:

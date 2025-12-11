@@ -1,0 +1,33 @@
+{
+  "cursor-": {
+    "id": "cursor-",
+    "is_running": true,
+    "is_paused": false,
+    "iteration": 1,
+    "current_task": "Executing Agent",
+    "last_log": [
+      "Sending prompt to Cursor Agent:\n## YOUR ROLE - CODING AGENT\n\nYou are continuing work on a long-running autonomous development task using an Autonomous Agent.\nThis is a FRESH context window - you have no memory of previous sessions.\n..."
+    ],
+    "last_heartbeat": 1765418734.2836273
+  },
+  "test-agent": {
+    "id": "test-agent",
+    "is_running": false,
+    "is_paused": false,
+    "iteration": 0,
+    "current_task": "Idle",
+    "last_log": [],
+    "last_heartbeat": 1765418652.1858664
+  },
+  "cursor-autonomous-agent-exporter": {
+    "id": "cursor-autonomous-agent-exporter",
+    "is_running": true,
+    "is_paused": false,
+    "iteration": 1,
+    "current_task": "Sending Prompt to Agent",
+    "last_log": [
+      "Received response (1218 chars). Processing..."
+    ],
+    "last_heartbeat": 1765420050.7428603
+  }
+}

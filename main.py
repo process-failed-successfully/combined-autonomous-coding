@@ -14,12 +14,15 @@ from pathlib import Path
 
 from shared.config import Config
 from shared.logger import setup_logger
+from shared.git import ensure_git_safe
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
 # though structure should be clean.
 from agents.gemini import run_autonomous_agent as run_gemini
+from agents.gemini import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
+
 
 
 def parse_args():
@@ -119,6 +122,19 @@ def parse_args():
         help="Run the agent in login/authentication mode (exit after login)"
     )
 
+    # Sprint Arguments
+    parser.add_argument(
+        "--sprint",
+        action="store_true",
+        help="Run in Sprint Mode (Concurrent Agents)"
+    )
+
+    parser.add_argument(
+        "--max-agents",
+        type=int,
+        help="Maximum number of simultaneous agents in Sprint Mode"
+    )
+
     return parser.parse_args()
 
 
@@ -203,6 +219,10 @@ async def main():
             "Error: --spec argument is required for new projects! (or place 'app_spec.txt' in directory)")
         sys.exit(1)
 
+    # Git Safety
+    # Ensure we are on a safe branch before starting any agent work
+    ensure_git_safe(args.project_dir)
+
     # Initialize Agent Client
     from shared.agent_client import AgentClient
 
@@ -215,6 +235,11 @@ async def main():
 
     # Dispatch
     try:
+        if config.sprint_mode:
+            logger.info("Running in SPRINT MODE")
+            await run_sprint(config, agent_client=client)
+            return
+
         if args.agent == "gemini":
             await run_gemini(config, agent_client=client)
         elif args.agent == "cursor":

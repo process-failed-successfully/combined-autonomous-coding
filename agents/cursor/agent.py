@@ -138,6 +138,10 @@ class CursorClient:
                     status_callback(current_task="Cursor Generating...", output_line=text)
 
             def on_stderr(text):
+                # Always log stderr to debug/info for visibility
+                if text.strip():
+                    logger.warning(f"Cursor Agent STDERR: {text.strip()}")
+                
                 if self.config.stream_output:
                     sys.stderr.write(text)
                     sys.stderr.flush()
@@ -257,7 +261,8 @@ def log_progress_summary(project_dir: Path, progress_file: Path) -> None:
 async def run_agent_session(
     client: CursorClient,
     prompt: str,
-    recent_history: List[str] = []
+    recent_history: List[str] = [],
+    status_callback: Optional[Any] = None
 ) -> tuple[str, str, List[str]]:
     """
     Run a single agent session using Cursor CLI.
@@ -298,11 +303,54 @@ RECENT ACTIONS:
         augmented_prompt = prompt + \
             f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
 
+        # Truncation Logic to avoid ARG_MAX and reduce crash risk
+        MAX_PROMPT_CHARS = 100000
+        if len(augmented_prompt) > MAX_PROMPT_CHARS:
+            logger.warning(f"Prompt length ({len(augmented_prompt)}) exceeds limit ({MAX_PROMPT_CHARS}). Truncating context.")
+            
+            # 1. Truncate File Tree
+            # We'll just take the top 5000 chars of file tree as a heuristic
+            truncated_file_tree = file_tree[:5000] + "\n... (File tree truncated)"
+            
+            context_block = f"""
+CURRENT CONTEXT:
+Working Directory: {client.config.project_dir}
+{feature_status}
+RECENT ACTIONS:
+{history_text}
+
+{truncated_file_tree}
+"""
+            augmented_prompt = prompt + \
+                f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
+            
+            # 2. If still too long, truncate recent history
+            if len(augmented_prompt) > MAX_PROMPT_CHARS:
+                # Keep only last 2 actions
+                short_history_text = "\n".join([f"- {h}" for h in recent_history[-2:]]) if recent_history else "None"
+                
+                context_block = f"""
+CURRENT CONTEXT:
+Working Directory: {client.config.project_dir}
+{feature_status}
+RECENT ACTIONS:
+{short_history_text}
+
+{truncated_file_tree}
+"""
+                augmented_prompt = prompt + \
+                    f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
+
         # Define callback to update dashboard status
         # We maintain a strictly local log for the current turn to display live generation
         current_turn_log = []
         
-        def status_update(current_task=None, output_line=None):
+        def local_status_update(current_task=None, output_line=None):
+            # If an external callback is provided, call it
+            if status_callback:
+                status_callback(current_task=current_task, output_line=output_line)
+
+            # Also perform local logic (Dashboard Client specific)
             if not client.agent_client:
                 return
             
@@ -320,7 +368,10 @@ RECENT ACTIONS:
                     updates["last_log"] = current_turn_log[-30:]
             
             client.agent_client.report_state(**updates)
-
+            
+        # Use simple alias for passing to downstream functions
+        # But wait, logic above merges them.
+        
         if client.agent_client:
             client.agent_client.report_state(
                 current_task="Sending Prompt to Agent")
@@ -334,7 +385,7 @@ RECENT ACTIONS:
         result = await client.run_command(
             augmented_prompt,
             client.config.project_dir,
-            status_callback=status_update
+            status_callback=local_status_update
         )
 
         response_text = ""
@@ -373,8 +424,7 @@ RECENT ACTIONS:
 
             # Define callback to update dashboard status
             def block_status_update(msg):
-                if client.agent_client:
-                    client.agent_client.report_state(current_task=msg)
+                local_status_update(current_task=msg)
 
             log, actions = await process_response_blocks(
                 response_text,

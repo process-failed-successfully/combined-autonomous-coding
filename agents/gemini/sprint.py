@@ -74,14 +74,9 @@ class SprintManager:
         client, session_runner = self._get_agent_runner()
         
         # specific prompt for planning
+        # specific prompt for planning
         base_prompt = get_sprint_planner_prompt()
-        prompt = base_prompt.format(
-            working_directory=self.config.project_dir,
-            user_goal=self.config.project_dir.name # Heuristic: use project name as goal proxy if no other input. 
-            # Ideally we'd have the initial user prompt. 
-            # For now let's assume the user put a spec or README. 
-            # Better: read app_spec.txt if exists
-        )
+
         
         # Check for app_spec or initial goal
         spec_path = self.config.project_dir / "app_spec.txt"

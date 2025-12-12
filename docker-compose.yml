@@ -7,10 +7,10 @@ services:
       # Mount agent configurations if they exist (optional, docker handles missing source dirs by creating them on host usually, but we want to map existing)
       # We rely on the wrapper script to handle existence or docker compose warning suppression?
       # Actually, let's map precise paths.
-      - ${HOME}/.gemini:/root/.gemini
-      - ${HOME}/.config:/root/.config
+      - ${HOME}/.gemini:/home/appuser/.gemini
+      - ${HOME}/.config:/home/appuser/.config
       # Mount cursor configuration
-      - ${HOME}/.cursor:/root/.cursor
+      - ${HOME}/.cursor:/home/appuser/.cursor
 
       # Mount current workspace
       - ${WORKSPACE_DIR}:/workspace

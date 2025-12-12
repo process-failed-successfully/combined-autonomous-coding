@@ -22,6 +22,8 @@ You DO NOT write the code yourself. You provide **directives** and **answers** t
 2.  **Address Blockers**: Provide solutions or simpler alternatives for reported blockers.
 3.  **Answer Questions**: Read `questions.txt` and provide answers.
 4.  **Refine Plan**: Validates if `feature_list.json` priorities make sense. You can reorder or modify features (carefully) if the current path is blocked or inefficient.
+5.  **Sign Off**: If the project is complete. Validate it ensuring it has sufficient documentation, testing and is feature complete.
+6.  **Function Validation**: At sign off, validate that all functions are implemented and working. Run all core functionality and ensure outputs.
 
 ### ACTIONS YOU CAN TAKE
 

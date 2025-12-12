@@ -16,32 +16,47 @@ Directory: {working_directory}
 # Instructions
 
 1. Analyze the goal, existing files, and specifically the `feature_list.json` content provided below.
-2. Use the `feature_list.json` as the PRIMARY source of requirements. Each feature should be broken down into one or more technical tasks.
-3. Break down the work into a Sprint Plan.
-4. Each task must be **fully self-contained**. Minimize dependencies between tasks if possible.
-5. If tasks have dependencies, clearly list the `dependencies` (list of task IDs that must complete first).
-6. Output the plan **ONLY** as a JSON file named `sprint_plan.json`.
+2. Use the `feature_list.json` as the PRIMARY source of requirements. Each feature should be broken down into **multiple small, technical tasks**.
+3. **CRITICAL: MAXIMIZE PARALLELISM**.
+   - Identify tasks that can be done simultaneously (e.g., creating independent utility files, independent features).
+   - These tasks MUST have `dependencies: []`.
+   - Do NOT linearize work unnecessarily.
+4. **BITE-SIZED TASKS**:
+   - Each task should represent a small unit of work (e.g., "Create file X", "Implement function Y").
+   - A single task should not take more than 5 turns to complete.
+   - If a feature is large, break it down: "Create interface", "Implement core logic", "Add tests".
+5. **ISOLATION**:
+   - Avoid having two parallel tasks edit the SAME file. This causes conflicts.
+   - If two tasks must edit the same file, make one dependent on the other.
+6. If tasks have dependencies, clearly list the `dependencies` (list of task IDs that must complete first).
+7. Output the plan **ONLY** as a JSON file named `sprint_plan.json`.
 
 # JSON Format
 
 ```write:sprint_plan.json
-{
-  "sprint_goal": " Brief summary",
+{{
+  "sprint_goal": "Brief summary",
   "tasks": [
-    {
-      "id": "task_1",
-      "title": "Short title",
-      "description": "Detailed instructions for the worker agent. Be specific about files to edit or create.",
+    {{
+      "id": "task_utils",
+      "title": "Create Utils",
+      "description": "Create utils.py with helper functions. Independent task.",
       "dependencies": []
-    },
-    {
-      "id": "task_2",
-      "title": "Dependent Task",
-      "description": "...",
-      "dependencies": ["task_1"]
-    }
+    }},
+    {{
+      "id": "task_models",
+      "title": "Create Models",
+      "description": "Create models.py with data classes. Independent task.",
+      "dependencies": []
+    }},
+    {{
+      "id": "task_main",
+      "title": "Update Main",
+      "description": "Import utils and models into main.py and use them.",
+      "dependencies": ["task_utils", "task_models"]
+    }}
   ]
-}
+}}
 ```
 
 # Important

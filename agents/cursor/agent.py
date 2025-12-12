@@ -262,11 +262,13 @@ async def run_agent_session(
     client: CursorClient,
     prompt: str,
     recent_history: List[str] = [],
-    status_callback: Optional[Any] = None
+    status_callback: Optional[Any] = None,
+    metrics_callback: Optional[Any] = None
 ) -> tuple[str, str, List[str]]:
     """
     Run a single agent session using Cursor CLI.
     """
+    import time
     logger.info("Sending prompt to Cursor Agent...")
 
     try:
@@ -281,6 +283,15 @@ async def run_agent_session(
                 features = json.loads(feature_file.read_text())
                 total = len(features)
                 passing = sum(1 for f in features if f.get("passes", False))
+                if total > 0:
+                    pct = (passing / total) * 100.0
+                else:
+                    pct = 0.0
+                
+                # Report Feature Metrics
+                if metrics_callback:
+                    metrics_callback("feature_stats", {"count": passing, "pct": pct})
+
                 if passing == total:
                     feature_status = f"Feature List Status: ALL {total}/{total} FEATURES PASSING. Project is verified complete."
                 else:
@@ -309,7 +320,6 @@ RECENT ACTIONS:
             logger.warning(f"Prompt length ({len(augmented_prompt)}) exceeds limit ({MAX_PROMPT_CHARS}). Truncating context.")
             
             # 1. Truncate File Tree
-            # We'll just take the top 5000 chars of file tree as a heuristic
             truncated_file_tree = file_tree[:5000] + "\n... (File tree truncated)"
             
             context_block = f"""
@@ -326,7 +336,6 @@ RECENT ACTIONS:
             
             # 2. If still too long, truncate recent history
             if len(augmented_prompt) > MAX_PROMPT_CHARS:
-                # Keep only last 2 actions
                 short_history_text = "\n".join([f"- {h}" for h in recent_history[-2:]]) if recent_history else "None"
                 
                 context_block = f"""
@@ -342,7 +351,6 @@ RECENT ACTIONS:
                     f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
 
         # Define callback to update dashboard status
-        # We maintain a strictly local log for the current turn to display live generation
         current_turn_log = []
         
         def local_status_update(current_task=None, output_line=None):
@@ -359,34 +367,29 @@ RECENT ACTIONS:
                 updates["current_task"] = current_task
             
             if output_line:
-                # Clean up the line a bit (remove strict newlines for the list, 
-                # but keep them if the UI expects them. Let's strip trailing)
                 clean_line = output_line.rstrip()
                 if clean_line:
                     current_turn_log.append(clean_line)
-                    # Show last 30 lines of live output
                     updates["last_log"] = current_turn_log[-30:]
             
             client.agent_client.report_state(**updates)
             
-        # Use simple alias for passing to downstream functions
-        # But wait, logic above merges them.
-        
         if client.agent_client:
             client.agent_client.report_state(
                 current_task="Sending Prompt to Agent")
 
-        # Also recover logs if they are empty from a restart?
-        # No, we can't easily recover history from disk here without parsing logs.
-        # But we can at least show we are starting.
-
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
 
+        # Measure LLM Latency
+        start_time = time.time()
         result = await client.run_command(
             augmented_prompt,
             client.config.project_dir,
             status_callback=local_status_update
         )
+        latency = time.time() - start_time
+        if metrics_callback:
+            metrics_callback("llm_latency", latency)
 
         response_text = ""
         # Handle result structure from Cursor API
@@ -395,10 +398,8 @@ RECENT ACTIONS:
                 for part in candidate.get("content", {}).get("parts", []):
                     if "text" in part:
                         response_text += part["text"]
-        # Handle flattened 'content' (some CLI wrappers do this)
         elif "content" in result:
             response_text = result.get("content", "")
-        # Handle 'response' key (observed in some CLI versions)
         elif "response" in result:
             response_text = result.get("response", "")
         else:
@@ -430,19 +431,15 @@ RECENT ACTIONS:
                 response_text,
                 client.config.project_dir,
                 client.config.bash_timeout,
-                status_callback=block_status_update
+                status_callback=block_status_update,
+                metrics_callback=metrics_callback
             )
 
             if log:
                 logger.info("Execution Log updated.")
-                # We do NOT report the full execution log to the dashboard to avoid overwriting history
-                # if client.agent_client:
-                #    client.agent_client.report_state(last_log=[f"Execution Log:\n{log}"])
             executed_actions = actions
 
         return "continue", response_text, executed_actions
-
-        return "continue", response_text
 
     except Exception as e:
         logger.exception("Error during agent session")
@@ -458,6 +455,7 @@ async def run_autonomous_agent(
     """
     Run the autonomous agent loop.
     """
+    import time
     log_startup_config(config, logger)
 
     # Create project directory
@@ -472,15 +470,12 @@ async def run_autonomous_agent(
         logger.info("Starting Cursor Login Flow...")
         import subprocess
         try:
-            # cursor-agent login
             subprocess.run(["cursor-agent", "login"], check=False)
         except FileNotFoundError:
             logger.error("Cursor Agent CLI not found.")
         except Exception as e:
             logger.error(f"Error during login: {e}")
         return
-
-    # Check state
 
     # Check state
     is_first_run = not config.feature_list_path.exists()
@@ -497,12 +492,57 @@ async def run_autonomous_agent(
     consecutive_errors = 0
     recent_history: List[str] = []
     has_run_manager_first = False
+    start_time = time.time()
+    
+    # Session Metrics State
+    metrics_state = {
+        "llm_latencies": [],
+        "tool_times": [],
+        "iteration_times": [],
+    }
+
+    # Metrics Callback Handler
+    def handle_metrics(metric_type: str, value: Any):
+        if not agent_client:
+            return
+            
+        updates = {}
+        
+        if metric_type.startswith("tool:"):
+            tool_name = metric_type.split(":")[1]
+            updates["tool_usage_delta"] = {tool_name: value}
+            
+        elif metric_type == "error":
+            updates["error_match"] = True
+            
+        elif metric_type == "feature_stats":
+            updates["feature_completion_count"] = value["count"]
+            updates["feature_completion_pct"] = value["pct"]
+            
+        elif metric_type == "llm_latency":
+            metrics_state["llm_latencies"].append(value)
+            avg = sum(metrics_state["llm_latencies"]) / len(metrics_state["llm_latencies"])
+            updates["avg_llm_latency"] = avg
+            
+        elif metric_type == "execution_time":
+            metrics_state["tool_times"].append(value)
+            avg = sum(metrics_state["tool_times"]) / len(metrics_state["tool_times"])
+            updates["avg_tool_execution_time"] = avg
+            
+        if updates:
+            agent_client.report_state(**updates)
 
     # Mark as running
     if agent_client:
-        agent_client.report_state(is_running=True, current_task="Initializing")
+        agent_client.report_state(
+            is_running=True, 
+            current_task="Initializing",
+            start_time=start_time
+        )
 
     while True:
+        iter_start_time = time.time()
+        
         # Check Control State
         if agent_client:
             ctl = agent_client.poll_commands()
@@ -553,9 +593,7 @@ async def run_autonomous_agent(
         if (config.project_dir / "COMPLETED").exists():
             logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
             should_run_manager = True
-            # Ensure we force manager execution in the next block logic
-            # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
-        
+            
         print_session_header(iteration, is_first_run)
 
         # Choose prompt
@@ -563,7 +601,6 @@ async def run_autonomous_agent(
 
         if is_first_run:
             prompt = get_initializer_prompt()
-            # Note: We don't flip is_first_run to False until we get a success
         else:
             # Check for Manager Triggers
             should_run_manager = False
@@ -613,7 +650,12 @@ async def run_autonomous_agent(
             config.model = config.manager_model
             logger.info(f"Switched to Manager Model: {config.model}")
 
-        status, response, new_actions = await run_agent_session(client, prompt, recent_history)
+        status, response, new_actions = await run_agent_session(
+            client, 
+            prompt, 
+            recent_history,
+            metrics_callback=handle_metrics
+        )
 
         if using_manager and config.manager_model:
             config.model = original_model
@@ -633,6 +675,14 @@ async def run_autonomous_agent(
             if agent_client:
                 agent_client.report_state(
                     current_task="Waiting (Auto-Continue)")
+            
+            # Calculate Iteration Time & Update Averages
+            iter_duration = time.time() - iter_start_time
+            metrics_state["iteration_times"].append(iter_duration)
+            avg_iter = sum(metrics_state["iteration_times"]) / len(metrics_state["iteration_times"])
+            
+            if agent_client:
+                agent_client.report_state(avg_iteration_time=avg_iter)
 
             logger.info(
                 f"Agent will auto-continue in {config.auto_continue_delay}s...")

@@ -49,11 +49,13 @@ async def run_agent_session(
     client: GeminiClient,
     prompt: str,
     recent_history: List[str] = [],
-    status_callback: Optional[Any] = None
+    status_callback: Optional[Any] = None,
+    metrics_callback: Optional[Any] = None
 ) -> tuple[str, str, List[str]]:
     """
     Run a single agent session using Gemini CLI.
     """
+    import time
     logger.info("Sending prompt to Gemini...")
 
     try:
@@ -68,6 +70,15 @@ async def run_agent_session(
                 features = json.loads(feature_file.read_text())
                 total = len(features)
                 passing = sum(1 for f in features if f.get("passes", False))
+                if total > 0:
+                    pct = (passing / total) * 100.0
+                else:
+                    pct = 0.0
+                
+                # Report Feature Metrics
+                if metrics_callback:
+                    metrics_callback("feature_stats", {"count": passing, "pct": pct})
+
                 if passing == total:
                     feature_status = f"Feature List Status: ALL {total}/{total} FEATURES PASSING. Project is verified complete."
                 else:
@@ -92,7 +103,12 @@ RECENT ACTIONS:
 
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
 
+        # Measure LLM Latency
+        start_time = time.time()
         result = await client.run_command(augmented_prompt, client.config.project_dir)
+        latency = time.time() - start_time
+        if metrics_callback:
+            metrics_callback("llm_latency", latency)
 
         response_text = ""
         # Handle 'candidates' structure from Gemini API
@@ -141,7 +157,7 @@ RECENT ACTIONS:
         executed_actions = []
         if response_text:
             logger.info("Processing response blocks...")
-            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=status_callback)
+            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=status_callback, metrics_callback=metrics_callback)
             if log:
                 logger.info("Execution Log updated.")
             executed_actions = actions
@@ -154,88 +170,100 @@ RECENT ACTIONS:
 
 
 async def run_autonomous_agent(config: Config,
-                               agent_client: Optional[Any] = None) -> None:
+                               agent_client: Optional[Any] = None):
     """
     Run the autonomous agent loop.
     """
+    import time
     log_startup_config(config, logger)
-
-    # Create project directory
-    config.project_dir.mkdir(parents=True, exist_ok=True)
-
-    # Initialize Client
     client = GeminiClient(config)
 
-    # Login Mode
-    if config.login_mode:
-        logger.info("Starting Gemini Login Flow...")
-        import subprocess
-        try:
-            # We attempt to run 'gemini login'. If it doesn't exist, we'll catch it.
-            # We use subprocess.run to allow interactive login if supported by the CLI.
-            result = subprocess.run(["gemini", "login"], check=False)
-            if result.returncode != 0:
-                 logger.warning("'gemini login' finished with errors or is not supported.")
-                 logger.info("If you need to authenticate, please check 'gemini --help'.")
-        except FileNotFoundError:
-            logger.error("Gemini CLI not found.")
-        except Exception as e:
-            logger.error(f"Error during login: {e}")
-        return
+    # Load Prompts
+    initializer_prompt = get_initializer_prompt()
+    coding_prompt = get_coding_prompt()
+    manager_prompt = get_manager_prompt()
 
-    # Check state
-    is_first_run = not config.feature_list_path.exists()
-
-    if is_first_run:
-        logger.info("Fresh start - will use initializer agent")
-        logger.info("This may create the initial spec. Please wait.")
-        copy_spec_to_project(config.project_dir, config.spec_file)
-    else:
-        logger.info("Continuing existing project")
-        log_progress_summary(config.project_dir, config.progress_file_path)
-
+    # Session State
+    history: List[str] = []
     iteration = 0
-    consecutive_errors = 0
-    recent_history: List[str] = []
-    has_run_manager_first = False
+    start_time = time.time()
+    
+    # Session Metrics State
+    metrics_state = {
+        "llm_latencies": [],
+        "tool_times": [],
+        "iteration_times": [],
+    }
 
-    # Mark as running
+    # Initialize Project (Copy Spec)
+    copy_spec_to_project(config.project_dir, config.spec_file)
+    
+    # Metrics Callback Handler
+    def handle_metrics(metric_type: str, value: Any):
+        if not agent_client:
+            return
+            
+        updates = {}
+        
+        if metric_type.startswith("tool:"):
+            tool_name = metric_type.split(":")[1]
+            updates["tool_usage_delta"] = {tool_name: value}
+            
+        elif metric_type == "error":
+            updates["error_match"] = True
+            
+        elif metric_type == "feature_stats":
+            updates["feature_completion_count"] = value["count"]
+            updates["feature_completion_pct"] = value["pct"]
+            
+        elif metric_type == "llm_latency":
+            metrics_state["llm_latencies"].append(value)
+            avg = sum(metrics_state["llm_latencies"]) / len(metrics_state["llm_latencies"])
+            updates["avg_llm_latency"] = avg
+            
+        elif metric_type == "execution_time":
+            metrics_state["tool_times"].append(value)
+            avg = sum(metrics_state["tool_times"]) / len(metrics_state["tool_times"])
+            updates["avg_tool_execution_time"] = avg
+            
+        if updates:
+            agent_client.report_state(**updates)
+
+    # Initial Status
     if agent_client:
-        agent_client.report_state(is_running=True, current_task="Initializing")
+        agent_client.report_state(
+            current_task="Initializing", 
+            is_running=True,
+            start_time=start_time
+        )
 
+    # Main Loop
     while True:
-        # Check Control State
+        iter_start_time = time.time()
+        
+        # Check Limits
+        if config.max_iterations and iteration >= config.max_iterations:
+            logger.info("Max iterations reached. Stopping.")
+            break
+
+        # Check Control Signals
         if agent_client:
-            ctl = agent_client.poll_commands()
-
-            if ctl.stop_requested:
+            control = agent_client.poll_commands()
+            if control.stop_requested:
                 logger.info("Stop requested by user.")
-                # Report stop before breaking
-                agent_client.report_state(
-                    is_running=False, current_task="Stopped")
                 break
-
-            if ctl.pause_requested:
+            if control.pause_requested:
                 agent_client.report_state(
-                    is_paused=True, current_task="Paused")
-                logger.info("Agent Paused. Waiting for resume...")
-                while True:
+                    current_task="Paused", is_paused=True)
+                while control.pause_requested:
                     await asyncio.sleep(1)
-                    ctl = agent_client.poll_commands()
-                    if ctl.stop_requested:
+                    control = agent_client.poll_commands()
+                    if control.stop_requested:
                         return
-                    if not ctl.pause_requested:
-                        break
-                agent_client.report_state(is_paused=False)
-                logger.info("Agent Resumed.")
-
-            if ctl.skip_requested:
-                agent_client.clear_skip()
-                logger.info("Skipping iteration as requested.")
-                continue
+                agent_client.report_state(
+                    current_task="Resuming...", is_paused=False)
 
         iteration += 1
-
         # Update State
         if agent_client:
             agent_client.report_state(
@@ -315,7 +343,13 @@ async def run_autonomous_agent(config: Config,
             config.model = config.manager_model
             logger.info(f"Switched to Manager Model: {config.model}")
 
-        status, response, new_actions = await run_agent_session(client, prompt, recent_history)
+        status, response, new_actions = await run_agent_session(
+            client, 
+            prompt, 
+            recent_history, 
+            status_callback=lambda msg: agent_client.report_state(current_task=msg) if agent_client else None,
+            metrics_callback=handle_metrics
+        )
 
         if using_manager and config.manager_model:
             config.model = original_model

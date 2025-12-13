@@ -156,9 +156,16 @@ def execute_write_block(filename: str, content: str, cwd: Path) -> str:
     logger.info(f"[Writing File] {filename}")
     try:
         file_path = cwd / filename
+        # Create parent directories
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(content)
-        return f"Successfully wrote {filename}"
+
+        with open(file_path, "w") as f:
+            f.write(content)
+            
+        from shared.telemetry import get_telemetry
+        get_telemetry().increment_counter("files_written_total")
+
+        return f"Successfully wrote to {filename}"
     except Exception as e:
         logger.error(f"[Error] {e}")
         return str(e)
@@ -168,11 +175,16 @@ def execute_read_block(filename: str, cwd: Path) -> str:
     """Read content from a file with line numbers."""
     logger.info(f"[Reading File] {filename}")
     try:
-        file_path = cwd / filename
+        file_path = cwd / filename # Kept cwd, assuming 'project_dir' was a typo in instruction
         if not file_path.exists():
             return f"Error: File {filename} does not exist."
 
-        content = file_path.read_text()
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        from shared.telemetry import get_telemetry
+        get_telemetry().increment_counter("files_read_total")
+
         lines = content.splitlines()
         numbered_lines = [f"{i + 1:4} | {line}" for i,
                           line in enumerate(lines)]
@@ -220,10 +232,9 @@ async def process_response_blocks(response_text: str,
                                   metrics_callback=None) -> Tuple[str, List[str]]:
     """
     Parse the response text for code blocks and execute them.
-    ...
-    metrics_callback: func(metric_type: str, value: Any)
     """
     import time
+    from shared.telemetry import get_telemetry
 
     # Simple state machine parser
     lines = response_text.splitlines()
@@ -247,61 +258,59 @@ async def process_response_blocks(response_text: str,
                     if status_callback:
                         status_callback(f"Running Bash: {content[:50]}...")
                     try:
+                        get_telemetry().increment_counter("tool_execution_total", labels={"tool_type": "bash"})
                         output = await execute_bash_block(content, project_dir, timeout=bash_timeout)
                     except Exception:
                         tool_success = False
+                        get_telemetry().increment_counter("tool_errors_total", labels={"tool_type": "bash", "error_type": "exception"})
                         output = "Error"
                     execution_log += f"\n> {content}\n{output}\n"
                     executed_actions.append(f"Ran Bash: {content}")
-                    if metrics_callback:
-                        metrics_callback("tool:bash", 1)
                         
                 elif block_type == "write":
                     if status_callback:
                         status_callback(f"Writing File: {block_arg}")
                     try:
+                        get_telemetry().increment_counter("tool_execution_total", labels={"tool_type": "write"})
                         output = execute_write_block(block_arg, content, project_dir)
                     except Exception:
                         tool_success = False
+                        get_telemetry().increment_counter("tool_errors_total", labels={"tool_type": "write", "error_type": "exception"})
                         output = "Error"
                     execution_log += f"\n> Write {block_arg}\n{output}\n"
                     executed_actions.append(f"Wrote File: {block_arg}")
-                    if metrics_callback:
-                        metrics_callback("tool:write", 1)
 
                 elif block_type == "read":
                     if status_callback:
                         status_callback(f"Reading File: {block_arg}")
                     try:
+                        get_telemetry().increment_counter("tool_execution_total", labels={"tool_type": "read"})
                         output = execute_read_block(block_arg, project_dir)
                     except Exception:
                         tool_success = False
+                        get_telemetry().increment_counter("tool_errors_total", labels={"tool_type": "read", "error_type": "exception"})
                         output = "Error"
                     execution_log += f"\n> Read {block_arg}\n{output}\n"
                     executed_actions.append(f"Read File: {block_arg}")
-                    if metrics_callback:
-                        metrics_callback("tool:read", 1)
 
                 elif block_type == "search":
                     if status_callback:
                         status_callback(f"Searching: {block_arg}")
                     try:
+                        get_telemetry().increment_counter("tool_execution_total", labels={"tool_type": "search"})
                         output = await execute_search_block(block_arg, project_dir)
                     except Exception:
                         tool_success = False
+                        get_telemetry().increment_counter("tool_errors_total", labels={"tool_type": "search", "error_type": "exception"})
                         output = "Error"
                     execution_log += f"\n> Search {block_arg}\n{output}\n"
                     executed_actions.append(f"Searched: {block_arg}")
-                    if metrics_callback:
-                        metrics_callback("tool:search", 1)
 
                 # Timing End
                 end_time = time.time()
                 duration = end_time - start_time
-                if metrics_callback:
-                    metrics_callback("execution_time", duration)
-                    if not tool_success:
-                        metrics_callback("error", 1)
+                if block_type:
+                    get_telemetry().record_histogram("tool_execution_duration_seconds", duration, labels={"tool_type": block_type})
 
                 in_block = False
                 block_type = None

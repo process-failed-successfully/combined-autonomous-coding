@@ -14,6 +14,7 @@ from typing import Optional, Any, Dict, List
 
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config
+from shared.telemetry import init_telemetry, get_telemetry
 from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, copy_spec_to_project
 from .client import GeminiClient
 
@@ -76,8 +77,8 @@ async def run_agent_session(
                     pct = 0.0
                 
                 # Report Feature Metrics
-                if metrics_callback:
-                    metrics_callback("feature_stats", {"count": passing, "pct": pct})
+                get_telemetry().record_gauge("feature_completion_count", passing)
+                get_telemetry().record_gauge("feature_completion_pct", pct)
 
                 if passing == total:
                     feature_status = f"Feature List Status: ALL {total}/{total} FEATURES PASSING. Project is verified complete."
@@ -117,8 +118,7 @@ RECENT ACTIONS:
             status_callback=local_status_update
         )
         latency = time.time() - start_time
-        if metrics_callback:
-            metrics_callback("llm_latency", latency)
+        get_telemetry().record_histogram("llm_latency_seconds", latency, labels={"model": client.config.model, "operation": "generate_content"})
 
         response_text = ""
         # Handle 'candidates' structure from Gemini API
@@ -145,23 +145,33 @@ RECENT ACTIONS:
             logger.warning("No text content found in Gemini response.")
             logger.info(
                 f"Full Gemini response: {json.dumps(result, indent=2)}")
+            
+            # Record Token Usage if available
+        if "usageMetadata" in result:
+             usage = result["usageMetadata"]
+             prompt_tokens = usage.get("promptTokenCount", 0)
+             candidates_tokens = usage.get("candidatesTokenCount", 0)
+             total_tokens = usage.get("totalTokenCount", 0)
+             
+             get_telemetry().increment_counter("llm_tokens_total", prompt_tokens, labels={"model": client.config.model, "type": "input"})
+             get_telemetry().increment_counter("llm_tokens_total", candidates_tokens, labels={"model": client.config.model, "type": "output"})
 
-            # Detailed diagnostics
-            if "promptFeedback" in result:
-                logger.warning(
-                    f"Prompt Feedback: {json.dumps(result['promptFeedback'], indent=2)}")
+        # Detailed diagnostics
+        if "promptFeedback" in result:
+            logger.warning(
+                f"Prompt Feedback: {json.dumps(result['promptFeedback'], indent=2)}")
 
-            if "candidates" in result:
-                for i, candidate in enumerate(result["candidates"]):
-                    finish_reason = candidate.get('finishReason')
-                    if finish_reason:
-                        logger.warning(
-                            f"Candidate {i} finish reason: {finish_reason}")
+        if "candidates" in result:
+            for i, candidate in enumerate(result["candidates"]):
+                finish_reason = candidate.get('finishReason')
+                if finish_reason:
+                    logger.warning(
+                        f"Candidate {i} finish reason: {finish_reason}")
 
-                    safety_ratings = candidate.get('safetyRatings')
-                    if safety_ratings:
-                        logger.warning(
-                            f"Candidate {i} safety ratings: {json.dumps(safety_ratings, indent=2)}")
+                safety_ratings = candidate.get('safetyRatings')
+                if safety_ratings:
+                    logger.warning(
+                        f"Candidate {i} safety ratings: {json.dumps(safety_ratings, indent=2)}")
 
         # Execute any blocks found in the response
         executed_actions = []
@@ -172,7 +182,7 @@ RECENT ACTIONS:
                 if status_callback:
                     status_callback(current_task=msg)
 
-            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=block_status_update, metrics_callback=metrics_callback)
+            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=block_status_update)
             if log:
                 logger.info("Execution Log updated.")
             executed_actions = actions
@@ -191,6 +201,11 @@ async def run_autonomous_agent(config: Config,
     """
     import time
     log_startup_config(config, logger)
+    
+    # Initialize Telemetry
+    init_telemetry("gemini_agent", agent_type="gemini", project_name=config.project_dir.name)
+    get_telemetry().start_system_monitoring()
+    
     client = GeminiClient(config)
 
     # Load Prompts
@@ -202,13 +217,6 @@ async def run_autonomous_agent(config: Config,
     recent_history: List[str] = []
     iteration = 0
     start_time = time.time()
-    
-    # Session Metrics State
-    metrics_state = {
-        "llm_latencies": [],
-        "tool_times": [],
-        "iteration_times": [],
-    }
 
     # Initialize State
     is_first_run = not config.feature_list_path.exists()
@@ -217,36 +225,8 @@ async def run_autonomous_agent(config: Config,
     # Initialize Project (Copy Spec)
     copy_spec_to_project(config.project_dir, config.spec_file)
     
-    # Metrics Callback Handler
-    def handle_metrics(metric_type: str, value: Any):
-        if not agent_client:
-            return
-            
-        updates = {}
-        
-        if metric_type.startswith("tool:"):
-            tool_name = metric_type.split(":")[1]
-            updates["tool_usage_delta"] = {tool_name: value}
-            
-        elif metric_type == "error":
-            updates["error_match"] = True
-            
-        elif metric_type == "feature_stats":
-            updates["feature_completion_count"] = value["count"]
-            updates["feature_completion_pct"] = value["pct"]
-            
-        elif metric_type == "llm_latency":
-            metrics_state["llm_latencies"].append(value)
-            avg = sum(metrics_state["llm_latencies"]) / len(metrics_state["llm_latencies"])
-            updates["avg_llm_latency"] = avg
-            
-        elif metric_type == "execution_time":
-            metrics_state["tool_times"].append(value)
-            avg = sum(metrics_state["tool_times"]) / len(metrics_state["tool_times"])
-            updates["avg_tool_execution_time"] = avg
-            
-        if updates:
-            agent_client.report_state(**updates)
+    # Metrics Callback Handler (REMOVED - Use Telemetry)
+    # def handle_metrics(metric_type: str, value: Any): ...
 
     # Initial Status
     if agent_client:
@@ -407,7 +387,7 @@ async def run_autonomous_agent(config: Config,
             prompt, 
             recent_history, 
             status_callback=status_update,
-            metrics_callback=handle_metrics
+            metrics_callback=None # Deprecated
         )
 
         if using_manager and config.manager_model:

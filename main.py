@@ -141,34 +141,13 @@ def parse_args():
 async def main():
     args = parse_args()
 
-    # Dashboard Mode
-    # By default we start the dashboard unless explicitly disabled
+    # Dashboard Mode (Legacy - Removed)
     if args.dashboard_only:
-        # Exclusive Mode: Start server and block
-        from ui.server import start_server
-        try:
-            start_server(port=7654)
-            # Block forever
-            while True:
-                await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            sys.exit(0)
-        except OSError as e:
-            # If port is busy in exclusive mode, it's an error
-            print(f"Error starting dashboard: {e}")
-            sys.exit(1)
+        print("Error: The legacy dashboard has been removed. Please use 'make monitor-up' to access Grafana.")
+        sys.exit(1)
 
-    if not args.no_dashboard:
-        # Default Mode: Try to start server, but proceed if it fails (graceful
-        # degradation)
-        try:
-            from ui.server import start_server
-            # We start it in foreground for this mode, or keep main alive
-            server, _ = start_server(port=7654)
-            # Server runs in daemon thread, so we can proceed to run agent.
-        except OSError:
-            # Assume port is busy, meaning dashboard is already running
-            pass
+    # Legacy dashboard auto-start logic is removed.
+    # The Grafana stack runs separately via Docker Compose.
 
     # Setup Logger
     # We might want to log to a file in the project directory, but we need to
@@ -176,15 +155,14 @@ async def main():
     args.project_dir.mkdir(parents=True, exist_ok=True)
 
     if args.dashboard_only:
+         # Should be caught above, but just in case
         log_file = args.project_dir / "dashboard_server.log"
     else:
         log_file = args.project_dir / f"{args.agent}_agent_debug.log"
 
     logger = setup_logger(log_file=log_file, verbose=args.verbose)
 
-    if args.dashboard_only:
-        logger.info("Starting Dashboard Server on port 7654")
-    else:
+    if not args.dashboard_only:
         logger.info(
             f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
 

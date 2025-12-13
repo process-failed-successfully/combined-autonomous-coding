@@ -30,6 +30,11 @@ def get_manager_prompt() -> str:
     return load_prompt("manager_prompt")
 
 
+def get_reviewer_prompt() -> str:
+    """Load the reviewer agent prompt."""
+    return load_prompt("reviewer_prompt")
+
+
 def copy_spec_to_project(
         project_dir: Path,
         custom_spec_path: Path = None) -> None:

@@ -98,6 +98,20 @@ def parse_args():
         help="Run the manager agent before the first coding session"
     )
 
+    # Reviewer Arguments
+    parser.add_argument(
+        "--reviewer-frequency",
+        type=int,
+        default=5,
+        help="How often the technical reviewer runs (default: 5 iterations)"
+    )
+
+    parser.add_argument(
+        "--reviewer-model",
+        type=str,
+        help="Model to use for the reviewer agent"
+    )
+
     parser.add_argument(
         "--no-dashboard",
         action="store_true",
@@ -201,7 +215,9 @@ async def main():
         manager_frequency=args.manager_frequency,
         manager_model=args.manager_model,
         run_manager_first=args.manager_first,
-        login_mode=args.login
+        login_mode=args.login,
+        reviewer_frequency=args.reviewer_frequency,
+        reviewer_model=args.reviewer_model
     )
 
     # Function to resolve spec file

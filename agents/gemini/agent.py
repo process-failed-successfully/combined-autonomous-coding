@@ -14,7 +14,7 @@ from typing import Optional, Any, Dict, List
 
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config
-from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, copy_spec_to_project
+from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, get_reviewer_prompt, copy_spec_to_project
 from .client import GeminiClient
 
 
@@ -328,17 +328,19 @@ async def run_autonomous_agent(config: Config,
         print_session_header(iteration, is_first_run)
 
         # Choose prompt
-        # Choose prompt
         using_manager = False
+        using_reviewer = False
 
         if is_first_run:
             prompt = get_initializer_prompt()
             # Note: We don't flip is_first_run to False until we get a success
         else:
-            # Check for Manager Triggers
+            # Check for Triggers
             should_run_manager = False
-            manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
+            should_run_reviewer = False
 
+            # 1. Manager Triggers
+            manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
             if manager_trigger_path.exists():
                 logger.info("Manager triggered by TRIGGER_MANAGER file.")
                 should_run_manager = True
@@ -367,21 +369,47 @@ async def run_autonomous_agent(config: Config,
                 except Exception:
                      pass
 
+            # 2. Reviewer Triggers (Only if manager is not running)
+            if not should_run_manager:
+                 reviewer_trigger_path = config.project_dir / "TRIGGER_REVIEW"
+                 if reviewer_trigger_path.exists():
+                    logger.info("Reviewer triggered by TRIGGER_REVIEW file.")
+                    should_run_reviewer = True
+                    try:
+                        reviewer_trigger_path.unlink()
+                    except OSError:
+                        pass
+                 elif iteration > 0 and iteration % config.reviewer_frequency == 0:
+                    logger.info(f"Reviewer triggered by frequency (Iteration {iteration}).")
+                    should_run_reviewer = True
+
             if should_run_manager:
                 prompt = get_manager_prompt()
                 using_manager = True
+            elif should_run_reviewer:
+                prompt = get_reviewer_prompt()
+                using_reviewer = True
             else:
                 prompt = get_coding_prompt()
 
         # Run session
+        current_role = 'Agent'
+        if using_manager:
+            current_role = 'Manager'
+        elif using_reviewer:
+            current_role = 'Reviewer'
+
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {'Manager' if using_manager else 'Agent'}")
+                current_task=f"Executing {current_role}")
 
         original_model = config.model
         if using_manager and config.manager_model:
             config.model = config.manager_model
             logger.info(f"Switched to Manager Model: {config.model}")
+        elif using_reviewer and config.reviewer_model:
+            config.model = config.reviewer_model
+            logger.info(f"Switched to Reviewer Model: {config.model}")
 
         # Status Callback Handler
         current_turn_log = []
@@ -410,7 +438,7 @@ async def run_autonomous_agent(config: Config,
             metrics_callback=handle_metrics
         )
 
-        if using_manager and config.manager_model:
+        if (using_manager and config.manager_model) or (using_reviewer and config.reviewer_model):
             config.model = original_model
             logger.info(f"Restored Agent Model: {config.model}")
 

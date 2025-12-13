@@ -47,6 +47,10 @@ class Config:
     run_manager_first: bool = False
     login_mode: bool = False
 
+    # Reviewer Configuration
+    reviewer_frequency: int = 5
+    reviewer_model: Optional[str] = None
+
     def __post_init__(self):
         if self.model is None:
             if self.agent_type == "gemini":

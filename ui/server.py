@@ -21,6 +21,34 @@ class AgentState:
     current_task: str = "Idle"
     last_log: List[str] = field(default_factory=list)
     last_heartbeat: float = 0.0
+    
+    # New Metrics
+    loc_count: int = 0
+    manager_approvals: int = 0
+    manager_rejections: int = 0
+    
+    # Persistence helpers
+    total_iterations: int = 0
+    last_session_iteration: int = 0  # To track delta within a session
+
+    # Advanced Dev Metrics (15+)
+    start_time: float = field(default_factory=time.time)
+    error_count: int = 0  # Current session errors
+    total_errors: int = 0 # Cumulative
+    
+    # Tool Usage (Cumulative)
+    tool_usage: Dict[str, int] = field(default_factory=lambda: {
+        "bash": 0, "write": 0, "read": 0, "search": 0
+    })
+    
+    # Timing (Current Session Averages)
+    avg_iteration_time: float = 0.0
+    avg_llm_latency: float = 0.0
+    avg_tool_execution_time: float = 0.0
+    
+    # Feature Tracking
+    feature_completion_count: int = 0
+    feature_completion_pct: float = 0.0
 
 
 @dataclass
@@ -47,7 +75,7 @@ class DashboardState:
         while self.running:
             time.sleep(1)
 
-            # Run cleanup every iteration (every 1s is fine, or modulo it)
+            # Run cleanup every iteration
             self._cleanup_stale_agents()
 
             with self.lock:
@@ -64,27 +92,17 @@ class DashboardState:
                 print(f"Error saving state: {e}")
 
     def _cleanup_stale_agents(self):
-        # Remove agents that haven't heartbeat in 30 seconds
+        # Mark agents as offline if they haven't heartbeat in 30 seconds
+        # Do NOT delete them, to preserve stats.
         threshold = 30
         now = time.time()
-        to_remove = []
-
+        
         with self.lock:
             for agent_id, agent in self.agents.items():
-                # If last_heartbeat is 0, it might be new, but we init with time.time() usually?
-                # Actually AgentState default is 0.0. Let's assume we update it on first heartbeat.
-                # If it's 0.0, we probably shouldn't kill it immediately unless it's really old persistence data?
-                # Let's say if (now - last_heartbeat) > threshold
-                if agent.last_heartbeat > 0 and (
-                        now - agent.last_heartbeat) > threshold:
-                    to_remove.append(agent_id)
-
-            for agent_id in to_remove:
-                print(f"Removing stale agent: {agent_id}")
-                del self.agents[agent_id]
-                if agent_id in self.queues:
-                    del self.queues[agent_id]
-                self.dirty = True
+                if agent.is_running and agent.last_heartbeat > 0 and (now - agent.last_heartbeat) > threshold:
+                    print(f"Marking agent offline: {agent_id}")
+                    agent.is_running = False
+                    self.dirty = True
 
     def update_agent(self, agent_id: str, data: dict):
         with self.lock:
@@ -93,10 +111,68 @@ class DashboardState:
                 self.queues[agent_id] = AgentQueue()  # Init queue
 
             agent = self.agents[agent_id]
+            
+            # Special handling for metrics
+            if 'iteration' in data:
+                new_iter = data['iteration']
+                
+                # Logic to accumulate total iterations
+                delta = 0
+                if new_iter < agent.last_session_iteration:
+                    # Agent restarted
+                    delta = new_iter
+                else:
+                    delta = new_iter - agent.last_session_iteration
+                
+                if delta > 0:
+                    agent.total_iterations += delta
+                
+                agent.last_session_iteration = new_iter
+
+            # Handle Tool Usage Merging (Cumulative)
+            if 'tool_usage' in data:
+                new_usage = data['tool_usage']
+                # Data comes in as cumulative for the session usually, or delta?
+                # Let's assume the agent reports its CURRENT SESSION total.
+                # But if we want proper cumulative across restarts, we need to handle it like iterations.
+                # Actually, complexity: The agent might just report {bash: 1} for a single turn?
+                # No, typically state is a snapshot.
+                # Let's assume the agent reports a DELTA dictionary for this heartbeat? 
+                # OR the agent reports its full session counters.
+                # Let's assume the agent reports DELTA (increment) to simplify backend aggregation?
+                # No, heartbeats usually replace state.
+                # Strategy: Backend maintains `total_tool_usage`. 
+                # Agent reports component `tool_usage_delta`?
+                # EASIER: Agent reports `tool_usage_session`. Backend keeps `tool_usage_historical` + `tool_usage_session`.
+                # FOR NOW: Let's assume simple replacement for stats that are averages.
+                # For counts, we'll assume the agent sends a DELTA if key is `tool_usage_delta`.
+                # If key is `tool_usage`, we replace it? No that resets history.
+                
+                # Re-decision: Client will send `tool_usage_delta` for increments.
+                pass # Handled in loop below if we rename keys or specific logic
+
+            # Handle Error Count (Cumulative)
+            if 'error_match' in data: # signal to increment
+                agent.total_errors += 1
+                agent.error_count += 1
+            
+            # Generic Update
             for k, v in data.items():
-                if hasattr(agent, k):
+                if k == 'tool_usage_delta':
+                    # Merge delta
+                    for tool, count in v.items():
+                        agent.tool_usage[tool] = agent.tool_usage.get(tool, 0) + count
+                elif k == 'tool_usage':
+                     # If we receive full usage, maybe just set it? NO, cumulative is key.
+                     # Ignore full usage replacement if we rely on deltas.
+                     pass
+                elif hasattr(agent, k) and k not in ['total_iterations', 'last_session_iteration', 'total_errors', 'tool_usage']:
                     setattr(agent, k, v)
+            
             agent.last_heartbeat = time.time()
+            # If we receive a heartbeat, it is running
+            agent.is_running = True
+            
             self.dirty = True
 
     def get_agent_commands(self, agent_id: str) -> List[str]:

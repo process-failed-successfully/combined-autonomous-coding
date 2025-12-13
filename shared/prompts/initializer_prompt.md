@@ -71,6 +71,11 @@ needs to be built.
 - Order features by priority: fundamental features first
 - ALL tests start with "passes": false
 - Cover every feature in the spec exhaustively
+- Tests cover all unit and integration tests
+- Tests cover all edge cases
+- Tests cover all error states
+- Tests cover all performance requirements
+- Tests cover all security requirements
 
 **CRITICAL INSTRUCTION:**
 IT IS CATASTROPHIC TO REMOVE OR EDIT FEATURES IN FUTURE SESSIONS.
@@ -111,6 +116,7 @@ If you have time remaining in this session, you may begin implementing
 the highest-priority features from feature_list.json. Remember:
 
 - Work on ONE feature at a time
+- **QUALITY**: Write clean, typed, and documented code.
 - Test thoroughly before marking "passes": true
 - Commit your progress before session ends
 
@@ -124,6 +130,9 @@ Before your context fills up:
 4. Leave the environment in a clean, working state
 
 The next agent will continue from here with a fresh context window.
+
+**CRITICAL: STOP GENERATING**
+Once you have created `PROJECT_SIGNED_OFF` or completed the handover, **STOP GENERATING**. Do not simulate the next agent's turn. Do not continue.
 
 ---
 

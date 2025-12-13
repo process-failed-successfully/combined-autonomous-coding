@@ -30,6 +30,17 @@ def get_manager_prompt() -> str:
     return load_prompt("manager_prompt")
 
 
+def get_sprint_planner_prompt() -> str:
+    """Load the sprint planner prompt."""
+    return load_prompt("sprint_planner_prompt")
+
+
+def get_sprint_worker_prompt() -> str:
+    """Load the sprint worker prompt."""
+    return load_prompt("sprint_worker_prompt")
+
+
+
 def copy_spec_to_project(
         project_dir: Path,
         custom_spec_path: Path = None) -> None:

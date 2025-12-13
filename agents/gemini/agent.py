@@ -15,185 +15,12 @@ from typing import Optional, Any, Dict, List
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config
 from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, copy_spec_to_project
+from .client import GeminiClient
+
 
 logger = logging.getLogger(__name__)
 
 
-class GeminiClient:
-    """Handles interactions with the Gemini CLI."""
-
-    def __init__(self, config: Config):
-        self.config = config
-
-    async def run_command(self, prompt: str, cwd: Path) -> Dict[str, Any]:
-        """
-        Run a gemini CLI command and return the parsed JSON output.
-        """
-        logger.debug("Starting gemini subprocess...")
-
-        if self.config.verify_creation:
-            logger.info("VERIFICATION MODE: Returning mock response.")
-            mock_content = {
-                "London": 45.0,
-                "New York": 25.0,
-                "Paris": 30.0,
-                "Tokyo": 100.0
-            }
-            mock_json = json.dumps(mock_content, indent=4)
-            return {
-                "candidates": [
-                    {
-                        "content": {
-                            "parts": [
-                                {
-                                    "text": f"I will create the output.json file.\n```write:output.json\n{mock_json}\n```"
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }
-
-        # We assume 'gemini' is in the PATH.
-        # Ensure we ask for TEXT output for better streaming
-        cmd = ["gemini", "--output-format", "text", "--approval-mode", "yolo"]
-
-        if self.config.model and self.config.model != "auto":
-            cmd.extend(["--model", self.config.model])
-
-        env = os.environ.copy()
-
-        # Run in subprocess, passing PROMPT via stdin to avoid shell arg limits
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                cwd=cwd,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=env
-            )
-        except FileNotFoundError:
-            logger.error(
-                "Gemini CLI not found. Please ensure 'gemini' is installed and in your PATH.")
-            raise
-
-        # ... (streaming logic remains the same) ...
-        # But we need to update the end of run_command to return the raw text
-
-        # import time removed
-        import sys
-
-        logger.debug("Sending prompt to stdin...")
-        try:
-            # We close stdin immediately after writing to ensure gemini knows
-            # input is finished
-            process.stdin.write(prompt.encode())
-            await process.stdin.drain()
-            process.stdin.close()
-            logger.debug("Stdin closed. Waiting for output...")
-
-            # Helper for streaming interaction
-            async def _read_stream(stream, callback, buffer_list):
-                while True:
-                    line = await stream.readline()
-                    if line:
-                        decoded = line.decode()
-                        if callback:
-                            callback(decoded)
-                        buffer_list.append(decoded)
-                    else:
-                        break
-
-            stdout_buf: List[str] = []
-            stderr_buf: List[str] = []
-
-            # Helper callbacks
-            def on_stdout(text):
-                if self.config.stream_output:
-                    sys.stdout.write(text)
-                    sys.stdout.flush()
-
-            def on_stderr(text):
-                if self.config.stream_output:
-                    sys.stderr.write(text)
-                    sys.stderr.flush()
-
-            # Create tasks
-            tasks = [
-                asyncio.create_task(_read_stream(
-                    process.stdout, on_stdout, stdout_buf)),
-                asyncio.create_task(_read_stream(
-                    process.stderr, on_stderr, stderr_buf))
-            ]
-
-            # Wait loop with activity check
-            timeout_counter = self.config.timeout
-            last_stdout_len = 0
-            last_stderr_len = 0
-
-            while True:
-                # Wait for tasks to complete or short timeout
-                done, pending = await asyncio.wait(tasks, timeout=5.0)
-
-                if not pending:
-                    break
-
-                # Check for Output Activity (Streaming)
-                current_stdout_len = len(stdout_buf)
-                current_stderr_len = len(stderr_buf)
-
-                if current_stdout_len > last_stdout_len or current_stderr_len > last_stderr_len:
-                    # Activity detected, reset timeout
-                    timeout_counter = self.config.timeout
-                    last_stdout_len = current_stdout_len
-                    last_stderr_len = current_stderr_len
-                    continue
-                
-                # No output, decrement
-                timeout_counter -= 5.0
-
-                if timeout_counter > 0:
-                    continue
-
-                from shared.utils import has_recent_activity
-                if has_recent_activity(self.config.project_dir, seconds=60):
-                    logger.info(
-                        "Agent timeout exceeded, but file activity detected. Extending wait by 60s...")
-                    timeout_counter = 60.0  # Wait another minute
-                    continue
-                else:
-                    logger.error(
-                        f"Gemini CLI timed out ({self.config.timeout}s) and no recent file activity.")
-                    process.kill()
-                    raise asyncio.TimeoutError
-
-            # Ensure process is collected
-            await process.wait()
-
-            stdout = "".join(stdout_buf).encode()
-            stderr = "".join(stderr_buf).encode()
-
-            if process.returncode != 0:
-                logger.error(
-                    f"Gemini process exited with code {process.returncode}")
-                if stderr:
-                    logger.error(f"STDERR: {stderr.decode()}")
-
-        except Exception as e:
-            logger.exception(f"Unexpected error running Gemini: {e}")
-            raise
-
-        stdout_text = stdout.decode().strip()
-        stderr_text = stderr.decode().strip()
-
-        if self.config.verbose and stderr_text:
-            logger.debug(f"Gemini STDERR: {stderr_text}")
-
-        # In TEXT mode, the whole stdout is the response content
-        return {"content": stdout_text}
-
-        # Original JSON parsing removed
 
 
 def print_session_header(iteration: int, is_first: bool) -> None:
@@ -221,11 +48,14 @@ def log_progress_summary(project_dir: Path, progress_file: Path) -> None:
 async def run_agent_session(
     client: GeminiClient,
     prompt: str,
-    recent_history: List[str] = []
+    recent_history: List[str] = [],
+    status_callback: Optional[Any] = None,
+    metrics_callback: Optional[Any] = None
 ) -> tuple[str, str, List[str]]:
     """
     Run a single agent session using Gemini CLI.
     """
+    import time
     logger.info("Sending prompt to Gemini...")
 
     try:
@@ -240,6 +70,15 @@ async def run_agent_session(
                 features = json.loads(feature_file.read_text())
                 total = len(features)
                 passing = sum(1 for f in features if f.get("passes", False))
+                if total > 0:
+                    pct = (passing / total) * 100.0
+                else:
+                    pct = 0.0
+                
+                # Report Feature Metrics
+                if metrics_callback:
+                    metrics_callback("feature_stats", {"count": passing, "pct": pct})
+
                 if passing == total:
                     feature_status = f"Feature List Status: ALL {total}/{total} FEATURES PASSING. Project is verified complete."
                 else:
@@ -264,7 +103,22 @@ RECENT ACTIONS:
 
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
 
-        result = await client.run_command(augmented_prompt, client.config.project_dir)
+        # Measure LLM Latency
+        start_time = time.time()
+        
+        # Define callback to update dashboard status (aligns with Cursor parity)
+        def local_status_update(current_task=None, output_line=None):
+            if status_callback:
+                status_callback(current_task=current_task, output_line=output_line)
+
+        result = await client.run_command(
+            augmented_prompt, 
+            client.config.project_dir,
+            status_callback=local_status_update
+        )
+        latency = time.time() - start_time
+        if metrics_callback:
+            metrics_callback("llm_latency", latency)
 
         response_text = ""
         # Handle 'candidates' structure from Gemini API
@@ -313,7 +167,12 @@ RECENT ACTIONS:
         executed_actions = []
         if response_text:
             logger.info("Processing response blocks...")
-            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout)
+            # Wrapper for process_response_blocks to match expected signature
+            def block_status_update(msg):
+                if status_callback:
+                    status_callback(current_task=msg)
+
+            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=block_status_update, metrics_callback=metrics_callback)
             if log:
                 logger.info("Execution Log updated.")
             executed_actions = actions
@@ -326,88 +185,104 @@ RECENT ACTIONS:
 
 
 async def run_autonomous_agent(config: Config,
-                               agent_client: Optional[Any] = None) -> None:
+                               agent_client: Optional[Any] = None):
     """
     Run the autonomous agent loop.
     """
+    import time
     log_startup_config(config, logger)
-
-    # Create project directory
-    config.project_dir.mkdir(parents=True, exist_ok=True)
-
-    # Initialize Client
     client = GeminiClient(config)
 
-    # Login Mode
-    if config.login_mode:
-        logger.info("Starting Gemini Login Flow...")
-        import subprocess
-        try:
-            # We attempt to run 'gemini login'. If it doesn't exist, we'll catch it.
-            # We use subprocess.run to allow interactive login if supported by the CLI.
-            result = subprocess.run(["gemini", "login"], check=False)
-            if result.returncode != 0:
-                 logger.warning("'gemini login' finished with errors or is not supported.")
-                 logger.info("If you need to authenticate, please check 'gemini --help'.")
-        except FileNotFoundError:
-            logger.error("Gemini CLI not found.")
-        except Exception as e:
-            logger.error(f"Error during login: {e}")
-        return
+    # Load Prompts
+    initializer_prompt = get_initializer_prompt()
+    coding_prompt = get_coding_prompt()
+    manager_prompt = get_manager_prompt()
 
-    # Check state
-    is_first_run = not config.feature_list_path.exists()
-
-    if is_first_run:
-        logger.info("Fresh start - will use initializer agent")
-        logger.info("This may create the initial spec. Please wait.")
-        copy_spec_to_project(config.project_dir, config.spec_file)
-    else:
-        logger.info("Continuing existing project")
-        log_progress_summary(config.project_dir, config.progress_file_path)
-
-    iteration = 0
-    consecutive_errors = 0
+    # Session State
     recent_history: List[str] = []
+    iteration = 0
+    start_time = time.time()
+    
+    # Session Metrics State
+    metrics_state = {
+        "llm_latencies": [],
+        "tool_times": [],
+        "iteration_times": [],
+    }
+
+    # Initialize State
+    is_first_run = not config.feature_list_path.exists()
     has_run_manager_first = False
 
-    # Mark as running
+    # Initialize Project (Copy Spec)
+    copy_spec_to_project(config.project_dir, config.spec_file)
+    
+    # Metrics Callback Handler
+    def handle_metrics(metric_type: str, value: Any):
+        if not agent_client:
+            return
+            
+        updates = {}
+        
+        if metric_type.startswith("tool:"):
+            tool_name = metric_type.split(":")[1]
+            updates["tool_usage_delta"] = {tool_name: value}
+            
+        elif metric_type == "error":
+            updates["error_match"] = True
+            
+        elif metric_type == "feature_stats":
+            updates["feature_completion_count"] = value["count"]
+            updates["feature_completion_pct"] = value["pct"]
+            
+        elif metric_type == "llm_latency":
+            metrics_state["llm_latencies"].append(value)
+            avg = sum(metrics_state["llm_latencies"]) / len(metrics_state["llm_latencies"])
+            updates["avg_llm_latency"] = avg
+            
+        elif metric_type == "execution_time":
+            metrics_state["tool_times"].append(value)
+            avg = sum(metrics_state["tool_times"]) / len(metrics_state["tool_times"])
+            updates["avg_tool_execution_time"] = avg
+            
+        if updates:
+            agent_client.report_state(**updates)
+
+    # Initial Status
     if agent_client:
-        agent_client.report_state(is_running=True, current_task="Initializing")
+        agent_client.report_state(
+            current_task="Initializing", 
+            is_running=True,
+            start_time=start_time
+        )
 
+    # Main Loop
     while True:
-        # Check Control State
+        iter_start_time = time.time()
+        
+        # Check Limits
+        if config.max_iterations and iteration >= config.max_iterations:
+            logger.info("Max iterations reached. Stopping.")
+            break
+
+        # Check Control Signals
         if agent_client:
-            ctl = agent_client.poll_commands()
-
-            if ctl.stop_requested:
+            control = agent_client.poll_commands()
+            if control.stop_requested:
                 logger.info("Stop requested by user.")
-                # Report stop before breaking
-                agent_client.report_state(
-                    is_running=False, current_task="Stopped")
                 break
-
-            if ctl.pause_requested:
+            if control.pause_requested:
                 agent_client.report_state(
-                    is_paused=True, current_task="Paused")
-                logger.info("Agent Paused. Waiting for resume...")
-                while True:
+                    current_task="Paused", is_paused=True)
+                while control.pause_requested:
                     await asyncio.sleep(1)
-                    ctl = agent_client.poll_commands()
-                    if ctl.stop_requested:
+                    control = agent_client.poll_commands()
+                    if control.stop_requested:
                         return
-                    if not ctl.pause_requested:
-                        break
-                agent_client.report_state(is_paused=False)
-                logger.info("Agent Resumed.")
-
-            if ctl.skip_requested:
-                agent_client.clear_skip()
-                logger.info("Skipping iteration as requested.")
-                continue
+                agent_client.report_state(
+                    current_task="Resuming...", is_paused=False)
 
         iteration += 1
-
         # Update State
         if agent_client:
             agent_client.report_state(
@@ -417,17 +292,38 @@ async def run_autonomous_agent(config: Config,
             logger.info(f"\nReached max iterations ({config.max_iterations})")
             break
 
+        if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+            logger.info("\n" + "=" * 50)
+            logger.info("  PROJECT SIGNED OFF")
+            logger.info("=" * 50)
+            break
+
         if (config.project_dir / "COMPLETED").exists():
-            if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+            logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
+            should_run_manager = True
+            # Ensure we force manager execution in the next block logic
+            # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
+
+        # Check for Human in Loop
+        human_loop_file = config.project_dir / "human_in_loop.txt"
+        if human_loop_file.exists():
+            try:
+                reason = human_loop_file.read_text().strip()
                 logger.info("\n" + "=" * 50)
-                logger.info("  PROJECT COMPLETED & SIGNED OFF")
+                logger.info("  HUMAN IN LOOP REQUESTED")
                 logger.info("=" * 50)
+                logger.info(f"Reason: {reason}")
+                logger.info("Stopping execution until human intervention is resolved (file removed).")
+                
+                if agent_client:
+                    agent_client.report_state(
+                        is_running=False, 
+                        current_task=f"Stopped: Human in Loop ({reason})"
+                    )
                 break
-            else:
-                logger.info("Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager...")
-                should_run_manager = True
-                # Ensure we force manager execution in the next block logic
-                # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
+            except Exception as e:
+                logger.error(f"Error reading human_in_loop.txt: {e}")
+
 
         print_session_header(iteration, is_first_run)
 
@@ -459,6 +355,18 @@ async def run_autonomous_agent(config: Config,
                     f"Manager triggered by frequency (Iteration {iteration}).")
                 should_run_manager = True
 
+            # Auto-trigger Manager if all features are passing
+            if not should_run_manager and config.feature_list_path.exists():
+                try:
+                    features = json.loads(config.feature_list_path.read_text())
+                    total = len(features)
+                    passing = sum(1 for f in features if f.get("passes", False))
+                    if total > 0 and passing == total:
+                        logger.info("All features passed. Triggering Manager for potential sign-off.")
+                        should_run_manager = True
+                except Exception:
+                     pass
+
             if should_run_manager:
                 prompt = get_manager_prompt()
                 using_manager = True
@@ -475,7 +383,32 @@ async def run_autonomous_agent(config: Config,
             config.model = config.manager_model
             logger.info(f"Switched to Manager Model: {config.model}")
 
-        status, response, new_actions = await run_agent_session(client, prompt, recent_history)
+        # Status Callback Handler
+        current_turn_log = []
+        def status_update(current_task=None, output_line=None):
+            if not agent_client:
+                return
+            
+            updates = {}
+            if current_task:
+                updates["current_task"] = current_task
+            
+            if output_line:
+                clean_line = output_line.rstrip()
+                if clean_line:
+                    current_turn_log.append(clean_line)
+                    updates["last_log"] = current_turn_log[-30:]
+            
+            if updates:
+                agent_client.report_state(**updates)
+
+        status, response, new_actions = await run_agent_session(
+            client, 
+            prompt, 
+            recent_history, 
+            status_callback=status_update,
+            metrics_callback=handle_metrics
+        )
 
         if using_manager and config.manager_model:
             config.model = original_model

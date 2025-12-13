@@ -216,27 +216,14 @@ async def execute_search_block(query: str, cwd: Path) -> str:
 async def process_response_blocks(response_text: str,
                                   project_dir: Path,
                                   bash_timeout: float = 120.0,
-                                  status_callback=None) -> Tuple[str,
-                                                                 List[str]]:
+                                  status_callback=None,
+                                  metrics_callback=None) -> Tuple[str, List[str]]:
     """
     Parse the response text for code blocks and execute them.
-    Supported blocks:
-    ```bash
-    command
-    ```
-    ```write:filename
-    content
-    ```
-    ```read:filename
-    (empty or ignored)
-    ```
-    ```search:query
-    (empty or ignored)
-    ```
-
-    Returns:
-        tuple[str, List[str]]: execution_log, executed_actions
+    ...
+    metrics_callback: func(metric_type: str, value: Any)
     """
+    import time
 
     # Simple state machine parser
     lines = response_text.splitlines()
@@ -253,31 +240,68 @@ async def process_response_blocks(response_text: str,
             if in_block:
                 # End of block
                 content = "\n".join(block_content)
+                start_time = time.time()
+                tool_success = True
+                
                 if block_type == "bash":
                     if status_callback:
                         status_callback(f"Running Bash: {content[:50]}...")
-                    output = await execute_bash_block(content, project_dir, timeout=bash_timeout)
+                    try:
+                        output = await execute_bash_block(content, project_dir, timeout=bash_timeout)
+                    except Exception:
+                        tool_success = False
+                        output = "Error"
                     execution_log += f"\n> {content}\n{output}\n"
                     executed_actions.append(f"Ran Bash: {content}")
+                    if metrics_callback:
+                        metrics_callback("tool:bash", 1)
+                        
                 elif block_type == "write":
                     if status_callback:
                         status_callback(f"Writing File: {block_arg}")
-                    output = execute_write_block(
-                        block_arg, content, project_dir)
+                    try:
+                        output = execute_write_block(block_arg, content, project_dir)
+                    except Exception:
+                        tool_success = False
+                        output = "Error"
                     execution_log += f"\n> Write {block_arg}\n{output}\n"
                     executed_actions.append(f"Wrote File: {block_arg}")
+                    if metrics_callback:
+                        metrics_callback("tool:write", 1)
+
                 elif block_type == "read":
                     if status_callback:
                         status_callback(f"Reading File: {block_arg}")
-                    output = execute_read_block(block_arg, project_dir)
+                    try:
+                        output = execute_read_block(block_arg, project_dir)
+                    except Exception:
+                        tool_success = False
+                        output = "Error"
                     execution_log += f"\n> Read {block_arg}\n{output}\n"
                     executed_actions.append(f"Read File: {block_arg}")
+                    if metrics_callback:
+                        metrics_callback("tool:read", 1)
+
                 elif block_type == "search":
                     if status_callback:
                         status_callback(f"Searching: {block_arg}")
-                    output = await execute_search_block(block_arg, project_dir)
+                    try:
+                        output = await execute_search_block(block_arg, project_dir)
+                    except Exception:
+                        tool_success = False
+                        output = "Error"
                     execution_log += f"\n> Search {block_arg}\n{output}\n"
                     executed_actions.append(f"Searched: {block_arg}")
+                    if metrics_callback:
+                        metrics_callback("tool:search", 1)
+
+                # Timing End
+                end_time = time.time()
+                duration = end_time - start_time
+                if metrics_callback:
+                    metrics_callback("execution_time", duration)
+                    if not tool_success:
+                        metrics_callback("error", 1)
 
                 in_block = False
                 block_type = None
@@ -303,6 +327,13 @@ async def process_response_blocks(response_text: str,
                 # Ignore other blocks
         elif in_block:
             block_content.append(line)
+
+        # Early termination check
+        if (project_dir / "PROJECT_SIGNED_OFF").exists():
+             if status_callback:
+                 status_callback("Project Signed Off. Stopping execution of further blocks.")
+             execution_log += "\n[System] Project Signed Off. Stopping execution.\n"
+             break
 
     return execution_log, executed_actions
 

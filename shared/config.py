@@ -34,6 +34,12 @@ class Config:
     stream_output: bool = True
     spec_file: Optional[Path] = None
     verify_creation: bool = False
+    
+    # Sprint Configuration
+    sprint_mode: bool = False
+    max_agents: int = 1
+    sprint_id: Optional[str] = None
+
 
     # Manager Configuration
     manager_frequency: int = 10

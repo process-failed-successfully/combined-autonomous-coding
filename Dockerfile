@@ -33,30 +33,47 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libasound2 \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Gemini CLI
+# Create a non-root user
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g "${GID}" appuser && \
+    useradd -l -u "${UID}" -g "${GID}" -m -s /bin/bash appuser && \
+    echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Install Gemini CLI (Global)
 RUN npm install -g @google/gemini-cli
 
-# Install Cursor Agent
+# Configure git to trust all directories (Global)
+RUN git config --global --add safe.directory '*'
+
+# Create directory structure and set permissions
+RUN mkdir -p /app/combined-autonomous-coding && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+ENV HOME=/home/appuser
+
+# Install Cursor Agent as appuser
 RUN curl https://cursor.com/install -fsS | bash
 
-# Symlink cursor-agent to global bin
-RUN ln -s /root/.local/bin/cursor-agent /usr/local/bin/cursor-agent
+# Add local bin to PATH
+ENV PATH="/home/appuser/.local/bin:${PATH}"
 
-# Configure git to trust all directories (fixes dubious ownership in mounted volumes)
+# Configure git for user
 RUN git config --global --add safe.directory '*'
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements if any (currently none, but good practice)
+# Copy requirements and install (User install)
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# pip install as user (goes to ~/.local usually or checks permissions)
+RUN pip install --user -r requirements.txt && \
+    echo "export PATH=\$PATH:/home/appuser/.local/bin" >> ~/.bashrc
 
-# We don't copy the code here because we bind mount it for development/execution
-# COPY . /app
-
-# Set entrypoint
 # Set entrypoint
 # ENTRYPOINT ["python3", "combined-autonomous-coding/main.py"]

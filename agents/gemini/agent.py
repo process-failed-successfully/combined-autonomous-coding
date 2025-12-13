@@ -105,7 +105,17 @@ RECENT ACTIONS:
 
         # Measure LLM Latency
         start_time = time.time()
-        result = await client.run_command(augmented_prompt, client.config.project_dir)
+        
+        # Define callback to update dashboard status (aligns with Cursor parity)
+        def local_status_update(current_task=None, output_line=None):
+            if status_callback:
+                status_callback(current_task=current_task, output_line=output_line)
+
+        result = await client.run_command(
+            augmented_prompt, 
+            client.config.project_dir,
+            status_callback=local_status_update
+        )
         latency = time.time() - start_time
         if metrics_callback:
             metrics_callback("llm_latency", latency)
@@ -157,7 +167,12 @@ RECENT ACTIONS:
         executed_actions = []
         if response_text:
             logger.info("Processing response blocks...")
-            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=status_callback, metrics_callback=metrics_callback)
+            # Wrapper for process_response_blocks to match expected signature
+            def block_status_update(msg):
+                if status_callback:
+                    status_callback(current_task=msg)
+
+            log, actions = await process_response_blocks(response_text, client.config.project_dir, client.config.bash_timeout, status_callback=block_status_update, metrics_callback=metrics_callback)
             if log:
                 logger.info("Execution Log updated.")
             executed_actions = actions
@@ -184,7 +199,7 @@ async def run_autonomous_agent(config: Config,
     manager_prompt = get_manager_prompt()
 
     # Session State
-    history: List[str] = []
+    recent_history: List[str] = []
     iteration = 0
     start_time = time.time()
     
@@ -194,6 +209,10 @@ async def run_autonomous_agent(config: Config,
         "tool_times": [],
         "iteration_times": [],
     }
+
+    # Initialize State
+    is_first_run = not config.feature_list_path.exists()
+    has_run_manager_first = False
 
     # Initialize Project (Copy Spec)
     copy_spec_to_project(config.project_dir, config.spec_file)
@@ -285,6 +304,27 @@ async def run_autonomous_agent(config: Config,
             # Ensure we force manager execution in the next block logic
             # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
 
+        # Check for Human in Loop
+        human_loop_file = config.project_dir / "human_in_loop.txt"
+        if human_loop_file.exists():
+            try:
+                reason = human_loop_file.read_text().strip()
+                logger.info("\n" + "=" * 50)
+                logger.info("  HUMAN IN LOOP REQUESTED")
+                logger.info("=" * 50)
+                logger.info(f"Reason: {reason}")
+                logger.info("Stopping execution until human intervention is resolved (file removed).")
+                
+                if agent_client:
+                    agent_client.report_state(
+                        is_running=False, 
+                        current_task=f"Stopped: Human in Loop ({reason})"
+                    )
+                break
+            except Exception as e:
+                logger.error(f"Error reading human_in_loop.txt: {e}")
+
+
         print_session_header(iteration, is_first_run)
 
         # Choose prompt
@@ -343,11 +383,30 @@ async def run_autonomous_agent(config: Config,
             config.model = config.manager_model
             logger.info(f"Switched to Manager Model: {config.model}")
 
+        # Status Callback Handler
+        current_turn_log = []
+        def status_update(current_task=None, output_line=None):
+            if not agent_client:
+                return
+            
+            updates = {}
+            if current_task:
+                updates["current_task"] = current_task
+            
+            if output_line:
+                clean_line = output_line.rstrip()
+                if clean_line:
+                    current_turn_log.append(clean_line)
+                    updates["last_log"] = current_turn_log[-30:]
+            
+            if updates:
+                agent_client.report_state(**updates)
+
         status, response, new_actions = await run_agent_session(
             client, 
             prompt, 
             recent_history, 
-            status_callback=lambda msg: agent_client.report_state(current_task=msg) if agent_client else None,
+            status_callback=status_update,
             metrics_callback=handle_metrics
         )
 

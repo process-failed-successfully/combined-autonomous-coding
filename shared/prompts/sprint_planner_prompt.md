@@ -21,8 +21,9 @@ Directory: {working_directory}
    - Identify tasks that can be done simultaneously (e.g., creating independent utility files, independent features).
    - These tasks MUST have `dependencies: []`.
    - Do NOT linearize work unnecessarily.
-4. **BITE-SIZED TASKS**:
+4. **BITE-SIZED & CLEAR TASKS**:
    - Each task should represent a small unit of work (e.g., "Create file X", "Implement function Y").
+   - **QUALITY FOCUS**: Descriptions must be explicit about requirements (e.g. "Create typed interface", "Add docstrings").
    - A single task should not take more than 5 turns to complete.
    - If a feature is large, break it down: "Create interface", "Implement core logic", "Add tests".
 5. **ISOLATION**:

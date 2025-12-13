@@ -5,10 +5,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 
+
 # Create config dirs if they don't exist to avoid docker creating root-owned dirs on host
 mkdir -p ~/.gemini
 mkdir -p ~/.cursor
 
+# Fix permissions using a temporary root container
+# This ensures that even if files were previously created by root, they are now owned by the user (UID 1000)
+echo "Ensuring correct permissions for config directories..."
+docker run --rm \
+    -v ~/.gemini:/gemini \
+    -v ~/.cursor:/cursor \
+    busybox sh -c "chown -R 1000:1000 /gemini /cursor"
 # Set workspace directory for docker-compose
 export WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 export PROJECT_NAME="$(basename "$WORKSPACE_DIR")"

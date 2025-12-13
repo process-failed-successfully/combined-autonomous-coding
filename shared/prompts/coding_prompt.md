@@ -12,6 +12,28 @@ You are running inside a **Docker container**.
 - **Limited Permissions:** You are running as a non-root user and do not have `sudo` access.
 - **Browser Automation:** Use headless browsers if automation is required.
 
+### CRITICAL: CODE QUALITY & BEST PRACTICES
+
+Your goal is not just to make it work, but to make it **maintainable, readable, and robust**.
+
+**1. Clean Code Standards:**
+
+- **DRY (Don't Repeat Yourself):** Extract common logic into helper functions or utility files.
+- **Descriptive Naming:** Use clear, verbose variable and function names (e.g., `calculate_user_latency` instead of `calc`).
+- **Strong Typing:** Use type hints (Python) or Typescript types (JS/TS) for all function signatures.
+- **Modular:** Keep functions small (under 40 lines) and files focused on a single responsibility.
+
+**2. Robustness:**
+
+- **Error Handling:** Never swallow exceptions. Log errors and raise meaningful exceptions.
+- **Input Validation:** Validate all inputs at function boundaries.
+- **Logging:** Use logging instead of print statements for production code.
+
+**3. Documentation:**
+
+- **Docstrings:** Every function and class must have a docstring explaining input, output, and purpose.
+- **In-line Comments:** Explain "why" complex logic exists, not just "what" it does.
+
 ### STEP 1: GET YOUR BEARINGS (MANDATORY)
 
 Start by orienting yourself.
@@ -110,9 +132,10 @@ It's ok if you only complete one feature in this session, as there will be more 
 Implement the chosen feature thoroughly:
 
 1. Write the code (frontend and/or backend as needed)
-2. Test manually (curl, or running test scripts) or using browser automation if available.
-3. Fix any issues discovered
-4. Verify the feature works end-to-end
+2. **SELF-REVIEW**: pause and review your code against the "Clean Code Standards" above. Refactor if necessary.
+3. Test manually (curl, or running test scripts) or using browser automation if available.
+4. Fix any issues discovered
+5. Verify the feature works end-to-end
 
 ### STEP 6: TEST AND VERIFY
 
@@ -210,6 +233,7 @@ You have a Project Manager who reviews your work every 10 iterations.
 - **Blockers**: If you are stuck, write to `blockers.txt`.
 - **Questions**: If you need clarification, write to `questions.txt`.
 - **Urgent Help**: If you are completely stuck and need immediate intervention, create an empty file named `TRIGGER_MANAGER`.
+- **Human in Loop**: If you have questions without a possible answer that the manager could solve, write to `human_in_loop.txt`.
 
 ```write:successes.txt
 - Implemented Login flow successfully.

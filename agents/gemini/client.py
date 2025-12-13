@@ -18,7 +18,7 @@ class GeminiClient:
     def __init__(self, config: Config):
         self.config = config
 
-    async def run_command(self, prompt: str, cwd: Path) -> Dict[str, Any]:
+    async def run_command(self, prompt: str, cwd: Path, status_callback=None) -> Dict[str, Any]:
         """
         Run a gemini CLI command and return the parsed JSON output.
         """
@@ -100,6 +100,8 @@ class GeminiClient:
                 if self.config.stream_output:
                     sys.stdout.write(text)
                     sys.stdout.flush()
+                if status_callback:
+                    status_callback(output_line=text)
 
             def on_stderr(text):
                 if self.config.stream_output:

@@ -116,6 +116,7 @@ If you have time remaining in this session, you may begin implementing
 the highest-priority features from feature_list.json. Remember:
 
 - Work on ONE feature at a time
+- **QUALITY**: Write clean, typed, and documented code.
 - Test thoroughly before marking "passes": true
 - Commit your progress before session ends
 

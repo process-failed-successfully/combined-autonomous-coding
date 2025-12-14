@@ -135,58 +135,67 @@ def parse_args():
         help="Maximum number of simultaneous agents in Sprint Mode"
     )
 
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        help="Timeout in seconds for agent execution (default: 600.0)"
+    )
+
     return parser.parse_args()
 
 
 async def main():
     args = parse_args()
 
-    # Dashboard Mode
-    # By default we start the dashboard unless explicitly disabled
+    # Dashboard Mode (Legacy - Removed)
     if args.dashboard_only:
-        # Exclusive Mode: Start server and block
-        from ui.server import start_server
-        try:
-            start_server(port=7654)
-            # Block forever
-            while True:
-                await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            sys.exit(0)
-        except OSError as e:
-            # If port is busy in exclusive mode, it's an error
-            print(f"Error starting dashboard: {e}")
-            sys.exit(1)
+        print("Error: The legacy dashboard has been removed. Please use 'make monitor-up' to access Grafana.")
+        sys.exit(1)
 
-    if not args.no_dashboard:
-        # Default Mode: Try to start server, but proceed if it fails (graceful
-        # degradation)
+    # Legacy dashboard auto-start logic is removed.
+    # The Grafana stack runs separately via Docker Compose.
+
+    # Initialize Agent Client
+    from shared.agent_client import AgentClient
+    from shared.utils import generate_agent_id
+
+    project_name = os.environ.get("PROJECT_NAME")
+    if not project_name:
+        project_name = args.project_dir.resolve().name
+        
+    # Read spec content for ID generation
+    spec_content = ""
+    if args.spec and args.spec.exists():
         try:
-            from ui.server import start_server
-            # We start it in foreground for this mode, or keep main alive
-            server, _ = start_server(port=7654)
-            # Server runs in daemon thread, so we can proceed to run agent.
-        except OSError:
-            # Assume port is busy, meaning dashboard is already running
-            pass
+             spec_content = args.spec.read_text()
+        except Exception as e:
+             # We can't log yet, so print to stderr
+             print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
+    
+    # Generate deterministic ID
+    agent_id = generate_agent_id(project_name, spec_content, args.agent)
 
     # Setup Logger
-    # We might want to log to a file in the project directory, but we need to
-    # ensure it exists first
-    args.project_dir.mkdir(parents=True, exist_ok=True)
+    # We prioritize logging to agents/logs relative to the repo root
+    # This ensures it aligns with the Promtail mount
+    repo_root = Path(__file__).parent
+    agents_log_dir = repo_root / "agents/logs"
+    agents_log_dir.mkdir(parents=True, exist_ok=True)
 
     if args.dashboard_only:
-        log_file = args.project_dir / "dashboard_server.log"
+        log_file = agents_log_dir / "dashboard_server.log"
     else:
-        log_file = args.project_dir / f"{args.agent}_agent_debug.log"
+        # Agent ID now contains the full unique name including format: {agent}_agent_{project}_{hash}
+        log_file = agents_log_dir / f"{agent_id}.log"
 
     logger = setup_logger(log_file=log_file, verbose=args.verbose)
 
-    if args.dashboard_only:
-        logger.info("Starting Dashboard Server on port 7654")
-    else:
+    if not args.dashboard_only:
         logger.info(
             f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+        logger.info(f"Generated Agent ID: {agent_id}")
+
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
 
     # Create Config
     config = Config(
@@ -201,7 +210,8 @@ async def main():
         manager_frequency=args.manager_frequency,
         manager_model=args.manager_model,
         run_manager_first=args.manager_first,
-        login_mode=args.login
+        login_mode=args.login,
+        timeout=args.timeout if args.timeout else 600.0 # Default fallback if not specified, though Config has its own default
     )
 
     # Function to resolve spec file
@@ -222,16 +232,6 @@ async def main():
     # Git Safety
     # Ensure we are on a safe branch before starting any agent work
     ensure_git_safe(args.project_dir)
-
-    # Initialize Agent Client
-    from shared.agent_client import AgentClient
-
-    project_name = os.environ.get("PROJECT_NAME")
-    if not project_name:
-        project_name = args.project_dir.resolve().name
-
-    agent_id = f"{args.agent}-{project_name}"
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
 
     # Dispatch
     try:

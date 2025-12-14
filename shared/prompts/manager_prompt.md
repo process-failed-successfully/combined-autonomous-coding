@@ -19,8 +19,6 @@ You provide **directives** and **answers** to the coding agents.
 
 ### YOUR TASKS
 
-### YOUR TASKS
-
 1.  **Code Quality Review**: Look at the structure and quality of the work reported. Is it robust? documented? typed?
 2.  **Review Progress**: Are they moving fast enough? Are they stuck?
 3.  **Address Blockers**: Provide solutions or simpler alternatives for reported blockers.
@@ -28,6 +26,7 @@ You provide **directives** and **answers** to the coding agents.
 5.  **Refine Plan**: Validates if `feature_list.json` priorities make sense.
 6.  **Sign Off**: If the project is complete. Validate it ensuring it has sufficient documentation, testing and is feature complete.
 7.  **Function Validation**: At sign off, validate that all functions are implemented and working. Run all core functionality.
+8.  **Function Expansion**: At sign off if the project is missing vital tests or functionality to make this an complete and amazing project ADD to `feature_list.json`.
 
 ### ACTIONS YOU CAN TAKE
 

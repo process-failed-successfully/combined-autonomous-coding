@@ -64,15 +64,22 @@ format:
 	$(BIN)/autopep8 --in-place --aggressive --aggressive --recursive --exclude .venv .
 	@echo "Done."
 
+# Monitoring
+.PHONY: monitor-up monitor-down monitor-logs
+monitor-up:
+	docker compose -f docker-compose.monitoring.yml up -d
+
+monitor-down:
+	docker compose -f docker-compose.monitoring.yml down
+
+monitor-logs:
+	docker compose -f docker-compose.monitoring.yml logs -f
+
 # Clean
 .PHONY: clean
 clean:
-	rm -rf $(VENV)
-	rm -rf tests_output
-	rm -rf __pycache__
-	rm -rf .pytest_cache
-	rm -f *.spec
-	find . -type d -name "__pycache__" -exec rm -rf {} +
+	rm -rf __pycache__ .venv .mypy_cache .pytest_cache
+	find . -type f -name "*.pyc" -delete
 	@echo "Cleaned up."
 
 # Run Dashboard

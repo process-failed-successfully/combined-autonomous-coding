@@ -15,6 +15,7 @@ from typing import Optional, Any, Dict, List
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config, log_system_health
 from shared.agent_client import AgentClient
+from shared.telemetry import init_telemetry, get_telemetry
 from .prompts import get_initializer_prompt, get_coding_prompt, get_manager_prompt, copy_spec_to_project
 
 logger = logging.getLogger(__name__)
@@ -76,8 +77,8 @@ async def run_agent_session(
                     pct = 0.0
                 
                 # Report Feature Metrics
-                if metrics_callback:
-                    metrics_callback("feature_stats", {"count": passing, "pct": pct})
+                get_telemetry().record_gauge("feature_completion_count", passing)
+                get_telemetry().record_gauge("feature_completion_pct", pct)
 
                 if passing == total:
                     feature_status = f"Feature List Status: ALL {total}/{total} FEATURES PASSING. Project is verified complete."
@@ -175,8 +176,8 @@ RECENT ACTIONS:
             status_callback=local_status_update
         )
         latency = time.time() - start_time
-        if metrics_callback:
-            metrics_callback("llm_latency", latency)
+        latency = time.time() - start_time
+        get_telemetry().record_histogram("llm_latency_seconds", latency, labels={"model": client.config.model, "operation": "generate_content"})
 
         response_text = ""
         # Handle result structure from Cursor API
@@ -205,6 +206,16 @@ RECENT ACTIONS:
             logger.info(
                 f"Full Cursor response: {json.dumps(result, indent=2)}")
 
+        # Record Token Usage if available
+        if "usageMetadata" in result:
+             usage = result["usageMetadata"]
+             prompt_tokens = usage.get("promptTokenCount", 0)
+             candidates_tokens = usage.get("candidatesTokenCount", 0)
+             total_tokens = usage.get("totalTokenCount", 0)
+             
+             get_telemetry().increment_counter("llm_tokens_total", prompt_tokens, labels={"model": client.config.model, "type": "input"})
+             get_telemetry().increment_counter("llm_tokens_total", candidates_tokens, labels={"model": client.config.model, "type": "output"})
+
         # Execute any blocks found in the response
         executed_actions = []
         if response_text:
@@ -218,8 +229,7 @@ RECENT ACTIONS:
                 response_text,
                 client.config.project_dir,
                 client.config.bash_timeout,
-                status_callback=block_status_update,
-                metrics_callback=metrics_callback
+                status_callback=block_status_update
             )
 
             if log:
@@ -247,6 +257,15 @@ async def run_autonomous_agent(
 
     # Create project directory
     config.project_dir.mkdir(parents=True, exist_ok=True)
+
+    # Initialize Telemetry
+    # Use agent_id from client if available
+    service_name = "cursor_agent"
+    if agent_client:
+        service_name = agent_client.agent_id
+
+    init_telemetry(service_name, agent_type="cursor", project_name=config.project_dir.name)
+    get_telemetry().start_system_monitoring()
 
     # Initialize Client
     client = CursorClient(config)
@@ -288,36 +307,8 @@ async def run_autonomous_agent(
         "iteration_times": [],
     }
 
-    # Metrics Callback Handler
-    def handle_metrics(metric_type: str, value: Any):
-        if not agent_client:
-            return
-            
-        updates = {}
-        
-        if metric_type.startswith("tool:"):
-            tool_name = metric_type.split(":")[1]
-            updates["tool_usage_delta"] = {tool_name: value}
-            
-        elif metric_type == "error":
-            updates["error_match"] = True
-            
-        elif metric_type == "feature_stats":
-            updates["feature_completion_count"] = value["count"]
-            updates["feature_completion_pct"] = value["pct"]
-            
-        elif metric_type == "llm_latency":
-            metrics_state["llm_latencies"].append(value)
-            avg = sum(metrics_state["llm_latencies"]) / len(metrics_state["llm_latencies"])
-            updates["avg_llm_latency"] = avg
-            
-        elif metric_type == "execution_time":
-            metrics_state["tool_times"].append(value)
-            avg = sum(metrics_state["tool_times"]) / len(metrics_state["tool_times"])
-            updates["avg_tool_execution_time"] = avg
-            
-        if updates:
-            agent_client.report_state(**updates)
+    # Metrics Callback Handler (REMOVED - Use Telemetry)
+    # def handle_metrics(metric_type: str, value: Any): ...
 
     # Mark as running
     if agent_client:
@@ -366,6 +357,10 @@ async def run_autonomous_agent(
         if agent_client:
             agent_client.report_state(
                 iteration=iteration, current_task="Preparing Prompt")
+
+        # Telemetry: Record Iteration
+        get_telemetry().record_gauge("agent_iteration", iteration)
+        get_telemetry().increment_counter("agent_iterations_total")
 
         if config.max_iterations and iteration > config.max_iterations:
             logger.info(f"\nReached max iterations ({config.max_iterations})")
@@ -461,7 +456,7 @@ async def run_autonomous_agent(
             client, 
             prompt, 
             recent_history,
-            metrics_callback=handle_metrics
+            metrics_callback=None # Deprecated
         )
 
         if using_manager and config.manager_model:
@@ -485,11 +480,15 @@ async def run_autonomous_agent(
             
             # Calculate Iteration Time & Update Averages
             iter_duration = time.time() - iter_start_time
-            metrics_state["iteration_times"].append(iter_duration)
-            avg_iter = sum(metrics_state["iteration_times"]) / len(metrics_state["iteration_times"])
+            # metrics_state["iteration_times"].append(iter_duration) # REMOVED
+            # avg_iter = sum(metrics_state["iteration_times"]) / len(metrics_state["iteration_times"]) # REMOVED
+            
+            # Telemetry: Record Iteration Duration
+            get_telemetry().record_gauge("iteration_duration_seconds", iter_duration)
             
             if agent_client:
-                agent_client.report_state(avg_iteration_time=avg_iter)
+                # agent_client.report_state(avg_iteration_time=avg_iter) # Deprecated
+                pass
 
             logger.info(
                 f"Agent will auto-continue in {config.auto_continue_delay}s...")

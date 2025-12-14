@@ -1,0 +1,296 @@
+# HELP agent_errors_created All agent errors
+# TYPE agent_errors_created gauge
+agent_errors_created{agent_id="gemini_agent",agent_type="gemini",error_type="log_error",instance="2c850bba3855",job="agent_job",project="",service="gemini_agent"} 1.765613833969585e+09
+agent_errors_created{agent_id="gemini_agent",agent_type="gemini",error_type="log_error",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 1.7655982788859427e+09
+agent_errors_created{agent_id="gemini_agent",agent_type="gemini",error_type="log_error",instance="abf01cdb2c95",job="agent_job",project="",service="gemini_agent"} 1.7655976701979303e+09
+# HELP agent_errors_total All agent errors
+# TYPE agent_errors_total counter
+agent_errors_total{agent_id="gemini_agent",agent_type="gemini",error_type="log_error",instance="2c850bba3855",job="agent_job",project="",service="gemini_agent"} 7
+agent_errors_total{agent_id="gemini_agent",agent_type="gemini",error_type="log_error",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 710
+agent_errors_total{agent_id="gemini_agent",agent_type="gemini",error_type="log_error",instance="abf01cdb2c95",job="agent_job",project="",service="gemini_agent"} 25
+# HELP agent_heartbeat_timestamp Unix timestamp of last heartbeat
+# TYPE agent_heartbeat_timestamp gauge
+agent_heartbeat_timestamp{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 1.7656139934215126e+09
+# HELP agent_online Binary (1=online, 0=offline)
+# TYPE agent_online gauge
+agent_online{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 1
+# HELP container_cpu_usage_pct CPU usage percentage
+# TYPE container_cpu_usage_pct gauge
+container_cpu_usage_pct{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 0
+# HELP container_memory_usage_bytes Memory consumption
+# TYPE container_memory_usage_bytes gauge
+container_memory_usage_bytes{agent_id="gemini_agent",agent_type="gemini",instance="2c850bba3855",job="agent_job",project="",service="gemini_agent"} 3.8682624e+07
+container_memory_usage_bytes{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 3.8813696e+07
+container_memory_usage_bytes{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 3.9206912e+07
+container_memory_usage_bytes{agent_id="gemini_agent",agent_type="gemini",instance="abf01cdb2c95",job="agent_job",project="",service="gemini_agent"} 3.868672e+07
+# HELP feature_completion_pct Percentage of features passing
+# TYPE feature_completion_pct gauge
+feature_completion_pct{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 0
+feature_completion_pct{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 100
+feature_completion_pct{agent_id="gemini_agent",agent_type="gemini",instance="abf01cdb2c95",job="agent_job",project="",service="gemini_agent"} 20
+# HELP files_read_created Files read
+# TYPE files_read_created gauge
+files_read_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 1.7656043138631253e+09
+# HELP files_read_total Files read
+# TYPE files_read_total counter
+files_read_total{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 32
+# HELP files_written_created Files created/modified
+# TYPE files_written_created gauge
+files_written_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 1.7655987346261535e+09
+# HELP files_written_total Files created/modified
+# TYPE files_written_total counter
+files_written_total{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 5
+# HELP go_gc_duration_seconds A summary of the wall-time pause (stop-the-world) duration in garbage collection cycles.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 2.6164e-05
+go_gc_duration_seconds{quantile="0.25"} 3.6928e-05
+go_gc_duration_seconds{quantile="0.5"} 4.3247e-05
+go_gc_duration_seconds{quantile="0.75"} 6.122e-05
+go_gc_duration_seconds{quantile="1"} 0.000526176
+go_gc_duration_seconds_sum 0.026823628
+go_gc_duration_seconds_count 516
+# HELP go_gc_gogc_percent Heap size target percentage configured by the user, otherwise 100. This value is set by the GOGC environment variable, and the runtime/debug.SetGCPercent function. Sourced from /gc/gogc:percent.
+# TYPE go_gc_gogc_percent gauge
+go_gc_gogc_percent 100
+# HELP go_gc_gomemlimit_bytes Go runtime memory limit configured by the user, otherwise math.MaxInt64. This value is set by the GOMEMLIMIT environment variable, and the runtime/debug.SetMemoryLimit function. Sourced from /gc/gomemlimit:bytes.
+# TYPE go_gc_gomemlimit_bytes gauge
+go_gc_gomemlimit_bytes 9.223372036854776e+18
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 11
+# HELP go_info Information about the Go environment.
+# TYPE go_info gauge
+go_info{version="go1.25.3"} 1
+# HELP go_memstats_alloc_bytes Number of bytes allocated in heap and currently in use. Equals to /memory/classes/heap/objects:bytes.
+# TYPE go_memstats_alloc_bytes gauge
+go_memstats_alloc_bytes 6.310336e+06
+# HELP go_memstats_alloc_bytes_total Total number of bytes allocated in heap until now, even if released already. Equals to /gc/heap/allocs:bytes.
+# TYPE go_memstats_alloc_bytes_total counter
+go_memstats_alloc_bytes_total 2.139360832e+09
+# HELP go_memstats_buck_hash_sys_bytes Number of bytes used by the profiling bucket hash table. Equals to /memory/classes/profiling/buckets:bytes.
+# TYPE go_memstats_buck_hash_sys_bytes gauge
+go_memstats_buck_hash_sys_bytes 1.533828e+06
+# HELP go_memstats_frees_total Total number of heap objects frees. Equals to /gc/heap/frees:objects + /gc/heap/tiny/allocs:objects.
+# TYPE go_memstats_frees_total counter
+go_memstats_frees_total 1.1968716e+07
+# HELP go_memstats_gc_sys_bytes Number of bytes used for garbage collection system metadata. Equals to /memory/classes/metadata/other:bytes.
+# TYPE go_memstats_gc_sys_bytes gauge
+go_memstats_gc_sys_bytes 3.45064e+06
+# HELP go_memstats_heap_alloc_bytes Number of heap bytes allocated and currently in use, same as go_memstats_alloc_bytes. Equals to /memory/classes/heap/objects:bytes.
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 6.310336e+06
+# HELP go_memstats_heap_idle_bytes Number of heap bytes waiting to be used. Equals to /memory/classes/heap/released:bytes + /memory/classes/heap/free:bytes.
+# TYPE go_memstats_heap_idle_bytes gauge
+go_memstats_heap_idle_bytes 1.5343616e+07
+# HELP go_memstats_heap_inuse_bytes Number of heap bytes that are in use. Equals to /memory/classes/heap/objects:bytes + /memory/classes/heap/unused:bytes
+# TYPE go_memstats_heap_inuse_bytes gauge
+go_memstats_heap_inuse_bytes 8.773632e+06
+# HELP go_memstats_heap_objects Number of currently allocated objects. Equals to /gc/heap/objects:objects.
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 6335
+# HELP go_memstats_heap_released_bytes Number of heap bytes released to OS. Equals to /memory/classes/heap/released:bytes.
+# TYPE go_memstats_heap_released_bytes gauge
+go_memstats_heap_released_bytes 1.1763712e+07
+# HELP go_memstats_heap_sys_bytes Number of heap bytes obtained from system. Equals to /memory/classes/heap/objects:bytes + /memory/classes/heap/unused:bytes + /memory/classes/heap/released:bytes + /memory/classes/heap/free:bytes.
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 2.4117248e+07
+# HELP go_memstats_last_gc_time_seconds Number of seconds since 1970 of last garbage collection.
+# TYPE go_memstats_last_gc_time_seconds gauge
+go_memstats_last_gc_time_seconds 1.7656139990185232e+09
+# HELP go_memstats_mallocs_total Total number of heap objects allocated, both live and gc-ed. Semantically a counter version for go_memstats_heap_objects gauge. Equals to /gc/heap/allocs:objects + /gc/heap/tiny/allocs:objects.
+# TYPE go_memstats_mallocs_total counter
+go_memstats_mallocs_total 1.1975051e+07
+# HELP go_memstats_mcache_inuse_bytes Number of bytes in use by mcache structures. Equals to /memory/classes/metadata/mcache/inuse:bytes.
+# TYPE go_memstats_mcache_inuse_bytes gauge
+go_memstats_mcache_inuse_bytes 7248
+# HELP go_memstats_mcache_sys_bytes Number of bytes used for mcache structures obtained from system. Equals to /memory/classes/metadata/mcache/inuse:bytes + /memory/classes/metadata/mcache/free:bytes.
+# TYPE go_memstats_mcache_sys_bytes gauge
+go_memstats_mcache_sys_bytes 15704
+# HELP go_memstats_mspan_inuse_bytes Number of bytes in use by mspan structures. Equals to /memory/classes/metadata/mspan/inuse:bytes.
+# TYPE go_memstats_mspan_inuse_bytes gauge
+go_memstats_mspan_inuse_bytes 146560
+# HELP go_memstats_mspan_sys_bytes Number of bytes used for mspan structures obtained from system. Equals to /memory/classes/metadata/mspan/inuse:bytes + /memory/classes/metadata/mspan/free:bytes.
+# TYPE go_memstats_mspan_sys_bytes gauge
+go_memstats_mspan_sys_bytes 195840
+# HELP go_memstats_next_gc_bytes Number of heap bytes when next garbage collection will take place. Equals to /gc/heap/goal:bytes.
+# TYPE go_memstats_next_gc_bytes gauge
+go_memstats_next_gc_bytes 1.1197634e+07
+# HELP go_memstats_other_sys_bytes Number of bytes used for other system allocations. Equals to /memory/classes/other:bytes.
+# TYPE go_memstats_other_sys_bytes gauge
+go_memstats_other_sys_bytes 1.445916e+06
+# HELP go_memstats_stack_inuse_bytes Number of bytes obtained from system for stack allocator in non-CGO environments. Equals to /memory/classes/heap/stacks:bytes.
+# TYPE go_memstats_stack_inuse_bytes gauge
+go_memstats_stack_inuse_bytes 1.048576e+06
+# HELP go_memstats_stack_sys_bytes Number of bytes obtained from system for stack allocator. Equals to /memory/classes/heap/stacks:bytes + /memory/classes/os-stacks:bytes.
+# TYPE go_memstats_stack_sys_bytes gauge
+go_memstats_stack_sys_bytes 1.048576e+06
+# HELP go_memstats_sys_bytes Number of bytes obtained from system. Equals to /memory/classes/total:byte.
+# TYPE go_memstats_sys_bytes gauge
+go_memstats_sys_bytes 3.1807752e+07
+# HELP go_sched_gomaxprocs_threads The current runtime.GOMAXPROCS setting, or the number of operating system threads that can execute user-level Go code simultaneously. Sourced from /sched/gomaxprocs:threads.
+# TYPE go_sched_gomaxprocs_threads gauge
+go_sched_gomaxprocs_threads 6
+# HELP go_threads Number of OS threads created.
+# TYPE go_threads gauge
+go_threads 12
+# HELP llm_latency_seconds LLM response time
+# TYPE llm_latency_seconds histogram
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="1"} 0
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="5"} 0
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="10"} 0
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="30"} 1
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="60"} 1
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="120"} 1
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="300"} 1
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="+Inf"} 1
+llm_latency_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent"} 11.628153562545776
+llm_latency_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent"} 1
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="1"} 0
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="5"} 0
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="10"} 1
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="30"} 9
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="60"} 9
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="120"} 13
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="300"} 15
+llm_latency_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent",le="+Inf"} 25
+llm_latency_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent"} 9664.359565019608
+llm_latency_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent"} 25
+# HELP llm_latency_seconds_created LLM response time
+# TYPE llm_latency_seconds_created gauge
+llm_latency_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent"} 1.7656139450049858e+09
+llm_latency_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",model="auto",operation="generate_content",project="",service="gemini_agent"} 1.765598292122817e+09
+# HELP process_count Child processes spawned
+# TYPE process_count gauge
+process_count{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 3
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 6.78
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 524287
+# HELP process_network_receive_bytes_total Number of bytes received by the process over the network.
+# TYPE process_network_receive_bytes_total counter
+process_network_receive_bytes_total 1.5924192e+07
+# HELP process_network_transmit_bytes_total Number of bytes sent by the process over the network.
+# TYPE process_network_transmit_bytes_total counter
+process_network_transmit_bytes_total 1.2892713e+07
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 8
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 2.9863936e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.76559742936e+09
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 1.273237504e+09
+# HELP process_virtual_memory_max_bytes Maximum amount of virtual memory available in bytes.
+# TYPE process_virtual_memory_max_bytes gauge
+process_virtual_memory_max_bytes 1.8446744073709552e+19
+# HELP push_failure_time_seconds Last Unix time when changing this group in the Pushgateway failed.
+# TYPE push_failure_time_seconds gauge
+push_failure_time_seconds{agent_type="gemini",instance="2c850bba3855",job="agent_job",project="",service="gemini_agent"} 0
+push_failure_time_seconds{agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 0
+push_failure_time_seconds{agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 0
+push_failure_time_seconds{agent_type="gemini",instance="abf01cdb2c95",job="agent_job",project="",service="gemini_agent"} 0
+# HELP push_time_seconds Last Unix time when changing this group in the Pushgateway succeeded.
+# TYPE push_time_seconds gauge
+push_time_seconds{agent_type="gemini",instance="2c850bba3855",job="agent_job",project="",service="gemini_agent"} 1.7656139239992568e+09
+push_time_seconds{agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent"} 1.765613993424757e+09
+push_time_seconds{agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent"} 1.7656089206856627e+09
+push_time_seconds{agent_type="gemini",instance="abf01cdb2c95",job="agent_job",project="",service="gemini_agent"} 1.765598030287706e+09
+# HELP pushgateway_build_info A metric with a constant '1' value labeled by version, revision, branch, goversion from which pushgateway was built, and the goos and goarch for the build.
+# TYPE pushgateway_build_info gauge
+pushgateway_build_info{branch="HEAD",goarch="amd64",goos="linux",goversion="go1.25.3",revision="ace6bf252df95246501059f17ace076f1081144e",tags="unknown",version="1.11.2"} 1
+# HELP pushgateway_http_push_duration_seconds HTTP request duration for pushes to the Pushgateway.
+# TYPE pushgateway_http_push_duration_seconds summary
+pushgateway_http_push_duration_seconds{method="put",quantile="0.1"} 0.000564445
+pushgateway_http_push_duration_seconds{method="put",quantile="0.5"} 0.000648066
+pushgateway_http_push_duration_seconds{method="put",quantile="0.9"} 0.001067767
+pushgateway_http_push_duration_seconds_sum{method="put"} 1.3462772480000007
+pushgateway_http_push_duration_seconds_count{method="put"} 1871
+# HELP pushgateway_http_push_size_bytes HTTP request size for pushes to the Pushgateway.
+# TYPE pushgateway_http_push_size_bytes summary
+pushgateway_http_push_size_bytes{method="put",quantile="0.1"} 2416
+pushgateway_http_push_size_bytes{method="put",quantile="0.5"} 4075
+pushgateway_http_push_size_bytes{method="put",quantile="0.9"} 5239
+pushgateway_http_push_size_bytes_sum{method="put"} 1.3412381e+07
+pushgateway_http_push_size_bytes_count{method="put"} 1871
+# HELP pushgateway_http_requests_total Total HTTP requests processed by the Pushgateway, excluding scrapes.
+# TYPE pushgateway_http_requests_total counter
+pushgateway_http_requests_total{code="200",handler="push",method="put"} 1871
+# HELP tool_execution_created Tool invocations
+# TYPE tool_execution_created gauge
+tool_execution_created{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 1.7656139450072942e+09
+tool_execution_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 1.7655982921247106e+09
+tool_execution_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read"} 1.7656043138601575e+09
+tool_execution_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search"} 1.7656079648601563e+09
+tool_execution_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write"} 1.7655987346231449e+09
+# HELP tool_execution_duration_seconds Tool execution time
+# TYPE tool_execution_duration_seconds histogram
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="0.1"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="0.5"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="1"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="5"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="10"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="30"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="60"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="+Inf"} 1
+tool_execution_duration_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 0.007868766784667969
+tool_execution_duration_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="0.1"} 81
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="0.5"} 84
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="1"} 85
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="5"} 89
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="10"} 93
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="30"} 93
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="60"} 93
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash",le="+Inf"} 100
+tool_execution_duration_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 878.8314199447632
+tool_execution_duration_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 100
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="0.1"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="0.5"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="1"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="5"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="10"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="30"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="60"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read",le="+Inf"} 32
+tool_execution_duration_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read"} 0.1667935848236084
+tool_execution_duration_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read"} 32
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="0.1"} 0
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="0.5"} 0
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="1"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="5"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="10"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="30"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="60"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search",le="+Inf"} 1
+tool_execution_duration_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search"} 0.5442085266113281
+tool_execution_duration_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search"} 1
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="0.1"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="0.5"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="1"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="5"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="10"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="30"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="60"} 5
+tool_execution_duration_seconds_bucket{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write",le="+Inf"} 5
+tool_execution_duration_seconds_sum{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write"} 0.024029254913330078
+tool_execution_duration_seconds_count{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write"} 5
+# HELP tool_execution_duration_seconds_created Tool execution time
+# TYPE tool_execution_duration_seconds_created gauge
+tool_execution_duration_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 1.7656139450151777e+09
+tool_execution_duration_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 1.7655982921309865e+09
+tool_execution_duration_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read"} 1.7656043138653579e+09
+tool_execution_duration_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search"} 1.7656079654043493e+09
+tool_execution_duration_seconds_created{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write"} 1.7655987346279955e+09
+# HELP tool_execution_total Tool invocations
+# TYPE tool_execution_total counter
+tool_execution_total{agent_id="gemini_agent",agent_type="gemini",instance="6f1d6216f9f1",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 1
+tool_execution_total{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="bash"} 100
+tool_execution_total{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="read"} 32
+tool_execution_total{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="search"} 1
+tool_execution_total{agent_id="gemini_agent",agent_type="gemini",instance="a27d6c91c974",job="agent_job",project="",service="gemini_agent",tool_type="write"} 5

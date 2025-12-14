@@ -233,7 +233,7 @@ You have a Project Manager who reviews your work every 10 iterations.
 - **Blockers**: If you are stuck, write to `blockers.txt`.
 - **Questions**: If you need clarification, write to `questions.txt`.
 - **Urgent Help**: If you are completely stuck and need immediate intervention, create an empty file named `TRIGGER_MANAGER`.
-- **Human in Loop**: If you have questions without a possible answer that the manager could solve, write to `human_in_loop.txt`.
+- **Human in Loop**: If you require out of scope information like API keys for validation or blocking design decisions, write to `human_in_loop.txt`.
 
 ```write:successes.txt
 - Implemented Login flow successfully.

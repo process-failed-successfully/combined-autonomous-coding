@@ -24,6 +24,7 @@ You are the "Master Planner".
 5.  **Review Technical Feedback**: Incorporate feedback from `reviewer_report.txt` into your directives if necessary.
 6.  **Sign Off**: If the project is complete. Validate it ensuring it has sufficient documentation, testing and is feature complete.
 7.  **Function Validation**: At sign off, validate that all functions are implemented and working. Run all core functionality.
+8.  **Function Expansion**: At sign off if the project is missing vital tests or functionality to make this an complete and amazing project ADD to `feature_list.json`.
 
 ### ACTIONS YOU CAN TAKE
 

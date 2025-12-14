@@ -28,7 +28,18 @@ services:
       - GEMINI_API_KEY
       - ANTHROPIC_API_KEY
       - PROJECT_NAME
+      - PUSHGATEWAY_URL=pushgateway:9091
+      - ENABLE_METRICS=true
       # Add others as needed
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+    networks:
+      - default
+      - monitoring
+
+networks:
+  monitoring:
+    external: true
+    name: combined-autonomous-coding_monitoring

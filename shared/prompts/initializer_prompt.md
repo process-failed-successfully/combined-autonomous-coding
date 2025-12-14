@@ -31,7 +31,7 @@ cat app_spec.txt
 ```
 
 **Step 2: Create feature_list.json**
-Create a file called `feature_list.json` with 20 detailed
+Create a file called `feature_list.json` with 50 detailed
 end-to-end test cases. This file is the single source of truth for what
 needs to be built.
 

@@ -9,6 +9,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Create config dirs if they don't exist to avoid docker creating root-owned dirs on host
 mkdir -p ~/.gemini
 mkdir -p ~/.cursor
+mkdir -p agents/logs
 
 # Fix permissions using a temporary root container
 # This ensures that even if files were previously created by root, they are now owned by the user (UID 1000)
@@ -16,12 +17,50 @@ echo "Ensuring correct permissions for config directories..."
 docker run --rm \
     -v ~/.gemini:/gemini \
     -v ~/.cursor:/cursor \
-    busybox sh -c "chown -R 1000:1000 /gemini /cursor"
+    -v "$(pwd)/agents/logs":/agents_logs \
+    busybox sh -c "chown -R 1000:1000 /gemini /cursor /agents_logs"
 # Set workspace directory for docker-compose
 export WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 export PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
+# Define a consistent container name for this project's agent run
+export CONTAINER_NAME="${PROJECT_NAME}_agent_run"
 
-echo "Launching Agent in Container..."
+# --- Pre-flight Checks ---
+
+# 1. Check for Project Completion
+if [ -f "$WORKSPACE_DIR/PROJECT_SIGNED_OFF" ]; then
+    echo "✅ Project is marked as SIGNED OFF (PROJECT_SIGNED_OFF exists)."
+    echo "   Remove this file if you wish to run the agent again."
+    exit 0
+fi
+
+# 2. Check for Existing Container
+# Check if a container with this name already exists
+if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "🔍 Found existing container: ${CONTAINER_NAME}"
+
+    # Check if it is currently running
+    if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+        echo "❌ Error: Agent is already running for this project!"
+        echo "   Container Name: ${CONTAINER_NAME}"
+        echo "   To force restart, stop the container manually: docker stop ${CONTAINER_NAME}"
+        exit 1
+    else
+        echo "🧹 Removing stale container..."
+        docker rm -f "${CONTAINER_NAME}" > /dev/null
+    fi
+fi
+
+# --- Cleanup Trap ---
+# Ensure we remove the container when this script exits (e.g. Ctrl-C)
+cleanup() {
+    echo ""
+    echo "🛑 Stopping and cleaning up agent container..."
+    docker rm -f "${CONTAINER_NAME}" > /dev/null 2>&1
+}
+trap cleanup EXIT INT TERM
+
+echo "🚀 Launching Agent in Container (${CONTAINER_NAME})..."
 
 # Check for --build flag
 if [[ "$1" == "--build" ]]; then
@@ -77,15 +116,15 @@ fi
 if [ "$USE_PORTS" = true ]; then
     # Expose ports
     if [ -z "$CMD" ]; then
-         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --service-ports --rm agent
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --service-ports --rm agent
     else
-         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --service-ports --rm agent $CMD
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --service-ports --rm agent $CMD
     fi
 else
     # Do not expose ports
     if [ -z "$CMD" ]; then
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm agent
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --rm agent
     else
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm agent $CMD
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --rm agent $CMD
     fi
 fi

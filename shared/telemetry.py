@@ -33,13 +33,12 @@ class Telemetry:
         
         # File Handler
         log_file = os.path.join(LOG_DIR, f"{service_name}.log")
-        file_handler = logging.FileHandler(log_file)
+        self.file_handler = logging.FileHandler(log_file)
         formatter = logging.Formatter(
             '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "%(name)s", "message": "%(message)s"}'
         )
-        file_handler.setFormatter(formatter)
-        file_handler.setFormatter(formatter)
-        self.logger.addHandler(file_handler)
+        self.file_handler.setFormatter(formatter)
+        self.logger.addHandler(self.file_handler)
         
         # Console Handler
         console_handler = logging.StreamHandler()
@@ -49,9 +48,20 @@ class Telemetry:
         # Initialize Core Metrics
         self._init_metrics()
         
+        # Initialize Default Values
+        self._initialize_default_values()
+        
         # Start System Monitoring Thread
         self.monitoring_thread = threading.Thread(target=self._system_monitoring_loop, daemon=True)
         self.monitoring_active = False
+
+    def capture_logs_from(self, logger_name: str = None):
+        """Attach the telemetry file handler to another logger to capture its output."""
+        target_logger = logging.getLogger(logger_name)
+        # Avoid duplicate handlers
+        if self.file_handler not in target_logger.handlers:
+            target_logger.addHandler(self.file_handler)
+            self.log_info(f"Attached telemetry logging to '{logger_name or 'root'}'")
 
     def _init_metrics(self):
         # 1. Agent Health
@@ -66,6 +76,7 @@ class Telemetry:
         self.register_gauge("features_total", "Total number of features", ["agent_id", "project"])
         self.register_gauge("agent_iteration", "Current iteration number", ["agent_id", "project"])
         self.register_counter("agent_iterations_total", "Total iterations completed", ["agent_id", "project"])
+        self.register_gauge("iteration_duration_seconds", "Time taken for the last iteration", ["agent_id", "project"])
         
         # 3. LLM Performance
         self.register_histogram("llm_latency_seconds", "LLM response time", ["agent_id", "model", "operation"], buckets=(1, 5, 10, 30, 60, 120, 300))
@@ -95,6 +106,25 @@ class Telemetry:
             cls._instance = Telemetry(service_name)
         return cls._instance
 
+    def _initialize_default_values(self):
+        """Initialize metrics to 0/default values so they appear in Grafana immediately."""
+        try:
+            # Gauges
+            self.record_gauge("feature_completion_pct", 0)
+            self.record_gauge("features_passing", 0)
+            self.record_gauge("features_total", 0)
+            self.record_gauge("agent_iteration", 0)
+            self.record_gauge("agent_uptime_seconds", 0)
+            self.record_gauge("agent_online", 1)
+            
+            # Counters (Initialize to 0)
+            self.increment_counter("agent_iterations_total", 0)
+            self.increment_counter("files_written_total", 0)
+            self.increment_counter("files_read_total", 0)
+            
+        except Exception as e:
+            self.log_error(f"Failed to initialize default metrics: {e}")
+
     def register_gauge(self, name: str, documentation: str, labelnames: list = []):
         if name not in self.metrics:
             self.metrics[name] = Gauge(name, documentation, labelnames=labelnames, registry=self.registry)
@@ -109,7 +139,7 @@ class Telemetry:
 
     def _get_labels(self, labels: Dict[str, str]) -> Dict[str, str]:
         # Merge default labels with provided labels
-        final_labels = labels.copy()
+        final_labels = labels.copy() if labels else {}
         # Always inject agent_id and project if not provided (though we expect callers to provide specifics or we default)
         # However, checking the schema, most metrics use agent_id and project as labels.
         # We'll rely on the caller or default to instance variables.
@@ -118,44 +148,59 @@ class Telemetry:
         
         return final_labels
 
-    def record_gauge(self, name: str, value: float, labels: Dict[str, str] = {}):
+    def record_gauge(self, name: str, value: float, labels: Dict[str, str] = None):
         if not ENABLE_METRICS: return
+        labels = labels or {}
         if name in self.metrics:
             # Auto-fill common labels if missing and required
             required_labels = self.metrics[name]._labelnames
-            for lbl in required_labels:
-                if lbl not in labels:
-                    if lbl == "agent_id": labels[lbl] = self.service_name
-                    elif lbl == "project": labels[lbl] = self.project_name
-                    elif lbl == "agent_type": labels[lbl] = self.agent_type
             
-            self.metrics[name].labels(**labels).set(value)
+            # Create a copy to avoid mutating the passed dictionary if it's reused by caller
+            final_labels = labels.copy()
+            
+            for lbl in required_labels:
+                if lbl not in final_labels:
+                    if lbl == "agent_id": final_labels[lbl] = self.service_name
+                    elif lbl == "project": final_labels[lbl] = self.project_name
+                    elif lbl == "agent_type": final_labels[lbl] = self.agent_type
+            
+            self.metrics[name].labels(**final_labels).set(value)
             self._push_metrics()
 
-    def increment_counter(self, name: str, value: float = 1.0, labels: Dict[str, str] = {}):
+    def increment_counter(self, name: str, value: float = 1.0, labels: Dict[str, str] = None):
         if not ENABLE_METRICS: return
+        labels = labels or {}
         if name in self.metrics:
             required_labels = self.metrics[name]._labelnames
+            
+            # Create a copy
+            final_labels = labels.copy()
+            
             for lbl in required_labels:
-                if lbl not in labels:
-                    if lbl == "agent_id": labels[lbl] = self.service_name
-                    elif lbl == "project": labels[lbl] = self.project_name
-                    elif lbl == "agent_type": labels[lbl] = self.agent_type
+                if lbl not in final_labels:
+                    if lbl == "agent_id": final_labels[lbl] = self.service_name
+                    elif lbl == "project": final_labels[lbl] = self.project_name
+                    elif lbl == "agent_type": final_labels[lbl] = self.agent_type
 
-            self.metrics[name].labels(**labels).inc(value)
+            self.metrics[name].labels(**final_labels).inc(value)
             self._push_metrics()
 
-    def record_histogram(self, name: str, value: float, labels: Dict[str, str] = {}):
+    def record_histogram(self, name: str, value: float, labels: Dict[str, str] = None):
         if not ENABLE_METRICS: return
+        labels = labels or {}
         if name in self.metrics:
             required_labels = self.metrics[name]._labelnames
-            for lbl in required_labels:
-                if lbl not in labels:
-                    if lbl == "agent_id": labels[lbl] = self.service_name
-                    elif lbl == "project": labels[lbl] = self.project_name
-                    elif lbl == "agent_type": labels[lbl] = self.agent_type
             
-            self.metrics[name].labels(**labels).observe(value)
+            # Create a copy
+            final_labels = labels.copy()
+            
+            for lbl in required_labels:
+                if lbl not in final_labels:
+                    if lbl == "agent_id": final_labels[lbl] = self.service_name
+                    elif lbl == "project": final_labels[lbl] = self.project_name
+                    elif lbl == "agent_type": final_labels[lbl] = self.agent_type
+            
+            self.metrics[name].labels(**final_labels).observe(value)
             self._push_metrics()
 
     def log_info(self, message: str):

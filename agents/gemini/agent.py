@@ -203,8 +203,14 @@ async def run_autonomous_agent(config: Config,
     log_startup_config(config, logger)
     
     # Initialize Telemetry
-    init_telemetry("gemini_agent", agent_type="gemini", project_name=config.project_dir.name)
+    # Use agent_id from client if available, ensuring metrics match the generated ID
+    service_name = "gemini_agent"
+    if agent_client:
+        service_name = agent_client.agent_id
+        
+    init_telemetry(service_name, agent_type="gemini", project_name=config.project_dir.name)
     get_telemetry().start_system_monitoring()
+    get_telemetry().capture_logs_from("agents")
     
     client = GeminiClient(config)
 
@@ -267,6 +273,10 @@ async def run_autonomous_agent(config: Config,
         if agent_client:
             agent_client.report_state(
                 iteration=iteration, current_task="Preparing Prompt")
+        
+        # Telemetry: Record Iteration
+        get_telemetry().record_gauge("agent_iteration", iteration)
+        get_telemetry().increment_counter("agent_iterations_total")
 
         if config.max_iterations and iteration > config.max_iterations:
             logger.info(f"\nReached max iterations ({config.max_iterations})")
@@ -412,6 +422,9 @@ async def run_autonomous_agent(config: Config,
             logger.info(
                 f"Agent will auto-continue in {config.auto_continue_delay}s...")
             log_progress_summary(config.project_dir, config.progress_file_path)
+
+            # Telemetry: Record Iteration Duration
+            get_telemetry().record_gauge("iteration_duration_seconds", time.time() - iter_start_time)
 
             # Interruptible sleep
             sleep_steps = int(config.auto_continue_delay * 10)

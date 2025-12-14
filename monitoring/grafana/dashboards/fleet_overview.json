@@ -52,11 +52,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "expr": "count(agent_uptime_seconds)",
+          "expr": "count(time() - agent_heartbeat_timestamp < 60)",
           "refId": "A"
         }
       ],
-      "title": "Total Agents",
+      "title": "Total Active Agents",
       "type": "stat"
     },
     {
@@ -89,17 +89,24 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "expr": "count(count by (project) (agent_heartbeat_timestamp))",
+          "expr": "count(count by (project) (time() - agent_heartbeat_timestamp < 60))",
           "refId": "A"
         }
       ],
-      "title": "Projects In Progress",
+      "title": "Active Projects",
       "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        }
       },
       "gridPos": {
         "h": 8,
@@ -110,9 +117,12 @@
       "id": 3,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -122,11 +132,11 @@
       },
       "targets": [
         {
-          "expr": "avg(feature_completion_pct)",
+          "expr": "avg(feature_completion_pct and on(agent_id) (time() - agent_heartbeat_timestamp < 60))",
           "refId": "A"
         }
       ],
-      "title": "Avg Feature Completion (%)",
+      "title": "Avg Feature Completion (Active Agents)",
       "type": "timeseries"
     }
   ],

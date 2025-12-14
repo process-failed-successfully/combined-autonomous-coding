@@ -259,7 +259,12 @@ async def run_autonomous_agent(
     config.project_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize Telemetry
-    init_telemetry("cursor_agent", agent_type="cursor", project_name=config.project_dir.name)
+    # Use agent_id from client if available
+    service_name = "cursor_agent"
+    if agent_client:
+        service_name = agent_client.agent_id
+
+    init_telemetry(service_name, agent_type="cursor", project_name=config.project_dir.name)
     get_telemetry().start_system_monitoring()
 
     # Initialize Client
@@ -352,6 +357,10 @@ async def run_autonomous_agent(
         if agent_client:
             agent_client.report_state(
                 iteration=iteration, current_task="Preparing Prompt")
+
+        # Telemetry: Record Iteration
+        get_telemetry().record_gauge("agent_iteration", iteration)
+        get_telemetry().increment_counter("agent_iterations_total")
 
         if config.max_iterations and iteration > config.max_iterations:
             logger.info(f"\nReached max iterations ({config.max_iterations})")

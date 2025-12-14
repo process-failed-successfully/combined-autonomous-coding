@@ -35,3 +35,7 @@ schema_config:
 
 ruler:
   alertmanager_url: http://localhost:9093
+
+limits_config:
+  ingestion_rate_mb: 20
+  ingestion_burst_size_mb: 40

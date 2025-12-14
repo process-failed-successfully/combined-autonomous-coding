@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C7575E"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -40,8 +40,8 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 0.1,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -49,7 +49,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -65,19 +65,26 @@
             }
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -90,9 +97,12 @@
       "id": 1,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -104,7 +114,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C7575E"
+            "uid": "prometheus"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -124,7 +134,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C7575E"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -139,8 +149,8 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 0.1,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -148,7 +158,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -172,11 +182,16 @@
                 "value": null
               },
               {
+                "color": "yellow",
+                "value": 5
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 15
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -189,9 +204,12 @@
       "id": 2,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -203,11 +221,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C7575E"
+            "uid": "prometheus"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "llm_latency",
+          "expr": "sum by (model) (rate(llm_latency_seconds_sum[5m])) / sum by (model) (rate(llm_latency_seconds_count[5m]))",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -217,13 +235,13 @@
           "useBackend": false
         }
       ],
-      "title": "LLM Latency",
+      "title": "LLM Latency (Avg)",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "loki",
-        "uid": "P416EC45053E5105"
+        "uid": "loki"
       },
       "gridPos": {
         "h": 14,
@@ -246,7 +264,7 @@
         {
           "datasource": {
             "type": "loki",
-            "uid": "P416EC45053E5105"
+            "uid": "loki"
           },
           "editorMode": "builder",
           "expr": "{job=\"agent_logs\"}",

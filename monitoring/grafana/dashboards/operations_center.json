@@ -34,6 +34,25 @@
         "y": 0
       },
       "id": 1,
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Offline",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "Online",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        }
+      },
       "options": {
         "colWidth": 0.9,
         "colorMode": "value",
@@ -46,13 +65,13 @@
       },
       "targets": [
         {
-          "expr": "time() - agent_heartbeat_timestamp < 60",
+          "expr": "time() - agent_heartbeat_timestamp < bool 60",
           "format": "time_series",
           "legendFormat": "{{agent_id}}",
           "refId": "A"
         }
       ],
-      "title": "Agent Status Grid (Green = Online)",
+      "title": "Agent Status Grid (Green = Online, Red = Offline)",
       "type": "state-timeline"
     },
     {
@@ -69,7 +88,9 @@
       "id": 2,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "mean"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -82,6 +103,7 @@
       "targets": [
         {
           "expr": "rate(llm_tokens_total[1m])",
+          "legendFormat": "{{model}} - {{type}}",
           "refId": "A"
         }
       ],
@@ -102,7 +124,9 @@
       "id": 3,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "sum"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -115,6 +139,7 @@
       "targets": [
         {
           "expr": "rate(agent_errors_total[5m])",
+          "legendFormat": "{{error_type}}",
           "refId": "A"
         }
       ],

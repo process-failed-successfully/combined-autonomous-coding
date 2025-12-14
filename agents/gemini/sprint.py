@@ -160,7 +160,19 @@ class SprintManager:
         # TODO: Thread-safe logging context?
         
         # Instantiate a dedicated AgentClient for this worker
-        worker_id = f"worker-{task.id}"
+        from shared.utils import generate_agent_id
+        
+        # Read spec content for ID generation consistency
+        spec_content = ""
+        if self.config.spec_file and self.config.spec_file.exists():
+            spec_content = self.config.spec_file.read_text()
+            
+        # Base ID on hash
+        # generate_agent_id returns {type}_agent_{project}_{hash}
+        # We want worker_agent_{project}_{hash}-{task_id}
+        base_id = generate_agent_id(self.config.project_dir.name, spec_content, "worker")
+        worker_id = f"{base_id}-{task.id}" # Format: worker_agent_{project}_{hash}-{task_id}
+        
         dashboard_url = "http://localhost:7654"
         if self.agent_client:
              dashboard_url = self.agent_client.dashboard_url

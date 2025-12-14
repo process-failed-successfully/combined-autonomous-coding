@@ -11,6 +11,7 @@ import os
 import subprocess
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING
+import hashlib
 
 if TYPE_CHECKING:
     from shared.config import Config
@@ -379,3 +380,23 @@ def log_system_health() -> str:
         return f"Failed to retrieve system health: {e}"
         
     return "; ".join(health_info)
+
+
+def generate_agent_id(project_name: str, spec_content: str, agent_type: str) -> str:
+    """
+    Generate a deterministic agent ID based on project name and spec content.
+    Format: {agent_type}_agent_{project_name}_{hash}
+    """
+    # Create the source string for hashing
+    # We include project_name to differentiate same spec in diff folders
+    source = f"{project_name}:{spec_content}".encode('utf-8')
+    
+    # Generate SHA256 hash
+    hasher = hashlib.sha256(source)
+    hash_digest = hasher.hexdigest()
+    
+    # Truncate hash to 8 chars (uuid-like suffix)
+    short_hash = hash_digest[:8]
+    
+    # Combine to match requested format: cursor_agent_hello_world_uuid
+    return f"{agent_type}_agent_{project_name}_{short_hash}"

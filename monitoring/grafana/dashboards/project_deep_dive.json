@@ -101,6 +101,11 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -110,9 +115,11 @@
       "id": 3,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -123,6 +130,7 @@
       "targets": [
         {
           "expr": "rate(tool_execution_total{agent_id=\"$agent_id\"}[5m])",
+          "legendFormat": "{{tool_type}}",
           "refId": "A"
         }
       ],
@@ -134,6 +142,11 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -143,9 +156,12 @@
       "id": 4,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -156,6 +172,7 @@
       "targets": [
         {
           "expr": "container_memory_usage_bytes{agent_id=\"$agent_id\"}",
+          "legendFormat": "{{agent_id}}",
           "refId": "A"
         }
       ],

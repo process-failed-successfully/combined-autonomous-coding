@@ -1,8 +1,8 @@
-
 import requests
 import time
 import concurrent.futures
 import threading
+
 # We'll reuse these dataclasses effectively
 from shared.state import AgentControl
 
@@ -12,10 +12,7 @@ class AgentClient:
     Client for Agents to communicate with the Dashboard.
     """
 
-    def __init__(
-            self,
-            agent_id: str,
-            dashboard_url: str = "http://localhost:8000"):
+    def __init__(self, agent_id: str, dashboard_url: str = "http://localhost:8000"):
         self.agent_id = agent_id
         self.dashboard_url = dashboard_url.rstrip("/")
         # We maintain a local control state
@@ -25,7 +22,8 @@ class AgentClient:
         # Background Heartbeat
         self._stop_event = threading.Event()
         self._heartbeat_thread = threading.Thread(
-            target=self._heartbeat_loop, daemon=True)
+            target=self._heartbeat_loop, daemon=True
+        )
         self._heartbeat_thread.start()
 
     def _heartbeat_loop(self):

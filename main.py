@@ -24,7 +24,6 @@ from agents.gemini import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -32,50 +31,36 @@ def parse_args():
         "--project-dir",
         type=Path,
         default=Path("."),
-        help="Directory where the project will be created/modified (default: current directory)"
+        help="Directory where the project will be created/modified (default: current directory)",
     )
 
     parser.add_argument(
         "--agent",
         choices=["gemini", "cursor"],
         default="gemini",
-        help="Which agent to use (default: gemini)"
+        help="Which agent to use (default: gemini)",
+    )
+
+    parser.add_argument("--model", type=str, help="Model to use (overrides default)")
+
+    parser.add_argument(
+        "--max-iterations", type=int, help="Maximum number of agent iterations"
     )
 
     parser.add_argument(
-        "--model",
-        type=str,
-        help="Model to use (overrides default)"
+        "--spec", type=Path, help="Path to app_spec.txt (required for new projects)"
     )
 
-    parser.add_argument(
-        "--max-iterations",
-        type=int,
-        help="Maximum number of agent iterations"
-    )
-
-    parser.add_argument(
-        "--spec",
-        type=Path,
-        help="Path to app_spec.txt (required for new projects)"
-    )
-
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     parser.add_argument(
         "--verify-creation",
         action="store_true",
-        help="Run verification test (dummy mode)"
+        help="Run verification test (dummy mode)",
     )
 
     parser.add_argument(
-        "--no-stream",
-        action="store_true",
-        help="Disable streaming output"
+        "--no-stream", action="store_true", help="Disable streaming output"
     )
 
     # Manager Arguments
@@ -83,62 +68,58 @@ def parse_args():
         "--manager-frequency",
         type=int,
         default=10,
-        help="How often the manager agent runs (default: 10 iterations)"
+        help="How often the manager agent runs (default: 10 iterations)",
     )
 
     parser.add_argument(
-        "--manager-model",
-        type=str,
-        help="Model to use for the manager agent"
+        "--manager-model", type=str, help="Model to use for the manager agent"
     )
 
     parser.add_argument(
         "--manager-first",
         action="store_true",
-        help="Run the manager agent before the first coding session"
+        help="Run the manager agent before the first coding session",
     )
 
     parser.add_argument(
         "--no-dashboard",
         action="store_true",
-        help="Disable the standalone dashboard server (enabled by default)"
+        help="Disable the standalone dashboard server (enabled by default)",
     )
 
     parser.add_argument(
         "--dashboard-only",
         action="store_true",
-        help="Run ONLY the dashboard server (no agent)"
+        help="Run ONLY the dashboard server (no agent)",
     )
 
     parser.add_argument(
         "--dashboard-url",
         default="http://localhost:7654",
-        help="URL of the dashboard server (default: http://localhost:7654)"
+        help="URL of the dashboard server (default: http://localhost:7654)",
     )
 
     parser.add_argument(
         "--login",
         action="store_true",
-        help="Run the agent in login/authentication mode (exit after login)"
+        help="Run the agent in login/authentication mode (exit after login)",
     )
 
     # Sprint Arguments
     parser.add_argument(
-        "--sprint",
-        action="store_true",
-        help="Run in Sprint Mode (Concurrent Agents)"
+        "--sprint", action="store_true", help="Run in Sprint Mode (Concurrent Agents)"
     )
 
     parser.add_argument(
         "--max-agents",
         type=int,
-        help="Maximum number of simultaneous agents in Sprint Mode"
+        help="Maximum number of simultaneous agents in Sprint Mode",
     )
 
     parser.add_argument(
         "--timeout",
         type=float,
-        help="Timeout in seconds for agent execution (default: 600.0)"
+        help="Timeout in seconds for agent execution (default: 600.0)",
     )
 
     return parser.parse_args()
@@ -149,7 +130,9 @@ async def main():
 
     # Dashboard Mode (Legacy - Removed)
     if args.dashboard_only:
-        print("Error: The legacy dashboard has been removed. Please use 'make monitor-up' to access Grafana.")
+        print(
+            "Error: The legacy dashboard has been removed. Please use 'make monitor-up' to access Grafana."
+        )
         sys.exit(1)
 
     # Legacy dashboard auto-start logic is removed.
@@ -162,16 +145,19 @@ async def main():
     project_name = os.environ.get("PROJECT_NAME")
     if not project_name:
         project_name = args.project_dir.resolve().name
-        
+
     # Read spec content for ID generation
     spec_content = ""
     if args.spec and args.spec.exists():
         try:
-             spec_content = args.spec.read_text()
+            spec_content = args.spec.read_text()
         except Exception as e:
-             # We can't log yet, so print to stderr
-             print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
-    
+            # We can't log yet, so print to stderr
+            print(
+                f"Warning: Could not read spec file for ID generation: {e}",
+                file=sys.stderr,
+            )
+
     # Generate deterministic ID
     agent_id = generate_agent_id(project_name, spec_content, args.agent)
 
@@ -185,14 +171,18 @@ async def main():
     if args.dashboard_only:
         log_file = agents_log_dir / "dashboard_server.log"
     else:
-        # Agent ID now contains the full unique name including format: {agent}_agent_{project}_{hash}
+        # Agent ID now contains the full unique name including format:
+        # {agent}_agent_{project}_{hash}
         log_file = agents_log_dir / f"{agent_id}.log"
 
     logger = setup_logger(log_file=log_file, verbose=args.verbose)
 
     if not args.dashboard_only:
         logger.info(
-            f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+            f"Starting {
+                args.agent.capitalize()} Agent on {
+                args.project_dir}"
+        )
         logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
@@ -211,7 +201,9 @@ async def main():
         manager_model=args.manager_model,
         run_manager_first=args.manager_first,
         login_mode=args.login,
-        timeout=args.timeout if args.timeout else 600.0 # Default fallback if not specified, though Config has its own default
+        timeout=(
+            args.timeout if args.timeout else 600.0
+        ),  # Default fallback if not specified, though Config has its own default
     )
 
     # Function to resolve spec file
@@ -226,7 +218,8 @@ async def main():
     is_fresh = not config.feature_list_path.exists()
     if is_fresh and not args.spec:
         logger.error(
-            "Error: --spec argument is required for new projects! (or place 'app_spec.txt' in directory)")
+            "Error: --spec argument is required for new projects! (or place 'app_spec.txt' in directory)"
+        )
         sys.exit(1)
 
     # Git Safety
@@ -255,6 +248,7 @@ async def main():
     # If project is signed off, run the cleaner
     if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
         from agents.cleaner import run_cleaner_agent
+
         logger.info("Project signed off. Initiating Cleanup...")
         await run_cleaner_agent(config, agent_client=client)
 

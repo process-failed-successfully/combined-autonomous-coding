@@ -1,10 +1,9 @@
-
 import asyncio
 import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from pathlib import Path
 
 from shared.config import Config
@@ -12,13 +11,16 @@ from shared.utils import has_recent_activity
 
 logger = logging.getLogger(__name__)
 
+
 class GeminiClient:
     """Handles interactions with the Gemini CLI."""
 
     def __init__(self, config: Config):
         self.config = config
 
-    async def run_command(self, prompt: str, cwd: Path, status_callback=None) -> Dict[str, Any]:
+    async def run_command(
+        self, prompt: str, cwd: Path, status_callback=None
+    ) -> Dict[str, Any]:
         """
         Run a gemini CLI command and return the parsed JSON output.
         """
@@ -30,7 +32,7 @@ class GeminiClient:
                 "London": 45.0,
                 "New York": 25.0,
                 "Paris": 30.0,
-                "Tokyo": 100.0
+                "Tokyo": 100.0,
             }
             mock_json = json.dumps(mock_content, indent=4)
             return {
@@ -64,11 +66,12 @@ class GeminiClient:
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
         except FileNotFoundError:
             logger.error(
-                "Gemini CLI not found. Please ensure 'gemini' is installed and in your PATH.")
+                "Gemini CLI not found. Please ensure 'gemini' is installed and in your PATH."
+            )
             raise
 
         logger.debug("Sending prompt to stdin...")
@@ -110,10 +113,12 @@ class GeminiClient:
 
             # Create tasks
             tasks = [
-                asyncio.create_task(_read_stream(
-                    process.stdout, on_stdout, stdout_buf)),
-                asyncio.create_task(_read_stream(
-                    process.stderr, on_stderr, stderr_buf))
+                asyncio.create_task(
+                    _read_stream(process.stdout, on_stdout, stdout_buf)
+                ),
+                asyncio.create_task(
+                    _read_stream(process.stderr, on_stderr, stderr_buf)
+                ),
             ]
 
             # Wait loop with activity check
@@ -132,13 +137,16 @@ class GeminiClient:
                 current_stdout_len = len(stdout_buf)
                 current_stderr_len = len(stderr_buf)
 
-                if current_stdout_len > last_stdout_len or current_stderr_len > last_stderr_len:
+                if (
+                    current_stdout_len > last_stdout_len
+                    or current_stderr_len > last_stderr_len
+                ):
                     # Activity detected, reset timeout
                     timeout_counter = self.config.timeout
                     last_stdout_len = current_stdout_len
                     last_stderr_len = current_stderr_len
                     continue
-                
+
                 # No output, decrement
                 timeout_counter -= 5.0
 
@@ -147,12 +155,15 @@ class GeminiClient:
 
                 if has_recent_activity(self.config.project_dir, seconds=60):
                     logger.info(
-                        "Agent timeout exceeded, but file activity detected. Extending wait by 60s...")
+                        "Agent timeout exceeded, but file activity detected. Extending wait by 60s..."
+                    )
                     timeout_counter = 60.0  # Wait another minute
                     continue
                 else:
                     logger.error(
-                        f"Gemini CLI timed out ({self.config.timeout}s) and no recent file activity.")
+                        f"Gemini CLI timed out ({
+                            self.config.timeout}s) and no recent file activity."
+                    )
                     process.kill()
                     raise asyncio.TimeoutError
 
@@ -164,7 +175,9 @@ class GeminiClient:
 
             if process.returncode != 0:
                 logger.error(
-                    f"Gemini process exited with code {process.returncode}")
+                    f"Gemini process exited with code {
+                        process.returncode}"
+                )
                 if stderr:
                     logger.error(f"STDERR: {stderr.decode()}")
 

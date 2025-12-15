@@ -22,6 +22,7 @@ DEFAULT_BASH_TIMEOUT = 120.0
 @dataclass
 class Config:
     """Application Configuration."""
+
     project_dir: Path
     agent_type: str = "gemini"  # 'gemini' or 'cursor'
     model: Optional[str] = None
@@ -34,12 +35,11 @@ class Config:
     stream_output: bool = True
     spec_file: Optional[Path] = None
     verify_creation: bool = False
-    
+
     # Sprint Configuration
     sprint_mode: bool = False
     max_agents: int = 1
     sprint_id: Optional[str] = None
-
 
     # Manager Configuration
     manager_frequency: int = 10

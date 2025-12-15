@@ -31,8 +31,7 @@ def setup():
 
 async def test_gemini_instantiation():
     print("Testing Gemini Client Instantiation...")
-    config = Config(project_dir=TEST_DIR,
-                    agent_type="gemini", spec_file=SPEC_FILE)
+    config = Config(project_dir=TEST_DIR, agent_type="gemini", spec_file=SPEC_FILE)
     client = GeminiClient(config)
     assert client.config.model == "auto"
     print("PASS: Gemini Client instantiated correctly.")
@@ -40,8 +39,7 @@ async def test_gemini_instantiation():
 
 async def test_cursor_instantiation():
     print("Testing Cursor Client Instantiation...")
-    config = Config(project_dir=TEST_DIR,
-                    agent_type="cursor", spec_file=SPEC_FILE)
+    config = Config(project_dir=TEST_DIR, agent_type="cursor", spec_file=SPEC_FILE)
     client = CursorClient(config)
     assert client.config.model == "auto"
     print("PASS: Cursor Client instantiated correctly.")
@@ -53,6 +51,7 @@ async def main():
     await test_cursor_instantiation()
 
     print("\nAll basic instantiation tests passed.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

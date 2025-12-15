@@ -9,9 +9,9 @@ import logging
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
+
 
 def run_git(cmd: list[str], cwd: Path) -> bool:
     """Run a git command and return success status."""
@@ -21,7 +21,7 @@ def run_git(cmd: list[str], cwd: Path) -> bool:
             cwd=cwd,
             check=True,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
         return True
     except subprocess.CalledProcessError as e:
@@ -30,6 +30,7 @@ def run_git(cmd: list[str], cwd: Path) -> bool:
     except Exception as e:
         logger.error(f"Git execution error: {e}")
         return False
+
 
 def ensure_git_safe(project_dir: Path) -> None:
     """
@@ -44,15 +45,15 @@ def ensure_git_safe(project_dir: Path) -> None:
         run_git(["commit", "-m", "Initial commit"], project_dir)
         # We ensure we are on main
         run_git(["branch", "-M", "main"], project_dir)
-    
+
     # Check if we are already on an agent branch?
     # Maybe. But safer to always create a new one for a new run session.
-    
+
     timestamp = int(time.time())
     branch_name = f"agent/session-{timestamp}"
-    
+
     logger.info(f"Checking out safe branch: {branch_name}")
-    
+
     # Create and checkout
     # -b creates it.
     if run_git(["checkout", "-b", branch_name], project_dir):

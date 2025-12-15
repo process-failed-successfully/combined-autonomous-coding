@@ -40,10 +40,7 @@ def get_sprint_worker_prompt() -> str:
     return load_prompt("sprint_worker_prompt")
 
 
-
-def copy_spec_to_project(
-        project_dir: Path,
-        custom_spec_path: Path = None) -> None:
+def copy_spec_to_project(project_dir: Path, custom_spec_path: Path = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = custom_spec_path if custom_spec_path else PROMPTS_DIR / "app_spec.txt"
     spec_dest = project_dir / "app_spec.txt"

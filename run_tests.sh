@@ -20,14 +20,13 @@ echo "[3/4] Running Bandit Security Scan..."
 bandit -r . -c "pyproject.toml" -ll -b bandit_baseline.json -f custom
 
 echo -e "\n========================================"
-echo "  UNIT & INTEGRATION TESTS"
+echo "  UNIT & INTEGRATION TESTS (PYTEST)"
 echo "========================================"
 
-echo "[4/4] Running Unit Tests..."
-python3 tests/test_utils.py
+echo "[4/4] Running Tests with Coverage..."
+pytest --cov=. --cov-report=term-missing tests/
 
 echo -e "\nRunning Setup Verification..."
 python3 tests/verify_setup.py
 
 echo -e "\n\033[0;32mAll Checks Passed Successfully!\033[0m"
-

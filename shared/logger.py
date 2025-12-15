@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 
-def setup_logger(name: str = "agent", log_file: Path = None,
-                 verbose: bool = False) -> logging.Logger:
+def setup_logger(
+    name: str = "agent", log_file: Path = None, verbose: bool = False
+) -> logging.Logger:
     """Configure and return a logger instance."""
 
     logger = logging.getLogger(name)
@@ -20,8 +21,7 @@ def setup_logger(name: str = "agent", log_file: Path = None,
         return logger
 
     formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"
     )
 
     # Console Handler

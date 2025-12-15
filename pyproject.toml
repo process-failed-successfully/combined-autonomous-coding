@@ -1,3 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agents", "shared"]
+
 [project]
 name = "combined-autonomous-coding"
 version = "0.1.0"
@@ -5,7 +12,10 @@ description = "Combined Autonomous Coding Agent"
 authors = [
     {name = "User", email = "user@example.com"},
 ]
-dependencies = []
+dependencies = [
+    "psutil",
+    "requests",
+]
 requires-python = ">=3.11"
 
 [tool.bandit]

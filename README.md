@@ -37,6 +37,14 @@ You can choose between the `gemini` (default) and `cursor` agents using the `--a
 ./safe_run.sh --agent cursor --spec app_spec.txt
 ```
 
+### 🏃 Sprint Mode (Concurrent)
+
+For complex projects, you can run multiple agents concurrently. A "Lead Agent" creates a plan, and "Worker Agents" execute tasks in parallel.
+
+```bash
+./safe_run.sh --sprint --max-agents 3 --spec app_spec.txt
+```
+
 ## ⚙️ Common Options
 
 The `safe_run.sh` script passes arguments directly to the agent runner. Here are the most useful options:
@@ -139,9 +147,17 @@ The Manager Agent is invoked in three ways:
 2.  **Manual Trigger**: The coding agent can explicitly request a review if it gets stuck.
 3.  **Final Sign-off**: When the agent marks work as `COMPLETED`, the Manager **must** review and sign off (`PROJECT_SIGNED_OFF`) before the system accepts it as finished.
 
+### 🧹 Cleaner Agent
+
+Once the project is signed off, the **Cleaner Agent** runs to remove temporary files and artifacts, ensuring a clean repository state.
+
 ## 🏗️ Architecture
 
 - **`main.py`**: Entry point that dispatches to the selected agent.
 - **`agents/`**: Contains the logic for `gemini` and `cursor` agents.
 - **`shared/`**: Common utilities (logging, config, file ops) shared between agents.
 - **`Dockerfile`**: Defines the secure execution environment with necessary tools (`git`, `node`, `python`, `chromium` for browser tests).
+
+## 🙏 Acknowledgements
+
+This repository is based on and inspired by the [Anthropic Autonomous Coding Quickstart](https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding).

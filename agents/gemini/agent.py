@@ -155,12 +155,7 @@ RECENT ACTIONS:
             logger.debug(f"Response:\n{response_text}")
         else:
             logger.warning("No text content found in Gemini response.")
-            logger.info(
-                f"Full Gemini response: {
-                    json.dumps(
-                        result,
-                        indent=2)}"
-            )
+            logger.info(f"Full Gemini response: {json.dumps(result, indent=2)}")
 
             # Record Token Usage if available
         if "usageMetadata" in result:
@@ -183,10 +178,7 @@ RECENT ACTIONS:
         # Detailed diagnostics
         if "promptFeedback" in result:
             logger.warning(
-                f"Prompt Feedback: {
-                    json.dumps(
-                        result['promptFeedback'],
-                        indent=2)}"
+                f"Prompt Feedback: {json.dumps(result['promptFeedback'], indent=2)}"
             )
 
         if "candidates" in result:
@@ -198,10 +190,7 @@ RECENT ACTIONS:
                 safety_ratings = candidate.get("safetyRatings")
                 if safety_ratings:
                     logger.warning(
-                        f"Candidate {i} safety ratings: {
-                            json.dumps(
-                                safety_ratings,
-                                indent=2)}"
+                        f"Candidate {i} safety ratings: {json.dumps(safety_ratings, indent=2)}"
                     )
 
         # Execute any blocks found in the response
@@ -410,8 +399,7 @@ async def run_autonomous_agent(  # noqa: C901
         # Run session
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {
-                    'Manager' if using_manager else 'Agent'}"
+                current_task=f"Executing {'Manager' if using_manager else 'Agent'}"
             )
 
         original_model = config.model
@@ -488,8 +476,7 @@ async def run_autonomous_agent(  # noqa: C901
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
-                    f"Too many consecutive errors ({
-                        config.max_consecutive_errors}). Stopping execution."
+                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
                 )
                 break
 

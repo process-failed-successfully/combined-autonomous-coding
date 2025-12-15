@@ -161,8 +161,7 @@ class GeminiClient:
                     continue
                 else:
                     logger.error(
-                        f"Gemini CLI timed out ({
-                            self.config.timeout}s) and no recent file activity."
+                        f"Gemini CLI timed out ({self.config.timeout}s) and no recent file activity."
                     )
                     process.kill()
                     raise asyncio.TimeoutError
@@ -174,10 +173,7 @@ class GeminiClient:
             stderr = "".join(stderr_buf).encode()
 
             if process.returncode != 0:
-                logger.error(
-                    f"Gemini process exited with code {
-                        process.returncode}"
-                )
+                logger.error(f"Gemini process exited with code {process.returncode}")
                 if stderr:
                     logger.error(f"STDERR: {stderr.decode()}")
 

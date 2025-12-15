@@ -178,11 +178,7 @@ async def main():
     logger = setup_logger(log_file=log_file, verbose=args.verbose)
 
     if not args.dashboard_only:
-        logger.info(
-            f"Starting {
-                args.agent.capitalize()} Agent on {
-                args.project_dir}"
-        )
+        logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
         logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)

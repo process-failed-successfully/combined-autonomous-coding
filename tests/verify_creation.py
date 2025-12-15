@@ -98,24 +98,18 @@ def verify_output(test_dir):
                 matches = False
             elif abs(data[city] - avg) > 0.1:
                 print(
-                    f"FAIL: Wrong average for {city}. Expected {avg}, got {
-                        data[city]}"
+                    f"FAIL: Wrong average for {city}. Expected {avg}, got {data[city]}"
                 )
                 matches = False
 
         if len(data) != len(EXPECTED_OUTPUT):
             print(
-                f"FAIL: Output has {
-                    len(data)} cities, expected {
-                    len(EXPECTED_OUTPUT)}"
+                f"FAIL: Output has {len(data)} cities, expected {len(EXPECTED_OUTPUT)}"
             )
             matches = False
 
         if matches:
-            print(
-                f"SUCCESS: Output for {
-                    test_dir.name} matches expected data."
-            )
+            print(f"SUCCESS: Output for {test_dir.name} matches expected data.")
             return True
         else:
             return False

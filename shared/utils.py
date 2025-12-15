@@ -32,10 +32,7 @@ def log_startup_config(config: "Config", logger: logging.Logger):
     if config.spec_file:
         logger.info(f"  Spec File    : {config.spec_file}")
 
-    logger.info(
-        f"  Verbose      : {
-            'Enabled' if config.verbose else 'Disabled'}"
-    )
+    logger.info(f"  Verbose      : {'Enabled' if config.verbose else 'Disabled'}")
 
     if config.verify_creation:
         logger.info("  Verify Mode  : Enabled (Mocking responses)")
@@ -55,12 +52,10 @@ def get_file_tree(root_dir: Path) -> str:
         if result.returncode == 0 and result.stdout:
             lines = result.stdout.splitlines()
             if len(lines) > 400:
-                tree_str = f"Project Files (Truncated first 400 of {
-                    len(lines)}): \n"
+                tree_str = f"Project Files (Truncated first 400 of {len(lines)}): \n"
                 for line in lines[:400]:
                     tree_str += f"- {line}\n"
-                tree_str += f"\n... and {
-                    len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
+                tree_str += f"\n... and {len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
             else:
                 tree_str = "Project Files:\n"
                 for line in lines:

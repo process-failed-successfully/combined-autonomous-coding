@@ -17,16 +17,22 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.setup_logger")
     @patch("main.ensure_git_safe")
     @patch("shared.agent_client.AgentClient")
-    @patch("main.run_gemini")
-    @patch("main.run_cursor")
-    @patch("main.run_sprint")
+    @patch("agents.gemini.run_autonomous_agent", new_callable=unittest.mock.AsyncMock)
+    @patch("agents.cursor.run_autonomous_agent", new_callable=unittest.mock.AsyncMock)
+    @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
+    @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
+    @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
+    @patch("agents.cleaner.run_cleaner_agent", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
     async def test_main_gemini_run(
         self,
         mock_gen_id,
+        mock_cleaner_agent,
         mock_sprint,
         mock_cursor,
         mock_gemini,
+        mock_source_cursor,
+        mock_source_gemini,
         mock_client_cls,
         mock_git_safe,
         mock_setup_logger,
@@ -61,6 +67,12 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                 await main()
 
         mock_gemini.assert_called()
+        mock_cleaner_agent.assert_called()  # Should be called because Path.exists=True
+        mock_source_cursor.assert_not_called()
+        mock_source_gemini.assert_not_called()  # Should match source patch if called via main?
+        # Actually if we patch source and main... main calls main.run_gemini (mock_gemini).
+        # source_gemini (agents.gemini...) might NOT be called if main uses its own mock.
+
         mock_cursor.assert_not_called()
         mock_sprint.assert_not_called()
         mock_git_safe.assert_called()
@@ -71,7 +83,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.setup_logger")
     @patch("main.ensure_git_safe")
     @patch("shared.agent_client.AgentClient")
-    @patch("main.run_cursor")
+    @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
     async def test_main_cursor_run(
         self,
@@ -104,7 +116,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.setup_logger")
     @patch("main.ensure_git_safe")
     @patch("shared.agent_client.AgentClient")
-    @patch("main.run_sprint")
+    @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
     async def test_main_sprint_run(
         self,
@@ -211,8 +223,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.setup_logger")
     @patch("main.ensure_git_safe")
     @patch("shared.agent_client.AgentClient")
-    @patch("main.run_gemini")
-    @patch("agents.cleaner.run_cleaner_agent")
+    @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
+    @patch("agents.cleaner.run_cleaner_agent", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
     async def test_main_cleanup(
         self,

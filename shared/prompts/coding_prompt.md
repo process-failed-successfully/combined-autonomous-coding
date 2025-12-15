@@ -8,8 +8,9 @@ This is a FRESH context window - you have no memory of previous sessions.
 You are running inside a **Docker container**.
 
 - **No GUI:** You have no graphical user interface. You cannot run apps that require a display (e.g., standard Chrome, desktop apps).
-- **Ephemeral Environment:** While the workspace is mounted, system-level changes (installing apt packages) may not persist across restarts unless added to the Dockerfile.
-- **Limited Permissions:** You are running as a non-root user and do not have `sudo` access.
+- **Ephemeral Environment:** While the workspace is mounted, system-level changes (installing apt packages) will not persist across restarts unless added to the Dockerfile.
+- **Sudo Access:** You are running as a non-root user but you HAVE `sudo` access (nopasswd). You can install packages using `sudo apt-get install`.
+- **Package Installation:** Always run `sudo apt-get update` before installing packages.
 - **Browser Automation:** Use headless browsers if automation is required.
 
 ### CRITICAL: CODE QUALITY & BEST PRACTICES
@@ -76,7 +77,13 @@ cat *_progress.txt
 
 # 6. Check recent git history
 
+# 6. Check recent git history
+
 git log --oneline -20
+
+# 7. Read Manager Directives (CRITICAL)
+
+cat manager_directives.txt
 
 # 7. Count remaining tests
 
@@ -204,16 +211,31 @@ Update `*_progress.txt` (e.g. `gemini_progress.txt` or `cursor_progress.txt`) wi
 - What should be worked on next
 - Current completion status (e.g., "45/200 tests passing")
 
-### STEP 10: END SESSION CLEANLY
+### STEP 10: HOUSEKEEPING & END SESSION CLEANLY
 
+**1. Track Temporary Files:**
+If you created any temporary scripts (e.g., `debug_auth.py`, `test_schema.py`) or log files, ensure they are listed in `temp_files.txt`.
+
+```bash
+echo "debug_auth.py" >> temp_files.txt
+```
+
+**2. Cleanup (Optional):**
+If a temporary file is definitely no longer needed, remove it now.
+
+```bash
+rm debug_auth.py
+```
+
+**3. Final Checks:**
 Before context fills up:
 
-1. Commit all working code
-2. Update progress file (\*\_progress.txt)
-3. Update feature_list.json if tests verified
-4. Ensure no uncommitted changes
-5. Ensure no uncommitted changes
-6. Leave app in working state (no broken features)
+- Commit all working code
+- Update progress file (\*\_progress.txt)
+- Update feature_list.json if tests verified
+- Ensure no uncommitted changes
+- Leave app in working state (no broken features)
+- If you cannot test trigger human in loop event
 
 ### STEP 11: PROJECT COMPLETION
 
@@ -233,7 +255,7 @@ You have a Project Manager who reviews your work every 10 iterations.
 - **Blockers**: If you are stuck, write to `blockers.txt`.
 - **Questions**: If you need clarification, write to `questions.txt`.
 - **Urgent Help**: If you are completely stuck and need immediate intervention, create an empty file named `TRIGGER_MANAGER`.
-- **Human in Loop**: If you require out of scope information like API keys for validation or blocking design decisions, write to `human_in_loop.txt`.
+- **Human in Loop**: If you are blocked by out of scope information like API keys for validation, cannot test the changes or blocking design decisions, write to `human_in_loop.txt`.
 
 ```write:successes.txt
 - Implemented Login flow successfully.
@@ -272,16 +294,6 @@ Output a markdown block with the language `read:path/to/file`.
 
 ```
 
-**4. To Search the Codebase:**
-Output a markdown block with the language `search:query`.
-This runs `grep` recursively.
-
-```search:TODO
-
-```
-
-**CRITICAL:**
-
 **CRITICAL:**
 
 - **DO NOT USE THE `read_file`, `write_file`, `replace`, OR `write_todos` TOOLS.** They are unreliable or unsupported in this container.
@@ -293,6 +305,7 @@ This runs `grep` recursively.
 - Use `read` and `search` blocks to explore the codebase efficiently.
 - **KEEP RESPONSES CONCISE.** If you need to do many things, split them into multiple responses.
 - **DO NOT CHAIN MORE THAN 3 ACTIONS PER TURN.**
+- **DO NOT SKIP TESTING IF MISSING LIBRARIES OR PACKAGES** You should trigger human in loop
 
 ---
 

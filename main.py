@@ -251,6 +251,14 @@ async def main():
         logger.exception(f"Fatal error: {e}")
         sys.exit(1)
 
+    # Post-Execution Cleanup
+    # If project is signed off, run the cleaner
+    if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+        from agents.cleaner import run_cleaner_agent
+        logger.info("Project signed off. Initiating Cleanup...")
+        await run_cleaner_agent(config, agent_client=client)
+
+
 if __name__ == "__main__":
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

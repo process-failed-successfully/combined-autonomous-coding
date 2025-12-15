@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY, call
+from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
-import json
-import asyncio
 from shared.config import Config
 from agents.cursor.agent import run_agent_session, run_autonomous_agent
 
@@ -134,7 +132,7 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
         mock_client_cls.return_value = self.client
 
         # Simulate is_first_run = False
-        with patch.object(Path, "exists") as mock_exists:
+        with patch.object(Path, "exists"):
             # We need carefully mock exists calls
             # 1. mkdir parents (True/False doesn't matter much)
             # 2. config.feature_list_path.exists() -> True (First run check)
@@ -143,16 +141,17 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
             # 5. TRIGGER_MANAGER exists -> False
 
             # It's tricky with side_effect because Path.exists is called many times.
-            # Let's assume most exist checks return False except feature_list_path which we want True.
+            # Let's assume most exist checks return False except
+            # feature_list_path which we want True.
 
             def side_effect_exists():
-                # We can't really access 'self' (the Path object) easily in side_effect without wrapper
+                # We can't really access 'self' (the Path object) easily in
+                # side_effect without wrapper
                 return False
 
             # Simpler: use MagicMock for paths in Config?
             # self.config.feature_list_path is a Path.
             # Let's mock the Path objects in config directly.
-            pass
 
         self.config.feature_list_path = MagicMock()
         self.config.feature_list_path.exists.return_value = True

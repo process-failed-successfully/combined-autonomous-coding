@@ -32,7 +32,10 @@ def log_startup_config(config: "Config", logger: logging.Logger):
     if config.spec_file:
         logger.info(f"  Spec File    : {config.spec_file}")
 
-    logger.info(f"  Verbose      : {'Enabled' if config.verbose else 'Disabled'}")
+    logger.info(
+        f"  Verbose      : {
+            'Enabled' if config.verbose else 'Disabled'}"
+    )
 
     if config.verify_creation:
         logger.info("  Verify Mode  : Enabled (Mocking responses)")
@@ -52,10 +55,12 @@ def get_file_tree(root_dir: Path) -> str:
         if result.returncode == 0 and result.stdout:
             lines = result.stdout.splitlines()
             if len(lines) > 400:
-                tree_str = f"Project Files (Truncated first 400 of {len(lines)}): \n"
+                tree_str = f"Project Files (Truncated first 400 of {
+                    len(lines)}): \n"
                 for line in lines[:400]:
                     tree_str += f"- {line}\n"
-                tree_str += f"\n... and {len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
+                tree_str += f"\n... and {
+                    len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
             else:
                 tree_str = "Project Files:\n"
                 for line in lines:
@@ -259,7 +264,6 @@ async def process_response_blocks(
                 # End of block
                 content = "\n".join(block_content)
                 start_time = time.time()
-                tool_success = True
 
                 if block_type == "bash":
                     if status_callback:
@@ -272,7 +276,7 @@ async def process_response_blocks(
                             content, project_dir, timeout=bash_timeout
                         )
                     except Exception:
-                        tool_success = False
+                        # tool_success = False
                         get_telemetry().increment_counter(
                             "tool_errors_total",
                             labels={"tool_type": "bash", "error_type": "exception"},
@@ -290,7 +294,7 @@ async def process_response_blocks(
                         )
                         output = execute_write_block(block_arg, content, project_dir)
                     except Exception:
-                        tool_success = False
+                        # tool_success = False
                         get_telemetry().increment_counter(
                             "tool_errors_total",
                             labels={"tool_type": "write", "error_type": "exception"},
@@ -308,7 +312,7 @@ async def process_response_blocks(
                         )
                         output = execute_read_block(block_arg, project_dir)
                     except Exception:
-                        tool_success = False
+                        # tool_success = False
                         get_telemetry().increment_counter(
                             "tool_errors_total",
                             labels={"tool_type": "read", "error_type": "exception"},
@@ -320,18 +324,18 @@ async def process_response_blocks(
                 elif block_type == "search":
                     if status_callback:
                         status_callback(f"Searching: {block_arg}")
-                    try:
-                        get_telemetry().increment_counter(
-                            "tool_execution_total", labels={"tool_type": "search"}
-                        )
-                        output = await execute_search_block(block_arg, project_dir)
-                    except Exception:
-                        tool_success = False
-                        get_telemetry().increment_counter(
-                            "tool_errors_total",
-                            labels={"tool_type": "search", "error_type": "exception"},
-                        )
-                        output = "Error"
+                try:
+                    get_telemetry().increment_counter(
+                        "tool_execution_total", labels={"tool_type": "search"}
+                    )
+                    output = await execute_search_block(block_arg, project_dir)
+                except Exception:
+                    # tool_success = False  # Unused
+                    get_telemetry().increment_counter(
+                        "tool_errors_total",
+                        labels={"tool_type": "search", "error_type": "exception"},
+                    )
+                    output = "Error"
                     execution_log += f"\n> Search {block_arg}\n{output}\n"
                     executed_actions.append(f"Searched: {block_arg}")
 

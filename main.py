@@ -171,13 +171,18 @@ async def main():
     if args.dashboard_only:
         log_file = agents_log_dir / "dashboard_server.log"
     else:
-        # Agent ID now contains the full unique name including format: {agent}_agent_{project}_{hash}
+        # Agent ID now contains the full unique name including format:
+        # {agent}_agent_{project}_{hash}
         log_file = agents_log_dir / f"{agent_id}.log"
 
     logger = setup_logger(log_file=log_file, verbose=args.verbose)
 
     if not args.dashboard_only:
-        logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+        logger.info(
+            f"Starting {
+                args.agent.capitalize()} Agent on {
+                args.project_dir}"
+        )
         logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)

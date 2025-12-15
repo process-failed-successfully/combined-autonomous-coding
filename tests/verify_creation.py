@@ -22,7 +22,8 @@ def run_agent(agent_type):
     test_dir_agent.mkdir(parents=True)
 
     # Copy input files
-    # SOURCE_DIR needs to be absolute for reliable relative_to calc later, though we can just resolve it
+    # SOURCE_DIR needs to be absolute for reliable relative_to calc later,
+    # though we can just resolve it
     source_dir_abs = SOURCE_DIR.resolve()
     shutil.copy(source_dir_abs / "input.csv", test_dir_agent / "input.csv")
 
@@ -38,7 +39,8 @@ def run_agent(agent_type):
 
     # Docker Compose Command
     # We map the test directory to /workspace
-    # Note: WORKSPACE_DIR is needed for docker-compose.yml interpolation, so it must be in the process env.
+    # Note: WORKSPACE_DIR is needed for docker-compose.yml interpolation, so
+    # it must be in the process env.
     cmd = [
         "docker",
         "compose",
@@ -96,18 +98,24 @@ def verify_output(test_dir):
                 matches = False
             elif abs(data[city] - avg) > 0.1:
                 print(
-                    f"FAIL: Wrong average for {city}. Expected {avg}, got {data[city]}"
+                    f"FAIL: Wrong average for {city}. Expected {avg}, got {
+                        data[city]}"
                 )
                 matches = False
 
         if len(data) != len(EXPECTED_OUTPUT):
             print(
-                f"FAIL: Output has {len(data)} cities, expected {len(EXPECTED_OUTPUT)}"
+                f"FAIL: Output has {
+                    len(data)} cities, expected {
+                    len(EXPECTED_OUTPUT)}"
             )
             matches = False
 
         if matches:
-            print(f"SUCCESS: Output for {test_dir.name} matches expected data.")
+            print(
+                f"SUCCESS: Output for {
+                    test_dir.name} matches expected data."
+            )
             return True
         else:
             return False

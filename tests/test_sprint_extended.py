@@ -1,10 +1,10 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 import json
 import asyncio
 from shared.config import Config
-from agents.gemini.sprint import SprintManager, Task, SprintPlan, run_sprint
+from agents.gemini.sprint import SprintManager, Task, SprintPlan
 
 
 class TestSprintManager(unittest.IsolatedAsyncioTestCase):
@@ -53,7 +53,7 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
             # Third check (sprint_plan.json) -> False (to trigger parsing)
             mock_exists.side_effect = [False, False, False]
 
-            with patch.object(Path, "write_text") as mock_write:
+            with patch.object(Path, "write_text"):
                 with patch.object(Path, "read_text") as mock_read:
                     # Mock read_text for validation step
                     mock_read.return_value = json.dumps(plan_json)

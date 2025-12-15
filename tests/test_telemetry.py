@@ -1,6 +1,6 @@
-import os
+import logging
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from shared.telemetry import Telemetry
 
 
@@ -21,10 +21,13 @@ class TestTelemetry(unittest.TestCase):
             # No, if _labelnames is empty, .labels() should NOT be called.
             # But in shared/telemetry.py:167: self.metrics[name].labels(**final_labels).set(value)
             # It ALWAYS calls .labels(**final_labels).
-            # If final_labels is empty and _labelnames is empty, .labels() raises ValueError: No label names were set when constructing gauge:test_metric
+            # If final_labels is empty and _labelnames is empty, .labels()
+            # raises ValueError: No label names were set when constructing
+            # gauge:test_metric
 
             # The fix is to provide at least one label, OR fix the implementation of record_gauge to not call .labels() if no labels are needed.
-            # Given the error, let's register with a label to satisfy the test logic first.
+            # Given the error, let's register with a label to satisfy the test
+            # logic first.
             self.telemetry.register_gauge("test_metric", "doc", ["agent_id"])
             self.telemetry.record_gauge("test_metric", 42.0)
 
@@ -61,8 +64,6 @@ class TestTelemetry(unittest.TestCase):
         self.assertEqual(data["message"], "test message")
         self.assertEqual(data["service"], "test_agent")
 
-
-import logging
 
 if __name__ == "__main__":
     unittest.main()

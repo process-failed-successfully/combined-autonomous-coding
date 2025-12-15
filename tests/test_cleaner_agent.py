@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 from shared.config import Config
 from agents.cleaner.agent import run_cleaner_agent, get_cleaner_prompt

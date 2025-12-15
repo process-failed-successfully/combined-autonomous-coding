@@ -5,7 +5,6 @@ import shutil
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch, mock_open
-import logging
 from shared.utils import (
     log_startup_config,
     get_file_tree,
@@ -208,7 +207,8 @@ echo "should not run"
         # but we can try mocking open.
 
         with patch("builtins.open", mock_open(read_data="MemAvailable: 100 kB\n")):
-            # We need to handle multiple opens, so side_effect is better if we want different contents
+            # We need to handle multiple opens, so side_effect is better if we
+            # want different contents
             pass
 
         # Just running it to ensure no crash

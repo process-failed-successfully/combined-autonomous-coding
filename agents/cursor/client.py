@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List
 
 from shared.config import Config
 from shared.utils import log_system_health
@@ -17,6 +17,7 @@ class CursorClient:
 
     def __init__(self, config: Config):
         self.config = config
+        self.agent_client: Any = None
 
     async def run_command(
         self, prompt: str, cwd: Path, status_callback=None
@@ -173,7 +174,8 @@ class CursorClient:
 
             while True:
                 # Wait for a short interval to check activity
-                # We use a shorter wait here to frequently check for output flow
+                # We use a shorter wait here to frequently check for output
+                # flow
                 done, pending = await asyncio.wait(tasks, timeout=5.0)
 
                 if not pending:
@@ -190,7 +192,8 @@ class CursorClient:
                     # We have activity! Reset timeout counter
                     # But we don't reset the *loop* timeout, we just don't decrement the counter
                     # Actually, we should probably implement a custom timeout counter since asyncio.wait argument is a max wait.
-                    # Let's simplify: execution continues as long as we have output OR file activity.
+                    # Let's simplify: execution continues as long as we have
+                    # output OR file activity.
                     timeout_counter = self.config.timeout
                     last_stdout_len = current_stdout_len
                     last_stderr_len = current_stderr_len
@@ -220,7 +223,8 @@ class CursorClient:
                     continue
                 else:
                     logger.error(
-                        f"Cursor Agent CLI timed out ({self.config.timeout}s) and no recent output or file activity."
+                        f"Cursor Agent CLI timed out ({
+                            self.config.timeout}s) and no recent output or file activity."
                     )
                     process.kill()
                     raise asyncio.TimeoutError
@@ -230,7 +234,8 @@ class CursorClient:
             stderr = "".join(stderr_buf).encode()
 
             if process.returncode != 0:
-                error_msg = f"Cursor process exited with code {process.returncode}"
+                error_msg = f"Cursor process exited with code {
+                    process.returncode}"
                 logger.error(error_msg)
 
                 if stderr:

@@ -8,9 +8,8 @@ Core agent interaction functions for running autonomous coding sessions using Ge
 import asyncio
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, List
 
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config
@@ -115,7 +114,8 @@ RECENT ACTIONS:
         # Measure LLM Latency
         start_time = time.time()
 
-        # Define callback to update dashboard status (aligns with Cursor parity)
+        # Define callback to update dashboard status (aligns with Cursor
+        # parity)
         def local_status_update(current_task=None, output_line=None):
             if status_callback:
                 status_callback(current_task=current_task, output_line=output_line)
@@ -155,14 +155,19 @@ RECENT ACTIONS:
             logger.debug(f"Response:\n{response_text}")
         else:
             logger.warning("No text content found in Gemini response.")
-            logger.info(f"Full Gemini response: {json.dumps(result, indent=2)}")
+            logger.info(
+                f"Full Gemini response: {
+                    json.dumps(
+                        result,
+                        indent=2)}"
+            )
 
             # Record Token Usage if available
         if "usageMetadata" in result:
             usage = result["usageMetadata"]
             prompt_tokens = usage.get("promptTokenCount", 0)
             candidates_tokens = usage.get("candidatesTokenCount", 0)
-            total_tokens = usage.get("totalTokenCount", 0)
+            # _total_tokens = usage.get("totalTokenCount", 0)
 
             get_telemetry().increment_counter(
                 "llm_tokens_total",
@@ -178,7 +183,10 @@ RECENT ACTIONS:
         # Detailed diagnostics
         if "promptFeedback" in result:
             logger.warning(
-                f"Prompt Feedback: {json.dumps(result['promptFeedback'], indent=2)}"
+                f"Prompt Feedback: {
+                    json.dumps(
+                        result['promptFeedback'],
+                        indent=2)}"
             )
 
         if "candidates" in result:
@@ -190,7 +198,10 @@ RECENT ACTIONS:
                 safety_ratings = candidate.get("safetyRatings")
                 if safety_ratings:
                     logger.warning(
-                        f"Candidate {i} safety ratings: {json.dumps(safety_ratings, indent=2)}"
+                        f"Candidate {i} safety ratings: {
+                            json.dumps(
+                                safety_ratings,
+                                indent=2)}"
                     )
 
         # Execute any blocks found in the response
@@ -220,7 +231,9 @@ RECENT ACTIONS:
         return "error", str(e), []
 
 
-async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = None):
+async def run_autonomous_agent(  # noqa: C901
+    config: Config, agent_client: Optional[Any] = None
+):  # noqa: C901
     """
     Run the autonomous agent loop.
     """
@@ -229,7 +242,8 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
     log_startup_config(config, logger)
 
     # Initialize Telemetry
-    # Use agent_id from client if available, ensuring metrics match the generated ID
+    # Use agent_id from client if available, ensuring metrics match the
+    # generated ID
     service_name = "gemini_agent"
     if agent_client:
         service_name = agent_client.agent_id
@@ -243,9 +257,10 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
     client = GeminiClient(config)
 
     # Load Prompts
-    initializer_prompt = get_initializer_prompt()
-    coding_prompt = get_coding_prompt()
-    manager_prompt = get_manager_prompt()
+    # Load Prompts (Pre-load to ensure they exist)
+    _ = get_initializer_prompt()
+    _ = get_coding_prompt()
+    _ = get_manager_prompt()
 
     # Session State
     recent_history: List[str] = []
@@ -395,7 +410,8 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
         # Run session
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {'Manager' if using_manager else 'Agent'}"
+                current_task=f"Executing {
+                    'Manager' if using_manager else 'Agent'}"
             )
 
         original_model = config.model
@@ -472,7 +488,8 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
-                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
+                    f"Too many consecutive errors ({
+                        config.max_consecutive_errors}). Stopping execution."
                 )
                 break
 

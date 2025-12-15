@@ -1,13 +1,11 @@
+from shared.telemetry import Telemetry, init_telemetry, get_telemetry
 import unittest
-from unittest.mock import MagicMock, patch
-import os
+from unittest.mock import patch
 import sys
 from pathlib import Path
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from shared.telemetry import Telemetry, init_telemetry, get_telemetry
 
 
 class TestTelemetry(unittest.TestCase):
@@ -49,7 +47,8 @@ class TestTelemetry(unittest.TestCase):
 
         # Verify agent_id and project were injected
         # We need to access the metric sample
-        # Note: 'agent_id' matches self.service_name in the implementation logic
+        # Note: 'agent_id' matches self.service_name in the implementation
+        # logic
         metric = self.telemetry.metrics["test_auto_label"]
         # Access the sample with injected labels
         val = metric.labels(agent_id="test_service", project="test_project", custom="C")

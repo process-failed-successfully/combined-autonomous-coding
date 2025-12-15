@@ -5,9 +5,9 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import patch
 
-from agents.gemini.sprint import SprintManager, SprintPlan, Task
+from agents.gemini.sprint import SprintManager
 from shared.config import Config
 
 # Configure logging to show timing
@@ -70,9 +70,11 @@ class TestSprintParallel(unittest.IsolatedAsyncioTestCase):
 
         # First call is Planning, return success and the JSON
         # Subsequent calls are Workers. We need to handle them differently or mock run_worker directly.
-        # Ideally we mock _get_agent_runner to return different mocks for planner vs worker.
+        # Ideally we mock _get_agent_runner to return different mocks for
+        # planner vs worker.
 
-        # Let's mock SprintManager.run_worker instead for precise control over timing
+        # Let's mock SprintManager.run_worker instead for precise control over
+        # timing
 
         manager = SprintManager(self.config)
 

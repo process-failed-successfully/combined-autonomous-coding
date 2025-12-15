@@ -5,19 +5,18 @@ Cursor Agent Session Logic
 Core agent interaction functions for running autonomous coding sessions using Cursor CLI.
 """
 
+from .client import CursorClient
 import asyncio
 import json
 import logging
-import os
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, List
 
 from shared.config import Config
 from shared.utils import (
     get_file_tree,
     process_response_blocks,
     log_startup_config,
-    log_system_health,
 )
 from shared.agent_client import AgentClient
 from shared.telemetry import init_telemetry, get_telemetry
@@ -29,9 +28,6 @@ from .prompts import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-from .client import CursorClient
 
 
 def print_session_header(iteration: int, is_first: bool) -> None:
@@ -121,7 +117,8 @@ RECENT ACTIONS:
         MAX_PROMPT_CHARS = 100000
         if len(augmented_prompt) > MAX_PROMPT_CHARS:
             logger.warning(
-                f"Prompt length ({len(augmented_prompt)}) exceeds limit ({MAX_PROMPT_CHARS}). Truncating context."
+                f"Prompt length ({
+                    len(augmented_prompt)}) exceeds limit ({MAX_PROMPT_CHARS}). Truncating context."
             )
 
             # 1. Truncate File Tree
@@ -160,7 +157,8 @@ RECENT ACTIONS:
 """
                 augmented_prompt = (
                     prompt
-                    + f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
+                    + f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, "
+                    "```read:filename to read, ```search:query to search."
                 )
 
         # Define callback to update dashboard status
@@ -230,14 +228,19 @@ RECENT ACTIONS:
             logger.debug(f"Response:\n{response_text}")
         else:
             logger.warning("No text content found in Cursor response.")
-            logger.info(f"Full Cursor response: {json.dumps(result, indent=2)}")
+            logger.info(
+                f"Full Cursor response: {
+                    json.dumps(
+                        result,
+                        indent=2)}"
+            )
 
         # Record Token Usage if available
         if "usageMetadata" in result:
             usage = result["usageMetadata"]
             prompt_tokens = usage.get("promptTokenCount", 0)
             candidates_tokens = usage.get("candidatesTokenCount", 0)
-            total_tokens = usage.get("totalTokenCount", 0)
+            # _total_tokens = usage.get("totalTokenCount", 0)
 
             get_telemetry().increment_counter(
                 "llm_tokens_total",
@@ -280,7 +283,7 @@ RECENT ACTIONS:
         return "error", str(e), []
 
 
-async def run_autonomous_agent(
+async def run_autonomous_agent(  # noqa: C901
     config: Config, agent_client: Optional[AgentClient] = None
 ) -> None:
     """
@@ -339,11 +342,11 @@ async def run_autonomous_agent(
     start_time = time.time()
 
     # Session Metrics State
-    metrics_state = {
-        "llm_latencies": [],
-        "tool_times": [],
-        "iteration_times": [],
-    }
+    # metrics_state = {
+    #     "llm_latencies": [],
+    #     "tool_times": [],
+    #     "iteration_times": [],
+    # }
 
     # Metrics Callback Handler (REMOVED - Use Telemetry)
     # def handle_metrics(metric_type: str, value: Any): ...
@@ -484,7 +487,8 @@ async def run_autonomous_agent(
         # Run session
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {'Manager' if using_manager else 'Agent'}"
+                current_task=f"Executing {
+                    'Manager' if using_manager else 'Agent'}"
             )
 
         original_model = config.model
@@ -516,13 +520,15 @@ async def run_autonomous_agent(
             # Calculate Iteration Time & Update Averages
             iter_duration = time.time() - iter_start_time
             # metrics_state["iteration_times"].append(iter_duration) # REMOVED
-            # avg_iter = sum(metrics_state["iteration_times"]) / len(metrics_state["iteration_times"]) # REMOVED
+            # avg_iter = sum(metrics_state["iteration_times"]) /
+            # len(metrics_state["iteration_times"]) # REMOVED
 
             # Telemetry: Record Iteration Duration
             get_telemetry().record_gauge("iteration_duration_seconds", iter_duration)
 
             if agent_client:
-                # agent_client.report_state(avg_iteration_time=avg_iter) # Deprecated
+                # agent_client.report_state(avg_iteration_time=avg_iter) #
+                # Deprecated
                 pass
 
             logger.info(f"Agent will auto-continue in {config.auto_continue_delay}s...")
@@ -544,7 +550,8 @@ async def run_autonomous_agent(
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
-                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
+                    f"Too many consecutive errors ({
+                        config.max_consecutive_errors}). Stopping execution."
                 )
                 break
 

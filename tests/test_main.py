@@ -1,13 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY
+from unittest.mock import patch, MagicMock
 from pathlib import Path
-import argparse
-import sys
-import os
 
 # We import main functions to test
 from main import parse_args, main
-from shared.config import Config
 
 
 class TestMain(unittest.IsolatedAsyncioTestCase):
@@ -155,7 +151,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         # `manager_frequency=... login_mode=args.login`
         # `timeout=...`
         # Nothing about sprint.
-        # BUT `shared/config.py` might parse args itself? No, it takes args in init.
+        # BUT `shared/config.py` might parse args itself? No, it takes args in
+        # init.
 
         # IF main.py is buggy regarding sprint mode, I should fix it too!
         # `config.sprint_mode` usage:

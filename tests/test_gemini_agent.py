@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY, call
+from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
-import json
-import asyncio
 from shared.config import Config
 from agents.gemini.agent import run_agent_session, run_autonomous_agent
 

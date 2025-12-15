@@ -1,7 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock
 import logging
-import time
 from shared.telemetry import Telemetry, get_telemetry, init_telemetry
 
 
@@ -90,7 +89,7 @@ class TestTelemetryExtended(unittest.TestCase):
 
         with (
             patch("shared.telemetry.ENABLE_METRICS", True),
-            patch("shared.telemetry.push_to_gateway") as mock_push,
+            patch("shared.telemetry.push_to_gateway"),
         ):
 
             self.telemetry.monitoring_active = True

@@ -1,9 +1,8 @@
 import time
 import requests
-import json
 import uuid
 import sys
-from shared.telemetry import Telemetry, PUSHGATEWAY_URL
+from shared.telemetry import Telemetry
 
 # Configuration
 PROMETHEUS_QUERY_URL = "http://localhost:9090/api/v1/query"

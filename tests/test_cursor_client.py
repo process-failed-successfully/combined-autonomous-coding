@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY
+from unittest.mock import patch, MagicMock, AsyncMock
 import asyncio
-import os
-import sys
 from shared.config import Config
 from agents.cursor.client import CursorClient
 

@@ -1,12 +1,11 @@
 import unittest
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch
 import time
-import requests
 import subprocess
 import logging
 from pathlib import Path
 from shared.agent_client import AgentClient
-from shared.state import AgentState, AgentControl, StateManager
+from shared.state import StateManager
 from shared.logger import setup_logger
 from shared.git import run_git, ensure_git_safe
 
@@ -110,8 +109,8 @@ class TestSharedModules(unittest.TestCase):
         logger2 = setup_logger("test_logger")
         self.assertEqual(logger, logger2)
 
-        # Test file handler - skipping due to mocking difficulties in this context
-        pass
+        # Test file handler - skipping due to mocking difficulties in this
+        # context
 
     # --- Git Tests ---
 

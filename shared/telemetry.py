@@ -4,7 +4,7 @@ import socket
 import time
 import threading
 import psutil
-from typing import Dict, Optional, Any, List
+from typing import Dict, Any
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
@@ -75,7 +75,10 @@ class Telemetry:
         # Avoid duplicate handlers
         if self.file_handler not in target_logger.handlers:
             target_logger.addHandler(self.file_handler)
-            self.log_info(f"Attached telemetry logging to '{logger_name or 'root'}'")
+            self.log_info(
+                f"Attached telemetry logging to '{
+                    logger_name or 'root'}'"
+            )
 
     def _init_metrics(self):
         # 1. Agent Health
@@ -254,7 +257,8 @@ class Telemetry:
             # Auto-fill common labels if missing and required
             required_labels = self.metrics[name]._labelnames
 
-            # Create a copy to avoid mutating the passed dictionary if it's reused by caller
+            # Create a copy to avoid mutating the passed dictionary if it's
+            # reused by caller
             final_labels = labels.copy()
 
             for lbl in required_labels:
@@ -326,7 +330,8 @@ class Telemetry:
         try:
             # We group metrics by job, instance, and other high-level identifiers to act as "global labels"
             # grouping_key = {'instance': socket.gethostname(), 'service': self.service_name, 'project': self.project_name, 'agent_type': self.agent_type}
-            # Prometheus Pushgateway grouping keys overwrite previous pushes with the same key.
+            # Prometheus Pushgateway grouping keys overwrite previous pushes
+            # with the same key.
 
             grouping_key = {
                 "instance": socket.gethostname(),
@@ -341,7 +346,7 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
-        except Exception as e:
+        except Exception:
             # Don't crash the agent if metrics fail
             # Avoid print spam, maybe log once
             pass

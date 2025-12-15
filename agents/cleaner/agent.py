@@ -7,11 +7,11 @@ Runs after project sign-off to clean up temporary files.
 
 import logging
 from pathlib import Path
+from typing import List
 
 from shared.config import Config
 from agents.gemini.client import GeminiClient
 from agents.gemini.agent import run_agent_session
-from shared.utils import get_file_tree
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +40,12 @@ async def run_cleaner_agent(config: Config, agent_client=None):
     # Run a limited number of iterations to ensure cleanup
     # Usually it should take 1-2 turns.
     max_cleaner_iterations = 5
-    recent_history = []
+    recent_history: List[str] = []
 
     logger.info("Cleaner Agent Initialized. Scanning files...")
 
     for i in range(max_cleaner_iterations):
-        logger.info(f"Cleaner Iteration {i+1}/{max_cleaner_iterations}")
+        logger.info(f"Cleaner Iteration {i + 1}/{max_cleaner_iterations}")
 
         status, response, new_actions = await run_agent_session(
             client,

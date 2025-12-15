@@ -2,11 +2,9 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from shared.config import Config
-from shared.utils import get_file_tree, process_response_blocks
 from shared.agent_client import AgentClient
 from .client import GeminiClient
 from .prompts import get_sprint_planner_prompt, get_sprint_worker_prompt
@@ -25,7 +23,7 @@ try:
     )
 except ImportError:
     run_cursor_session = None
-    CursorClient = None
+    CursorClient = None  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -89,7 +87,10 @@ class SprintManager:
         feature_list_content = "No feature_list.json found."
         if self.config.feature_list_path.exists():
             feature_list_content = self.config.feature_list_path.read_text()
-            logger.info(f"Loaded feature list from {self.config.feature_list_path}")
+            logger.info(
+                f"Loaded feature list from {
+                    self.config.feature_list_path}"
+            )
 
         prompt = base_prompt.format(
             working_directory=self.config.project_dir,
@@ -189,7 +190,8 @@ class SprintManager:
             self.config.project_dir.name, spec_content, "worker"
         )
         worker_id = (
-            f"{base_id}-{task.id}"  # Format: worker_agent_{project}_{hash}-{task_id}
+            # Format: worker_agent_{project}_{hash}-{task_id}
+            f"{base_id}-{task.id}"
         )
 
         dashboard_url = "http://localhost:7654"
@@ -198,7 +200,10 @@ class SprintManager:
 
         worker_client = AgentClient(agent_id=worker_id, dashboard_url=dashboard_url)
         worker_client.report_state(
-            is_running=True, current_task=f"Starting Task: {task.title}", iteration=0
+            is_running=True,
+            current_task=f"Starting Task: {
+                task.title}",
+            iteration=0,
         )
 
         client, session_runner = self._get_agent_runner()
@@ -211,7 +216,7 @@ class SprintManager:
             working_directory=self.config.project_dir,
         )
 
-        history = []
+        history: List[str] = []
         max_turns = 10  # Cap turns per task
         turns = 0
 
@@ -231,7 +236,8 @@ class SprintManager:
                     worker_client.report_state(is_paused=False)
 
                 # Status callback for real-time updates
-                # We assume session_runner supports status_callback (Gemini and Cursor now both do)
+                # We assume session_runner supports status_callback (Gemini and
+                # Cursor now both do)
                 current_turn_log = []
 
                 def status_update(current_task=None, output_line=None):
@@ -315,7 +321,8 @@ class SprintManager:
                     deps_met = all(d in self.completed_tasks for d in task.dependencies)
                     if deps_met:
                         runnable.append(task)
-                        # Reset status to PENDING so it can be picked up, though we add to runnable directly
+                        # Reset status to PENDING so it can be picked up,
+                        # though we add to runnable directly
                         if task.status == "BLOCKED":
                             task.status = "PENDING"
                     else:

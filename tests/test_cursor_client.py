@@ -6,6 +6,7 @@ import sys
 from shared.config import Config
 from agents.cursor.client import CursorClient
 
+
 class TestCursorClient(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_exec")
@@ -23,7 +24,11 @@ class TestCursorClient(unittest.IsolatedAsyncioTestCase):
         # Mock process
         process = AsyncMock()
         process.returncode = 0
-        process.stdout.readline.side_effect = [b"output line 1\n", b"output line 2\n", b""]
+        process.stdout.readline.side_effect = [
+            b"output line 1\n",
+            b"output line 2\n",
+            b"",
+        ]
         process.stderr.readline.side_effect = [b""]
         process.wait.return_value = None
 
@@ -48,7 +53,7 @@ class TestCursorClient(unittest.IsolatedAsyncioTestCase):
     async def test_run_command_timeout(self, mock_exec):
         config = MagicMock(spec=Config)
         config.verify_creation = False
-        config.timeout = 0.1 # short timeout
+        config.timeout = 0.1  # short timeout
         config.project_dir = MagicMock()
         config.stream_output = False
         config.model = None
@@ -107,6 +112,7 @@ class TestCursorClient(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(Exception):
             await client.run_command("prompt", MagicMock())
+
 
 if __name__ == "__main__":
     unittest.main()

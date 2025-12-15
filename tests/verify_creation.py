@@ -1,4 +1,3 @@
-
 import json
 import shutil
 import subprocess
@@ -10,19 +9,14 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent
 TEST_DIR = Path("tests_output/creation_test_run")
 SOURCE_DIR = SCRIPT_DIR / "creation_test"
-EXPECTED_OUTPUT = {
-    "London": 45.0,
-    "New York": 25.0,
-    "Paris": 30.0,
-    "Tokyo": 100.0
-}
+EXPECTED_OUTPUT = {"London": 45.0, "New York": 25.0, "Paris": 30.0, "Tokyo": 100.0}
 
 
 def run_agent(agent_type):
     """Run the agent using docker-compose."""
     # Resolve paths to absolute to ensure Docker volume mounting works
     test_dir_agent = (TEST_DIR / agent_type).resolve()
-    
+
     if test_dir_agent.exists():
         shutil.rmtree(test_dir_agent)
     test_dir_agent.mkdir(parents=True)
@@ -33,11 +27,11 @@ def run_agent(agent_type):
     shutil.copy(source_dir_abs / "input.csv", test_dir_agent / "input.csv")
 
     repo_root = SCRIPT_DIR.parent.resolve()
-    
+
     # Calculate spec path inside container
     # The repo is mounted at /app/combined-autonomous-coding (since ..:/app and repo name is combined-autonomous-coding)
     # We strictly adhere to the structure implied by docker-compose.yml
-    
+
     # Relative path of spec from repo root
     rel_spec_path = (source_dir_abs / "app_spec.txt").relative_to(repo_root)
     container_spec_path = Path("/app/combined-autonomous-coding") / rel_spec_path
@@ -46,20 +40,28 @@ def run_agent(agent_type):
     # We map the test directory to /workspace
     # Note: WORKSPACE_DIR is needed for docker-compose.yml interpolation, so it must be in the process env.
     cmd = [
-        "docker", "compose", "run", "--rm",
+        "docker",
+        "compose",
+        "run",
+        "--rm",
         # We don't strictly need -e here if variables are passed via shell env and configured in compose to pass-through,
         # but -e ensures it overrides anything else for the container process.
         # However, for the volume usage in docker-compose.yml, we MUST set it in subprocess env.
         "agent",
-        "python3", "/app/combined-autonomous-coding/main.py",
-        "--project-dir", "/workspace",
-        "--spec", str(container_spec_path),
-        "--agent", agent_type,
-        "--max-iterations", "5",  # Give it enough turns to plan, implement, and run
+        "python3",
+        "/app/combined-autonomous-coding/main.py",
+        "--project-dir",
+        "/workspace",
+        "--spec",
+        str(container_spec_path),
+        "--agent",
+        agent_type,
+        "--max-iterations",
+        "5",  # Give it enough turns to plan, implement, and run
         "--verbose",
-        "--verify-creation"
+        "--verify-creation",
     ]
-    
+
     # Prepare environment for docker-compose
     cmd_env = os.environ.copy()
     cmd_env["WORKSPACE_DIR"] = str(test_dir_agent)
@@ -93,17 +95,19 @@ def verify_output(test_dir):
                 print(f"FAIL: Missing city {city}")
                 matches = False
             elif abs(data[city] - avg) > 0.1:
-                print(f"FAIL: Wrong average for {city}. Expected {avg}, got {data[city]}")
+                print(
+                    f"FAIL: Wrong average for {city}. Expected {avg}, got {data[city]}"
+                )
                 matches = False
 
         if len(data) != len(EXPECTED_OUTPUT):
             print(
-                f"FAIL: Output has {len(data)} cities, expected {len(EXPECTED_OUTPUT)}")
+                f"FAIL: Output has {len(data)} cities, expected {len(EXPECTED_OUTPUT)}"
+            )
             matches = False
 
         if matches:
-            print(
-                f"SUCCESS: Output for {test_dir.name} matches expected data.")
+            print(f"SUCCESS: Output for {test_dir.name} matches expected data.")
             return True
         else:
             return False

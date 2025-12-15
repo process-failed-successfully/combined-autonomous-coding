@@ -4,6 +4,7 @@ import asyncio
 from shared.config import Config
 from agents.gemini.client import GeminiClient
 
+
 class TestGeminiClient(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_exec")
@@ -80,7 +81,9 @@ class TestGeminiClient(unittest.IsolatedAsyncioTestCase):
         client = GeminiClient(config)
 
         res = await client.run_command("prompt", MagicMock())
-        self.assertIn("write:output.json", res["candidates"][0]["content"]["parts"][0]["text"])
+        self.assertIn(
+            "write:output.json", res["candidates"][0]["content"]["parts"][0]["text"]
+        )
         mock_exec.assert_not_called()
 
     @patch("asyncio.create_subprocess_exec")
@@ -115,6 +118,7 @@ class TestGeminiClient(unittest.IsolatedAsyncioTestCase):
 
         res = await client.run_command("prompt", MagicMock())
         self.assertEqual(res["content"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

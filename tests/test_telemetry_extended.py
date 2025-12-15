@@ -4,6 +4,7 @@ import logging
 import time
 from shared.telemetry import Telemetry, get_telemetry, init_telemetry
 
+
 class TestTelemetryExtended(unittest.TestCase):
     def setUp(self):
         # Reset singleton logic if needed or just instantiate directly
@@ -46,7 +47,12 @@ class TestTelemetryExtended(unittest.TestCase):
             self.telemetry.log_error("Somethign went wrong")
 
             # agent_errors_total is registered in init
-            val = self.telemetry.metrics["agent_errors_total"].collect()[0].samples[0].value
+            val = (
+                self.telemetry.metrics["agent_errors_total"]
+                .collect()[0]
+                .samples[0]
+                .value
+            )
             self.assertEqual(val, 1.0)
 
     def test_capture_logs_from(self):
@@ -62,6 +68,7 @@ class TestTelemetryExtended(unittest.TestCase):
     def test_get_telemetry_fallback(self):
         # Reset global
         import shared.telemetry
+
         shared.telemetry._telemetry = None
 
         t = get_telemetry()
@@ -81,8 +88,10 @@ class TestTelemetryExtended(unittest.TestCase):
         mock_p.children.return_value = []
         mock_process.return_value = mock_p
 
-        with patch("shared.telemetry.ENABLE_METRICS", True), \
-             patch("shared.telemetry.push_to_gateway") as mock_push:
+        with (
+            patch("shared.telemetry.ENABLE_METRICS", True),
+            patch("shared.telemetry.push_to_gateway") as mock_push,
+        ):
 
             self.telemetry.monitoring_active = True
 
@@ -95,12 +104,18 @@ class TestTelemetryExtended(unittest.TestCase):
                 self.telemetry.monitoring_active = False
 
             with patch("time.sleep", side_effect=side_effect_sleep):
-                 self.telemetry._system_monitoring_loop()
+                self.telemetry._system_monitoring_loop()
 
             # Check if metrics were recorded
             # container_memory_usage_bytes
-            val = self.telemetry.metrics["container_memory_usage_bytes"].collect()[0].samples[0].value
+            val = (
+                self.telemetry.metrics["container_memory_usage_bytes"]
+                .collect()[0]
+                .samples[0]
+                .value
+            )
             self.assertEqual(val, 1000)
+
 
 if __name__ == "__main__":
     unittest.main()

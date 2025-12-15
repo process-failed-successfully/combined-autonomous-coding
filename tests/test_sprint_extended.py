@@ -6,6 +6,7 @@ import asyncio
 from shared.config import Config
 from agents.gemini.sprint import SprintManager, Task, SprintPlan, run_sprint
 
+
 class TestSprintManager(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
@@ -22,7 +23,9 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
     @patch("agents.gemini.sprint.GeminiClient")
     @patch("agents.gemini.sprint.run_gemini_session")
     @patch("agents.gemini.sprint.get_sprint_planner_prompt")
-    async def test_run_planning_phase_success(self, mock_prompt, mock_run_session, mock_client_cls):
+    async def test_run_planning_phase_success(
+        self, mock_prompt, mock_run_session, mock_client_cls
+    ):
         mock_prompt.return_value = "Plan prompt"
 
         # Mock successful session response
@@ -30,15 +33,19 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
             "sprint_goal": "Goal",
             "tasks": [
                 {"id": "1", "title": "Task 1", "dependencies": []},
-                {"id": "2", "title": "Task 2", "dependencies": ["1"]}
-            ]
+                {"id": "2", "title": "Task 2", "dependencies": ["1"]},
+            ],
         }
 
         # Mock writing to file via side effect of agent
         # The agent logic in run_planning_phase expects the file to exist after session
         # OR it parses from response.
 
-        mock_run_session.return_value = ("continue", f"```json\n{json.dumps(plan_json)}\n```", [])
+        mock_run_session.return_value = (
+            "continue",
+            f"```json\n{json.dumps(plan_json)}\n```",
+            [],
+        )
 
         with patch.object(Path, "exists") as mock_exists:
             # First check (app_spec) -> False
@@ -61,7 +68,9 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
     @patch("agents.gemini.sprint.run_gemini_session")
     @patch("agents.gemini.sprint.get_sprint_worker_prompt")
     @patch("agents.gemini.sprint.AgentClient")
-    async def test_run_worker(self, mock_agent_client_cls, mock_prompt, mock_run_session, mock_client_cls):
+    async def test_run_worker(
+        self, mock_agent_client_cls, mock_prompt, mock_run_session, mock_client_cls
+    ):
         task = Task(id="1", title="T1", description="D1")
 
         mock_worker_client = MagicMock()
@@ -69,7 +78,11 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
         mock_agent_client_cls.return_value = mock_worker_client
 
         # Mock session to complete task
-        mock_run_session.return_value = ("continue", "Done! SPRINT_TASK_COMPLETE", ["action"])
+        mock_run_session.return_value = (
+            "continue",
+            "Done! SPRINT_TASK_COMPLETE",
+            ["action"],
+        )
 
         await self.manager.run_worker(task)
 
@@ -80,7 +93,9 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
     async def test_execute_sprint_logic(self):
         # Setup plan manually
         t1 = Task(id="1", title="T1", description="D1", status="PENDING")
-        t2 = Task(id="2", title="T2", description="D2", status="PENDING", dependencies=["1"])
+        t2 = Task(
+            id="2", title="T2", description="D2", status="PENDING", dependencies=["1"]
+        )
 
         self.manager.plan = SprintPlan(sprint_goal="G", tasks=[t1, t2])
         self.manager.tasks_by_id = {"1": t1, "2": t2}
@@ -99,6 +114,7 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(t1.status, "COMPLETED")
         self.assertEqual(t2.status, "COMPLETED")
+
 
 if __name__ == "__main__":
     unittest.main()

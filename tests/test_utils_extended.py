@@ -16,8 +16,9 @@ from shared.utils import (
     execute_search_block,
     process_response_blocks,
     log_system_health,
-    generate_agent_id
+    generate_agent_id,
 )
+
 
 class TestUtils(unittest.TestCase):
 
@@ -122,7 +123,9 @@ class TestUtils(unittest.TestCase):
             self.assertIn("Successfully wrote", res)
             self.assertTrue((self.test_dir / "new_file.txt").exists())
             self.assertEqual((self.test_dir / "new_file.txt").read_text(), "content")
-            mock_telemetry.return_value.increment_counter.assert_called_with("files_written_total")
+            mock_telemetry.return_value.increment_counter.assert_called_with(
+                "files_written_total"
+            )
 
     def test_execute_write_block_error(self):
         # Pass a dir as filename to cause error
@@ -138,7 +141,9 @@ class TestUtils(unittest.TestCase):
             res = execute_read_block("read_me.txt", self.test_dir)
             self.assertIn("line1", res)
             self.assertIn("   1 | line1", res)
-            mock_telemetry.return_value.increment_counter.assert_called_with("files_read_total")
+            mock_telemetry.return_value.increment_counter.assert_called_with(
+                "files_read_total"
+            )
 
     def test_execute_read_block_not_exist(self):
         res = execute_read_block("ghost.txt", self.test_dir)
@@ -174,7 +179,7 @@ written content
         with patch("shared.telemetry.get_telemetry"):
             log, actions = await process_response_blocks(response_text, self.test_dir)
 
-            self.assertIn("Ran Bash: echo \"bash test\"", actions)
+            self.assertIn('Ran Bash: echo "bash test"', actions)
             self.assertIn("Wrote File: test.txt", actions)
             self.assertIn("Read File: test.txt", actions)
 
@@ -190,10 +195,11 @@ written content
 echo "should not run"
 ```
 """
+
         async def run():
-             log, actions = await process_response_blocks(response_text, self.test_dir)
-             self.assertNotIn("Ran Bash", actions)
-             self.assertIn("Project Signed Off", log)
+            log, actions = await process_response_blocks(response_text, self.test_dir)
+            self.assertNotIn("Ran Bash", actions)
+            self.assertIn("Project Signed Off", log)
 
         asyncio.run(run())
 
@@ -202,8 +208,8 @@ echo "should not run"
         # but we can try mocking open.
 
         with patch("builtins.open", mock_open(read_data="MemAvailable: 100 kB\n")):
-             # We need to handle multiple opens, so side_effect is better if we want different contents
-             pass
+            # We need to handle multiple opens, so side_effect is better if we want different contents
+            pass
 
         # Just running it to ensure no crash
         res = log_system_health()
@@ -218,6 +224,7 @@ echo "should not run"
 
         aid3 = generate_agent_id("proj", "diff content", "agent")
         self.assertNotEqual(aid, aid3)
+
 
 if __name__ == "__main__":
     unittest.main()

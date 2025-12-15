@@ -10,6 +10,7 @@ from shared.state import AgentState, AgentControl, StateManager
 from shared.logger import setup_logger
 from shared.git import run_git, ensure_git_safe
 
+
 class TestSharedModules(unittest.TestCase):
 
     # --- AgentClient Tests ---
@@ -26,9 +27,7 @@ class TestSharedModules(unittest.TestCase):
         # Manually call _do_report_state
         client._do_report_state({"foo": "bar"})
         mock_post.assert_called_with(
-            "http://test/api/agents/test_id/heartbeat",
-            json={"foo": "bar"},
-            timeout=2
+            "http://test/api/agents/test_id/heartbeat", json={"foo": "bar"}, timeout=2
         )
 
     @patch("requests.post")
@@ -50,9 +49,7 @@ class TestSharedModules(unittest.TestCase):
         client.stop()
 
         mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            "commands": ["pause", "skip"]
-        }
+        mock_get.return_value.json.return_value = {"commands": ["pause", "skip"]}
 
         control = client.poll_commands()
         self.assertTrue(control.pause_requested)
@@ -126,7 +123,9 @@ class TestSharedModules(unittest.TestCase):
 
     @patch("subprocess.run")
     def test_run_git_failure(self, mock_run):
-        mock_run.side_effect = subprocess.CalledProcessError(1, ["git"], stderr=b"error")
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, ["git"], stderr=b"error"
+        )
         res = run_git(["status"], Path("."))
         self.assertFalse(res)
 
@@ -160,6 +159,7 @@ class TestSharedModules(unittest.TestCase):
             mock_run_git.assert_called_once()
             args = mock_run_git.call_args[0][0]
             self.assertEqual(args[0], "checkout")
+
 
 if __name__ == "__main__":
     unittest.main()

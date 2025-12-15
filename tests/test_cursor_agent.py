@@ -6,6 +6,7 @@ import asyncio
 from shared.config import Config
 from agents.cursor.agent import run_agent_session, run_autonomous_agent
 
+
 class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
@@ -32,7 +33,9 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
     @patch("agents.cursor.agent.get_file_tree")
     @patch("agents.cursor.agent.process_response_blocks")
     @patch("agents.cursor.agent.get_telemetry")
-    async def test_run_agent_session_basic(self, mock_telemetry, mock_process_blocks, mock_get_tree):
+    async def test_run_agent_session_basic(
+        self, mock_telemetry, mock_process_blocks, mock_get_tree
+    ):
         mock_get_tree.return_value = "file tree"
         mock_process_blocks.return_value = ("log", ["action1"])
 
@@ -65,12 +68,12 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
     async def test_run_agent_session_candidates_format(self, mock_get_tree):
         # Mock Cursor response with "candidates" format
         self.client.run_command.return_value = {
-            "candidates": [
-                {"content": {"parts": [{"text": "candidate text"}]}}
-            ]
+            "candidates": [{"content": {"parts": [{"text": "candidate text"}]}}]
         }
 
-        with patch("agents.cursor.agent.process_response_blocks", return_value=("", [])):
+        with patch(
+            "agents.cursor.agent.process_response_blocks", return_value=("", [])
+        ):
             status, response, actions = await run_agent_session(
                 self.client, "prompt", [], None
             )
@@ -84,8 +87,14 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
     @patch("agents.cursor.agent.get_initializer_prompt")
     @patch("agents.cursor.agent.copy_spec_to_project")
     async def test_run_autonomous_agent_first_run(
-        self, mock_copy_spec, mock_get_init_prompt, mock_run_session,
-        mock_client_cls, mock_get_telemetry, mock_init_telemetry, mock_log_config
+        self,
+        mock_copy_spec,
+        mock_get_init_prompt,
+        mock_run_session,
+        mock_client_cls,
+        mock_get_telemetry,
+        mock_init_telemetry,
+        mock_log_config,
     ):
         # Setup mocks
         mock_client_cls.return_value = self.client
@@ -113,8 +122,14 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
     @patch("agents.cursor.agent.get_coding_prompt")
     @patch("agents.cursor.agent.log_progress_summary")
     async def test_run_autonomous_agent_coding_run(
-        self, mock_log_progress, mock_get_coding_prompt, mock_run_session,
-        mock_client_cls, mock_get_telemetry, mock_init_telemetry, mock_log_config
+        self,
+        mock_log_progress,
+        mock_get_coding_prompt,
+        mock_run_session,
+        mock_client_cls,
+        mock_get_telemetry,
+        mock_init_telemetry,
+        mock_log_config,
     ):
         mock_client_cls.return_value = self.client
 
@@ -162,8 +177,12 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
     @patch("agents.cursor.agent.CursorClient")
     @patch("agents.cursor.agent.run_agent_session")
     async def test_run_autonomous_agent_human_loop(
-        self, mock_run_session,
-        mock_client_cls, mock_get_telemetry, mock_init_telemetry, mock_log_config
+        self,
+        mock_run_session,
+        mock_client_cls,
+        mock_get_telemetry,
+        mock_init_telemetry,
+        mock_log_config,
     ):
         mock_client_cls.return_value = self.client
         self.config.feature_list_path = MagicMock()
@@ -193,6 +212,7 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
 
         # Should break loop early
         mock_run_session.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

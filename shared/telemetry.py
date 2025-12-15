@@ -75,10 +75,7 @@ class Telemetry:
         # Avoid duplicate handlers
         if self.file_handler not in target_logger.handlers:
             target_logger.addHandler(self.file_handler)
-            self.log_info(
-                f"Attached telemetry logging to '{
-                    logger_name or 'root'}'"
-            )
+            self.log_info(f"Attached telemetry logging to '{logger_name or 'root'}'")
 
     def _init_metrics(self):
         # 1. Agent Health

@@ -87,10 +87,7 @@ class SprintManager:
         feature_list_content = "No feature_list.json found."
         if self.config.feature_list_path.exists():
             feature_list_content = self.config.feature_list_path.read_text()
-            logger.info(
-                f"Loaded feature list from {
-                    self.config.feature_list_path}"
-            )
+            logger.info(f"Loaded feature list from {self.config.feature_list_path}")
 
         prompt = base_prompt.format(
             working_directory=self.config.project_dir,
@@ -201,8 +198,7 @@ class SprintManager:
         worker_client = AgentClient(agent_id=worker_id, dashboard_url=dashboard_url)
         worker_client.report_state(
             is_running=True,
-            current_task=f"Starting Task: {
-                task.title}",
+            current_task=f"Starting Task: {task.title}",
             iteration=0,
         )
 

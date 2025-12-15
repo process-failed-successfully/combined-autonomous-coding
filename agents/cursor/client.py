@@ -223,8 +223,7 @@ class CursorClient:
                     continue
                 else:
                     logger.error(
-                        f"Cursor Agent CLI timed out ({
-                            self.config.timeout}s) and no recent output or file activity."
+                        f"Cursor Agent CLI timed out ({self.config.timeout}s) and no recent output or file activity."
                     )
                     process.kill()
                     raise asyncio.TimeoutError
@@ -234,8 +233,7 @@ class CursorClient:
             stderr = "".join(stderr_buf).encode()
 
             if process.returncode != 0:
-                error_msg = f"Cursor process exited with code {
-                    process.returncode}"
+                error_msg = f"Cursor process exited with code {process.returncode}"
                 logger.error(error_msg)
 
                 if stderr:

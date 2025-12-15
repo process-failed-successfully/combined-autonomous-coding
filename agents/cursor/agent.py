@@ -117,8 +117,7 @@ RECENT ACTIONS:
         MAX_PROMPT_CHARS = 100000
         if len(augmented_prompt) > MAX_PROMPT_CHARS:
             logger.warning(
-                f"Prompt length ({
-                    len(augmented_prompt)}) exceeds limit ({MAX_PROMPT_CHARS}). Truncating context."
+                f"Prompt length ({len(augmented_prompt)}) exceeds limit ({MAX_PROMPT_CHARS}). Truncating context."
             )
 
             # 1. Truncate File Tree
@@ -228,12 +227,7 @@ RECENT ACTIONS:
             logger.debug(f"Response:\n{response_text}")
         else:
             logger.warning("No text content found in Cursor response.")
-            logger.info(
-                f"Full Cursor response: {
-                    json.dumps(
-                        result,
-                        indent=2)}"
-            )
+            logger.info(f"Full Cursor response: {json.dumps(result, indent=2)}")
 
         # Record Token Usage if available
         if "usageMetadata" in result:
@@ -487,8 +481,7 @@ async def run_autonomous_agent(  # noqa: C901
         # Run session
         if agent_client:
             agent_client.report_state(
-                current_task=f"Executing {
-                    'Manager' if using_manager else 'Agent'}"
+                current_task=f"Executing {'Manager' if using_manager else 'Agent'}"
             )
 
         original_model = config.model
@@ -550,8 +543,7 @@ async def run_autonomous_agent(  # noqa: C901
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
-                    f"Too many consecutive errors ({
-                        config.max_consecutive_errors}). Stopping execution."
+                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
                 )
                 break
 

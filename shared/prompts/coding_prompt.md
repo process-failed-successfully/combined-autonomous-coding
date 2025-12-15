@@ -204,16 +204,30 @@ Update `*_progress.txt` (e.g. `gemini_progress.txt` or `cursor_progress.txt`) wi
 - What should be worked on next
 - Current completion status (e.g., "45/200 tests passing")
 
-### STEP 10: END SESSION CLEANLY
+### STEP 10: HOUSEKEEPING & END SESSION CLEANLY
 
+**1. Track Temporary Files:**
+If you created any temporary scripts (e.g., `debug_auth.py`, `test_schema.py`) or log files, ensure they are listed in `temp_files.txt`.
+
+```bash
+echo "debug_auth.py" >> temp_files.txt
+```
+
+**2. Cleanup (Optional):**
+If a temporary file is definitely no longer needed, remove it now.
+
+```bash
+rm debug_auth.py
+```
+
+**3. Final Checks:**
 Before context fills up:
 
-1. Commit all working code
-2. Update progress file (\*\_progress.txt)
-3. Update feature_list.json if tests verified
-4. Ensure no uncommitted changes
-5. Ensure no uncommitted changes
-6. Leave app in working state (no broken features)
+- Commit all working code
+- Update progress file (\*\_progress.txt)
+- Update feature_list.json if tests verified
+- Ensure no uncommitted changes
+- Leave app in working state (no broken features)
 
 ### STEP 11: PROJECT COMPLETION
 

@@ -289,11 +289,14 @@ class SprintManager:
             # Check for runnable tasks
             runnable = []
             for task in self.plan.tasks:
-                if task.status == "PENDING":
+                if task.status in ["PENDING", "BLOCKED"]:
                     # Check dependencies
                     deps_met = all(d in self.completed_tasks for d in task.dependencies)
                     if deps_met:
                         runnable.append(task)
+                        # Reset status to PENDING so it can be picked up, though we add to runnable directly
+                        if task.status == "BLOCKED":
+                             task.status = "PENDING"
                     else:
                         task.status = "BLOCKED"
             

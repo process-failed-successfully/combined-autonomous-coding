@@ -235,6 +235,7 @@ Before context fills up:
 - Update feature_list.json if tests verified
 - Ensure no uncommitted changes
 - Leave app in working state (no broken features)
+- If you cannot test trigger human in loop event
 
 ### STEP 11: PROJECT COMPLETION
 
@@ -254,7 +255,7 @@ You have a Project Manager who reviews your work every 10 iterations.
 - **Blockers**: If you are stuck, write to `blockers.txt`.
 - **Questions**: If you need clarification, write to `questions.txt`.
 - **Urgent Help**: If you are completely stuck and need immediate intervention, create an empty file named `TRIGGER_MANAGER`.
-- **Human in Loop**: If you require out of scope information like API keys for validation, cannot test the changes or blocking design decisions, write to `human_in_loop.txt`.
+- **Human in Loop**: If you are blocked by out of scope information like API keys for validation, cannot test the changes or blocking design decisions, write to `human_in_loop.txt`.
 
 ```write:successes.txt
 - Implemented Login flow successfully.
@@ -293,16 +294,6 @@ Output a markdown block with the language `read:path/to/file`.
 
 ```
 
-**4. To Search the Codebase:**
-Output a markdown block with the language `search:query`.
-This runs `grep` recursively.
-
-```search:TODO
-
-```
-
-**CRITICAL:**
-
 **CRITICAL:**
 
 - **DO NOT USE THE `read_file`, `write_file`, `replace`, OR `write_todos` TOOLS.** They are unreliable or unsupported in this container.
@@ -314,6 +305,7 @@ This runs `grep` recursively.
 - Use `read` and `search` blocks to explore the codebase efficiently.
 - **KEEP RESPONSES CONCISE.** If you need to do many things, split them into multiple responses.
 - **DO NOT CHAIN MORE THAN 3 ACTIONS PER TURN.**
+- **DO NOT SKIP TESTING IF MISSING LIBRARIES OR PACKAGES** You should trigger human in loop
 
 ---
 

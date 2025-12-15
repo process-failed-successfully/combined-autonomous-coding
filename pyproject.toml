@@ -21,3 +21,14 @@ requires-python = ">=3.11"
 
 [tool.bandit]
 exclude_dirs = ["tests", "tests_output", ".venv", "venv"]
+
+[tool.semantic_release]
+version_toml = [
+    "pyproject.toml:project.version"
+]
+major_on_zero = false
+branch = "master"
+upload_to_pypi = false
+upload_to_release = true
+build_command = "pip install build && python -m build"
+commit_parser = "angular"

@@ -43,7 +43,7 @@ jobs:
 
       - name: Security Scan - Bandit
         run: |
-          bandit -c pyproject.toml -r .
+          bandit -c pyproject.toml -r . -ll
 
       - name: Type Checking - Mypy
         run: |

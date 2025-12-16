@@ -4,6 +4,57 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# --- Image Selection ---
+IMAGE_KEY="default"
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --image)
+            IMAGE_KEY="$2"
+            shift # past argument
+            shift # past value
+            ;;
+        *)
+            ARGS+=("$1")
+            shift # past argument
+            ;;
+    esac
+done
+
+# Restore args (without --image)
+set -- "${ARGS[@]}"
+
+# Resolve Dockerfile path from manifest
+MANIFEST_PATH="$SCRIPT_DIR/images/manifest.json"
+if [ ! -f "$MANIFEST_PATH" ]; then
+    echo "❌ Error: Manifest file not found at $MANIFEST_PATH"
+    exit 1
+fi
+
+# Use python to parse json (avoids jq dependency)
+DOCKERFILE_REL_PATH=$(python3 -c "import sys, json; print(json.load(open('$MANIFEST_PATH')).get('$IMAGE_KEY', ''))")
+
+if [ -z "$DOCKERFILE_REL_PATH" ]; then
+    # Check if the key provided is actually a path to a custom Dockerfile
+    if [ -f "$IMAGE_KEY" ]; then
+        echo "🤔 Key '$IMAGE_KEY' not found in manifest, but file exists."
+        # Resolve absolute path for consistent usage
+        DOCKERFILE_PATH=$(readlink -f "$IMAGE_KEY")
+    elif [ -f "$PROJECT_ROOT/$IMAGE_KEY" ]; then
+        echo "🤔 Key '$IMAGE_KEY' not found in manifest, but found relative to project root."
+        DOCKERFILE_PATH=$(readlink -f "$PROJECT_ROOT/$IMAGE_KEY")
+    else
+        echo "❌ Error: Invalid image key '$IMAGE_KEY'. Not found in manifest and not a valid file."
+        exit 1
+    fi
+else
+    DOCKERFILE_PATH="$SCRIPT_DIR/$DOCKERFILE_REL_PATH"
+fi
+
+export DOCKERFILE_PATH
+echo "🐳 Using Dockerfile: $DOCKERFILE_PATH"
+
+
 
 
 # Create config dirs if they don't exist to avoid docker creating root-owned dirs on host

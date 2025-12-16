@@ -1,6 +1,8 @@
 services:
   agent:
-    build: .
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE_PATH:-images/python/Dockerfile}
     volumes:
       # Mount the project root to /app
       - ..:/app

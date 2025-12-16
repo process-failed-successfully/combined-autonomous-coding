@@ -1,0 +1,18 @@
+{
+  "default": "images/python/Dockerfile",
+  "python": "images/python/Dockerfile",
+  "node": "images/node/Dockerfile",
+  "go": "images/go/Dockerfile",
+  "rust": "images/rust/Dockerfile",
+  "java": "images/java/Dockerfile",
+  "csharp": "images/csharp/Dockerfile",
+  "ruby": "images/ruby/Dockerfile",
+  "php": "images/php/Dockerfile",
+  "cpp": "images/cpp/Dockerfile",
+  "swift": "images/swift/Dockerfile",
+  "kotlin": "images/kotlin/Dockerfile",
+  "dart": "images/dart/Dockerfile",
+  "elixir": "images/elixir/Dockerfile",
+  "scala": "images/scala/Dockerfile",
+  "haskell": "images/haskell/Dockerfile"
+}

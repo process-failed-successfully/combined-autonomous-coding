@@ -30,6 +30,7 @@ Directory: {working_directory}
    - Avoid having two parallel tasks edit the SAME file. This causes conflicts.
    - If two tasks must edit the same file, make one dependent on the other.
 6. If tasks have dependencies, clearly list the `dependencies` (list of task IDs that must complete first).
+   **BRANCHING**: All tasks will be executed on feature branches. Do not worry about git operations; the worker infra handles it, but ensure tasks are independent enough to merge cleanly.
 7. Output the plan **ONLY** as a JSON file named `sprint_plan.json`.
 
 # JSON Format

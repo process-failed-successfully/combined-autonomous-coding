@@ -37,6 +37,41 @@ You can choose between the `gemini` (default) and `cursor` agents using the `--a
 ./safe_run.sh --agent cursor --spec app_spec.txt
 ```
 
+## 📦 Selecting an Image
+
+The agent supports **15+ languages** via pre-built Docker environments, pre-loaded with relevant tools (e.g., Node.js + Yarn, PHP + Composer, Go, Rust, etc.).
+
+Use the `--image` flag to select an environment:
+
+```bash
+# Start with Node.js 20 environment (includes npm, yarn, pnpm)
+./safe_run.sh --image node
+
+# Start with Go 1.21 environment
+./safe_run.sh --image go
+```
+
+### Supported Images
+
+| Key             | Base                                                   | Included Tools               |
+| :-------------- | :----------------------------------------------------- | :--------------------------- |
+| `python`        | Python 3.11                                            | `poetry`, `pipenv` (Default) |
+| `node`          | Node.js 20                                             | `yarn`, `pnpm`               |
+| `go`            | Go 1.21                                                | `golangci-lint`              |
+| `rust`          | Rust 1.75                                              | `rustfmt`, `clippy`          |
+| `java`          | OpenJDK 17                                             | `maven`, `gradle`            |
+| `php`           | PHP 8.2                                                | `composer`                   |
+| `ruby`          | Ruby 3.2                                               | `bundler`                    |
+| **...and more** | (C#, C++, Swift, Kotlin, Dart, Elixir, Scala, Haskell) | See `images/manifest.json`   |
+
+### Custom Dockerfile
+
+You can also provide a path to your own `Dockerfile`:
+
+```bash
+./safe_run.sh --image ./my-custom-dockerfile/Dockerfile
+```
+
 ### 🏃 Sprint Mode (Concurrent)
 
 For complex projects, you can run multiple agents concurrently. A "Lead Agent" creates a plan, and "Worker Agents" execute tasks in parallel.

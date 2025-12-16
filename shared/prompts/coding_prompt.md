@@ -15,6 +15,8 @@ You are running inside a **Docker container**.
 
 ### CRITICAL: CODE QUALITY & BEST PRACTICES
 
+1. **NEVER WORK ON MASTER/MAIN:** You must always work on a feature branch. The system should have automatically placed you on one. If you find yourself on `master` or `main`, STOP immediately and ask for help.
+
 Your goal is not just to make it work, but to make it **maintainable, readable, and robust**.
 
 **1. Clean Code Standards:**

@@ -1,40 +1,44 @@
-FROM python:3.11-slim
+FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    nodejs \
-    npm \
-    curl \
-    wget \
-    procps \
-    net-tools \
-    iputils-ping \
-    vim \
-    nano \
-    unzip \
-    zip \
-    jq \
     build-essential \
-    python3-dev \
-    dnsutils \
-    ripgrep \
-    fd-find \
     chromium \
-    libnss3 \
-    libatk1.0-0 \
+    curl \
+    dnsutils \
+    fd-find \
+    git \
+    iputils-ping \
+    jq \
+    libasound2 \
     libatk-bridge2.0-0 \
+    libatk1.0-0 \
     libcups2 \
     libdrm2 \
-    libxkbcommon0 \
+    libgbm1 \
+    libnss3 \
     libxcomposite1 \
     libxdamage1 \
     libxfixes3 \
+    libxkbcommon0 \
     libxrandr2 \
-    libgbm1 \
-    libasound2 \
+    nano \
+    net-tools \
+    nodejs \
+    npm \
+    procps \
+    python3 \
+    python3-dev \
+    python3-pip \
+    ripgrep \
     sudo \
+    unzip \
+    vim \
+    wget \
+    zip \
     && rm -rf /var/lib/apt/lists/*
+
+
 
 # Create a non-root user
 ARG UID=1000
@@ -44,6 +48,7 @@ RUN groupadd -g "${GID}" appuser && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Install Gemini CLI (Global)
+# Requires Node.js and NPM to be installed
 RUN npm install -g @google/gemini-cli
 
 # Configure git to trust all directories (Global)
@@ -72,7 +77,8 @@ WORKDIR /app
 # Copy requirements and install (User install)
 COPY requirements.txt .
 # pip install as user (goes to ~/.local usually or checks permissions)
-RUN pip install --user -r requirements.txt && \
+# Ensure we use the correct pip (pip3 or pip)
+RUN pip3 install --user -r requirements.txt && \
     echo "export PATH=\$PATH:/home/appuser/.local/bin" >> ~/.bashrc
 
 # Set entrypoint

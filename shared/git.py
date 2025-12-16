@@ -60,3 +60,36 @@ def ensure_git_safe(project_dir: Path) -> None:
         logger.info(f"Switched to new branch: {branch_name}")
     else:
         logger.warning(f"Failed to create/switch to branch {branch_name}. Check logs.")
+        raise RuntimeError(f"Failed to switch to safe branch {branch_name}")
+
+    assert_safe_branch(project_dir)
+
+
+def assert_safe_branch(project_dir: Path) -> None:
+    """
+    Verify that the current branch is NOT master or main.
+    Raises RuntimeError if unsafe.
+    """
+    try:
+        # Get current branch
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        current_branch = result.stdout.strip()
+        
+        if current_branch in ["master", "main"]:
+            raise RuntimeError(
+                f"CRITICAL SECURITY ERROR: Agent is on protected branch '{current_branch}'. "
+                "Agents must ALWAYS work on feature branches (e.g. agent/session-X)."
+            )
+            
+    except subprocess.CalledProcessError:
+        logger.warning("Could not determine current branch. Assuming unsafe.")
+        # If we can't check, we shouldn't proceed? Or maybe we should?
+        # For now let's be strict.
+        raise RuntimeError("Could not determine current git branch.")
+

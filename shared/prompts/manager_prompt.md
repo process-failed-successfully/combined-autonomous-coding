@@ -28,6 +28,7 @@ You provide **directives** and **answers** to the coding agents.
 7.  **Sign Off**: If the project is complete. Validate it ensuring it has sufficient documentation, testing and is feature complete.
 8.  **Function Validation**: At sign off, validate that all functions are implemented and working. Run all core functionality.
 9.  **Function Expansion**: At sign off if the project is missing vital tests or functionality to make this an complete and amazing project ADD to `feature_list.json`.
+10. **Branch Enforcement**: Ensure agents are NOT working on `master` or `main`. If they are, REJECT their work and instruct them to switch to a feature branch.
 
 ### ACTIONS YOU CAN TAKE
 

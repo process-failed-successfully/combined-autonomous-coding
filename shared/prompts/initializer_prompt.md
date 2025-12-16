@@ -12,6 +12,10 @@ You are running inside a **Docker container**.
 - **Limited Permissions:** You are running as a non-root user and do not have `sudo` access.
 - **Browser Automation:** Use headless browsers if automation is required.
 
+### CRITICAL: DO NOT WORK ON MASTER/MAIN
+
+**NEVER WORK ON MASTER/MAIN:** You must always work on a feature branch. The system should have automatically placed you on one. If you find yourself on `master` or `main`, STOP immediately and ask for help.
+
 ### FIRST: Read the Project Specification
 
 This file contains

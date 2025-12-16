@@ -1,7 +1,7 @@
 FROM node:20-bookworm
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     build-essential \
     chromium \
     curl \
@@ -39,7 +39,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Yarn and pnpm
 # Install pnpm (Yarn is usually pre-installed in node:20)
-RUN npm install -g pnpm
+# Update npm to latest to fix vulnerabilities
+RUN npm install -g npm@latest && npm install -g pnpm
 
 # Create a non-root user
 # Create a non-root user (handle existing node user)
@@ -92,7 +93,8 @@ COPY requirements.txt .
 RUN python3 -m venv /home/appuser/venv
 ENV PATH="/home/appuser/venv/bin:$PATH"
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 # echo "export PATH=\$PATH:/home/appuser/.local/bin" >> ~/.bashrc
 
 # Set entrypoint

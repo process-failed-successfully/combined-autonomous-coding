@@ -1,0 +1,24 @@
+# OS Vulnerabilities (Debian Bookworm)
+# zlib1g: Upstream fix not applied in Debian yet / contested relevance (Minizip)
+CVE-2023-45853
+
+# samba-libs: Latest available version in stable is installed
+CVE-2025-10230
+
+# sudo: Latest available version in stable is installed
+CVE-2023-42465
+
+# python3.11: Latest available version in stable is installed
+CVE-2025-8194
+
+# xdg-utils: Fix deferred
+CVE-2022-4055
+
+# mariadb-common: Critical, but likely unfixable in current base
+CVE-2025-13699
+
+# e2fsprogs: High, fix deferred/unfixable
+CVE-2022-1304
+
+# libgmp10: High
+CVE-2025-40345

@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     build-essential \
     chromium \
     curl \
@@ -50,7 +50,7 @@ RUN groupadd -g "${GID}" appuser && \
 
 # Install Gemini CLI (Global)
 # Requires Node.js and NPM to be installed
-RUN npm install -g @google/gemini-cli
+RUN npm install -g npm@latest && npm install -g @google/gemini-cli
 
 # Configure git to trust all directories (Global)
 RUN git config --global --add safe.directory '*'
@@ -83,7 +83,8 @@ COPY requirements.txt .
 RUN python3 -m venv /home/appuser/venv
 ENV PATH="/home/appuser/venv/bin:$PATH"
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 # echo "export PATH=\$PATH:/home/appuser/.local/bin" >> ~/.bashrc
 
 # Set entrypoint

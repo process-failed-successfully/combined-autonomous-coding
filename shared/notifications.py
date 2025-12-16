@@ -1,10 +1,9 @@
 import logging
 import requests
-import json
-from typing import Optional, Dict
 from shared.config import Config
 
 logger = logging.getLogger(__name__)
+
 
 class NotificationManager:
     """Manages notifications to external services (Slack, Discord)."""
@@ -30,15 +29,15 @@ class NotificationManager:
         # 1. Check override in config
         if self.config.notification_settings:
             event_settings = self.config.notification_settings.get(event_type)
-            
+
             # If explicit boolean (True/False), use it for all platforms
             if isinstance(event_settings, bool):
                 return event_settings
-            
+
             # If it's a dictionary, check specific platform
             if isinstance(event_settings, dict):
-                 return event_settings.get(platform, False)
-        
+                return event_settings.get(platform, False)
+
         # 2. Fallback to default
         return self.default_settings.get(event_type, False)
 
@@ -51,7 +50,7 @@ class NotificationManager:
         try:
             payload = {"text": message}
             response = requests.post(
-                webhook_url, 
+                webhook_url,
                 json=payload,
                 timeout=5
             )
@@ -68,7 +67,7 @@ class NotificationManager:
         try:
             payload = {"content": message}
             response = requests.post(
-                webhook_url, 
+                webhook_url,
                 json=payload,
                 timeout=5
             )
@@ -79,7 +78,7 @@ class NotificationManager:
     def notify(self, event_type: str, message: str, **kwargs) -> None:
         """
         Send notification to all enabled platforms.
-        
+
         Args:
             event_type: One of 'iteration', 'manager', 'human_in_loop', 'project_completion', 'error'
             message: The message content

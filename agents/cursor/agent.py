@@ -427,7 +427,7 @@ async def run_autonomous_agent(  # noqa: C901
 
         # Choose prompt
         using_manager = False
-        
+
         if is_first_run:
             prompt = get_initializer_prompt()
         else:
@@ -525,9 +525,9 @@ async def run_autonomous_agent(  # noqa: C901
 
             # Notifications
             if using_manager:
-                 notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
+                notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
             else:
-                 notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
+                notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
 
             if agent_client:
                 agent_client.report_state(current_task="Waiting (Auto-Continue)")
@@ -561,7 +561,7 @@ async def run_autonomous_agent(  # noqa: C901
                 logger.critical(
                     f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
                 )
-                notifier.notify("error", f"CRITICAL: Agent stopping due to too many errors.")
+                notifier.notify("error", "CRITICAL: Agent stopping due to too many errors.")
                 break
 
             logger.info("Retrying in 10 seconds...")
@@ -575,6 +575,11 @@ async def run_autonomous_agent(  # noqa: C901
     logger.info("\n" + "=" * 50)
     logger.info("  SESSION COMPLETE")
     logger.info("=" * 50)
+
+    # Log session summary
+    # Log session summary
+    duration = time.time() - start_time
+    logger.info(f"Cursor Agent Session Completed in {duration:.2f}s")
 
     notifier.notify("agent_stop", f"Cursor Agent stopped for project {config.project_dir.name}")
 

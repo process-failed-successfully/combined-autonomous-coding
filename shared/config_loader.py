@@ -1,11 +1,11 @@
 import yaml
 import logging
-import os
 from pathlib import Path
 from typing import Dict, Any, Optional
-from platformdirs import user_config_dir
+import platformdirs
 
 logger = logging.getLogger(__name__)
+
 
 def get_config_path() -> Optional[Path]:
     """
@@ -13,7 +13,7 @@ def get_config_path() -> Optional[Path]:
     1. Current Directory: ./agent_config.yaml
     2. XDG Config Home: ~/.config/combined-autonomous-coding/agent_config.yaml
     3. Legacy Config: ~/.gemini/agent_config.yaml
-    
+
     Returns:
         Path object if a config file is found, else None.
     """
@@ -25,7 +25,7 @@ def get_config_path() -> Optional[Path]:
 
     # 2. XDG Config Home
     # App Name: combined-autonomous-coding
-    xdg_config_dir = Path(user_config_dir("combined-autonomous-coding"))
+    xdg_config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
     xdg_config = xdg_config_dir / "agent_config.yaml"
     if xdg_config.exists():
         logger.debug(f"Found config in XDG path: {xdg_config}")
@@ -39,10 +39,11 @@ def get_config_path() -> Optional[Path]:
 
     return None
 
+
 def create_default_config(path: Path) -> None:
     """Create a default configuration file with comments."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     default_content = """# Combined Autonomous Coding Agent Configuration
 # ============================================
 
@@ -64,12 +65,13 @@ notification_settings:
 # login_mode: false         # Set to true to run in login/auth mode
 # sprint_mode: false        # Set to true to enable Sprint mode
     """
-    
+
     try:
         path.write_text(default_content)
         logger.info(f"Created default configuration at {path}")
     except Exception as e:
         logger.error(f"Failed to create default config at {path}: {e}")
+
 
 def ensure_config_exists() -> None:
     """
@@ -82,19 +84,21 @@ def ensure_config_exists() -> None:
         return
 
     # No config found, create one in XDG path
-    xdg_config_dir = Path(user_config_dir("combined-autonomous-coding"))
+    xdg_config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
     target_path = xdg_config_dir / "agent_config.yaml"
-    
+
     logger.info("No configuration found. Creating default at XDG location.")
+
     create_default_config(target_path)
+
 
 def load_config_from_file(config_path: Optional[Path] = None) -> Dict[str, Any]:
     """
     Load configuration from a YAML file.
-    
+
     Args:
         config_path: Specific path to load. If None, resolves using get_config_path().
-        
+
     Returns:
         Dict containing configuration values, or empty dict if file not found/error.
     """

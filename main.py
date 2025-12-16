@@ -206,29 +206,31 @@ async def main():
         stream_output=not args.no_stream,
         spec_file=args.spec,
         verify_creation=args.verify_creation,
-        
+
         # Manager
         manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10),
         manager_model=resolve(args.manager_model, "manager_model", None),
-        run_manager_first=args.manager_first,  # boolean flags are False by default in argparse, hard to distinguish "not set" vs "false" without logic, assuming CLI priority for bools is ok if we don't support enabling via config if CLI false. 
-                                              # For booleans, standard argparse `store_true` defaults to False.
-                                              # If config has `run_manager_first: true` but user doesn't pass flag, args is False.
-                                              # We should check if config key exists.
-                                              # Refactoring bools:
+        run_manager_first=args.manager_first,
+        # boolean flags are False by default in argparse, hard to distinguish "not set" vs "false"
+        # without logic, assuming CLI priority for bools is ok if we don't support enabling via config if CLI false.
+        # For booleans, standard argparse `store_true` defaults to False.
+        # If config has `run_manager_first: true` but user doesn't pass flag, args is False.
+        # We should check if config key exists.
+        # Refactoring bools:
         login_mode=args.login or file_config.get("login_mode", False),
-        
+
         timeout=resolve(args.timeout, "timeout", 600.0),
-        
+
         # Sprint
         sprint_mode=args.sprint or file_config.get("sprint_mode", False),
         max_agents=resolve(args.max_agents, "max_agents", 1),
-        
+
         # Notifications (New)
         slack_webhook_url=file_config.get("slack_webhook_url"),
         discord_webhook_url=file_config.get("discord_webhook_url"),
         notification_settings=file_config.get("notification_settings"),
     )
-    
+
     # Correction for boolean flags initialized with 'store_true' (default False)
     # If we want Config file to enable them, we must check if matched by OR.
     # Logic above for login_mode and sprint_mode handles it.
@@ -272,6 +274,14 @@ async def main():
     except Exception as e:
         logger.exception(f"Fatal error: {e}")
         sys.exit(1)
+
+    # Post-Execution Cleanup
+    # If project is signed off, run the cleaner
+    if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+        from agents.cleaner import run_cleaner_agent
+
+        logger.info("Project signed off. Initiating Cleanup...")
+        await run_cleaner_agent(config, agent_client=client)
 
     # Post-Execution Cleanup
     # If project is signed off, run the cleaner

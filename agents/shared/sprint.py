@@ -270,9 +270,9 @@ class SprintManager:
                     task.status = "COMPLETED"
                     self.completed_tasks.add(task.id)
                     self.running_tasks.remove(task.id)
-                    
+
                     self.notifier.notify("sprint_task_complete", f"Task Completed: {task.title}")
-                    
+
                     worker_client.report_state(
                         current_task="Completed", is_running=False
                     )

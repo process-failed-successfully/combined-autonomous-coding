@@ -28,12 +28,12 @@ logger = logging.getLogger(__name__)
 
 
 def print_session_header(iteration: int, is_first: bool) -> None:
-        header = f"  SESSION {iteration} " + (
-            "(INITIALIZATION)" if is_first else "(CODING)"
-        )
-        logger.info("\n" + "=" * 50)
-        logger.info(header)
-        logger.info("=" * 50 + "\n")
+    header = f"  SESSION {iteration} " + (
+        "(INITIALIZATION)" if is_first else "(CODING)"
+    )
+    logger.info("\n" + "=" * 50)
+    logger.info(header)
+    logger.info("=" * 50 + "\n")
 
 
 def log_progress_summary(project_dir: Path, progress_file: Path) -> None:
@@ -344,7 +344,7 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
                 logger.info(
                     "Stopping execution until human intervention is resolved (file removed)."
                 )
-                
+
                 notifier.notify("human_in_loop", f"Human intervention requested: {reason}")
 
                 if agent_client:
@@ -460,9 +460,9 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
 
             # Notifications
             if using_manager:
-                 notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
+                notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
             else:
-                 notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
+                notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
 
             if agent_client:
                 agent_client.report_state(current_task="Waiting (Auto-Continue)")
@@ -488,14 +488,14 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
             logger.error(
                 f"Session encountered an error (Attempt {consecutive_errors}/{config.max_consecutive_errors})."
             )
-            
+
             notifier.notify("error", f"Agent encountered error: {response}")
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
                     f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
                 )
-                notifier.notify("error", f"CRITICAL: Agent stopping due to too many errors.")
+                notifier.notify("error", "CRITICAL: Agent stopping due to too many errors.")
                 break
 
             logger.info("Retrying in 10 seconds...")

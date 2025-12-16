@@ -359,16 +359,46 @@ class SprintManager:
             await asyncio.sleep(1)  # Yield execution
 
 
-async def run_sprint(config: Config, agent_client=None):
+async def run_single_sprint(config: Config, agent_client=None) -> int:
     manager = SprintManager(config, agent_client)
 
     # 1. Plan
     success = await manager.run_planning_phase()
     if not success:
-        return
+        return 0
+
+    if not manager.plan or not manager.plan.tasks:
+        return 0
 
     # 2. Execute
     await manager.execute_sprint()
 
     logger.info("Sprint Completed.")
-    manager.notifier.notify("sprint_complete", f"Sprint Competed for project {config.project_dir.name}. {len(manager.completed_tasks)} tasks finished.")
+    manager.notifier.notify(
+        "sprint_complete",
+        f"Sprint Completed for project {config.project_dir.name}. {len(manager.completed_tasks)} tasks finished.",
+    )
+
+    return len(manager.plan.tasks)
+
+
+async def run_sprint(config: Config, agent_client=None):
+    logger.info("Starting Continuous Sprint Mode.")
+    iteration = 0
+
+    while True:
+        iteration += 1
+        logger.info(f"--- Starting Sprint Cycle {iteration} ---")
+
+        task_count = await run_single_sprint(config, agent_client)
+
+        if task_count == 0:
+            logger.info(
+                "Sprint Plan is empty. All features assumed complete. Exiting Sprint Mode."
+            )
+            break
+
+        logger.info(
+            f"Sprint Cycle {iteration} finished with {task_count} tasks planned. Proceeding to next cycle..."
+        )
+        await asyncio.sleep(2)

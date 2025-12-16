@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from agents.gemini.sprint import SprintManager
+from agents.shared.sprint import SprintManager
 from shared.config import Config
 
 # Configure logging to show timing
@@ -38,7 +38,7 @@ class TestSprintParallel(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         shutil.rmtree(self.test_dir)
 
-    @patch("agents.gemini.sprint.run_gemini_session")
+    @patch("agents.shared.sprint.run_gemini_session")
     async def test_parallel_execution(self, mock_run_gemini):
         """
         Verify that independent tasks are executed in parallel.

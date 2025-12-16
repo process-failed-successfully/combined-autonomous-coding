@@ -70,6 +70,33 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
   --max-iterations 20
 ```
 
+## 🔔 Notifications
+
+You can configure the agent to send notifications to **Slack** and **Discord** for key events (Iteration, Manager updates, Human-in-the-loop, Completion, Errors).
+
+### Configuration
+
+The agent looks for configuration in the following order:
+1.  Current Directory: `./agent_config.yaml`
+2.  XDG Config Home: `~/.config/combined-autonomous-coding/agent_config.yaml` (Linux/Mac) or `%LOCALAPPDATA%\combined-autonomous-coding\agent_config.yaml` (Windows)
+3.  Legacy Path: `~/.gemini/agent_config.yaml`
+
+Create a file named `agent_config.yaml` in any of these locations.
+
+```yaml
+# Webhook URLs
+slack_webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+discord_webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK/URL"
+
+# Notification Preferences
+notification_settings:
+  iteration: false # Summary of every iteration
+  manager: true # Manager agent updates (Recommended)
+  human_in_loop: true # When human intervention is requested (Recommended)
+  project_completion: true # When the project is signed off (Recommended)
+  error: true # On agent errors or crashes
+```
+
 ## 🛠️ Development & Troubleshooting
 
 - **Rebuild Container**: If you modify the agent code, force a rebuild:

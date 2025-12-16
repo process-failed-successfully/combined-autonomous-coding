@@ -6,9 +6,10 @@ from typing import Dict, List, Optional, Set
 
 from shared.config import Config
 from shared.agent_client import AgentClient
-from .client import GeminiClient
-from .prompts import get_sprint_planner_prompt, get_sprint_worker_prompt
-from .agent import run_agent_session as run_gemini_session
+from shared.notifications import NotificationManager
+from agents.gemini.client import GeminiClient
+from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_worker_prompt
+from agents.gemini.agent import run_agent_session as run_gemini_session
 
 # Lazy import or dynamic import to avoid circular dep if possible,
 # but for now explicit import is fine if structure allows.
@@ -50,6 +51,7 @@ class SprintManager:
     def __init__(self, config: Config, agent_client=None):
         self.config = config
         self.agent_client = agent_client
+        self.notifier = NotificationManager(config)
         self.plan: Optional[SprintPlan] = None
         self.tasks_by_id: Dict[str, Task] = {}
         self.running_tasks: Set[str] = set()
@@ -70,6 +72,9 @@ class SprintManager:
         logger.info("Starting Sprint Planning Phase...")
         if self.agent_client:
             self.agent_client.report_state(current_task="Sprint Planning")
+
+        # Notify Start
+        self.notifier.notify("sprint_start", f"Sprint Planning started for project {self.config.project_dir.name}")
 
         client, session_runner = self._get_agent_runner()
 
@@ -265,6 +270,9 @@ class SprintManager:
                     task.status = "COMPLETED"
                     self.completed_tasks.add(task.id)
                     self.running_tasks.remove(task.id)
+
+                    self.notifier.notify("sprint_task_complete", f"Task Completed: {task.title}")
+
                     worker_client.report_state(
                         current_task="Completed", is_running=False
                     )
@@ -363,3 +371,4 @@ async def run_sprint(config: Config, agent_client=None):
     await manager.execute_sprint()
 
     logger.info("Sprint Completed.")
+    manager.notifier.notify("sprint_complete", f"Sprint Competed for project {config.project_dir.name}. {len(manager.completed_tasks)} tasks finished.")

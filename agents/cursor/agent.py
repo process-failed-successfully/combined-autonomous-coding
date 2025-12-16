@@ -20,6 +20,7 @@ from shared.utils import (
 )
 from shared.agent_client import AgentClient
 from shared.telemetry import init_telemetry, get_telemetry
+from shared.notifications import NotificationManager
 from .prompts import (
     get_initializer_prompt,
     get_coding_prompt,
@@ -318,6 +319,12 @@ async def run_autonomous_agent(  # noqa: C901
             logger.error(f"Error during login: {e}")
         return
 
+    # Initialize Notifier
+    notifier = NotificationManager(config)
+
+    # Notify Start
+    notifier.notify("agent_start", f"Cursor Agent started for project {config.project_dir.name}")
+
     # Check state
     is_first_run = not config.feature_list_path.exists()
 
@@ -335,55 +342,40 @@ async def run_autonomous_agent(  # noqa: C901
     has_run_manager_first = False
     start_time = time.time()
 
-    # Session Metrics State
-    # metrics_state = {
-    #     "llm_latencies": [],
-    #     "tool_times": [],
-    #     "iteration_times": [],
-    # }
-
-    # Metrics Callback Handler (REMOVED - Use Telemetry)
-    # def handle_metrics(metric_type: str, value: Any): ...
-
-    # Mark as running
-    if agent_client:
-        agent_client.report_state(
-            is_running=True, current_task="Initializing", start_time=start_time
-        )
-
+    # Main Loop
     while True:
         iter_start_time = time.time()
 
-        # Check Control State
-        if agent_client:
-            ctl = agent_client.poll_commands()
+        # Check Limits
+        if config.max_iterations and iteration >= config.max_iterations:
+            logger.info("Max iterations reached. Stopping.")
+            break
 
-            if ctl.stop_requested:
+        # Check Control Signals
+        if agent_client:
+            control = agent_client.poll_commands()
+            if control.stop_requested:
                 logger.info("Stop requested by user.")
                 # Report stop before breaking
                 agent_client.report_state(is_running=False, current_task="Stopped")
                 break
-
-            if ctl.pause_requested:
-                agent_client.report_state(is_paused=True, current_task="Paused")
+            if control.pause_requested:
+                agent_client.report_state(current_task="Paused", is_paused=True)
                 logger.info("Agent Paused. Waiting for resume...")
-                while True:
+                while control.pause_requested:
                     await asyncio.sleep(1)
-                    ctl = agent_client.poll_commands()
-                    if ctl.stop_requested:
+                    control = agent_client.poll_commands()
+                    if control.stop_requested:
                         return
-                    if not ctl.pause_requested:
-                        break
-                agent_client.report_state(is_paused=False)
+                agent_client.report_state(current_task="Resuming...", is_paused=False)
                 logger.info("Agent Resumed.")
 
-            if ctl.skip_requested:
+            if control.skip_requested:
                 agent_client.clear_skip()
                 logger.info("Skipping iteration as requested.")
                 continue
 
         iteration += 1
-
         # Update State
         if agent_client:
             agent_client.report_state(
@@ -394,16 +386,14 @@ async def run_autonomous_agent(  # noqa: C901
         get_telemetry().record_gauge("agent_iteration", iteration)
         get_telemetry().increment_counter("agent_iterations_total")
 
-        if config.max_iterations and iteration > config.max_iterations:
-            logger.info(f"\nReached max iterations ({config.max_iterations})")
-            break
-
         if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
             logger.info("\n" + "=" * 50)
             logger.info("  PROJECT SIGNED OFF")
             logger.info("=" * 50)
+            notifier.notify("project_completion", f"Project {config.project_dir.name} has been signed off and completed.")
             break
 
+        if (config.project_dir / "COMPLETED").exists():
             logger.info(
                 "Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager..."
             )
@@ -421,6 +411,8 @@ async def run_autonomous_agent(  # noqa: C901
                 logger.info(
                     "Stopping execution until human intervention is resolved (file removed)."
                 )
+
+                notifier.notify("human_in_loop", f"Human intervention requested: {reason}")
 
                 if agent_client:
                     agent_client.report_state(
@@ -489,8 +481,32 @@ async def run_autonomous_agent(  # noqa: C901
             config.model = config.manager_model
             logger.info(f"Switched to Manager Model: {config.model}")
 
+        # Status Callback Handler
+        current_turn_log = []
+
+        def status_update(current_task=None, output_line=None):
+            if not agent_client:
+                return
+
+            updates = {}
+            if current_task:
+                updates["current_task"] = current_task
+
+            if output_line:
+                clean_line = output_line.rstrip()
+                if clean_line:
+                    current_turn_log.append(clean_line)
+                    updates["last_log"] = current_turn_log[-30:]
+
+            if updates:
+                agent_client.report_state(**updates)
+
         status, response, new_actions = await run_agent_session(
-            client, prompt, recent_history, metrics_callback=None  # Deprecated
+            client,
+            prompt,
+            recent_history,
+            status_callback=status_update,
+            metrics_callback=None,
         )
 
         if using_manager and config.manager_model:
@@ -507,22 +523,20 @@ async def run_autonomous_agent(  # noqa: C901
             consecutive_errors = 0
             is_first_run = False  # Successful run, next run is coding
 
+            # Notifications
+            if using_manager:
+                notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
+            else:
+                notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
+
             if agent_client:
                 agent_client.report_state(current_task="Waiting (Auto-Continue)")
 
             # Calculate Iteration Time & Update Averages
             iter_duration = time.time() - iter_start_time
-            # metrics_state["iteration_times"].append(iter_duration) # REMOVED
-            # avg_iter = sum(metrics_state["iteration_times"]) /
-            # len(metrics_state["iteration_times"]) # REMOVED
 
             # Telemetry: Record Iteration Duration
             get_telemetry().record_gauge("iteration_duration_seconds", iter_duration)
-
-            if agent_client:
-                # agent_client.report_state(avg_iteration_time=avg_iter) #
-                # Deprecated
-                pass
 
             logger.info(f"Agent will auto-continue in {config.auto_continue_delay}s...")
             log_progress_summary(config.project_dir, config.progress_file_path)
@@ -541,10 +555,13 @@ async def run_autonomous_agent(  # noqa: C901
                 f"Session encountered an error (Attempt {consecutive_errors}/{config.max_consecutive_errors})."
             )
 
+            notifier.notify("error", f"Agent encountered error: {response}")
+
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
                     f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
                 )
+                notifier.notify("error", "CRITICAL: Agent stopping due to too many errors.")
                 break
 
             logger.info("Retrying in 10 seconds...")
@@ -558,6 +575,13 @@ async def run_autonomous_agent(  # noqa: C901
     logger.info("\n" + "=" * 50)
     logger.info("  SESSION COMPLETE")
     logger.info("=" * 50)
+
+    # Log session summary
+    # Log session summary
+    duration = time.time() - start_time
+    logger.info(f"Cursor Agent Session Completed in {duration:.2f}s")
+
+    notifier.notify("agent_stop", f"Cursor Agent stopped for project {config.project_dir.name}")
 
     if agent_client:
         agent_client.report_state(is_running=False, current_task="Completed")

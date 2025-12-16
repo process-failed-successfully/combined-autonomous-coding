@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import asyncio
 from shared.config import Config
-from agents.gemini.sprint import SprintManager, Task, SprintPlan
+from agents.shared.sprint import SprintManager, Task, SprintPlan
 
 
 class TestSprintManager(unittest.IsolatedAsyncioTestCase):
@@ -20,9 +20,9 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
 
         self.manager = SprintManager(self.config, self.agent_client)
 
-    @patch("agents.gemini.sprint.GeminiClient")
-    @patch("agents.gemini.sprint.run_gemini_session")
-    @patch("agents.gemini.sprint.get_sprint_planner_prompt")
+    @patch("agents.shared.sprint.GeminiClient")
+    @patch("agents.shared.sprint.run_gemini_session")
+    @patch("agents.shared.sprint.get_sprint_planner_prompt")
     async def test_run_planning_phase_success(
         self, mock_prompt, mock_run_session, mock_client_cls
     ):
@@ -64,10 +64,10 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(self.manager.plan.tasks), 2)
                     self.assertEqual(self.manager.tasks_by_id["2"].dependencies, ["1"])
 
-    @patch("agents.gemini.sprint.GeminiClient")
-    @patch("agents.gemini.sprint.run_gemini_session")
-    @patch("agents.gemini.sprint.get_sprint_worker_prompt")
-    @patch("agents.gemini.sprint.AgentClient")
+    @patch("agents.shared.sprint.GeminiClient")
+    @patch("agents.shared.sprint.run_gemini_session")
+    @patch("agents.shared.sprint.get_sprint_worker_prompt")
+    @patch("agents.shared.sprint.AgentClient")
     async def test_run_worker(
         self, mock_agent_client_cls, mock_prompt, mock_run_session, mock_client_cls
     ):

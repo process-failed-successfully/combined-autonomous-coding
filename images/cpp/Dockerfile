@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-dev \
     python3-pip \
+    python3-venv \
     ripgrep \
     sudo \
     unzip \
@@ -81,8 +82,12 @@ WORKDIR /app
 COPY requirements.txt .
 # pip install as user (goes to ~/.local usually or checks permissions)
 # Ensure we use the correct pip (pip3 or pip)
-RUN pip3 install --user -r requirements.txt && \
-    echo "export PATH=\$PATH:/home/appuser/.local/bin" >> ~/.bashrc
+# Use venv
+RUN python3 -m venv /home/appuser/venv
+ENV PATH="/home/appuser/venv/bin:$PATH"
+
+RUN pip install --no-cache-dir -r requirements.txt
+# echo "export PATH=\$PATH:/home/appuser/.local/bin" >> ~/.bashrc
 
 # Set entrypoint
 # ENTRYPOINT ["python3", "combined-autonomous-coding/main.py"]

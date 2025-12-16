@@ -5,11 +5,12 @@ This is a FRESH context window - you have no memory of previous sessions.
 
 ### CRITICAL: CONTAINER AWARENESS
 
-You are running inside a **Docker container**.
+You are running inside a **Docker container**. This has specific implications:
 
+- **Usage of Sudo:** You are running as a non-root user but you HAVE `sudo` access (nopasswd). You MUST use `sudo` to install any system requirements (e.g., `sudo apt-get install ...`).
+- **Container Limitations:** You are in a restricted environment. deeply integrated system services (like systemd, dbus, exact hardware access) may not work as expected. Work AROUND these limitations, or ask the user for help if you run into a hard wall.
+- **Ephemeral Environment:** While the workspace is mounted, system-level changes (installed packages) will not persist across restarts unless added to the Dockerfile.
 - **No GUI:** You have no graphical user interface. You cannot run apps that require a display (e.g., standard Chrome, desktop apps).
-- **Ephemeral Environment:** While the workspace is mounted, system-level changes (installing apt packages) will not persist across restarts unless added to the Dockerfile.
-- **Sudo Access:** You are running as a non-root user but you HAVE `sudo` access (nopasswd). You can install packages using `sudo apt-get install`.
 - **Package Installation:** Always run `sudo apt-get update` before installing packages.
 - **Browser Automation:** Use headless browsers if automation is required.
 

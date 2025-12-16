@@ -91,3 +91,8 @@ run-dashboard:
 .PHONY: docker-build
 docker-build:
 	docker build -t combined-autonomous-coding:latest .
+
+# Docker Run Interactive
+.PHONY: docker-run
+docker-run:
+	./bin/start_agent --build bash

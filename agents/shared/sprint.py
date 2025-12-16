@@ -39,6 +39,7 @@ class Task:
     status: str = "PENDING"  # PENDING, IN_PROGRESS, COMPLETED, FAILED, BLOCKED
     assigned_agent: Optional[str] = None
     agent_output: str = ""
+    feature_name: Optional[str] = None
 
 
 @dataclass
@@ -150,6 +151,7 @@ class SprintManager:
                         title=t.get("title", "No Title"),
                         description=t.get("description", ""),
                         dependencies=t.get("dependencies", []),
+                        feature_name=t.get("feature_name"),
                     )
                 )
             self.plan = SprintPlan(
@@ -316,7 +318,7 @@ class SprintManager:
             iteration += 1
             if self.agent_client:
                 self.agent_client.report_state(iteration=iteration)
-
+            
             # Check for runnable tasks
             runnable = []
             for task in self.plan.tasks:
@@ -358,6 +360,58 @@ class SprintManager:
 
             await asyncio.sleep(1)  # Yield execution
 
+    def update_feature_list(self):
+        """Checks completed tasks and updates feature_list.json."""
+        if not self.config.feature_list_path.exists():
+            return
+
+        try:
+            features = json.loads(self.config.feature_list_path.read_text())
+        except Exception as e:
+            logger.error(f"Failed to read feature list: {e}")
+            return
+
+        # Map: Feature Name -> List of Task Statuses
+        # We need to consider that the plan might NOT contain all tasks for a feature if it's large.
+        # But for now, we assume if ALL tasks in the *current plan* for a feature are done,
+        # we mark it as done? No, that's risky.
+        # Prudent approach: The Planner creates tasks for a feature. If all those tasks succeed,
+        # we can toggle the feature status?
+        # A better approach: The feature status in JSON tracks overall progress.
+        # We mark it as 'completed' only if all planned tasks for it are done.
+        
+        # Determine which features were present in this plan
+        planned_features = set()
+        for t in self.plan.tasks:
+            if t.feature_name:
+                planned_features.add(t.feature_name)
+        
+        if not planned_features:
+            return
+
+        updated_any = False
+        for feature in features:
+            f_name = feature.get("name") # Assuming 'name' key provided by user or standard? 
+            # Or assume list of strings? No, prompted as JSON in previous step, usually list of objects.
+            # But earlier code used `feature.get("name")` in test... wait, test used name.
+            # Let's assume standard object structure or check prompt.
+            # Prompt doesn't enforce feature list structure, but it consumes it.
+            # Assuming list of dicts with "name" or just keys.
+            
+            if f_name in planned_features:
+                 # Check if ALL tasks for this feature in the CURRENT plan are completed
+                 tasks_for_feature = [t for t in self.plan.tasks if t.feature_name == f_name]
+                 if tasks_for_feature:
+                     all_done = all(t.status == "COMPLETED" for t in tasks_for_feature)
+                     if all_done:
+                        if feature.get("status") != "completed":
+                            feature["status"] = "completed"
+                            updated_any = True
+                            logger.info(f"Marking feature '{f_name}' as COMPLETED in feature_list.json")
+        
+        if updated_any:
+            self.config.feature_list_path.write_text(json.dumps(features, indent=2))
+
 
 async def run_single_sprint(config: Config, agent_client=None) -> int:
     manager = SprintManager(config, agent_client)
@@ -372,6 +426,9 @@ async def run_single_sprint(config: Config, agent_client=None) -> int:
 
     # 2. Execute
     await manager.execute_sprint()
+
+    # 3. Validation / Feature Update
+    manager.update_feature_list()
 
     logger.info("Sprint Completed.")
     manager.notifier.notify(

@@ -43,18 +43,21 @@ Directory: {working_directory}
   "tasks": [
     {{
       "id": "task_utils",
+      "feature_name": "Core Utilities",
       "title": "Create Utils",
       "description": "Create utils.py with helper functions. Independent task.",
       "dependencies": []
     }},
     {{
       "id": "task_models",
+      "feature_name": "Data Models",
       "title": "Create Models",
       "description": "Create models.py with data classes. Independent task.",
       "dependencies": []
     }},
     {{
       "id": "task_main",
+      "feature_name": "Main Entry Point",
       "title": "Update Main",
       "description": "Import utils and models into main.py and use them.",
       "dependencies": ["task_utils", "task_models"]
@@ -68,3 +71,4 @@ Directory: {working_directory}
 - Do NOT write any code yourself. specific implementation details should be in the task descriptions.
 - The `dependencies` field is crucial for the Sprint Manager to schedule tasks correctly.
 - Assign IDs like `task_1`, `task_2`, etc.
+- **Ensure `feature_name` matches EXACTLY the name in `feature_list.json`**.

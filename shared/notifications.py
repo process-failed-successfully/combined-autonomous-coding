@@ -49,6 +49,9 @@ class NotificationManager:
 
         try:
             payload = {"text": message}
+            if self.config.agent_id:
+                payload["username"] = self.config.agent_id
+            
             response = requests.post(
                 webhook_url,
                 json=payload,

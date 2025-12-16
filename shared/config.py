@@ -47,6 +47,12 @@ class Config:
     run_manager_first: bool = False
     login_mode: bool = False
 
+    # Notification Configuration
+    slack_webhook_url: Optional[str] = None
+    discord_webhook_url: Optional[str] = None
+    # Map event_type -> "slack"|"discord" -> bool
+    notification_settings: Optional[dict] = None
+
     def __post_init__(self):
         if self.model is None:
             if self.agent_type == "gemini":

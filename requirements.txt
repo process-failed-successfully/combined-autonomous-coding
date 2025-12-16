@@ -1,3 +1,5 @@
 requests
 prometheus_client
 psutil
+PyYAML
+platformdirs

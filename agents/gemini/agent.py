@@ -14,7 +14,8 @@ from typing import Optional, Any, List
 from shared.config import Config
 from shared.utils import get_file_tree, process_response_blocks, log_startup_config
 from shared.telemetry import init_telemetry, get_telemetry
-from .prompts import (
+from shared.notifications import NotificationManager
+from agents.shared.prompts import (
     get_initializer_prompt,
     get_coding_prompt,
     get_manager_prompt,
@@ -27,12 +28,12 @@ logger = logging.getLogger(__name__)
 
 
 def print_session_header(iteration: int, is_first: bool) -> None:
-    header = f"  SESSION {iteration} " + (
-        "(INITIALIZATION)" if is_first else "(CODING)"
-    )
-    logger.info("\n" + "=" * 50)
-    logger.info(header)
-    logger.info("=" * 50 + "\n")
+        header = f"  SESSION {iteration} " + (
+            "(INITIALIZATION)" if is_first else "(CODING)"
+        )
+        logger.info("\n" + "=" * 50)
+        logger.info(header)
+        logger.info("=" * 50 + "\n")
 
 
 def log_progress_summary(project_dir: Path, progress_file: Path) -> None:
@@ -206,23 +207,24 @@ RECENT ACTIONS:
             log, actions = await process_response_blocks(
                 response_text,
                 client.config.project_dir,
-                client.config.bash_timeout,
                 status_callback=block_status_update,
             )
-            if log:
-                logger.info("Execution Log updated.")
-            executed_actions = actions
+            executed_actions.extend(actions)
+            logger.debug(f"Executed actions: {executed_actions}")
+
+            # If the LLM returned a response but no actions, it might be done
+            if not executed_actions and response_text:
+                logger.info("LLM returned a response but no actions. Assuming completion.")
+                return "done", response_text, executed_actions
 
         return "continue", response_text, executed_actions
 
     except Exception as e:
-        logger.exception("Error during agent session")
+        logger.error(f"Error during agent session: {e}", exc_info=True)
         return "error", str(e), []
 
 
-async def run_autonomous_agent(  # noqa: C901
-    config: Config, agent_client: Optional[Any] = None
-):  # noqa: C901
+async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = None):
     """
     Run the autonomous agent loop.
     """
@@ -244,6 +246,10 @@ async def run_autonomous_agent(  # noqa: C901
     get_telemetry().capture_logs_from("agents")
 
     client = GeminiClient(config)
+    notifier = NotificationManager(config)
+
+    # Notify Start
+    notifier.notify("agent_start", f"Gemini Agent started for project {config.project_dir.name}")
 
     # Load Prompts
     # Load Prompts (Pre-load to ensure they exist)
@@ -315,6 +321,7 @@ async def run_autonomous_agent(  # noqa: C901
             logger.info("\n" + "=" * 50)
             logger.info("  PROJECT SIGNED OFF")
             logger.info("=" * 50)
+            notifier.notify("project_completion", f"Project {config.project_dir.name} has been signed off and completed.")
             break
 
         if (config.project_dir / "COMPLETED").exists():
@@ -337,6 +344,8 @@ async def run_autonomous_agent(  # noqa: C901
                 logger.info(
                     "Stopping execution until human intervention is resolved (file removed)."
                 )
+                
+                notifier.notify("human_in_loop", f"Human intervention requested: {reason}")
 
                 if agent_client:
                     agent_client.report_state(
@@ -449,6 +458,12 @@ async def run_autonomous_agent(  # noqa: C901
             consecutive_errors = 0
             is_first_run = False  # Successful run, next run is coding
 
+            # Notifications
+            if using_manager:
+                 notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
+            else:
+                 notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
+
             if agent_client:
                 agent_client.report_state(current_task="Waiting (Auto-Continue)")
 
@@ -473,11 +488,14 @@ async def run_autonomous_agent(  # noqa: C901
             logger.error(
                 f"Session encountered an error (Attempt {consecutive_errors}/{config.max_consecutive_errors})."
             )
+            
+            notifier.notify("error", f"Agent encountered error: {response}")
 
             if consecutive_errors >= config.max_consecutive_errors:
                 logger.critical(
                     f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
                 )
+                notifier.notify("error", f"CRITICAL: Agent stopping due to too many errors.")
                 break
 
             logger.info("Retrying in 10 seconds...")
@@ -491,3 +509,8 @@ async def run_autonomous_agent(  # noqa: C901
     logger.info("\n" + "=" * 50)
     logger.info("  SESSION COMPLETE")
     logger.info("=" * 50)
+
+    notifier.notify("agent_stop", f"Gemini Agent stopped for project {config.project_dir.name}")
+
+    if agent_client:
+        agent_client.report_state(is_running=False, current_task="Completed")

@@ -15,12 +15,13 @@ from pathlib import Path
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
+from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
 # though structure should be clean.
 from agents.gemini import run_autonomous_agent as run_gemini
-from agents.gemini import run_sprint as run_sprint
+from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
 
 
@@ -67,7 +68,6 @@ def parse_args():
     parser.add_argument(
         "--manager-frequency",
         type=int,
-        default=10,
         help="How often the manager agent runs (default: 10 iterations)",
     )
 
@@ -183,24 +183,57 @@ async def main():
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
 
+    # Load Configuration from File
+    # Priority resolved in config_loader: ./ > XDG > Legacy
+    ensure_config_exists()
+    file_config = load_config_from_file()
+
+    # Helper to resolve configuration priority: CLI > Config File > Default
+    def resolve(cli_arg, config_key, default_val):
+        if cli_arg is not None:
+            return cli_arg
+        if config_key in file_config:
+            return file_config[config_key]
+        return default_val
+
     # Create Config
     config = Config(
         project_dir=args.project_dir,
         agent_type=args.agent,
-        model=args.model,
-        max_iterations=args.max_iterations,
+        model=resolve(args.model, "model", None),
+        max_iterations=resolve(args.max_iterations, "max_iterations", None),
         verbose=args.verbose,
         stream_output=not args.no_stream,
         spec_file=args.spec,
         verify_creation=args.verify_creation,
-        manager_frequency=args.manager_frequency,
-        manager_model=args.manager_model,
-        run_manager_first=args.manager_first,
-        login_mode=args.login,
-        timeout=(
-            args.timeout if args.timeout else 600.0
-        ),  # Default fallback if not specified, though Config has its own default
+        
+        # Manager
+        manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10),
+        manager_model=resolve(args.manager_model, "manager_model", None),
+        run_manager_first=args.manager_first,  # boolean flags are False by default in argparse, hard to distinguish "not set" vs "false" without logic, assuming CLI priority for bools is ok if we don't support enabling via config if CLI false. 
+                                              # For booleans, standard argparse `store_true` defaults to False.
+                                              # If config has `run_manager_first: true` but user doesn't pass flag, args is False.
+                                              # We should check if config key exists.
+                                              # Refactoring bools:
+        login_mode=args.login or file_config.get("login_mode", False),
+        
+        timeout=resolve(args.timeout, "timeout", 600.0),
+        
+        # Sprint
+        sprint_mode=args.sprint or file_config.get("sprint_mode", False),
+        max_agents=resolve(args.max_agents, "max_agents", 1),
+        
+        # Notifications (New)
+        slack_webhook_url=file_config.get("slack_webhook_url"),
+        discord_webhook_url=file_config.get("discord_webhook_url"),
+        notification_settings=file_config.get("notification_settings"),
     )
+    
+    # Correction for boolean flags initialized with 'store_true' (default False)
+    # If we want Config file to enable them, we must check if matched by OR.
+    # Logic above for login_mode and sprint_mode handles it.
+    if file_config.get("run_manager_first"):
+        config.run_manager_first = True
 
     # Function to resolve spec file
     if args.spec is None:

@@ -24,8 +24,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libxrandr2 \
     nano \
     net-tools \
-    nodejs \
-    npm \
     procps \
     python3 \
     python3-dev \
@@ -41,6 +39,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
 
 # Install Hex and Rebar
 RUN mix local.hex --force && mix local.rebar --force
+
+# Install Node.js 20 (required for latest npm and gemini-cli)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
 
 # Create a non-root user
 ARG UID=1000

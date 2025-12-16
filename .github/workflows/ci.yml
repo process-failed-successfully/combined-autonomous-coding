@@ -41,8 +41,28 @@ jobs:
   docker-build:
     name: 🐳 Docker Build
     runs-on: ubuntu-latest
-    needs: [python-tests] # Optional: only build if tests pass
     if: success() || failure() # Run even if tests fail? No, robust means usually ensuring quality first. But let's keep it dependent to save resources if code is broken.
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          [
+            python,
+            node,
+            go,
+            rust,
+            cpp,
+            java,
+            csharp,
+            php,
+            ruby,
+            swift,
+            kotlin,
+            scala,
+            elixir,
+            haskell,
+            dart,
+          ]
 
     steps:
       - uses: actions/checkout@v4
@@ -50,29 +70,66 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Image
+      - name: Build Docker Image (${{ matrix.image }})
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: images/${{ matrix.image }}/Dockerfile
           push: false
-          tags: combined-autonomous-coding:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: combined-autonomous-coding:${{ matrix.image }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
   security-trivy:
-    name: 🛡️ Container Security Scan (Trivy)
+    name: 🛡️ Container Security Scan
     runs-on: ubuntu-latest
     needs: [docker-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          [
+            python,
+            node,
+            go,
+            rust,
+            cpp,
+            java,
+            csharp,
+            php,
+            ruby,
+            swift,
+            kotlin,
+            scala,
+            elixir,
+            haskell,
+            dart,
+          ]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image for scanning
-        run: docker build -t test-image:local .
+      # We need to rebuild or load the image. Since we didn't push, we might need to rebuild or use artifacts.
+      # However, GHA cache might make rebuild fast.
+      # Alternatively, cleaner is to just build-and-scan in one step or load it.
+      # For now, let's rely on cache to rebuild fast for scanning.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for scanning (${{ matrix.image }})
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: images/${{ matrix.image }}/Dockerfile
+          push: false
+          load: true # Load into docker daemon so Trivy can see it
+          tags: test-image:${{ matrix.image }}
+          cache-from: type=gha,scope=${{ matrix.image }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "test-image:local"
+          image-ref: "test-image:${{ matrix.image }}"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true

@@ -3,7 +3,6 @@ FROM eclipse-temurin:17-jdk-jammy
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    chromium \
     curl \
     dnsutils \
     fd-find \

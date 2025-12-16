@@ -38,13 +38,23 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Yarn and pnpm
-RUN npm install -g yarn pnpm
+# Install pnpm (Yarn is usually pre-installed in node:20)
+RUN npm install -g pnpm
 
 # Create a non-root user
+# Create a non-root user (handle existing node user)
 ARG UID=1000
 ARG GID=1000
-RUN groupadd -g "${GID}" appuser && \
-    useradd -l -u "${UID}" -g "${GID}" -m -s /bin/bash appuser && \
+RUN if ! getent group "${GID}" > /dev/null; then \
+    groupadd -g "${GID}" appuser; \
+    else \
+    groupmod -n appuser $(getent group "${GID}" | cut -d: -f1); \
+    fi && \
+    if ! id -u "${UID}" > /dev/null 2>&1; then \
+    useradd -l -u "${UID}" -g "${GID}" -m -s /bin/bash appuser; \
+    else \
+    usermod -l appuser -g "${GID}" -m -d /home/appuser $(getent passwd "${UID}" | cut -d: -f1); \
+    fi && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Install Gemini CLI (Global)

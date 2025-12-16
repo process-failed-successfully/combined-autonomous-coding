@@ -3,7 +3,6 @@ FROM sbtscala/scala-sbt:eclipse-temurin-17.0.4_1.7.1_3.2.0
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    chromium \
     curl \
     dnsutils \
     fd-find \

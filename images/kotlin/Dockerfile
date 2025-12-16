@@ -3,7 +3,6 @@ FROM gradle:jdk17-jammy
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    chromium \
     curl \
     dnsutils \
     fd-find \

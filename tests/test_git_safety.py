@@ -17,6 +17,8 @@ def temp_git_repo(tmp_path):
     
     # Initialize git
     run(["git", "init"], cwd=repo_dir, check=True)
+    run(["git", "config", "user.email", "you@example.com"], cwd=repo_dir, check=True)
+    run(["git", "config", "user.name", "Your Name"], cwd=repo_dir, check=True)
     run(["git", "branch", "-M", "main"], cwd=repo_dir, check=True)
     
     # Create initial commit

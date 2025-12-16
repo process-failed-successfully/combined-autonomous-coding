@@ -128,11 +128,26 @@ class TestSharedModules(unittest.TestCase):
         res = run_git(["status"], Path("."))
         self.assertFalse(res)
 
+    @patch("shared.git.assert_safe_branch")
     @patch("shared.git.run_git")
-    def test_ensure_git_safe_new_repo(self, mock_run_git):
+    def test_ensure_git_safe_new_repo(self, mock_run_git, mock_assert_safe):
         p = Path("/tmp/test_git_repo")
         with patch.object(Path, "exists") as mock_exists:
-            # Simulate .git does not exist
+            # Simulate .git does not exist (so it enters the init block)
+            # The logic checks (project_dir / ".git").exists()
+            # If we mock p.exists() to false, ensuring p/.git also returns false or the code handles checking children
+            # Actually ensure_git_safe checks `if not (project_dir / ".git").exists():`
+            # We need to mock Path.exists carefully or mock the specific call.
+            # But the simplest way is to mock just the git parts and not rely on real FS.
+            
+            # The original code mocks Path.exists. But wait, `p / ".git"` creates a new Path object.
+            # Mocking Path.exists on the class affects all instances, which is tricky.
+            # However, looking at the previous code: `with patch.object(Path, "exists") as mock_exists:`
+            # This mocks the method on the class.
+            
+            # Let's adjust the return value to handle the check.
+            # logic: if not (project_dir / ".git").exists()
+            # We want this to return False.
             mock_exists.return_value = False
 
             # We assume mock_run_git returns True
@@ -143,9 +158,13 @@ class TestSharedModules(unittest.TestCase):
             # verify init, add, commit, branch calls
             self.assertTrue(mock_run_git.call_count >= 4)
             mock_run_git.assert_any_call(["init"], p)
+            
+            # Verify assert_safe_branch was called
+            mock_assert_safe.assert_called_once_with(p)
 
+    @patch("shared.git.assert_safe_branch")
     @patch("shared.git.run_git")
-    def test_ensure_git_safe_existing_repo(self, mock_run_git):
+    def test_ensure_git_safe_existing_repo(self, mock_run_git, mock_assert_safe):
         p = Path("/tmp/test_git_repo")
         with patch.object(Path, "exists") as mock_exists:
             # Simulate .git exists
@@ -158,6 +177,10 @@ class TestSharedModules(unittest.TestCase):
             mock_run_git.assert_called_once()
             args = mock_run_git.call_args[0][0]
             self.assertEqual(args[0], "checkout")
+            
+            # Verify assert_safe_branch was called
+            mock_assert_safe.assert_called_once_with(p)
+
 
 
 if __name__ == "__main__":

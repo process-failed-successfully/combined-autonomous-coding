@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-12-16)
+
+### Chores
+
+- Increase docker awareness
+  ([`3ba7fbb`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/3ba7fbbca03e7e2539abd657de3f2ca9367407b4))
+
+### Features
+
+- Notifications
+  ([`9fba0a3`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/9fba0a3c5fa53f73ac870c1042d38adc2543db8c))
+
+
 ## v0.1.0 (2025-12-15)
 
 ### Bug Fixes

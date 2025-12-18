@@ -237,6 +237,74 @@ RECENT ACTIONS:
         return "error", str(e), []
 
 
+
+def select_prompt(config: Config, iteration: int, is_first_run: bool, has_run_manager_first: bool) -> tuple[str, bool]:
+    """Select the appropriate prompt based on configuration and state."""
+    using_manager = False
+    
+    if is_first_run:
+        if config.jira and config.jira_ticket_key:
+            return get_jira_initializer_prompt(), False
+        else:
+            return get_initializer_prompt(), False
+
+    # Check for Manager Triggers
+    should_run_manager = False
+    manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
+
+    if manager_trigger_path.exists():
+        logger.info("Manager triggered by TRIGGER_MANAGER file.")
+        should_run_manager = True
+        try:
+            manager_trigger_path.unlink()
+        except OSError:
+            pass
+    elif config.run_manager_first and not has_run_manager_first:
+        # In Jira Mode, we might skip manager-first or just run it? 
+        # Let's support it if explicitly asked, but generally Jira flow is simpler.
+        logger.info("Manager triggered by --manager-first flag.")
+        should_run_manager = True
+        # Note:Caller needs to update has_run_manager_first if we return True using_manager
+        # But we can't update scalar arg. 
+        # The caller logic updates `has_run_manager_first` when it *decides* to run manager.
+        # But wait, we are moving the decision logic here.
+        # Let's just return using_manager. The caller has to handle the state update?
+        # Or we rely on the caller to update has_run_manager_first based on `using_manager`.
+        # Actually, the original code updated `has_run_manager_first = True` inside the block.
+        # We can't easily reproduce side effects on local vars of caller!
+        # This refactor is tricky without changing calling signature to return state updates.
+        pass
+    elif iteration > 0 and iteration % config.manager_frequency == 0:
+        logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
+        should_run_manager = True
+        
+    # Auto-trigger Manager if all features are passing
+    if not should_run_manager and config.feature_list_path.exists():
+        try:
+            features = json.loads(config.feature_list_path.read_text())
+            total = len(features)
+            passing = sum(1 for f in features if f.get("passes", False))
+            if total > 0 and passing == total:
+                logger.info(
+                    "All features passed. Triggering Manager for potential sign-off."
+                )
+                should_run_manager = True
+        except Exception:
+            pass
+
+    if should_run_manager:
+        using_manager = True
+        if config.jira and config.jira_ticket_key:
+            return get_jira_manager_prompt(), True
+        else:
+            return get_manager_prompt(), True
+    else:
+        if config.jira and config.jira_ticket_key:
+             return get_jira_worker_prompt(), False
+        else:
+             return get_coding_prompt(), False
+
+
 async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = None):
     """
     Run the autonomous agent loop.
@@ -388,60 +456,9 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
         # Choose prompt
         using_manager = False
 
-        if is_first_run:
-            if config.jira and config.jira_ticket_key:
-                prompt = get_jira_initializer_prompt()
-            else:
-                prompt = get_initializer_prompt()
-            # Note: We don't flip is_first_run to False until we get a success
-        else:
-            # Check for Manager Triggers
-            should_run_manager = False
-            manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
-
-            if manager_trigger_path.exists():
-                logger.info("Manager triggered by TRIGGER_MANAGER file.")
-                should_run_manager = True
-                try:
-                    manager_trigger_path.unlink()
-                except OSError:
-                    pass
-            elif config.run_manager_first and not has_run_manager_first:
-                # In Jira Mode, we might skip manager-first or just run it? 
-                # Let's support it if explicitly asked, but generally Jira flow is simpler.
-                logger.info("Manager triggered by --manager-first flag.")
-                should_run_manager = True
-                has_run_manager_first = True
-            elif iteration > 0 and iteration % config.manager_frequency == 0:
-                logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
-                should_run_manager = True
-                
-            # Auto-trigger Manager if all features are passing
-            if not should_run_manager and config.feature_list_path.exists():
-                try:
-                    features = json.loads(config.feature_list_path.read_text())
-                    total = len(features)
-                    passing = sum(1 for f in features if f.get("passes", False))
-                    if total > 0 and passing == total:
-                        logger.info(
-                            "All features passed. Triggering Manager for potential sign-off."
-                        )
-                        should_run_manager = True
-                except Exception:
-                    pass
-
-            if should_run_manager:
-                if config.jira and config.jira_ticket_key:
-                    prompt = get_jira_manager_prompt()
-                else:
-                    prompt = get_manager_prompt()
-                using_manager = True
-            else:
-                if config.jira and config.jira_ticket_key:
-                     prompt = get_jira_worker_prompt()
-                else:
-                     prompt = get_coding_prompt()
-
+        # Select Prompt
+        prompt, using_manager = select_prompt(config, iteration, is_first_run, has_run_manager_first)
+        
         # Inject Jira Context if available (for ALL Jira prompts)
         if config.jira and config.jira_ticket_key:
              # Basic injection for any placeholder

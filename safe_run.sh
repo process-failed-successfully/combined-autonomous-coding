@@ -113,18 +113,27 @@ if [ "$USE_PORTS" = true ]; then
     fi
 fi
 
+# Git & SSH Mounts
+GIT_MOUNTS=""
+if [ -f "$HOME/.gitconfig" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.gitconfig:/home/appuser/.gitconfig:ro"
+fi
+if [ -d "$HOME/.ssh" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.ssh:/home/appuser/.ssh:ro"
+fi
+
 if [ "$USE_PORTS" = true ]; then
     # Expose ports
     if [ -z "$CMD" ]; then
-         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --service-ports --rm agent
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --service-ports --rm agent
     else
-         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --service-ports --rm agent $CMD
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --service-ports --rm agent $CMD
     fi
 else
     # Do not expose ports
     if [ -z "$CMD" ]; then
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --rm agent
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --rm agent
     else
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --name "$CONTAINER_NAME" --rm agent $CMD
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --rm agent $CMD
     fi
 fi

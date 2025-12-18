@@ -212,7 +212,11 @@ async def main():
     if jira_env_email: jira_cfg_data["email"] = jira_env_email
     if jira_env_token: jira_cfg_data["token"] = jira_env_token
 
-    if jira_cfg_data and (args.jira_ticket or args.jira_label):
+    if args.jira_ticket or args.jira_label:
+        if not jira_cfg_data:
+             print("Error: Jira arguments provided but no Jira configuration found (config file or env vars).", file=sys.stderr)
+             print("Please set JIRA_URL, JIRA_EMAIL, JIRA_TOKEN or configure agent_config.yaml", file=sys.stderr)
+             sys.exit(1)
         config.jira = JiraConfig(**jira_cfg_data)
 
     # Correction for boolean flags initialized with 'store_true' (default False)

@@ -64,6 +64,15 @@ notification_settings:
 # --- Agent Settings ---
 # login_mode: false         # Set to true to run in login/auth mode
 # sprint_mode: false        # Set to true to enable Sprint mode
+
+# --- Jira Integration ---
+# jira:
+#   url: "https://your-domain.atlassian.net"
+#   email: "your@email.com"
+#   token: "API_TOKEN_OR_PASSWORD"
+#   status_map:
+#     start: "In Progress"
+#     done: "Code Review"
     """
 
     try:

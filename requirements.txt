@@ -3,3 +3,4 @@ prometheus_client
 psutil
 PyYAML
 platformdirs
+jira

@@ -60,3 +60,22 @@ def ensure_git_safe(project_dir: Path) -> None:
         logger.info(f"Switched to new branch: {branch_name}")
     else:
         logger.warning(f"Failed to create/switch to branch {branch_name}. Check logs.")
+
+
+def clone_repo(url: str, dest_path: Path) -> bool:
+    """Clone a repository to the destination path."""
+    try:
+        logger.info(f"Cloning {url} to {dest_path}...")
+        subprocess.run(
+            ["git", "clone", url, str(dest_path)],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to clone repo {url}: {e.stderr.decode().strip()}")
+        return False
+    except Exception as e:
+        logger.error(f"Error cloning repo: {e}")
+        return False

@@ -122,6 +122,18 @@ def parse_args():
         help="Timeout in seconds for agent execution (default: 600.0)",
     )
 
+    parser.add_argument(
+        "--jira-ticket",
+        type=str,
+        help="Jira ticket ID to work on (e.g., PROJ-123)",
+    )
+
+    parser.add_argument(
+        "--jira-label",
+        type=str,
+        help="Jira label to search for (picks first 'To Do' ticket)",
+    )
+
     return parser.parse_args()
 
 
@@ -146,43 +158,6 @@ async def main():
     if not project_name:
         project_name = args.project_dir.resolve().name
 
-    # Read spec content for ID generation
-    spec_content = ""
-    if args.spec and args.spec.exists():
-        try:
-            spec_content = args.spec.read_text()
-        except Exception as e:
-            # We can't log yet, so print to stderr
-            print(
-                f"Warning: Could not read spec file for ID generation: {e}",
-                file=sys.stderr,
-            )
-
-    # Generate deterministic ID
-    agent_id = generate_agent_id(project_name, spec_content, args.agent)
-
-    # Setup Logger
-    # We prioritize logging to agents/logs relative to the repo root
-    # This ensures it aligns with the Promtail mount
-    repo_root = Path(__file__).parent
-    agents_log_dir = repo_root / "agents/logs"
-    agents_log_dir.mkdir(parents=True, exist_ok=True)
-
-    if args.dashboard_only:
-        log_file = agents_log_dir / "dashboard_server.log"
-    else:
-        # Agent ID now contains the full unique name including format:
-        # {agent}_agent_{project}_{hash}
-        log_file = agents_log_dir / f"{agent_id}.log"
-
-    logger = setup_logger(log_file=log_file, verbose=args.verbose)
-
-    if not args.dashboard_only:
-        logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
-        logger.info(f"Generated Agent ID: {agent_id}")
-
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
-
     # Load Configuration from File
     # Priority resolved in config_loader: ./ > XDG > Legacy
     ensure_config_exists()
@@ -199,7 +174,7 @@ async def main():
     # Create Config
     config = Config(
         project_dir=args.project_dir,
-        agent_id=agent_id,
+        agent_id=None,  # Placeholder, set later
         agent_type=args.agent,
         model=resolve(args.model, "model", None),
         max_iterations=resolve(args.max_iterations, "max_iterations", None),
@@ -212,12 +187,6 @@ async def main():
         manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10),
         manager_model=resolve(args.manager_model, "manager_model", None),
         run_manager_first=args.manager_first,
-        # boolean flags are False by default in argparse, hard to distinguish "not set" vs "false"
-        # without logic, assuming CLI priority for bools is ok if we don't support enabling via config if CLI false.
-        # For booleans, standard argparse `store_true` defaults to False.
-        # If config has `run_manager_first: true` but user doesn't pass flag, args is False.
-        # We should check if config key exists.
-        # Refactoring bools:
         login_mode=args.login or file_config.get("login_mode", False),
 
         timeout=resolve(args.timeout, "timeout", 600.0),
@@ -226,31 +195,138 @@ async def main():
         sprint_mode=args.sprint or file_config.get("sprint_mode", False),
         max_agents=resolve(args.max_agents, "max_agents", 1),
 
-        # Notifications (New)
+        # Notifications
         slack_webhook_url=file_config.get("slack_webhook_url"),
         discord_webhook_url=file_config.get("discord_webhook_url"),
         notification_settings=file_config.get("notification_settings"),
     )
 
+    # Load Jira Config
+    from shared.config import JiraConfig
+    jira_cfg_data = file_config.get("jira", {})
+    jira_env_url = os.environ.get("JIRA_URL")
+    jira_env_email = os.environ.get("JIRA_EMAIL")
+    jira_env_token = os.environ.get("JIRA_TOKEN")
+
+    if jira_env_url: jira_cfg_data["url"] = jira_env_url
+    if jira_env_email: jira_cfg_data["email"] = jira_env_email
+    if jira_env_token: jira_cfg_data["token"] = jira_env_token
+
+    if jira_cfg_data and (args.jira_ticket or args.jira_label):
+        config.jira = JiraConfig(**jira_cfg_data)
+
     # Correction for boolean flags initialized with 'store_true' (default False)
-    # If we want Config file to enable them, we must check if matched by OR.
-    # Logic above for login_mode and sprint_mode handles it.
     if file_config.get("run_manager_first"):
         config.run_manager_first = True
 
-    # Function to resolve spec file
-    if args.spec is None:
-        default_spec = args.project_dir / "app_spec.txt"
-        if default_spec.exists():
-            args.spec = default_spec
-            logger.info(f"Using default spec file: {args.spec}")
+    # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
+    repo_root = Path(__file__).parent
+    agents_log_dir = repo_root / "agents/logs"
+    agents_log_dir.mkdir(parents=True, exist_ok=True)
+    
+    # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
+    # But for now, we can use a generic one or wait. 
+    # Let's setup a basic console logger first? 
+    # existing setup_logger requires a file. We will update it later.
 
-    # Check spec requirement for fresh projects
-    # We check if feature list exists to determine if it's a fresh run
+    # JIRA LOGIC
+    jira_client = None
+    jira_ticket = None
+    jira_spec_content = ""
+
+    if config.jira and (args.jira_ticket or args.jira_label):
+        from shared.jira_client import JiraClient
+        from shared.git import clone_repo
+        import re
+
+        try:
+            jira_client = JiraClient(config.jira)
+            
+            if args.jira_ticket:
+                issue = jira_client.get_issue(args.jira_ticket)
+            elif args.jira_label:
+                issue = jira_client.get_first_todo_by_label(args.jira_label)
+            
+            if issue:
+                jira_ticket = issue
+                print(f"Working on Jira Ticket: {issue.key} - {issue.fields.summary}")
+                
+                # Parse Description for Repo
+                desc = issue.fields.description or ""
+                # Look for simple patterns: "Repo: <url>" or just a git/https url on a line?
+                # RegEx for generic URL, filtered for github/gitlab/etc?
+                # Let's assume explicit "Repo: <url>" or just searching for first http/ssh git url
+                repo_match = re.search(r'(?:git@|https://)[\w.@:/\-~]+(?:\.git)', desc)
+                if repo_match:
+                    repo_url = repo_match.group(0)
+                    print(f"Found Repository URL: {repo_url}")
+                    # Clone to project_dir
+                    # Check if project_dir is default (.) - if so, maybe we want to clone INTO a subdir?
+                    # Or clone content into current dir?
+                    # "Standard" flow: if project_dir is default, we might assume we run IN the repo.
+                    # If we need to clone, we should probably check if current dir is empty or a git repo.
+                    # Current behavior: clone_repo(url, config.project_dir)
+                    # If config.project_dir has .git, we skip?
+                    
+                    if not (config.project_dir / ".git").exists():
+                         success = clone_repo(repo_url, config.project_dir)
+                         if not success:
+                             print("Failed to clone repository. Exiting.")
+                             sys.exit(1)
+                    else:
+                        print(f"Directory {config.project_dir} is already a git repo. Skipping clone.")
+
+                else:
+                    print("No repository URL found in ticket description. Using current directory.")
+
+                # Construct Spec
+                jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{desc}"
+                config.jira_ticket_key = issue.key
+                
+                # Transition to In Progress (default 'Start' status)
+                start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
+                jira_client.transition_issue(issue.key, start_status)
+    
+            else:
+                print("No suitable Jira ticket found.")
+                sys.exit(0)
+
+        except Exception as e:
+            print(f"Jira Integration Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Read spec content for ID generation
+    spec_content = ""
+    if jira_spec_content:
+        spec_content = jira_spec_content
+    elif args.spec and args.spec.exists():
+        try:
+            spec_content = args.spec.read_text()
+        except Exception as e:
+            print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
+
+    # Generate deterministic ID
+    agent_id = generate_agent_id(project_name, spec_content, args.agent)
+    config.agent_id = agent_id
+
+    if args.dashboard_only:
+        log_file = agents_log_dir / "dashboard_server.log"
+    else:
+        log_file = agents_log_dir / f"{agent_id}.log"
+
+    logger = setup_logger(log_file=log_file, verbose=args.verbose)
+
+    if not args.dashboard_only:
+        logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+        logger.info(f"Generated Agent ID: {agent_id}")
+
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
+    
+    # Check spec requirement for fresh projects (Updated for Jira)
     is_fresh = not config.feature_list_path.exists()
-    if is_fresh and not args.spec:
+    if is_fresh and not args.spec and not jira_spec_content:
         logger.error(
-            "Error: --spec argument is required for new projects! (or place 'app_spec.txt' in directory)"
+            "Error: --spec argument or --jira-ticket is required for new projects!"
         )
         sys.exit(1)
 

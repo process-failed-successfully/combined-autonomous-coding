@@ -109,9 +109,14 @@ RECENT ACTIONS:
 {file_tree}
 """
         # We append a reminder to use the code block format and tool usage
+        # Append Jira Prompt Injection if applicable
+        jira_context = ""
+        if client.config.jira and getattr(client.config, "jira_ticket_key", None):
+             jira_context = "\n\nCRITICAL: You are working on a JIRA TICKET. You MUST provide frequent updates to the ticket by using the `jira_comment` tool (if available) or simply stating your progress clearly so I can post it."
+        
         augmented_prompt = (
             prompt
-            + f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
+            + f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
         )
 
         # Truncation Logic to avoid ARG_MAX and reduce crash risk
@@ -391,6 +396,20 @@ async def run_autonomous_agent(  # noqa: C901
             logger.info("  PROJECT SIGNED OFF")
             logger.info("=" * 50)
             notifier.notify("project_completion", f"Project {config.project_dir.name} has been signed off and completed.")
+            
+            # Jira Status Transition
+            if config.jira and config.jira_ticket_key:
+                try:
+                    from shared.jira_client import JiraClient
+                    j_client = JiraClient(config.jira)
+                    # "Done" status
+                    done_status = config.jira.status_map.get("done", "Code Review") if config.jira.status_map else "Code Review"
+                    logger.info(f"Transitioning Jira Ticket {config.jira_ticket_key} to '{done_status}'...")
+                    j_client.transition_issue(config.jira_ticket_key, done_status)
+                    j_client.add_comment(config.jira_ticket_key, "Agent has completed the work. Please review.")
+                except Exception as e:
+                    logger.error(f"Failed to transition Jira ticket: {e}")
+
             break
 
         if (config.project_dir / "COMPLETED").exists():

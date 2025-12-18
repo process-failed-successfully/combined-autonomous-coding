@@ -14,10 +14,11 @@ class TestCleanerAgent(unittest.TestCase):
         self.assertEqual(prompt, "clean things")
 
     @patch("agents.cleaner.agent.GeminiClient")
-    @patch("agents.cleaner.agent.run_agent_session")
-    async def async_test_run_cleaner_agent(self, mock_run, mock_client_cls):
+    @patch("agents.cleaner.agent.run_gemini_session")
+    async def async_test_run_cleaner_agent_gemini(self, mock_run, mock_client_cls):
         config = MagicMock(spec=Config)
         config.project_dir = Path("/tmp/test_project")
+        config.agent_type = "gemini"
 
         agent_client = MagicMock()
 
@@ -42,12 +43,38 @@ class TestCleanerAgent(unittest.TestCase):
             )
             agent_client.report_state.assert_any_call(current_task="Cleanup Complete")
 
-    @patch("agents.cleaner.agent.GeminiClient")
-    @patch("agents.cleaner.agent.run_agent_session")
-    def test_run_cleaner_agent_wrapper(self, mock_run, mock_client):
-        import asyncio
+    @patch("agents.cleaner.agent.CursorClient")
+    @patch("agents.cleaner.agent.run_cursor_session")
+    async def async_test_run_cleaner_agent_cursor(self, mock_run, mock_client_cls):
+        config = MagicMock(spec=Config)
+        config.project_dir = Path("/tmp/test_project")
+        config.agent_type = "cursor"
 
-        asyncio.run(self.async_test_run_cleaner_agent())
+        agent_client = MagicMock()
+
+        mock_run.return_value = ("success", "response", ["action1"])
+
+        with patch.object(Path, "exists") as mock_exists:
+            mock_exists.side_effect = [
+                False,
+                True,
+            ]
+
+            await run_cleaner_agent(config, agent_client)
+
+            self.assertEqual(mock_run.call_count, 2)
+            agent_client.report_state.assert_any_call(
+                current_task="Cleaning Project..."
+            )
+            agent_client.report_state.assert_any_call(current_task="Cleanup Complete")
+
+    def test_run_cleaner_agent_gemini(self):
+        import asyncio
+        asyncio.run(self.async_test_run_cleaner_agent_gemini())
+
+    def test_run_cleaner_agent_cursor(self):
+        import asyncio
+        asyncio.run(self.async_test_run_cleaner_agent_cursor())
 
 
 if __name__ == "__main__":

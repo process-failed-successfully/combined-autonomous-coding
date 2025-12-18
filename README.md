@@ -12,7 +12,7 @@ This project provides a unified interface for running autonomous coding agents u
 ### Running with Default Settings (Gemini)
 
 ```bash
-./safe_run.sh --spec app_spec.txt
+./bin/start_agent --spec app_spec.txt
 ```
 
 This will:
@@ -28,13 +28,13 @@ You can choose between the `gemini` (default) and `cursor` agents using the `--a
 ### Using Gemini Agent
 
 ```bash
-./safe_run.sh --agent gemini --spec app_spec.txt
+./bin/start_agent --agent gemini --spec app_spec.txt
 ```
 
 ### Using Cursor Agent
 
 ```bash
-./safe_run.sh --agent cursor --spec app_spec.txt
+./bin/start_agent --agent cursor --spec app_spec.txt
 ```
 
 ### 🏃 Sprint Mode (Concurrent)
@@ -47,9 +47,9 @@ For complex projects, you can run multiple agents concurrently. This mode contin
 
 **Prerequisite**: For complex projects, place a `feature_list.json` in your project root to define the features the agents should tackle.
 
-./safe_run.sh --sprint --max-agents 3 --spec app_spec.txt
-
-````
+```bash
+./bin/start_agent --sprint --max-agents 3 --spec app_spec.txt
+```
 
 ## 🎟️ Jira Integration
 
@@ -63,12 +63,12 @@ Configure Jira access via `agent_config.yaml` or environment variables:
 export JIRA_URL="https://your-domain.atlassian.net"
 export JIRA_EMAIL="your@email.com"
 export JIRA_TOKEN="your-api-token"
-````
+```
 
 ### Running by Ticket ID
 
 ```bash
-./safe_run.sh --jira-ticket PROJ-123
+./bin/start_agent --jira-ticket PROJ-123
 ```
 
 ### Running by Label
@@ -76,12 +76,12 @@ export JIRA_TOKEN="your-api-token"
 Picks the first "To Do" ticket with the label:
 
 ```bash
-./safe_run.sh --jira-label "agent-work"
+./bin/start_agent --jira-label "agent-work"
 ```
 
 ## ⚙️ Common Options
 
-The `safe_run.sh` script passes arguments directly to the agent runner. Here are the most useful options:
+The `start_agent` script passes arguments directly to the agent runner. Here are the most useful options:
 
 | Flag                       | Description                                                                 | Default                 |
 | :------------------------- | :-------------------------------------------------------------------------- | :---------------------- |
@@ -100,7 +100,7 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
 ### Example: Custom Project Directory and Model
 
 ```bash
-./safe_run.sh \
+./bin/start_agent \
   --agent cursor \
   --project-dir ./my-new-app \
   --spec ./specs/todo-app.txt \
@@ -143,7 +143,7 @@ notification_settings:
 
 - **Rebuild Container**: If you modify the agent code, force a rebuild:
   ```bash
-  ./safe_run.sh --build ...
+  ./bin/start_agent --build ...
   ```
 - **Git Issues**: The container is configured to handle git ownership issues automatically.
 - **Streaming**: By default, the agent streams its "thought process" capability. Use `--no-stream` if you prefer a cleaner, buffered output.

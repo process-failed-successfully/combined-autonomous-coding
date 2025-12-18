@@ -47,8 +47,36 @@ For complex projects, you can run multiple agents concurrently. This mode contin
 
 **Prerequisite**: For complex projects, place a `feature_list.json` in your project root to define the features the agents should tackle.
 
-```bash
 ./safe_run.sh --sprint --max-agents 3 --spec app_spec.txt
+
+````
+
+## 🎟️ Jira Integration
+
+You can drive the agent directly from Jira tickets instead of a local spec file.
+
+### Prerequisites
+
+Configure Jira access via `agent_config.yaml` or environment variables:
+
+```bash
+export JIRA_URL="https://your-domain.atlassian.net"
+export JIRA_EMAIL="your@email.com"
+export JIRA_TOKEN="your-api-token"
+````
+
+### Running by Ticket ID
+
+```bash
+./safe_run.sh --jira-ticket PROJ-123
+```
+
+### Running by Label
+
+Picks the first "To Do" ticket with the label:
+
+```bash
+./safe_run.sh --jira-label "agent-work"
 ```
 
 ## ⚙️ Common Options
@@ -66,6 +94,8 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
 | `--verbose`                | Enable debug logging.                                                       | `False`                 |
 | `--manager-frequency [N]`  | How often the Manager Agent runs (in iterations).                           | `10`                    |
 | `--manager-first`          | Run the Manager Agent _before_ the first coding session.                    | `False`                 |
+| `--jira-ticket [ID]`       | Use a Jira ticket as the work spec (e.g., `PROJ-123`).                      | None                    |
+| `--jira-label [Label]`     | Find and pick first 'To Do' ticket with this label.                         | None                    |
 
 ### Example: Custom Project Directory and Model
 

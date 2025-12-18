@@ -426,7 +426,20 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
                 prompt = get_manager_prompt()
                 using_manager = True
             else:
-                prompt = get_coding_prompt()
+                # Jira Prompt Override
+                if config.jira and config.jira_ticket_key:
+                    jira_prompt_path = Path(__file__).parent.parent / "shared/prompts/jira_prompt.md"
+                    prompt = jira_prompt_path.read_text()
+                    # Inject Jira Context
+                    if hasattr(config, "jira_spec_content") and config.jira_spec_content:
+                         context_to_inject = config.jira_spec_content
+                    else:
+                         context_to_inject = f"Ticket: {config.jira_ticket_key}"
+                    
+                    prompt = prompt.replace("{jira_ticket_context}", context_to_inject)
+                    logger.info("Using Jira Prompt for this session.")
+                else:
+                    prompt = get_coding_prompt()
 
         # Run session
         if agent_client:

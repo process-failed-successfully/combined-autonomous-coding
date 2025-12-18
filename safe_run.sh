@@ -20,7 +20,27 @@ docker run --rm \
     -v "$(pwd)/agents/logs":/agents_logs \
     busybox sh -c "chown -R 1000:1000 /gemini /cursor /agents_logs"
 # Set workspace directory for docker-compose
+# Set workspace directory for docker-compose
 export WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
+
+# Check for Jira Mode arguments
+IS_JIRA_MODE=false
+for arg in "$@"; do
+  if [[ "$arg" == "--jira-ticket" ]] || [[ "$arg" == "--jira-label" ]]; then
+    IS_JIRA_MODE=true
+    break
+  fi
+done
+
+if [ "$IS_JIRA_MODE" = true ]; then
+    # Create a temporary workspace for Jira tasks
+    TIMESTAMP=$(date +%s)
+    TEMP_WORKSPACE="/tmp/agent_jira_${TIMESTAMP}"
+    mkdir -p "$TEMP_WORKSPACE"
+    export WORKSPACE_DIR="$TEMP_WORKSPACE"
+    echo "🎟️ Jira Mode detected. Using isolated workspace: $WORKSPACE_DIR"
+fi
+
 export PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
 # Define a consistent container name for this project's agent run
 export CONTAINER_NAME="${PROJECT_NAME}_agent_run"

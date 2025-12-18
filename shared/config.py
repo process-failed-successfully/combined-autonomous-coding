@@ -53,6 +53,7 @@ class Config:
     
     # Jira State
     jira_ticket_key: Optional[str] = None
+    jira_spec_content: Optional[str] = None  # Full content of the ticket
 
     # Manager Configuration
     manager_frequency: int = 10

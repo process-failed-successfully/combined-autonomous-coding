@@ -240,8 +240,7 @@ async def main():
 
     if config.jira and (args.jira_ticket or args.jira_label):
         from shared.jira_client import JiraClient
-        from shared.git import clone_repo
-        import re
+        from shared.jira_client import JiraClient
 
         try:
             jira_client = JiraClient(config.jira)
@@ -255,37 +254,13 @@ async def main():
                 jira_ticket = issue
                 print(f"Working on Jira Ticket: {issue.key} - {issue.fields.summary}")
                 
-                # Parse Description for Repo
+                # Parse Description (for context only)
                 desc = issue.fields.description or ""
-                # Look for simple patterns: "Repo: <url>" or just a git/https url on a line?
-                # RegEx for generic URL, filtered for github/gitlab/etc?
-                # Let's assume explicit "Repo: <url>" or just searching for first http/ssh git url
-                repo_match = re.search(r'(?:git@|https://)[\w.@:/\-~]+(?:\.git)', desc)
-                if repo_match:
-                    repo_url = repo_match.group(0)
-                    print(f"Found Repository URL: {repo_url}")
-                    # Clone to project_dir
-                    # Check if project_dir is default (.) - if so, maybe we want to clone INTO a subdir?
-                    # Or clone content into current dir?
-                    # "Standard" flow: if project_dir is default, we might assume we run IN the repo.
-                    # If we need to clone, we should probably check if current dir is empty or a git repo.
-                    # Current behavior: clone_repo(url, config.project_dir)
-                    # If config.project_dir has .git, we skip?
-                    
-                    if not (config.project_dir / ".git").exists():
-                         success = clone_repo(repo_url, config.project_dir)
-                         if not success:
-                             print("Failed to clone repository. Exiting.")
-                             sys.exit(1)
-                    else:
-                        print(f"Directory {config.project_dir} is already a git repo. Skipping clone.")
-
-                else:
-                    print("No repository URL found in ticket description. Using current directory.")
 
                 # Construct Spec
                 jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{desc}"
                 config.jira_ticket_key = issue.key
+                config.jira_spec_content = jira_spec_content
                 project_name = issue.key
                 
                 # Transition to In Progress (default 'Start' status)

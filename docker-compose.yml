@@ -26,10 +26,13 @@ services:
     environment:
       - OPENAI_API_KEY
       - GEMINI_API_KEY
-      - ANTHROPIC_API_KEY
       - PROJECT_NAME
       - PUSHGATEWAY_URL=pushgateway:9091
       - ENABLE_METRICS=true
+      # Jira Credentials
+      - JIRA_URL
+      - JIRA_EMAIL
+      - JIRA_TOKEN
       # Add others as needed
 
     extra_hosts:

@@ -25,9 +25,25 @@ def get_coding_prompt() -> str:
     return load_prompt("coding_prompt")
 
 
+
 def get_manager_prompt() -> str:
     """Load the manager agent prompt."""
     return load_prompt("manager_prompt")
+
+
+def get_jira_initializer_prompt() -> str:
+    """Load the Jira initializer prompt."""
+    return load_prompt("jira_initializer_prompt")
+
+
+def get_jira_manager_prompt() -> str:
+    """Load the Jira manager prompt."""
+    return load_prompt("jira_manager_prompt")
+
+
+def get_jira_worker_prompt() -> str:
+    """Load the Jira worker prompt."""
+    return load_prompt("jira_worker_prompt")
 
 
 def copy_spec_to_project(project_dir: Path, custom_spec_path: Path = None) -> None:

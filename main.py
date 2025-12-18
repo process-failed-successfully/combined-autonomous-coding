@@ -282,6 +282,7 @@ async def main():
                 # Construct Spec
                 jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{desc}"
                 config.jira_ticket_key = issue.key
+                project_name = issue.key
                 
                 # Transition to In Progress (default 'Start' status)
                 start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
@@ -314,7 +315,8 @@ async def main():
     else:
         log_file = agents_log_dir / f"{agent_id}.log"
 
-    logger = setup_logger(log_file=log_file, verbose=args.verbose)
+    # Configure Root Logger to capture all module logs (e.g. shared.git)
+    logger = setup_logger(name="", log_file=log_file, verbose=args.verbose)
 
     if not args.dashboard_only:
         logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")

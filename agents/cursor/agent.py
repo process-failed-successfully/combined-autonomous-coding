@@ -26,6 +26,9 @@ from .prompts import (
     get_coding_prompt,
     get_manager_prompt,
     copy_spec_to_project,
+    get_jira_initializer_prompt,
+    get_jira_manager_prompt,
+    get_jira_worker_prompt,
 )
 
 logger = logging.getLogger(__name__)
@@ -448,7 +451,10 @@ async def run_autonomous_agent(  # noqa: C901
         using_manager = False
 
         if is_first_run:
-            prompt = get_initializer_prompt()
+            if config.jira and config.jira_ticket_key:
+                prompt = get_jira_initializer_prompt()
+            else:
+                prompt = get_initializer_prompt()
         else:
             # Check for Manager Triggers
             should_run_manager = False
@@ -484,26 +490,26 @@ async def run_autonomous_agent(  # noqa: C901
                     pass
 
             if should_run_manager:
-                prompt = get_manager_prompt()
+                if config.jira and config.jira_ticket_key:
+                     prompt = get_jira_manager_prompt()
+                else:
+                     prompt = get_manager_prompt()
                 using_manager = True
             else:
-                # Jira Prompt Override
                 if config.jira and config.jira_ticket_key:
-                    # Load default path from shared/prompts/jira_prompt.md
-                    # We might need to construct path relative to this file
-                    jira_prompt_path = Path(__file__).parent.parent / "shared/prompts/jira_prompt.md"
-                    prompt = jira_prompt_path.read_text()
-                    
-                    # Inject Jira Context
-                    if hasattr(config, "jira_spec_content") and config.jira_spec_content:
-                         context_to_inject = config.jira_spec_content
-                    else:
-                         context_to_inject = f"Ticket: {config.jira_ticket_key}"
-                    
-                    prompt = prompt.replace("{jira_ticket_context}", context_to_inject)
-                    logger.info("Using Jira Prompt for this session.")
+                     prompt = get_jira_worker_prompt()
                 else:
-                    prompt = get_coding_prompt()
+                     prompt = get_coding_prompt()
+
+        # Inject Jira Context if available (for ALL Jira prompts)
+        if config.jira and config.jira_ticket_key:
+             # Basic injection for any placeholder
+             if hasattr(config, "jira_spec_content") and config.jira_spec_content:
+                  context_to_inject = config.jira_spec_content
+             else:
+                  context_to_inject = f"Ticket: {config.jira_ticket_key}"
+             
+             prompt = prompt.replace("{jira_ticket_context}", context_to_inject)    
 
         # Run session
         if agent_client:

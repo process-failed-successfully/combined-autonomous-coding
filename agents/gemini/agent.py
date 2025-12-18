@@ -20,6 +20,9 @@ from agents.shared.prompts import (
     get_coding_prompt,
     get_manager_prompt,
     copy_spec_to_project,
+    get_jira_initializer_prompt,
+    get_jira_manager_prompt,
+    get_jira_worker_prompt,
 )
 from .client import GeminiClient
 
@@ -386,7 +389,10 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
         using_manager = False
 
         if is_first_run:
-            prompt = get_initializer_prompt()
+            if config.jira and config.jira_ticket_key:
+                prompt = get_jira_initializer_prompt()
+            else:
+                prompt = get_initializer_prompt()
             # Note: We don't flip is_first_run to False until we get a success
         else:
             # Check for Manager Triggers
@@ -401,13 +407,15 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
                 except OSError:
                     pass
             elif config.run_manager_first and not has_run_manager_first:
+                # In Jira Mode, we might skip manager-first or just run it? 
+                # Let's support it if explicitly asked, but generally Jira flow is simpler.
                 logger.info("Manager triggered by --manager-first flag.")
                 should_run_manager = True
                 has_run_manager_first = True
             elif iteration > 0 and iteration % config.manager_frequency == 0:
                 logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
                 should_run_manager = True
-
+                
             # Auto-trigger Manager if all features are passing
             if not should_run_manager and config.feature_list_path.exists():
                 try:
@@ -423,23 +431,26 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
                     pass
 
             if should_run_manager:
-                prompt = get_manager_prompt()
+                if config.jira and config.jira_ticket_key:
+                    prompt = get_jira_manager_prompt()
+                else:
+                    prompt = get_manager_prompt()
                 using_manager = True
             else:
-                # Jira Prompt Override
                 if config.jira and config.jira_ticket_key:
-                    jira_prompt_path = Path(__file__).parent.parent / "shared/prompts/jira_prompt.md"
-                    prompt = jira_prompt_path.read_text()
-                    # Inject Jira Context
-                    if hasattr(config, "jira_spec_content") and config.jira_spec_content:
-                         context_to_inject = config.jira_spec_content
-                    else:
-                         context_to_inject = f"Ticket: {config.jira_ticket_key}"
-                    
-                    prompt = prompt.replace("{jira_ticket_context}", context_to_inject)
-                    logger.info("Using Jira Prompt for this session.")
+                     prompt = get_jira_worker_prompt()
                 else:
-                    prompt = get_coding_prompt()
+                     prompt = get_coding_prompt()
+
+        # Inject Jira Context if available (for ALL Jira prompts)
+        if config.jira and config.jira_ticket_key:
+             # Basic injection for any placeholder
+             if hasattr(config, "jira_spec_content") and config.jira_spec_content:
+                  context_to_inject = config.jira_spec_content
+             else:
+                  context_to_inject = f"Ticket: {config.jira_ticket_key}"
+             
+             prompt = prompt.replace("{jira_ticket_context}", context_to_inject)    
 
         # Run session
         if agent_client:

@@ -40,6 +40,21 @@ def get_sprint_worker_prompt() -> str:
     return load_prompt("sprint_worker_prompt")
 
 
+def get_jira_initializer_prompt() -> str:
+    """Load the jira initializer prompt."""
+    return load_prompt("jira_initializer_prompt")
+
+
+def get_jira_manager_prompt() -> str:
+    """Load the jira manager prompt."""
+    return load_prompt("jira_manager_prompt")
+
+
+def get_jira_worker_prompt() -> str:
+    """Load the jira worker prompt."""
+    return load_prompt("jira_worker_prompt")
+
+
 def copy_spec_to_project(project_dir: Path, custom_spec_path: Path = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = custom_spec_path if custom_spec_path else PROMPTS_DIR / "app_spec.txt"

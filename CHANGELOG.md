@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.2.1 (2025-12-18)
+
+### Bug Fixes
+
+- Better handle sprint alignment
+  ([`d2de59c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/d2de59cb8baf8a0304c4a44a16c1a9f93dc68907))
+
+- Sprint complete ends session
+  ([`c2e638f`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/c2e638f6ad62a217c8bd6f6e6fb6fb65a6431760))
+
+
 ## v0.2.0 (2025-12-16)
 
 ### Chores

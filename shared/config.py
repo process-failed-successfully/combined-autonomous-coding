@@ -24,6 +24,7 @@ class Config:
     """Application Configuration."""
 
     project_dir: Path
+    agent_id: Optional[str] = None
     agent_type: str = "gemini"  # 'gemini' or 'cursor'
     model: Optional[str] = None
     max_iterations: Optional[int] = None

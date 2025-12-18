@@ -199,6 +199,7 @@ async def main():
     # Create Config
     config = Config(
         project_dir=args.project_dir,
+        agent_id=agent_id,
         agent_type=args.agent,
         model=resolve(args.model, "model", None),
         max_iterations=resolve(args.max_iterations, "max_iterations", None),

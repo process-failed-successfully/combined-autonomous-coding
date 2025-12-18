@@ -31,6 +31,9 @@ Directory: {working_directory}
    - If two tasks must edit the same file, make one dependent on the other.
 6. If tasks have dependencies, clearly list the `dependencies` (list of task IDs that must complete first).
 7. Output the plan **ONLY** as a JSON file named `sprint_plan.json`.
+8. **COMPLETION CHECK**:
+   - Check existing files. If a feature from `feature_list.json` is ALREADY implemented, do NOT create a task for it.
+   - If ALL features are implemented and no work remains, output a `sprint_plan.json` with an empty `tasks` list (`[]`).
 
 # JSON Format
 
@@ -40,18 +43,21 @@ Directory: {working_directory}
   "tasks": [
     {{
       "id": "task_utils",
+      "feature_name": "Core Utilities",
       "title": "Create Utils",
       "description": "Create utils.py with helper functions. Independent task.",
       "dependencies": []
     }},
     {{
       "id": "task_models",
+      "feature_name": "Data Models",
       "title": "Create Models",
       "description": "Create models.py with data classes. Independent task.",
       "dependencies": []
     }},
     {{
       "id": "task_main",
+      "feature_name": "Main Entry Point",
       "title": "Update Main",
       "description": "Import utils and models into main.py and use them.",
       "dependencies": ["task_utils", "task_models"]
@@ -65,3 +71,4 @@ Directory: {working_directory}
 - Do NOT write any code yourself. specific implementation details should be in the task descriptions.
 - The `dependencies` field is crucial for the Sprint Manager to schedule tasks correctly.
 - Assign IDs like `task_1`, `task_2`, etc.
+- **Ensure `feature_name` matches EXACTLY the name in `feature_list.json`**.

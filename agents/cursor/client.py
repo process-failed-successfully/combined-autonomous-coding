@@ -237,7 +237,11 @@ class CursorClient:
                 logger.error(error_msg)
 
                 if stderr:
-                    logger.error(f"STDERR: {stderr.decode()}")
+                    decoded_stderr = stderr.decode()
+                    logger.error(f"STDERR: {decoded_stderr}")
+                    
+                    if "resource_exhausted" in decoded_stderr:
+                        raise Exception("Cursor Agent failed due to Resource Exhaustion (Quota/Rate Limit). Please try again later or switch models.")
 
                 # Special handling for SIGTERM (143) to identify it clearly
                 if process.returncode == 143 or process.returncode == -15:

@@ -39,7 +39,13 @@ You can choose between the `gemini` (default) and `cursor` agents using the `--a
 
 ### 🏃 Sprint Mode (Concurrent)
 
-For complex projects, you can run multiple agents concurrently. A "Lead Agent" creates a plan, and "Worker Agents" execute tasks in parallel.
+For complex projects, you can run multiple agents concurrently. This mode continuously runs cycles of planning and execution until all features are complete.
+
+1.  **Planning Phase**: The **Lead Agent** reads the `feature_list.json` (or checks `app_spec.txt` if new) and creates a Sprint Plan with independent tasks.
+2.  **Execution Phase**: **Worker Agents** execute the planned tasks in parallel.
+3.  **Loop**: This cycle repeats until the Lead Agent determines that all features are implemented.
+
+**Prerequisite**: For complex projects, place a `feature_list.json` in your project root to define the features the agents should tackle.
 
 ```bash
 ./safe_run.sh --sprint --max-agents 3 --spec app_spec.txt
@@ -58,6 +64,8 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
 | `--max-iterations [N]`     | Limit the number of agent loops.                                            | Unlimited               |
 | `--no-stream`              | **Disable** real-time streaming output (useful for logs).                   | Streaming Enabled       |
 | `--verbose`                | Enable debug logging.                                                       | `False`                 |
+| `--manager-frequency [N]`  | How often the Manager Agent runs (in iterations).                           | `10`                    |
+| `--manager-first`          | Run the Manager Agent _before_ the first coding session.                    | `False`                 |
 
 ### Example: Custom Project Directory and Model
 
@@ -67,7 +75,8 @@ The `safe_run.sh` script passes arguments directly to the agent runner. Here are
   --project-dir ./my-new-app \
   --spec ./specs/todo-app.txt \
   --model claude-3-5-sonnet \
-  --max-iterations 20
+  --max-iterations 20 \
+  --manager-first
 ```
 
 ## 🔔 Notifications
@@ -77,6 +86,7 @@ You can configure the agent to send notifications to **Slack** and **Discord** f
 ### Configuration
 
 The agent looks for configuration in the following order:
+
 1.  Current Directory: `./agent_config.yaml`
 2.  XDG Config Home: `~/.config/combined-autonomous-coding/agent_config.yaml` (Linux/Mac) or `%LOCALAPPDATA%\combined-autonomous-coding\agent_config.yaml` (Windows)
 3.  Legacy Path: `~/.gemini/agent_config.yaml`
@@ -94,6 +104,8 @@ notification_settings:
   manager: true # Manager agent updates (Recommended)
   human_in_loop: true # When human intervention is requested (Recommended)
   project_completion: true # When the project is signed off (Recommended)
+  sprint_start: true # When valid sprint plan is created
+  sprint_complete: true # When sprint cycle finishes
   error: true # On agent errors or crashes
 ```
 
@@ -140,7 +152,9 @@ The system follows a rigorous **"Agent-Manager"** workflow to ensure high-qualit
 ```mermaid
 flowchart TD
     Start[Start Project] --> Init[Initialize Project & Spec]
-    Init --> AgentLoop
+    Init --> CheckFirst{Manager First?}
+    CheckFirst -- Yes --> ManagerStart
+    CheckFirst -- No --> AgentLoop
 
     subgraph Agent Process
         AgentLoop[Agent Analysis & Execution]
@@ -162,7 +176,8 @@ flowchart TD
         Validation -- "Rejected (Not Done)" --> Reject[Delete COMPLETED &\nWrite Directives]
     end
 
-    SignOff --> AgentLoop
+    SignOff --> CleanerLoop[Cleaner Agent]
+    CleanerLoop --> Finish
     Reject --> AgentLoop
 ```
 

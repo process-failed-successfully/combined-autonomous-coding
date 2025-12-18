@@ -3,6 +3,7 @@ FROM python:3.11-slim
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
+    openssh-client \
     nodejs \
     npm \
     curl \
@@ -63,8 +64,10 @@ RUN curl https://cursor.com/install -fsS | bash
 # Add local bin to PATH
 ENV PATH="/home/appuser/.local/bin:${PATH}"
 
+
 # Configure git for user
-RUN git config --global --add safe.directory '*'
+RUN git config --global --add safe.directory '*' && \
+    git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 # Set working directory
 WORKDIR /app

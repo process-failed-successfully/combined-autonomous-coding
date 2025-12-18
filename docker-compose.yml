@@ -11,6 +11,8 @@ services:
       - ${HOME}/.config:/home/appuser/.config
       # Mount cursor configuration
       - ${HOME}/.cursor:/home/appuser/.cursor
+      # Mount ssh for git cloning
+      - ${HOME}/.ssh:/home/appuser/.ssh
 
       # Mount current workspace
       - ${WORKSPACE_DIR}:/workspace

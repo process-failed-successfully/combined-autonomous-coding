@@ -35,6 +35,10 @@ services:
       - JIRA_URL
       - JIRA_EMAIL
       - JIRA_TOKEN
+      # Git Credentials
+      - GIT_TOKEN
+      - GIT_USERNAME
+      - GIT_HOST
       # Add others as needed
 
     extra_hosts:

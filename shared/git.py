@@ -12,6 +12,40 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+def configure_git_auth(token: str, host: str = "github.com", username: str = "x-access-token") -> bool:
+    """
+    Configure global git to use the provided token for authentication.
+    Uses 'insteadOf' to transparently rewrite URL.
+    """
+    try:
+        # Construct the authenticated URL base
+        # e.g. https://x-access-token:MYTOKEN@github.com/
+        safe_token = token.strip()
+        safe_host = host.strip()
+        safe_user = username.strip()
+
+        logger.info(f"Configuring Git Auth for host: {safe_host} (User: {safe_user})")
+
+        # Configure rewrite rule
+        # git config --global url."https://${user}:${token}@${host}/".insteadOf "https://${host}/"
+        
+        auth_url = f"https://{safe_user}:{safe_token}@{safe_host}/"
+        base_url = f"https://{safe_host}/"
+
+        cmd = [
+            "config",
+            "--global",
+            f"url.{auth_url}.insteadOf",
+            base_url
+        ]
+        
+        subprocess.run(["git"] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to configure git auth: {e}")
+        return False
+
+
 
 def run_git(cmd: list[str], cwd: Path) -> bool:
     """Run a git command and return success status."""

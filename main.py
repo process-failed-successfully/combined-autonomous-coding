@@ -315,6 +315,14 @@ async def main():
     # Ensure we are on a safe branch before starting any agent work
     ensure_git_safe(args.project_dir)
 
+    # Git Authentication (Env Var Check)
+    git_token = os.environ.get("GIT_TOKEN")
+    if git_token:
+        from shared.git import configure_git_auth
+        git_host = os.environ.get("GIT_HOST", "github.com")
+        git_user = os.environ.get("GIT_USERNAME", "x-access-token")
+        configure_git_auth(git_token, git_host, git_user)
+
     # Dispatch
     try:
         if config.sprint_mode:

@@ -13,7 +13,7 @@ Your goal is to prepare the environment and create a detailed plan (`feature_lis
 
     - Check the ticket description for a repository URL.
     - If found, run `git clone <URL> .` (current directory).
-    - If not found, assume a new project or current directory usage.
+    - If not found, trigger human in the loop.
 
 2.  **ANALYZE**:
 

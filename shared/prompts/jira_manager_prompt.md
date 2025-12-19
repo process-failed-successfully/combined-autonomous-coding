@@ -26,6 +26,8 @@ You are invoked because either:
 
     - **IF COMPLETE**:
       - Create a file named `PROJECT_SIGNED_OFF`.
+      - **NEW**: Create a file named `PR_DESCRIPTION.md` with the content for the GitHub Pull Request.
+      - **NEW**: Create a file named `JIRA_COMMENT.txt` with a 1-3 sentence summary of the fix to be posted on the Jira ticket.
       - **CRITICAL**: Do NOT manually push the branch or transition the ticket. The system will automatically handle branch pushing, PR creation, and Jira status updates upon seeing this file.
     - **IF INCOMPLETE**:
 

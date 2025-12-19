@@ -64,7 +64,7 @@ RUN chmod 0555 /usr/local/share/git-hooks/pre-push && \
 # Install Global Git Ignore (Protected)
 COPY shared/.gitignore_global /usr/local/share/git/gitignore_global
 RUN chmod 0444 /usr/local/share/git/gitignore_global && \
-    git config --global core.excludesfile /usr/local/share/git/gitignore_global
+    git config --system core.excludesfile /usr/local/share/git/gitignore_global
 
 # Create directory structure and set permissions
 RUN mkdir -p /app/combined-autonomous-coding && \

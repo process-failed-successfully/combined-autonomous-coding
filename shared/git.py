@@ -9,6 +9,7 @@ import logging
 import subprocess
 import time
 from pathlib import Path
+from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ def push_branch(project_dir: Path, branch_name: str = None) -> bool:
 def clone_repo(url: str, dest_path: Path) -> bool:
     """Clone a repository to the destination path."""
     try:
-        logger.info(f"Cloning {url} to {dest_path}...")
+        logger.info(f"Cloning {sanitize_url(url)} to {dest_path}...")
         subprocess.run(
             ["git", "clone", url, str(dest_path)],
             check=True,
@@ -152,7 +153,7 @@ def clone_repo(url: str, dest_path: Path) -> bool:
         )
         return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to clone repo {url}: {e.stderr.decode().strip()}")
+        logger.error(f"Failed to clone repo {sanitize_url(url)}: {e.stderr.decode().strip()}")
         return False
     except Exception as e:
         logger.error(f"Error cloning repo: {e}")

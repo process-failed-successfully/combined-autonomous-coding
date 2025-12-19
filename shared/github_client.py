@@ -1,7 +1,9 @@
 import os
 import logging
 import requests
+import re
 from typing import Optional
+from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +55,28 @@ class GitHubClient:
         Supports:
         - https://github.com/owner/repo.git
         - git@github.com:owner/repo.git
+        - https://token@github.com/owner/repo.git
         """
         try:
             clean_url = remote_url.strip()
             if clean_url.endswith(".git"):
                 clean_url = clean_url[:-4]
             
-            if "github.com" in clean_url:
-                parts = clean_url.split("github.com")[-1]
-                parts = parts.strip("/:").split("/")
-                if len(parts) >= 2:
-                    return parts[0], parts[1]
+            # Use regex for more robust parsing
+            # Matches owner/repo from both HTTPS and SSH variants
+            # Handles tokens in HTTPS URLs
+            patterns = [
+                r"github\.com[:/](?P<owner>[^/]+)/(?P<repo>[^/]+)$",
+                r"github\.com[:/](?P<owner>[^/]+)/(?P<repo>[^/]+)/?$",
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, clean_url)
+                if match:
+                    return match.group("owner"), match.group("repo")
+
+            logger.warning(f"Failed to parse GitHub owner/repo from URL: {sanitize_url(clean_url)}")
             return None, None
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error parsing remote URL: {e}")
             return None, None

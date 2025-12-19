@@ -434,3 +434,13 @@ def generate_agent_id(project_name: str, spec_content: str, agent_type: str) -> 
 
     # Combine to match requested format: cursor_agent_hello_world_uuid
     return f"{agent_type}_agent_{project_name}_{short_hash}"
+
+
+def sanitize_url(url: str) -> str:
+    """Mask sensitive information (tokens) in a URL."""
+    if not url:
+        return url
+    
+    import re
+    # Mask https://token@github.com... or https://user:token@github.com...
+    return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)

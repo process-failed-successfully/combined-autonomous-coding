@@ -16,6 +16,31 @@ sys.modules['requests'] = MagicMock()
 
 from shared.config import Config, JiraConfig
 from shared.workflow import complete_jira_ticket
+from shared.utils import sanitize_url
+from shared.github_client import GitHubClient
+
+def test_sanitize_url():
+    """Test that tokens are masked in URLs."""
+    token_url = "https://x-access-token:ghp_123456789@github.com/owner/repo.git"
+    sanitized = sanitize_url(token_url)
+    assert "ghp_123456789" not in sanitized
+    assert "https://****@github.com/owner/repo.git" == sanitized
+    print("Verification Test Success: sanitize_url masks tokens.")
+
+def test_repo_parsing():
+    """Test robust repository parsing from URLs."""
+    gh = GitHubClient(token="mock")
+    urls = [
+        "https://github.com/owner/repo.git",
+        "https://github.com/owner/repo",
+        "git@github.com:owner/repo.git",
+        "https://token@github.com/owner/repo.git"
+    ]
+    for url in urls:
+        owner, repo = gh.get_repo_info_from_remote(url)
+        assert owner == "owner"
+        assert repo == "repo"
+    print("Verification Test Success: Robust repo parsing handles multiple formats.")
 
 async def test_complete_jira_ticket_success():
     """Test that completion flow handles git and jira calls correctly."""
@@ -65,4 +90,6 @@ async def test_complete_jira_ticket_success():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    test_sanitize_url()
+    test_repo_parsing()
     asyncio.run(test_complete_jira_ticket_success())

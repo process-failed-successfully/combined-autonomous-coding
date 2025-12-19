@@ -12,6 +12,7 @@ from shared.config import Config
 from shared.jira_client import JiraClient
 from shared.git import push_branch
 from shared.github_client import GitHubClient
+from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ async def complete_jira_ticket(config: Config) -> bool:
                     if pr_url:
                         pr_link = pr_url
                 else:
-                    logger.warning(f"Could not determine GitHub owner/repo from {remote_url}")
+                    logger.warning(f"Could not determine GitHub owner/repo from sanitized URL: {sanitize_url(remote_url)}")
             except Exception as e:
                 logger.error(f"Error during PR creation: {e}")
 

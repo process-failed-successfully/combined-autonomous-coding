@@ -133,15 +133,6 @@ if [ "$USE_PORTS" = true ]; then
     fi
 fi
 
-# Git & SSH Mounts
-GIT_MOUNTS=""
-if [ -f "$HOME/.gitconfig" ]; then
-    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.gitconfig:/home/appuser/.gitconfig:ro"
-fi
-if [ -d "$HOME/.ssh" ]; then
-    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.ssh:/home/appuser/.ssh:ro"
-fi
-
 if [ "$USE_PORTS" = true ]; then
     # Expose ports
     if [ -z "$CMD" ]; then

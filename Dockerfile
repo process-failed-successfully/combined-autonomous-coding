@@ -66,8 +66,7 @@ ENV PATH="/home/appuser/.local/bin:${PATH}"
 
 
 # Configure git for user
-RUN git config --global --add safe.directory '*' && \
-    git config --global url."git@github.com:".insteadOf "https://github.com/"
+RUN git config --global --add safe.directory '*'
 
 # Set working directory
 WORKDIR /app

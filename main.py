@@ -343,18 +343,14 @@ async def main():
         sys.exit(1)
 
     # Post-Execution Cleanup
-    # If project is signed off, run the cleaner
+    # If project is signed off, run the completion flow and cleaner
     if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+        # Final safety check for Jira completion (in case iteration loop didn't hit it)
+        if config.jira and config.jira_ticket_key:
+            from shared.workflow import complete_jira_ticket
+            await complete_jira_ticket(config)
+
         from agents.cleaner import run_cleaner_agent
-
-        logger.info("Project signed off. Initiating Cleanup...")
-        await run_cleaner_agent(config, agent_client=client)
-
-    # Post-Execution Cleanup
-    # If project is signed off, run the cleaner
-    if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
-        from agents.cleaner import run_cleaner_agent
-
         logger.info("Project signed off. Initiating Cleanup...")
         await run_cleaner_agent(config, agent_client=client)
 

@@ -460,7 +460,9 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = Non
              else:
                   context_to_inject = f"Ticket: {config.jira_ticket_key}"
              
+             unique_suffix = client.config.agent_id[-8:] if client.config.agent_id else "default"
              prompt = prompt.replace("{jira_ticket_context}", context_to_inject)    
+             prompt = prompt.replace("{unique_branch_suffix}", unique_suffix)
 
         # Run session
         if agent_client:

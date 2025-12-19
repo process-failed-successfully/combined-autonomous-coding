@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from main import main
 from shared.config import Config
+from shared.jira_client import JiraClient
 
 class TestJiraModeIntegration(unittest.TestCase):
 

@@ -1,0 +1,42 @@
+# Project Generated Files
+agents/logs/
+app_spec.txt
+feature_list.json
+*_progress.txt
+manager_directives.txt
+temp_files.txt
+successes.txt
+blockers.txt
+questions.txt
+TRIGGER_MANAGER
+human_in_loop.txt
+human_in_the_loop*
+COMPLETED
+PROJECT_SIGNED_OFF
+dashboard_state.json
+final_metrics.txt
+bandit_baseline.json
+output.json
+
+# Tooling/Caching
+.coverage
+.flake8
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+build/
+combined_autonomous_coding.egg-info/
+tests_output/
+node_modules/
+dist/
+htmlcov/
+*.log
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

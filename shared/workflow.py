@@ -37,15 +37,20 @@ async def complete_jira_ticket(config: Config) -> bool:
         # 2. Create PR
         pr_link = "No PR created"
         if push_success:
-            gh_client = GitHubClient()
             try:
                 # Try to guess owner/repo from remote origin
                 res = subprocess.run(["git", "remote", "get-url", "origin"], 
-                                    cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)
+                                     cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)
                 remote_url = res.stdout.strip()
-                owner, repo = gh_client.get_repo_info_from_remote(remote_url)
                 
-                if owner and repo:
+                # Use a temporary client to parse the remote
+                gh_helper = GitHubClient()
+                host, owner, repo = gh_helper.get_repo_info_from_remote(remote_url)
+                
+                if host and owner and repo:
+                    # Re-instantiate client with correct host
+                    gh_client = GitHubClient(host=host)
+                    
                     # Get current branch
                     res = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], 
                                         cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)
@@ -61,7 +66,7 @@ async def complete_jira_ticket(config: Config) -> bool:
                     if pr_url:
                         pr_link = pr_url
                 else:
-                    logger.warning(f"Could not determine GitHub owner/repo from sanitized URL: {sanitize_url(remote_url)}")
+                    logger.warning(f"Could not determine GitHub host/owner/repo from sanitized URL: {sanitize_url(remote_url)}")
             except Exception as e:
                 logger.error(f"Error during PR creation: {e}")
 

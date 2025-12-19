@@ -30,17 +30,26 @@ def test_sanitize_url():
 def test_repo_parsing():
     """Test robust repository parsing from URLs."""
     gh = GitHubClient(token="mock")
-    urls = [
-        "https://github.com/owner/repo.git",
-        "https://github.com/owner/repo",
-        "git@github.com:owner/repo.git",
-        "https://token@github.com/owner/repo.git"
+    tests = [
+        ("https://github.com/owner/repo.git", ("github.com", "owner", "repo")),
+        ("https://github.com/owner/repo", ("github.com", "owner", "repo")),
+        ("git@github.com:owner/repo.git", ("github.com", "owner", "repo")),
+        ("https://token@git.example.net/owner/repo.git", ("git.example.net", "owner", "repo")),
+        ("git@git.internal.com:owner/repo", ("git.internal.com", "owner", "repo")),
     ]
-    for url in urls:
-        owner, repo = gh.get_repo_info_from_remote(url)
-        assert owner == "owner"
-        assert repo == "repo"
-    print("Verification Test Success: Robust repo parsing handles multiple formats.")
+    for url, expected in tests:
+        res = gh.get_repo_info_from_remote(url)
+        assert res == expected
+    print("Verification Test Success: Robust repo parsing handles custom GHE domains.")
+
+def test_ghe_api_base():
+    """Test that API base is correctly set for GHE."""
+    gh_com = GitHubClient(host="github.com")
+    assert gh_com.api_base == "https://api.github.com"
+    
+    gh_ghe = GitHubClient(host="git.example.net")
+    assert gh_ghe.api_base == "https://git.example.net/api/v3"
+    print("Verification Test Success: GHE API base is correctly determined.")
 
 async def test_complete_jira_ticket_success():
     """Test that completion flow handles git and jira calls correctly."""
@@ -65,7 +74,7 @@ async def test_complete_jira_ticket_success():
         # Setup GitHub collaborator info
         mock_gh = MagicMock()
         mock_gh_client.return_value = mock_gh
-        mock_gh.get_repo_info_from_remote.return_value = ("owner", "repo")
+        mock_gh.get_repo_info_from_remote.return_value = ("github.com", "owner", "repo")
         mock_gh.create_pr.return_value = "https://github.com/PR-123"
         
         # Setup git remote/branch mocks
@@ -92,4 +101,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test_sanitize_url()
     test_repo_parsing()
+    test_ghe_api_base()
     asyncio.run(test_complete_jira_ticket_success())

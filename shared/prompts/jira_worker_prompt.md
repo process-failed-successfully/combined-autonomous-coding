@@ -45,8 +45,8 @@ Your goal is not just to make it work, but to make it **maintainable, readable, 
 
 Before starting work, ensure you are on a feature branch.
 
-- If you are on `main` or `master`, create a new branch: `git checkout -b agent/your-feature-name`.
-- Use the Jira ticket key in the branch name MUST (e.g., `agent/PROJ-123-ui-fix`).
+- If you are on `main` or `master`, create a new branch: `git checkout -b agent/your-feature-name-{unique_branch_suffix}`.
+- Use the Jira ticket key in the branch name MUST (e.g., `agent/PROJ-123-ui-fix-{unique_branch_suffix}`).
 
 ### STEP 1: GET YOUR BEARINGS (MANDATORY)
 

@@ -71,7 +71,7 @@ Based on the Jira ticket, create a file called `feature_list.json`. This file is
 
 1. **init.sh**: If missing or inadequate, create/update `init.sh` to install dependencies and start servers.
 2. **README.md**: Ensure a clear README exists with setup instructions.
-3. **Initialize Git**: If you just cloned, ensure you are on a feature branch: `git checkout -b agent/PROJ-123-fix`.
+3. **Initialize Git**: If you just cloned, ensure you are on a feature branch: `git checkout -b agent/PROJ-123-fix-{unique_branch_suffix}`.
 
 ### COMMUNICATE WITH MANAGER
 

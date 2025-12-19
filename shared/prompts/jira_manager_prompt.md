@@ -36,7 +36,7 @@ You are invoked because either:
   - Create a file named `PROJECT_SIGNED_OFF`.
   - **NEW**: Create a file named `PR_DESCRIPTION.md` with the content for the GitHub Pull Request.
   - **NEW**: Create a file named `JIRA_COMMENT.txt` with a 1-3 sentence summary of the fix to be posted on the Jira ticket.
-  - **CRITICAL**: Do NOT manually push the branch or transition the ticket. The system will automatically handle branch pushing, PR creation, and Jira status updates upon seeing this file.
+  - **CRITICAL**: Do NOT manually push the branch or transition the ticket. The system will automatically handle branch pushing, PR creation, and Jira status updates upon seeing this file. Ensure the branch name includes the unique suffix `{unique_branch_suffix}`.
 - **IF INCOMPLETE OR POOR QUALITY**:
   - Write feedback to `manager_directives.txt`.
   - (Optional) Update `feature_list.json` (mark tasks as `false` if they failed verification or add new tasks).

@@ -51,6 +51,15 @@ async def complete_jira_ticket(config: Config) -> bool:
                     # Re-instantiate client with correct host
                     gh_client = GitHubClient(host=host)
                     
+                    # Detect default branch
+                    base_branch = "main"
+                    repo_meta = gh_client.get_repo_metadata(owner, repo)
+                    if repo_meta and "default_branch" in repo_meta:
+                        base_branch = repo_meta["default_branch"]
+                        logger.info(f"Detected default branch '{base_branch}' for repo {owner}/{repo}")
+                    else:
+                        logger.warning(f"Failed to detect default branch for {owner}/{repo}. Falling back to '{base_branch}'.")
+
                     # Get current branch
                     res = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], 
                                         cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)
@@ -61,7 +70,7 @@ async def complete_jira_ticket(config: Config) -> bool:
                         title=f"Fixes {config.jira_ticket_key}",
                         body=f"Automated PR for Jira Ticket {config.jira_ticket_key}.",
                         head=current_branch,
-                        base="main"
+                        base=base_branch
                     )
                     if pr_url:
                         pr_link = pr_url

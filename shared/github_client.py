@@ -21,6 +21,29 @@ class GitHubClient:
             # GitHub Enterprise uses /api/v3
             self.api_base = f"https://{self.host}/api/v3"
 
+    def get_repo_metadata(self, owner: str, repo: str) -> Optional[dict]:
+        """Fetch repository metadata from the API."""
+        if not self.token:
+            return None
+        
+        url = f"{self.api_base}/repos/{owner}/{repo}"
+        headers = {
+            "Authorization": f"token {self.token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        try:
+            logger.info(f"Fetching repo metadata for {owner}/{repo}")
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"Failed to fetch repo metadata: {response.status_code} - {response.text}")
+                return None
+        except Exception as e:
+            logger.error(f"Error fetching repo metadata: {e}")
+            return None
+
     def create_pr(self, owner: str, repo: str, title: str, body: str, head: str, base: str = "main") -> Optional[str]:
         """
         Create a Pull Request.

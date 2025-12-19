@@ -75,6 +75,7 @@ async def test_complete_jira_ticket_success():
         mock_gh = MagicMock()
         mock_gh_client.return_value = mock_gh
         mock_gh.get_repo_info_from_remote.return_value = ("github.com", "owner", "repo")
+        mock_gh.get_repo_metadata.return_value = {"default_branch": "master"}
         mock_gh.create_pr.return_value = "https://github.com/PR-123"
         
         # Setup git remote/branch mocks

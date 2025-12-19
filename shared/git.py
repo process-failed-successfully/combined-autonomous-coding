@@ -12,6 +12,15 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+def is_git_safeguard_active() -> bool:
+    """Check if the git push safeguard wrapper is active."""
+    try:
+        # Check if /usr/local/bin/git is the wrapper
+        # Or check if git.real exists
+        return Path("/usr/bin/git.real").exists()
+    except Exception:
+        return False
+
 def configure_git_auth(token: str, host: str = "github.com", username: str = "x-access-token") -> bool:
     """
     Configure global git to use the provided token for authentication.
@@ -74,6 +83,8 @@ def ensure_git_safe(project_dir: Path, ticket_key: str = None) -> None:
     """
     if not (project_dir / ".git").exists():
         logger.info("Initializing new git repository...")
+        if is_git_safeguard_active():
+             logger.info("Git push safeguard is ACTIVE.")
         run_git(["init"], project_dir)
         run_git(["add", "."], project_dir)
         run_git(["commit", "-m", "Initial commit"], project_dir)
@@ -115,9 +126,15 @@ def push_branch(project_dir: Path, branch_name: str = None) -> bool:
             )
             branch_name = res.stdout.strip()
 
+        # RESTRICTED BRANCH CHECK
+        restricted_branches = ["main", "master"]
+        if branch_name.lower() in restricted_branches:
+            logger.error(f"ABORTED: Attempted to push to restricted branch '{branch_name}'.")
+            # We raise an error or return False. Returning False is consistent with run_git pattern.
+            return False
+
         logger.info(f"Pushing branch {branch_name} to origin...")
-        run_git(["push", "-u", "origin", branch_name], project_dir)
-        return True
+        return run_git(["push", "-u", "origin", branch_name], project_dir)
     except Exception as e:
         logger.error(f"Failed to push branch: {e}")
         return False

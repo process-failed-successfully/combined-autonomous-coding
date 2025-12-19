@@ -50,6 +50,17 @@ RUN npm install -g @google/gemini-cli
 # Configure git to trust all directories (Global)
 RUN git config --global --add safe.directory '*'
 
+# Install Git Wrapper Safeguard
+COPY shared/git_wrapper.py /usr/local/bin/git
+RUN chmod +x /usr/local/bin/git && \
+    mv /usr/bin/git /usr/bin/git.real
+
+# Install Global Pre-push Hook (Secondary Safeguard)
+COPY shared/pre-push /usr/local/share/git-hooks/pre-push
+RUN chmod 0555 /usr/local/share/git-hooks/pre-push && \
+    chown root:root /usr/local/share/git-hooks/pre-push && \
+    git config --global core.hooksPath /usr/local/share/git-hooks
+
 # Create directory structure and set permissions
 RUN mkdir -p /app/combined-autonomous-coding && \
     chown -R appuser:appuser /app

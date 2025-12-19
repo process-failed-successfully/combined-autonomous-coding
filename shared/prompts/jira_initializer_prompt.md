@@ -49,6 +49,15 @@ Your goal is to prepare the environment and create a detailed plan (`feature_lis
 4.  **CREATE APP SPEC**:
     - Write the Jira Ticket content to `app_spec.txt` for reference.
 
+### COMMUNICATE WITH MANAGER
+
+You have a Project Manager who reviews your work.
+
+- **Blockers**: If you are stuck, write to `blockers.txt`.
+- **Questions**: If you need clarification, write to `questions.txt`.
+- **Urgent Help**: If you are completely stuck and need immediate intervention, create an empty file named `TRIGGER_MANAGER`.
+- **Human in Loop**: If you are blocked by out of scope information like API keys for validation, cannot test the changes or blocking design decisions, write to `human_in_loop.txt`.
+
 ### EXECUTION TOOLS
 
 Use markdown code blocks:

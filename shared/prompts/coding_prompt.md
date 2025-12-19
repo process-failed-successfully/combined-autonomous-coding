@@ -13,6 +13,7 @@ You are running inside a **Docker container**. This has specific implications:
 - **No GUI:** You have no graphical user interface. You cannot run apps that require a display (e.g., standard Chrome, desktop apps).
 - **Package Installation:** Always run `sudo apt-get update` before installing packages.
 - **Browser Automation:** Use headless browsers if automation is required.
+- **Git Safeguards:** You are PROTECTED from pushing to `main` or `master`. Any attempt to do so will be blocked by a system-level git wrapper. Always work on feature branches.
 
 ### CRITICAL: CODE QUALITY & BEST PRACTICES
 
@@ -35,6 +36,13 @@ Your goal is not just to make it work, but to make it **maintainable, readable, 
 
 - **Docstrings:** Every function and class must have a docstring explaining input, output, and purpose.
 - **In-line Comments:** Explain "why" complex logic exists, not just "what" it does.
+
+### STEP 0: GIT SETUP (MANDATORY)
+
+Before starting work, ensure you are on a feature branch.
+
+- If you are on `main` or `master`, create a new branch: `git checkout -b agent/your-feature-name`.
+- Use the Jira ticket key in the branch name if available (e.g., `agent/PROJ-123-ui-fix`).
 
 ### STEP 1: GET YOUR BEARINGS (MANDATORY)
 
@@ -188,9 +196,9 @@ to:
 
 **ONLY CHANGE "passes" FIELD AFTER VERIFICATION.**
 
-### STEP 8: COMMIT YOUR PROGRESS
+### STEP 8: COMMIT AND PUSH YOUR PROGRESS
 
-Make a descriptive git commit:
+Make a descriptive git commit and push to origin:
 
 ```bash
 git add .
@@ -200,7 +208,10 @@ git commit -m "Implement [feature name] - verified end-to-end
 - Verified with [method]
 - Updated feature_list.json: marked test #X as passing
 "
+git push origin HEAD
 ```
+
+**Note:** If you are on a new branch, use `git push -u origin HEAD` the first time.
 
 ### STEP 9: UPDATE PROGRESS NOTES
 

@@ -66,7 +66,7 @@ def run_git(cmd: list[str], cwd: Path) -> bool:
         return False
 
 
-def ensure_git_safe(project_dir: Path) -> None:
+def ensure_git_safe(project_dir: Path, ticket_key: str = None) -> None:
     """
     Ensure the project is in a safe git state.
     - If not a repo: init, commit, checkout branch.
@@ -84,7 +84,12 @@ def ensure_git_safe(project_dir: Path) -> None:
     # Maybe. But safer to always create a new one for a new run session.
 
     timestamp = int(time.time())
-    branch_name = f"agent/session-{timestamp}"
+    if ticket_key:
+        # Sanitize ticket key
+        safe_ticket = "".join(c if c.isalnum() or c in "-_" else "" for c in ticket_key)
+        branch_name = f"agent/{safe_ticket}-{timestamp}"
+    else:
+        branch_name = f"agent/session-{timestamp}"
 
     logger.info(f"Checking out safe branch: {branch_name}")
 
@@ -94,6 +99,28 @@ def ensure_git_safe(project_dir: Path) -> None:
         logger.info(f"Switched to new branch: {branch_name}")
     else:
         logger.warning(f"Failed to create/switch to branch {branch_name}. Check logs.")
+
+
+def push_branch(project_dir: Path, branch_name: str = None) -> bool:
+    """Push the current branch to origin."""
+    try:
+        if not branch_name:
+            # Get current branch
+            res = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=project_dir,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True
+            )
+            branch_name = res.stdout.strip()
+
+        logger.info(f"Pushing branch {branch_name} to origin...")
+        run_git(["push", "-u", "origin", branch_name], project_dir)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to push branch: {e}")
+        return False
 
 
 def clone_repo(url: str, dest_path: Path) -> bool:

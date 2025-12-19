@@ -32,8 +32,18 @@ async def run_cleaner_agent(config: Config, agent_client=None):
     if agent_client:
         agent_client.report_state(current_task="Cleaning Project...")
 
-    # We reuse the Gemini Client as the underlying engine
-    client = GeminiClient(config)
+    # Instantiate Correct Client
+    client = None
+    if config.agent_type == "cursor":
+        try:
+            from agents.cursor.client import CursorClient
+            client = CursorClient(config)
+            logger.info("Cleaner using Cursor Client.")
+        except ImportError:
+            logger.error("Could not import CursorClient. Falling back to Gemini.")
+            client = GeminiClient(config)
+    else:
+        client = GeminiClient(config)
 
     prompt = get_cleaner_prompt()
 

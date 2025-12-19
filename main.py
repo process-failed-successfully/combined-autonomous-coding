@@ -313,7 +313,8 @@ async def main():
 
     # Git Safety
     # Ensure we are on a safe branch before starting any agent work
-    ensure_git_safe(args.project_dir)
+    jira_key = config.jira_ticket_key if config.jira else None
+    ensure_git_safe(args.project_dir, ticket_key=jira_key)
 
     # Git Authentication (Env Var Check)
     git_token = os.environ.get("GIT_TOKEN")

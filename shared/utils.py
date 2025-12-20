@@ -10,7 +10,7 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
 
 if TYPE_CHECKING:
@@ -156,6 +156,8 @@ async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) ->
 
 def execute_write_block(filename: str, content: str, cwd: Path) -> str:
     """Write content to a file."""
+    if not filename:
+        return "Error: No filename provided."
     logger.info(f"[Writing File] {filename}")
     try:
         file_path = cwd / filename
@@ -177,6 +179,8 @@ def execute_write_block(filename: str, content: str, cwd: Path) -> str:
 
 def execute_read_block(filename: str, cwd: Path) -> str:
     """Read content from a file with line numbers."""
+    if not filename:
+        return "Error: No filename provided."
     logger.info(f"[Reading File] {filename}")
     try:
         file_path = (
@@ -202,6 +206,8 @@ def execute_read_block(filename: str, cwd: Path) -> str:
 
 async def execute_search_block(query: str, cwd: Path) -> str:
     """Search for a pattern in the codebase using grep."""
+    if not query:
+        return "Error: No search query provided."
     logger.info(f"[Searching] {query}")
     try:
         # Recursive, line number, context=2
@@ -234,8 +240,8 @@ async def process_response_blocks(
     response_text: str,
     project_dir: Path,
     bash_timeout: float = 120.0,
-    status_callback=None,
-    metrics_callback=None,
+    status_callback: Optional[Any] = None,
+    metrics_callback: Optional[Any] = None,
 ) -> Tuple[str, List[str]]:
     """
     Parse the response text for code blocks and execute them.
@@ -287,7 +293,7 @@ async def process_response_blocks(
                         get_telemetry().increment_counter(
                             "tool_execution_total", labels={"tool_type": "write"}
                         )
-                        output = execute_write_block(block_arg, content, project_dir)
+                        output = execute_write_block(block_arg or "", content, project_dir)
                     except Exception:
                         # tool_success = False
                         get_telemetry().increment_counter(
@@ -305,7 +311,7 @@ async def process_response_blocks(
                         get_telemetry().increment_counter(
                             "tool_execution_total", labels={"tool_type": "read"}
                         )
-                        output = execute_read_block(block_arg, project_dir)
+                        output = execute_read_block(block_arg or "", project_dir)
                     except Exception:
                         # tool_success = False
                         get_telemetry().increment_counter(
@@ -323,7 +329,7 @@ async def process_response_blocks(
                     get_telemetry().increment_counter(
                         "tool_execution_total", labels={"tool_type": "search"}
                     )
-                    output = await execute_search_block(block_arg, project_dir)
+                    output = await execute_search_block(block_arg or "", project_dir)
                 except Exception:
                     # tool_success = False  # Unused
                     get_telemetry().increment_counter(
@@ -440,7 +446,7 @@ def sanitize_url(url: str) -> str:
     """Mask sensitive information (tokens) in a URL."""
     if not url:
         return url
-    
+
     import re
     # Mask https://token@github.com... or https://user:token@github.com...
     return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)

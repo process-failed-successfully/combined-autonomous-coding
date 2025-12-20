@@ -18,7 +18,7 @@ class TestCleanerAgent(unittest.TestCase):
     async def async_test_run_cleaner_agent_gemini(self, mock_run, mock_client_cls):
         from unittest.mock import AsyncMock
         mock_run.side_effect = AsyncMock(return_value=("success", "response", ["action1"]))
-        
+
         config = MagicMock(spec=Config)
         config.project_dir = Path("/tmp/test_project")
         config.agent_type = "gemini"
@@ -48,7 +48,7 @@ class TestCleanerAgent(unittest.TestCase):
         config.agent_type = "cursor"
 
         agent_client = MagicMock()
-        
+
         mock_cursor_client = MagicMock()
         mock_run_cursor = AsyncMock(return_value=("success", "response", []))
 
@@ -56,7 +56,7 @@ class TestCleanerAgent(unittest.TestCase):
             with patch("agents.cursor.agent.run_agent_session", mock_run_cursor, create=True):
                 with patch.object(Path, "exists", return_value=True):
                     await run_cleaner_agent(config, agent_client)
-        
+
         mock_run_cursor.assert_called_once()
         self.assertEqual(config.agent_type, "cursor")
 

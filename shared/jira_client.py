@@ -6,7 +6,7 @@ Client for interacting with Jira (Cloud and Self-Hosted).
 """
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
 from jira import JIRA, JIRAError
 from shared.config import JiraConfig
 
@@ -21,7 +21,7 @@ class JiraClient:
 
     def __init__(self, config: JiraConfig):
         self.config = config
-        self._client = None
+        self._client: Optional[JIRA] = None
         self._connect()
 
     def _connect(self):
@@ -42,6 +42,8 @@ class JiraClient:
 
     def get_issue(self, issue_key: str) -> Optional[Any]:
         """Fetch a single issue by key (e.g., PROJ-123)."""
+        if not self._client:
+            raise RuntimeError("Jira Client not connected")
         try:
             issue = self._client.issue(issue_key)
             return issue
@@ -54,6 +56,8 @@ class JiraClient:
 
     def search_issues(self, jql: str, max_results: int = 10) -> List[Any]:
         """Search for issues using JQL."""
+        if not self._client:
+            return []
         try:
             issues = self._client.search_issues(jql, maxResults=max_results)
             return issues
@@ -78,6 +82,8 @@ class JiraClient:
         Transition an issue to a new status (by name).
         Tries to find a transition that matches the target_status name.
         """
+        if not self._client:
+            return False
         try:
             # We need to find the transition ID for the name
             transitions = self._client.transitions(issue_key)
@@ -86,7 +92,7 @@ class JiraClient:
                 if t["name"].lower() == target_status.lower():
                     t_id = t["id"]
                     break
-            
+
             if not t_id:
                 logger.warning(
                     f"Transition to '{target_status}' not found for {issue_key}. "
@@ -103,6 +109,8 @@ class JiraClient:
 
     def add_comment(self, issue_key: str, body: str) -> bool:
         """Add a comment to the issue."""
+        if not self._client:
+            return False
         try:
             self._client.add_comment(issue_key, body)
             logger.info(f"Added comment to {issue_key}")

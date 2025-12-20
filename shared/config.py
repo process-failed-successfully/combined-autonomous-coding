@@ -50,11 +50,10 @@ class Config:
     sprint_mode: bool = False
     max_agents: int = 1
     sprint_id: Optional[str] = None
-    
+
     # Jira State
     jira_ticket_key: Optional[str] = None
     jira_spec_content: Optional[str] = None  # Full content of the ticket
-
     # Manager Configuration
     manager_frequency: int = 10
     manager_model: Optional[str] = None

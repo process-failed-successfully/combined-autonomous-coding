@@ -23,7 +23,7 @@ try:
         CursorClient,
     )
 except ImportError:
-    run_cursor_session = None
+    run_cursor_session = None  # type: ignore
     CursorClient = None  # type: ignore
 
 
@@ -318,7 +318,7 @@ class SprintManager:
             iteration += 1
             if self.agent_client:
                 self.agent_client.report_state(iteration=iteration)
-            
+
             # Check for runnable tasks
             runnable = []
             for task in self.plan.tasks:
@@ -379,36 +379,36 @@ class SprintManager:
         # we can toggle the feature status?
         # A better approach: The feature status in JSON tracks overall progress.
         # We mark it as 'completed' only if all planned tasks for it are done.
-        
+
         # Determine which features were present in this plan
         planned_features = set()
         for t in self.plan.tasks:
             if t.feature_name:
                 planned_features.add(t.feature_name)
-        
+
         if not planned_features:
             return
 
         updated_any = False
         for feature in features:
-            f_name = feature.get("name") # Assuming 'name' key provided by user or standard? 
+            f_name = feature.get("name")  # Assuming 'name' key provided by user or standard?
             # Or assume list of strings? No, prompted as JSON in previous step, usually list of objects.
             # But earlier code used `feature.get("name")` in test... wait, test used name.
             # Let's assume standard object structure or check prompt.
             # Prompt doesn't enforce feature list structure, but it consumes it.
             # Assuming list of dicts with "name" or just keys.
-            
+
             if f_name in planned_features:
-                 # Check if ALL tasks for this feature in the CURRENT plan are completed
-                 tasks_for_feature = [t for t in self.plan.tasks if t.feature_name == f_name]
-                 if tasks_for_feature:
-                     all_done = all(t.status == "COMPLETED" for t in tasks_for_feature)
-                     if all_done:
+                # Check if ALL tasks for this feature in the CURRENT plan are completed
+                tasks_for_feature = [t for t in self.plan.tasks if t.feature_name == f_name]
+                if tasks_for_feature:
+                    all_done = all(t.status == "COMPLETED" for t in tasks_for_feature)
+                    if all_done:
                         if feature.get("status") != "completed":
                             feature["status"] = "completed"
                             updated_any = True
                             logger.info(f"Marking feature '{f_name}' as COMPLETED in feature_list.json")
-        
+
         if updated_any:
             self.config.feature_list_path.write_text(json.dumps(features, indent=2))
 

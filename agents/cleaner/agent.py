@@ -7,20 +7,14 @@ Runs after project sign-off to clean up temporary files.
 
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Any
 
 from shared.config import Config
 from agents.gemini.client import GeminiClient
 from agents.gemini.agent import run_agent_session as run_gemini_session
+from agents.shared.prompts import get_cleaner_prompt
 
 logger = logging.getLogger(__name__)
-
-
-def get_cleaner_prompt() -> str:
-    prompt_path = (
-        Path(__file__).parent.parent.parent / "shared/prompts/cleaner_prompt.md"
-    )
-    return prompt_path.read_text()
 
 
 async def run_cleaner_agent(config: Config, agent_client=None):
@@ -33,8 +27,8 @@ async def run_cleaner_agent(config: Config, agent_client=None):
         agent_client.report_state(current_task="Cleaning Project...")
 
     # Instantiate Correct Client and Session Runner
-    client = None
-    session_runner = None
+    client: Any = None
+    session_runner: Any = None
 
     if config.agent_type == "cursor":
         try:

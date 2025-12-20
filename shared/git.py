@@ -9,9 +9,11 @@ import logging
 import subprocess
 import time
 from pathlib import Path
+from typing import Optional
 from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
+
 
 def is_git_safeguard_active() -> bool:
     """Check if the git push safeguard wrapper is active."""
@@ -21,6 +23,7 @@ def is_git_safeguard_active() -> bool:
         return Path("/usr/bin/git.real").exists()
     except Exception:
         return False
+
 
 def configure_git_auth(token: str, host: str = "github.com", username: str = "x-access-token") -> bool:
     """
@@ -38,7 +41,7 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
 
         # Configure rewrite rule
         # git config --global url."https://${user}:${token}@${host}/".insteadOf "https://${host}/"
-        
+
         auth_url = f"https://{safe_user}:{safe_token}@{safe_host}/"
         base_url = f"https://{safe_host}/"
 
@@ -48,13 +51,12 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
             f"url.{auth_url}.insteadOf",
             base_url
         ]
-        
+
         subprocess.run(["git"] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     except Exception as e:
         logger.error(f"Failed to configure git auth: {e}")
         return False
-
 
 
 def run_git(cmd: list[str], cwd: Path) -> bool:
@@ -76,7 +78,7 @@ def run_git(cmd: list[str], cwd: Path) -> bool:
         return False
 
 
-def ensure_git_safe(project_dir: Path, ticket_key: str = None) -> None:
+def ensure_git_safe(project_dir: Path, ticket_key: Optional[str] = None) -> None:
     """
     Ensure the project is in a safe git state.
     - If not a repo: init, commit, checkout branch.
@@ -85,7 +87,7 @@ def ensure_git_safe(project_dir: Path, ticket_key: str = None) -> None:
     if not (project_dir / ".git").exists():
         logger.info("Initializing new git repository...")
         if is_git_safeguard_active():
-             logger.info("Git push safeguard is ACTIVE.")
+            logger.info("Git push safeguard is ACTIVE.")
         run_git(["init"], project_dir)
         run_git(["add", "."], project_dir)
         run_git(["commit", "-m", "Initial commit"], project_dir)
@@ -113,7 +115,7 @@ def ensure_git_safe(project_dir: Path, ticket_key: str = None) -> None:
         logger.warning(f"Failed to create/switch to branch {branch_name}. Check logs.")
 
 
-def push_branch(project_dir: Path, branch_name: str = None) -> bool:
+def push_branch(project_dir: Path, branch_name: Optional[str] = None) -> bool:
     """Push the current branch to origin."""
     try:
         if not branch_name:

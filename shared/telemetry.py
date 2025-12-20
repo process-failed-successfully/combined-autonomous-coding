@@ -4,7 +4,7 @@ import socket
 import time
 import threading
 import psutil
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
@@ -69,7 +69,7 @@ class Telemetry:
         )
         self.monitoring_active = False
 
-    def capture_logs_from(self, logger_name: str = None):
+    def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
         target_logger = logging.getLogger(logger_name)
         # Avoid duplicate handlers
@@ -246,7 +246,7 @@ class Telemetry:
 
         return final_labels
 
-    def record_gauge(self, name: str, value: float, labels: Dict[str, str] = None):
+    def record_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
         labels = labels or {}
@@ -271,7 +271,7 @@ class Telemetry:
             self._push_metrics()
 
     def increment_counter(
-        self, name: str, value: float = 1.0, labels: Dict[str, str] = None
+        self, name: str, value: float = 1.0, labels: Optional[Dict[str, str]] = None
     ):
         if not ENABLE_METRICS:
             return
@@ -294,7 +294,7 @@ class Telemetry:
             self.metrics[name].labels(**final_labels).inc(value)
             self._push_metrics()
 
-    def record_histogram(self, name: str, value: float, labels: Dict[str, str] = None):
+    def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
         labels = labels or {}
@@ -382,13 +382,16 @@ _telemetry = None
 
 
 def init_telemetry(
-    service_name: str, agent_type: str = "unknown", project_name: str = "unknown"
-):
+    service_name: str,
+    agent_type: str = "generic",
+    project_name: str = "unknown",
+    logger_name: Optional[str] = None,
+) -> None:
     global _telemetry
     _telemetry = Telemetry(
         service_name, agent_type=agent_type, project_name=project_name
     )
-    return _telemetry
+    # return _telemetry # Mypy: return value expected None
 
 
 def get_telemetry() -> Telemetry:

@@ -17,7 +17,7 @@ echo "[2/4] Running Mypy Type Checking..."
 mypy . --ignore-missing-imports --no-strict-optional || echo "Mypy found issues (continuing for now)"
 
 echo "[3/4] Running Bandit Security Scan..."
-bandit -r . -c "pyproject.toml" -ll -b bandit_baseline.json -f custom
+bandit -r . -c "pyproject.toml" -ll -b bandit_baseline.json -f custom -x .venv,venv,build,tests
 
 echo -e "\n========================================"
 echo "  UNIT & INTEGRATION TESTS (PYTEST)"

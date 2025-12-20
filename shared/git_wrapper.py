@@ -6,6 +6,7 @@ import os
 # Protected branches that cannot be pushed to
 PROTECTED_BRANCHES = ["main", "master"]
 
+
 def get_current_branch():
     try:
         result = subprocess.run(
@@ -18,27 +19,28 @@ def get_current_branch():
     except Exception:
         return None
 
+
 def main():
     args = sys.argv[1:]
-    
+
     # Check if this is a push command
     if args and args[0] == "push":
         # 1. Check current branch if no explicit branch is provided
         current_branch = get_current_branch()
-        
+
         # We block if current branch is protected and we are doing a simple push
         # or if any argument matches a protected branch
-        
+
         is_blocked = False
         blocked_reason = ""
-        
+
         # Check arguments for branch names
         for arg in args:
             if arg in PROTECTED_BRANCHES:
                 is_blocked = True
                 blocked_reason = f"Explicitly pushing to protected branch '{arg}' is forbidden."
                 break
-        
+
         # If no explicit branch in args, check current branch
         if not is_blocked and current_branch in PROTECTED_BRANCHES:
             # Check if args contains origin or other remotes without branch names
@@ -52,7 +54,7 @@ def main():
                     # This might be a branch name
                     has_branch_arg = True
                     break
-            
+
             if not has_branch_arg:
                 is_blocked = True
                 blocked_reason = f"Attempting to push from protected branch '{current_branch}' is forbidden."
@@ -72,12 +74,13 @@ def main():
         # Fallback if git.real is not set up yet (for local testing)
         # In this case we just use the system 'git' but avoid infinite recursion
         if os.environ.get("GIT_WRAPPER_TESTING"):
-             print("DEBUG: Executing real git (mocked)", file=sys.stderr)
-             sys.exit(0)
-        
+            print("DEBUG: Executing real git (mocked)", file=sys.stderr)
+            sys.exit(0)
+
         # If we are not in testing mode and git.real is missing, it's a configuration error
         print("Error: git.real not found. Git wrapper is not correctly installed.", file=sys.stderr)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

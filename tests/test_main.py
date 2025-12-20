@@ -57,6 +57,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.max_agents = 2
         args.timeout = None
         args.dashboard_url = "http://test"
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"

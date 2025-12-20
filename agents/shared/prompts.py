@@ -5,8 +5,9 @@ Prompt Loading Utilities for Gemini
 
 import shutil
 from pathlib import Path
+from typing import Optional
 
-PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
+PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared/prompts"
 
 
 def load_prompt(name: str) -> str:
@@ -23,6 +24,11 @@ def get_initializer_prompt() -> str:
 def get_coding_prompt() -> str:
     """Load the coding agent prompt."""
     return load_prompt("coding_prompt")
+
+
+def get_cleaner_prompt() -> str:
+    """Load the cleaner agent prompt."""
+    return load_prompt("cleaner_prompt")
 
 
 def get_manager_prompt() -> str:
@@ -55,7 +61,7 @@ def get_jira_worker_prompt() -> str:
     return load_prompt("jira_worker_prompt")
 
 
-def copy_spec_to_project(project_dir: Path, custom_spec_path: Path = None) -> None:
+def copy_spec_to_project(project_dir: Path, custom_spec_path: Optional[Path] = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = custom_spec_path if custom_spec_path else PROMPTS_DIR / "app_spec.txt"
     spec_dest = project_dir / "app_spec.txt"

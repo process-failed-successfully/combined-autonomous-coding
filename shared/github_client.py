@@ -7,6 +7,7 @@ from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
 
+
 class GitHubClient:
     def __init__(self, token: Optional[str] = None, host: str = "github.com"):
         self.token = token or os.environ.get("GIT_TOKEN") or os.environ.get("GITHUB_TOKEN")
@@ -25,16 +26,16 @@ class GitHubClient:
         """Fetch repository metadata from the API."""
         if not self.token:
             return None
-        
+
         url = f"{self.api_base}/repos/{owner}/{repo}"
         headers = {
             "Authorization": f"token {self.token}",
             "Accept": "application/vnd.github.v3+json"
         }
-        
+
         try:
             logger.info(f"Fetching repo metadata for {owner}/{repo}")
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 return response.json()
             else:
@@ -67,8 +68,8 @@ class GitHubClient:
 
         try:
             logger.info(f"Creating PR in {owner}/{repo} ({self.host}): {title}")
-            response = requests.post(url, json=data, headers=headers)
-            
+            response = requests.post(url, json=data, headers=headers, timeout=10)
+
             if response.status_code == 201:
                 pr_data = response.json()
                 pr_url = pr_data.get("html_url")
@@ -94,7 +95,7 @@ class GitHubClient:
             clean_url = remote_url.strip()
             if clean_url.endswith(".git"):
                 clean_url = clean_url[:-4]
-            
+
             # Pattern for HTTPS: https://[token@]host/owner/repo
             https_match = re.search(r"https?://(?:[^@/]+@)?(?P<host>[^/]+)/(?P<owner>[^/]+)/(?P<repo>[^/]+)/?$", clean_url)
             if https_match:

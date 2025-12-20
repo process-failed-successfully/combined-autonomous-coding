@@ -165,10 +165,10 @@ class TestSharedModules(unittest.TestCase):
         # Simulate current branch is main
         mock_sub_run.return_value.stdout = "main\n"
         mock_sub_run.return_value.returncode = 0
-        
+
         from shared.git import push_branch
         res = push_branch(Path("/tmp/fake_repo"))
-        
+
         self.assertFalse(res)
         # Verify run_git was NOT called for push
         mock_run_git.assert_not_called()
@@ -180,10 +180,10 @@ class TestSharedModules(unittest.TestCase):
         mock_sub_run.return_value.stdout = "agent/PROJ-123\n"
         mock_sub_run.return_value.returncode = 0
         mock_run_git.return_value = True
-        
+
         from shared.git import push_branch
         res = push_branch(Path("/tmp/fake_repo"))
-        
+
         self.assertTrue(res)
         # Verify run_git WAS called for push
         mock_run_git.assert_called_with(["push", "-u", "origin", "agent/PROJ-123"], Path("/tmp/fake_repo"))

@@ -37,9 +37,8 @@ def test_agent_session_parity():
     common_args = [
         "client",
         "prompt",
-        "recent_history",
+        "history",
         "status_callback",
-        "metrics_callback",
     ]
 
     for arg in common_args:

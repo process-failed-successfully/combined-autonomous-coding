@@ -3,6 +3,11 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 import json
 import asyncio
+import sys
+
+# Add project root to path
+sys.path.append(str(Path(__file__).parent.parent))
+
 from shared.config import Config
 from agents.shared.sprint import SprintManager, Task, SprintPlan
 
@@ -15,6 +20,7 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
         self.config.feature_list_path = self.config.project_dir / "features.json"
         self.config.agent_type = "gemini"
         self.config.max_agents = 2
+        self.config.spec_file = self.config.project_dir / "app_spec.txt"
 
         self.agent_client = MagicMock()
 
@@ -36,10 +42,6 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
                 {"id": "2", "title": "Task 2", "dependencies": ["1"]},
             ],
         }
-
-        # Mock writing to file via side effect of agent
-        # The agent logic in run_planning_phase expects the file to exist after session
-        # OR it parses from response.
 
         mock_run_session.return_value = (
             "continue",
@@ -66,9 +68,24 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
 
     @patch("agents.shared.sprint.GeminiClient")
     @patch("agents.shared.sprint.run_gemini_session")
+    @patch("agents.shared.sprint.get_sprint_planner_prompt")
+    async def test_run_planning_phase_parsing_fail(
+        self, mock_prompt, mock_run_session, mock_client_cls
+    ):
+        mock_prompt.return_value = "Plan prompt"
+        # Mock response without valid JSON
+        mock_run_session.return_value = ("continue", "Invalid response", [])
+
+        with patch.object(Path, "exists") as mock_exists:
+            mock_exists.side_effect = [False, False, False]
+            success = await self.manager.run_planning_phase()
+            self.assertFalse(success)
+
+    @patch("agents.shared.sprint.GeminiClient")
+    @patch("agents.shared.sprint.run_gemini_session")
     @patch("agents.shared.sprint.get_sprint_worker_prompt")
     @patch("agents.shared.sprint.AgentClient")
-    async def test_run_worker(
+    async def test_run_worker_success(
         self, mock_agent_client_cls, mock_prompt, mock_run_session, mock_client_cls
     ):
         task = Task(id="1", title="T1", description="D1")
@@ -77,7 +94,6 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
         mock_worker_client.poll_commands.return_value.pause_requested = False
         mock_agent_client_cls.return_value = mock_worker_client
 
-        # Mock session to complete task
         mock_run_session.return_value = (
             "continue",
             "Done! SPRINT_TASK_COMPLETE",
@@ -88,6 +104,50 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(task.status, "COMPLETED")
         self.assertIn("1", self.manager.completed_tasks)
+        mock_worker_client.stop.assert_called()
+
+    @patch("agents.shared.sprint.GeminiClient")
+    @patch("agents.shared.sprint.run_gemini_session")
+    @patch("agents.shared.sprint.get_sprint_worker_prompt")
+    @patch("agents.shared.sprint.AgentClient")
+    async def test_run_worker_failed_response(
+        self, mock_agent_client_cls, mock_prompt, mock_run_session, mock_client_cls
+    ):
+        task = Task(id="1", title="T1", description="D1")
+
+        mock_worker_client = MagicMock()
+        mock_worker_client.poll_commands.return_value.pause_requested = False
+        mock_agent_client_cls.return_value = mock_worker_client
+
+        mock_run_session.return_value = (
+            "continue",
+            "Failed! SPRINT_TASK_FAILED",
+            ["action"],
+        )
+
+        await self.manager.run_worker(task)
+
+        self.assertEqual(task.status, "FAILED")
+        self.assertIn("1", self.manager.failed_tasks)
+        mock_worker_client.stop.assert_called()
+
+    @patch("agents.shared.sprint.GeminiClient")
+    @patch("agents.shared.sprint.run_gemini_session")
+    @patch("agents.shared.sprint.get_sprint_worker_prompt")
+    @patch("agents.shared.sprint.AgentClient")
+    async def test_run_worker_crash(
+        self, mock_agent_client_cls, mock_prompt, mock_run_session, mock_client_cls
+    ):
+        task = Task(id="1", title="T1", description="D1")
+
+        mock_worker_client = MagicMock()
+        mock_worker_client.poll_commands.return_value.pause_requested = False
+        mock_agent_client_cls.return_value = mock_worker_client
+
+        mock_run_session.side_effect = Exception("Crash")
+
+        await self.manager.run_worker(task)
+
         mock_worker_client.stop.assert_called()
 
     async def test_execute_sprint_logic(self):
@@ -103,7 +163,7 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
         # Mock run_worker to simulate async completion
         async def mock_worker(task):
             task.status = "IN_PROGRESS"
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
             task.status = "COMPLETED"
             self.manager.completed_tasks.add(task.id)
             self.manager.running_tasks.remove(task.id)
@@ -114,6 +174,32 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(t1.status, "COMPLETED")
         self.assertEqual(t2.status, "COMPLETED")
+
+    def test_update_feature_list_success(self):
+        features = [{"name": "F1", "status": "pending"}]
+        self.manager.plan = SprintPlan(
+            sprint_goal="G",
+            tasks=[Task(id="1", title="T1", description="D1", status="COMPLETED", feature_name="F1")]
+        )
+
+        with patch.object(Path, "exists") as mock_exists:
+            mock_exists.return_value = True
+            with patch.object(Path, "read_text") as mock_read:
+                mock_read.return_value = json.dumps(features)
+                with patch.object(Path, "write_text") as mock_write:
+
+                    self.manager.update_feature_list()
+
+                    # Verify write was called with updated status
+                    args, _ = mock_write.call_args
+                    written_data = json.loads(args[0])
+                    self.assertEqual(written_data[0]["status"], "completed")
+
+    def test_update_feature_list_missing_file(self):
+        with patch.object(Path, "exists") as mock_exists:
+            mock_exists.return_value = False
+            # Should just return without error
+            self.manager.update_feature_list()
 
 
 if __name__ == "__main__":

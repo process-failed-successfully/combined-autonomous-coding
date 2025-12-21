@@ -29,4 +29,7 @@ pytest --cov=. --cov-report=term-missing tests/
 echo -e "\nRunning Setup Verification..."
 python3 tests/verify_setup.py
 
+echo -e "\n[5/5] Verifying Grafana Dashboards..."
+python3 tests/verify_dashboards.py
+
 echo -e "\n\033[0;32mAll Checks Passed Successfully!\033[0m"

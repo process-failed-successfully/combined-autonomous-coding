@@ -83,6 +83,11 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           python3 tests/verify_setup.py
 
+      - name: Verify Dashboards
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          python3 tests/verify_dashboards.py
+
   docker-build:
     name: 🐳 Docker Build Check
     runs-on: ubuntu-latest

@@ -130,10 +130,21 @@ RECENT ACTIONS:
             status_callback=local_status_update,
         )
         latency = time.time() - start_time
+
+        # Determine role from agent_id or config
+        role = "unknown"
+        if client.config.agent_id:
+            if "worker" in client.config.agent_id:
+                role = "worker"
+            elif "planner" in client.config.agent_id or "manager" in client.config.agent_id:
+                role = "planner"
+            else:
+                role = "autonomous"
+
         get_telemetry().record_histogram(
             "llm_latency_seconds",
             latency,
-            labels={"model": client.config.model or "unknown", "operation": "generate_content"},
+            labels={"model": client.config.model or "unknown", "operation": "generate_content", "role": role},
         )
 
         response_text = ""
@@ -167,12 +178,12 @@ RECENT ACTIONS:
             get_telemetry().increment_counter(
                 "llm_tokens_total",
                 prompt_tokens,
-                labels={"model": client.config.model or "unknown", "type": "input"},
+                labels={"model": client.config.model or "unknown", "type": "input", "role": role},
             )
             get_telemetry().increment_counter(
                 "llm_tokens_total",
                 candidates_tokens,
-                labels={"model": client.config.model or "unknown", "type": "output"},
+                labels={"model": client.config.model or "unknown", "type": "output", "role": role},
             )
 
         # Execute any blocks found in the response

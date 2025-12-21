@@ -126,11 +126,11 @@ class Telemetry:
         self.register_histogram(
             "llm_latency_seconds",
             "LLM response time",
-            ["agent_id", "model", "operation"],
+            ["agent_id", "model", "operation", "role"],
             buckets=(1, 5, 10, 30, 60, 120, 300),
         )
         self.register_counter(
-            "llm_tokens_total", "Combined token counter", ["agent_id", "model", "type"]
+            "llm_tokens_total", "Combined token counter", ["agent_id", "model", "type", "role"]
         )
         self.register_counter(
             "llm_errors_total", "LLM API errors", ["agent_id", "model", "error_type"]
@@ -178,6 +178,31 @@ class Telemetry:
             "agent_crashes_total", "Agent process crashes", ["agent_id"]
         )
 
+        # 7. Sprint Metrics
+        self.register_gauge(
+            "sprint_tasks_total", "Total tasks in current sprint", ["project"]
+        )
+        self.register_counter(
+            "sprint_tasks_completed", "Tasks completed in sprint", ["project"]
+        )
+        self.register_counter(
+            "sprint_tasks_failed", "Tasks failed in sprint", ["project"]
+        )
+        self.register_gauge(
+            "sprint_active_workers", "Currently running worker agents", ["project"]
+        )
+        self.register_histogram(
+            "sprint_task_duration_seconds",
+            "Time taken for sprint tasks",
+            ["project", "status"],
+            buckets=(10, 30, 60, 120, 300, 600, 1800),
+        )
+        self.register_gauge(
+            "sprint_planning_duration_seconds",
+            "Time taken for sprint planning",
+            ["project", "status"],
+        )
+
     @classmethod
     def get_instance(cls, service_name: str = "unknown_agent"):
         if cls._instance is None:
@@ -199,6 +224,12 @@ class Telemetry:
             self.increment_counter("agent_iterations_total", 0)
             self.increment_counter("files_written_total", 0)
             self.increment_counter("files_read_total", 0)
+            self.increment_counter("sprint_tasks_completed", 0)
+            self.increment_counter("sprint_tasks_failed", 0)
+
+            # Initialize Sprint Gauges
+            self.record_gauge("sprint_tasks_total", 0)
+            self.record_gauge("sprint_active_workers", 0)
 
         except Exception as e:
             self.log_error(f"Failed to initialize default metrics: {e}")
@@ -266,6 +297,8 @@ class Telemetry:
                         final_labels[lbl] = self.project_name
                     elif lbl == "agent_type":
                         final_labels[lbl] = self.agent_type
+                    elif lbl == "role":
+                        final_labels[lbl] = "unknown"
 
             self.metrics[name].labels(**final_labels).set(value)
             self._push_metrics()
@@ -290,6 +323,8 @@ class Telemetry:
                         final_labels[lbl] = self.project_name
                     elif lbl == "agent_type":
                         final_labels[lbl] = self.agent_type
+                    elif lbl == "role":
+                        final_labels[lbl] = "unknown"
 
             self.metrics[name].labels(**final_labels).inc(value)
             self._push_metrics()
@@ -312,6 +347,8 @@ class Telemetry:
                         final_labels[lbl] = self.project_name
                     elif lbl == "agent_type":
                         final_labels[lbl] = self.agent_type
+                    elif lbl == "role":
+                        final_labels[lbl] = "unknown"
 
             self.metrics[name].labels(**final_labels).observe(value)
             self._push_metrics()

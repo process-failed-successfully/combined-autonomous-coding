@@ -2,9 +2,9 @@ name: Robust CI
 
 on:
   push:
-    branches: ["master", "main"]
+    branches: ["**"]
   pull_request:
-    branches: ["master", "main"]
+    branches: ["**"]
   workflow_dispatch:
 
 permissions:

@@ -105,6 +105,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.login = False
         args.sprint = False
         args.timeout = 600.0
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
 
@@ -136,6 +138,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_only = False
         args.sprint = True  # Enables Sprint Mode
         args.timeout = 600.0
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
 
@@ -245,6 +249,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_only = False
         args.sprint = False
         args.timeout = None
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
 

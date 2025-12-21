@@ -386,12 +386,12 @@ def init_telemetry(
     agent_type: str = "generic",
     project_name: str = "unknown",
     logger_name: Optional[str] = None,
-) -> None:
+) -> Telemetry:
     global _telemetry
     _telemetry = Telemetry(
         service_name, agent_type=agent_type, project_name=project_name
     )
-    # return _telemetry # Mypy: return value expected None
+    return _telemetry
 
 
 def get_telemetry() -> Telemetry:

@@ -28,51 +28,71 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 4,
+        "w": 6,
         "x": 0,
         "y": 0
       },
       "id": 1,
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "Offline",
-                  "color": "red"
-                },
-                "1": {
-                  "text": "Online",
-                  "color": "green"
-                }
-              }
-            }
-          ]
-        }
-      },
       "options": {
-        "colWidth": 0.9,
         "colorMode": "value",
-        "rowHeight": 0.9,
-        "showValue": "never",
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
       },
       "targets": [
         {
-          "expr": "time() - agent_heartbeat_timestamp < bool 60",
-          "format": "time_series",
-          "legendFormat": "{{agent_id}}",
+          "expr": "sum(sprint_tasks_completed)",
           "refId": "A"
         }
       ],
-      "title": "Agent Status Grid (Green = Online, Red = Offline)",
-      "type": "state-timeline"
+      "title": "Sprint Tasks Completed",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "sum(sprint_tasks_failed)",
+          "refId": "A"
+        }
+      ],
+      "title": "Sprint Tasks Failed",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -83,9 +103,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 4
       },
-      "id": 2,
+      "id": 3,
       "options": {
         "legend": {
           "calcs": [
@@ -119,16 +139,16 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 4
       },
-      "id": 3,
+      "id": 4,
       "options": {
         "legend": {
           "calcs": [
-            "sum"
+            "mean"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -138,12 +158,12 @@
       },
       "targets": [
         {
-          "expr": "rate(agent_errors_total[5m])",
-          "legendFormat": "{{error_type}}",
+          "expr": "sum by (tool_type) (rate(tool_execution_total[5m]))",
+          "legendFormat": "{{tool_type}}",
           "refId": "A"
         }
       ],
-      "title": "Global Error Rate",
+      "title": "Tool Execution Rate (5m avg)",
       "type": "timeseries"
     },
     {
@@ -155,9 +175,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 12
       },
-      "id": 4,
+      "id": 5,
       "options": {
         "calculate": false,
         "cellGap": 1,
@@ -197,6 +217,42 @@
       ],
       "title": "LLM Latency Heatmap",
       "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (tool_type) (rate(tool_errors_total[5m]))",
+          "legendFormat": "{{tool_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool Errors (5m avg)",
+      "type": "timeseries"
     }
   ],
   "refresh": "5s",
@@ -214,6 +270,6 @@
   "timezone": "",
   "title": "Operations Command Center",
   "uid": "ops-center",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

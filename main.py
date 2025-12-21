@@ -208,15 +208,18 @@ async def main():
     jira_env_email = os.environ.get("JIRA_EMAIL")
     jira_env_token = os.environ.get("JIRA_TOKEN")
 
-    if jira_env_url: jira_cfg_data["url"] = jira_env_url
-    if jira_env_email: jira_cfg_data["email"] = jira_env_email
-    if jira_env_token: jira_cfg_data["token"] = jira_env_token
+    if jira_env_url:
+        jira_cfg_data["url"] = jira_env_url
+    if jira_env_email:
+        jira_cfg_data["email"] = jira_env_email
+    if jira_env_token:
+        jira_cfg_data["token"] = jira_env_token
 
     if args.jira_ticket or args.jira_label:
         if not jira_cfg_data:
-             print("Error: Jira arguments provided but no Jira configuration found (config file or env vars).", file=sys.stderr)
-             print("Please set JIRA_URL, JIRA_EMAIL, JIRA_TOKEN or configure agent_config.yaml", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Jira arguments provided but no Jira configuration found (config file or env vars).", file=sys.stderr)
+            print("Please set JIRA_URL, JIRA_EMAIL, JIRA_TOKEN or configure agent_config.yaml", file=sys.stderr)
+            sys.exit(1)
         config.jira = JiraConfig(**jira_cfg_data)
 
     # Correction for boolean flags initialized with 'store_true' (default False)
@@ -227,33 +230,32 @@ async def main():
     repo_root = Path(__file__).parent
     agents_log_dir = repo_root / "agents/logs"
     agents_log_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
-    # But for now, we can use a generic one or wait. 
-    # Let's setup a basic console logger first? 
+    # But for now, we can use a generic one or wait.
+    # Let's setup a basic console logger first?
     # existing setup_logger requires a file. We will update it later.
 
     # JIRA LOGIC
     jira_client = None
-    jira_ticket = None
+    # jira_ticket = None  # Unused
     jira_spec_content = ""
 
     if config.jira and (args.jira_ticket or args.jira_label):
         from shared.jira_client import JiraClient
-        from shared.jira_client import JiraClient
 
         try:
             jira_client = JiraClient(config.jira)
-            
+
             if args.jira_ticket:
                 issue = jira_client.get_issue(args.jira_ticket)
             elif args.jira_label:
                 issue = jira_client.get_first_todo_by_label(args.jira_label)
-            
+
             if issue:
-                jira_ticket = issue
+                # jira_ticket = issue  # Unused
                 print(f"Working on Jira Ticket: {issue.key} - {issue.fields.summary}")
-                
+
                 # Parse Description (for context only)
                 desc = issue.fields.description or ""
 
@@ -262,11 +264,11 @@ async def main():
                 config.jira_ticket_key = issue.key
                 config.jira_spec_content = jira_spec_content
                 project_name = issue.key
-                
+
                 # Transition to In Progress (default 'Start' status)
                 start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
                 jira_client.transition_issue(issue.key, start_status)
-    
+
             else:
                 print("No suitable Jira ticket found.")
                 sys.exit(0)
@@ -302,7 +304,7 @@ async def main():
         logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
-    
+
     # Check spec requirement for fresh projects (Updated for Jira)
     is_fresh = not config.feature_list_path.exists()
     if is_fresh and not args.spec and not jira_spec_content:

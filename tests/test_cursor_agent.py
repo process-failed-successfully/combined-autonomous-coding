@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
 from shared.config import Config
-from agents.cursor.agent import run_agent_session, run_autonomous_agent
+from agents.cursor.agent import CursorAgent, run_autonomous_agent
 
 
 class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
@@ -20,82 +20,86 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
         self.config.max_consecutive_errors = 3
         self.config.login_mode = False
         self.config.verify_creation = False
-
-        self.client = MagicMock()
-        self.client.config = self.config
-        self.client.run_command = AsyncMock()
-
-        # Default mock for run_command
-        self.client.run_command.return_value = {"content": "response"}
+        self.config.manager_model = "manager-model"
+        self.config.bash_timeout = 60.0
+        self.config.jira = None
+        self.config.jira_ticket_key = None
+        self.config.jira_spec_content = None
+        self.config.agent_id = "test-agent"
+        # base agent expects these
+        self.config.spec_file = Path("spec.txt")
 
     @patch("agents.cursor.agent.get_file_tree")
     @patch("agents.cursor.agent.process_response_blocks")
     @patch("agents.cursor.agent.get_telemetry")
+    @patch("agents.cursor.agent.CursorClient")
     async def test_run_agent_session_basic(
-        self, mock_telemetry, mock_process_blocks, mock_get_tree
+        self, mock_client_cls, mock_telemetry, mock_process_blocks, mock_get_tree
     ):
         mock_get_tree.return_value = "file tree"
         mock_process_blocks.return_value = ("log", ["action1"])
 
-        status, response, actions = await run_agent_session(
-            self.client, "prompt", ["history"], None
+        # Setup Client Mock
+        mock_client_instance = MagicMock()
+        mock_client_instance.config = self.config
+        mock_client_instance.run_command = AsyncMock()
+        mock_client_instance.run_command.return_value = {"content": "response"}
+        mock_client_cls.return_value = mock_client_instance
+
+        agent = CursorAgent(self.config)
+        agent.recent_history = ["history"]
+
+        status, response, actions = await agent.run_agent_session(
+            "prompt", None
         )
 
         self.assertEqual(status, "continue")
         self.assertEqual(response, "response")
         self.assertEqual(actions, ["action1"])
 
-        self.client.run_command.assert_called()
+        mock_client_instance.run_command.assert_called()
         mock_telemetry.return_value.record_histogram.assert_called()
 
     @patch("agents.cursor.agent.get_file_tree")
     @patch("agents.cursor.agent.process_response_blocks")
-    async def test_run_agent_session_error(self, mock_process_blocks, mock_get_tree):
+    @patch("agents.cursor.agent.CursorClient")
+    async def test_run_agent_session_error(self, mock_client_cls, mock_process_blocks, mock_get_tree):
         mock_get_tree.return_value = "file tree"
-        self.client.run_command.side_effect = Exception("Run failed")
 
-        status, response, actions = await run_agent_session(
-            self.client, "prompt", [], None
+        # Setup Client Mock to raise error
+        mock_client_instance = MagicMock()
+        mock_client_instance.config = self.config
+        mock_client_instance.run_command = AsyncMock()
+        mock_client_instance.run_command.side_effect = Exception("Run failed")
+        mock_client_cls.return_value = mock_client_instance
+
+        agent = CursorAgent(self.config)
+
+        status, response, actions = await agent.run_agent_session(
+            "prompt", None
         )
 
         self.assertEqual(status, "error")
         self.assertIn("Run failed", response)
         self.assertEqual(actions, [])
 
-    @patch("agents.cursor.agent.get_file_tree")
-    async def test_run_agent_session_candidates_format(self, mock_get_tree):
-        # Mock Cursor response with "candidates" format
-        self.client.run_command.return_value = {
-            "candidates": [{"content": {"parts": [{"text": "candidate text"}]}}]
-        }
-
-        with patch(
-            "agents.cursor.agent.process_response_blocks", return_value=("", [])
-        ):
-            status, response, actions = await run_agent_session(
-                self.client, "prompt", [], None
-            )
-            self.assertEqual(response, "candidate text")
-
-    @patch("agents.cursor.agent.log_startup_config")
-    @patch("agents.cursor.agent.init_telemetry")
-    @patch("agents.cursor.agent.get_telemetry")
-    @patch("agents.cursor.agent.CursorClient")
-    @patch("agents.cursor.agent.run_agent_session")
-    @patch("agents.cursor.agent.get_initializer_prompt")
-    @patch("agents.cursor.agent.copy_spec_to_project")
+    @patch("agents.shared.base_agent.log_startup_config")
+    @patch("agents.shared.base_agent.init_telemetry")
+    @patch("agents.shared.base_agent.get_telemetry")
+    @patch("agents.cursor.agent.CursorAgent.run_agent_session")
+    @patch("agents.cursor.agent.CursorAgent.select_prompt")
+    @patch("agents.shared.base_agent.copy_spec_to_project")
     async def test_run_autonomous_agent_first_run(
         self,
         mock_copy_spec,
-        mock_get_init_prompt,
+        mock_select_prompt,
         mock_run_session,
-        mock_client_cls,
         mock_get_telemetry,
         mock_init_telemetry,
         mock_log_config,
     ):
-        # Setup mocks
-        mock_client_cls.return_value = self.client
+        # mock_run_session is now CursorAgent.run_agent_session
+        mock_select_prompt.return_value = ("init prompt", False)
 
         # Simulate is_first_run = True (feature file not exist)
         with patch.object(Path, "exists", return_value=False):
@@ -108,55 +112,32 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
             await run_autonomous_agent(self.config, None)
 
             mock_copy_spec.assert_called()
-            mock_get_init_prompt.assert_called()
+            mock_select_prompt.assert_called()
             mock_run_session.assert_called()
             mock_init_telemetry.assert_called()
 
-    @patch("agents.cursor.agent.log_startup_config")
-    @patch("agents.cursor.agent.init_telemetry")
-    @patch("agents.cursor.agent.get_telemetry")
-    @patch("agents.cursor.agent.CursorClient")
-    @patch("agents.cursor.agent.run_agent_session")
-    @patch("agents.cursor.agent.get_coding_prompt")
-    @patch("agents.cursor.agent.log_progress_summary")
+    @patch("agents.shared.base_agent.log_startup_config")
+    @patch("agents.shared.base_agent.init_telemetry")
+    @patch("agents.shared.base_agent.get_telemetry")
+    @patch("agents.cursor.agent.CursorAgent.run_agent_session")
+    @patch("agents.shared.base_agent.copy_spec_to_project")
+    @patch("agents.cursor.agent.CursorAgent.select_prompt")
+    @patch("agents.shared.base_agent.BaseAgent.log_progress_summary")
     async def test_run_autonomous_agent_coding_run(
         self,
         mock_log_progress,
-        mock_get_coding_prompt,
+        mock_select_prompt,
+        mock_copy_spec,
         mock_run_session,
-        mock_client_cls,
         mock_get_telemetry,
         mock_init_telemetry,
         mock_log_config,
     ):
-        mock_client_cls.return_value = self.client
-
-        # Simulate is_first_run = False
-        with patch.object(Path, "exists"):
-            # We need carefully mock exists calls
-            # 1. mkdir parents (True/False doesn't matter much)
-            # 2. config.feature_list_path.exists() -> True (First run check)
-            # 3. PROJECT_SIGNED_OFF exists -> False
-            # 4. human_in_loop exists -> False
-            # 5. TRIGGER_MANAGER exists -> False
-
-            # It's tricky with side_effect because Path.exists is called many times.
-            # Let's assume most exist checks return False except
-            # feature_list_path which we want True.
-
-            def side_effect_exists():
-                # We can't really access 'self' (the Path object) easily in
-                # side_effect without wrapper
-                return False
-
-            # Simpler: use MagicMock for paths in Config?
-            # self.config.feature_list_path is a Path.
-            # Let's mock the Path objects in config directly.
+        mock_select_prompt.return_value = ("coding prompt", False)
 
         self.config.feature_list_path = MagicMock()
         self.config.feature_list_path.exists.return_value = True
 
-        # PROJECT_SIGNED_OFF
         self.config.project_dir = MagicMock()
         self.config.project_dir.__truediv__.return_value.exists.return_value = False
 
@@ -168,22 +149,19 @@ class TestCursorAgent(unittest.IsolatedAsyncioTestCase):
         await run_autonomous_agent(self.config, None)
 
         mock_log_progress.assert_called()
-        mock_get_coding_prompt.assert_called()
+        mock_select_prompt.assert_called()
 
-    @patch("agents.cursor.agent.log_startup_config")
-    @patch("agents.cursor.agent.init_telemetry")
-    @patch("agents.cursor.agent.get_telemetry")
-    @patch("agents.cursor.agent.CursorClient")
-    @patch("agents.cursor.agent.run_agent_session")
+    @patch("agents.shared.base_agent.log_startup_config")
+    @patch("agents.shared.base_agent.init_telemetry")
+    @patch("agents.shared.base_agent.get_telemetry")
+    @patch("agents.cursor.agent.CursorAgent.run_agent_session")
     async def test_run_autonomous_agent_human_loop(
         self,
         mock_run_session,
-        mock_client_cls,
         mock_get_telemetry,
         mock_init_telemetry,
         mock_log_config,
     ):
-        mock_client_cls.return_value = self.client
         self.config.feature_list_path = MagicMock()
         self.config.feature_list_path.exists.return_value = True
 

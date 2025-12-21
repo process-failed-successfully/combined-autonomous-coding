@@ -57,6 +57,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.max_agents = 2
         args.timeout = None
         args.dashboard_url = "http://test"
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
@@ -103,6 +105,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.login = False
         args.sprint = False
         args.timeout = 600.0
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
 
@@ -134,6 +138,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_only = False
         args.sprint = True  # Enables Sprint Mode
         args.timeout = 600.0
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
 
@@ -243,6 +249,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_only = False
         args.sprint = False
         args.timeout = None
+        args.jira_ticket = None
+        args.jira_label = None
 
         mock_parse_args.return_value = args
 

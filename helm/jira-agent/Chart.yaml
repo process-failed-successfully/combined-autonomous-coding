@@ -1,0 +1,6 @@
+apiVersion: v2
+name: jira-agent
+description: A Helm chart for running autonomous agents that process Jira tickets from a Redis queue.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

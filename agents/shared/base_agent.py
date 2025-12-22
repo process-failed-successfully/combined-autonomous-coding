@@ -90,6 +90,7 @@ class BaseAgent(abc.ABC):
             get_jira_initializer_prompt,
             get_jira_manager_prompt,
             get_jira_worker_prompt,
+            get_qa_prompt,
         )
 
         config = self.config
@@ -144,6 +145,15 @@ class BaseAgent(abc.ABC):
             should_run_manager = True
 
         if should_run_manager:
+            # Check if QA is required before Manager Sign-off
+            is_ready_for_qa = (config.project_dir / "COMPLETED").exists() or (should_run_manager and not (config.project_dir / "TRIGGER_MANAGER").exists() and not (config.run_manager_first and not has_run_manager_first))
+            
+            qa_passed_path = config.project_dir / "QA_PASSED"
+            
+            if is_ready_for_qa and not qa_passed_path.exists():
+                logger.info("Completion signaled. Triggering QA Agent for verification...")
+                return get_qa_prompt(), True # We treat QA as a "manager-like" status for iteration tracking and model selection
+
             if config.jira and config.jira_ticket_key:
                 return get_jira_manager_prompt(), True
             else:
@@ -398,6 +408,14 @@ class BaseAgent(abc.ABC):
         if self.is_first_run:
             logger.info("Fresh start - copying spec to project")
             copy_spec_to_project(self.config.project_dir, self.config.spec_file)
+            # Cleanup any stale signals
+            for sig in ["COMPLETED", "QA_PASSED", "PROJECT_SIGNED_OFF"]:
+                sig_path = self.config.project_dir / sig
+                if sig_path.exists():
+                    try:
+                        sig_path.unlink()
+                    except OSError:
+                        pass
         else:
             logger.info("Continuing existing project")
             self.log_progress_summary()

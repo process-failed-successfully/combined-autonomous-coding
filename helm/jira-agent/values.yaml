@@ -1,0 +1,24 @@
+replicaCount: 1
+
+image:
+  repository: jira-agent
+  tag: latest
+  pullPolicy: IfNotPresent
+
+redis:
+  host: redis-master
+  port: 6379
+  queue: jira_ticket_queue
+
+secret:
+  name: jira-agent-secrets
+  jiraUrl: "https://your-domain.atlassian.net"
+  jiraEmail: "user@example.com"
+  jiraToken: "your-token"
+  gitToken: "your-git-token"
+
+keda:
+  enabled: false
+  minReplicaCount: 0
+  maxReplicaCount: 5
+  listLength: "1"

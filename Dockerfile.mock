@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir redis
+
+COPY mock_agent.py .
+
+CMD ["python3", "mock_agent.py"]

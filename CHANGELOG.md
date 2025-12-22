@@ -1,12 +1,24 @@
 # CHANGELOG
 
 
+## v0.4.0 (2025-12-22)
+
+
 ## v0.3.0 (2025-12-18)
 
 ### Features
 
 - Support cursor agent in cleaner to avoid gemini auth errors
   ([`2929d2c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/2929d2ce948246652fdabcc7adad581c577e5ac8))
+
+- **tests**: Add comprehensive tests for shared modules and sprint logic
+  ([`1beccc2`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1beccc203ee28cbf95de4e794bf84a11257e04a4))
+
+- Added `tests/test_github_client.py` to cover `shared/github_client.py`. - Added
+  `tests/test_workflow.py` to cover `shared/workflow.py`. - Added `tests/test_git_wrapper.py` to
+  cover `shared/git_wrapper.py`. - Enhanced `tests/test_sprint_extended.py` to cover edge cases in
+  `agents/shared/sprint.py`. - Improved overall test coverage from 81% to 86%. - Fixed missing
+  coverage in critical shared utilities.
 
 
 ## v0.2.1 (2025-12-18)

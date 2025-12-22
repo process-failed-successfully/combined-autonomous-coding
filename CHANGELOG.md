@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.3.0 (2025-12-18)
+
+### Features
+
+- Support cursor agent in cleaner to avoid gemini auth errors
+  ([`2929d2c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/2929d2ce948246652fdabcc7adad581c577e5ac8))
+
+
 ## v0.2.1 (2025-12-18)
 
 ### Bug Fixes

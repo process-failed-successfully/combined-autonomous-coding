@@ -1,67 +1,34 @@
-"""
-Gemini Agent Session Logic
-==========================
+# Gemini Agent Session Logic
+# ==========================
+#
+# Core agent interaction functions for running autonomous coding sessions using Gemini CLI.
 
-Core agent interaction functions for running autonomous coding sessions using Gemini CLI.
-"""
-
-import asyncio
 import json
 import logging
-from pathlib import Path
-from typing import Optional, Any, List
+import time
+from typing import Optional, Any, List, Tuple, Dict
 
 from shared.config import Config
-from shared.utils import get_file_tree, process_response_blocks, log_startup_config
-from shared.telemetry import init_telemetry, get_telemetry
-from shared.notifications import NotificationManager
-from agents.shared.prompts import (
-    get_initializer_prompt,
-    get_coding_prompt,
-    get_manager_prompt,
-    copy_spec_to_project,
-)
+from shared.utils import get_file_tree, process_response_blocks
+from shared.telemetry import get_telemetry
+from shared.agent_client import AgentClient
+from agents.shared.base_agent import BaseAgent
 from .client import GeminiClient
 
 
 logger = logging.getLogger(__name__)
 
 
-def print_session_header(iteration: int, is_first: bool) -> None:
-    header = f"  SESSION {iteration} " + (
-        "(INITIALIZATION)" if is_first else "(CODING)"
-    )
-    logger.info("\n" + "=" * 50)
-    logger.info(header)
-    logger.info("=" * 50 + "\n")
-
-
-def log_progress_summary(project_dir: Path, progress_file: Path) -> None:
-    if progress_file.exists():
-        logger.info("Last Progress Update:")
-        logger.info("-" * 30)
-        # Read last 5 lines
-        try:
-            lines = progress_file.read_text().splitlines()
-            for line in lines[-10:]:
-                logger.info(line)
-        except Exception as e:
-            logger.warning(f"Could not read progress file: {e}")
-        logger.info("-" * 30 + "\n")
-
-
 async def run_agent_session(
     client: GeminiClient,
     prompt: str,
-    recent_history: List[str] = [],
+    history: Optional[List[str]] = None,
     status_callback: Optional[Any] = None,
-    metrics_callback: Optional[Any] = None,
-) -> tuple[str, str, List[str]]:
+) -> Tuple[str, str, List[str]]:
     """
     Run a single agent session using Gemini CLI.
+    Standalone function for reusability (e.g. Sprint Mode).
     """
-    import time
-
     logger.info("Sending prompt to Gemini...")
 
     try:
@@ -93,7 +60,7 @@ async def run_agent_session(
                 feature_status = f"Feature List Status: Error reading file ({e})"
 
         history_text = (
-            "\n".join([f"- {h}" for h in recent_history]) if recent_history else "None"
+            "\n".join([f"- {h}" for h in history]) if history else "None"
         )
         context_block = f"""
 CURRENT CONTEXT:
@@ -104,22 +71,58 @@ RECENT ACTIONS:
 
 {file_tree}
 """
-        # We append a reminder to use the code block format and tool usage
+        # Append Jira Prompt Injection if applicable
+        jira_context = ""
+        if client.config.jira and client.config.agent_id and "JIRA" in client.config.agent_id:
+            jira_context = "\n\nCRITICAL: You are working on a JIRA TICKET. You MUST provide frequent updates to the ticket by using the `jira_comment` tool or simply stating your progress clearly so I can post it."
+
         augmented_prompt = (
             prompt
-            + f"\n{context_block}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
+            + f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
         )
+
+        # Truncation Logic
+        MAX_PROMPT_CHARS = 100000
+        if len(augmented_prompt) > MAX_PROMPT_CHARS:
+            logger.warning(f"Prompt length ({len(augmented_prompt)}) exceeds limit. Truncating.")
+            truncated_file_tree = file_tree[:5000] + "\n... (File tree truncated)"
+            context_block = f"""
+CURRENT CONTEXT:
+Working Directory: {client.config.project_dir}
+{feature_status}
+RECENT ACTIONS:
+{history_text}
+
+{truncated_file_tree}
+"""
+            augmented_prompt = prompt + f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
 
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
 
         # Measure LLM Latency
         start_time = time.time()
 
-        # Define callback to update dashboard status (aligns with Cursor
-        # parity)
+        # Define callback to update dashboard status
+        current_turn_log = []
+
         def local_status_update(current_task=None, output_line=None):
             if status_callback:
                 status_callback(current_task=current_task, output_line=output_line)
+
+            if not client.agent_client:
+                return
+
+            updates: Dict[str, Any] = {}
+            if current_task:
+                updates["current_task"] = current_task
+
+            if output_line:
+                clean_line = output_line.rstrip()
+                if clean_line:
+                    current_turn_log.append(clean_line)
+                    updates["last_log"] = current_turn_log[-30:]
+
+            client.agent_client.report_state(**updates)
 
         result = await client.run_command(
             augmented_prompt,
@@ -127,23 +130,32 @@ RECENT ACTIONS:
             status_callback=local_status_update,
         )
         latency = time.time() - start_time
+
+        # Determine role from agent_id or config
+        role = "unknown"
+        if client.config.agent_id:
+            if "worker" in client.config.agent_id:
+                role = "worker"
+            elif "planner" in client.config.agent_id or "manager" in client.config.agent_id:
+                role = "planner"
+            else:
+                role = "autonomous"
+
         get_telemetry().record_histogram(
             "llm_latency_seconds",
             latency,
-            labels={"model": client.config.model, "operation": "generate_content"},
+            labels={"model": client.config.model or "unknown", "operation": "generate_content", "role": role},
         )
 
         response_text = ""
-        # Handle 'candidates' structure from Gemini API
+        # Handle result structure from Gemini API
         if "candidates" in result:
             for candidate in result["candidates"]:
                 for part in candidate.get("content", {}).get("parts", []):
                     if "text" in part:
                         response_text += part["text"]
-        # Handle flattened 'content' (some CLI wrappers do this)
         elif "content" in result:
             response_text = result.get("content", "")
-        # Handle 'response' key (observed in some CLI versions)
         elif "response" in result:
             response_text = result.get("response", "")
         else:
@@ -152,61 +164,40 @@ RECENT ACTIONS:
 
         if response_text:
             logger.info("Received response from Gemini.")
-            # Only log full response in debug
             logger.debug(f"Response:\n{response_text}")
         else:
             logger.warning("No text content found in Gemini response.")
             logger.info(f"Full Gemini response: {json.dumps(result, indent=2)}")
 
-            # Record Token Usage if available
+        # Record Token Usage if available
         if "usageMetadata" in result:
             usage = result["usageMetadata"]
             prompt_tokens = usage.get("promptTokenCount", 0)
             candidates_tokens = usage.get("candidatesTokenCount", 0)
-            # _total_tokens = usage.get("totalTokenCount", 0)
 
             get_telemetry().increment_counter(
                 "llm_tokens_total",
                 prompt_tokens,
-                labels={"model": client.config.model, "type": "input"},
+                labels={"model": client.config.model or "unknown", "type": "input", "role": role},
             )
             get_telemetry().increment_counter(
                 "llm_tokens_total",
                 candidates_tokens,
-                labels={"model": client.config.model, "type": "output"},
+                labels={"model": client.config.model or "unknown", "type": "output", "role": role},
             )
-
-        # Detailed diagnostics
-        if "promptFeedback" in result:
-            logger.warning(
-                f"Prompt Feedback: {json.dumps(result['promptFeedback'], indent=2)}"
-            )
-
-        if "candidates" in result:
-            for i, candidate in enumerate(result["candidates"]):
-                finish_reason = candidate.get("finishReason")
-                if finish_reason:
-                    logger.warning(f"Candidate {i} finish reason: {finish_reason}")
-
-                safety_ratings = candidate.get("safetyRatings")
-                if safety_ratings:
-                    logger.warning(
-                        f"Candidate {i} safety ratings: {json.dumps(safety_ratings, indent=2)}"
-                    )
 
         # Execute any blocks found in the response
         executed_actions = []
         if response_text:
             logger.info("Processing response blocks...")
 
-            # Wrapper for process_response_blocks to match expected signature
             def block_status_update(msg):
-                if status_callback:
-                    status_callback(current_task=msg)
+                local_status_update(current_task=msg)
 
             log, actions = await process_response_blocks(
                 response_text,
                 client.config.project_dir,
+                client.config.bash_timeout,
                 status_callback=block_status_update,
             )
             executed_actions.extend(actions)
@@ -224,293 +215,32 @@ RECENT ACTIONS:
         return "error", str(e), []
 
 
-async def run_autonomous_agent(config: Config, agent_client: Optional[Any] = None):
+class GeminiAgent(BaseAgent):
     """
-    Run the autonomous agent loop.
+    Gemini-specific implementation of the autonomous agent.
     """
-    import time
 
-    log_startup_config(config, logger)
+    def get_agent_type(self) -> str:
+        return "gemini"
 
-    # Initialize Telemetry
-    # Use agent_id from client if available, ensuring metrics match the
-    # generated ID
-    service_name = "gemini_agent"
-    if agent_client:
-        service_name = agent_client.agent_id
+    async def run_agent_session(
+        self,
+        prompt: str,
+        status_callback: Optional[Any] = None,
+    ) -> Tuple[str, str, List[str]]:
+        """
+        Run a single agent session using Gemini CLI.
+        """
+        client = GeminiClient(self.config)
+        # Pass the agent client for status reporting
+        setattr(client, "agent_client", self.agent_client)
 
-    init_telemetry(
-        service_name, agent_type="gemini", project_name=config.project_dir.name
-    )
-    get_telemetry().start_system_monitoring()
-    get_telemetry().capture_logs_from("agents")
+        return await run_agent_session(client, prompt, self.recent_history, status_callback)
 
-    client = GeminiClient(config)
-    notifier = NotificationManager(config)
 
-    # Notify Start
-    notifier.notify("agent_start", f"Gemini Agent started for project {config.project_dir.name}")
-
-    # Load Prompts
-    # Load Prompts (Pre-load to ensure they exist)
-    _ = get_initializer_prompt()
-    _ = get_coding_prompt()
-    _ = get_manager_prompt()
-
-    # Session State
-    recent_history: List[str] = []
-    iteration = 0
-    start_time = time.time()
-
-    # Initialize State
-    is_first_run = not config.feature_list_path.exists()
-    has_run_manager_first = False
-
-    # Initialize Project (Copy Spec)
-    copy_spec_to_project(config.project_dir, config.spec_file)
-
-    # Metrics Callback Handler (REMOVED - Use Telemetry)
-    # def handle_metrics(metric_type: str, value: Any): ...
-
-    # Initial Status
-    if agent_client:
-        agent_client.report_state(
-            current_task="Initializing", is_running=True, start_time=start_time
-        )
-
-    # Main Loop
-    while True:
-        iter_start_time = time.time()
-
-        # Check Limits
-        if config.max_iterations and iteration >= config.max_iterations:
-            logger.info("Max iterations reached. Stopping.")
-            break
-
-        # Check Control Signals
-        if agent_client:
-            control = agent_client.poll_commands()
-            if control.stop_requested:
-                logger.info("Stop requested by user.")
-                break
-            if control.pause_requested:
-                agent_client.report_state(current_task="Paused", is_paused=True)
-                while control.pause_requested:
-                    await asyncio.sleep(1)
-                    control = agent_client.poll_commands()
-                    if control.stop_requested:
-                        return
-                agent_client.report_state(current_task="Resuming...", is_paused=False)
-
-        iteration += 1
-        # Update State
-        if agent_client:
-            agent_client.report_state(
-                iteration=iteration, current_task="Preparing Prompt"
-            )
-
-        # Telemetry: Record Iteration
-        get_telemetry().record_gauge("agent_iteration", iteration)
-        get_telemetry().increment_counter("agent_iterations_total")
-
-        if config.max_iterations and iteration > config.max_iterations:
-            logger.info(f"\nReached max iterations ({config.max_iterations})")
-            break
-
-        if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
-            logger.info("\n" + "=" * 50)
-            logger.info("  PROJECT SIGNED OFF")
-            logger.info("=" * 50)
-            notifier.notify("project_completion", f"Project {config.project_dir.name} has been signed off and completed.")
-            break
-
-        if (config.project_dir / "COMPLETED").exists():
-            logger.info(
-                "Project marks as COMPLETED but missing SIGN-OFF. Triggering Manager..."
-            )
-            should_run_manager = True
-            # Ensure we force manager execution in the next block logic
-            # (The logic below handles `should_run_manager`, but we need to ensure we don't skip it)
-
-        # Check for Human in Loop
-        human_loop_file = config.project_dir / "human_in_loop.txt"
-        if human_loop_file.exists():
-            try:
-                reason = human_loop_file.read_text().strip()
-                logger.info("\n" + "=" * 50)
-                logger.info("  HUMAN IN LOOP REQUESTED")
-                logger.info("=" * 50)
-                logger.info(f"Reason: {reason}")
-                logger.info(
-                    "Stopping execution until human intervention is resolved (file removed)."
-                )
-
-                notifier.notify("human_in_loop", f"Human intervention requested: {reason}")
-
-                if agent_client:
-                    agent_client.report_state(
-                        is_running=False,
-                        current_task=f"Stopped: Human in Loop ({reason})",
-                    )
-                break
-            except Exception as e:
-                logger.error(f"Error reading human_in_loop.txt: {e}")
-
-        print_session_header(iteration, is_first_run)
-
-        # Choose prompt
-        # Choose prompt
-        using_manager = False
-
-        if is_first_run:
-            prompt = get_initializer_prompt()
-            # Note: We don't flip is_first_run to False until we get a success
-        else:
-            # Check for Manager Triggers
-            should_run_manager = False
-            manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
-
-            if manager_trigger_path.exists():
-                logger.info("Manager triggered by TRIGGER_MANAGER file.")
-                should_run_manager = True
-                try:
-                    manager_trigger_path.unlink()
-                except OSError:
-                    pass
-            elif config.run_manager_first and not has_run_manager_first:
-                logger.info("Manager triggered by --manager-first flag.")
-                should_run_manager = True
-                has_run_manager_first = True
-            elif iteration > 0 and iteration % config.manager_frequency == 0:
-                logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
-                should_run_manager = True
-
-            # Auto-trigger Manager if all features are passing
-            if not should_run_manager and config.feature_list_path.exists():
-                try:
-                    features = json.loads(config.feature_list_path.read_text())
-                    total = len(features)
-                    passing = sum(1 for f in features if f.get("passes", False))
-                    if total > 0 and passing == total:
-                        logger.info(
-                            "All features passed. Triggering Manager for potential sign-off."
-                        )
-                        should_run_manager = True
-                except Exception:
-                    pass
-
-            if should_run_manager:
-                prompt = get_manager_prompt()
-                using_manager = True
-            else:
-                prompt = get_coding_prompt()
-
-        # Run session
-        if agent_client:
-            agent_client.report_state(
-                current_task=f"Executing {'Manager' if using_manager else 'Agent'}"
-            )
-
-        original_model = config.model
-        if using_manager and config.manager_model:
-            config.model = config.manager_model
-            logger.info(f"Switched to Manager Model: {config.model}")
-
-        # Status Callback Handler
-        current_turn_log = []
-
-        def status_update(current_task=None, output_line=None):
-            if not agent_client:
-                return
-
-            updates = {}
-            if current_task:
-                updates["current_task"] = current_task
-
-            if output_line:
-                clean_line = output_line.rstrip()
-                if clean_line:
-                    current_turn_log.append(clean_line)
-                    updates["last_log"] = current_turn_log[-30:]
-
-            if updates:
-                agent_client.report_state(**updates)
-
-        status, response, new_actions = await run_agent_session(
-            client,
-            prompt,
-            recent_history,
-            status_callback=status_update,
-            metrics_callback=None,  # Deprecated
-        )
-
-        if using_manager and config.manager_model:
-            config.model = original_model
-            logger.info(f"Restored Agent Model: {config.model}")
-
-        if new_actions:
-            recent_history.extend(new_actions)
-            recent_history = recent_history[-10:]  # Keep last 10 actions
-            if agent_client:
-                agent_client.report_state(last_log=[str(a) for a in recent_history])
-
-        if status == "continue":
-            consecutive_errors = 0
-            is_first_run = False  # Successful run, next run is coding
-
-            # Notifications
-            if using_manager:
-                notifier.notify("manager", f"Manager Update (Iteration {iteration}):\n{response[:500]}...")
-            else:
-                notifier.notify("iteration", f"Iteration {iteration} complete.\nActions: {len(new_actions)}")
-
-            if agent_client:
-                agent_client.report_state(current_task="Waiting (Auto-Continue)")
-
-            logger.info(f"Agent will auto-continue in {config.auto_continue_delay}s...")
-            log_progress_summary(config.project_dir, config.progress_file_path)
-
-            # Telemetry: Record Iteration Duration
-            get_telemetry().record_gauge(
-                "iteration_duration_seconds", time.time() - iter_start_time
-            )
-
-            # Interruptible sleep
-            sleep_steps = int(config.auto_continue_delay * 10)
-            for _ in range(sleep_steps):
-                await asyncio.sleep(0.1)
-                # Check interruption
-                if agent_client and agent_client.poll_commands().stop_requested:
-                    break
-
-        elif status == "error":
-            consecutive_errors += 1
-            logger.error(
-                f"Session encountered an error (Attempt {consecutive_errors}/{config.max_consecutive_errors})."
-            )
-
-            notifier.notify("error", f"Agent encountered error: {response}")
-
-            if consecutive_errors >= config.max_consecutive_errors:
-                logger.critical(
-                    f"Too many consecutive errors ({config.max_consecutive_errors}). Stopping execution."
-                )
-                notifier.notify("error", "CRITICAL: Agent stopping due to too many errors.")
-                break
-
-            logger.info("Retrying in 10 seconds...")
-            await asyncio.sleep(10)
-
-        # Prepare next session
-        if config.max_iterations is None or iteration < config.max_iterations:
-            logger.debug("Preparing next session...")
-            await asyncio.sleep(1)
-
-    logger.info("\n" + "=" * 50)
-    logger.info("  SESSION COMPLETE")
-    logger.info("=" * 50)
-
-    notifier.notify("agent_stop", f"Gemini Agent stopped for project {config.project_dir.name}")
-
-    if agent_client:
-        agent_client.report_state(is_running=False, current_task="Completed")
+async def run_autonomous_agent(config: Config, agent_client: Optional[AgentClient] = None):
+    """
+    Compatibility wrapper for running the Gemini autonomous agent.
+    """
+    agent = GeminiAgent(config, agent_client)
+    await agent.run_autonomous_loop()

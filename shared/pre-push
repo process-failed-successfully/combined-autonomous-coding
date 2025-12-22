@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Protected branches
+PROTECTED_BRANCHES=("main" "master")
+
+# Get the current branch
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Check if current branch is protected
+for protected in "${PROTECTED_BRANCHES[@]}"; do
+    if [[ "$current_branch" == "$protected" ]]; then
+        echo "FAILED: Attempting to push from protected branch '$current_branch' is forbidden by pre-push hook." >&2
+        echo "Secondary safeguard active. Please use a feature branch." >&2
+        exit 1
+    fi
+done
+
+# Also check the branch being pushed (from stdin)
+# Git pre-push hook receives lines like:
+# <local ref> <local sha1> <remote ref> <remote sha1>
+while read local_ref local_sha remote_ref remote_sha
+do
+    for protected in "${PROTECTED_BRANCHES[@]}"; do
+        if [[ "$remote_ref" == "refs/heads/$protected" ]]; then
+            echo "FAILED: Attempting to push to protected remote branch '$protected' is forbidden by pre-push hook." >&2
+            echo "Secondary safeguard active. Please use a feature branch." >&2
+            exit 1
+        fi
+    done
+done
+
+exit 0

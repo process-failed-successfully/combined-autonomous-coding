@@ -17,7 +17,7 @@ echo "[2/4] Running Mypy Type Checking..."
 mypy . --ignore-missing-imports --no-strict-optional || echo "Mypy found issues (continuing for now)"
 
 echo "[3/4] Running Bandit Security Scan..."
-bandit -r . -c "pyproject.toml" -ll -b bandit_baseline.json -f custom
+bandit -r . -c "pyproject.toml" -ll -b bandit_baseline.json -f custom -x .venv,venv,build,tests
 
 echo -e "\n========================================"
 echo "  UNIT & INTEGRATION TESTS (PYTEST)"
@@ -28,5 +28,8 @@ pytest --cov=. --cov-report=term-missing tests/
 
 echo -e "\nRunning Setup Verification..."
 python3 tests/verify_setup.py
+
+echo -e "\n[5/5] Verifying Grafana Dashboards..."
+python3 tests/verify_dashboards.py
 
 echo -e "\n\033[0;32mAll Checks Passed Successfully!\033[0m"

@@ -20,6 +20,15 @@ DEFAULT_BASH_TIMEOUT = 120.0
 
 
 @dataclass
+class JiraConfig:
+    """Jira Configuration."""
+    url: str
+    email: str
+    token: str
+    status_map: Optional[dict] = None
+
+
+@dataclass
 class Config:
     """Application Configuration."""
 
@@ -42,6 +51,9 @@ class Config:
     max_agents: int = 1
     sprint_id: Optional[str] = None
 
+    # Jira State
+    jira_ticket_key: Optional[str] = None
+    jira_spec_content: Optional[str] = None  # Full content of the ticket
     # Manager Configuration
     manager_frequency: int = 10
     manager_model: Optional[str] = None
@@ -53,6 +65,9 @@ class Config:
     discord_webhook_url: Optional[str] = None
     # Map event_type -> "slack"|"discord" -> bool
     notification_settings: Optional[dict] = None
+
+    # Jira Configuration
+    jira: Optional["JiraConfig"] = None
 
     def __post_init__(self):
         if self.model is None:

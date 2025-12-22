@@ -1,12 +1,14 @@
 import asyncio
 import json
 import logging
+import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 
 from shared.config import Config
 from shared.agent_client import AgentClient
 from shared.notifications import NotificationManager
+from shared.telemetry import get_telemetry, init_telemetry
 from agents.gemini.client import GeminiClient
 from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_worker_prompt
 from agents.gemini.agent import run_agent_session as run_gemini_session
@@ -23,7 +25,7 @@ try:
         CursorClient,
     )
 except ImportError:
-    run_cursor_session = None
+    run_cursor_session = None  # type: ignore
     CursorClient = None  # type: ignore
 
 
@@ -71,6 +73,8 @@ class SprintManager:
     async def run_planning_phase(self):
         """Runs the Lead Agent to create the sprint plan."""
         logger.info("Starting Sprint Planning Phase...")
+        start_time = time.time()
+
         if self.agent_client:
             self.agent_client.report_state(current_task="Sprint Planning")
 
@@ -133,12 +137,22 @@ class SprintManager:
                     )
                 except Exception as e:
                     logger.error(f"Failed to extract plan from response: {e}")
+                    get_telemetry().record_gauge(
+                        "sprint_planning_duration_seconds",
+                        time.time() - start_time,
+                        labels={"status": "fail"}
+                    )
                     return False
             else:
                 logger.error(
                     "Sprint Plan not created and no JSON block found. Aborting."
                 )
                 logger.debug(f"Full response:\n{response}")
+                get_telemetry().record_gauge(
+                    "sprint_planning_duration_seconds",
+                    time.time() - start_time,
+                    labels={"status": "fail"}
+                )
                 return False
 
         try:
@@ -159,20 +173,49 @@ class SprintManager:
             )
             self.tasks_by_id = {t.id: t for t in tasks}
             logger.info(f"Sprint Plan Created: {len(tasks)} tasks.")
+
+            get_telemetry().record_gauge(
+                "sprint_planning_duration_seconds",
+                time.time() - start_time,
+                labels={"status": "success"}
+            )
+            get_telemetry().record_gauge("sprint_tasks_total", len(tasks))
+
             return True
         except Exception as e:
             logger.exception(f"Failed to parse sprint plan: {e}")
+            get_telemetry().record_gauge(
+                "sprint_planning_duration_seconds",
+                time.time() - start_time,
+                labels={"status": "fail"}
+            )
             return False
 
     async def run_worker(self, task: Task):
         """Runs a worker agent on a specific task."""
         logger.info(f"SPAWNING WORKER for Task {task.id}: {task.title}")
+        start_time = time.time()
+
         if self.agent_client:
             self.agent_client.report_state(
                 current_task=f"Spawning Worker: {task.title}"
             )
 
         task.status = "IN_PROGRESS"
+
+        # Increment active workers
+        get_telemetry().record_gauge(
+            "sprint_active_workers",
+            len(self.running_tasks) + 1 # running_tasks includes this one, set by caller but let's be safe.
+            # Actually caller adds to self.running_tasks before calling run_worker.
+            # So len(self.running_tasks) is correct.
+        )
+        # But wait, self.running_tasks is a set on the manager instance.
+        # Accessing it here is fine as it's async and single threaded (mostly).
+        # However, to be cleaner, we can just increment a counter or re-set the gauge based on set size.
+        # Let's rely on update loop to set the gauge or set it here.
+        # Simpler: just set it based on current set size.
+        get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
 
         # Create a specific config for this worker?
         # We share the main config but maybe we want separate logs?
@@ -273,6 +316,12 @@ class SprintManager:
                     self.completed_tasks.add(task.id)
                     self.running_tasks.remove(task.id)
 
+                    # Metrics
+                    duration = time.time() - start_time
+                    get_telemetry().increment_counter("sprint_tasks_completed")
+                    get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "success"})
+                    get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
+
                     self.notifier.notify("sprint_task_complete", f"Task Completed: {task.title}")
 
                     worker_client.report_state(
@@ -286,6 +335,13 @@ class SprintManager:
                     task.status = "FAILED"
                     self.failed_tasks.add(task.id)
                     self.running_tasks.remove(task.id)
+
+                    # Metrics
+                    duration = time.time() - start_time
+                    get_telemetry().increment_counter("sprint_tasks_failed")
+                    get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "failed"})
+                    get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
+
                     worker_client.report_state(current_task="Failed", is_running=False)
                     worker_client.stop()
                     return
@@ -304,11 +360,25 @@ class SprintManager:
             task.status = "FAILED"
             self.failed_tasks.add(task.id)
             self.running_tasks.remove(task.id)
+
+            # Metrics
+            duration = time.time() - start_time
+            get_telemetry().increment_counter("sprint_tasks_failed")
+            get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "timeout"})
+            get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
+
             worker_client.report_state(current_task="Timed Out", is_running=False)
             worker_client.stop()
         except Exception as e:
             logger.exception(f"Worker {task.id} crashed: {e}")
             worker_client.report_state(current_task=f"Crashed: {e}", is_running=False)
+
+            # Metrics
+            duration = time.time() - start_time
+            get_telemetry().increment_counter("sprint_tasks_failed")
+            get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "crashed"})
+            get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
+
             worker_client.stop()
 
     async def execute_sprint(self):
@@ -318,7 +388,7 @@ class SprintManager:
             iteration += 1
             if self.agent_client:
                 self.agent_client.report_state(iteration=iteration)
-            
+
             # Check for runnable tasks
             runnable = []
             for task in self.plan.tasks:
@@ -379,36 +449,36 @@ class SprintManager:
         # we can toggle the feature status?
         # A better approach: The feature status in JSON tracks overall progress.
         # We mark it as 'completed' only if all planned tasks for it are done.
-        
+
         # Determine which features were present in this plan
         planned_features = set()
         for t in self.plan.tasks:
             if t.feature_name:
                 planned_features.add(t.feature_name)
-        
+
         if not planned_features:
             return
 
         updated_any = False
         for feature in features:
-            f_name = feature.get("name") # Assuming 'name' key provided by user or standard? 
+            f_name = feature.get("name")  # Assuming 'name' key provided by user or standard?
             # Or assume list of strings? No, prompted as JSON in previous step, usually list of objects.
             # But earlier code used `feature.get("name")` in test... wait, test used name.
             # Let's assume standard object structure or check prompt.
             # Prompt doesn't enforce feature list structure, but it consumes it.
             # Assuming list of dicts with "name" or just keys.
-            
+
             if f_name in planned_features:
-                 # Check if ALL tasks for this feature in the CURRENT plan are completed
-                 tasks_for_feature = [t for t in self.plan.tasks if t.feature_name == f_name]
-                 if tasks_for_feature:
-                     all_done = all(t.status == "COMPLETED" for t in tasks_for_feature)
-                     if all_done:
+                # Check if ALL tasks for this feature in the CURRENT plan are completed
+                tasks_for_feature = [t for t in self.plan.tasks if t.feature_name == f_name]
+                if tasks_for_feature:
+                    all_done = all(t.status == "COMPLETED" for t in tasks_for_feature)
+                    if all_done:
                         if feature.get("status") != "completed":
                             feature["status"] = "completed"
                             updated_any = True
                             logger.info(f"Marking feature '{f_name}' as COMPLETED in feature_list.json")
-        
+
         if updated_any:
             self.config.feature_list_path.write_text(json.dumps(features, indent=2))
 
@@ -440,6 +510,13 @@ async def run_single_sprint(config: Config, agent_client=None) -> int:
 
 
 async def run_sprint(config: Config, agent_client=None):
+    # Initialize telemetry for sprint mode as it might be the entry point
+    init_telemetry(
+        service_name="sprint_manager",
+        agent_type="sprint",
+        project_name=config.project_dir.name
+    )
+
     logger.info("Starting Continuous Sprint Mode.")
     iteration = 0
 

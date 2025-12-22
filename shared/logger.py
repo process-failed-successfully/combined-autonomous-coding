@@ -6,10 +6,11 @@ Logging Configuration
 import logging
 import sys
 from pathlib import Path
+from typing import Optional
 
 
 def setup_logger(
-    name: str = "agent", log_file: Path = None, verbose: bool = False
+    name: str = "agent", log_file: Optional[Path] = None, verbose: bool = False
 ) -> logging.Logger:
     """Configure and return a logger instance."""
 

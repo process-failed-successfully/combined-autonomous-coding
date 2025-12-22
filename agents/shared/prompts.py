@@ -5,8 +5,9 @@ Prompt Loading Utilities for Gemini
 
 import shutil
 from pathlib import Path
+from typing import Optional
 
-PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
+PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared/prompts"
 
 
 def load_prompt(name: str) -> str:
@@ -25,6 +26,11 @@ def get_coding_prompt() -> str:
     return load_prompt("coding_prompt")
 
 
+def get_cleaner_prompt() -> str:
+    """Load the cleaner agent prompt."""
+    return load_prompt("cleaner_prompt")
+
+
 def get_manager_prompt() -> str:
     """Load the manager agent prompt."""
     return load_prompt("manager_prompt")
@@ -40,7 +46,22 @@ def get_sprint_worker_prompt() -> str:
     return load_prompt("sprint_worker_prompt")
 
 
-def copy_spec_to_project(project_dir: Path, custom_spec_path: Path = None) -> None:
+def get_jira_initializer_prompt() -> str:
+    """Load the jira initializer prompt."""
+    return load_prompt("jira_initializer_prompt")
+
+
+def get_jira_manager_prompt() -> str:
+    """Load the jira manager prompt."""
+    return load_prompt("jira_manager_prompt")
+
+
+def get_jira_worker_prompt() -> str:
+    """Load the jira worker prompt."""
+    return load_prompt("jira_worker_prompt")
+
+
+def copy_spec_to_project(project_dir: Path, custom_spec_path: Optional[Path] = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = custom_spec_path if custom_spec_path else PROMPTS_DIR / "app_spec.txt"
     spec_dest = project_dir / "app_spec.txt"

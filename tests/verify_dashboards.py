@@ -87,7 +87,8 @@ def simple_metric_check(dashboard_dir, available_metrics):
 
     # Common prometheus/loki metrics we might ignore or assume exist
     whitelist = {'up', 'scrape_duration_seconds', 'scrape_samples_scraped', 'count', 'sum', 'rate',
-                 'avg', 'min', 'max', 'increase', 'time', 'vector', 'count_over_time', 'sum_over_time'}
+                 'avg', 'min', 'max', 'increase', 'time', 'vector', 'count_over_time', 'sum_over_time',
+                 'agent_id', 'agent_type', 'tool_type', 'agent_logs', 'agent_overview'}
 
     for dash_file in dashboard_files:
         print(f"\nChecking metrics in {dash_file}...")
@@ -148,7 +149,7 @@ def simple_metric_check(dashboard_dir, available_metrics):
         for w in words:
             if any(w.startswith(p) for p in prefixes):
                 # Exclude known labels if they share prefix (unlikely for these prefixes except maybe agent_id)
-                if w == 'agent_id' or w == 'agent_type':
+                if w in ('agent_id', 'agent_type', 'tool_type', 'agent_logs', 'agent_overview'):
                     continue
                 # Exclude suffixes if they are just part of the metric name (e.g. _total, _bucket)
                 # Actually, our metrics list includes the full name.

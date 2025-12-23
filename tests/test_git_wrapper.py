@@ -39,7 +39,7 @@ class TestGitWrapper(unittest.TestCase):
         mock_get_branch.return_value = "feature"
         with self.assertRaises(SystemExit) as cm:
             # Capture stderr
-            with patch('sys.stderr', new=StringIO()) as fake_err:
+            with patch('sys.stderr', new=StringIO()):
                 git_wrapper.main()
 
         self.assertEqual(cm.exception.code, 1)
@@ -57,7 +57,7 @@ class TestGitWrapper(unittest.TestCase):
     def test_main_push_blocked_implicit_main(self, mock_get_branch):
         mock_get_branch.return_value = "main"
         with self.assertRaises(SystemExit) as cm:
-            with patch('sys.stderr', new=StringIO()) as fake_err:
+            with patch('sys.stderr', new=StringIO()):
                 git_wrapper.main()
         self.assertEqual(cm.exception.code, 1)
 
@@ -75,7 +75,7 @@ class TestGitWrapper(unittest.TestCase):
         mock_execvp.side_effect = FileNotFoundError()
         with patch.dict("os.environ", {"GIT_WRAPPER_TESTING": "1"}):
             with self.assertRaises(SystemExit) as cm:
-                with patch('sys.stderr', new=StringIO()) as fake_err:
+                with patch('sys.stderr', new=StringIO()):
                     git_wrapper.main()
             self.assertEqual(cm.exception.code, 0)
 
@@ -85,7 +85,7 @@ class TestGitWrapper(unittest.TestCase):
         mock_execvp.side_effect = FileNotFoundError()
         with patch.dict("os.environ", {}, clear=True):
             with self.assertRaises(SystemExit) as cm:
-                with patch('sys.stderr', new=StringIO()) as fake_err:
+                with patch('sys.stderr', new=StringIO()):
                     git_wrapper.main()
             self.assertEqual(cm.exception.code, 1)
 

@@ -1,7 +1,7 @@
 import threading
 import time
 from dataclasses import dataclass, field, asdict
-from typing import List
+from typing import List, Any
 
 
 @dataclass
@@ -35,7 +35,7 @@ class StateManager:
                     setattr(self._state, k, v)
             self._state.last_update_ts = time.time()
 
-    def get_state(self) -> dict:
+    def get_state(self) -> dict[str, Any]:
         with self._lock:
             return asdict(self._state)
 

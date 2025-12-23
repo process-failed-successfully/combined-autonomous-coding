@@ -167,9 +167,8 @@ class TestSprintManager(unittest.IsolatedAsyncioTestCase):
             self.manager.completed_tasks.add(task.id)
             self.manager.running_tasks.remove(task.id)
 
-        self.manager.run_worker = mock_worker
-
-        await self.manager.execute_sprint()
+        with patch.object(self.manager, 'run_worker', side_effect=mock_worker):
+            await self.manager.execute_sprint()
 
         self.assertEqual(t1.status, "COMPLETED")
         self.assertEqual(t2.status, "COMPLETED")

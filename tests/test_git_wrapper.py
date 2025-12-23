@@ -1,5 +1,6 @@
+import shared.git_wrapper as git_wrapper
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 from io import StringIO
 from pathlib import Path
@@ -9,7 +10,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 # Import module to test - we need to import it carefully as it's a script
 # We can import it as a module
-import shared.git_wrapper as git_wrapper
+
 
 class TestGitWrapper(unittest.TestCase):
 
@@ -64,7 +65,7 @@ class TestGitWrapper(unittest.TestCase):
     @patch("shared.git_wrapper.get_current_branch")
     @patch("os.execvp")
     def test_main_push_allowed_explicit_feature(self, mock_execvp, mock_get_branch):
-        mock_get_branch.return_value = "main" # On main, but pushing feature branch explicitly
+        mock_get_branch.return_value = "main"  # On main, but pushing feature branch explicitly
         git_wrapper.main()
         mock_execvp.assert_called_with("git.real", ["git.real", "push", "origin", "feature"])
 
@@ -83,10 +84,11 @@ class TestGitWrapper(unittest.TestCase):
     def test_main_execvp_error_no_testing(self, mock_execvp):
         mock_execvp.side_effect = FileNotFoundError()
         with patch.dict("os.environ", {}, clear=True):
-             with self.assertRaises(SystemExit) as cm:
+            with self.assertRaises(SystemExit) as cm:
                 with patch('sys.stderr', new=StringIO()) as fake_err:
                     git_wrapper.main()
-             self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,7 @@ import socket
 import time
 import threading
 import psutil
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
@@ -68,7 +68,7 @@ class Telemetry:
             target=self._system_monitoring_loop, daemon=True
         )
         self.monitoring_active = False
-        self._last_push_error_time = 0
+        self._last_push_error_time = 0.0
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
@@ -235,13 +235,13 @@ class Telemetry:
         except Exception as e:
             self.log_error(f"Failed to initialize default metrics: {e}")
 
-    def register_gauge(self, name: str, documentation: str, labelnames: list = []):
+    def register_gauge(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Gauge(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
 
-    def register_counter(self, name: str, documentation: str, labelnames: list = []):
+    def register_counter(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Counter(
                 name, documentation, labelnames=labelnames, registry=self.registry
@@ -251,8 +251,8 @@ class Telemetry:
         self,
         name: str,
         documentation: str,
-        labelnames: list = [],
-        buckets: tuple = Histogram.DEFAULT_BUCKETS,
+        labelnames: List[str] = [],
+        buckets: Tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
     ):
         if name not in self.metrics:
             self.metrics[name] = Histogram(

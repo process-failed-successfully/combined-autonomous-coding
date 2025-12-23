@@ -1,15 +1,14 @@
+from shared.config import Config
+from shared.workflow import _get_remote_info, _create_pr, complete_jira_ticket
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
 from pathlib import Path
 import subprocess
-import asyncio
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.workflow import _get_remote_info, _create_pr, complete_jira_ticket
-from shared.config import Config
 
 class TestWorkflow(unittest.IsolatedAsyncioTestCase):
 
@@ -50,7 +49,7 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
     def test_create_pr_no_remote_info(self, mock_get_remote):
         mock_get_remote.return_value = (None, None, None)
         config = MagicMock(spec=Config)
-        config.project_dir = Path("/tmp") # Ensure this attribute exists
+        config.project_dir = Path("/tmp")  # Ensure this attribute exists
 
         pr_url = _create_pr(config, "branch")
         self.assertIsNone(pr_url)
@@ -84,7 +83,7 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
 
         mock_jira_instance = mock_jira_cls.return_value
         mock_jira_instance.transition_issue.return_value = True
-        mock_jira_instance.get_issue.return_value = None # No existing comments
+        mock_jira_instance.get_issue.return_value = None  # No existing comments
 
         result = await complete_jira_ticket(config)
         self.assertTrue(result)

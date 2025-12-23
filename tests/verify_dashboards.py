@@ -4,6 +4,7 @@ import re
 import sys
 import glob
 
+
 def parse_telemetry_metrics(telemetry_file):
     metrics = set()
     with open(telemetry_file, 'r') as f:
@@ -17,6 +18,7 @@ def parse_telemetry_metrics(telemetry_file):
 
     print(f"Found {len(metrics)} metrics in telemetry.py: {sorted(list(metrics))}")
     return metrics
+
 
 def validate_dashboards(dashboard_dir, available_metrics):
     dashboard_files = glob.glob(os.path.join(dashboard_dir, '*.json'))
@@ -69,13 +71,12 @@ def validate_dashboards(dashboard_dir, available_metrics):
                     # Instead, let's just warn if we don't see ANY of our custom metrics in a query,
                     # UNLESS it uses standard metrics (which we don't have a list of here, but can assume).
 
-                    pass
-
         except json.JSONDecodeError as e:
             print(f"  [ERROR] Invalid JSON: {e}")
             all_valid = False
 
     return all_valid
+
 
 def simple_metric_check(dashboard_dir, available_metrics):
     """
@@ -85,13 +86,14 @@ def simple_metric_check(dashboard_dir, available_metrics):
     all_valid = True
 
     # Common prometheus/loki metrics we might ignore or assume exist
-    whitelist = {'up', 'scrape_duration_seconds', 'scrape_samples_scraped', 'count', 'sum', 'rate', 'avg', 'min', 'max', 'increase', 'time', 'vector', 'count_over_time', 'sum_over_time'}
+    whitelist = {'up', 'scrape_duration_seconds', 'scrape_samples_scraped', 'count', 'sum', 'rate',
+                 'avg', 'min', 'max', 'increase', 'time', 'vector', 'count_over_time', 'sum_over_time'}
 
     for dash_file in dashboard_files:
         print(f"\nChecking metrics in {dash_file}...")
         with open(dash_file, 'r') as f:
             content = f.read()
-            data = json.loads(content) # Just to ensure it is valid JSON
+            data = json.loads(content)  # Just to ensure it is valid JSON
 
         # Find all targets
         panels = data.get('panels', [])
@@ -99,7 +101,8 @@ def simple_metric_check(dashboard_dir, available_metrics):
             targets = panel.get('targets', [])
             for target in targets:
                 expr = target.get('expr')
-                if not expr: continue
+                if not expr:
+                    continue
 
                 # Check for our specific metrics
                 # We iterate our known metrics and see if they are in the expression
@@ -115,7 +118,8 @@ def simple_metric_check(dashboard_dir, available_metrics):
                 potential_metrics = re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\b', expr)
 
                 for pm in potential_metrics:
-                    if pm.startswith('agent_') or pm.startswith('llm_') or pm.startswith('sprint_') or pm.startswith('feature_') or pm.startswith('tool_') or pm.startswith('files_') or pm.startswith('container_'):
+                    if pm.startswith('agent_') or pm.startswith('llm_') or pm.startswith('sprint_') or pm.startswith(
+                            'feature_') or pm.startswith('tool_') or pm.startswith('files_') or pm.startswith('container_'):
                         if pm not in available_metrics and pm not in whitelist:
                             # It might be a label name (e.g. agent_id), so we should be careful.
                             # But our metrics share prefixes with labels sometimes?
@@ -151,9 +155,12 @@ def simple_metric_check(dashboard_dir, available_metrics):
                 # But histogram buckets have _bucket, _sum, _count suffixes.
 
                 base_w = w
-                if w.endswith('_bucket'): base_w = w[:-7]
-                elif w.endswith('_sum'): base_w = w[:-4]
-                elif w.endswith('_count'): base_w = w[:-6]
+                if w.endswith('_bucket'):
+                    base_w = w[:-7]
+                elif w.endswith('_sum'):
+                    base_w = w[:-4]
+                elif w.endswith('_count'):
+                    base_w = w[:-6]
 
                 if base_w not in available_metrics:
                     print(f"  [WARN] Suspected invalid metric or label in {dash_file}: {w}")
@@ -162,6 +169,7 @@ def simple_metric_check(dashboard_dir, available_metrics):
                     # Wait, 'agent_heartbeat_timestamp' is a metric. 'agent_id' is a label.
 
     return True
+
 
 if __name__ == "__main__":
     telemetry_path = 'shared/telemetry.py'

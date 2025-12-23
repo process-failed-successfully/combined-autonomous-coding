@@ -1,3 +1,4 @@
+from shared.github_client import GitHubClient
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
@@ -6,8 +7,6 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.github_client import GitHubClient
-import logging
 
 class TestGitHubClient(unittest.TestCase):
 

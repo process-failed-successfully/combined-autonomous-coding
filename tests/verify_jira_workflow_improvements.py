@@ -74,7 +74,7 @@ class TestWorkflowImprovements(unittest.TestCase):
 
         try:
             with patch.object(Path, 'exists', autospec=True, side_effect=mock_exists), \
-                 patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
+                    patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
 
                 # Execute
                 success = asyncio.run(complete_jira_ticket(self.config))

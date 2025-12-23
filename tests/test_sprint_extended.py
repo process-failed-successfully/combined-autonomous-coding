@@ -1,3 +1,5 @@
+from agents.shared.sprint import SprintManager, Task, SprintPlan
+from shared.config import Config
 import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -7,9 +9,6 @@ import sys
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
-
-from shared.config import Config
-from agents.shared.sprint import SprintManager, Task, SprintPlan
 
 
 class TestSprintManager(unittest.IsolatedAsyncioTestCase):

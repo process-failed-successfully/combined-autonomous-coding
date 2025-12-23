@@ -14,7 +14,7 @@ from prometheus_client import (
 )
 
 # Configuration
-PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9091")
+PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9081")
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 LOG_DIR = os.getenv("LOG_DIR", "./agents/logs")
 
@@ -68,6 +68,7 @@ class Telemetry:
             target=self._system_monitoring_loop, daemon=True
         )
         self.monitoring_active = False
+        self._last_push_error_time = 0
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
@@ -183,10 +184,10 @@ class Telemetry:
             "sprint_tasks_total", "Total tasks in current sprint", ["project"]
         )
         self.register_counter(
-            "sprint_tasks_completed", "Tasks completed in sprint", ["project"]
+            "sprint_tasks_completed_total", "Tasks completed in sprint", ["project"]
         )
         self.register_counter(
-            "sprint_tasks_failed", "Tasks failed in sprint", ["project"]
+            "sprint_tasks_failed_total", "Tasks failed in sprint", ["project"]
         )
         self.register_gauge(
             "sprint_active_workers", "Currently running worker agents", ["project"]
@@ -380,10 +381,13 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
-        except Exception:
+        except Exception as e:
             # Don't crash the agent if metrics fail
-            # Avoid print spam, maybe log once
-            pass
+            # Use throttled logging to avoid spamming
+            now = time.time()
+            if now - self._last_push_error_time > 60:  # Log once per minute
+                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                self._last_push_error_time = now
 
     def start_system_monitoring(self, interval: int = 15):
         if self.monitoring_active:

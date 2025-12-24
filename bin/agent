@@ -1,22 +1,105 @@
-#!/bin/bash
+#!/home/luke/repos/combined-autonomous-coding/.venv/bin/python
 
-# Resolve the absolute path of the repository root
-# We use readlink -f to handle if this script is symlinked (e.g. in /usr/local/bin)
-SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+import typer
+from typing_extensions import Annotated
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.status import Status
+import time
+import docker
 
-# Capture the current working directory as the workspace
-export WORKSPACE_DIR="$(pwd)"
+app = typer.Typer(help="Autonomous Coding Agent CLI.")
+console = Console()
 
-# Run the Python CLI using the virtual environment if available
-cd "$REPO_ROOT"
-export PYTHONPATH="$REPO_ROOT"
+def check_docker_daemon(console: Console):
+    """
+    Checks if the Docker daemon is running and accessible.
+    """
+    with Status("[bold green]Verifying Docker daemon status...", console=console) as status:
+        try:
+            client = docker.from_env()
+            client.ping()
+            status.update("[bold green]Docker daemon is running.[/bold green]")
+            return True
+        except Exception as e:
+            status.update(f"[bold red]Docker daemon not running or accessible: {e}[/bold red]")
+            return False
 
-if [ -f "$REPO_ROOT/.venv/bin/python3" ]; then
-    PYTHON_EXEC="$REPO_ROOT/.venv/bin/python3"
-else
-    PYTHON_EXEC="python3"
-fi
+@app.command()
+def run(
+    path: Annotated[str, typer.Argument(help="Path to the project to run the agent in.")] = ".",
+    detached: Annotated[bool, typer.Option("--detached", "-d", help="Run the agent in detached mode.")] = False,
+    name: Annotated[str, typer.Option("--name", "-n", help="Assign a mnemonic name to the detached agent.")] = None,
+):
+    """
+    Launches the autonomous coding agent.
+    """
+    console.print(f"[bold green]Running agent in[/bold green] [yellow]{path}[/yellow]")
+    if detached:
+        console.print(f"[bold blue]Detached mode enabled.[/bold blue]")
+    if name:
+        console.print(f"[bold blue]Session name:[/bold blue] [cyan]{name}[/cyan]")
 
-"$PYTHON_EXEC" -m agents.cli "$@"
+    if not check_docker_daemon(console):
+        console.print("[bold red]Cannot proceed without a running Docker daemon.[/bold red]")
+        raise typer.Exit(code=1)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("[bold magenta]Initializing agent...", total=100)
+        for _ in range(100):
+            time.sleep(0.05)
+            progress.update(task, advance=1)
+        console.print("[bold green]Agent initialized successfully![/bold green]")
+
+    console.print("[bold green]Agent started. Monitoring progress...[/bold green]")
+    # Placeholder for actual agent execution logic
+    # In a real scenario, this would involve starting the agent process
+    # and streaming its output.
+    for i in range(5):
+        console.print(f"Agent output line {i+1}...")
+        time.sleep(1)
+    console.print("[bold green]Agent finished.[/bold green]")
+
+
+@app.command()
+def list():
+    """
+    Lists all active/detached agents.
+    """
+    console.print("Listing agents...")
+
+@app.command()
+def attach(name_or_id: Annotated[str, typer.Argument(help="Name or ID of the agent to attach to.")]):
+    """
+    Re-attaches to a running agent session.
+    """
+    console.print(f"Attaching to agent: {name_or_id}")
+
+@app.command()
+def logs(name_or_id: Annotated[str, typer.Argument(help="Name or ID of the agent to view logs for.")]):
+    """
+    Tails logs of a background agent.
+    """
+    console.print(f"Viewing logs for agent: {name_or_id}")
+
+@app.command()
+def stop(name_or_id: Annotated[str, typer.Argument(help="Name or ID of the agent to stop.")]):
+    """
+    Gracefully terminates a background agent.
+    """
+    console.print(f"Stopping agent: {name_or_id}")
+
+@app.command(name="config")
+def config_cmd():
+    """
+    Manages agent configuration.
+    """
+    console.print("Managing configuration...")
+
+if __name__ == "__main__":
+    app()

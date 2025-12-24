@@ -1,34 +1,52 @@
 {
   "features": [
     {
-      "id": "cli_env",
+      "id": "cli_launcher_implementation",
+      "title": "Agent CLI Launcher Implementation",
+      "description": "Implement the 'agent' command as a first-class Python-based entry point, replacing legacy scripts.",
+      "passes": true
+    },
+    {
+      "id": "dependency_management",
+      "title": "Dependency Management",
+      "description": "Verify and prepare the environment (Docker, Git, Python) and ensure 'typer', 'rich', and 'docker-py' are used.",
+      "passes": true
+    },
+    {
+      "id": "interactive_cli",
       "title": "Interactive CLI Environment",
-      "description": "Rich Terminal UI with colors/emojis, progress indicators, and smart logs using rich.",
+      "description": "Provide a rich terminal UI with colors, emoji, progress indicators, and smart logs.",
       "passes": true
     },
     {
-      "id": "agent_mgmt",
+      "id": "detached_mode_agent_management",
       "title": "Detached Mode & Agent Management",
-      "description": "Background execution, named sessions, re-attachment, and lifecycle control (list, logs, stop).",
-      "passes": true
+      "description": "Support background execution, named sessions, re-attachment, and lifecycle control (list, logs, stop).",
+      "passes": false
     },
     {
-      "id": "config_mgmt",
+      "id": "dynamic_config_management",
       "title": "Dynamic Configuration Management",
-      "description": "CLI-based configuration updates, discovery/guidance (list-keys, list-models), and validation.",
-      "passes": true
+      "description": "Implement CLI-based configuration updates, discovery, guidance, and validation.",
+      "passes": false
     },
     {
-      "id": "pre_flight",
+      "id": "intelligent_pre_flight_checks",
       "title": "Intelligent Pre-flight Checks",
-      "description": "Environment audit, dependency auto-fix, and workspace validation.",
+      "description": "Perform environment audits, dependency auto-fix, and workspace validation.",
       "passes": true
     },
     {
-      "id": "jira_integration",
+      "id": "advanced_jira_integration",
       "title": "Advanced Jira Integration",
-      "description": "Context-aware fetching, workspace isolation, and bi-directional status sync.",
-      "passes": true
+      "description": "Context-aware fetching, workspace isolation, and bi-directional status sync for Jira tasks.",
+      "passes": false
+    },
+    {
+      "id": "new_launcher_tests",
+      "title": "New Launcher Test Coverage",
+      "description": "Create comprehensive tests for all new launcher functionalities.",
+      "passes": false
     }
   ]
 }

@@ -16,13 +16,13 @@
       "id": "config_mgmt",
       "title": "Dynamic Configuration Management",
       "description": "CLI-based configuration updates, discovery/guidance (list-keys, list-models), and validation.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "pre_flight",
       "title": "Intelligent Pre-flight Checks",
       "description": "Environment audit, dependency auto-fix, and workspace validation.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "jira_integration",

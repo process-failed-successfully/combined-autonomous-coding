@@ -35,6 +35,7 @@ class Telemetry:
         self.project_name = project_name
         self.registry = CollectorRegistry()
         self.metrics: Dict[str, Any] = {}
+        self._last_push_error_time = 0.0
 
         # Ensure log directory exists
         os.makedirs(LOG_DIR, exist_ok=True)
@@ -68,7 +69,6 @@ class Telemetry:
             target=self._system_monitoring_loop, daemon=True
         )
         self.monitoring_active = False
-        self._last_push_error_time = 0.0
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""

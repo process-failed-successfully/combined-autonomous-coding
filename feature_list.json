@@ -10,7 +10,7 @@
       "id": "agent_mgmt",
       "title": "Detached Mode & Agent Management",
       "description": "Background execution, named sessions, re-attachment, and lifecycle control (list, logs, stop).",
-      "passes": false
+      "passes": true
     },
     {
       "id": "config_mgmt",

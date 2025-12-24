@@ -1,16 +1,15 @@
 import os
 import json
-import signal
 import time
 import subprocess
-import shutil
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import platformdirs
 import psutil
 from rich.console import Console
 
 console = Console()
+
 
 class SessionManager:
     def __init__(self):
@@ -22,20 +21,20 @@ class SessionManager:
     def _get_session_path(self, name: str) -> Path:
         return self.data_dir / f"{name}.json"
 
-    def list_sessions(self) -> List[Dict]:
+    def list_sessions(self) -> List[Dict[str, Any]]:
         sessions = []
         for file_path in self.data_dir.glob("*.json"):
             try:
                 with open(file_path, "r") as f:
                     data = json.load(f)
-                
+
                 # Check if process is still running
                 pid = data.get("pid")
                 if pid and not self._is_process_running(pid):
                     data["status"] = "dead"
                 else:
                     data["status"] = "running"
-                
+
                 sessions.append(data)
             except Exception:
                 continue
@@ -64,7 +63,7 @@ class SessionManager:
                 self._get_session_path(name).unlink()
 
         log_file = self.logs_dir / f"{name}.log"
-        
+
         # Prepare environment
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
@@ -77,9 +76,9 @@ class SessionManager:
                     stdout=f_out,
                     stderr=subprocess.STDOUT,
                     env=env,
-                    start_new_session=True # Detach from terminal
+                    start_new_session=True  # Detach from terminal
                 )
-            
+
             session_data = {
                 "name": name,
                 "pid": process.pid,
@@ -88,17 +87,17 @@ class SessionManager:
                 "log_file": str(log_file),
                 "type": "detached"
             }
-            
+
             with open(self._get_session_path(name), "w") as f:
                 json.dump(session_data, f)
-                
+
             return session_data
         else:
             # Interactive mode - Stream to console
-            # We don't save session state for interactive runs unless requested, 
+            # We don't save session state for interactive runs unless requested,
             # but usually interactive runs are blocking.
             try:
-                process = subprocess.Popen(
+                process_interactive = subprocess.Popen(
                     command,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -106,28 +105,29 @@ class SessionManager:
                     text=True,
                     bufsize=1
                 )
-                
+
                 # Stream output
-                for line in process.stdout:
+                assert process_interactive.stdout is not None
+                for line in process_interactive.stdout:
                     print(line, end="")
-                
-                process.wait()
-                return process.returncode
+
+                process_interactive.wait()
+                return process_interactive.returncode
             except KeyboardInterrupt:
-                process.terminate()
+                process_interactive.terminate()
                 return 1
 
     def stop_session(self, name: str):
         path = self._get_session_path(name)
         if not path.exists():
             return False, "Session not found"
-        
+
         with open(path, "r") as f:
             data = json.load(f)
-        
+
         pid = data.get("pid")
         msg = "Session file removed (was dead)"
-        
+
         if self._is_process_running(pid):
             try:
                 p = psutil.Process(pid)
@@ -141,7 +141,7 @@ class SessionManager:
             except Exception as e:
                 if self._is_process_running(pid):
                     return False, str(e)
-        
+
         # Cleanup file
         if path.exists():
             path.unlink()

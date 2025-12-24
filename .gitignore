@@ -48,8 +48,3 @@ ehthumbs.db
 Thumbs.db
 
 # Agent
-.agent_state.json
-manager_directives.txt
-feature_list.json
-app_spec.txt
-sprint_plan.json

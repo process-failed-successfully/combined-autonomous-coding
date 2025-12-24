@@ -9,8 +9,14 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 # Capture the current working directory as the workspace
 export WORKSPACE_DIR="$(pwd)"
 
-# Run the Python CLI
-# We assume python3 is available in the environment
+# Run the Python CLI using the virtual environment if available
 cd "$REPO_ROOT"
 export PYTHONPATH="$REPO_ROOT"
-python3 -m agents.cli "$@"
+
+if [ -f "$REPO_ROOT/.venv/bin/python3" ]; then
+    PYTHON_EXEC="$REPO_ROOT/.venv/bin/python3"
+else
+    PYTHON_EXEC="python3"
+fi
+
+"$PYTHON_EXEC" -m agents.cli "$@"

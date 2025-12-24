@@ -28,6 +28,7 @@ app.add_typer(config_app, name="config")
 console = Console()
 session_manager = SessionManager()
 
+
 def setup_logging(verbose: bool = False):
     """Configure logging with Rich."""
     logging.basicConfig(
@@ -38,22 +39,24 @@ def setup_logging(verbose: bool = False):
         force=True
     )
 
+
 def generate_name() -> str:
     adjectives = ["swift", "calm", "bright", "eager", "brave", "quiet", "wise", "bold"]
     nouns = ["fox", "eagle", "lion", "bear", "hawk", "owl", "wolf", "tiger"]
     return f"{random.choice(adjectives)}-{random.choice(nouns)}-{int(time.time()) % 1000}"
 
+
 def prepare_workspace(name: str, original_dir: Path) -> Path:
     """Creates a temporary workspace and clones the repo."""
     workspaces_dir = Path(platformdirs.user_data_dir("combined-autonomous-coding")) / "workspaces"
     workspaces_dir.mkdir(parents=True, exist_ok=True)
-    
+
     target_dir = workspaces_dir / name
     if target_dir.exists():
         shutil.rmtree(target_dir)
-        
+
     console.print(f"[yellow]Creating isolated workspace for {name}...[/yellow]")
-    
+
     # Git clone to ensure clean state and isolation
     try:
         subprocess.run(
@@ -65,6 +68,7 @@ def prepare_workspace(name: str, original_dir: Path) -> Path:
     except subprocess.CalledProcessError as e:
         console.print(f"[red]Failed to clone workspace: {e}[/red]")
         raise typer.Exit(code=1)
+
 
 @app.command()
 def run(
@@ -80,7 +84,6 @@ def run(
     Launch the Autonomous Coding Agent.
     """
     setup_logging(verbose)
-    logger = logging.getLogger("agent")
 
     console.print(Panel.fit(
         "[bold blue]Autonomous Coding Agent[/bold blue]\n"
@@ -105,7 +108,7 @@ def run(
     # Workspace Isolation for Jira
     workspace_path = None
     original_dir = Path.cwd()
-    
+
     if jira:
         workspace_path = prepare_workspace(name, original_dir)
         os.chdir(workspace_path)
@@ -118,19 +121,19 @@ def run(
         cmd.extend(["--jira-ticket", jira])
         # Also pass --project-dir explicitly to be safe?
         cmd.extend(["--project-dir", str(workspace_path)])
-        
+
     if verbose:
         cmd.append("--verbose")
     if model:
         cmd.extend(["--model", model])
     if max_iterations:
         cmd.extend(["--max-iterations", str(max_iterations)])
-    
+
     if detached:
         console.print(f"[yellow]Launching detached session: {name}[/yellow]")
         try:
             session = session_manager.start_session(name, cmd, detached=True)
-            
+
             # Update session with workspace path if isolated
             if workspace_path:
                 import json
@@ -151,18 +154,19 @@ def run(
         console.print(f"[cyan]Running session: {name}[/cyan]")
         try:
             ret = session_manager.start_session(name, cmd, detached=False)
-            
+
             # Cleanup workspace if interactive
             if workspace_path:
                 console.print("[dim]Cleaning up workspace...[/dim]")
-                os.chdir(original_dir) # Go back before deleting
+                os.chdir(original_dir)  # Go back before deleting
                 shutil.rmtree(workspace_path)
-                
+
             if ret != 0:
                 raise typer.Exit(code=ret)
         except Exception as e:
             console.print(f"[red]Error running agent: {e}[/red]")
             raise typer.Exit(code=1)
+
 
 @app.command()
 def list():
@@ -186,16 +190,17 @@ def list():
         start_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(s["start_time"]))
         workspace = s.get("workspace_path", "Shared")
         mode = "Isolated" if workspace != "Shared" else "Shared"
-        
+
         table.add_row(
-            s["name"], 
-            str(s["pid"]), 
-            f"[{status_style}]{s['status']}[/{status_style}]", 
+            s["name"],
+            str(s["pid"]),
+            f"[{status_style}]{s['status']}[/{status_style}]",
             mode,
             start_str
         )
-    
+
     console.print(table)
+
 
 @app.command()
 def stop(name: str):
@@ -203,17 +208,17 @@ def stop(name: str):
     Stop a detached agent session.
     """
     success, msg = session_manager.stop_session(name)
-    
+
     # Check for workspace cleanup (handled here or in SessionManager? Here for now)
     # But wait, stop_session deletes the JSON file. I need to read it first.
     # Refactor: SessionManager.stop_session should return the data of the stopped session?
     # Or I should check beforehand.
-    
-    # Actually, SessionManager.stop_session deletes the file. 
+
+    # Actually, SessionManager.stop_session deletes the file.
     # To clean up workspace, I need the path.
     # I should modify SessionManager to handle cleanup or return data.
     # Or just read it here before calling stop.
-    
+
     session_path = session_manager._get_session_path(name)
     workspace_to_clean = None
     if session_path.exists():
@@ -222,7 +227,7 @@ def stop(name: str):
             with open(session_path, "r") as f:
                 data = json.load(f)
             workspace_to_clean = data.get("workspace_path")
-        except:
+        except BaseException:
             pass
 
     if success:
@@ -235,6 +240,7 @@ def stop(name: str):
                 console.print(f"[red]Failed to clean workspace: {e}[/red]")
     else:
         console.print(f"[red]{msg}[/red]")
+
 
 @app.command()
 def logs(name: str, lines: int = 50, follow: bool = False):
@@ -251,7 +257,7 @@ def logs(name: str, lines: int = 50, follow: bool = False):
         return
 
     console.print(f"[blue]Displaying logs for {name} ({log_path}):[/blue]")
-    
+
     # Simple tail implementation
     try:
         if follow:
@@ -261,6 +267,7 @@ def logs(name: str, lines: int = 50, follow: bool = False):
     except KeyboardInterrupt:
         pass
 
+
 @app.command()
 def attach(name: str):
     """
@@ -268,20 +275,24 @@ def attach(name: str):
     """
     logs(name, follow=True)
 
+
 @config_app.command("list-keys")
 def config_list_keys():
     """List all configurable keys."""
     ConfigManager().list_keys()
+
 
 @config_app.command("set")
 def config_set(key: str, value: str):
     """Set a configuration value."""
     ConfigManager().set_value(key, value)
 
+
 @config_app.command("list-models")
 def config_list_models(agent: str = typer.Option(None, "--agent", help="Filter by agent type")):
     """List available models."""
     ConfigManager().list_models(agent)
+
 
 if __name__ == "__main__":
     app()

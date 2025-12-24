@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared.config import Config, JiraConfig  # noqa: E402
 from agents.gemini.agent import GeminiAgent  # noqa: E402
 
+
 class TestAgentJiraFlow(unittest.TestCase):
 
     def setUp(self):
@@ -72,7 +73,7 @@ class TestAgentJiraFlow(unittest.TestCase):
     @patch("agents.shared.prompts.get_manager_prompt")
     def test_manager_run_jira(self, mock_mgr, mock_jira_mgr):
         mock_jira_mgr.return_value = "JIRA_MGR"
-        
+
         # Create TRIGGER_MANAGER file to bypass QA logic
         (self.config.project_dir / "TRIGGER_MANAGER").touch()
 

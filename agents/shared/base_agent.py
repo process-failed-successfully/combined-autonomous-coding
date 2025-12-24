@@ -150,14 +150,14 @@ class BaseAgent(abc.ABC):
             # 1. Project marked as COMPLETED
             # 2. This is a periodic manager run (not triggered by file or flag)
             force_manager = triggered_by_file or (config.run_manager_first and self.has_run_manager_first)
-            
+
             is_ready_for_qa = (config.project_dir / "COMPLETED").exists() or (should_run_manager and not force_manager)
-            
+
             qa_passed_path = config.project_dir / "QA_PASSED"
-            
+
             if is_ready_for_qa and not qa_passed_path.exists():
                 logger.info("Completion signaled. Triggering QA Agent for verification...")
-                return get_qa_prompt(), True 
+                return get_qa_prompt(), True
 
             if config.jira and config.jira_ticket_key:
                 return get_jira_manager_prompt(), True

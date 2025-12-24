@@ -1,6 +1,4 @@
 import os
-import sys
-import asyncio
 from pathlib import Path
 from typing import Optional
 
@@ -15,6 +13,7 @@ from shared.agent_client import AgentClient
 from agents.gemini import run_autonomous_agent as run_gemini
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
+
 
 async def run_agent(
     project_dir: Path = Path("."),
@@ -52,7 +51,7 @@ async def run_agent(
         verbose=verbose,
         stream_output=not detached,
         spec_file=spec_file,
-        
+
         # Defaults
         manager_frequency=resolve(None, "manager_frequency", 10),
         manager_model=resolve(None, "manager_model", None),
@@ -69,31 +68,34 @@ async def run_agent(
     jira_env_email = os.environ.get("JIRA_EMAIL")
     jira_env_token = os.environ.get("JIRA_TOKEN")
 
-    if jira_env_url: jira_cfg_data["url"] = jira_env_url
-    if jira_env_email: jira_cfg_data["email"] = jira_env_email
-    if jira_env_token: jira_cfg_data["token"] = jira_env_token
+    if jira_env_url:
+        jira_cfg_data["url"] = jira_env_url
+    if jira_env_email:
+        jira_cfg_data["email"] = jira_env_email
+    if jira_env_token:
+        jira_cfg_data["token"] = jira_env_token
 
     jira_spec_content = ""
     if jira_ticket or jira_label:
         if not jira_cfg_data:
             raise ValueError("Jira configuration missing.")
         config.jira = JiraConfig(**jira_cfg_data)
-        
+
         from shared.jira_client import JiraClient
         jira_client = JiraClient(config.jira)
-        
+
         issue = None
         if jira_ticket:
             issue = jira_client.get_issue(jira_ticket)
         elif jira_label:
             issue = jira_client.get_first_todo_by_label(jira_label)
-            
+
         if issue:
             config.jira_ticket_key = issue.key
             jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{issue.fields.description or ''}"
             config.jira_spec_content = jira_spec_content
             project_name = issue.key
-            
+
             start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
             jira_client.transition_issue(issue.key, start_status)
         else:
@@ -104,7 +106,7 @@ async def run_agent(
     spec_content = jira_spec_content
     if not spec_content and spec_file and spec_file.exists():
         spec_content = spec_file.read_text()
-    
+
     agent_id = generate_agent_id(project_name, spec_content, agent_type)
     config.agent_id = agent_id
 
@@ -116,7 +118,7 @@ async def run_agent(
     logger = setup_logger(name="", log_file=log_file, verbose=verbose)
 
     logger.info(f"Starting {agent_type} Agent. ID: {agent_id}")
-    
+
     client = AgentClient(agent_id=agent_id, dashboard_url=file_config.get("dashboard_url", "http://localhost:7654"))
 
     # Git Safety
@@ -139,6 +141,6 @@ async def run_agent(
         if config.jira and config.jira_ticket_key:
             from shared.workflow import complete_jira_ticket
             await complete_jira_ticket(config)
-        
+
         from agents.cleaner import run_cleaner_agent
         await run_cleaner_agent(config, agent_client=client)

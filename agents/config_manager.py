@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from rich.console import Console
 from rich.table import Table
-from shared.config_loader import get_config_path, ensure_config_exists
+from shared.config_loader import get_config_path
 import platformdirs
 
 console = Console()
 
-CONFIG_KEYS = {
+CONFIG_KEYS: Dict[str, Dict[str, Any]] = {
     "agent_type": {"description": "Agent backend to use (gemini, cursor)", "default": "gemini"},
     "model": {"description": "Model to use (e.g., gemini-2.0-flash-exp)", "default": "auto"},
     "max_iterations": {"description": "Maximum number of iterations", "default": 50},
@@ -28,6 +28,7 @@ KNOWN_MODELS = {
     "cursor": ["gpt-4o", "claude-3-5-sonnet", "o1-mini"]
 }
 
+
 class ConfigManager:
     def __init__(self):
         self.config_path = get_config_path()
@@ -37,6 +38,7 @@ class ConfigManager:
             self.config_path = xdg_config_dir / "agent_config.yaml"
 
     def _load_config(self) -> Dict[str, Any]:
+        assert self.config_path is not None
         if not self.config_path.exists():
             return {}
         try:
@@ -46,6 +48,7 @@ class ConfigManager:
             return {}
 
     def _save_config(self, config: Dict[str, Any]):
+        assert self.config_path is not None
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.config_path, "w") as f:
             yaml.dump(config, f, default_flow_style=False)
@@ -91,7 +94,7 @@ class ConfigManager:
             all_models = []
             for m_list in KNOWN_MODELS.values():
                 all_models.extend(m_list)
-            
+
             if value not in all_models:
                 console.print(f"[yellow]Warning: Model '{value}' is not in the known list. Setting anyway.[/yellow]")
                 matches = difflib.get_close_matches(value, all_models, n=1, cutoff=0.6)
@@ -99,9 +102,11 @@ class ConfigManager:
                     console.print(f"[dim]Did you mean '{matches[0]}'? [/dim]")
 
         config = self._load_config()
-        
+
         # Type conversion
-        default = CONFIG_KEYS[key]["default"]
+        info = CONFIG_KEYS[key]
+        default = info["default"]
+        val: Any
         try:
             if isinstance(default, bool):
                 if value.lower() in ("true", "yes", "1"):
@@ -131,12 +136,12 @@ class ConfigManager:
         table.add_column("Model", style="magenta")
 
         if agent_type:
-            target_agents = [agent_type]
+            target_agents: List[str] = [agent_type]
         else:
-            target_agents = KNOWN_MODELS.keys()
+            target_agents = list(KNOWN_MODELS.keys())
 
         for agent in target_agents:
             for model in KNOWN_MODELS.get(agent, []):
                 table.add_row(agent, model)
-        
+
         console.print(table)

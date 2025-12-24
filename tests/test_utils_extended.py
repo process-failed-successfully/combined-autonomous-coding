@@ -104,6 +104,30 @@ class TestUtils(unittest.TestCase):
         os.utime(f, (0, 0))
         self.assertFalse(has_recent_activity(self.test_dir, seconds=10))
 
+    def test_has_recent_activity_ignore_patterns(self):
+        # Create a log file
+        f = self.test_dir / "active.log"
+        f.touch()
+
+        # Should be detected without patterns
+        self.assertTrue(has_recent_activity(self.test_dir, seconds=10))
+
+        # Should be ignored with patterns
+        self.assertFalse(
+            has_recent_activity(
+                self.test_dir, seconds=10, ignore_patterns=["*.log"]
+            )
+        )
+
+        # Create a non-ignored file
+        f2 = self.test_dir / "active.py"
+        f2.touch()
+        self.assertTrue(
+            has_recent_activity(
+                self.test_dir, seconds=10, ignore_patterns=["*.log"]
+            )
+        )
+
     async def async_test_execute_bash_block(self):
         # Success case
         output = await execute_bash_block("echo 'hello'", self.test_dir)

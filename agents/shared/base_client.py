@@ -164,7 +164,11 @@ class BaseClient(ABC):
             if timeout_counter > 0:
                 continue
 
-            if has_recent_activity(self.config.project_dir, seconds=60):
+            if has_recent_activity(
+                self.config.project_dir,
+                seconds=60,
+                ignore_patterns=["*.log", "*.tmp", "__pycache__/*"],
+            ):
                 logger.info(
                     "Agent timeout exceeded, but file activity detected. Extending wait by 60s..."
                 )

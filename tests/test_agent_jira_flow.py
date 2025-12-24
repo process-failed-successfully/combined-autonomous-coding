@@ -77,6 +77,11 @@ class TestAgentJiraFlow(unittest.TestCase):
         agent.is_first_run = False
         agent.has_run_manager_first = False
 
+        # Simulate QA_PASSED to bypass QA prompt
+        # We need to ensure the project dir exists before creating the file
+        self.config.project_dir.mkdir(parents=True, exist_ok=True)
+        (self.config.project_dir / "QA_PASSED").touch()
+
         prompt, using_mgr = agent.select_prompt()
 
         self.assertEqual(prompt, "JIRA_MGR")

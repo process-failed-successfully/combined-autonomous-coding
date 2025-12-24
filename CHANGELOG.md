@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.5.0 (2025-12-24)
+
+### Features
+
+- Implement initial CLI structure with Typer, Rich, and Docker check
+  ([`ac37eac`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/ac37eac5e9f0441fdd36d40a3e3eca3e2f2ef539))
+
+- Created bin/agent with basic Typer CLI commands (run, list, attach, logs, stop, config). -
+  Integrated Rich for terminal UI, including colored output and a progress spinner. - Added Docker
+  daemon pre-flight check using docker-py. - Updated feature_list.json to reflect completed
+  features: cli_launcher_implementation, interactive_cli, dependency_management, and
+  intelligent_pre_flight_checks. - Updated .gitignore to exclude temporary agent files.
+
+
 ## v0.4.0 (2025-12-22)
 
 

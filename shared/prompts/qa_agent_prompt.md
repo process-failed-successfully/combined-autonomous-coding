@@ -21,7 +21,9 @@ Either **PASS** or **FAIL** the current project state.
 If the project is NOT ready:
 
 1. **Explain Why**: Detail exactly what failed in a message to the coding agents.
-2. **Regenerate Feature List**: Rewrite `feature_list.json` to include the missing or failing items, marking them as `"passes": false`.
+2. **Regenerate Feature List**: YOU MUST ALWAYS REWRITE `feature_list.json`. Update it to include the missing or failing items, marking them as `"passes": false`.
+   - **CRITICAL**: If you do not update `feature_list.json`, the coding agent will not know what to fix, leading to an infinite loop.
+   - ENSURE that the `feature_list.json` reflects the CURRENT state of failures.
 3. **Remove Completion Signal**: You MUST delete the `COMPLETED` file.
    ```bash
    rm COMPLETED

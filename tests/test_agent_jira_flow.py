@@ -3,6 +3,8 @@ import unittest
 from unittest.mock import patch, PropertyMock
 import sys
 from pathlib import Path
+import tempfile
+import shutil
 
 # Add repo root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -10,12 +12,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared.config import Config, JiraConfig  # noqa: E402
 from agents.gemini.agent import GeminiAgent  # noqa: E402
 
-
 class TestAgentJiraFlow(unittest.TestCase):
 
     def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
         self.config = Config(
-            project_dir=Path("/tmp/test_project"),
+            project_dir=Path(self.tmp_dir),
             jira=JiraConfig(url="http://jira", email="me", token="token"),
             jira_ticket_key="TEST-1",
             jira_spec_content="TICKET CONTENT"
@@ -28,6 +30,7 @@ class TestAgentJiraFlow(unittest.TestCase):
         self.mock_flp.return_value.exists.return_value = False
 
         self.addCleanup(self.flp_patcher.stop)
+        self.addCleanup(lambda: shutil.rmtree(self.tmp_dir, ignore_errors=True))
 
     @patch("agents.shared.prompts.get_jira_initializer_prompt")
     @patch("agents.shared.prompts.get_initializer_prompt")
@@ -69,8 +72,9 @@ class TestAgentJiraFlow(unittest.TestCase):
     @patch("agents.shared.prompts.get_manager_prompt")
     def test_manager_run_jira(self, mock_mgr, mock_jira_mgr):
         mock_jira_mgr.return_value = "JIRA_MGR"
-        # Trigger manager by frequency
-        self.config.manager_frequency = 5
+        
+        # Create TRIGGER_MANAGER file to bypass QA logic
+        (self.config.project_dir / "TRIGGER_MANAGER").touch()
 
         agent = GeminiAgent(self.config)
         agent.iteration = 5

@@ -81,7 +81,7 @@ def verify_logs():
     # We query for the exact unique message content
     query = f'{{job="agent_logs"}} |= "{marker_msg}"'
     try:
-        response = requests.get(LOKI_QUERY_URL, params={"query": query, "limit": 1})
+        response = requests.get(LOKI_QUERY_URL, params={"query": query, "limit": "1"})
         if response.status_code != 200:
             print(f"FAILED: Loki API returned {response.status_code}")
             print(response.text)

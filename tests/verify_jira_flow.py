@@ -69,9 +69,9 @@ async def test_complete_jira_ticket_success():
 
     # Mock subprocess.run for git calls
     with patch("subprocess.run") as mock_run, \
-         patch("shared.workflow.push_branch") as mock_push, \
-         patch("shared.workflow.JiraClient") as mock_jira_client, \
-         patch("shared.workflow.GitHubClient") as mock_gh_client:
+            patch("shared.workflow.push_branch") as mock_push, \
+            patch("shared.workflow.JiraClient") as mock_jira_client, \
+            patch("shared.workflow.GitHubClient") as mock_gh_client:
 
         mock_push.return_value = True
 

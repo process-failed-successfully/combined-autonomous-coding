@@ -77,9 +77,8 @@ RECENT ACTIONS:
             jira_context = "\n\nCRITICAL: You are working on a JIRA TICKET. You MUST provide frequent updates to the ticket by using the `jira_comment` tool or simply stating your progress clearly so I can post it."
 
         augmented_prompt = (
-            prompt
-            + f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
-        )
+            prompt +
+            f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search.")
 
         # Truncation Logic
         MAX_PROMPT_CHARS = 100000
@@ -95,7 +94,8 @@ RECENT ACTIONS:
 
 {truncated_file_tree}
 """
-            augmented_prompt = prompt + f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
+            augmented_prompt = prompt + \
+                f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search."
 
         logger.debug(f"Sending Augmented Prompt:\n{augmented_prompt}")
 

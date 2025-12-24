@@ -7,7 +7,7 @@ Centralized configuration management for the Combined Autonomous Coding agent.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 # Default Constants
 DEFAULT_MODEL_GEMINI = "auto"
@@ -25,7 +25,7 @@ class JiraConfig:
     url: str
     email: str
     token: str
-    status_map: Optional[dict] = None
+    status_map: Optional[dict[str, Any]] = None
 
 
 @dataclass
@@ -64,7 +64,7 @@ class Config:
     slack_webhook_url: Optional[str] = None
     discord_webhook_url: Optional[str] = None
     # Map event_type -> "slack"|"discord" -> bool
-    notification_settings: Optional[dict] = None
+    notification_settings: Optional[dict[str, Any]] = None
 
     # Jira Configuration
     jira: Optional["JiraConfig"] = None

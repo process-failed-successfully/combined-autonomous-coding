@@ -49,7 +49,6 @@ class BaseClient(ABC):
         Returns:
             Dict[str, Any]: A dictionary containing the agent's response.
         """
-        pass
 
     async def _run_subprocess(
         self,

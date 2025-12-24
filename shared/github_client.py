@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 import re
-from typing import Optional
+from typing import Optional, Any
 from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class GitHubClient:
             # GitHub Enterprise uses /api/v3
             self.api_base = f"https://{self.host}/api/v3"
 
-    def get_repo_metadata(self, owner: str, repo: str) -> Optional[dict]:
+    def get_repo_metadata(self, owner: str, repo: str) -> Optional[dict[str, Any]]:
         """Fetch repository metadata from the API."""
         if not self.token:
             return None

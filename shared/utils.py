@@ -89,9 +89,15 @@ def get_file_tree(root_dir: Path) -> str:
     return tree_str
 
 
-def has_recent_activity(root_dir: Path, seconds: float = 60) -> bool:
-    """Check if any file in the directory has been modified recently."""
+def has_recent_activity(
+    root_dir: Path, seconds: float = 60, ignore_patterns: Optional[List[str]] = None
+) -> bool:
+    """
+    Check if any file in the directory has been modified recently.
+    ignore_patterns: List of glob patterns to ignore (e.g. ['*.log', '*.tmp'])
+    """
     import time
+    import fnmatch
 
     now = time.time()
     try:
@@ -100,6 +106,16 @@ def has_recent_activity(root_dir: Path, seconds: float = 60) -> bool:
             if ".git" in path.parts:
                 continue
             if path.is_file():
+                # Check ignore patterns
+                if ignore_patterns:
+                    should_ignore = False
+                    for pattern in ignore_patterns:
+                        if fnmatch.fnmatch(path.name, pattern):
+                            should_ignore = True
+                            break
+                    if should_ignore:
+                        continue
+
                 try:
                     mtime = path.stat().st_mtime
                     if now - mtime < seconds:

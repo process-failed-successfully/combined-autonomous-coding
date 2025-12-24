@@ -1,53 +1,71 @@
-# Combined Autonomous Coding Agent - Project Specification
+# App Spec: New First-Class Agent Launcher
 
 ## Overview
-This repository contains a framework for running autonomous coding agents (Gemini and Cursor) that can interact with local codebases to perform development tasks, management duties, and Jira integration. This specification serves as the primary blueprint for the agent's behavior and project evolution.
+A modern, robust, and visually appealing CLI launcher for the Autonomous Coding Agent. It replaces the legacy `safe_run.sh` and `bin/start_agent` scripts with a first-class Python-based entry point.
 
-## Project Goals & Best Practices
+## Core Objectives
+- **Simplify Execution**: Make running the agent as easy as a single, intuitive command.
+- **Dependency Management**: Automatically verify and prepare the environment (Docker, Git, Python).
+- **Premium UX**: Provide a beautiful, interactive CLI experience with clear status reporting.
+- **Background Operations**: Support detached execution and management of long-running agents.
+- **Robustness**: Replace shell-based permission hacks and container management with reliable logic.
 
-### 1. Abstract Agent Logic
-- **Objective**: Move core agent execution logic and subprocess coordination into a shared base layer (`BaseAgent` and `BaseClient`).
-- **Best Practice**: Follow the DRY (Don't Repeat Yourself) principle and use inheritance to share common state management and execution flows.
+## Key Features
 
-### 2. Standardize Prompt Management
-- **Objective**: Consolidate prompt generation logic into `agents/shared/prompts.py`.
-- **Best Practice**: Use template-based prompt construction to ensure consistency and prevent "prompt drift" between different agent models.
+### 1. Interactive CLI Environment
+- **Rich Terminal UI**: Use colors, emoji, and formatting to make progress clear and engaging.
+- **Progress Indicators**: Show active steps (e.g., "Verifying Docker...", "Fixing Permissions...", "Launching Container...").
+- **Smart Logs**: Stream agent logs with filtering and priority levels, avoiding terminal clutter.
 
-### 3. Improve Reliability & Observability
-- **Objective**: Unify telemetry and notification logic within the base classes.
-- **Best Practice**: Implement structured logging and real-time metrics (Prometheus/Grafana) to provide full visibility into agent performance and failures.
+### 2. Detached Mode & Agent Management
+- **Background Execution**: Launch with `--detached` to run the agent in the background.
+- **Named Sessions**: Automatically assign mnemonic names to detached agents (e.g., `flaming-phoenix`) for easy reference.
+- **Re-attachment**: `agent attach [name|id]` to jump back into the interactive log stream.
+- **Lifecycle Control**:
+  - `agent list`: Display all active/detached agents with status and uptime.
+  - `agent logs [name|id]`: Tail logs of a background agent without attaching stdin.
+  - `agent stop [name|id]`: Gracefully terminate a background agent.
 
-### 4. Support for Extensibility
-- **Objective**: Design the architecture to allow "pluggable" agent types.
-- **Best Practice**: Use abstract base classes (ABCs) to define strict interfaces for new agent implementations, ensuring future models (e.g., Claude, OpenAI) can be added with minimal friction.
+### 3. Dynamic Configuration Management
+- **CLI Configuration**: Update settings without manually editing YAML files.
+- **Commands**:
+  - `agent config set max-iterations 50`: Limit execution cycles.
+  - `agent config set model gemini-2.0-flash-exp`: Switch models on the fly.
+  - `agent config set agent cursor`: Toggle between Gemini and Cursor agents.
+- **Discovery & Guidance**:
+  - `agent config list-keys`: Interactive list of all configurable settings with descriptions and default values.
+  - `agent config list-models`: List models compatible with the active agent (e.g., show Gemini-specific models vs. Cursor-specific ones).
+  - **Context-Aware Hints**: If a user sets an invalid model, suggest the closest valid options.
+- **Validation**: Instant feedback on configuration changes (e.g., "Model 'invalid-model' not supported. Did you mean 'gemini-2.0-flash'?").
 
-### 5. Enforce Strict Typing and Linting
-- **Objective**: Achieve 100% type coverage with `mypy` and adhere to PEP 8 via `flake8`.
-- **Best Practice**: Use static analysis tools to catch bugs early and maintain a high-quality, readable codebase.
+### 4. Intelligent Pre-flight Checks
+- **Environment Audit**: Check for Docker daemon, `docker-compose`, and valid Git configuration.
+- **Dependency Auto-Fix**: Automatically handle minor issues (e.g., creating missing directories, fixing local file permissions).
+- **Workspace Validation**: Ensure the project directory is safe for agent modification (Git clean check).
 
-### 6. Automated Verification Pipeline
-- **Objective**: Integrate `run_tests.sh` and custom verification logic into a robust CI/CD process.
-- **Best Practice**: Require automated "sanity checks" and unit test passes before any agent-suggested code is considered "complete."
+### 5. Advanced Jira Integration
+- **Context-Aware Fetching**: Simplify transition to Jira mode with a single flag (e.g., `agent run --jira PROJ-123`).
+- **Workspace Isolation**: Automatically manage temporary workspaces for Jira tasks and cleanup on completion.
+- **Status Sync**: Maintain bi-directional status updates between the local run and Jira tickets.
 
-### 7. Secure Credential & Secret Management
-- **Objective**: Strictly manage Jira tokens, API keys, and other secrets using environment variables.
-- **Best Practice**: Zero-tolerance for hardcoded secrets. Use `.env.template` for local development and secure secrets management in production/CI.
+## Technical Design
 
-### 8. Resilient Error Recovery & State Persistence
-- **Objective**: Implement mechanisms to save and restore agent state across sessions.
-- **Best Practice**: Ensure the agent can resume from the last successful iteration after a timeout or crash, minimizing wasted tokens and time.
+### CLI Framework
+- **Primary Language**: Python 3.10+
+- **Library**: `typer` for CLI structure, `rich` for UI, `docker-py` for orchestration.
+- **Command Structure**: 
+  - `agent run [path] [--detached] [--name NAME]`: Launch the agent.
+  - `agent list`: List active sessions.
+  - `agent attach [name]`: Re-attach to a session.
+  - `agent logs [name]`: View logs.
+  - `agent stop [name]`: Stop a session.
+  - `agent config [set|view|reset]`: Manage configuration.
 
-### 9. Optimize Containerized Environments
-- **Objective**: Refactor the `Dockerfile` for multi-stage builds and non-root execution.
-- **Best Practice**: Minimize the attack surface and image size while ensuring a consistent, "reproducible" environment for the agent to operate in.
+### Visual Assets
+- Use `rich` for tables, panels, and live updates.
+- Custom ASCII art or stylized banners for the "First Class" feel.
 
-### 10. Advanced Jira Workflow Integration
-- **Objective**: Automate the full lifecycle of a Jira ticket from "In Progress" to "Code Review" including branch management.
-- **Best Practice**: Link every code change to a specific ticket via deterministic branch naming and commit messages.
-
-## Technical Architecture
-- **Language**: Python 3.9+ (Strict Typing)
-- **Concurrency**: Asyncio for non-blocking subprocesses and API calls.
-- **Testing**: Pytest for unit/integration tests; Shell-based verification scripts for project-level sanity.
-- **Telemetry**: OpenTelemetry-compatible metrics exported to Prometheus.
-- **Containerization**: Docker & Docker Compose for monitoring stack and agent execution.
+---
+*This specification replaces the functionality of legacy scripts:*
+- `safe_run.sh`
+- `bin/start_agent`

@@ -1,64 +1,34 @@
 {
   "features": [
     {
-      "id": "goal_1",
-      "title": "Abstract Agent Logic",
-      "description": "Move core agent execution logic and subprocess coordination into a shared base layer (BaseAgent and BaseClient).",
-      "status": "Passed"
+      "id": "cli_env",
+      "title": "Interactive CLI Environment",
+      "description": "Rich Terminal UI with colors/emojis, progress indicators, and smart logs using rich.",
+      "passes": false
     },
     {
-      "id": "goal_2",
-      "title": "Standardize Prompt Management",
-      "description": "Consolidate prompt generation logic into agents/shared/prompts.py and use template-based prompt construction.",
-      "status": "Passed"
+      "id": "agent_mgmt",
+      "title": "Detached Mode & Agent Management",
+      "description": "Background execution, named sessions, re-attachment, and lifecycle control (list, logs, stop).",
+      "passes": false
     },
     {
-      "id": "goal_3",
-      "title": "Improve Reliability & Observability",
-      "description": "Unify telemetry and notification logic within the base classes; implement structured logging and real-time metrics.",
-      "status": "Passed"
+      "id": "config_mgmt",
+      "title": "Dynamic Configuration Management",
+      "description": "CLI-based configuration updates, discovery/guidance (list-keys, list-models), and validation.",
+      "passes": false
     },
     {
-      "id": "goal_4",
-      "title": "Support for Extensibility",
-      "description": "Design architecture to allow pluggable agent types using abstract base classes to define strict interfaces.",
-      "status": "Passed"
+      "id": "pre_flight",
+      "title": "Intelligent Pre-flight Checks",
+      "description": "Environment audit, dependency auto-fix, and workspace validation.",
+      "passes": false
     },
     {
-      "id": "goal_5",
-      "title": "Strict Typing and Linting",
-      "description": "Achieve 100% type coverage with mypy and adhere to PEP 8 via flake8.",
-      "status": "In Progress"
-    },
-    {
-      "id": "goal_6",
-      "title": "Automated Verification Pipeline",
-      "description": "Integrate run_tests.sh and custom verification logic into a robust CI/CD process.",
-      "status": "Passed"
-    },
-    {
-      "id": "goal_7",
-      "title": "Secure Credential & Secret Management",
-      "description": "Manage Jira tokens, API keys, and other secrets using environment variables; zero-tolerance for hardcoded secrets.",
-      "status": "Passed"
-    },
-    {
-      "id": "goal_8",
-      "title": "Resilient Error Recovery & State Persistence",
-      "description": "Implement mechanisms to save and restore agent state across sessions to resume from the last successful iteration.",
-      "status": "In Progress"
-    },
-    {
-      "id": "goal_9",
-      "title": "Optimize Containerized Environments",
-      "description": "Refactor Dockerfile for multi-stage builds and non-root execution for a reproducible environment.",
-      "status": "Passed"
-    },
-    {
-      "id": "goal_10",
-      "title": "Advanced Jira Workflow Integration",
-      "description": "Automate full lifecycle of Jira tickets from In Progress to Code Review including branch management.",
-      "status": "Passed"
+      "id": "jira_integration",
+      "title": "Advanced Jira Integration",
+      "description": "Context-aware fetching, workspace isolation, and bi-directional status sync.",
+      "passes": false
     }
   ]
 }

@@ -1,0 +1,119 @@
+import yaml
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+from rich.console import Console
+from rich.table import Table
+from shared.config_loader import get_config_path, ensure_config_exists
+import platformdirs
+
+console = Console()
+
+CONFIG_KEYS = {
+    "agent_type": {"description": "Agent backend to use (gemini, cursor)", "default": "gemini"},
+    "model": {"description": "Model to use (e.g., gemini-2.0-flash-exp)", "default": "auto"},
+    "max_iterations": {"description": "Maximum number of iterations", "default": 50},
+    "timeout": {"description": "Timeout in seconds", "default": 600.0},
+    "auto_continue_delay": {"description": "Delay before auto-continue", "default": 3},
+    "verbose": {"description": "Enable verbose logging", "default": False},
+    "stream_output": {"description": "Stream LLM output to console", "default": True},
+    "slack_webhook_url": {"description": "Slack Webhook URL", "default": None},
+    "discord_webhook_url": {"description": "Discord Webhook URL", "default": None},
+    "login_mode": {"description": "Enable login/auth mode", "default": False},
+    "sprint_mode": {"description": "Enable sprint mode", "default": False},
+}
+
+class ConfigManager:
+    def __init__(self):
+        self.config_path = get_config_path()
+        if not self.config_path:
+            # Default to XDG if not found
+            xdg_config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
+            self.config_path = xdg_config_dir / "agent_config.yaml"
+
+    def _load_config(self) -> Dict[str, Any]:
+        if not self.config_path.exists():
+            return {}
+        try:
+            with open(self.config_path, "r") as f:
+                return yaml.safe_load(f) or {}
+        except Exception:
+            return {}
+
+    def _save_config(self, config: Dict[str, Any]):
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.config_path, "w") as f:
+            yaml.dump(config, f, default_flow_style=False)
+
+    def list_keys(self):
+        """Display a table of available configuration keys."""
+        table = Table(title="Configuration Keys")
+        table.add_column("Key", style="cyan")
+        table.add_column("Description", style="magenta")
+        table.add_column("Default", style="green")
+        table.add_column("Current Value", style="yellow")
+
+        current_config = self._load_config()
+
+        for key, info in CONFIG_KEYS.items():
+            current_val = current_config.get(key, "Not Set")
+            table.add_row(key, info["description"], str(info["default"]), str(current_val))
+
+        console.print(table)
+        console.print(f"\n[dim]Config file: {self.config_path}[/dim]")
+
+    def set_value(self, key: str, value: str):
+        """Set a configuration value."""
+        if key not in CONFIG_KEYS:
+            # Fuzzy match or suggestion could go here
+            console.print(f"[red]Error: Unknown key '{key}'.[/red]")
+            self.list_keys()
+            return
+
+        config = self._load_config()
+        
+        # Type conversion
+        default = CONFIG_KEYS[key]["default"]
+        try:
+            if isinstance(default, bool):
+                if value.lower() in ("true", "yes", "1"):
+                    val = True
+                elif value.lower() in ("false", "no", "0"):
+                    val = False
+                else:
+                    raise ValueError("Must be boolean")
+            elif isinstance(default, int):
+                val = int(value)
+            elif isinstance(default, float):
+                val = float(value)
+            else:
+                val = value
+        except ValueError:
+            console.print(f"[red]Error: Invalid value for {key}. Expected type matching default.[/red]")
+            return
+
+        config[key] = val
+        self._save_config(config)
+        console.print(f"[green]Set '{key}' to '{val}'[/green]")
+
+    def list_models(self, agent_type: Optional[str] = None):
+        """List available models."""
+        # Placeholder for model list
+        models = {
+            "gemini": ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"],
+            "cursor": ["gpt-4o", "claude-3-5-sonnet", "o1-mini"]
+        }
+        
+        table = Table(title="Available Models")
+        table.add_column("Agent", style="cyan")
+        table.add_column("Model", style="magenta")
+
+        if agent_type:
+            target_agents = [agent_type]
+        else:
+            target_agents = models.keys()
+
+        for agent in target_agents:
+            for model in models.get(agent, []):
+                table.add_row(agent, model)
+        
+        console.print(table)

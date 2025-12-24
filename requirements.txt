@@ -1,6 +1,12 @@
+typer
+rich
+docker
 requests
-prometheus_client
-psutil
 PyYAML
-platformdirs
-jira
+python-dotenv
+tenacity
+openai
+google-cloud-aiplatform
+gitpython
+prometheus-client
+psutil

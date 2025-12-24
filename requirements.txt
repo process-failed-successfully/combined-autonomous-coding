@@ -10,3 +10,4 @@ google-cloud-aiplatform
 gitpython
 prometheus-client
 psutil
+platformdirs

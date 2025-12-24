@@ -4,7 +4,7 @@
       "id": "cli_env",
       "title": "Interactive CLI Environment",
       "description": "Rich Terminal UI with colors/emojis, progress indicators, and smart logs using rich.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "agent_mgmt",

@@ -1,8 +1,10 @@
 import typer
 import sys
 import os
+import logging
 from rich.console import Console
 from rich.panel import Panel
+from rich.logging import RichHandler
 from agents.pre_flight import PreFlightCheck
 from agents.config_manager import ConfigManager
 
@@ -17,16 +19,30 @@ app.add_typer(config_app, name="config")
 
 console = Console()
 
+def setup_logging(verbose: bool = False):
+    """Configure logging with Rich."""
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(console=console, rich_tracebacks=True, markup=True)],
+        force=True
+    )
+
 @app.command()
 def run(
     detached: bool = typer.Option(False, "--detached", "-d", help="Run in detached mode"),
     name: str = typer.Option(None, "--name", "-n", help="Name for the session"),
     jira: str = typer.Option(None, "--jira", "-j", help="Jira ticket key to work on"),
-    skip_checks: bool = typer.Option(False, "--skip-checks", help="Skip pre-flight checks (DEV ONLY)")
+    skip_checks: bool = typer.Option(False, "--skip-checks", help="Skip pre-flight checks (DEV ONLY)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging")
 ):
     """
     Launch the Autonomous Coding Agent.
     """
+    setup_logging(verbose)
+    logger = logging.getLogger("agent")
+
     console.print(Panel.fit(
         "[bold blue]Autonomous Coding Agent[/bold blue]\n"
         "[dim]v0.4.0 - First-Class Launcher[/dim]",
@@ -46,11 +62,17 @@ def run(
     # Placeholder for actual launch logic
     if jira:
         console.print(f"[cyan]Mode: Jira ({jira})[/cyan]")
+        logger.info(f"Starting in Jira mode for ticket {jira}")
     else:
         console.print("[cyan]Mode: Autonomous[/cyan]")
+        logger.info("Starting in Autonomous mode")
 
     if detached:
         console.print("[yellow]Detached mode not yet implemented.[/yellow]")
+    
+    # Demonstration of logging
+    logger.debug("Debug logging enabled")
+    logger.info("Agent initialized")
     
     # TODO: Actual container launch logic here
 

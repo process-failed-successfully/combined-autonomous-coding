@@ -6,7 +6,6 @@ Runs after project sign-off to clean up temporary files.
 """
 
 import logging
-from pathlib import Path
 from typing import List, Any
 
 from shared.config import Config

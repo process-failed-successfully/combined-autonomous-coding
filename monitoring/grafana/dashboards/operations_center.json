@@ -51,7 +51,7 @@
       },
       "targets": [
         {
-          "expr": "sum(sprint_tasks_completed)",
+          "expr": "sum(sprint_tasks_completed_total)",
           "refId": "A"
         }
       ],
@@ -87,7 +87,7 @@
       },
       "targets": [
         {
-          "expr": "sum(sprint_tasks_failed)",
+          "expr": "sum(sprint_tasks_failed_total)",
           "refId": "A"
         }
       ],

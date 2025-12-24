@@ -6,7 +6,7 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
-      - "9098:9090"
+      - "9080:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
@@ -15,7 +15,7 @@ services:
   pushgateway:
     image: prom/pushgateway:latest
     ports:
-      - "9091:9091"
+      - "9081:9091"
     networks:
       - monitoring
 

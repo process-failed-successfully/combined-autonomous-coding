@@ -100,16 +100,15 @@ class TestSprintParallel(unittest.IsolatedAsyncioTestCase):
             active_workers -= 1
             logger.info(f"Worker {task.id} finished. Active: {active_workers}")
 
-        manager.run_worker = fake_worker
+        with patch.object(manager, 'run_worker', side_effect=fake_worker):
+            # Run!
+            start_time = asyncio.get_running_loop().time()
 
-        # Run!
-        start_time = asyncio.get_running_loop().time()
+            # We need to run planning first
+            await manager.run_planning_phase()
 
-        # We need to run planning first
-        await manager.run_planning_phase()
-
-        # Then execute
-        await manager.execute_sprint()
+            # Then execute
+            await manager.execute_sprint()
 
         end_time = asyncio.get_running_loop().time()
         duration = end_time - start_time

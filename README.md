@@ -177,7 +177,7 @@ On every push and PR, the CI pipeline performs:
 
 ## 🔄 Process Workflow
 
-The system follows a rigorous **"Agent-Manager"** workflow to ensure high-quality output. The Manager acts as both a periodic reviewer and a final gatekeeper.
+The system follows a rigorous **"Agent-QA-Manager"** workflow to ensure high-quality output. The QA agent verifies the work before the Manager provides the final sign-off.
 
 ```mermaid
 flowchart TD
@@ -191,33 +191,50 @@ flowchart TD
         AgentLoop --> CheckTrigger{Manager Triggered?}
         CheckTrigger -- "No" --> CheckDone{Is work done?}
         CheckDone -- No --> AgentLoop
-        CheckDone -- Yes (Creates COMPLETED) --> CheckSignOff{Is Signed Off?}
+        CheckDone -- Yes (Creates COMPLETED) --> CheckQA{QA Passed?}
     end
 
     CheckTrigger -- "Yes (Periodic/Manual)" --> ManagerStart
-    CheckSignOff -- Yes --> Finish[Project Verified & Complete]
-    CheckSignOff -- No --> ManagerStart
+    CheckQA -- Yes --> ManagerStart
+    CheckQA -- No --> QAStart
 
-    subgraph Manager Process
+    subgraph QA Process
+        QAStart[QA Agent Verification] --> QAValidation{QA Validation}
+        QAValidation -- "Failed (Regenerate Features)" --> RejectQA[Delete COMPLETED &\nUpdate feature_list.json]
+        QAValidation -- "Passed" --> PassQA[Create QA_PASSED]
+    end
+
+    subgraph Manager Review
         ManagerStart[Manager Review]
         ManagerStart --> Validation{Validation}
         Validation -- "Directives / Correction" --> AgentLoop
         Validation -- "Approved (Sign-off)" --> SignOff[Create PROJECT_SIGNED_OFF]
-        Validation -- "Rejected (Not Done)" --> Reject[Delete COMPLETED &\nWrite Directives]
+        Validation -- "Rejected (Not Done)" --> Reject[Delete COMPLETED & QA_PASSED &\nWrite Directives]
     end
 
+    RejectQA --> AgentLoop
+    PassQA --> ManagerStart
     SignOff --> CleanerLoop[Cleaner Agent]
-    CleanerLoop --> Finish
+    CleanerLoop --> Finish[Project Verified & Complete]
     Reject --> AgentLoop
 ```
 
-### Manager Triggers
+### 🧐 QA Agent (Verification)
 
-The Manager Agent is invoked in three ways:
+The **QA Agent** is the first gatekeeper after development is marked as complete.
+
+1.  **Verification**: It strictly verifies that the application runs and all features in `feature_list.json` pass.
+2.  **Spec Compliance**: It ensures the output matches the `app_spec.txt`.
+3.  **Failure Handling**: If verification fails, it deletes the `COMPLETED` file, regenerates the `feature_list.json` to include failing items, and provides feedback to the coding agent.
+4.  **Signal Success**: Once passed, it creates a `QA_PASSED` file, which allows the Manager to perform the final review.
+
+### 🏛️ Manager Triggers
+
+The Manager Agent is now primarily focused on strategic guidance and final high-level sign-off:
 
 1.  **Periodic Review**: Automatically runs every **X iterations** (configurable) to check progress, answer questions, and unblock the coding agent.
 2.  **Manual Trigger**: The coding agent can explicitly request a review if it gets stuck.
-3.  **Final Sign-off**: When the agent marks work as `COMPLETED`, the Manager **must** review and sign off (`PROJECT_SIGNED_OFF`) before the system accepts it as finished.
+3.  **Final Sign-off**: After the QA Agent has created a `QA_PASSED` file, the Manager performs a final quality review and signs off (`PROJECT_SIGNED_OFF`).
 
 ### 🧹 Cleaner Agent
 

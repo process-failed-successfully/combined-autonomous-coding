@@ -4,7 +4,7 @@ import socket
 import time
 import threading
 import psutil
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
@@ -14,7 +14,7 @@ from prometheus_client import (
 )
 
 # Configuration
-PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9091")
+PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9081")
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 LOG_DIR = os.getenv("LOG_DIR", "./agents/logs")
 
@@ -35,6 +35,7 @@ class Telemetry:
         self.project_name = project_name
         self.registry = CollectorRegistry()
         self.metrics: Dict[str, Any] = {}
+        self._last_push_error_time = 0.0
 
         # Ensure log directory exists
         os.makedirs(LOG_DIR, exist_ok=True)
@@ -183,10 +184,10 @@ class Telemetry:
             "sprint_tasks_total", "Total tasks in current sprint", ["project"]
         )
         self.register_counter(
-            "sprint_tasks_completed", "Tasks completed in sprint", ["project"]
+            "sprint_tasks_completed_total", "Tasks completed in sprint", ["project"]
         )
         self.register_counter(
-            "sprint_tasks_failed", "Tasks failed in sprint", ["project"]
+            "sprint_tasks_failed_total", "Tasks failed in sprint", ["project"]
         )
         self.register_gauge(
             "sprint_active_workers", "Currently running worker agents", ["project"]
@@ -234,13 +235,13 @@ class Telemetry:
         except Exception as e:
             self.log_error(f"Failed to initialize default metrics: {e}")
 
-    def register_gauge(self, name: str, documentation: str, labelnames: list = []):
+    def register_gauge(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Gauge(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
 
-    def register_counter(self, name: str, documentation: str, labelnames: list = []):
+    def register_counter(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Counter(
                 name, documentation, labelnames=labelnames, registry=self.registry
@@ -250,8 +251,8 @@ class Telemetry:
         self,
         name: str,
         documentation: str,
-        labelnames: list = [],
-        buckets: tuple = Histogram.DEFAULT_BUCKETS,
+        labelnames: List[str] = [],
+        buckets: Tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
     ):
         if name not in self.metrics:
             self.metrics[name] = Histogram(
@@ -380,10 +381,13 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
-        except Exception:
+        except Exception as e:
             # Don't crash the agent if metrics fail
-            # Avoid print spam, maybe log once
-            pass
+            # Use throttled logging to avoid spamming
+            now = time.time()
+            if now - self._last_push_error_time > 60:  # Log once per minute
+                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                self._last_push_error_time = now
 
     def start_system_monitoring(self, interval: int = 15):
         if self.monitoring_active:

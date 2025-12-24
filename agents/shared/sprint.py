@@ -206,7 +206,7 @@ class SprintManager:
         # Increment active workers
         get_telemetry().record_gauge(
             "sprint_active_workers",
-            len(self.running_tasks) + 1 # running_tasks includes this one, set by caller but let's be safe.
+            len(self.running_tasks) + 1  # running_tasks includes this one, set by caller but let's be safe.
             # Actually caller adds to self.running_tasks before calling run_worker.
             # So len(self.running_tasks) is correct.
         )

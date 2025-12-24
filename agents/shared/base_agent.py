@@ -43,7 +43,6 @@ class BaseAgent(abc.ABC):
     @abc.abstractmethod
     def get_agent_type(self) -> str:
         """Return the agent type string (e.g., 'gemini', 'cursor')."""
-        pass
 
     @abc.abstractmethod
     async def run_agent_session(
@@ -55,7 +54,6 @@ class BaseAgent(abc.ABC):
         Run a single agent session and return (status, response_text, executed_actions).
         Status can be 'continue', 'done', 'error'.
         """
-        pass
 
     def print_session_header(self, iteration: int, is_first: bool) -> None:
         """Print a visual header for the current session."""
@@ -90,6 +88,7 @@ class BaseAgent(abc.ABC):
             get_jira_initializer_prompt,
             get_jira_manager_prompt,
             get_jira_worker_prompt,
+            get_qa_prompt,
         )
 
         config = self.config
@@ -106,8 +105,9 @@ class BaseAgent(abc.ABC):
         # Check for Manager Triggers
         should_run_manager = False
         manager_trigger_path = config.project_dir / "TRIGGER_MANAGER"
+        triggered_by_file = manager_trigger_path.exists()
 
-        if manager_trigger_path.exists():
+        if triggered_by_file:
             logger.info("Manager triggered by TRIGGER_MANAGER file.")
             should_run_manager = True
             try:
@@ -117,6 +117,7 @@ class BaseAgent(abc.ABC):
         elif config.run_manager_first and not has_run_manager_first:
             logger.info("Manager triggered by --manager-first flag.")
             should_run_manager = True
+            force_manager = True
             self.has_run_manager_first = True
         elif iteration > 0 and iteration % config.manager_frequency == 0:
             logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
@@ -144,6 +145,20 @@ class BaseAgent(abc.ABC):
             should_run_manager = True
 
         if should_run_manager:
+            # Check if QA is required before Manager Sign-off
+            # We trigger QA if either:
+            # 1. Project marked as COMPLETED
+            # 2. This is a periodic manager run (not triggered by file or flag)
+            force_manager = triggered_by_file or (config.run_manager_first and self.has_run_manager_first)
+            
+            is_ready_for_qa = (config.project_dir / "COMPLETED").exists() or (should_run_manager and not force_manager)
+            
+            qa_passed_path = config.project_dir / "QA_PASSED"
+            
+            if is_ready_for_qa and not qa_passed_path.exists():
+                logger.info("Completion signaled. Triggering QA Agent for verification...")
+                return get_qa_prompt(), True 
+
             if config.jira and config.jira_ticket_key:
                 return get_jira_manager_prompt(), True
             else:
@@ -398,6 +413,14 @@ class BaseAgent(abc.ABC):
         if self.is_first_run:
             logger.info("Fresh start - copying spec to project")
             copy_spec_to_project(self.config.project_dir, self.config.spec_file)
+            # Cleanup any stale signals
+            for sig in ["COMPLETED", "QA_PASSED", "PROJECT_SIGNED_OFF"]:
+                sig_path = self.config.project_dir / sig
+                if sig_path.exists():
+                    try:
+                        sig_path.unlink()
+                    except OSError:
+                        pass
         else:
             logger.info("Continuing existing project")
             self.log_progress_summary()

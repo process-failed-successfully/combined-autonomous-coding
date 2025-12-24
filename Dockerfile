@@ -1,10 +1,14 @@
 # Stage 1: Builder
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim-bookworm AS builder
+
+# Configure apt for robustness
+RUN echo 'Acquire::Retries "20";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "60";' >> /etc/apt/apt.conf.d/80-retries
 
 WORKDIR /build
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build dependencies
-# Combine updates and installs to minimize layers
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
@@ -17,23 +21,35 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Final
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
+# Configure apt for robustness
+RUN echo 'Acquire::Retries "20";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "60";' >> /etc/apt/apt.conf.d/80-retries
+
+ENV DEBIAN_FRONTEND=noninteractive
 ARG UID=1000
 ARG GID=1000
 
-# Install runtime system dependencies
-# Combined list, sorted for readability
-# Removed build-essential and python3-dev as they are not needed for runtime
+# Install runtime system dependencies in chunks
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    jq \
+    ripgrep \
+    fd-find \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     chromium \
-    curl \
-    dnsutils \
-    fd-find \
-    git \
-    iputils-ping \
-    jq \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -46,24 +62,19 @@ RUN apt-get update && \
     libxfixes3 \
     libxkbcommon0 \
     libxrandr2 \
-    nano \
-    net-tools \
-    nodejs \
-    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     openssh-client \
     procps \
-    ripgrep \
-    sudo \
     unzip \
-    vim \
-    wget \
     zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd -g "${GID}" appuser && \
-    useradd -l -u "${UID}" -g "${GID}" -m -s /bin/bash appuser && \
-    echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    useradd -l -u "${UID}" -g "${GID}" -m -s /bin/bash appuser
 
 # Copy installed python packages from builder
 COPY --from=builder /install /usr/local

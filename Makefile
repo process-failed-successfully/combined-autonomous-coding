@@ -44,6 +44,15 @@ install: $(VENV)/bin/activate
 # Run tests (CI Check)
 .PHONY: test
 test:
+	@echo "========================================"
+	@echo "  CI CHECK SUITE"
+	@echo "========================================"
+	@if [ "$(SKIP_DOCKER)" != "1" ]; then \
+		echo "Running Docker build check..."; \
+		-$(MAKE) docker-build; \
+	else \
+		echo "Skipping Docker build check (local override)."; \
+	fi
 	@# Ensure run_tests.sh is executable
 	@chmod +x run_tests.sh
 	@# Run run_tests.sh with the venv path explicitly added to PATH

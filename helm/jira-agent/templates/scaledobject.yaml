@@ -1,0 +1,19 @@
+{{- if .Values.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "jira-agent.fullname" . }}-scaler
+  labels:
+    {{- include "jira-agent.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "jira-agent.fullname" . }}
+  minReplicaCount: {{ .Values.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  triggers:
+    - type: redis
+      metadata:
+        address: {{ printf "%s:%s" .Values.redis.host .Values.redis.port | quote }}
+        listName: {{ .Values.redis.queue | quote }}
+        listLength: {{ .Values.keda.listLength | quote }}
+{{- end }}

@@ -36,6 +36,11 @@ def get_manager_prompt() -> str:
     return load_prompt("manager_prompt")
 
 
+def get_qa_prompt() -> str:
+    """Load the QA agent prompt."""
+    return load_prompt("qa_agent_prompt")
+
+
 def get_sprint_planner_prompt() -> str:
     """Load the sprint planner prompt."""
     return load_prompt("sprint_planner_prompt")

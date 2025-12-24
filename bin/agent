@@ -1,3 +1,16 @@
 #!/bin/bash
-export PYTHONPATH=$PYTHONPATH:$(pwd)
+
+# Resolve the absolute path of the repository root
+# We use readlink -f to handle if this script is symlinked (e.g. in /usr/local/bin)
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Capture the current working directory as the workspace
+export WORKSPACE_DIR="$(pwd)"
+
+# Run the Python CLI
+# We assume python3 is available in the environment
+cd "$REPO_ROOT"
+export PYTHONPATH="$REPO_ROOT"
 python3 -m agents.cli "$@"

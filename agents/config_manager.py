@@ -1,4 +1,5 @@
 import yaml
+import difflib
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from rich.console import Console
@@ -20,6 +21,11 @@ CONFIG_KEYS = {
     "discord_webhook_url": {"description": "Discord Webhook URL", "default": None},
     "login_mode": {"description": "Enable login/auth mode", "default": False},
     "sprint_mode": {"description": "Enable sprint mode", "default": False},
+}
+
+KNOWN_MODELS = {
+    "gemini": ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"],
+    "cursor": ["gpt-4o", "claude-3-5-sonnet", "o1-mini"]
 }
 
 class ConfigManager:
@@ -64,10 +70,33 @@ class ConfigManager:
     def set_value(self, key: str, value: str):
         """Set a configuration value."""
         if key not in CONFIG_KEYS:
-            # Fuzzy match or suggestion could go here
             console.print(f"[red]Error: Unknown key '{key}'.[/red]")
-            self.list_keys()
+            matches = difflib.get_close_matches(key, CONFIG_KEYS.keys(), n=1, cutoff=0.6)
+            if matches:
+                console.print(f"[yellow]Did you mean '{matches[0]}'? [/yellow]")
+            else:
+                self.list_keys()
             return
+
+        # Special Validation for 'agent_type'
+        if key == "agent_type":
+            if value not in KNOWN_MODELS:
+                console.print(f"[red]Error: Invalid agent_type '{value}'. Must be one of: {', '.join(KNOWN_MODELS.keys())}[/red]")
+                return
+
+        # Special Validation for 'model'
+        if key == "model" and value != "auto":
+            # Check against all known models, or specific to current agent if set?
+            # For simplicity, check if it exists in any list
+            all_models = []
+            for m_list in KNOWN_MODELS.values():
+                all_models.extend(m_list)
+            
+            if value not in all_models:
+                console.print(f"[yellow]Warning: Model '{value}' is not in the known list. Setting anyway.[/yellow]")
+                matches = difflib.get_close_matches(value, all_models, n=1, cutoff=0.6)
+                if matches:
+                    console.print(f"[dim]Did you mean '{matches[0]}'? [/dim]")
 
         config = self._load_config()
         
@@ -97,12 +126,6 @@ class ConfigManager:
 
     def list_models(self, agent_type: Optional[str] = None):
         """List available models."""
-        # Placeholder for model list
-        models = {
-            "gemini": ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"],
-            "cursor": ["gpt-4o", "claude-3-5-sonnet", "o1-mini"]
-        }
-        
         table = Table(title="Available Models")
         table.add_column("Agent", style="cyan")
         table.add_column("Model", style="magenta")
@@ -110,10 +133,10 @@ class ConfigManager:
         if agent_type:
             target_agents = [agent_type]
         else:
-            target_agents = models.keys()
+            target_agents = KNOWN_MODELS.keys()
 
         for agent in target_agents:
-            for model in models.get(agent, []):
+            for model in KNOWN_MODELS.get(agent, []):
                 table.add_row(agent, model)
         
         console.print(table)

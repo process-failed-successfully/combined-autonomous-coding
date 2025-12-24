@@ -36,13 +36,12 @@ def validate_dashboards(dashboard_dir, available_metrics):
 
             # Check UID
             if 'uid' not in data or not data['uid']:
-                print(f"  [ERROR] Missing or empty 'uid'")
+                print("  [ERROR] Missing or empty 'uid'")
                 all_valid = False
 
             # Check Panels
             panels = data.get('panels', [])
             for panel in panels:
-                title = panel.get('title', 'Untitled')
                 targets = panel.get('targets', [])
 
                 for target in targets:
@@ -50,15 +49,13 @@ def validate_dashboards(dashboard_dir, available_metrics):
                     if not expr:
                         continue
 
-                    # Check if any known metric is present in the expression
-                    found_metric = False
                     for metric in available_metrics:
                         # Ensure we match whole words (e.g. don't match 'rate' as a metric if 'rate' isn't one)
                         # but our metrics are distinct enough (snake_case)
                         if metric in expr:
-                            found_metric = True
                             # We could check if *all* words that look like metrics are valid,
                             # but that's harder. Checking if at least one valid metric is used is a good sanity check.
+                            pass
 
                     # Also check for some standard prometheus metrics that might not be in telemetry.py (e.g. up, scrape_duration_seconds)
                     # For now, we assume we only care about our custom metrics or common ones.
@@ -83,7 +80,6 @@ def simple_metric_check(dashboard_dir, available_metrics):
     Scans dashboard files for strings that look like metrics and verifies they exist.
     """
     dashboard_files = glob.glob(os.path.join(dashboard_dir, '*.json'))
-    all_valid = True
 
     # Common prometheus/loki metrics we might ignore or assume exist
     whitelist = {'up', 'scrape_duration_seconds', 'scrape_samples_scraped', 'count', 'sum', 'rate',

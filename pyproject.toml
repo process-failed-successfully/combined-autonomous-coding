@@ -13,9 +13,18 @@ authors = [
     {name = "User", email = "user@example.com"},
 ]
 dependencies = [
-    "psutil",
+    "typer",
+    "rich",
+    "docker",
     "requests",
-    "prometheus_client",
+    "PyYAML",
+    "python-dotenv",
+    "tenacity",
+    "openai",
+    "google-cloud-aiplatform",
+    "gitpython",
+    "prometheus-client",
+    "psutil",
     "platformdirs",
 ]
 requires-python = ">=3.11"

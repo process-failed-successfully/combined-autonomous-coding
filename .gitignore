@@ -46,3 +46,10 @@ output.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Agent
+.agent_state.json
+blockers.txt
+gemini_progress.txt
+manager_directives.txt
+successes.txt

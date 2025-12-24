@@ -28,7 +28,7 @@
       "id": "jira_integration",
       "title": "Advanced Jira Integration",
       "description": "Context-aware fetching, workspace isolation, and bi-directional status sync.",
-      "passes": false
+      "passes": true
     }
   ]
 }

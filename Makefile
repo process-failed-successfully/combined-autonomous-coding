@@ -49,7 +49,7 @@ test:
 	@echo "========================================"
 	@if [ "$(SKIP_DOCKER)" != "1" ]; then \
 		echo "Running Docker build check..."; \
-		-$(MAKE) docker-build; \
+		$(MAKE) docker-build || echo "Docker build check failed (ignoring)..."; \
 	else \
 		echo "Skipping Docker build check (local override)."; \
 	fi

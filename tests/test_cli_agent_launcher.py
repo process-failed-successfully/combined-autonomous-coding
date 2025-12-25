@@ -1,6 +1,7 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+from pathlib import Path
 from typer.testing import CliRunner
+
 from agents.cli import app
 
 runner = CliRunner()
@@ -98,21 +99,20 @@ def test_cli_logs(mock_session_mgr, mock_run):
     # Wait, get_log_path returns Path object or None.
     # And CLI checks .exists()
 
-    with patch("agents.cli.Path") as MockPath:  # Mocking Path is hard.
-        # Better: Mock session_manager.get_log_path returning a MagicMock that has .exists() = True
-        log_path_mock = MagicMock()
-        log_path_mock.exists.return_value = True
-        log_path_mock.__str__.return_value = "agent.log"
-        mock_session_mgr.get_log_path.return_value = log_path_mock
+    # Correct way to mock a method that returns a Path object
+    mock_path_instance = MagicMock(spec=Path)
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.__str__.return_value = "agent.log"
+    mock_session_mgr.get_log_path.return_value = mock_path_instance
 
-        result = runner.invoke(app, ["logs", "agent-1"])
+    result = runner.invoke(app, ["logs", "agent-1"])
 
-        assert result.exit_code == 0
-        assert "Displaying logs for agent-1" in result.stdout
-        mock_run.assert_called_once()
-        args = mock_run.call_args[0][0]
-        assert args[0] == "tail"
-        assert args[-1] == "agent.log"
+    assert result.exit_code == 0
+    assert "Displaying logs for agent-1" in result.stdout
+    mock_run.assert_called_once()
+    args = mock_run.call_args[0][0]
+    assert args[0] == "tail"
+    assert args[-1] == "agent.log"
 
 
 def test_cli_config_list():

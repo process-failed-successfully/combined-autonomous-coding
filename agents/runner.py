@@ -63,7 +63,7 @@ async def run_agent(
     )
 
     # Jira Logic
-    jira_cfg_data = file_config.get("jira", {{}})
+    jira_cfg_data = file_config.get("jira", {})
     jira_env_url = os.environ.get("JIRA_URL")
     jira_env_email = os.environ.get("JIRA_EMAIL")
     jira_env_token = os.environ.get("JIRA_TOKEN")

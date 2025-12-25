@@ -72,6 +72,7 @@ def prepare_workspace(name: str, original_dir: Path) -> Path:
 
 @app.command()
 def run(
+    path: str = typer.Argument(".", help="Path to the project to run the agent in"),
     detached: bool = typer.Option(False, "--detached", "-d", help="Run in detached mode"),
     name: str = typer.Option(None, "--name", "-n", help="Name for the session"),
     jira: str = typer.Option(None, "--jira", "-j", help="Jira ticket key to work on"),
@@ -119,8 +120,10 @@ def run(
     cmd = [sys.executable, "main.py"]
     if jira:
         cmd.extend(["--jira-ticket", jira])
-        # Also pass --project-dir explicitly to be safe?
-        cmd.extend(["--project-dir", str(workspace_path)])
+        # In isolation mode, the workspace IS the project dir
+        cmd.extend(["--project-dir", "."])
+    else:
+        cmd.extend(["--project-dir", path])
 
     if verbose:
         cmd.append("--verbose")

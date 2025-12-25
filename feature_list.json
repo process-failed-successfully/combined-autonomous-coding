@@ -22,13 +22,13 @@
       "id": "detached_mode_agent_management",
       "title": "Detached Mode & Agent Management",
       "description": "Support background execution, named sessions, re-attachment, and lifecycle control (list, logs, stop).",
-      "passes": false
+      "passes": true
     },
     {
       "id": "dynamic_config_management",
       "title": "Dynamic Configuration Management",
       "description": "Implement CLI-based configuration updates, discovery, guidance, and validation.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "intelligent_pre_flight_checks",
@@ -40,13 +40,13 @@
       "id": "advanced_jira_integration",
       "title": "Advanced Jira Integration",
       "description": "Context-aware fetching, workspace isolation, and bi-directional status sync for Jira tasks.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "new_launcher_tests",
       "title": "New Launcher Test Coverage",
       "description": "Create comprehensive tests for all new launcher functionalities.",
-      "passes": false
+      "passes": true
     }
   ]
 }

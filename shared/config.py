@@ -39,6 +39,7 @@ class Config:
     max_iterations: Optional[int] = None
     auto_continue_delay: int = DEFAULT_AUTO_CONTINUE_DELAY
     max_consecutive_errors: int = DEFAULT_MAX_CONSECUTIVE_ERRORS
+    max_error_wait: float = 600.0
     timeout: float = DEFAULT_GEMINI_TIMEOUT  # Generic timeout for the active agent
     bash_timeout: float = DEFAULT_BASH_TIMEOUT
     verbose: bool = False

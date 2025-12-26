@@ -335,8 +335,11 @@ class BaseAgent(abc.ABC):
             self.notifier.notify("error", f"Agent encountered error: {response}")
             self.save_state()
 
-            logger.info("Retrying in 10 seconds...")
-            await asyncio.sleep(10)
+            # Exponential Backoff
+            # 10s, 20s, 40s, 80s ... max_error_wait
+            wait_time = min(10 * (2 ** (self.consecutive_errors - 1)), self.config.max_error_wait)
+            logger.info(f"Retrying in {wait_time} seconds...")
+            await asyncio.sleep(wait_time)
 
     async def _execute_iteration(self, iter_start_time: float) -> None:
         """Execute a single iteration of the agent loop."""
@@ -471,7 +474,9 @@ class BaseAgent(abc.ABC):
                 logger.info("Skipping iteration as requested.")
                 continue
 
-            self.iteration += 1
+            if self.consecutive_errors == 0:
+                self.iteration += 1
+
             # Update State
             if self.agent_client:
                 self.agent_client.report_state(

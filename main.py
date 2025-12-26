@@ -123,6 +123,12 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--max-error-wait",
+        type=float,
+        help="Maximum wait time in seconds for agent error backoff (default: 600.0)",
+    )
+
+    parser.add_argument(
         "--jira-ticket",
         type=str,
         help="Jira ticket ID to work on (e.g., PROJ-123)",
@@ -190,6 +196,7 @@ async def main():
         login_mode=args.login or file_config.get("login_mode", False),
 
         timeout=resolve(args.timeout, "timeout", 600.0),
+        max_error_wait=resolve(args.max_error_wait, "max_error_wait", 600.0),
 
         # Sprint
         sprint_mode=args.sprint or file_config.get("sprint_mode", False),

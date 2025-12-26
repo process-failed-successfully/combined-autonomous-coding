@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.6.0 (2025-12-26)
+
+### Code Style
+
+- Fix linting errors in CLI launcher tests
+  ([`6ace356`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6ace3567f97bd656827aa08ca3237eac019b9482))
+
+### Features
+
+- Verify and complete Agent CLI Launcher features
+  ([`e08e3d5`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/e08e3d516d8fa657a1cb857d07d2b3f3a4c10ba7))
+
+- Verified detached mode and config management - Fixed and enabled CLI launcher tests - Confirmed
+  Jira integration tests pass - Updated feature_list.json to all passing
+
+
 ## v0.5.0 (2025-12-24)
 
 ### Features

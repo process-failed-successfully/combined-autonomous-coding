@@ -352,9 +352,9 @@ async def main():
             from shared.workflow import complete_jira_ticket
             await complete_jira_ticket(config)
 
-        from agents.cleaner import run_cleaner_agent
-        logger.info("Project signed off. Initiating Cleanup...")
-        await run_cleaner_agent(config, agent_client=client)
+        logger.info("Project signed off. Finalizing...")
+        # note: the autonomous loop itself now handles triggering the cleaner agent
+        # if cleanup_report.txt is missing.
 
 
 if __name__ == "__main__":

@@ -89,6 +89,7 @@ class BaseAgent(abc.ABC):
             get_jira_manager_prompt,
             get_jira_worker_prompt,
             get_qa_prompt,
+            get_cleaner_prompt,
         )
 
         config = self.config
@@ -101,6 +102,12 @@ class BaseAgent(abc.ABC):
                 return get_jira_initializer_prompt(), False
             else:
                 return get_initializer_prompt(), False
+
+        # Check for Cleaner Triggers (highest priority post-sign-off)
+        if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+            if not (config.project_dir / "cleanup_report.txt").exists():
+                logger.info("Project signed off but no cleanup report found. Running Cleaner Agent...")
+                return get_cleaner_prompt(), True
 
         # Check for Manager Triggers
         should_run_manager = False
@@ -253,7 +260,12 @@ class BaseAgent(abc.ABC):
                 from shared.workflow import complete_jira_ticket
                 await complete_jira_ticket(self.config)
 
-            return True
+            # Only stop if cleanup is also done (standardised flow)
+            if (self.config.project_dir / "cleanup_report.txt").exists():
+                return True
+            else:
+                logger.info("Project signed off. Continuing for final cleanup...")
+                return False
 
         # Check for Human in Loop
         human_loop_file = self.config.project_dir / "human_in_loop.txt"
@@ -439,8 +451,15 @@ class BaseAgent(abc.ABC):
 
             # Check Limits
             if self.config.max_iterations is not None and self.iteration >= self.config.max_iterations:
-                logger.info("Max iterations reached. Stopping.")
-                break
+                # Safety: If project is signed off but cleanup is pending, we allow a few extra turns
+                is_signed_off = (self.config.project_dir / "PROJECT_SIGNED_OFF").exists()
+                cleanup_done = (self.config.project_dir / "cleanup_report.txt").exists()
+
+                if is_signed_off and not cleanup_done and self.iteration < (self.config.max_iterations + 5):
+                    logger.info(f"Max iterations reached, but cleanup is pending. Allowing extra turn {self.iteration + 1}...")
+                else:
+                    logger.info("Max iterations reached. Stopping.")
+                    break
 
             # Check Control Signals
             if await self._check_control_signals():

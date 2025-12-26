@@ -142,5 +142,5 @@ async def run_agent(
             from shared.workflow import complete_jira_ticket
             await complete_jira_ticket(config)
 
-        from agents.cleaner import run_cleaner_agent
-        await run_cleaner_agent(config, agent_client=client)
+        # logger.info("Project signed off. Finalizing...")
+        # The autonomous loop now handles cleaner triggering automatically.

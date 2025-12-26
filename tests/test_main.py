@@ -22,12 +22,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
     @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
     @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
-    @patch("agents.cleaner.run_cleaner_agent", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
     async def test_main_gemini_run(
         self,
         mock_gen_id,
-        mock_cleaner_agent,
         mock_sprint,
         mock_cursor,
         mock_gemini,
@@ -69,7 +67,6 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                 await main()
 
         mock_gemini.assert_called()
-        mock_cleaner_agent.assert_called()  # Should be called because Path.exists=True
         mock_source_cursor.assert_not_called()
         mock_source_gemini.assert_not_called()  # Should match source patch if called via main?
         # Actually if we patch source and main... main calls main.run_gemini (mock_gemini).
@@ -230,12 +227,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.ensure_git_safe")
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
-    @patch("agents.cleaner.run_cleaner_agent", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
     async def test_main_cleanup(
         self,
         mock_gen_id,
-        mock_cleaner,
         mock_gemini,
         mock_client_cls,
         mock_git_safe,
@@ -274,7 +269,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                 with patch.object(Path, "read_text", return_value="Spec"):
                     await main()
 
-            mock_cleaner.assert_called()
+            # mock_cleaner.assert_called() - Obsolete as it's now handled in the agent loop
 
 
 if __name__ == "__main__":

@@ -56,6 +56,64 @@ class TestBaseAgent(unittest.TestCase):
         self.assertEqual(prompt, "init prompt")
         self.assertFalse(using_manager)
 
+
+    @patch("agents.shared.prompts.get_manager_prompt")
+    @patch("agents.shared.prompts.get_coding_prompt")
+    def test_select_prompt_manager_iterative(self, mock_coding, mock_manager):
+        mock_coding.return_value = "coding prompt"
+        mock_manager.return_value = "manager prompt"
+        self.config.manager_frequency = 5
+        self.agent.is_first_run = False
+        self.agent.last_manager_iteration = 0
+
+        # Iteration 1-4: Should be coding
+        for i in range(1, 5):
+            self.agent.iteration = i
+            prompt, using_manager = self.agent.select_prompt()
+            self.assertEqual(prompt, "coding prompt")
+            self.assertFalse(using_manager)
+
+        # Iteration 5: Should be manager
+        self.agent.iteration = 5
+        prompt, using_manager = self.agent.select_prompt()
+        self.assertEqual(prompt, "manager prompt")
+        self.assertTrue(using_manager)
+        self.assertEqual(self.agent.last_manager_iteration, 5)
+
+        # Iteration 6-9: Should be coding
+        for i in range(6, 10):
+            self.agent.iteration = i
+            prompt, using_manager = self.agent.select_prompt()
+            self.assertEqual(prompt, "coding prompt")
+            self.assertFalse(using_manager)
+
+        # Iteration 10: Should be manager (5 turns since last)
+        self.agent.iteration = 10
+        prompt, using_manager = self.agent.select_prompt()
+        self.assertEqual(prompt, "manager prompt")
+        self.assertTrue(using_manager)
+        self.assertEqual(self.agent.last_manager_iteration, 10)
+
+    @patch("agents.shared.prompts.get_qa_prompt")
+    @patch("agents.shared.prompts.get_manager_prompt")
+    def test_select_prompt_qa_only_on_completed(self, mock_manager, mock_qa):
+        mock_manager.return_value = "manager prompt"
+        mock_qa.return_value = "qa prompt"
+        self.config.manager_frequency = 5
+        self.agent.is_first_run = False
+        self.agent.iteration = 5
+
+        # Case 1: Iteration 5 reached, but NOT completed -> Manager
+        prompt, using_manager = self.agent.select_prompt()
+        self.assertEqual(prompt, "manager prompt")
+        self.assertTrue(using_manager)
+
+        # Case 2: COMPLETED exists -> QA
+        (self.project_dir / "COMPLETED").write_text("done")
+        prompt, using_manager = self.agent.select_prompt()
+        self.assertEqual(prompt, "qa prompt")
+        self.assertTrue(using_manager)
+
     def test_inject_jira_context(self):
         self.config.jira = MagicMock()
         self.config.jira_ticket_key = "PROJ-123"
@@ -105,6 +163,17 @@ class TestBaseAgent(unittest.TestCase):
 
         asyncio.run(run_test())
         self.assertEqual(self.agent.iteration, 1)
+
+    def test_save_load_state_with_manager_iter(self):
+        self.agent.iteration = 42
+        self.agent.last_manager_iteration = 35
+        self.agent.save_state()
+
+        # New agent to load state
+        new_agent = ConcreteAgent(self.config)
+        new_agent.load_state()
+        self.assertEqual(new_agent.iteration, 42)
+        self.assertEqual(new_agent.last_manager_iteration, 35)
 
 
 if __name__ == "__main__":

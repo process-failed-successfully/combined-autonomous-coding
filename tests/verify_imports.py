@@ -13,7 +13,6 @@ def test_imports():
         "shared.utils",
         "agents.cursor.agent",
         "agents.gemini.agent",
-        "agents.cleaner.agent",
     ]
 
     print("Verifying imports...")

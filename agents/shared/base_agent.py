@@ -38,6 +38,7 @@ class BaseAgent(abc.ABC):
         self.consecutive_errors = 0
         self.is_first_run = not config.feature_list_path.exists()
         self.has_run_manager_first = False
+        self.last_manager_iteration = 0
         self.start_time = 0.0
 
     @abc.abstractmethod
@@ -89,6 +90,7 @@ class BaseAgent(abc.ABC):
             get_jira_manager_prompt,
             get_jira_worker_prompt,
             get_qa_prompt,
+            get_cleaner_prompt,
         )
 
         config = self.config
@@ -101,6 +103,12 @@ class BaseAgent(abc.ABC):
                 return get_jira_initializer_prompt(), False
             else:
                 return get_initializer_prompt(), False
+
+        # Check for Cleaner Triggers (highest priority post-sign-off)
+        if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+            if not (config.project_dir / "cleanup_report.txt").exists():
+                logger.info("Project signed off but no cleanup report found. Running Cleaner Agent...")
+                return get_cleaner_prompt(), True
 
         # Check for Manager Triggers
         should_run_manager = False
@@ -117,10 +125,10 @@ class BaseAgent(abc.ABC):
         elif config.run_manager_first and not has_run_manager_first:
             logger.info("Manager triggered by --manager-first flag.")
             should_run_manager = True
-            force_manager = True
             self.has_run_manager_first = True
-        elif iteration > 0 and iteration % config.manager_frequency == 0:
-            logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
+        # Trigger Manager based on frequency since last manager run
+        elif iteration > 0 and (iteration - self.last_manager_iteration) >= config.manager_frequency:
+            logger.info(f"Manager triggered by frequency (Iteration {iteration}, Last {self.last_manager_iteration}).")
             should_run_manager = True
 
         # Auto-trigger Manager if all features are passing
@@ -146,18 +154,16 @@ class BaseAgent(abc.ABC):
 
         if should_run_manager:
             # Check if QA is required before Manager Sign-off
-            # We trigger QA if either:
-            # 1. Project marked as COMPLETED
-            # 2. This is a periodic manager run (not triggered by file or flag)
-            force_manager = triggered_by_file or (config.run_manager_first and self.has_run_manager_first)
-
-            is_ready_for_qa = (config.project_dir / "COMPLETED").exists() or (should_run_manager and not force_manager)
-
+            # Standardised: QA ONLY triggers if project is marked as COMPLETED
+            is_completed = (config.project_dir / "COMPLETED").exists()
             qa_passed_path = config.project_dir / "QA_PASSED"
 
-            if is_ready_for_qa and not qa_passed_path.exists():
-                logger.info("Completion signaled. Triggering QA Agent for verification...")
+            if is_completed and not qa_passed_path.exists():
+                logger.info("Project completed. Triggering QA Agent for verification...")
                 return get_qa_prompt(), True
+
+            # Record manager run iteration
+            self.last_manager_iteration = iteration
 
             if config.jira and config.jira_ticket_key:
                 return get_jira_manager_prompt(), True
@@ -193,6 +199,7 @@ class BaseAgent(abc.ABC):
             "consecutive_errors": self.consecutive_errors,
             "is_first_run": self.is_first_run,
             "has_run_manager_first": self.has_run_manager_first,
+            "last_manager_iteration": self.last_manager_iteration,
             "recent_history": self.recent_history,
         }
         try:
@@ -210,6 +217,7 @@ class BaseAgent(abc.ABC):
                 self.consecutive_errors = state.get("consecutive_errors", 0)
                 self.is_first_run = state.get("is_first_run", self.is_first_run)
                 self.has_run_manager_first = state.get("has_run_manager_first", False)
+                self.last_manager_iteration = state.get("last_manager_iteration", 0)
                 self.recent_history = state.get("recent_history", [])
                 logger.info(f"Resumed state from {state_path} (Iteration {self.iteration})")
             except Exception as e:
@@ -253,7 +261,12 @@ class BaseAgent(abc.ABC):
                 from shared.workflow import complete_jira_ticket
                 await complete_jira_ticket(self.config)
 
-            return True
+            # Only stop if cleanup is also done (standardised flow)
+            if (self.config.project_dir / "cleanup_report.txt").exists():
+                return True
+            else:
+                logger.info("Project signed off. Continuing for final cleanup...")
+                return False
 
         # Check for Human in Loop
         human_loop_file = self.config.project_dir / "human_in_loop.txt"
@@ -439,8 +452,15 @@ class BaseAgent(abc.ABC):
 
             # Check Limits
             if self.config.max_iterations is not None and self.iteration >= self.config.max_iterations:
-                logger.info("Max iterations reached. Stopping.")
-                break
+                # Safety: If project is signed off but cleanup is pending, we allow a few extra turns
+                is_signed_off = (self.config.project_dir / "PROJECT_SIGNED_OFF").exists()
+                cleanup_done = (self.config.project_dir / "cleanup_report.txt").exists()
+
+                if is_signed_off and not cleanup_done and self.iteration < (self.config.max_iterations + 5):
+                    logger.info(f"Max iterations reached, but cleanup is pending. Allowing extra turn {self.iteration + 1}...")
+                else:
+                    logger.info("Max iterations reached. Stopping.")
+                    break
 
             # Check Control Signals
             if await self._check_control_signals():

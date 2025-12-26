@@ -38,6 +38,7 @@ class BaseAgent(abc.ABC):
         self.consecutive_errors = 0
         self.is_first_run = not config.feature_list_path.exists()
         self.has_run_manager_first = False
+        self.last_manager_iteration = 0
         self.start_time = 0.0
 
     @abc.abstractmethod
@@ -124,10 +125,10 @@ class BaseAgent(abc.ABC):
         elif config.run_manager_first and not has_run_manager_first:
             logger.info("Manager triggered by --manager-first flag.")
             should_run_manager = True
-            force_manager = True
             self.has_run_manager_first = True
-        elif iteration > 0 and iteration % config.manager_frequency == 0:
-            logger.info(f"Manager triggered by frequency (Iteration {iteration}).")
+        # Trigger Manager based on frequency since last manager run
+        elif iteration > 0 and (iteration - self.last_manager_iteration) >= config.manager_frequency:
+            logger.info(f"Manager triggered by frequency (Iteration {iteration}, Last {self.last_manager_iteration}).")
             should_run_manager = True
 
         # Auto-trigger Manager if all features are passing
@@ -153,18 +154,16 @@ class BaseAgent(abc.ABC):
 
         if should_run_manager:
             # Check if QA is required before Manager Sign-off
-            # We trigger QA if either:
-            # 1. Project marked as COMPLETED
-            # 2. This is a periodic manager run (not triggered by file or flag)
-            force_manager = triggered_by_file or (config.run_manager_first and self.has_run_manager_first)
-
-            is_ready_for_qa = (config.project_dir / "COMPLETED").exists() or (should_run_manager and not force_manager)
-
+            # Standardised: QA ONLY triggers if project is marked as COMPLETED
+            is_completed = (config.project_dir / "COMPLETED").exists()
             qa_passed_path = config.project_dir / "QA_PASSED"
 
-            if is_ready_for_qa and not qa_passed_path.exists():
-                logger.info("Completion signaled. Triggering QA Agent for verification...")
+            if is_completed and not qa_passed_path.exists():
+                logger.info("Project completed. Triggering QA Agent for verification...")
                 return get_qa_prompt(), True
+
+            # Record manager run iteration
+            self.last_manager_iteration = iteration
 
             if config.jira and config.jira_ticket_key:
                 return get_jira_manager_prompt(), True
@@ -200,6 +199,7 @@ class BaseAgent(abc.ABC):
             "consecutive_errors": self.consecutive_errors,
             "is_first_run": self.is_first_run,
             "has_run_manager_first": self.has_run_manager_first,
+            "last_manager_iteration": self.last_manager_iteration,
             "recent_history": self.recent_history,
         }
         try:
@@ -217,6 +217,7 @@ class BaseAgent(abc.ABC):
                 self.consecutive_errors = state.get("consecutive_errors", 0)
                 self.is_first_run = state.get("is_first_run", self.is_first_run)
                 self.has_run_manager_first = state.get("has_run_manager_first", False)
+                self.last_manager_iteration = state.get("last_manager_iteration", 0)
                 self.recent_history = state.get("recent_history", [])
                 logger.info(f"Resumed state from {state_path} (Iteration {self.iteration})")
             except Exception as e:

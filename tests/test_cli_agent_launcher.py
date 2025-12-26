@@ -101,7 +101,7 @@ def test_cli_logs(mock_session_mgr, mock_run):
     # Correct way to mock a method that returns a Path object
     mock_path_instance = MagicMock()
     mock_path_instance.exists.return_value = True
-    mock_path_instance.__str__ = MagicMock(return_value="agent.log")
+    mock_path_instance.configure_mock(**{"__str__.return_value": "agent.log"})
     mock_session_mgr.get_log_path.return_value = mock_path_instance
 
     result = runner.invoke(app, ["logs", "agent-1"])

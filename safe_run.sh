@@ -41,6 +41,21 @@ if [ "$IS_JIRA_MODE" = true ]; then
     echo "🎟️ Jira Mode detected. Using isolated workspace: $WORKSPACE_DIR"
 fi
 
+# Check for Docker-in-Docker arguments
+DIND_ENABLED=false
+for arg in "$@"; do
+  if [[ "$arg" == "--dind" ]] || [[ "$arg" == "--docker-in-docker" ]]; then
+    DIND_ENABLED=true
+    break
+  fi
+done
+
+DIND_OPTS=""
+if [ "$DIND_ENABLED" = true ]; then
+    echo "🐳 Docker-in-Docker enabled. Mounting docker socket..."
+    DIND_OPTS="-v /var/run/docker.sock:/var/run/docker.sock"
+fi
+
 export PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
 # Define a consistent container name for this project's agent run
 export CONTAINER_NAME="${PROJECT_NAME}_agent_run"
@@ -136,15 +151,15 @@ fi
 if [ "$USE_PORTS" = true ]; then
     # Expose ports
     if [ -z "$CMD" ]; then
-         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --service-ports --rm agent
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $DIND_OPTS $GIT_MOUNTS --name "$CONTAINER_NAME" --service-ports --rm agent
     else
-         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --service-ports --rm agent $CMD
+         docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $DIND_OPTS $GIT_MOUNTS --name "$CONTAINER_NAME" --service-ports --rm agent $CMD
     fi
 else
     # Do not expose ports
     if [ -z "$CMD" ]; then
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --rm agent
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $DIND_OPTS $GIT_MOUNTS --name "$CONTAINER_NAME" --rm agent
     else
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $GIT_MOUNTS --name "$CONTAINER_NAME" --rm agent $CMD
+        docker compose -f "$SCRIPT_DIR/docker-compose.yml" run $DIND_OPTS $GIT_MOUNTS --name "$CONTAINER_NAME" --rm agent $CMD
     fi
 fi

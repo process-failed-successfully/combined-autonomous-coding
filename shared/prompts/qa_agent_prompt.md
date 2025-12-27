@@ -15,6 +15,7 @@ Either **PASS** or **FAIL** the current project state.
 2. **Verification**: Run the tests. All features in `feature_list.json` MUST pass.
 3. **Spec Compliance**: Compare the actual functionality against `app_spec.txt`.
 4. **Resilience**: If you cannot run the tests because of missing dependencies or setup issues, that is a **FAIL**.
+   {dind_context}
 
 ### IF YOU FAIL THE WORK
 

@@ -188,6 +188,14 @@ class BaseAgent(abc.ABC):
             prompt = prompt.replace("{unique_branch_suffix}", unique_suffix)
         return prompt
 
+    def inject_dind_context(self, prompt: str) -> str:
+        """Inject Docker-in-Docker context into the prompt if enabled."""
+        dind_line = ""
+        if self.config.dind_enabled:
+            dind_line = "- **Docker-in-Docker:** You have access to the Docker socket. You can launch additional containers (e.g., using `docker run` or `docker-compose`) for testing purposes if required."
+
+        return prompt.replace("{dind_context}", dind_line)
+
     def get_state_file_path(self) -> Path:
         """Return the path to the state persistence file."""
         return self.config.project_dir / ".agent_state.json"
@@ -350,6 +358,9 @@ class BaseAgent(abc.ABC):
 
         # Inject Jira Context
         prompt = self.inject_jira_context(prompt)
+
+        # Inject dind Context
+        prompt = self.inject_dind_context(prompt)
 
         # Run session
         if self.agent_client:

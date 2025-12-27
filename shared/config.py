@@ -67,6 +67,9 @@ class Config:
     # Map event_type -> "slack"|"discord" -> bool
     notification_settings: Optional[dict[str, Any]] = None
 
+    # Docker-in-Docker
+    dind_enabled: bool = False
+
     # Jira Configuration
     jira: Optional["JiraConfig"] = None
 

@@ -6,6 +6,7 @@ You are the final step in the autonomous coding process.
 ### GOAL
 
 Remove temporary files, debugging scripts, and logs that are no longer needed, leaving only the functional application code, documentation, and configuration.
+{dind_context}
 
 ### INPUTS
 

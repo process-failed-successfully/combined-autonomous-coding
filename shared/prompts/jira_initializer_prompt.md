@@ -15,6 +15,7 @@ You are running inside a **Docker container**.
 - **No GUI:** You have no graphical user interface. You cannot run apps that require a display.
 - **Ephemeral Environment:** System-level changes (installing packages) may not persist across restarts unless added to the Dockerfile.
 - **Browser Automation:** Use headless browsers if automation is required.
+  {dind_context}
 
 ### STEP 1: CLONE REPO (CRITICAL)
 

@@ -99,10 +99,15 @@ class SprintManager:
             feature_list_content = self.config.feature_list_path.read_text()
             logger.info(f"Loaded feature list from {self.config.feature_list_path}")
 
+        dind_context = ""
+        if self.config.dind_enabled:
+            dind_context = "- **Docker-in-Docker:** You have access to the Docker socket. You can launch additional containers (e.g., using `docker run` or `docker-compose`) for testing purposes if required."
+
         prompt = base_prompt.format(
             working_directory=self.config.project_dir,
             user_goal=goal_text,
             feature_list_content=feature_list_content,
+            dind_context=dind_context,
         )
 
         # Run session
@@ -255,11 +260,16 @@ class SprintManager:
         client, session_runner = self._get_agent_runner()
         base_prompt = get_sprint_worker_prompt()
 
+        dind_context = ""
+        if self.config.dind_enabled:
+            dind_context = "- **Docker-in-Docker:** You have access to the Docker socket. You can launch additional containers (e.g., using `docker run` or `docker-compose`) for testing purposes if required."
+
         formatted_prompt = base_prompt.format(
             task_id=task.id,
             task_title=task.title,
             task_description=task.description,
             working_directory=self.config.project_dir,
+            dind_context=dind_context,
         )
 
         history: List[str] = []

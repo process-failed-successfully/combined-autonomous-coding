@@ -18,6 +18,7 @@ You are running inside a **Docker container**. This has specific implications:
 - **Package Installation:** Always run `sudo apt-get update` before installing packages.
 - **Browser Automation:** Use headless browsers if automation is required.
 - **Git Safeguards:** You are PROTECTED from pushing to `main` or `master`. Any attempt to do so will be blocked by a system-level git wrapper. Always work on feature branches.
+  {dind_context}
 
 ### CRITICAL: CODE QUALITY & BEST PRACTICES
 

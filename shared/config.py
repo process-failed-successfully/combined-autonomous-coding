@@ -12,6 +12,7 @@ from typing import Optional, Any
 # Default Constants
 DEFAULT_MODEL_GEMINI = "auto"
 DEFAULT_MODEL_CURSOR = "auto"
+DEFAULT_MODEL_LOCAL = "Qwen2.5-Coder-14B-Instruct"
 DEFAULT_AUTO_CONTINUE_DELAY = 3
 DEFAULT_MAX_CONSECUTIVE_ERRORS = 3
 DEFAULT_GEMINI_TIMEOUT = 600.0
@@ -34,7 +35,7 @@ class Config:
 
     project_dir: Path
     agent_id: Optional[str] = None
-    agent_type: str = "gemini"  # 'gemini' or 'cursor'
+    agent_type: str = "gemini"  # 'gemini', 'cursor', or 'local'
     model: Optional[str] = None
     max_iterations: Optional[int] = None
     auto_continue_delay: int = DEFAULT_AUTO_CONTINUE_DELAY
@@ -79,6 +80,8 @@ class Config:
                 self.model = DEFAULT_MODEL_GEMINI
             elif self.agent_type == "cursor":
                 self.model = DEFAULT_MODEL_CURSOR
+            elif self.agent_type == "local":
+                self.model = DEFAULT_MODEL_LOCAL
 
     @property
     def feature_list_path(self) -> Path:
@@ -93,5 +96,7 @@ class Config:
         # prompts.
         if self.agent_type == "gemini":
             return self.project_dir / "gemini_progress.txt"
+        elif self.agent_type == "local":
+            return self.project_dir / "local_progress.txt"
         else:
             return self.project_dir / "cursor_progress.txt"

@@ -48,7 +48,24 @@ services:
       - default
       - monitoring
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 networks:
   monitoring:
     external: true
     name: combined-autonomous-coding_monitoring
+
+volumes:
+  ollama_models:

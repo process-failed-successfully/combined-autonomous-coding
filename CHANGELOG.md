@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.7.0 (2025-12-27)
+
+### Features
+
+- Add profile support for local ollama service
+  ([`76eec68`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/76eec684bbe83a8b55de70b7ce776103fee9fe5e))
+
+- Updated `docker-compose.yml` to put `ollama` under `profiles: ["local"]`. - Updated `safe_run.sh`
+  to auto-enable `COMPOSE_PROFILES=local` if `--agent local` is passed. - This ensures `ollama` is
+  not started unless specifically requested.
+
+- Introduce local model support via docker (Ollama)
+  ([`82993c7`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/82993c700bef05a4185cef5716beb609a1d72ccf))
+
+- Added `ollama` service to `docker-compose.yml`. - Added `DEFAULT_MODEL_LOCAL` and
+  `agent_type="local"` support in `shared/config.py`. - Created `agents/local` package with
+  `LocalClient` (OpenAI compatible) and `LocalAgent`. - Updated `agents/config_manager.py` to
+  support `local` agent type. - Updated `main.py` to dispatch to `LocalAgent`.
+
+
 ## v0.6.0 (2025-12-26)
 
 ### Code Style

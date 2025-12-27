@@ -134,6 +134,13 @@ def parse_args():
         help="Jira label to search for (picks first 'To Do' ticket)",
     )
 
+    parser.add_argument(
+        "--dind",
+        "--docker-in-docker",
+        action="store_true",
+        help="Enable Docker-in-Docker support (mounts docker socket)",
+    )
+
     return parser.parse_args()
 
 
@@ -199,6 +206,9 @@ async def main():
         slack_webhook_url=file_config.get("slack_webhook_url"),
         discord_webhook_url=file_config.get("discord_webhook_url"),
         notification_settings=file_config.get("notification_settings"),
+
+        # Docker-in-Docker
+        dind_enabled=args.dind or file_config.get("dind_enabled", False),
     )
 
     # Load Jira Config

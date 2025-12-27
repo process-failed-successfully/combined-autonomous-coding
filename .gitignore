@@ -52,4 +52,5 @@ Thumbs.db
 blockers.txt
 gemini_progress.txt
 manager_directives.txt
-successes.txt
+successes.txt.mypy_cache/
+.mypy_cache/

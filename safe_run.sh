@@ -56,6 +56,27 @@ if [ "$DIND_ENABLED" = true ]; then
     DIND_OPTS="-v /var/run/docker.sock:/var/run/docker.sock"
 fi
 
+# Check for Local Agent
+IS_LOCAL_AGENT=false
+for arg in "$@"; do
+    if [[ "$arg" == "local" ]]; then
+        # Check previous arg if it was --agent
+        # This is a bit naive, but suffices for simple flag checking
+        # Better: iterate with index or check specific pattern
+        :
+    fi
+done
+
+# Simpler check: if arguments contain "local" (as standalone word) or "--agent local"
+if [[ "$*" == *"--agent local"* ]] || [[ "$*" == *"--agent=local"* ]]; then
+    IS_LOCAL_AGENT=true
+fi
+
+if [ "$IS_LOCAL_AGENT" = true ]; then
+    echo "🏠 Local Agent detected. Enabling Ollama profile..."
+    export COMPOSE_PROFILES=local
+fi
+
 export PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
 # Define a consistent container name for this project's agent run
 export CONTAINER_NAME="${PROJECT_NAME}_agent_run"

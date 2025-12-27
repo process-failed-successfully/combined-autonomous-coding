@@ -73,8 +73,10 @@ if [[ "$*" == *"--agent local"* ]] || [[ "$*" == *"--agent=local"* ]]; then
 fi
 
 if [ "$IS_LOCAL_AGENT" = true ]; then
-    echo "🏠 Local Agent detected. Enabling Ollama profile..."
+    echo "🏠 Local Agent detected. Enabling Ollama profile and starting service..."
     export COMPOSE_PROFILES=local
+    # Ensure Ollama is running and reachable
+    docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d ollama
 fi
 
 export PROJECT_NAME="$(basename "$WORKSPACE_DIR")"

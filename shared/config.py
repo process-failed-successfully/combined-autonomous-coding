@@ -12,7 +12,7 @@ from typing import Optional, Any
 # Default Constants
 DEFAULT_MODEL_GEMINI = "auto"
 DEFAULT_MODEL_CURSOR = "auto"
-DEFAULT_MODEL_LOCAL = "Qwen2.5-Coder-14B-Instruct"
+DEFAULT_MODEL_LOCAL = "qwen2.5-coder:14b-instruct"
 DEFAULT_AUTO_CONTINUE_DELAY = 3
 DEFAULT_MAX_CONSECUTIVE_ERRORS = 3
 DEFAULT_GEMINI_TIMEOUT = 600.0

@@ -63,6 +63,19 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        ollama serve &
+        # Wait for ollama to start
+        until ollama list > /dev/null 2>&1; do
+          echo "Waiting for Ollama server to start..."
+          sleep 2
+        done
+        echo "Ollama server started. Checking model: $${OLLAMA_MODEL:-qwen2.5-coder:14b}..."
+        ollama pull $${OLLAMA_MODEL:-qwen2.5-coder:14b}
+        echo "Model pull complete. Service ready."
+        wait
 
 networks:
   monitoring:

@@ -33,6 +33,7 @@ Follow this loop for every session.
 
 **1. Start Servers (If needed):**
    - Run `./init.sh` or start manually.
+   - **INSTALL PACKAGES**: Use `sudo apt-get install` or `pip install` if tools/libs are missing.
 
 **2. Verify Baseline:**
    - Run 1-2 core passing tests from `feature_list.json`.

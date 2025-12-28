@@ -13,6 +13,8 @@ from shared.agent_client import AgentClient
 from agents.gemini import run_autonomous_agent as run_gemini
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
+from agents.local import run_autonomous_agent as run_local
+from agents.openrouter import run_autonomous_agent as run_openrouter
 
 
 async def run_agent(
@@ -132,6 +134,10 @@ async def run_agent(
             await run_gemini(config, agent_client=client)
         elif agent_type == "cursor":
             await run_cursor(config, agent_client=client)
+        elif agent_type == "local":
+            await run_local(config, agent_client=client)
+        elif agent_type == "openrouter":
+            await run_openrouter(config, agent_client=client)
     except Exception as e:
         logger.exception(f"Fatal error: {e}")
         raise

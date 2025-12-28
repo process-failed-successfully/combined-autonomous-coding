@@ -35,6 +35,9 @@ Directory: {working_directory}
 8. **COMPLETION CHECK**:
    - Check existing files. If a feature from `feature_list.json` is ALREADY implemented, do NOT create a task for it.
    - If ALL features are implemented and no work remains, output a `sprint_plan.json` with an empty `tasks` list (`[]`).
+9. **STRICT MAPPING**:
+   - You MUST ensure `feature_name` matches the `feature_list.json` EXACTLY.
+   - If you plan to complete a feature, ensure you generate **ALL** necessary tasks to fully implement and verify it in this sprint. The feature will be auto-marked as COMPLETED only if all its tasks succeed.
 
 # JSON Format
 

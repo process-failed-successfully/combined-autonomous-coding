@@ -13,6 +13,7 @@ from typing import Optional, Any
 DEFAULT_MODEL_GEMINI = "auto"
 DEFAULT_MODEL_CURSOR = "auto"
 DEFAULT_MODEL_LOCAL = "Qwen2.5-Coder-14B-Instruct"
+DEFAULT_MODEL_OPENROUTER = "deepseek/deepseek-v3.2"
 DEFAULT_AUTO_CONTINUE_DELAY = 3
 DEFAULT_MAX_CONSECUTIVE_ERRORS = 3
 DEFAULT_GEMINI_TIMEOUT = 600.0
@@ -82,6 +83,8 @@ class Config:
                 self.model = DEFAULT_MODEL_CURSOR
             elif self.agent_type == "local":
                 self.model = DEFAULT_MODEL_LOCAL
+            elif self.agent_type == "openrouter":
+                self.model = DEFAULT_MODEL_OPENROUTER
 
     @property
     def feature_list_path(self) -> Path:
@@ -98,5 +101,7 @@ class Config:
             return self.project_dir / "gemini_progress.txt"
         elif self.agent_type == "local":
             return self.project_dir / "local_progress.txt"
+        elif self.agent_type == "openrouter":
+            return self.project_dir / "openrouter_progress.txt"
         else:
             return self.project_dir / "cursor_progress.txt"

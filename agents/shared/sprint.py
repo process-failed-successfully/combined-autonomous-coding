@@ -10,8 +10,13 @@ from shared.agent_client import AgentClient
 from shared.notifications import NotificationManager
 from shared.telemetry import get_telemetry, init_telemetry
 from agents.gemini.client import GeminiClient
-from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_worker_prompt
-from agents.gemini.agent import run_agent_session as run_gemini_session
+from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_coding_prompt, get_initializer_prompt
+from agents.gemini.agent import run_agent_session as run_gemini_session, GeminiAgent
+from agents.shared.base_agent import BaseAgent
+from agents.openrouter.client import OpenRouterClient
+from agents.openrouter.agent import run_agent_session as run_openrouter_session
+from agents.local.client import LocalClient
+from agents.local.agent import run_agent_session as run_local_session
 
 # Lazy import or dynamic import to avoid circular dep if possible,
 # but for now explicit import is fine if structure allows.
@@ -67,6 +72,10 @@ class SprintManager:
             if CursorClient is None:
                 raise ValueError("Cursor Agent not available (ImportError).")
             return CursorClient(self.config), run_cursor_session
+        elif self.config.agent_type == "openrouter":
+            return OpenRouterClient(self.config), run_openrouter_session
+        elif self.config.agent_type == "local":
+            return LocalClient(self.config), run_local_session
         else:
             return GeminiClient(self.config), run_gemini_session
 
@@ -258,19 +267,19 @@ class SprintManager:
         )
 
         client, session_runner = self._get_agent_runner()
-        base_prompt = get_sprint_worker_prompt()
+        base_prompt = get_sprint_coding_prompt()
 
         dind_context = ""
         if self.config.dind_enabled:
             dind_context = "- **Docker-in-Docker:** You have access to the Docker socket. You can launch additional containers (e.g., using `docker run` or `docker-compose`) for testing purposes if required."
 
-        formatted_prompt = base_prompt.format(
-            task_id=task.id,
-            task_title=task.title,
-            task_description=task.description,
-            working_directory=self.config.project_dir,
-            dind_context=dind_context,
-        )
+        # Explicit string replacement for robust prompt
+        formatted_prompt = base_prompt.replace("{task_id}", task.id)
+        formatted_prompt = formatted_prompt.replace("{task_title}", task.title)
+        formatted_prompt = formatted_prompt.replace("{task_description}", task.description)
+        # Note: coding_prompt uses {dind_context} if we kept it, but robust prompt might not have {working_directory} in the same way.
+        # Let's check prompt structure. Our new prompt has {dind_context} but uses `pwd` for working dir.
+        formatted_prompt = formatted_prompt.replace("{dind_context}", dind_context)
 
         history: List[str] = []
         max_turns = 10  # Cap turns per task
@@ -492,6 +501,99 @@ class SprintManager:
         if updated_any:
             self.config.feature_list_path.write_text(json.dumps(features, indent=2))
 
+    async def run_post_sprint_checks(self):
+        """Runs Manager and optional QA agents after sprint execution."""
+        logger.info("Running Post-Sprint Manager Review...")
+        
+        # We can reuse the GeminiAgent logic but simplified.
+        # We need a 'Manager' agent instance.
+        
+        # 1. Manager (checks progress, successes, etc)
+        # We create a temporary config for the manager
+        manager_config = self.config
+        
+        # Use GeminiAgent as it wraps BaseAgent logic which handles prompts
+        # But BaseAgent loop is infinite. We just want one check.
+        # So we can use run_agent_session directly with Manager prompt?
+        # Better: Instantiate GeminiAgent and call a specific method or just use session runner with Manager prompt.
+        
+        from agents.shared.prompts import get_manager_prompt, get_qa_prompt
+        
+        # Get Manager Prompt
+        manager_prompt = get_manager_prompt()
+        
+        # Inject context (same as BaseAgent)
+        if self.config.jira and self.config.jira_ticket_key:
+             # If Jira, usage might differ, but for now stick to standard manager
+             pass
+
+        # Run Manager Session
+        client, session_runner = self._get_agent_runner()
+        # We need to construct the prompt with context like BaseAgent does, but simpler?
+        # BaseAgent relies on 'get_file_tree' injected inside run_agent_session.
+        # So we just pass the raw prompt.
+        
+        logger.info("  -> Invoking Manager Agent...")
+        status, response, actions = await session_runner(client, manager_prompt)
+        
+        if actions:
+             logger.info(f"Manager performed actions: {len(actions)}")
+             
+        # Check if Manager marked it as COMPLETED or if it was already COMPLETED
+        if (self.config.project_dir / "COMPLETED").exists():
+            if not (self.config.project_dir / "QA_PASSED").exists():
+                 logger.info("Project marked COMPLETED. Running QA Agent...")
+                 qa_prompt = get_qa_prompt()
+                 status, response, actions = await session_runner(client, qa_prompt)
+                 if (self.config.project_dir / "QA_PASSED").exists():
+                     logger.info("QA Passed!")
+                 else:
+                     logger.info("QA did not pass yet.")
+            else:
+                 logger.info("Project COMPLETED and QA PASSED.")
+    async def ensure_project_initialized(self):
+        """Ensures the project has a valid feature_list.json. If not, runs initialization."""
+        needs_init = False
+        if not self.config.feature_list_path.exists():
+            needs_init = True
+        else:
+            try:
+                content = self.config.feature_list_path.read_text().strip()
+                if not content:
+                    needs_init = True
+                else:
+                    data = json.loads(content)
+                    if not isinstance(data, list) or not data:
+                        needs_init = True
+            except Exception:
+                needs_init = True
+
+        if needs_init:
+            logger.info("Project uninitialized or feature list invalid. Running Initializer Agent...")
+            
+            client, session_runner = self._get_agent_runner()
+            prompt = get_initializer_prompt()
+            
+            # Inject Specs
+            spec_path = self.config.project_dir / "app_spec.txt"
+            goal_text = "See app_spec.txt or README.md"
+            if spec_path.exists():
+                goal_text = spec_path.read_text()
+            
+            # Simple Injection similar to BaseAgent?
+            # get_initializer_prompt usually expects formatting or context injection?
+            # Checking BaseAgent.select_prompt -> just calls get_initializer_prompt().
+            # and run_agent_session injects "CURRENT CONTEXT".
+            # So we can just run it.
+            
+            status, response, actions = await session_runner(client, prompt)
+            
+            if self.config.feature_list_path.exists() and self.config.feature_list_path.stat().st_size > 0:
+                logger.info("Initialization Complete. Feature list created.")
+            else:
+                logger.error("Initialization Failed. Feature list still missing.")
+
+
 
 async def run_single_sprint(config: Config, agent_client=None) -> int:
     manager = SprintManager(config, agent_client)
@@ -508,7 +610,11 @@ async def run_single_sprint(config: Config, agent_client=None) -> int:
     await manager.execute_sprint()
 
     # 3. Validation / Feature Update
+    # 3. Update Feature List based on Task Completion
     manager.update_feature_list()
+
+    # 4. Post-Sprint Checks (Manager + QA)
+    await manager.run_post_sprint_checks()
 
     logger.info("Sprint Completed.")
     manager.notifier.notify(
@@ -526,6 +632,9 @@ async def run_sprint(config: Config, agent_client=None):
         agent_type="sprint",
         project_name=config.project_dir.name
     )
+
+    manager = SprintManager(config, agent_client)
+    await manager.ensure_project_initialized()
 
     logger.info("Starting Continuous Sprint Mode.")
     iteration = 0

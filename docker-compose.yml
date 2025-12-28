@@ -28,6 +28,7 @@ services:
     environment:
       - OPENAI_API_KEY
       - GEMINI_API_KEY
+      - OPENROUTER_API_KEY
       - PROJECT_NAME
       - PUSHGATEWAY_URL=pushgateway:9091
       - ENABLE_METRICS=true

@@ -46,7 +46,7 @@ output.json
 .Trashes
 ehthumbs.db
 Thumbs.db
-
+.env 
 # Agent
 .agent_state.json
 blockers.txt

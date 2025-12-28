@@ -24,6 +24,7 @@ from agents.gemini import run_autonomous_agent as run_gemini
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
 from agents.local import run_autonomous_agent as run_local
+from agents.openrouter import run_autonomous_agent as run_openrouter
 
 
 def parse_args():
@@ -38,7 +39,7 @@ def parse_args():
 
     parser.add_argument(
         "--agent",
-        choices=["gemini", "cursor", "local"],
+        choices=["gemini", "cursor", "local", "openrouter"],
         default="gemini",
         help="Which agent to use (default: gemini)",
     )
@@ -357,6 +358,8 @@ async def main():
             await run_cursor(config, agent_client=client)
         elif args.agent == "local":
             await run_local(config, agent_client=client)
+        elif args.agent == "openrouter":
+            await run_openrouter(config, agent_client=client)
     except KeyboardInterrupt:
         logger.info("\nExecution interrupted by user.")
         sys.exit(0)

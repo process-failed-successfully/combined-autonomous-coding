@@ -51,6 +51,11 @@ def get_sprint_worker_prompt() -> str:
     return load_prompt("sprint_worker_prompt")
 
 
+def get_sprint_coding_prompt() -> str:
+    """Load the robust sprint coding prompt."""
+    return load_prompt("sprint_coding_prompt")
+
+
 def get_jira_initializer_prompt() -> str:
     """Load the jira initializer prompt."""
     return load_prompt("jira_initializer_prompt")

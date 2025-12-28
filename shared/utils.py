@@ -43,6 +43,22 @@ def log_startup_config(config: "Config", logger: logging.Logger):
 def get_file_tree(root_dir: Path) -> str:
     """Generate a concise file tree string."""
     tree_str = ""
+    ignore_files = {
+        "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "composer.lock", "Cargo.lock",
+        "gemini_progress.txt", "local_progress.txt", "cursor_progress.txt", "openrouter_progress.txt",
+    }
+    ignore_extensions = {
+        ".svg", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip", ".tar.gz", ".pyc"
+    }
+
+    def should_ignore(path_str: str) -> bool:
+        p = Path(path_str)
+        if p.name in ignore_files:
+            return True
+        if p.suffix in ignore_extensions:
+            return True
+        return False
+
     try:
         # Use git ls-files if available for cleaner output (respects
         # .gitignore)
@@ -50,7 +66,10 @@ def get_file_tree(root_dir: Path) -> str:
             ["git", "ls-files"], cwd=root_dir, capture_output=True, text=True
         )
         if result.returncode == 0 and result.stdout:
-            lines = result.stdout.splitlines()
+            all_lines = result.stdout.splitlines()
+            lines = [line for line in all_lines if not should_ignore(line)]
+            skipped_count = len(all_lines) - len(lines)
+
             if len(lines) > 400:
                 tree_str = f"Project Files (Truncated first 400 of {len(lines)}): \n"
                 for line in lines[:400]:
@@ -60,6 +79,10 @@ def get_file_tree(root_dir: Path) -> str:
                 tree_str = "Project Files:\n"
                 for line in lines:
                     tree_str += f"- {line}\n"
+
+            if skipped_count > 0:
+                tree_str += f"\n(Omitted {skipped_count} large/binary/lock files)"
+
         else:
             # Fallback to simple walk
             tree_str = "Project Files (System):\n"
@@ -69,6 +92,7 @@ def get_file_tree(root_dir: Path) -> str:
                     path.is_file()
                     and not any(p.name.startswith(".") for p in path.parents)
                     and not path.name.startswith(".")
+                    and not should_ignore(str(path.name))
                 ):
                     rel_path = path.relative_to(root_dir)
                     files.append(str(rel_path))

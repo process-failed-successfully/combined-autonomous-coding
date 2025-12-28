@@ -81,7 +81,7 @@ RECENT ACTIONS:
             f"\n{context_block}{jira_context}\n\nREMINDER: Use ```bash for commands, ```write:filename for files, ```read:filename to read, ```search:query to search.")
 
         # Truncation Logic
-        MAX_PROMPT_CHARS = 100000
+        MAX_PROMPT_CHARS = client.config.max_prompt_chars
         if len(augmented_prompt) > MAX_PROMPT_CHARS:
             logger.warning(f"Prompt length ({len(augmented_prompt)}) exceeds limit. Truncating.")
             truncated_file_tree = file_tree[:5000] + "\n... (File tree truncated)"

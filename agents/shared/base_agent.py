@@ -24,6 +24,34 @@ from agents.shared.prompts import copy_spec_to_project
 logger = logging.getLogger(__name__)
 
 
+def detect_runaway(text: str) -> bool:
+    """Detects if text contains excessive repetition of phrases."""
+    if not text or len(text) < 100:
+        return False
+        
+    words = text.split()
+    if len(words) < 20:
+        return False
+        
+    # Check for repeated sequences
+    # Simple heuristic: if the set of unique words is very small compared to length
+    unique_ratio = len(set(words)) / len(words)
+    if unique_ratio < 0.1: # e.g. 100 words, only 10 unique
+         return True
+    
+    # Check for direct phrase repetition
+    chunk_size = 5
+    if len(words) > chunk_size * 4:
+         chunk = tuple(words[:chunk_size])
+         repeats = 0
+         for i in range(0, len(words) - chunk_size, chunk_size):
+             if tuple(words[i:i+chunk_size]) == chunk:
+                 repeats += 1
+         if repeats > 5 and repeats > len(words) / (chunk_size * 1.5):
+             return True
+             
+    return False
+
 class BaseAgent(abc.ABC):
     """
     Abstract Base Class for autonomous agents.
@@ -36,6 +64,8 @@ class BaseAgent(abc.ABC):
         self.recent_history: List[str] = []
         self.iteration = 0
         self.consecutive_errors = 0
+        self.last_actions: List[str] = []
+        self.repetition_count = 0
         self.is_first_run = not config.feature_list_path.exists()
         self.has_run_manager_first = False
         self.last_manager_iteration = 0
@@ -393,6 +423,7 @@ class BaseAgent(abc.ABC):
             if updates:
                 self.agent_client.report_state(**updates)
 
+
         status, response, new_actions = await self.run_agent_session(
             prompt,
             status_callback=status_update,
@@ -402,11 +433,46 @@ class BaseAgent(abc.ABC):
             self.config.model = original_model
             logger.info(f"Restored Agent Model: {self.config.model}")
 
+        # 1. Runaway Output Check
+        if detect_runaway(response):
+            logger.critical("Runaway output detected (repeating phrases). Stopping.")
+            self.notifier.notify("error", "Agent stopped due to runaway output loop.")
+            if self.agent_client:
+                self.agent_client.report_state(is_running=False, current_task="Stopped (Runaway Output)")
+            raise RuntimeError("Runaway Output Detected")
+
+        # 2. Loop Detection
+        is_loop = False
+        # Added text look for Inter-turn repetition
+        last_response_text = getattr(self, "last_response_text", "")
+        
         if new_actions:
+            if new_actions == self.last_actions:
+                is_loop = True
+        elif response and response == last_response_text:
+             # Text loop with no actions
+             is_loop = True
+             
+        if is_loop:
+            self.repetition_count += 1
+            logger.warning(f"Repetitive behavior detected ({self.repetition_count}/3).")
+            if self.repetition_count >= 3:
+                logger.critical("Repetition loop detected. Stopping execution.")
+                self.notifier.notify("error", "Agent stopped due to repetitive behavior loop.")
+                if self.agent_client:
+                    self.agent_client.report_state(is_running=False, current_task="Stopped (Loop Detected)")
+                raise RuntimeError("Repetition Loop Detected")
+        else:
+            if new_actions or (response != last_response_text):
+                self.repetition_count = 0
+                self.last_actions = new_actions
+                self.last_response_text = response
+
             self.recent_history.extend(new_actions)
             self.recent_history = self.recent_history[-10:]  # Keep last 10 actions
             if self.agent_client:
                 self.agent_client.report_state(last_log=[str(a) for a in self.recent_history])
+
 
         await self._handle_session_result(status, response, new_actions, iter_start_time, using_manager)
 
@@ -503,7 +569,13 @@ class BaseAgent(abc.ABC):
                 break
 
             # Execute
-            await self._execute_iteration(iter_start_time)
+            # Execute
+            try:
+                await self._execute_iteration(iter_start_time)
+            except RuntimeError as e:
+                # Catch explicit stops (like loop detection)
+                logger.error(f"Execution stopped: {e}")
+                break
 
             # Check Error Limit
             if self.consecutive_errors >= self.config.max_consecutive_errors:

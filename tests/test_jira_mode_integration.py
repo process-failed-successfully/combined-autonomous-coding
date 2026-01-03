@@ -4,6 +4,9 @@ import unittest
 import asyncio
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+import tempfile
+import shutil
+import os
 
 # Mock prometheus_client regarding telemetry
 sys.modules["prometheus_client"] = MagicMock()
@@ -16,6 +19,13 @@ from shared.config import Config  # noqa: E402
 
 
 class TestJiraModeIntegration(unittest.TestCase):
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix="test_jira_")
+        self.project_dir = Path(self.tmp_dir)
+
+    def tearDown(self):
+        if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     @patch("main.run_gemini")
     @patch("shared.jira_client.JiraClient")
@@ -28,7 +38,7 @@ class TestJiraModeIntegration(unittest.TestCase):
         """
         # 1. Setup Mock Args
         mock_args = MagicMock()
-        mock_args.project_dir = Path("/tmp/test_project")
+        mock_args.project_dir = self.project_dir
         mock_args.agent = "gemini"
         mock_args.jira_ticket = "PROJ-123"
         mock_args.jira_label = None

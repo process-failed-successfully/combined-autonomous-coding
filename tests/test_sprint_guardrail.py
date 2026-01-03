@@ -5,10 +5,14 @@ import asyncio
 from pathlib import Path
 from agents.shared.sprint import SprintManager, Task
 from shared.config import Config
+import tempfile
+import shutil
+import os
 
 class TestSprintGuardrail(unittest.TestCase):
     def setUp(self):
-        self.project_dir = Path("/tmp/test_sprint_guardrail")
+        self.tmp_dir = tempfile.mkdtemp(prefix="test_sprint_guardrail_")
+        self.project_dir = Path(self.tmp_dir)
         self.project_dir.mkdir(parents=True, exist_ok=True)
         self.feature_list = self.project_dir / "feature_list.json"
         self.feature_list.write_text("[]")
@@ -19,9 +23,8 @@ class TestSprintGuardrail(unittest.TestCase):
             self.manager.worktree_manager.create_worktree.return_value = self.project_dir # Mock returning project dir as worktree path
 
     def tearDown(self):
-        import shutil
-        if self.project_dir.exists():
-            shutil.rmtree(self.project_dir)
+        if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     @patch("agents.shared.sprint.shutil.copy")
     @patch("agents.shared.sprint.get_sprint_coding_prompt")

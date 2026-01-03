@@ -101,17 +101,18 @@ class SprintManager:
         self.failed_tasks: Set[str] = set()
         self.rescued_tasks: Set[str] = set() # Tasks that failed but work was saved
 
-    def _get_agent_runner(self):
-        if self.config.agent_type == "cursor":
+    def _get_agent_runner(self, config: Optional[Config] = None):
+        cfg = config or self.config
+        if cfg.agent_type == "cursor":
             if CursorClient is None:
                 raise ValueError("Cursor Agent not available (ImportError).")
-            return CursorClient(self.config), run_cursor_session
-        elif self.config.agent_type == "openrouter":
-            return OpenRouterClient(self.config), run_openrouter_session
-        elif self.config.agent_type == "local":
-            return LocalClient(self.config), run_local_session
+            return CursorClient(cfg), run_cursor_session
+        elif cfg.agent_type == "openrouter":
+            return OpenRouterClient(cfg), run_openrouter_session
+        elif cfg.agent_type == "local":
+            return LocalClient(cfg), run_local_session
         else:
-            return GeminiClient(self.config), run_gemini_session
+            return GeminiClient(cfg), run_gemini_session
 
     async def run_planning_phase(self):
         """Runs the Lead Agent to create the sprint plan."""
@@ -310,21 +311,7 @@ class SprintManager:
         # Refactor _get_agent_runner to accept config?
         # Or just instantiate client here.
         
-        if worker_config.agent_type == "cursor":
-             if CursorClient:
-                 client = CursorClient(worker_config)
-                 session_runner = run_cursor_session
-             else:
-                 raise ValueError("Cursor Missing")
-        elif worker_config.agent_type == "openrouter":
-             client = OpenRouterClient(worker_config)
-             session_runner = run_openrouter_session
-        elif worker_config.agent_type == "local":
-             client = LocalClient(worker_config)
-             session_runner = run_local_session
-        else:
-             client = GeminiClient(worker_config)
-             session_runner = run_gemini_session
+        client, session_runner = self._get_agent_runner(worker_config)
 
         # Instantiate a dedicated AgentClient for this worker
         from shared.utils import generate_agent_id

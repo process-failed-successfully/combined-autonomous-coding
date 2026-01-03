@@ -24,7 +24,11 @@ echo "  UNIT & INTEGRATION TESTS (PYTEST)"
 echo "========================================"
 
 echo "[4/4] Running Tests with Coverage..."
-pytest --cov=. --cov-report=term-missing tests/
+if [ -d ".venv" ]; then
+    .venv/bin/pytest --cov=. --cov-report=term-missing tests/
+else
+    pytest --cov=. --cov-report=term-missing tests/
+fi
 
 echo -e "\nRunning Setup Verification..."
 python3 tests/verify_setup.py

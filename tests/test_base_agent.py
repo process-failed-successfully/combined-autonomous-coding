@@ -5,7 +5,10 @@ Tests for BaseAgent
 
 import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
+import os
 import asyncio
+import tempfile
+import shutil
 from pathlib import Path
 from agents.shared.base_agent import BaseAgent
 from shared.config import Config
@@ -23,16 +26,15 @@ class ConcreteAgent(BaseAgent):
 class TestBaseAgent(unittest.TestCase):
     def setUp(self):
         # Use a temporary directory for project_dir
-        self.project_dir = Path("/tmp/test_project_base_agent")
-        self.project_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_dir = tempfile.mkdtemp(prefix="test_base_agent_")
+        self.project_dir = Path(self.tmp_dir)
         self.config = Config(project_dir=self.project_dir, auto_continue_delay=0)
         self.agent = ConcreteAgent(self.config)
 
     def tearDown(self):
         # Clean up
-        import shutil
-        if self.project_dir.exists():
-            shutil.rmtree(self.project_dir)
+        if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     def test_init(self):
         self.assertEqual(self.agent.get_agent_type(), "test")

@@ -3,11 +3,14 @@ import unittest
 import shutil
 import subprocess
 from pathlib import Path
+import tempfile
+import os
 from agents.shared.worktree_manager import WorktreeManager
 
 class TestWorktreeManager(unittest.TestCase):
     def setUp(self):
-        self.repo_dir = Path("/tmp/test_worktree_repo")
+        self.tmp_dir = tempfile.mkdtemp(prefix="test_worktree_repo_")
+        self.repo_dir = Path(self.tmp_dir)
         self.repo_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize a real git repo
@@ -21,8 +24,8 @@ class TestWorktreeManager(unittest.TestCase):
 
     def tearDown(self):
         # Allow cleanup of read-only files if needed
-        if self.repo_dir.exists():
-            shutil.rmtree(self.repo_dir)
+        if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     def test_create_worktree(self):
         wt_path = self.manager.create_worktree("t1")

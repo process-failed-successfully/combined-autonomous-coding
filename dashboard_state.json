@@ -1,1 +1,11 @@
-{}
+{
+  "test-agent-1": {
+    "id": "test-agent-1",
+    "state": {
+      "step": "init",
+      "status": "running"
+    },
+    "commands": [],
+    "last_seen": 1767509215968
+  }
+}

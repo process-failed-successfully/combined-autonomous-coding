@@ -7,14 +7,18 @@ import threading
 from shared.state import AgentControl
 
 
+from shared.log_handler import MemoryLogHandler
+from typing import Optional
+
 class AgentClient:
     """
     Client for Agents to communicate with the Dashboard.
     """
 
-    def __init__(self, agent_id: str, dashboard_url: str = "http://localhost:8000"):
+    def __init__(self, agent_id: str, dashboard_url: str = "http://localhost:8000", memory_handler: Optional[MemoryLogHandler] = None):
         self.agent_id = agent_id
         self.dashboard_url = dashboard_url.rstrip("/")
+        self.memory_handler = memory_handler
         # We maintain a local control state
         self.local_control = AgentControl()
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
@@ -49,9 +53,13 @@ class AgentClient:
         self._executor.submit(self._do_report_state, kwargs)
 
     def _do_report_state(self, kwargs):
+        payload = kwargs.copy()
+        if self.memory_handler:
+            payload['logs'] = self.memory_handler.get_logs()
+
         try:
             url = f"{self.dashboard_url}/api/agents/{self.agent_id}/heartbeat"
-            requests.post(url, json=kwargs, timeout=2)  # Short timeout
+            requests.post(url, json=payload, timeout=2)  # Short timeout
         except Exception:
             # Silent fail is better than crashing agent
             pass

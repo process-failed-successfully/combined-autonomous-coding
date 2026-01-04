@@ -71,6 +71,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
 
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
+
         # Spec file exists
         with patch.object(Path, "exists", return_value=True):
             with patch.object(Path, "read_text", return_value="Spec content"):
@@ -116,6 +118,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_label = None
 
         mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         with patch.object(Path, "exists", return_value=True):
             with patch.object(Path, "read_text", return_value="Spec"):
@@ -149,6 +152,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_label = None
 
         mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         # We need to ensure config.sprint_mode is True.
         # Main creates Config(..., agent_type=args.agent, ..., )
@@ -258,6 +262,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_label = None
 
         mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         with patch("main.Config") as mock_config_cls:
             mock_conf = MagicMock()

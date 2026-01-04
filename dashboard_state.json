@@ -7,5 +7,92 @@
     },
     "commands": [],
     "last_seen": 1767509215968
+  },
+  "test-agent": {
+    "id": "test-agent",
+    "state": {
+      "logs": [
+        "log entry 1",
+        "log entry 2"
+      ]
+    },
+    "commands": [],
+    "last_seen": 1767511808935
+  },
+  "test-agent-2": {
+    "id": "test-agent-2",
+    "state": {
+      "logs": [
+        "log entry 50",
+        "log entry 51",
+        "log entry 52",
+        "log entry 53",
+        "log entry 54",
+        "log entry 55",
+        "log entry 56",
+        "log entry 57",
+        "log entry 58",
+        "log entry 59",
+        "log entry 60",
+        "log entry 61",
+        "log entry 62",
+        "log entry 63",
+        "log entry 64",
+        "log entry 65",
+        "log entry 66",
+        "log entry 67",
+        "log entry 68",
+        "log entry 69",
+        "log entry 70",
+        "log entry 71",
+        "log entry 72",
+        "log entry 73",
+        "log entry 74",
+        "log entry 75",
+        "log entry 76",
+        "log entry 77",
+        "log entry 78",
+        "log entry 79",
+        "log entry 80",
+        "log entry 81",
+        "log entry 82",
+        "log entry 83",
+        "log entry 84",
+        "log entry 85",
+        "log entry 86",
+        "log entry 87",
+        "log entry 88",
+        "log entry 89",
+        "log entry 90",
+        "log entry 91",
+        "log entry 92",
+        "log entry 93",
+        "log entry 94",
+        "log entry 95",
+        "log entry 96",
+        "log entry 97",
+        "log entry 98",
+        "log entry 99"
+      ]
+    },
+    "commands": [],
+    "last_seen": 1767511808955
+  },
+  "test-agent-for-verification": {
+    "id": "test-agent-for-verification",
+    "state": {
+      "logs": [
+        "[INFO] Starting agent...",
+        "[DEBUG] Configuration loaded.",
+        "[INFO] Connecting to server...",
+        "[ERROR] Failed to connect to database.",
+        "[INFO] Retrying connection..."
+      ],
+      "state": {
+        "step": "testing"
+      }
+    },
+    "commands": [],
+    "last_seen": 1767511844679
   }
 }

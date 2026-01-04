@@ -320,12 +320,12 @@ async def main():
     log_file = agents_log_dir / f"{agent_id}.log"
 
     # Configure Root Logger to capture all module logs (e.g. shared.git)
-    logger = setup_logger(name="", log_file=log_file, verbose=args.verbose)
+    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=args.verbose)
 
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
 
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
 
     # Check spec requirement for fresh projects (Updated for Jira)
     is_fresh = not config.feature_list_path.exists()

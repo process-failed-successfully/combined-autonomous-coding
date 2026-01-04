@@ -101,13 +101,15 @@ class TestSharedModules(unittest.TestCase):
     def test_setup_logger(self):
         # We can't easily test stdout content without capturing it,
         # but we can verify logger configuration.
-        logger = setup_logger("test_logger", verbose=True)
+        logger, handler = setup_logger("test_logger", verbose=True)
         self.assertTrue(logger.hasHandlers())
         self.assertEqual(logger.level, logging.DEBUG)
+        self.assertIsNotNone(handler)
 
         # Test idempotency
-        logger2 = setup_logger("test_logger")
+        logger2, handler2 = setup_logger("test_logger")
         self.assertEqual(logger, logger2)
+        self.assertEqual(handler, handler2)
 
         # Test file handler - skipping due to mocking difficulties in this
         # context

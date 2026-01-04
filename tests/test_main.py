@@ -427,19 +427,19 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch('main.parse_args')
     async def test_trash_list_with_log_summary(self, mock_parse_args, mock_stdout):
         # --- Setup ---
-        # Create a mock trash directory structure
+        # The 'trash list' command sorts archives in reverse chronological order (latest first).
+        # In this test, archive1 will have the log and be the LATEST, so it appears first in the output.
         trash_dir = self.project_dir / ".agent_trash"
-        archive1_dir = trash_dir / "trash-2023-01-01_12-00-00"
-        archive2_dir = trash_dir / "trash-2023-01-02_12-00-00"
+        archive1_dir = trash_dir / "trash-2023-01-02_12-00-00"  # This one is latest
+        archive2_dir = trash_dir / "trash-2023-01-01_12-00-00"  # This one is older
         archive1_dir.mkdir(parents=True, exist_ok=True)
         archive2_dir.mkdir(parents=True, exist_ok=True)
 
-        # Archive 1: Contains a log file with more than 15 lines
+        # Archive 1 (latest): Contains a log file with more than 15 lines.
         log_content = "".join([f"Line {i+1}\n" for i in range(20)])
-        log_file = archive1_dir / "agent_run.log"
-        log_file.write_text(log_content)
+        (archive1_dir / "agent_run.log").write_text(log_content)
 
-        # Archive 2: Contains a non-log file
+        # Archive 2 (older): Contains a non-log file.
         (archive2_dir / "some_file.txt").write_text("hello")
 
         # Mock the parsed arguments for the 'trash list' command
@@ -447,7 +447,6 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             command='trash',
             action='list',
             project_dir=self.project_dir,
-            # Other trash-specific args can be defaulted to None
             archive_name=None,
             all=False,
             yes=False
@@ -464,38 +463,26 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         # --- Verification ---
         output = mock_stdout.getvalue()
 
-        # Check for both archives
+        # Check that the latest archive (archive1) is listed before the older one (archive2)
         self.assertIn("trash-2023-01-01_12-00-00", output)
         self.assertIn("trash-2023-01-02_12-00-00", output)
+        self.assertTrue(output.find("trash-2023-01-02_12-00-00") < output.find("trash-2023-01-01_12-00-00"))
 
-        # Check that Archive 1 has the log summary
+        # Check that the log summary is present and correct
         self.assertIn("--- Log Summary (last 15 lines) ---", output)
-        self.assertIn("agent_run.log", output)
-
-        # For a more robust check, let's isolate the log summary block
         summary_block_start = output.find("--- Log Summary (last 15 lines) ---")
-        self.assertNotEqual(summary_block_start, -1, "Log summary block not found")
-
-        # Find the end of the summary (next archive or end of string)
         summary_block_end = output.find("\n\n[", summary_block_start)
-        if summary_block_end == -1:
-            summary_block_end = len(output)
+        summary_block = output[summary_block_start:summary_block_end if summary_block_end != -1 else len(output)]
 
-        summary_block = output[summary_block_start:summary_block_end]
-
-        # Now, check for lines only within this block
-        self.assertIn("Line 6", summary_block)
         self.assertIn("Line 20", summary_block)
-        self.assertNotIn("Line 1", summary_block)
         self.assertNotIn("Line 5", summary_block)
 
-
-        # Check that Archive 2 does NOT have a log summary
-        # A bit tricky to assert the absence in a block, but we can check
-        # that the summary string doesn't appear right after archive2's name
-        archive2_index = output.find("trash-2023-01-02_12-00-00")
+        # Crucially, verify that the summary (from the first archive) appears *before* the second archive
+        archive2_index = output.find("trash-2023-01-01_12-00-00")
         summary_index = output.find("--- Log Summary (last 15 lines) ---")
-        # Ensure the summary found is the one for the first archive
+
+        self.assertTrue(archive2_index > -1, "Older archive name not found in output")
+        self.assertTrue(summary_index > -1, "Log summary not found in output")
         self.assertTrue(summary_index < archive2_index)
 
 

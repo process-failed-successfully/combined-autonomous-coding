@@ -172,5 +172,37 @@ class TestMainTrash(unittest.TestCase):
         self.assertIn("file1.txt", output)
         self.assertTrue(self.archive1_path.exists()) # Should not be deleted
 
+    def test_trash_list_with_log_summary(self):
+        """Test that `trash list` shows a log summary if a log file is present."""
+        # Arrange
+        log_content = "\n".join([f"Line {i}" for i in range(20)])
+        (self.archive2_path / "test_run_123.log").write_text(log_content)
+
+        args = argparse.Namespace(
+            command="trash",
+            action="list",
+            project_dir=self.test_dir,
+        )
+
+        # Act
+        with self.assertRaises(SystemExit) as cm:
+            run_trash(args)
+
+        # Assert
+        self.assertEqual(cm.exception.code, 0)
+        output = sys.stdout.getvalue()
+
+        self.assertIn(self.archive2_name, output)
+        # Check that other files are still listed
+        self.assertIn("file2.txt", output)
+        self.assertIn("subdir/ (dir)", output)
+        self.assertIn("test_run_123.log", output)
+
+        # Check for log summary details
+        self.assertIn("--- Log Summary (last 15 lines) ---", output)
+        self.assertIn("Line 5", output)
+        self.assertIn("Line 19", output)
+        self.assertNotIn("Line 4", output)
+
 if __name__ == '__main__':
     unittest.main()

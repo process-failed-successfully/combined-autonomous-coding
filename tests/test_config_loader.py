@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, mock_open
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import yaml
@@ -16,6 +16,101 @@ class TestConfigLoader(unittest.TestCase):
         self.temp_dir = TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
         self.test_dir = Path(self.temp_dir.name)
+
+    def test_load_config_with_valid_profile(self):
+        """Test loading a configuration with a valid profile."""
+        config_data = {
+            "model": "base_model",
+            "max_iterations": 10,
+            "profiles": {
+                "test_profile": {
+                    "model": "profile_model",
+                    "timeout": 500
+                }
+            }
+        }
+        mock_content = yaml.dump(config_data)
+
+        with patch("builtins.open", mock_open(read_data=mock_content)), \
+             patch("pathlib.Path.exists", return_value=True):
+
+            config = load_config_from_file(config_path=Path("dummy/path"), profile="test_profile")
+
+            self.assertEqual(config.get("model"), "profile_model")
+            self.assertEqual(config.get("max_iterations"), 10)
+            self.assertEqual(config.get("timeout"), 500)
+
+    def test_load_config_with_non_existent_profile(self):
+        """Test loading a configuration with a non-existent profile."""
+        config_data = {
+            "model": "base_model",
+            "max_iterations": 10,
+            "profiles": {
+                "test_profile": {
+                    "model": "profile_model"
+                }
+            }
+        }
+        mock_content = yaml.dump(config_data)
+
+        with patch("builtins.open", mock_open(read_data=mock_content)), \
+             patch("pathlib.Path.exists", return_value=True):
+
+            config = load_config_from_file(config_path=Path("dummy/path"), profile="non_existent_profile")
+
+            self.assertEqual(config.get("model"), "base_model")
+            self.assertEqual(config.get("max_iterations"), 10)
+
+    def test_load_config_without_profile(self):
+        """Test loading a configuration without specifying a profile."""
+        config_data = {
+            "model": "base_model",
+            "profiles": {
+                "test_profile": {
+                    "model": "profile_model"
+                }
+            }
+        }
+        mock_content = yaml.dump(config_data)
+
+        with patch("builtins.open", mock_open(read_data=mock_content)), \
+             patch("pathlib.Path.exists", return_value=True):
+
+            config = load_config_from_file(config_path=Path("dummy/path"))
+
+            self.assertEqual(config.get("model"), "base_model")
+
+    def test_load_config_with_invalid_profiles_section(self):
+        """Test loading a configuration where 'profiles' is not a dictionary."""
+        config_data = {
+            "model": "base_model",
+            "profiles": "not_a_dictionary"
+        }
+        mock_content = yaml.dump(config_data)
+
+        with patch("builtins.open", mock_open(read_data=mock_content)), \
+             patch("pathlib.Path.exists", return_value=True):
+
+            config = load_config_from_file(config_path=Path("dummy/path"), profile="test_profile")
+
+            self.assertEqual(config.get("model"), "base_model")
+
+    def test_load_config_with_invalid_profile_definition(self):
+        """Test loading a configuration where a profile's definition is not a dictionary."""
+        config_data = {
+            "model": "base_model",
+            "profiles": {
+                "test_profile": "not_a_dictionary"
+            }
+        }
+        mock_content = yaml.dump(config_data)
+
+        with patch("builtins.open", mock_open(read_data=mock_content)), \
+             patch("pathlib.Path.exists", return_value=True):
+
+            config = load_config_from_file(config_path=Path("dummy/path"), profile="test_profile")
+
+            self.assertEqual(config.get("model"), "base_model")
 
     def test_get_config_path_local(self):
         # Create local config

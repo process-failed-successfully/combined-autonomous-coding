@@ -193,6 +193,11 @@ def parse_args():
     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")
     core_group.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
+    )
+    core_group.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -363,7 +368,7 @@ async def main():
     # Load Configuration from File
     # Priority resolved in config_loader: ./ > XDG > Legacy
     ensure_config_exists()
-    file_config = load_config_from_file()
+    file_config = load_config_from_file(profile=args.profile)
 
     # Helper to resolve configuration priority: CLI > Config File > Default
     def resolve(cli_arg, config_key, default_val):

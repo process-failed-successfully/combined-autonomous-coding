@@ -195,13 +195,17 @@ def run_configure():
 
 
 def run_clean(args):
-    """Removes agent-generated artifacts from the project directory."""
+    """Moves or removes agent-generated artifacts from the project directory."""
     import shutil
+    from datetime import datetime
 
     project_dir = args.project_dir.resolve()
-    print(f"--- Cleaning project directory: {project_dir} ---")
+    is_force_delete = args.force
 
-    # List of agent-generated files and directories to be removed
+    action_desc = "Permanently DELETING" if is_force_delete else "Moving to trash"
+    print(f"--- {action_desc} artifacts in project directory: {project_dir} ---")
+
+    # List of agent-generated files and directories to be cleaned
     artifacts_to_clean = [
         ".agent_db.sqlite",
         "COMPLETED",
@@ -227,7 +231,17 @@ def run_clean(args):
         print("No agent-generated artifacts found to clean.")
         sys.exit(0)
 
-    print("The following agent-generated files and directories will be DELETED:")
+    # Prepare trash directory path if needed, but don't create it yet
+    trash_dir = None
+    trash_dir_display_path = None
+    if not is_force_delete:
+        trash_base_dir = project_dir / ".agent_trash"
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        trash_dir = trash_base_dir / f"trash-{timestamp}"
+        trash_dir_display_path = trash_dir.relative_to(project_dir)
+
+    action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {trash_dir_display_path}"
+    print(f"The following agent-generated files and directories will be {action_verb}:")
     for path in existing_artifacts:
         print(f"  - {path.relative_to(project_dir)}")
 
@@ -237,19 +251,32 @@ def run_clean(args):
             print("Aborted.")
             sys.exit(0)
 
-    print("\nCleaning artifacts...")
+    print(f"\n{'Cleaning' if is_force_delete else 'Trashing'} artifacts...")
+
+    # Create trash directory now that we have confirmation
+    if not is_force_delete and trash_dir:
+        trash_dir.mkdir(parents=True, exist_ok=True)
+
     for path in existing_artifacts:
         try:
-            if path.is_file():
-                path.unlink()
-                print(f"Deleted file: {path.relative_to(project_dir)}")
-            elif path.is_dir():
-                shutil.rmtree(path)
-                print(f"Deleted directory: {path.relative_to(project_dir)}")
+            if is_force_delete:
+                if path.is_file():
+                    path.unlink()
+                    print(f"Deleted file: {path.relative_to(project_dir)}")
+                elif path.is_dir():
+                    shutil.rmtree(path)
+                    print(f"Deleted directory: {path.relative_to(project_dir)}")
+            else:
+                dest = trash_dir / path.name
+                shutil.move(str(path), str(dest))
+                print(f"Moved to trash: {path.relative_to(project_dir)}")
         except OSError as e:
-            print(f"Error deleting {path}: {e}", file=sys.stderr)
+            print(f"Error processing {path}: {e}", file=sys.stderr)
 
-    print("\n✅ Clean complete.")
+    if not is_force_delete:
+        print(f"\n✅ Trash complete. Artifacts moved to {trash_dir.relative_to(project_dir)}")
+    else:
+        print("\n✅ Clean complete.")
     sys.exit(0)
 
 
@@ -458,7 +485,7 @@ def parse_args():
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
     # Subparser for 'clean'
-    parser_clean = subparsers.add_parser("clean", help="Remove all agent-generated artifacts from a project")
+    parser_clean = subparsers.add_parser("clean", help="Move agent-generated artifacts to a trash directory")
     parser_clean.add_argument(
         "-p", "--project-dir",
         type=Path,
@@ -468,7 +495,12 @@ def parse_args():
     parser_clean.add_argument(
         "-y", "--yes",
         action="store_true",
-        help="Skip confirmation prompt and automatically delete artifacts",
+        help="Skip confirmation prompt",
+    )
+    parser_clean.add_argument(
+        "--force",
+        action="store_true",
+        help="Permanently delete artifacts instead of moving them to the trash directory",
     )
 
     # Subparser for 'archive'

@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v0.8.0 (2026-01-04)
+
+### Bug Fixes
+
+- **workflow**: Add checkout step for local action
+  ([`e7fc674`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/e7fc674eb3d45520e709053f879f1ac324ed8e0c))
+
+### Features
+
+- Add real-time logging to the agent dashboard
+  ([#51](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/51),
+  [`d668da3`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/d668da31756b30c3c78e6fb32e8b8247340cef3c))
+
+This commit introduces a new feature that displays real-time logs from the Python agents in the web
+  dashboard.
+
+The implementation includes: - A new `MemoryLogHandler` in the Python agent that captures the last
+  50 log messages. - Updates to the `AgentClient` to send the captured logs with each heartbeat. - A
+  new API endpoint in the Node.js backend to receive and store the logs. - Frontend modifications to
+  display the logs in the agent cards. - New unit tests for the `MemoryLogHandler` and the Node.js
+  backend. - Updates to existing tests to ensure compatibility with the new logging setup.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Replace jules-invoke with local action to fix arg list too long
+  ([`ed96a07`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/ed96a079ce9eaa3eab79bafab4d23ef5bba99b34))
+
+
 ## v0.7.2 (2026-01-04)
 
 ### Performance Improvements

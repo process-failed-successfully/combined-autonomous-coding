@@ -29,6 +29,70 @@ import yaml
 import platformdirs
 
 
+def run_validate():
+    """Validates the agent_config.yaml file."""
+    print("--- Validating Agent Configuration ---")
+    errors = []
+
+    from shared.config_loader import get_config_path, load_config_from_file
+    config_path = get_config_path()
+
+    if not config_path or not config_path.exists():
+        print("❌ Configuration file (agent_config.yaml) not found in any of the searched paths.")
+        print("   Searched in ./, ~/.config/combined-autonomous-coding/, and ~/.gemini/")
+        sys.exit(1)
+
+    print(f"Found configuration file at: {config_path}")
+
+    try:
+        config_data = load_config_from_file()
+    except Exception as e:
+        print(f"❌ Error loading or parsing YAML from {config_path}: {e}")
+        sys.exit(1)
+
+    # Jira Validation
+    if 'jira' in config_data:
+        jira_config = config_data['jira']
+        if not isinstance(jira_config, dict):
+            errors.append("Jira config ('jira') must be a dictionary.")
+        else:
+            required_jira_keys = ['url', 'email', 'token']
+            for key in required_jira_keys:
+                if key not in jira_config or not jira_config.get(key):
+                    errors.append(f"Jira config in {config_path} is missing required key or value: '{key}'")
+
+    # Notification Validation (check for non-empty strings)
+    if 'slack_webhook_url' in config_data and config_data.get('slack_webhook_url'):
+        url = config_data['slack_webhook_url']
+        if not isinstance(url, str) or not url.startswith("https://hooks.slack.com/"):
+            errors.append(f"Invalid Slack webhook URL format in {config_path}.")
+
+    if 'discord_webhook_url' in config_data and config_data.get('discord_webhook_url'):
+        url = config_data['discord_webhook_url']
+        if not isinstance(url, str) or not url.startswith("https://discord.com/api/webhooks/"):
+            errors.append(f"Invalid Discord webhook URL format in {config_path}.")
+
+    # Type checks for other common keys
+    type_checks = {
+        'model': str, 'max_iterations': int, 'manager_frequency': int,
+        'manager_model': str, 'timeout': (int, float), 'max_error_wait': (int, float),
+        'max_agents': int, 'dind_enabled': bool, 'run_manager_first': bool,
+        'notification_settings': dict,
+    }
+    for key, expected_type in type_checks.items():
+        if key in config_data and config_data.get(key) is not None and not isinstance(config_data[key], expected_type):
+            errors.append(f"'{key}' has incorrect type in {config_path}. Expected {expected_type}, got {type(config_data[key]).__name__}.")
+
+    if errors:
+        print(f"\n❌ Configuration validation failed with {len(errors)} error(s):")
+        for error in errors:
+            print(f"  - {error}")
+        sys.exit(1)
+    else:
+        print("\n✅ Configuration is valid!")
+        sys.exit(0)
+
+
 def run_configure():
     """Interactively create or update the agent_config.yaml file."""
     print("--- Agent Configuration ---")
@@ -237,6 +301,7 @@ def parse_args():
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
     parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
+    parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     # No additional arguments for configure, it's interactive
 
     return parser.parse_args()
@@ -248,6 +313,11 @@ async def main():
     # Handle `configure` command
     if args.command == "configure":
         run_configure()
+        return
+
+    # Handle `validate` command
+    if args.command == "validate":
+        run_validate()
         return
 
     # Initialize Agent Client

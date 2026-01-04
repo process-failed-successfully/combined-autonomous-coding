@@ -42,7 +42,7 @@ class TestMainRestoreCommand(unittest.TestCase):
 
     def _run_clean(self):
         """Helper to run the clean command and create a trash directory."""
-        args = argparse.Namespace(project_dir=self.project_path, yes=True, force=False)
+        args = argparse.Namespace(project_dir=self.project_path, yes=True, force=False, archive=False)
         with self.assertRaises(SystemExit) as cm:
             with patch('sys.stdout'):
                 run_clean(args)

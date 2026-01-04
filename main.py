@@ -201,8 +201,28 @@ def run_clean(args):
 
     project_dir = args.project_dir.resolve()
     is_force_delete = args.force
+    is_archive = args.archive
 
-    action_desc = "Permanently DELETING" if is_force_delete else "Moving to trash"
+    # Determine action and destination
+    if is_force_delete:
+        action_desc = "Permanently DELETING"
+        log_verb = "Cleaning"
+        dest_base_dir_name = None
+        dest_dir_prefix = None
+        completion_message = "\n✅ Clean complete."
+    elif is_archive:
+        action_desc = "Archiving"
+        log_verb = "Archiving"
+        dest_base_dir_name = ".agent_archives"
+        dest_dir_prefix = "archive"
+        completion_message = "\n✅ Archive complete. Artifacts moved to {dest_dir_display_path}"
+    else:  # Default is trash
+        action_desc = "Moving to trash"
+        log_verb = "Trashing"
+        dest_base_dir_name = ".agent_trash"
+        dest_dir_prefix = "trash"
+        completion_message = "\n✅ Trash complete. Artifacts moved to {dest_dir_display_path}"
+
     print(f"--- {action_desc} artifacts in project directory: {project_dir} ---")
 
     # List of agent-generated files and directories to be cleaned
@@ -231,16 +251,16 @@ def run_clean(args):
         print("No agent-generated artifacts found to clean.")
         sys.exit(0)
 
-    # Prepare trash directory path if needed, but don't create it yet
-    trash_dir = None
-    trash_dir_display_path = None
+    # Prepare destination directory path if needed
+    dest_dir = None
+    dest_dir_display_path = None
     if not is_force_delete:
-        trash_base_dir = project_dir / ".agent_trash"
+        dest_base_dir = project_dir / dest_base_dir_name
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        trash_dir = trash_base_dir / f"trash-{timestamp}"
-        trash_dir_display_path = trash_dir.relative_to(project_dir)
+        dest_dir = dest_base_dir / f"{dest_dir_prefix}-{timestamp}"
+        dest_dir_display_path = dest_dir.relative_to(project_dir)
 
-    action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {trash_dir_display_path}"
+    action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {dest_dir_display_path}"
     print(f"The following agent-generated files and directories will be {action_verb}:")
     for path in existing_artifacts:
         print(f"  - {path.relative_to(project_dir)}")
@@ -251,11 +271,11 @@ def run_clean(args):
             print("Aborted.")
             sys.exit(0)
 
-    print(f"\n{'Cleaning' if is_force_delete else 'Trashing'} artifacts...")
+    print(f"\n{log_verb} artifacts...")
 
-    # Create trash directory now that we have confirmation
-    if not is_force_delete and trash_dir:
-        trash_dir.mkdir(parents=True, exist_ok=True)
+    # Create destination directory now that we have confirmation
+    if not is_force_delete and dest_dir:
+        dest_dir.mkdir(parents=True, exist_ok=True)
 
     for path in existing_artifacts:
         try:
@@ -267,21 +287,23 @@ def run_clean(args):
                     shutil.rmtree(path)
                     print(f"Deleted directory: {path.relative_to(project_dir)}")
             else:
-                dest = trash_dir / path.name
+                dest = dest_dir / path.name
                 shutil.move(str(path), str(dest))
-                print(f"Moved to trash: {path.relative_to(project_dir)}")
+                print(f"Moved to {dest_dir_prefix}: {path.relative_to(project_dir)}")
         except OSError as e:
             print(f"Error processing {path}: {e}", file=sys.stderr)
 
     if not is_force_delete:
-        print(f"\n✅ Trash complete. Artifacts moved to {trash_dir.relative_to(project_dir)}")
+        print(completion_message.format(dest_dir_display_path=dest_dir.relative_to(project_dir)))
     else:
-        print("\n✅ Clean complete.")
+        print(completion_message)
     sys.exit(0)
 
 
 def run_archive(args):
     """Archives agent-generated artifacts to a timestamped directory."""
+    print("Warning: The 'archive' command is deprecated and will be removed in a future version. "
+          "Use 'clean --archive' instead.", file=sys.stderr)
     import shutil
     from datetime import datetime
 
@@ -771,10 +793,16 @@ def parse_args():
         action="store_true",
         help="Skip confirmation prompt",
     )
-    parser_clean.add_argument(
+    clean_exclusive_group = parser_clean.add_mutually_exclusive_group()
+    clean_exclusive_group.add_argument(
         "--force",
         action="store_true",
         help="Permanently delete artifacts instead of moving them to the trash directory",
+    )
+    clean_exclusive_group.add_argument(
+        "--archive",
+        action="store_true",
+        help="Archive artifacts to the `.agent_archives/` directory instead of moving them to trash",
     )
 
     # Subparser for 'archive'

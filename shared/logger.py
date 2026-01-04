@@ -10,7 +10,7 @@ from typing import Optional
 
 
 def setup_logger(
-    name: str = "agent", log_file: Optional[Path] = None, verbose: bool = False
+    name: str = "agent", log_file: Optional[Path] = None, verbose: bool = False, console_output: bool = True
 ) -> logging.Logger:
     """Configure and return a logger instance."""
 
@@ -26,10 +26,11 @@ def setup_logger(
     )
 
     # Console Handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    if console_output:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
     # File Handler
     if log_file:

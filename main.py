@@ -30,123 +30,134 @@ from agents.openrouter import run_autonomous_agent as run_openrouter
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
-    parser.add_argument(
-        "--project-dir",
+    # Core Configuration
+    core_group = parser.add_argument_group("Core Configuration")
+    core_group.add_argument(
+        "-p", "--project-dir",
         type=Path,
         default=Path("."),
         help="Directory where the project will be created/modified (default: current directory)",
     )
-
-    parser.add_argument(
-        "--agent",
+    core_group.add_argument(
+        "-a", "--agent",
         choices=["gemini", "cursor", "local", "openrouter"],
         default="gemini",
         help="Which agent to use (default: gemini)",
     )
-
-    parser.add_argument("--model", type=str, help="Model to use (overrides default)")
-
-    parser.add_argument(
-        "--max-iterations", type=int, help="Maximum number of agent iterations"
+    core_group.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default). Can also be set via config.",
     )
-
-    parser.add_argument(
-        "--spec", type=Path, help="Path to app_spec.txt (required for new projects)"
+    core_group.add_argument(
+        "-s", "--spec",
+        type=Path,
+        help="Path to app_spec.txt (required for new projects)",
     )
-
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-
-    parser.add_argument(
-        "--verify-creation",
+    core_group.add_argument(
+        "-v", "--verbose",
         action="store_true",
-        help="Run verification test (dummy mode)",
+        help="Enable verbose logging",
     )
 
-    parser.add_argument(
-        "--no-stream", action="store_true", help="Disable streaming output"
+    # Execution Control
+    exec_group = parser.add_argument_group("Execution Control")
+    exec_group.add_argument(
+        "--max-iterations",
+        type=int,
+        help="Maximum number of agent iterations. Can also be set via config.",
+    )
+    exec_group.add_argument(
+        "--timeout",
+        type=float,
+        help="Timeout in seconds for agent execution (default: 600.0). Can also be set via config.",
+    )
+    exec_group.add_argument(
+        "--max-error-wait",
+        type=float,
+        help="Maximum wait time in seconds for agent error backoff (default: 600.0). Can also be set via config.",
+    )
+    exec_group.add_argument(
+        "--no-stream",
+        action="store_true",
+        help="Disable streaming output",
     )
 
-    # Manager Arguments
-    parser.add_argument(
+    # Manager Agent
+    manager_group = parser.add_argument_group("Manager Agent")
+    manager_group.add_argument(
         "--manager-frequency",
         type=int,
-        help="How often the manager agent runs (default: 10 iterations)",
+        help="How often the manager agent runs (default: 10 iterations). Can also be set via config.",
     )
-
-    parser.add_argument(
-        "--manager-model", type=str, help="Model to use for the manager agent"
+    manager_group.add_argument(
+        "--manager-model",
+        type=str,
+        help="Model to use for the manager agent. Can also be set via config.",
     )
-
-    parser.add_argument(
+    manager_group.add_argument(
         "--manager-first",
         action="store_true",
         help="Run the manager agent before the first coding session",
     )
 
-    parser.add_argument(
+    # Dashboard
+    dash_group = parser.add_argument_group("Dashboard")
+    dash_group.add_argument(
         "--no-dashboard",
         action="store_true",
         help="Disable the standalone dashboard server (enabled by default)",
     )
-
-    parser.add_argument(
-        "--dashboard-only",
-        action="store_true",
-        help="Run ONLY the dashboard server (no agent)",
-    )
-
-    parser.add_argument(
+    dash_group.add_argument(
         "--dashboard-url",
         default="http://localhost:7654",
         help="URL of the dashboard server (default: http://localhost:7654)",
     )
-
-    parser.add_argument(
+    dash_group.add_argument(
         "--login",
         action="store_true",
         help="Run the agent in login/authentication mode (exit after login)",
     )
 
-    # Sprint Arguments
-    parser.add_argument(
-        "--sprint", action="store_true", help="Run in Sprint Mode (Concurrent Agents)"
+    # Sprint Mode
+    sprint_group = parser.add_argument_group("Sprint Mode")
+    sprint_group.add_argument(
+        "--sprint",
+        action="store_true",
+        help="Run in Sprint Mode (Concurrent Agents)",
     )
-
-    parser.add_argument(
+    sprint_group.add_argument(
         "--max-agents",
         type=int,
-        help="Maximum number of simultaneous agents in Sprint Mode",
+        help="Maximum number of simultaneous agents in Sprint Mode. Can also be set via config.",
     )
 
-    parser.add_argument(
-        "--timeout",
-        type=float,
-        help="Timeout in seconds for agent execution (default: 600.0)",
-    )
-
-    parser.add_argument(
-        "--max-error-wait",
-        type=float,
-        help="Maximum wait time in seconds for agent error backoff (default: 600.0)",
-    )
-
-    parser.add_argument(
+    # Jira Integration
+    jira_group = parser.add_argument_group("Jira Integration")
+    jira_exclusive = jira_group.add_mutually_exclusive_group()
+    jira_exclusive.add_argument(
         "--jira-ticket",
         type=str,
         help="Jira ticket ID to work on (e.g., PROJ-123)",
     )
-
-    parser.add_argument(
+    jira_exclusive.add_argument(
         "--jira-label",
         type=str,
         help="Jira label to search for (picks first 'To Do' ticket)",
     )
 
-    parser.add_argument(
+    # Advanced
+    adv_group = parser.add_argument_group("Advanced")
+    adv_group.add_argument(
+        "--verify-creation",
+        action="store_true",
+        help="Run verification test (dummy mode)",
+    )
+    adv_group.add_argument(
         "--dind",
         "--docker-in-docker",
         action="store_true",
-        help="Enable Docker-in-Docker support (mounts docker socket)",
+        help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
 
     return parser.parse_args()
@@ -154,16 +165,6 @@ def parse_args():
 
 async def main():
     args = parse_args()
-
-    # Dashboard Mode (Legacy - Removed)
-    if args.dashboard_only:
-        print(
-            "Error: The legacy dashboard has been removed. Please use 'make monitor-up' to access Grafana."
-        )
-        sys.exit(1)
-
-    # Legacy dashboard auto-start logic is removed.
-    # The Grafana stack runs separately via Docker Compose.
 
     # Initialize Agent Client
     from shared.agent_client import AgentClient
@@ -316,17 +317,13 @@ async def main():
     agent_id = generate_agent_id(project_name, spec_content, args.agent)
     config.agent_id = agent_id
 
-    if args.dashboard_only:
-        log_file = agents_log_dir / "dashboard_server.log"
-    else:
-        log_file = agents_log_dir / f"{agent_id}.log"
+    log_file = agents_log_dir / f"{agent_id}.log"
 
     # Configure Root Logger to capture all module logs (e.g. shared.git)
     logger = setup_logger(name="", log_file=log_file, verbose=args.verbose)
 
-    if not args.dashboard_only:
-        logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
-        logger.info(f"Generated Agent ID: {agent_id}")
+    logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+    logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
 

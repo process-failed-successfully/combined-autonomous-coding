@@ -51,10 +51,15 @@ app.post('/api/agents/:id/heartbeat', (req, res) => {
     }
 
     agents[agentId].last_seen = Date.now();
+
+    // Special handling for logs to truncate them
+    if (update.logs && Array.isArray(update.logs) && update.logs.length > 50) {
+        update.logs = update.logs.slice(-50);
+    }
+
     // Merge state updates
     agents[agentId].state = { ...agents[agentId].state, ...update };
 
-    // Clean up ancient agents? Maybe later. For now just persist.
     saveState();
 
     res.json({ status: 'ok' });
@@ -108,6 +113,10 @@ app.post('/api/ui/command', (req, res) => {
     res.json({ status: 'ok', message: `Command ${command} queued for ${agent_id}` });
 });
 
-app.listen(PORT, () => {
-    console.log(`Dashboard server running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+      console.log(`Dashboard server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

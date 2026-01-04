@@ -57,6 +57,16 @@ document.addEventListener('DOMContentLoaded', () => {
                  });
             }
 
+            // Build log view
+            let logsHtml = '';
+            if (agent.state && agent.state.logs && agent.state.logs.length > 0) {
+                logsHtml = `
+                    <div class="log-preview">
+                        ${agent.state.logs.map(line => `<div>${line}</div>`).join('')}
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 <div class="agent-header">
                     <span class="agent-id">${agent.id}</span>
@@ -65,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="agent-details">
                     ${stateDetails || '<div class="detail-row">Waiting for heartbeat...</div>'}
                 </div>
+                ${logsHtml}
                 ${controlsHtml}
             `;
 

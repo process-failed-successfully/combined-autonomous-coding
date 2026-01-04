@@ -334,6 +334,50 @@ def run_archive(args):
     sys.exit(0)
 
 
+def run_empty_trash(args):
+    """Permanently deletes the .agent_trash directory."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    trash_dir = project_dir / ".agent_trash"
+
+    print(f"--- Permanently emptying trash in project: {project_dir} ---")
+
+    if not trash_dir.exists() or not trash_dir.is_dir():
+        print("Trash directory (.agent_trash) not found. Nothing to do.")
+        sys.exit(0)
+
+    # Count items for user confirmation
+    trash_items = list(trash_dir.iterdir())
+    if not trash_items:
+        print("Trash directory is already empty.")
+        # Also remove the empty .agent_trash directory itself
+        try:
+            trash_dir.rmdir()
+            print("Removed empty .agent_trash directory.")
+        except OSError as e:
+            print(f"Could not remove empty .agent_trash directory: {e}", file=sys.stderr)
+        sys.exit(0)
+
+    print(f"The trash directory (.agent_trash) contains {len(trash_items)} item(s).")
+    print("This action will permanently delete its contents.")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nEmptying trash...")
+    try:
+        shutil.rmtree(trash_dir)
+        print("✅ Trash successfully emptied.")
+    except OSError as e:
+        print(f"Error while emptying trash: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -512,6 +556,20 @@ def parse_args():
         help="The project directory to clean (default: current directory)",
     )
 
+    # Subparser for 'empty-trash'
+    parser_empty_trash = subparsers.add_parser("empty-trash", help="Permanently delete all items in the agent trash directory")
+    parser_empty_trash.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the trash is located (default: current directory)",
+    )
+    parser_empty_trash.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
     return parser.parse_args()
 
 
@@ -536,6 +594,11 @@ async def main():
     # Handle `archive` command
     if args.command == "archive":
         run_archive(args)
+        return
+
+    # Handle `empty-trash` command
+    if args.command == "empty-trash":
+        run_empty_trash(args)
         return
 
     # Handle `list-agents` command

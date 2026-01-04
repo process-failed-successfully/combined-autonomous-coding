@@ -9,6 +9,12 @@ from agents.shared.worktree_manager import WorktreeManager
 
 class TestWorktreeManager(unittest.TestCase):
     def setUp(self):
+        # Set Git identity for tests to avoid failures in CI environments
+        os.environ["GIT_AUTHOR_NAME"] = "Test User"
+        os.environ["GIT_AUTHOR_EMAIL"] = "test@example.com"
+        os.environ["GIT_COMMITTER_NAME"] = "Test User"
+        os.environ["GIT_COMMITTER_EMAIL"] = "test@example.com"
+
         self.tmp_dir = tempfile.mkdtemp(prefix="test_worktree_repo_")
         self.repo_dir = Path(self.tmp_dir)
         self.repo_dir.mkdir(parents=True, exist_ok=True)

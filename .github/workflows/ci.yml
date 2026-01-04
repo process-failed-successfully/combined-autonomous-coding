@@ -73,6 +73,11 @@ jobs:
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           pip install .
 
+      - name: Configure Git
+        run: |
+          git config --global user.email "agent@example.com"
+          git config --global user.name "Combined Agent CI"
+
       - name: Run Pytest
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)

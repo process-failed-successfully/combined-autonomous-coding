@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.7.2 (2026-01-04)
+
+### Performance Improvements
+
+- Optimize file reading in execute_read_block
+  ([`1a3229f`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1a3229f55c260c0bbf6773a7357b000f1560c5b2))
+
+Optimized `execute_read_block` to stream lines from the file object directly instead of reading the
+  entire content into memory first. This reduces memory usage for large files and avoids creating
+  unnecessary intermediate large strings.
+
+- Replaced `f.read().splitlines()` with iteration over `f` - Used `line.rstrip('\n')` to handle
+  newlines
+
+
 ## v0.7.1 (2026-01-04)
 
 ### Bug Fixes

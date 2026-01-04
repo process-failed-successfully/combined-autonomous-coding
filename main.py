@@ -194,7 +194,7 @@ def run_configure():
         print(f"\n❌ Error saving configuration: {e}")
 
 
-def run_clean(args):
+def run_clean(args, repo_root_for_test=None):
     """Moves or removes agent-generated artifacts from the project directory."""
     import shutil
     from datetime import datetime
@@ -238,12 +238,33 @@ def run_clean(args):
         "final_metrics.txt",
         "temp_files.txt",
         "dashboard_state.json",
+        ".agent_run_id", # Added
         "worktrees/",  # Directory
     ]
 
+    # Try to find the log file from the last run
+    agent_run_id_file = project_dir / ".agent_run_id"
+    if agent_run_id_file.exists():
+        try:
+            agent_id = agent_run_id_file.read_text().strip()
+            # The log file is relative to the script's location, not the project dir
+            repo_root = repo_root_for_test if repo_root_for_test else Path(__file__).parent
+            log_file = repo_root / f"agents/logs/{agent_id}.log"
+            if log_file.exists():
+                artifacts_to_clean.append(log_file)
+            else:
+                print(f"Warning: Log file for run '{agent_id}' not found at expected path: {log_file}", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: Could not read or process .agent_run_id file: {e}", file=sys.stderr)
+
+
     existing_artifacts = []
     for artifact in artifacts_to_clean:
-        path = project_dir / artifact
+        # Handle both Path objects and strings
+        path = Path(artifact) if not isinstance(artifact, Path) else artifact
+        # Make paths absolute if they aren't already
+        path = project_dir / path if not path.is_absolute() else path
+
         if path.exists():
             existing_artifacts.append(path)
 
@@ -263,7 +284,12 @@ def run_clean(args):
     action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {dest_dir_display_path}"
     print(f"The following agent-generated files and directories will be {action_verb}:")
     for path in existing_artifacts:
-        print(f"  - {path.relative_to(project_dir)}")
+        # For paths outside the project_dir (like logs), show a more informative path
+        try:
+            display_path = path.relative_to(project_dir)
+        except ValueError:
+            display_path = path
+        print(f"  - {display_path}")
 
     if not args.yes:
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
@@ -373,13 +399,29 @@ def _trash_list(trash_base_dir):
         latest_marker = " (latest)" if i == 0 else ""
         print(f"\n[{i+1}] {archive_dir.name}{latest_marker}")
         try:
-            contents = list(archive_dir.iterdir())
+            contents = sorted(list(archive_dir.iterdir()), key=lambda p: p.name)
+            log_file = None
             if not contents:
                 print("    (empty)")
             else:
+                print("    --- Contents ---")
                 for item in contents:
+                    if item.name.endswith(".log"):
+                        log_file = item
                     is_dir = "/ (dir)" if item.is_dir() else ""
                     print(f"    - {item.name}{is_dir}")
+
+            if log_file:
+                print("    --- Log Summary (last 15 lines) ---")
+                try:
+                    with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        lines = f.readlines()
+                    summary_lines = [line.strip() for line in lines[-15:]]
+                    for line in summary_lines:
+                        print(f"      {line}")
+                except Exception as e:
+                    print(f"      Could not read or parse log file: {e}")
+
         except OSError as e:
             print(f"    Error reading archive contents: {e}", file=sys.stderr)
     sys.exit(0)
@@ -1075,6 +1117,12 @@ async def main():
     # Generate deterministic ID
     agent_id = generate_agent_id(project_name, spec_content, args.agent)
     config.agent_id = agent_id
+
+    # Store the agent_id for other commands to use
+    try:
+        (config.project_dir / ".agent_run_id").write_text(agent_id)
+    except OSError as e:
+        print(f"Warning: Could not write .agent_run_id file: {e}", file=sys.stderr)
 
     log_file = agents_log_dir / f"{agent_id}.log"
 

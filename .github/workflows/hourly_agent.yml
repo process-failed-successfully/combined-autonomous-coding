@@ -12,7 +12,7 @@ jobs:
       contents: read
     steps:
       - name: Invoke Jules
-        uses: google-labs-code/jules-invoke@v1.0.0
+        uses: ./.github/actions/jules-invoke
         with:
           prompt: |
             Analyze the repository to understand its purpose and active components.
@@ -26,5 +26,6 @@ jobs:
             - Do not break existing tests.
             - Do not just do "cleanup" or "documentation" unless it is critical. Focus on functional value.
           jules_api_key: ${{ secrets.JULES_API_KEY }}
-          include_commit_log: true
+          include_commit_log: false
+          include_last_commit: false
           starting_branch: master

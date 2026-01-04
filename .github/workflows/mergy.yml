@@ -29,6 +29,35 @@ jobs:
             }
 
             try {
+              // 1. Get PR details to check if it's a draft and get node_id
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+
+              // 2. If it's a draft, promote it
+              if (pr.draft) {
+                console.log(`PR #${prNumber} is a draft. Promoting to ready for review...`);
+                // Query to mark PR as ready for review
+                const mutation = `
+                  mutation($pullRequestId: ID!) {
+                    markPullRequestReadyForReview(input: {pullRequestId: $pullRequestId}) {
+                      pullRequest {
+                        id
+                        isDraft
+                      }
+                    }
+                  }
+                `;
+                
+                await github.graphql(mutation, {
+                  pullRequestId: pr.node_id
+                });
+                console.log(`Successfully promoted PR #${prNumber}`);
+              }
+
+              // 3. Merge the PR
               await github.rest.pulls.merge({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -37,6 +66,6 @@ jobs:
               });
               console.log(`Successfully merged PR #${prNumber}`);
             } catch (error) {
-              console.error(`Failed to merge PR #${prNumber}:`, error.message);
+              console.error(`Failed to process PR #${prNumber}:`, error.message);
               // We don't want to fail the job if the merge fails (e.g. conflicts, already merged)
             }

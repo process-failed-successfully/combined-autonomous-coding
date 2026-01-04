@@ -15,7 +15,14 @@ from pathlib import Path
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
-from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.config_loader import load_config_from_file, ensure_config_exists, load_profile_config
+from shared.database import init_db
+from shared.agent_client import AgentClient
+from shared.utils import generate_agent_id
+from shared.config import JiraConfig
+from shared.jira_client import JiraClient
+from shared.git import configure_git_auth
+from shared.workflow import complete_jira_ticket
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -33,6 +40,11 @@ def parse_args():
     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")
     core_group.add_argument(
+        "--profile",
+        type=str,
+        help="Name of the configuration profile to use from agent_config.yaml",
+    )
+    core_group.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -41,7 +53,7 @@ def parse_args():
     core_group.add_argument(
         "-a", "--agent",
         choices=["gemini", "cursor", "local", "openrouter"],
-        default="gemini",
+        default=None,
         help="Which agent to use (default: gemini)",
     )
     core_group.add_argument(
@@ -167,9 +179,6 @@ async def main():
     args = parse_args()
 
     # Initialize Agent Client
-    from shared.agent_client import AgentClient
-    from shared.utils import generate_agent_id
-
     project_name = os.environ.get("PROJECT_NAME")
     if not project_name:
         project_name = args.project_dir.resolve().name
@@ -179,10 +188,17 @@ async def main():
     ensure_config_exists()
     file_config = load_config_from_file()
 
-    # Helper to resolve configuration priority: CLI > Config File > Default
-    def resolve(cli_arg, config_key, default_val):
-        if cli_arg is not None:
+    # Load Profile Configuration if specified
+    profile_config = {}
+    if args.profile:
+        profile_config = load_profile_config(args.profile)
+
+    # Helper to resolve configuration priority: CLI > Profile > Config File > Default
+    def resolve(cli_arg, config_key, default_val, is_cli_arg_present=False):
+        if is_cli_arg_present:
             return cli_arg
+        if config_key in profile_config:
+            return profile_config[config_key]
         if config_key in file_config:
             return file_config[config_key]
         return default_val
@@ -191,44 +207,42 @@ async def main():
     config = Config(
         project_dir=args.project_dir,
         agent_id=None,  # Placeholder, set later
-        agent_type=args.agent,
-        model=resolve(args.model, "model", None),
-        max_iterations=resolve(args.max_iterations, "max_iterations", None),
-        verbose=args.verbose,
-        stream_output=not args.no_stream,
+        agent_type=resolve(args.agent, "agent", "gemini", is_cli_arg_present=args.agent is not None),
+        model=resolve(args.model, "model", None, is_cli_arg_present=args.model is not None),
+        max_iterations=resolve(args.max_iterations, "max_iterations", None, is_cli_arg_present=args.max_iterations is not None),
+        verbose=args.verbose or resolve(None, "verbose", False),
+        stream_output=not (args.no_stream or resolve(None, "no_stream", False)),
         spec_file=args.spec,
         verify_creation=args.verify_creation,
 
         # Manager
-        manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10),
-        manager_model=resolve(args.manager_model, "manager_model", None),
-        run_manager_first=args.manager_first,
-        login_mode=args.login or file_config.get("login_mode", False),
+        manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10, is_cli_arg_present=args.manager_frequency is not None),
+        manager_model=resolve(args.manager_model, "manager_model", None, is_cli_arg_present=args.manager_model is not None),
+        run_manager_first=args.manager_first or resolve(None, "manager_first", False),
+        login_mode=args.login or resolve(None, "login_mode", False),
 
-        timeout=resolve(args.timeout, "timeout", 600.0),
-        max_error_wait=resolve(args.max_error_wait, "max_error_wait", 600.0),
+        timeout=resolve(args.timeout, "timeout", 600.0, is_cli_arg_present=args.timeout is not None),
+        max_error_wait=resolve(args.max_error_wait, "max_error_wait", 600.0, is_cli_arg_present=args.max_error_wait is not None),
 
         # Sprint
-        sprint_mode=args.sprint or file_config.get("sprint_mode", False),
-        max_agents=resolve(args.max_agents, "max_agents", 1),
+        sprint_mode=args.sprint or resolve(None, "sprint_mode", False),
+        max_agents=resolve(args.max_agents, "max_agents", 1, is_cli_arg_present=args.max_agents is not None),
 
-        # Notifications
+        # Notifications (only from file_config)
         slack_webhook_url=file_config.get("slack_webhook_url"),
         discord_webhook_url=file_config.get("discord_webhook_url"),
         notification_settings=file_config.get("notification_settings"),
 
         # Docker-in-Docker
-        dind_enabled=args.dind or file_config.get("dind_enabled", False),
+        dind_enabled=args.dind or resolve(None, "dind_enabled", False),
     )
 
     # Initialize Database
-    from shared.database import init_db
     # Ensure project dir exists for DB creation
     config.project_dir.mkdir(parents=True, exist_ok=True)
     init_db(config.project_dir / ".agent_db.sqlite")
 
     # Load Jira Config
-    from shared.config import JiraConfig
     jira_cfg_data = file_config.get("jira", {})
     jira_env_url = os.environ.get("JIRA_URL")
     jira_env_email = os.environ.get("JIRA_EMAIL")
@@ -268,8 +282,6 @@ async def main():
     jira_spec_content = ""
 
     if config.jira and (args.jira_ticket or args.jira_label):
-        from shared.jira_client import JiraClient
-
         try:
             jira_client = JiraClient(config.jira)
 
@@ -314,15 +326,15 @@ async def main():
             print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
 
     # Generate deterministic ID
-    agent_id = generate_agent_id(project_name, spec_content, args.agent)
+    agent_id = generate_agent_id(project_name, spec_content, config.agent_type)
     config.agent_id = agent_id
 
     log_file = agents_log_dir / f"{agent_id}.log"
 
     # Configure Root Logger to capture all module logs (e.g. shared.git)
-    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=args.verbose)
+    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=config.verbose)
 
-    logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
+    logger.info(f"Starting {config.agent_type.capitalize()} Agent on {config.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
@@ -343,7 +355,6 @@ async def main():
     # Git Authentication (Env Var Check)
     git_token = os.environ.get("GIT_TOKEN")
     if git_token:
-        from shared.git import configure_git_auth
         git_host = os.environ.get("GIT_HOST", "github.com")
         git_user = os.environ.get("GIT_USERNAME", "x-access-token")
         configure_git_auth(git_token, git_host, git_user)
@@ -355,13 +366,13 @@ async def main():
             await run_sprint(config, agent_client=client)
             return
 
-        if args.agent == "gemini":
+        if config.agent_type == "gemini":
             await run_gemini(config, agent_client=client)
-        elif args.agent == "cursor":
+        elif config.agent_type == "cursor":
             await run_cursor(config, agent_client=client)
-        elif args.agent == "local":
+        elif config.agent_type == "local":
             await run_local(config, agent_client=client)
-        elif args.agent == "openrouter":
+        elif config.agent_type == "openrouter":
             await run_openrouter(config, agent_client=client)
     except KeyboardInterrupt:
         logger.info("\nExecution interrupted by user.")
@@ -375,7 +386,6 @@ async def main():
     if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
         # Final safety check for Jira completion (in case iteration loop didn't hit it)
         if config.jira and config.jira_ticket_key:
-            from shared.workflow import complete_jira_ticket
             await complete_jira_ticket(config)
 
         logger.info("Project signed off. Finalizing...")

@@ -128,3 +128,29 @@ def load_config_from_file(config_path: Optional[Path] = None) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error loading config file {config_path}: {e}")
         return {}
+
+
+def load_profile_config(profile_name: str, config_path: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Load a specific profile's configuration from the config file.
+
+    Args:
+        profile_name: The name of the profile to load.
+        config_path: Specific path to load. If None, resolves using get_config_path().
+
+    Returns:
+        Dict containing the profile's configuration, or empty dict if not found.
+    """
+    full_config = load_config_from_file(config_path)
+    profiles = full_config.get("profiles", {})
+
+    if not isinstance(profiles, dict):
+        logger.warning("'profiles' section in config is not a dictionary. Cannot load profiles.")
+        return {}
+
+    if profile_name in profiles:
+        logger.info(f"Loaded '{profile_name}' profile configuration.")
+        return profiles[profile_name]
+    else:
+        logger.warning(f"Profile '{profile_name}' not found in configuration.")
+        return {}

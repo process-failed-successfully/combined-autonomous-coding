@@ -776,6 +776,61 @@ def run_status(args):
     sys.exit(0)
 
 
+def run_history(args):
+    """Displays a history of agent runs for the project."""
+    project_dir = args.project_dir.resolve()
+    history_file = project_dir / ".agent_history"
+    repo_root = Path(__file__).parent
+    logs_dir = repo_root / "agents/logs"
+
+    print(f"--- Agent Run History: {project_dir} ---")
+
+    if not history_file.exists():
+        print("No agent run history found for this project.")
+        sys.exit(0)
+
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+    except IOError as e:
+        print(f"Error reading history file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not run_ids:
+        print("History is empty.")
+        sys.exit(0)
+
+    # Display in reverse chronological order
+    for i, run_id in enumerate(reversed(run_ids)):
+        latest_marker = " (latest)" if i == 0 else ""
+        print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
+        log_file = logs_dir / f"{run_id}.log"
+
+        if log_file.exists():
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+                # Attempt to get timestamp from the first line
+                first_line = lines[0].strip() if lines else ""
+                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
+                print(f"  Timestamp: {timestamp}")
+
+                if lines:
+                    print("  Log Summary (last 5 lines):")
+                    # Find last 5 non-empty lines
+                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
+                    for line in last_lines:
+                        print(f"    {line}")
+                else:
+                    print("  Log file is empty.")
+            except Exception as e:
+                print(f"  Error reading log file: {e}")
+        else:
+            print("  Log file not found.")
+
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -935,6 +990,15 @@ def parse_args():
         help="The project directory to check status for (default: current directory)",
     )
 
+    # Subparser for 'history'
+    parser_history = subparsers.add_parser("history", help="Show the history of agent runs for the project")
+    parser_history.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check history for (default: current directory)",
+    )
+
     # Subparser for 'clean'
     parser_clean = subparsers.add_parser("clean", help="Move agent-generated artifacts to a trash directory")
     parser_clean.add_argument(
@@ -1075,6 +1139,11 @@ async def main():
     # Handle `status` command
     if args.command == "status":
         run_status(args)
+        return
+
+    # Handle `history` command
+    if args.command == "history":
+        run_history(args)
         return
 
     # Initialize Agent Client
@@ -1243,6 +1312,14 @@ async def main():
 
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
+
+    # Append the current run ID to the history file
+    try:
+        history_file = config.project_dir / ".agent_history"
+        with open(history_file, "a") as f:
+            f.write(f"{agent_id}\n")
+    except IOError as e:
+        logger.warning(f"Could not write to history file {history_file}: {e}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
 

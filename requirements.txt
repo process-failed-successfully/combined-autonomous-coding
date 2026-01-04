@@ -12,3 +12,4 @@ gitpython
 prometheus-client
 psutil
 platformdirs
+google-generativeai

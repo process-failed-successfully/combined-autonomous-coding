@@ -28,6 +28,14 @@ from agents.openrouter import run_autonomous_agent as run_openrouter
 import yaml
 import platformdirs
 
+# Agent Definitions
+AVAILABLE_AGENTS = {
+    "gemini": "Uses Google's Gemini model via the official API.",
+    "cursor": "Interacts with the Cursor IDE's AI features.",
+    "local": "Runs a local model (e.g., Ollama).",
+    "openrouter": "Uses a model from the OpenRouter API.",
+}
+
 
 def run_validate():
     """Validates the agent_config.yaml file."""
@@ -91,6 +99,18 @@ def run_validate():
     else:
         print("\n✅ Configuration is valid!")
         sys.exit(0)
+
+
+def run_list_agents():
+    """Prints a list of available agents and their descriptions."""
+    print("--- Available Agents ---")
+    # Find the longest agent name for alignment
+    max_len = max(len(name) for name in AVAILABLE_AGENTS.keys())
+
+    for name, description in AVAILABLE_AGENTS.items():
+        # Format with padding for alignment
+        print(f"  {name.ljust(max_len)} : {description}")
+    sys.exit(0)
 
 
 def run_configure():
@@ -178,7 +198,7 @@ def parse_args():
     )
     core_group.add_argument(
         "-a", "--agent",
-        choices=["gemini", "cursor", "local", "openrouter"],
+        choices=list(AVAILABLE_AGENTS.keys()),
         default="gemini",
         help="Which agent to use (default: gemini)",
     )
@@ -302,7 +322,7 @@ def parse_args():
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
     parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
-    # No additional arguments for configure, it's interactive
+    parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
 
     return parser.parse_args()
 
@@ -318,6 +338,11 @@ async def main():
     # Handle `validate` command
     if args.command == "validate":
         run_validate()
+        return
+
+    # Handle `list-agents` command
+    if args.command == "list-agents":
+        run_list_agents()
         return
 
     # Initialize Agent Client

@@ -630,6 +630,116 @@ def run_restore(args):
     sys.exit(0)
 
 
+def run_status(args):
+    """Displays the current status of the agent project."""
+    import subprocess
+    import json
+    project_dir = args.project_dir.resolve()
+    print(f"--- Project Status: {project_dir} ---")
+
+    # 1. Workflow Stage
+    print("\n[ Workflow Stage ]")
+    if (project_dir / "PROJECT_SIGNED_OFF").exists():
+        print("  ✅ Project Signed Off: The project is complete and verified.")
+    elif (project_dir / "QA_PASSED").exists():
+        print("  🤔 QA Passed: Ready for final manager review and sign-off.")
+    elif (project_dir / "COMPLETED").exists():
+        print("  ⏳ Completed: Agent has finished coding, pending QA verification.")
+    else:
+        print("  🏃 In Progress: Agent is actively working or ready to start.")
+
+    # 2. Feature Summary
+    print("\n[ Feature Summary ]")
+    feature_file = project_dir / "feature_list.json"
+    if feature_file.exists():
+        try:
+            with open(feature_file, 'r') as f:
+                features = json.load(f)
+            if isinstance(features, list) and features:
+                print(f"  Found {len(features)} features in feature_list.json:")
+                for i, feature in enumerate(features[:5]):
+                    print(f"    - {feature}")
+                if len(features) > 5:
+                    print("    ...")
+            else:
+                print("  feature_list.json is empty or invalid.")
+        except json.JSONDecodeError:
+            print("  Error: Could not parse feature_list.json.")
+        except Exception as e:
+            print(f"  An error occurred: {e}")
+    else:
+        print("  No feature_list.json found.")
+
+    # 3. Last Agent Run
+    print("\n[ Last Agent Run ]")
+    run_id_file = project_dir / ".agent_run_id"
+    if run_id_file.exists():
+        run_id = run_id_file.read_text().strip()
+        print(f"  Last Run ID: {run_id}")
+        repo_root = Path(__file__).parent
+        # Use a relative path for display if possible, but resolve the actual path for reading
+        log_file_path = repo_root / f"agents/logs/{run_id}.log"
+
+        try:
+            display_path = log_file_path.relative_to(project_dir.parent)
+        except ValueError:
+            display_path = log_file_path
+
+        if log_file_path.exists():
+            try:
+                lines = []
+                with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    # More robust way to get last N lines without seeking on special files (like in /proc)
+                    all_lines = f.readlines()
+                    lines = all_lines[-5:]
+
+                if lines:
+                    print("  Log Snippet (last 5 lines):")
+                    for line in lines:
+                        print(f"    {line.strip()}")
+                else:
+                    print("  Log file is empty.")
+            except Exception as e:
+                print(f"  Error reading log file: {e}")
+        else:
+            print(f"  Log file not found at: {display_path}")
+    else:
+        print("  No .agent_run_id file found. Has the agent been run yet?")
+
+    # 4. Git Status
+    print("\n[ Git Status ]")
+    try:
+        # Using absolute path for git to comply with Bandit B607
+        git_path = "/usr/bin/git"
+        # Check if it's a git repo first
+        check_repo = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True
+        )
+        if check_repo.returncode == 0 and check_repo.stdout.strip() == "true":
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if result.stdout:
+                print("  Uncommitted changes detected:")
+                for line in result.stdout.strip().split('\n'):
+                    print(f"    {line}")
+            else:
+                print("  ✅ Working directory is clean.")
+        else:
+            print("  Directory is not a Git repository.")
+
+    except FileNotFoundError:
+        print("  Git not found. Cannot determine repository status.")
+    except subprocess.CalledProcessError as e:
+        print(f"  Error checking git status: {e.stderr}")
+    except Exception as e:
+        print(f"  An unexpected error occurred while checking git status: {e}")
+
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -780,6 +890,15 @@ def parse_args():
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
+    # Subparser for 'status'
+    parser_status = subparsers.add_parser("status", help="Show the current status of the agent project")
+    parser_status.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check status for (default: current directory)",
+    )
+
     # Subparser for 'clean'
     parser_clean = subparsers.add_parser("clean", help="Move agent-generated artifacts to a trash directory")
     parser_clean.add_argument(
@@ -915,6 +1034,11 @@ async def main():
     # Handle `list-agents` command
     if args.command == "list-agents":
         run_list_agents()
+        return
+
+    # Handle `status` command
+    if args.command == "status":
+        run_status(args)
         return
 
     # Initialize Agent Client

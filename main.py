@@ -334,8 +334,165 @@ def run_archive(args):
     sys.exit(0)
 
 
+def _trash_list(trash_base_dir):
+    """Helper function to list trash archives."""
+    print(f"--- Trash Archives in: {trash_base_dir} ---")
+    try:
+        archives = sorted([d for d in trash_base_dir.iterdir() if d.is_dir()], reverse=True)
+    except OSError as e:
+        print(f"Error reading trash directory: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not archives:
+        print("Trash is empty.")
+        sys.exit(0)
+
+    for i, archive_dir in enumerate(archives):
+        latest_marker = " (latest)" if i == 0 else ""
+        print(f"\n[{i+1}] {archive_dir.name}{latest_marker}")
+        try:
+            contents = list(archive_dir.iterdir())
+            if not contents:
+                print("    (empty)")
+            else:
+                for item in contents:
+                    is_dir = "/ (dir)" if item.is_dir() else ""
+                    print(f"    - {item.name}{is_dir}")
+        except OSError as e:
+            print(f"    Error reading archive contents: {e}", file=sys.stderr)
+    sys.exit(0)
+
+
+def _trash_restore(args, trash_base_dir):
+    """Helper function to restore from trash."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Restoring from trash in: {project_dir} ---")
+    archive_to_restore = None
+    try:
+        archives = sorted([d for d in trash_base_dir.iterdir() if d.is_dir()])
+        if not archives:
+            print("Trash is empty. Nothing to restore.")
+            sys.exit(0)
+
+        if args.archive_name:
+            target_path = trash_base_dir / args.archive_name
+            if not target_path.is_dir():
+                print(f"❌ Error: Archive '{args.archive_name}' not found.")
+                sys.exit(1)
+            archive_to_restore = target_path
+        else:
+            archive_to_restore = archives[-1]
+    except (OSError, ValueError) as e:
+        print(f"Error accessing trash archives: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Found archive to restore: {archive_to_restore.name}")
+
+    artifacts = list(archive_to_restore.iterdir())
+    if not artifacts:
+        print("Archive is empty. Nothing to restore.")
+        archive_to_restore.rmdir()
+        print(f"Removed empty archive: {archive_to_restore.name}")
+        sys.exit(0)
+
+    conflicts = [p.name for p in artifacts if (project_dir / p.name).exists()]
+    if conflicts:
+        print("\n❌ Error: The following files already exist in the project directory:")
+        for f in conflicts:
+            print(f"  - {f}")
+        print("Please move or delete these conflicting files before running restore.")
+        sys.exit(1)
+
+    print("\nThe following artifacts will be restored:")
+    for artifact in artifacts:
+        print(f"  - {artifact.name}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nRestoring artifacts...")
+    try:
+        for artifact in artifacts:
+            dest = project_dir / artifact.name
+            shutil.move(str(artifact), str(dest))
+            print(f"Restored: {artifact.name}")
+        archive_to_restore.rmdir()
+        print(f"Removed empty archive: {archive_to_restore.name}")
+    except OSError as e:
+        print(f"Error during restore: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n✅ Restore complete.")
+    sys.exit(0)
+
+
+def _trash_clear(args, trash_base_dir):
+    """Helper function to clear trash."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Clearing trash in: {project_dir} ---")
+    if args.all:
+        if not args.yes:
+            print(f"This will permanently delete the entire '.agent_trash' directory and all its contents.")
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+        try:
+            shutil.rmtree(trash_base_dir)
+            print("✅ Trash successfully emptied.")
+        except OSError as e:
+            print(f"Error emptying trash: {e}", file=sys.stderr)
+            sys.exit(1)
+    elif args.archive_name:
+        target_path = trash_base_dir / args.archive_name
+        if not target_path.is_dir():
+            print(f"❌ Error: Archive '{args.archive_name}' not found.")
+            sys.exit(1)
+
+        if not args.yes:
+            print(f"This will permanently delete the archive: {args.archive_name}")
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+        try:
+            shutil.rmtree(target_path)
+            print(f"✅ Archive '{args.archive_name}' deleted.")
+        except OSError as e:
+            print(f"Error deleting archive: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("Error: 'clear' action requires either an archive name or the --all flag.")
+        sys.exit(1)
+    sys.exit(0)
+
+
+def run_trash(args):
+    """Manages the agent trash directory."""
+    project_dir = args.project_dir.resolve()
+    trash_base_dir = project_dir / ".agent_trash"
+
+    if not trash_base_dir.exists() or not trash_base_dir.is_dir():
+        print("Trash directory (.agent_trash) not found. Nothing to do.")
+        sys.exit(0)
+
+    if args.action == "list":
+        _trash_list(trash_base_dir)
+    elif args.action == "restore":
+        _trash_restore(args, trash_base_dir)
+    elif args.action == "clear":
+        _trash_clear(args, trash_base_dir)
+
+
 def run_empty_trash(args):
     """Permanently deletes the .agent_trash directory."""
+    print("Warning: The 'empty-trash' command is deprecated and will be removed in a future version. "
+          "Use 'trash clear --all' instead.", file=sys.stderr)
     import shutil
     project_dir = args.project_dir.resolve()
     trash_dir = project_dir / ".agent_trash"
@@ -380,6 +537,8 @@ def run_empty_trash(args):
 
 def run_restore(args):
     """Restores agent-generated artifacts from the most recent trash directory."""
+    print("Warning: The 'restore' command is deprecated and will be removed in a future version. "
+          "Use 'trash restore' instead.", file=sys.stderr)
     import shutil
     project_dir = args.project_dir.resolve()
     trash_base_dir = project_dir / ".agent_trash"
@@ -628,7 +787,7 @@ def parse_args():
     )
 
     # Subparser for 'empty-trash'
-    parser_empty_trash = subparsers.add_parser("empty-trash", help="Permanently delete all items in the agent trash directory")
+    parser_empty_trash = subparsers.add_parser("empty-trash", help="DEPRECATED: Use 'trash clear --all' instead.")
     parser_empty_trash.add_argument(
         "-p", "--project-dir",
         type=Path,
@@ -642,7 +801,7 @@ def parse_args():
     )
 
     # Subparser for 'restore'
-    parser_restore = subparsers.add_parser("restore", help="Restore artifacts from the most recent trash archive")
+    parser_restore = subparsers.add_parser("restore", help="DEPRECATED: Use 'trash restore' instead.")
     parser_restore.add_argument(
         "-p", "--project-dir",
         type=Path,
@@ -653,6 +812,35 @@ def parse_args():
         "-y", "--yes",
         action="store_true",
         help="Skip confirmation prompt",
+    )
+
+    # Subparser for 'trash'
+    parser_trash = subparsers.add_parser("trash", help="Manage the agent trash directory")
+    parser_trash.add_argument(
+        "action",
+        choices=["list", "restore", "clear"],
+        help="Action to perform on the trash",
+    )
+    parser_trash.add_argument(
+        "archive_name",
+        nargs="?",
+        help="The name of the trash archive to restore or clear (e.g., trash-2023-10-27_12-30-00)",
+    )
+    parser_trash.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the trash is located",
+    )
+    parser_trash.add_argument(
+        "--all",
+        action="store_true",
+        help="Option for 'clear' action to remove all archives",
+    )
+    parser_trash.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts",
     )
 
     return parser.parse_args()
@@ -689,6 +877,11 @@ async def main():
     # Handle `restore` command
     if args.command == "restore":
         run_restore(args)
+        return
+
+    # Handle `trash` command
+    if args.command == "trash":
+        run_trash(args)
         return
 
     # Handle `list-agents` command

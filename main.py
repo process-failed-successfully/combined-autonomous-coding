@@ -159,6 +159,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the final configuration and exit without running the agent",
+    )
 
     return parser.parse_args()
 
@@ -220,6 +225,21 @@ async def main():
         # Docker-in-Docker
         dind_enabled=args.dind or file_config.get("dind_enabled", False),
     )
+
+    if args.dry_run:
+        import json
+        from dataclasses import asdict
+
+        # Convert Path objects to strings for JSON serialization
+        class PathEncoder(json.JSONEncoder):
+            def default(self, o):
+                if isinstance(o, Path):
+                    return str(o)
+                return super().default(o)
+
+        config_dict = asdict(config)
+        print(json.dumps(config_dict, indent=2, cls=PathEncoder))
+        sys.exit(0)
 
     # Initialize Database
     from shared.database import init_db

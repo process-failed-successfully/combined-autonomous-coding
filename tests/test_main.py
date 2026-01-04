@@ -67,6 +67,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_url = "http://test"
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
@@ -116,6 +117,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -150,6 +152,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -207,6 +210,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     async def test_main_dashboard_only_exit(self, mock_parse_args):
         args = MagicMock()
         args.dashboard_only = True
+        args.dry_run = False
         mock_parse_args.return_value = args
 
         with self.assertRaises(SystemExit) as cm:
@@ -221,6 +225,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
+        args.dry_run = False
         mock_parse_args.return_value = args
 
         # feature_list_path.exists() -> False (fresh)
@@ -260,6 +265,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = None
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -285,6 +291,42 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                     await main()
 
             # mock_cleaner.assert_called() - Obsolete as it's now handled in the agent loop
+
+    @patch("main.parse_args")
+    @patch("main.setup_logger")
+    @patch("sys.exit")
+    async def test_main_dry_run_exit(self, mock_exit, mock_setup_logger, mock_parse_args):
+        args = MagicMock()
+        args.project_dir = self.project_dir
+        args.spec = self.spec_file
+        args.dry_run = True
+        args.jira_ticket = None
+        args.jira_label = None
+        args.agent = "gemini"
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.no_stream = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.login = False
+        args.sprint = False
+        args.max_agents = 1
+        args.timeout = 600.0
+        args.max_error_wait = 600.0
+        args.dind = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_dashboard = False
+
+        mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
+
+        with patch("builtins.print") as mock_print:
+            await main()
+            mock_print.assert_called()
+            mock_exit.assert_called_with(0)
 
 
 if __name__ == "__main__":

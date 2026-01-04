@@ -10,6 +10,8 @@ import argparse
 import asyncio
 import sys
 import os
+import json
+from dataclasses import asdict
 from pathlib import Path
 
 from shared.config import Config
@@ -159,6 +161,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the final configuration as JSON and exit",
+    )
 
     return parser.parse_args()
 
@@ -220,6 +227,19 @@ async def main():
         # Docker-in-Docker
         dind_enabled=args.dind or file_config.get("dind_enabled", False),
     )
+
+    # DRY RUN LOGIC
+    if args.dry_run:
+        # Custom JSON encoder to handle Path objects
+        class PathEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, Path):
+                    return str(obj)
+                return json.JSONEncoder.default(self, obj)
+
+        print(json.dumps(asdict(config), indent=2, cls=PathEncoder))
+        sys.exit(0)
+
 
     # Initialize Database
     from shared.database import init_db

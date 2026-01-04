@@ -253,6 +253,60 @@ def run_clean(args):
     sys.exit(0)
 
 
+def run_archive(args):
+    """Archives agent-generated artifacts to a timestamped directory."""
+    import shutil
+    from datetime import datetime
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Archiving artifacts in project directory: {project_dir} ---")
+
+    # List of agent-generated files and directories to be archived
+    artifacts_to_archive = [
+        ".agent_db.sqlite",
+        "COMPLETED",
+        "QA_PASSED",
+        "PROJECT_SIGNED_OFF",
+        "feature_list.json",
+        "qa_summary.txt",
+        "reviewer_report.txt",
+        "cleanup_report.txt",
+        "final_metrics.txt",
+        "temp_files.txt",
+        "dashboard_state.json",
+        "worktrees/",  # Directory
+    ]
+
+    existing_artifacts = []
+    for artifact in artifacts_to_archive:
+        path = project_dir / artifact
+        if path.exists():
+            existing_artifacts.append(path)
+
+    if not existing_artifacts:
+        print("No agent-generated artifacts found to archive.")
+        sys.exit(0)
+
+    # Create archive directory
+    archive_base_dir = project_dir / ".agent_archives"
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    archive_dir = archive_base_dir / f"archive-{timestamp}"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Archiving to: {archive_dir}")
+
+    for path in existing_artifacts:
+        try:
+            dest = archive_dir / path.name
+            shutil.move(str(path), str(dest))
+            print(f"Archived: {path.relative_to(project_dir)}")
+        except OSError as e:
+            print(f"Error archiving {path}: {e}", file=sys.stderr)
+
+    print(f"\n✅ Archiving complete. Artifacts moved to {archive_dir.relative_to(project_dir)}")
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -417,6 +471,15 @@ def parse_args():
         help="Skip confirmation prompt and automatically delete artifacts",
     )
 
+    # Subparser for 'archive'
+    parser_archive = subparsers.add_parser("archive", help="Archive all agent-generated artifacts to a timestamped directory")
+    parser_archive.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to clean (default: current directory)",
+    )
+
     return parser.parse_args()
 
 
@@ -436,6 +499,11 @@ async def main():
     # Handle `clean` command
     if args.command == "clean":
         run_clean(args)
+        return
+
+    # Handle `archive` command
+    if args.command == "archive":
+        run_archive(args)
         return
 
     # Handle `list-agents` command

@@ -1,3 +1,13 @@
+# ⚠️ DEPRECATION NOTICE ⚠️
+
+# THIS REPOSITORY HAS BEEN REPLACED
+
+**Please switch to [https://github.com/process-failed-successfully/recac](https://github.com/process-failed-successfully/recac) to take advantage of Go CLI and TUI libraries.**
+
+**Going forward, this repository will be maintained by agentic AI.**
+
+---
+
 # Combined Autonomous Coding Agent
 
 [![Robust CI](https://github.com/process-failed-successfully/combined-autonomous-coding/actions/workflows/ci.yml/badge.svg)](https://github.com/process-failed-successfully/combined-autonomous-coding/actions/workflows/ci.yml)

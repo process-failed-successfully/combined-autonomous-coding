@@ -103,6 +103,13 @@ def run_validate():
         sys.exit(0)
 
 
+def run_show_config(config):
+    """Prints the final resolved configuration as JSON and exits."""
+    from shared.utils import EnhancedJSONEncoder
+    print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
+    sys.exit(0)
+
+
 def run_list_agents():
     """Prints a list of available agents and their descriptions."""
     print("--- Available Agents ---")
@@ -327,7 +334,7 @@ def parse_args():
     adv_group.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print the final configuration and exit without running the agent.",
+        help="DEPRECATED: Use the 'show-config' command instead. Prints the final configuration and exits.",
     )
 
     # Subparsers for commands like 'configure'
@@ -335,6 +342,7 @@ def parse_args():
     parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
+    parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
     return parser.parse_args()
 
@@ -453,11 +461,13 @@ async def main():
     # Let's setup a basic console logger first?
     # existing setup_logger requires a file. We will update it later.
 
-    # --dry-run implementation
+    # Handle `show-config` command and deprecated `--dry-run`
+    if args.command == "show-config":
+        run_show_config(config)
+
     if args.dry_run:
-        from shared.utils import EnhancedJSONEncoder
-        print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
-        sys.exit(0)
+        print("Warning: --dry-run is deprecated. Please use the 'show-config' command instead.", file=sys.stderr)
+        run_show_config(config)
 
     # JIRA LOGIC
     jira_client = None

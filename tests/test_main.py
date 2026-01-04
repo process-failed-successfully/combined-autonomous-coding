@@ -332,6 +332,90 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
 
             # mock_cleaner.assert_called() - Obsolete as it's now handled in the agent loop
 
+    @patch("main.parse_args")
+    @patch("shared.config_loader.ensure_config_exists")
+    @patch("shared.config_loader.load_config_from_file")
+    @patch("shared.database.init_db")
+    @patch("json.dumps", return_value="{}")
+    async def test_main_show_config_command(self, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
+        args = MagicMock()
+        args.command = "show-config"
+        args.dry_run = False
+        args.profile = None
+        args.project_dir = self.project_dir
+        args.agent = 'gemini'
+        args.model = None
+        args.max_iterations = None
+        args.spec = self.spec_file
+        args.verbose = False
+        args.no_stream = True
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.login = False
+        args.timeout = None
+        args.max_error_wait = None
+        args.sprint = False
+        args.max_agents = 1
+        args.jira_ticket = None
+        args.jira_label = None
+        args.dind = False
+        args.no_dashboard = True
+        args.dashboard_url = None
+
+        mock_parse_args.return_value = args
+        mock_load_config.return_value = {}
+
+        with self.assertRaises(SystemExit) as cm:
+            await main()
+
+        self.assertEqual(cm.exception.code, 0)
+        mock_json_dumps.assert_called_once()
+
+    @patch("main.parse_args")
+    @patch("shared.config_loader.ensure_config_exists")
+    @patch("shared.config_loader.load_config_from_file")
+    @patch("shared.database.init_db")
+    @patch("json.dumps", return_value="{}")
+    @patch("sys.stderr")
+    async def test_main_dry_run_deprecation(self, mock_stderr, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
+        args = MagicMock()
+        args.command = None
+        args.dry_run = True
+        args.profile = None
+        args.project_dir = self.project_dir
+        args.agent = 'gemini'
+        args.model = None
+        args.max_iterations = None
+        args.spec = self.spec_file
+        args.verbose = False
+        args.no_stream = True
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.login = False
+        args.timeout = None
+        args.max_error_wait = None
+        args.sprint = False
+        args.max_agents = 1
+        args.jira_ticket = None
+        args.jira_label = None
+        args.dind = False
+        args.no_dashboard = True
+        args.dashboard_url = None
+
+        mock_parse_args.return_value = args
+        mock_load_config.return_value = {}
+
+        with self.assertRaises(SystemExit) as cm:
+            await main()
+
+        self.assertEqual(cm.exception.code, 0)
+        mock_json_dumps.assert_called_once()
+        self.assertTrue(any("Warning: --dry-run is deprecated" in call.args[0] for call in mock_stderr.write.call_args_list))
+
 
 if __name__ == "__main__":
     unittest.main()

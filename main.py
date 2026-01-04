@@ -377,9 +377,29 @@ def _trash_list(trash_base_dir):
             if not contents:
                 print("    (empty)")
             else:
+                log_file = None
                 for item in contents:
                     is_dir = "/ (dir)" if item.is_dir() else ""
                     print(f"    - {item.name}{is_dir}")
+                    if item.is_file() and item.name.endswith('.log'):
+                        log_file = item
+
+                if log_file:
+                    print("    --- Log Summary (last 15 lines) ---")
+                    try:
+                        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                            lines = f.readlines()
+
+                        # Get the last 15 lines and strip them
+                        summary_lines = [line.strip() for line in lines[-15:]]
+
+                        for line in summary_lines:
+                            # Truncate long lines for readability
+                            display_line = (line[:100] + '...') if len(line) > 100 else line
+                            print(f"      {display_line}")
+                    except Exception as e:
+                        print(f"      <Could not read log summary: {e}>")
+
         except OSError as e:
             print(f"    Error reading archive contents: {e}", file=sys.stderr)
     sys.exit(0)

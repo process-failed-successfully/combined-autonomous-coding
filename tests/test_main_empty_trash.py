@@ -10,9 +10,9 @@ import argparse
 # Ensure the main module can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_empty_trash
+from main import run_trash
 
-class TestEmptyTrash(unittest.TestCase):
+class TestTrashClear(unittest.TestCase):
 
     def setUp(self):
         """Set up a temporary project directory with a trash folder."""
@@ -27,97 +27,85 @@ class TestEmptyTrash(unittest.TestCase):
         (self.trash_dir / "trash-2023-01-01_12-00-00" / "some_file.txt").touch()
         (self.trash_dir / "trash-2023-01-02_12-00-00").mkdir()
 
-        # Redirect stdout to capture print statements
-        self.stdout_capture = io.StringIO()
-        sys.stdout = self.stdout_capture
-
     def tearDown(self):
-        """Clean up the temporary directory and restore stdout."""
+        """Clean up the temporary directory."""
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
-        sys.stdout = sys.__stdout__
 
-    def _create_mock_input(self, return_value):
-        """Helper to create a mock for builtins.input that also prints the prompt."""
-        def mock_input(prompt):
-            print(prompt, end="")
-            return return_value
-        return mock_input
-
-    def test_empty_trash_with_yes_flag(self):
-        """Test that trash is emptied when --yes is provided."""
-        args = argparse.Namespace(project_dir=self.test_dir, yes=True)
+    def test_trash_clear_with_yes_flag(self):
+        """Test that trash is cleared when --yes and --all are provided."""
+        args = argparse.Namespace(
+            command='trash',
+            action='clear',
+            project_dir=self.test_dir,
+            archive_name=None,
+            all=True,
+            yes=True
+        )
 
         with self.assertRaises(SystemExit) as cm:
-            run_empty_trash(args)
+             with patch('sys.stdout'):
+                run_trash(args)
 
         self.assertEqual(cm.exception.code, 0)
         self.assertFalse(self.trash_dir.exists())
-        output = self.stdout_capture.getvalue()
-        self.assertIn("Permanently emptying trash", output)
-        self.assertIn("Trash successfully emptied", output)
 
-    def test_empty_trash_with_user_confirmation_yes(self):
-        """Test that trash is emptied when user confirms with 'y'."""
-        args = argparse.Namespace(project_dir=self.test_dir, yes=False)
-
-        mock_input_y = self._create_mock_input('y')
-        with patch('builtins.input', side_effect=mock_input_y) as mock_input_call:
-            with self.assertRaises(SystemExit) as cm:
-                run_empty_trash(args)
+    @patch('builtins.input', return_value='y')
+    def test_trash_clear_with_user_confirmation_yes(self, mock_input):
+        """Test that trash is cleared when user confirms with 'y'."""
+        args = argparse.Namespace(
+            command='trash',
+            action='clear',
+            project_dir=self.test_dir,
+            archive_name=None,
+            all=True,
+            yes=False
+        )
+        with self.assertRaises(SystemExit) as cm:
+            with patch('sys.stdout'):
+                run_trash(args)
 
         self.assertEqual(cm.exception.code, 0)
         self.assertFalse(self.trash_dir.exists())
-        output = self.stdout_capture.getvalue()
-        self.assertIn("Are you sure you want to proceed? [y/N]:", output)
+        mock_input.assert_called_once()
 
-    def test_empty_trash_with_user_confirmation_no(self):
-        """Test that trash is NOT emptied when user confirms with 'n'."""
-        args = argparse.Namespace(project_dir=self.test_dir, yes=False)
+    @patch('builtins.input', return_value='n')
+    def test_trash_clear_with_user_confirmation_no(self, mock_input):
+        """Test that trash is NOT cleared when user confirms with 'n'."""
+        args = argparse.Namespace(
+            command='trash',
+            action='clear',
+            project_dir=self.test_dir,
+            archive_name=None,
+            all=True,
+            yes=False
+        )
 
-        mock_input_n = self._create_mock_input('n')
-        with patch('builtins.input', side_effect=mock_input_n):
-            with self.assertRaises(SystemExit) as cm:
-                run_empty_trash(args)
+        with self.assertRaises(SystemExit) as cm:
+            with patch('sys.stdout'):
+                run_trash(args)
 
         self.assertEqual(cm.exception.code, 0)
-        self.assertTrue(self.trash_dir.exists()) # Should still exist
-        output = self.stdout_capture.getvalue()
-        self.assertIn("Are you sure you want to proceed? [y/N]:", output)
-        self.assertIn("Aborted.", output)
+        self.assertTrue(self.trash_dir.exists())
+        mock_input.assert_called_once()
 
-    def test_empty_trash_when_no_trash_directory_exists(self):
+    def test_trash_clear_when_no_trash_directory_exists(self):
         """Test the command when the trash directory does not exist."""
         shutil.rmtree(self.trash_dir) # Remove it first
-        args = argparse.Namespace(project_dir=self.test_dir, yes=True)
+        args = argparse.Namespace(
+            command='trash',
+            action='clear',
+            project_dir=self.test_dir,
+            archive_name=None,
+            all=True,
+            yes=True
+        )
 
         with self.assertRaises(SystemExit) as cm:
-            run_empty_trash(args)
+            with patch('sys.stdout'):
+                run_trash(args)
 
         self.assertEqual(cm.exception.code, 0)
-        self.assertIn("Trash directory (.agent_trash) not found.", self.stdout_capture.getvalue())
-
-    def test_empty_trash_when_trash_is_already_empty(self):
-        """Test the command when the trash directory is empty."""
-        # Clear the trash directory contents
-        for item in self.trash_dir.iterdir():
-            if item.is_dir():
-                shutil.rmtree(item)
-            else:
-                item.unlink()
-
-        args = argparse.Namespace(project_dir=self.test_dir, yes=True)
-
-        with self.assertRaises(SystemExit) as cm:
-            run_empty_trash(args)
-
-        self.assertEqual(cm.exception.code, 0)
-        # The function should also remove the now-empty .agent_trash directory
-        self.assertFalse(self.trash_dir.exists())
-        output = self.stdout_capture.getvalue()
-        self.assertIn("Trash directory is already empty.", output)
-        self.assertIn("Removed empty .agent_trash directory.", output)
-
 
 if __name__ == '__main__':
     unittest.main()

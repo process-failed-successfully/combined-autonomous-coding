@@ -2,6 +2,7 @@ import requests
 import time
 import concurrent.futures
 import threading
+from typing import Callable, List, Dict, Any
 
 # We'll reuse these dataclasses effectively
 from shared.state import AgentControl
@@ -26,6 +27,13 @@ class AgentClient:
         )
         self._heartbeat_thread.start()
 
+        # Callbacks for state updates (e.g. for TUI)
+        self._on_state_update: List[Callable[[Dict[str, Any]], None]] = []
+
+    def add_state_listener(self, callback: Callable[[Dict[str, Any]], None]):
+        """Add a callback to be invoked when state is reported."""
+        self._on_state_update.append(callback)
+
     def _heartbeat_loop(self):
         """
         Sends a heartbeat every 5 seconds to keep the agent 'online'.
@@ -47,6 +55,13 @@ class AgentClient:
         Send state update to dashboard (non-blocking).
         """
         self._executor.submit(self._do_report_state, kwargs)
+
+        # Notify local listeners immediately
+        for cb in self._on_state_update:
+            try:
+                cb(kwargs)
+            except Exception:
+                pass
 
     def _do_report_state(self, kwargs):
         try:

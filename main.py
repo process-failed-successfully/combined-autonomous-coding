@@ -18,8 +18,6 @@ from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
-# We import these lazily or handled via dispatch to avoid circular deps if any,
-# though structure should be clean.
 from agents.gemini import run_autonomous_agent as run_gemini
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
@@ -118,6 +116,11 @@ def parse_args():
         action="store_true",
         help="Run the agent in login/authentication mode (exit after login)",
     )
+    dash_group.add_argument(
+        "--tui",
+        action="store_true",
+        help="Run with Text User Interface (TUI)",
+    )
 
     # Sprint Mode
     sprint_group = parser.add_argument_group("Sprint Mode")
@@ -175,7 +178,6 @@ async def main():
         project_name = args.project_dir.resolve().name
 
     # Load Configuration from File
-    # Priority resolved in config_loader: ./ > XDG > Legacy
     ensure_config_exists()
     file_config = load_config_from_file()
 
@@ -223,7 +225,6 @@ async def main():
 
     # Initialize Database
     from shared.database import init_db
-    # Ensure project dir exists for DB creation
     config.project_dir.mkdir(parents=True, exist_ok=True)
     init_db(config.project_dir / ".agent_db.sqlite")
 
@@ -243,104 +244,81 @@ async def main():
 
     if args.jira_ticket or args.jira_label:
         if not jira_cfg_data:
-            print("Error: Jira arguments provided but no Jira configuration found (config file or env vars).", file=sys.stderr)
-            print("Please set JIRA_URL, JIRA_EMAIL, JIRA_TOKEN or configure agent_config.yaml", file=sys.stderr)
+            print("Error: Jira arguments provided but no Jira configuration found.", file=sys.stderr)
             sys.exit(1)
         config.jira = JiraConfig(**jira_cfg_data)
 
-    # Correction for boolean flags initialized with 'store_true' (default False)
     if file_config.get("run_manager_first"):
         config.run_manager_first = True
 
-    # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
+    # SETUP LOGGER
     repo_root = Path(__file__).parent
     agents_log_dir = repo_root / "agents/logs"
     agents_log_dir.mkdir(parents=True, exist_ok=True)
 
-    # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
-    # But for now, we can use a generic one or wait.
-    # Let's setup a basic console logger first?
-    # existing setup_logger requires a file. We will update it later.
-
     # JIRA LOGIC
     jira_client = None
-    # jira_ticket = None  # Unused
     jira_spec_content = ""
 
     if config.jira and (args.jira_ticket or args.jira_label):
         from shared.jira_client import JiraClient
-
         try:
             jira_client = JiraClient(config.jira)
-
             if args.jira_ticket:
                 issue = jira_client.get_issue(args.jira_ticket)
             elif args.jira_label:
                 issue = jira_client.get_first_todo_by_label(args.jira_label)
 
             if issue:
-                # jira_ticket = issue  # Unused
                 print(f"Working on Jira Ticket: {issue.key} - {issue.fields.summary}")
-
-                # Parse Description (for context only)
                 desc = issue.fields.description or ""
-
-                # Construct Spec
                 jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{desc}"
                 config.jira_ticket_key = issue.key
                 config.jira_spec_content = jira_spec_content
                 project_name = issue.key
 
-                # Transition to In Progress (default 'Start' status)
                 start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
                 jira_client.transition_issue(issue.key, start_status)
-
             else:
                 print("No suitable Jira ticket found.")
                 sys.exit(0)
-
         except Exception as e:
             print(f"Jira Integration Error: {e}", file=sys.stderr)
             sys.exit(1)
 
-    # Read spec content for ID generation
+    # Generate Agent ID
     spec_content = ""
     if jira_spec_content:
         spec_content = jira_spec_content
     elif args.spec and args.spec.exists():
-        try:
-            spec_content = args.spec.read_text()
-        except Exception as e:
-            print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
+        spec_content = args.spec.read_text()
 
-    # Generate deterministic ID
     agent_id = generate_agent_id(project_name, spec_content, args.agent)
     config.agent_id = agent_id
 
     log_file = agents_log_dir / f"{agent_id}.log"
 
-    # Configure Root Logger to capture all module logs (e.g. shared.git)
-    logger = setup_logger(name="", log_file=log_file, verbose=args.verbose)
+    # Configure Logger
+    # If TUI is enabled, we disable console output here because the TUI app will handle it.
+    logger = setup_logger(
+        name="",
+        log_file=log_file,
+        verbose=args.verbose,
+        console_output=not args.tui
+    )
 
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
 
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
 
-    # Check spec requirement for fresh projects (Updated for Jira)
     is_fresh = not config.feature_list_path.exists()
     if is_fresh and not args.spec and not jira_spec_content:
-        logger.error(
-            "Error: --spec argument or --jira-ticket is required for new projects!"
-        )
+        logger.error("Error: --spec argument or --jira-ticket is required for new projects!")
         sys.exit(1)
 
-    # Git Safety
-    # Ensure we are on a safe branch before starting any agent work
-    jira_key = config.jira_ticket_key if config.jira else None
-    ensure_git_safe(args.project_dir, ticket_key=jira_key)
+    ensure_git_safe(args.project_dir, ticket_key=config.jira_ticket_key if config.jira else None)
 
-    # Git Authentication (Env Var Check)
     git_token = os.environ.get("GIT_TOKEN")
     if git_token:
         from shared.git import configure_git_auth
@@ -348,39 +326,47 @@ async def main():
         git_user = os.environ.get("GIT_USERNAME", "x-access-token")
         configure_git_auth(git_token, git_host, git_user)
 
-    # Dispatch
-    try:
-        if config.sprint_mode:
-            logger.info("Running in SPRINT MODE")
-            await run_sprint(config, agent_client=client)
-            return
+    # Agent Execution Logic
+    async def run_agent_task():
+        try:
+            if config.sprint_mode:
+                logger.info("Running in SPRINT MODE")
+                await run_sprint(config, agent_client=client)
+            elif args.agent == "gemini":
+                await run_gemini(config, agent_client=client)
+            elif args.agent == "cursor":
+                await run_cursor(config, agent_client=client)
+            elif args.agent == "local":
+                await run_local(config, agent_client=client)
+            elif args.agent == "openrouter":
+                await run_openrouter(config, agent_client=client)
+        except KeyboardInterrupt:
+            logger.info("\nExecution interrupted by user.")
+        except Exception as e:
+            logger.exception(f"Fatal error: {e}")
+            # In TUI mode, we might want to keep the app open to see the error,
+            # but usually we just log and exit or let the TUI show the error.
+            # If we re-raise, the TUI worker might catch it.
+            raise
 
-        if args.agent == "gemini":
-            await run_gemini(config, agent_client=client)
-        elif args.agent == "cursor":
-            await run_cursor(config, agent_client=client)
-        elif args.agent == "local":
-            await run_local(config, agent_client=client)
-        elif args.agent == "openrouter":
-            await run_openrouter(config, agent_client=client)
-    except KeyboardInterrupt:
-        logger.info("\nExecution interrupted by user.")
-        sys.exit(0)
-    except Exception as e:
-        logger.exception(f"Fatal error: {e}")
-        sys.exit(1)
+        # Post-Execution Cleanup
+        if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
+            if config.jira and config.jira_ticket_key:
+                from shared.workflow import complete_jira_ticket
+                await complete_jira_ticket(config)
+            logger.info("Project signed off. Finalizing...")
 
-    # Post-Execution Cleanup
-    # If project is signed off, run the completion flow and cleaner
-    if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
-        # Final safety check for Jira completion (in case iteration loop didn't hit it)
-        if config.jira and config.jira_ticket_key:
-            from shared.workflow import complete_jira_ticket
-            await complete_jira_ticket(config)
-
-        logger.info("Project signed off. Finalizing...")
-        # note: the autonomous loop itself now handles triggering the cleaner agent
-        # if cleanup_report.txt is missing.
+    # Launch
+    if args.tui:
+        from ui.tui import AgentTui
+        app = AgentTui(config, client, run_agent_task(), logger)
+        # Textual runs its own event loop, so we cannot run it inside the existing asyncio loop
+        # But we are already inside `asyncio.run(main())`.
+        # Textual `app.run()` is async-aware but typically expects to control the loop or be awaited if async.
+        # Since we are in async main, we should use `await app.run_async()`.
+        await app.run_async()
+    else:
+        await run_agent_task()
 
 
 if __name__ == "__main__":

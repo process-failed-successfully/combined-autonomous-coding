@@ -27,3 +27,4 @@ jobs:
             - Do not just do "cleanup" or "documentation" unless it is critical. Focus on functional value.
           jules_api_key: ${{ secrets.JULES_API_KEY }}
           include_commit_log: true
+          starting_branch: master

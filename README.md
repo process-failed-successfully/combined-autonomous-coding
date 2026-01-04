@@ -106,6 +106,9 @@ The `start_agent` script passes arguments directly to the agent runner. Here are
 | `--manager-first`          | Run the Manager Agent _before_ the first coding session.                    | `False`                 |
 | `--jira-ticket [ID]`       | Use a Jira ticket as the work spec (e.g., `PROJ-123`).                      | None                    |
 | `--jira-label [Label]`     | Find and pick first 'To Do' ticket with this label.                         | None                    |
+| `clean`                    | Subcommand to manage agent-generated artifacts.                             | N/A                     |
+| `clean --archive`          | Archives artifacts to `.agent_archives/` instead of trashing.               | N/A                     |
+| `clean --force`            | Permanently deletes artifacts instead of moving them to `.agent_trash/`.      | N/A                     |
 
 ### Example: Custom Project Directory and Model
 

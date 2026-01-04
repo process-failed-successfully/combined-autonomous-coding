@@ -459,6 +459,27 @@ def generate_agent_id(project_name: str, spec_content: str, agent_type: str) -> 
     return f"{agent_type}_agent_{project_name}_{short_hash}"
 
 
+import json
+from dataclasses import asdict, is_dataclass
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if is_dataclass(o):
+            # For dataclasses, convert them to a dict.
+            # We use a dict comprehension to recursively apply this logic.
+            return {f: self.default(getattr(o, f)) for f in o.__dataclass_fields__}
+        elif isinstance(o, Path):
+            return str(o)
+        else:
+            # For MagicMock, return a string representation
+            if "MagicMock" in str(type(o)):
+                return f"MagicMock(id={id(o)})"
+            try:
+                return super().default(o)
+            except TypeError:
+                return str(o)
+
+
 def sanitize_url(url: str) -> str:
     """Mask sensitive information (tokens) in a URL."""
     if not url:

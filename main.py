@@ -25,8 +25,10 @@ from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
 from agents.local import run_autonomous_agent as run_local
 from agents.openrouter import run_autonomous_agent as run_openrouter
+import json
 import yaml
 import platformdirs
+from dataclasses import asdict, is_dataclass
 
 # Agent Definitions
 AVAILABLE_AGENTS = {
@@ -317,6 +319,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the final configuration and exit without running the agent.",
+    )
 
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
@@ -440,6 +447,12 @@ async def main():
     # But for now, we can use a generic one or wait.
     # Let's setup a basic console logger first?
     # existing setup_logger requires a file. We will update it later.
+
+    # --dry-run implementation
+    if args.dry_run:
+        from shared.utils import EnhancedJSONEncoder
+        print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
+        sys.exit(0)
 
     # JIRA LOGIC
     jira_client = None

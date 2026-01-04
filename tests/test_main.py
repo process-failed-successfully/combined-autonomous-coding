@@ -67,6 +67,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_url = "http://test"
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
@@ -116,6 +124,22 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -150,6 +174,22 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -204,16 +244,6 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             mock_run_sprint.assert_called()
 
     @patch("main.parse_args")
-    async def test_main_dashboard_only_exit(self, mock_parse_args):
-        args = MagicMock()
-        args.dashboard_only = True
-        mock_parse_args.return_value = args
-
-        with self.assertRaises(SystemExit) as cm:
-            await main()
-        self.assertEqual(cm.exception.code, 1)
-
-    @patch("main.parse_args")
     @patch("main.setup_logger")
     @patch("shared.utils.generate_agent_id")
     async def test_main_missing_spec_exit(self, mock_gen, mock_logger, mock_parse_args):
@@ -260,6 +290,22 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = None
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())

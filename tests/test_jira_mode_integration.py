@@ -56,6 +56,12 @@ class TestJiraModeIntegration(unittest.TestCase):
         mock_args.timeout = 600.0
         mock_args.manager_first = False
         mock_args.login = False
+        mock_args.dry_run = False
+        mock_args.dind = False
+        mock_args.command = None
+        mock_args.no_dashboard = False
+        mock_args.dashboard_url = "http://localhost:7654"
+        mock_args.max_error_wait = None
 
         mock_parse_args.return_value = mock_args
 
@@ -151,6 +157,12 @@ class TestJiraModeIntegration(unittest.TestCase):
         mock_args.manager_model = None
         mock_args.manager_first = False
         mock_args.login = False
+        mock_args.dry_run = False
+        mock_args.dind = False
+        mock_args.command = None
+        mock_args.no_dashboard = False
+        mock_args.dashboard_url = "http://localhost:7654"
+        mock_args.max_error_wait = None
 
         mock_parse_args.return_value = mock_args
 

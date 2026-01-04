@@ -17,7 +17,6 @@ from pathlib import Path
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
-from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -349,6 +348,7 @@ async def main():
 
     # Load Configuration from File
     # Priority resolved in config_loader: ./ > XDG > Legacy
+    from shared.config_loader import load_config_from_file, ensure_config_exists
     ensure_config_exists()
     file_config = load_config_from_file()
 

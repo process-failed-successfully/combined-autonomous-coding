@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 import os
 from pathlib import Path
@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import io
 from contextlib import redirect_stdout
+import argparse
 
 # Ensure the main script can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -62,31 +63,54 @@ class TestMainCleanCommand(unittest.TestCase):
         """Remove the temporary directory."""
         shutil.rmtree(self.test_dir)
 
-    def test_clean_removes_agent_artifacts_only(self):
-        """Verify that only agent-generated files are deleted."""
-        args = MagicMock()
-        args.project_dir = self.project_path
-        args.yes = True  # Skip confirmation
+    def test_clean_moves_artifacts_to_trash_by_default(self):
+        """Verify that artifacts are moved to a trash directory by default."""
+        args = argparse.Namespace(project_dir=self.project_path, yes=True, force=False)
 
         with self.assertRaises(SystemExit) as cm:
             with patch('sys.stdout'):
                 run_clean(args)
         self.assertEqual(cm.exception.code, 0)
 
-        # Check that agent artifacts are deleted
+        for artifact in self.agent_artifacts:
+            self.assertFalse((self.project_path / artifact).exists(), f"{artifact} should have been moved")
+
+        for user_file in self.user_files:
+            self.assertTrue((self.project_path / user_file).exists(), f"{user_file} should NOT have been touched")
+
+        trash_dir = self.project_path / ".agent_trash"
+        self.assertTrue(trash_dir.is_dir())
+
+        trash_contents = list(trash_dir.iterdir())
+        self.assertEqual(len(trash_contents), 1)
+        timestamped_trash_dir = trash_contents[0]
+        self.assertTrue(timestamped_trash_dir.is_dir())
+
+        for artifact in self.agent_artifacts:
+            artifact_name = Path(artifact).name
+            self.assertTrue((timestamped_trash_dir / artifact_name).exists(), f"{artifact_name} should be in the trash directory")
+
+    def test_clean_with_force_removes_agent_artifacts_only(self):
+        """Verify that --force permanently deletes only agent-generated files."""
+        args = argparse.Namespace(project_dir=self.project_path, yes=True, force=True)
+
+        with self.assertRaises(SystemExit) as cm:
+            with patch('sys.stdout'):
+                run_clean(args)
+        self.assertEqual(cm.exception.code, 0)
+
         for artifact in self.agent_artifacts:
             self.assertFalse((self.project_path / artifact).exists(), f"{artifact} should have been deleted")
 
-        # Check that user files remain
         for user_file in self.user_files:
             self.assertTrue((self.project_path / user_file).exists(), f"{user_file} should NOT have been deleted")
 
+        self.assertFalse((self.project_path / ".agent_trash").exists())
+
     @patch('builtins.input', return_value='y')
-    def test_clean_with_user_confirmation_yes(self, mock_input):
-        """Test the interactive 'yes' confirmation."""
-        args = MagicMock()
-        args.project_dir = self.project_path
-        args.yes = False
+    def test_clean_with_user_confirmation_yes_moves_to_trash(self, mock_input):
+        """Test the interactive 'yes' confirmation moves artifacts to trash."""
+        args = argparse.Namespace(project_dir=self.project_path, yes=False, force=False)
 
         with self.assertRaises(SystemExit) as cm:
             with patch('sys.stdout'):
@@ -94,27 +118,25 @@ class TestMainCleanCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
 
         mock_input.assert_called_once()
-        self.assertFalse((self.project_path / "COMPLETED").exists(), "File should be deleted after 'y' confirmation")
+        self.assertFalse((self.project_path / "COMPLETED").exists(), "File should be moved after 'y' confirmation")
+        self.assertTrue((self.project_path / ".agent_trash").exists())
 
     @patch('builtins.input', return_value='n')
-    def test_clean_with_user_confirmation_no(self, mock_input):
-        """Test the interactive 'no' confirmation."""
-        args = MagicMock()
-        args.project_dir = self.project_path
-        args.yes = False
+    def test_clean_with_user_confirmation_no_aborts(self, mock_input):
+        """Test the interactive 'no' confirmation aborts the operation."""
+        args = argparse.Namespace(project_dir=self.project_path, yes=False, force=False)
 
         with patch('sys.stdout'), self.assertRaises(SystemExit) as cm:
             run_clean(args)
 
         self.assertEqual(cm.exception.code, 0)
         mock_input.assert_called_once()
-        self.assertTrue((self.project_path / "COMPLETED").exists(), "File should NOT be deleted after 'n' confirmation")
+        self.assertTrue((self.project_path / "COMPLETED").exists(), "File should NOT be moved after 'n' confirmation")
+        self.assertFalse((self.project_path / ".agent_trash").exists())
 
-    def test_clean_with_yes_flag_skips_confirmation(self):
-        """Test that the -y flag skips the confirmation prompt."""
-        args = MagicMock()
-        args.project_dir = self.project_path
-        args.yes = True
+    def test_clean_with_yes_flag_skips_confirmation_and_moves_to_trash(self):
+        """Test that -y skips confirmation and moves artifacts to trash."""
+        args = argparse.Namespace(project_dir=self.project_path, yes=True, force=False)
 
         with self.assertRaises(SystemExit) as cm:
             with patch('sys.stdout'), patch('builtins.input') as mock_input:
@@ -122,16 +144,13 @@ class TestMainCleanCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
 
         mock_input.assert_not_called()
-        self.assertFalse((self.project_path / "COMPLETED").exists(), "File should be deleted without confirmation")
+        self.assertFalse((self.project_path / "COMPLETED").exists(), "File should be moved without confirmation")
+        self.assertTrue((self.project_path / ".agent_trash").exists())
 
     def test_clean_on_directory_with_no_artifacts(self):
         """Test clean command on a directory with no agent artifacts."""
-        # Create a new empty directory
         clean_dir = Path(tempfile.mkdtemp())
-
-        args = MagicMock()
-        args.project_dir = clean_dir
-        args.yes = True
+        args = argparse.Namespace(project_dir=clean_dir, yes=True, force=False)
 
         f = io.StringIO()
         with redirect_stdout(f), self.assertRaises(SystemExit) as cm:

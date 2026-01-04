@@ -16,6 +16,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.database import init_db
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -159,6 +160,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the resolved configuration and exit without running the agent.",
+    )
 
     return parser.parse_args()
 
@@ -222,7 +228,6 @@ async def main():
     )
 
     # Initialize Database
-    from shared.database import init_db
     # Ensure project dir exists for DB creation
     config.project_dir.mkdir(parents=True, exist_ok=True)
     init_db(config.project_dir / ".agent_db.sqlite")
@@ -251,6 +256,23 @@ async def main():
     # Correction for boolean flags initialized with 'store_true' (default False)
     if file_config.get("run_manager_first"):
         config.run_manager_first = True
+
+    # Handle --dry-run
+    if args.dry_run:
+        import json
+        from dataclasses import asdict
+
+        # Convert dataclass to dict, handling Path objects
+        config_dict = asdict(config)
+        for key, value in config_dict.items():
+            if isinstance(value, Path):
+                config_dict[key] = str(value.resolve())
+            if key == 'jira' and value is not None:
+                # JiraConfig is also a dataclass
+                config_dict[key] = asdict(value)
+
+        print(json.dumps(config_dict, indent=2))
+        sys.exit(0)
 
     # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
     repo_root = Path(__file__).parent

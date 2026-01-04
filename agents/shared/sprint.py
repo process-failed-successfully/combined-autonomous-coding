@@ -10,8 +10,15 @@ from shared.agent_client import AgentClient
 from shared.notifications import NotificationManager
 from shared.telemetry import get_telemetry, init_telemetry
 from agents.gemini.client import GeminiClient
-from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_worker_prompt
-from agents.gemini.agent import run_agent_session as run_gemini_session
+from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_coding_prompt, get_initializer_prompt
+from agents.gemini.agent import run_agent_session as run_gemini_session, GeminiAgent
+from agents.shared.base_agent import BaseAgent
+from agents.openrouter.client import OpenRouterClient
+from agents.openrouter.agent import run_agent_session as run_openrouter_session
+from agents.local.client import LocalClient
+import shutil
+from agents.local.agent import run_agent_session as run_local_session
+from agents.shared.worktree_manager import WorktreeManager
 
 # Lazy import or dynamic import to avoid circular dep if possible,
 # but for now explicit import is fine if structure allows.
@@ -50,6 +57,36 @@ class SprintPlan:
     tasks: List[Task]
 
 
+
+def detect_runaway(text: str) -> bool:
+    """Detects if text contains excessive repetition of phrases."""
+    if not text or len(text) < 100:
+        return False
+        
+    words = text.split()
+    if len(words) < 20:
+        return False
+        
+    # Check for repeated sequences
+    # Simple heuristic: if the set of unique words is very small compared to length
+    unique_ratio = len(set(words)) / len(words)
+    if unique_ratio < 0.1: # e.g. 100 words, only 10 unique
+         return True
+         
+    # Check for direct phrase repetition (e.g. "foo bar foo bar foo bar")
+    # Taking chunks of 5 words
+    chunk_size = 5
+    if len(words) > chunk_size * 4:
+         chunk = tuple(words[:chunk_size])
+         repeats = 0
+         for i in range(0, len(words) - chunk_size, chunk_size):
+             if tuple(words[i:i+chunk_size]) == chunk:
+                 repeats += 1
+         if repeats > 5 and repeats > len(words) / (chunk_size * 1.5):
+             return True
+             
+    return False
+
 class SprintManager:
     def __init__(self, config: Config, agent_client=None):
         self.config = config
@@ -58,17 +95,24 @@ class SprintManager:
         self.plan: Optional[SprintPlan] = None
         self.tasks_by_id: Dict[str, Task] = {}
         self.running_tasks: Set[str] = set()
+        self.worktree_manager = WorktreeManager(config.project_dir)
 
         self.completed_tasks: Set[str] = set()
         self.failed_tasks: Set[str] = set()
+        self.rescued_tasks: Set[str] = set() # Tasks that failed but work was saved
 
-    def _get_agent_runner(self):
-        if self.config.agent_type == "cursor":
+    def _get_agent_runner(self, config: Optional[Config] = None):
+        cfg = config or self.config
+        if cfg.agent_type == "cursor":
             if CursorClient is None:
                 raise ValueError("Cursor Agent not available (ImportError).")
-            return CursorClient(self.config), run_cursor_session
+            return CursorClient(cfg), run_cursor_session
+        elif cfg.agent_type == "openrouter":
+            return OpenRouterClient(cfg), run_openrouter_session
+        elif cfg.agent_type == "local":
+            return LocalClient(cfg), run_local_session
         else:
-            return GeminiClient(self.config), run_gemini_session
+            return GeminiClient(cfg), run_gemini_session
 
     async def run_planning_phase(self):
         """Runs the Lead Agent to create the sprint plan."""
@@ -226,23 +270,65 @@ class SprintManager:
         # We share the main config but maybe we want separate logs?
         # For now, share config. Logging might get interleaved.
         # TODO: Thread-safe logging context?
+        
+        # 1. Isolation: Create Worktree
+        worktree_path = self.worktree_manager.create_worktree(task.id)
+        if not worktree_path:
+             logger.error(f"Failed to create worktree for {task.id}. Aborting")
+             task.status = "FAILED"
+             self.failed_tasks.add(task.id)
+             self.running_tasks.remove(task.id)
+             return
+
+        # 1.5 Context Copy
+        # Copy critical context files that might not be in git or have local changes
+        for filename in ["feature_list.json", "sprint_plan.json"]:
+             src = self.config.project_dir / filename
+             dst = worktree_path / filename
+             if src.exists():
+                 try:
+                     shutil.copy(src, dst)
+                 except Exception as e:
+                     logger.warning(f"Failed to copy {filename} to worktree: {e}")
+
+        # 2. Config Clone
+        # We need a shallow copy of config with updated project_dir
+        # Config is a dataclass, so replace() works if we were using it, but it's not frozen?
+        # It's a regular dataclass.
+        import copy
+        worker_config = copy.copy(self.config)
+        worker_config.project_dir = worktree_path
+        # Also need detailed update of paths derived from project_dir?
+        # NO, Config properties work dynamically based on project_dir.
+        # BUT feature_list_path is a property, good.
+        # However, what about initial files?
+        # If worktree is created, it has the files.
+        # BUT if the main repo has `app_spec.txt`, the worktree will too.
+        
+        # Note: We must NOT pass the main self.config to the worker logic if it relies on path.
+        # We assume _get_agent_runner uses the passed config or we need to instantiate new clients?
+        # _get_agent_runner uses self.config. We need to pass the new config.
+        # Refactor _get_agent_runner to accept config?
+        # Or just instantiate client here.
+        
+        client, session_runner = self._get_agent_runner(worker_config)
 
         # Instantiate a dedicated AgentClient for this worker
         from shared.utils import generate_agent_id
 
         # Read spec content for ID generation consistency
         spec_content = ""
-        if self.config.spec_file and self.config.spec_file.exists():
-            spec_content = self.config.spec_file.read_text()
-
+        # Use worker_config to read from worktree
+        if worker_config.spec_file and worker_config.spec_file.exists():
+            spec_content = worker_config.spec_file.read_text()
+        
+        # Or fallback to main config if file missing in worktree (shouldn't happen)
+        
         # Base ID on hash
-        # generate_agent_id returns {type}_agent_{project}_{hash}
-        # We want worker_agent_{project}_{hash}-{task_id}
         base_id = generate_agent_id(
-            self.config.project_dir.name, spec_content, "worker"
+            worker_config.project_dir.name, spec_content, "worker"
         )
         worker_id = (
-            # Format: worker_agent_{project}_{hash}-{task_id}
             f"{base_id}-{task.id}"
         )
 
@@ -257,24 +343,27 @@ class SprintManager:
             iteration=0,
         )
 
-        client, session_runner = self._get_agent_runner()
-        base_prompt = get_sprint_worker_prompt()
+        # Runner already selected above using worker_config
+        base_prompt = get_sprint_coding_prompt()
 
         dind_context = ""
-        if self.config.dind_enabled:
+        if worker_config.dind_enabled:
             dind_context = "- **Docker-in-Docker:** You have access to the Docker socket. You can launch additional containers (e.g., using `docker run` or `docker-compose`) for testing purposes if required."
 
-        formatted_prompt = base_prompt.format(
-            task_id=task.id,
-            task_title=task.title,
-            task_description=task.description,
-            working_directory=self.config.project_dir,
-            dind_context=dind_context,
-        )
+        # Explicit string replacement for robust prompt
+        formatted_prompt = base_prompt.replace("{task_id}", task.id)
+        formatted_prompt = formatted_prompt.replace("{task_title}", task.title)
+        formatted_prompt = formatted_prompt.replace("{task_description}", task.description)
+        # Note: coding_prompt uses {dind_context} if we kept it, but robust prompt might not have {working_directory} in the same way.
+        # Let's check prompt structure. Our new prompt has {dind_context} but uses `pwd` for working dir.
+        formatted_prompt = formatted_prompt.replace("{dind_context}", dind_context)
 
         history: List[str] = []
         max_turns = 10  # Cap turns per task
         turns = 0
+        last_actions: List[str] = []
+        last_response: str = ""
+        repetition_count = 0
 
         try:
             while turns < max_turns:
@@ -310,10 +399,71 @@ class SprintManager:
 
                     if updates:
                         worker_client.report_state(**updates)
-
                 status, response, actions = await session_runner(
                     client, formatted_prompt, history, status_callback=status_update
                 )
+
+                # 1. Runaway Output Check
+                if detect_runaway(response):
+                    logger.error(f"Task {task.id}: Runaway output detected.")
+                    task.status = "FAILED"
+                    self.failed_tasks.add(task.id)
+                    self.running_tasks.remove(task.id)
+                    
+                    worker_client.report_state(current_task="Failed: Runaway Output", is_running=False)
+                    worker_client.stop()
+                    
+                    # Rescue
+                    if self.worktree_manager.rescue_worktree(task.id):
+                        self.rescued_tasks.add(task.id)
+                        logger.info(f"Work rescued for task {task.id} on branch sprint/task-{task.id}")
+                        self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
+                        self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
+                    else:
+                        self.worktree_manager.cleanup_worktree(task.id, delete_branch=True)
+                    return
+
+                # 2. Loop Detection Guardrail (Actions OR Text Loop)
+                is_loop = False
+                
+                # Action Loop
+                if actions and actions == last_actions:
+                    is_loop = True
+                # Text Loop (only if no actions)
+                elif not actions and response and response == last_response:
+                    is_loop = True
+                
+                if is_loop:
+                    repetition_count += 1
+                    logger.warning(f"Task {task.id}: Repetitive behavior detected ({repetition_count}/3).")
+                    if repetition_count >= 3:
+                        logger.error(f"Task {task.id}: Repetition loop detected. Terminating.")
+                        task.status = "FAILED"
+                        self.failed_tasks.add(task.id)
+                        self.running_tasks.remove(task.id)
+
+                        # Metrics
+                        duration = time.time() - start_time
+                        get_telemetry().increment_counter("sprint_tasks_failed")
+                        get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "repetition_loop"})
+                        get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
+
+                        worker_client.report_state(current_task="Failed: Repetition Loop", is_running=False)
+                        worker_client.stop()
+                        
+                        # Rescue
+                        if self.worktree_manager.rescue_worktree(task.id):
+                            self.rescued_tasks.add(task.id)
+                            logger.info(f"Work rescued for task {task.id} on branch sprint/task-{task.id}")
+                            self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
+                        else:
+                            self.worktree_manager.cleanup_worktree(task.id, delete_branch=True)
+                        return
+                else:
+                    if actions or (response != last_response):
+                        repetition_count = 0
+                        last_actions = actions
+                        last_response = response
 
                 # Report recent history
                 if actions:
@@ -338,10 +488,31 @@ class SprintManager:
                         current_task="Completed", is_running=False
                     )
                     worker_client.stop()
+                    
+                    # Merge Logic
+                    merged = self.worktree_manager.merge_worktree(task.id)
+                    if merged:
+                         logger.info(f"Task {task.id} merged successfully.")
+                    else:
+                         logger.error(f"Task {task.id} FAILED TO MERGE. Marking as failed (or manual intervention needed).")
+                         # For now, mark as failed if merge fails?
+                         # Or keep completed but warn?
+                         # Strict Sprint: Fail.
+                         task.status = "FAILED"
+                         self.failed_tasks.add(task.id)
+                         self.running_tasks.remove(task.id)
+                         # Remove from completed if we added it?
+                         self.completed_tasks.remove(task.id) 
+                         # We added it lines above: self.completed_tasks.add(task.id)
+                         # So revert that.
+                         self.worktree_manager.cleanup_worktree(task.id)
+                         return
+
+                    self.worktree_manager.cleanup_worktree(task.id)
                     return
 
                 if "SPRINT_TASK_FAILED" in response:
-                    logger.error(f"Task {task.id} Failed.")
+                    logger.error(f"Task {task.id} Failed by Agent.")
                     task.status = "FAILED"
                     self.failed_tasks.add(task.id)
                     self.running_tasks.remove(task.id)
@@ -349,11 +520,19 @@ class SprintManager:
                     # Metrics
                     duration = time.time() - start_time
                     get_telemetry().increment_counter("sprint_tasks_failed")
-                    get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "failed"})
+                    get_telemetry().record_histogram("sprint_task_duration_seconds", duration, labels={"status": "agent_failed"})
                     get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
 
                     worker_client.report_state(current_task="Failed", is_running=False)
                     worker_client.stop()
+                    
+                    # Rescue
+                    if self.worktree_manager.rescue_worktree(task.id):
+                        self.rescued_tasks.add(task.id)
+                        logger.info(f"Work rescued for task {task.id} on branch sprint/task-{task.id}")
+                        self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
+                    else:
+                        self.worktree_manager.cleanup_worktree(task.id, delete_branch=True)
                     return
 
                 if status == "error":
@@ -363,6 +542,11 @@ class SprintManager:
                 # Append actions to history for context
                 if actions:
                     history.extend(actions)
+                    history = history[-5:]
+                elif response:
+                    # If no actions, capture the response text to avoid amnesia loops
+                    # We truncate to avoid polluting context too much, but enough to show what was said.
+                    history.append(f"[Response]: {response[:200]}...")
                     history = history[-5:]
 
             # If max turns reached
@@ -379,6 +563,15 @@ class SprintManager:
 
             worker_client.report_state(current_task="Timed Out", is_running=False)
             worker_client.stop()
+            
+            # Rescue
+            if self.worktree_manager.rescue_worktree(task.id):
+                self.rescued_tasks.add(task.id)
+                logger.info(f"Work rescued for task {task.id} on branch sprint/task-{task.id}")
+                self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
+            else:
+                 self.worktree_manager.cleanup_worktree(task.id, delete_branch=True)
+
         except Exception as e:
             logger.exception(f"Worker {task.id} crashed: {e}")
             worker_client.report_state(current_task=f"Crashed: {e}", is_running=False)
@@ -390,6 +583,14 @@ class SprintManager:
             get_telemetry().record_gauge("sprint_active_workers", len(self.running_tasks))
 
             worker_client.stop()
+            
+            # Rescue
+            if self.worktree_manager.rescue_worktree(task.id):
+                self.rescued_tasks.add(task.id)
+                logger.info(f"Work rescued for task {task.id} on branch sprint/task-{task.id}")
+                self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
+            else:
+                 self.worktree_manager.cleanup_worktree(task.id, delete_branch=True)
 
     async def execute_sprint(self):
         """Main execution loop."""
@@ -492,6 +693,99 @@ class SprintManager:
         if updated_any:
             self.config.feature_list_path.write_text(json.dumps(features, indent=2))
 
+    async def run_post_sprint_checks(self):
+        """Runs Manager and optional QA agents after sprint execution."""
+        logger.info("Running Post-Sprint Manager Review...")
+        
+        # We can reuse the GeminiAgent logic but simplified.
+        # We need a 'Manager' agent instance.
+        
+        # 1. Manager (checks progress, successes, etc)
+        # We create a temporary config for the manager
+        manager_config = self.config
+        
+        # Use GeminiAgent as it wraps BaseAgent logic which handles prompts
+        # But BaseAgent loop is infinite. We just want one check.
+        # So we can use run_agent_session directly with Manager prompt?
+        # Better: Instantiate GeminiAgent and call a specific method or just use session runner with Manager prompt.
+        
+        from agents.shared.prompts import get_manager_prompt, get_qa_prompt
+        
+        # Get Manager Prompt
+        manager_prompt = get_manager_prompt()
+        
+        # Inject context (same as BaseAgent)
+        if self.config.jira and self.config.jira_ticket_key:
+             # If Jira, usage might differ, but for now stick to standard manager
+             pass
+
+        # Run Manager Session
+        client, session_runner = self._get_agent_runner()
+        # We need to construct the prompt with context like BaseAgent does, but simpler?
+        # BaseAgent relies on 'get_file_tree' injected inside run_agent_session.
+        # So we just pass the raw prompt.
+        
+        logger.info("  -> Invoking Manager Agent...")
+        status, response, actions = await session_runner(client, manager_prompt)
+        
+        if actions:
+             logger.info(f"Manager performed actions: {len(actions)}")
+             
+        # Check if Manager marked it as COMPLETED or if it was already COMPLETED
+        if (self.config.project_dir / "COMPLETED").exists():
+            if not (self.config.project_dir / "QA_PASSED").exists():
+                 logger.info("Project marked COMPLETED. Running QA Agent...")
+                 qa_prompt = get_qa_prompt()
+                 status, response, actions = await session_runner(client, qa_prompt)
+                 if (self.config.project_dir / "QA_PASSED").exists():
+                     logger.info("QA Passed!")
+                 else:
+                     logger.info("QA did not pass yet.")
+            else:
+                 logger.info("Project COMPLETED and QA PASSED.")
+    async def ensure_project_initialized(self):
+        """Ensures the project has a valid feature_list.json. If not, runs initialization."""
+        needs_init = False
+        if not self.config.feature_list_path.exists():
+            needs_init = True
+        else:
+            try:
+                content = self.config.feature_list_path.read_text().strip()
+                if not content:
+                    needs_init = True
+                else:
+                    data = json.loads(content)
+                    if not isinstance(data, list) or not data:
+                        needs_init = True
+            except Exception:
+                needs_init = True
+
+        if needs_init:
+            logger.info("Project uninitialized or feature list invalid. Running Initializer Agent...")
+            
+            client, session_runner = self._get_agent_runner()
+            prompt = get_initializer_prompt()
+            
+            # Inject Specs
+            spec_path = self.config.project_dir / "app_spec.txt"
+            goal_text = "See app_spec.txt or README.md"
+            if spec_path.exists():
+                goal_text = spec_path.read_text()
+            
+            # Simple Injection similar to BaseAgent?
+            # get_initializer_prompt usually expects formatting or context injection?
+            # Checking BaseAgent.select_prompt -> just calls get_initializer_prompt().
+            # and run_agent_session injects "CURRENT CONTEXT".
+            # So we can just run it.
+            
+            status, response, actions = await session_runner(client, prompt)
+            
+            if self.config.feature_list_path.exists() and self.config.feature_list_path.stat().st_size > 0:
+                logger.info("Initialization Complete. Feature list created.")
+            else:
+                logger.error("Initialization Failed. Feature list still missing.")
+
+
 
 async def run_single_sprint(config: Config, agent_client=None) -> int:
     manager = SprintManager(config, agent_client)
@@ -508,7 +802,11 @@ async def run_single_sprint(config: Config, agent_client=None) -> int:
     await manager.execute_sprint()
 
     # 3. Validation / Feature Update
+    # 3. Update Feature List based on Task Completion
     manager.update_feature_list()
+
+    # 4. Post-Sprint Checks (Manager + QA)
+    await manager.run_post_sprint_checks()
 
     logger.info("Sprint Completed.")
     manager.notifier.notify(
@@ -526,6 +824,9 @@ async def run_sprint(config: Config, agent_client=None):
         agent_type="sprint",
         project_name=config.project_dir.name
     )
+
+    manager = SprintManager(config, agent_client)
+    await manager.ensure_project_initialized()
 
     logger.info("Starting Continuous Sprint Mode.")
     iteration = 0

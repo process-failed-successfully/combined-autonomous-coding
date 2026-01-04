@@ -1,12 +1,22 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import tempfile
+import shutil
+import os
 from pathlib import Path
-
-# We import main functions to test
 from main import parse_args, main
 
 
 class TestMain(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix="test_main_")
+        self.project_dir = Path(self.tmp_dir)
+        self.spec_file = self.project_dir / "spec.txt"
+        self.spec_file.write_text("Spec content")
+
+    def tearDown(self):
+        if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:
@@ -38,11 +48,11 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     ):
         # Setup args
         args = MagicMock()
-        args.project_dir = Path("/tmp/test_project")
+        args.project_dir = self.project_dir
         args.agent = "gemini"
         args.model = None
         args.max_iterations = None
-        args.spec = Path("/tmp/spec.txt")
+        args.spec = self.spec_file
         args.verbose = False
         args.no_stream = False
         args.verify_creation = False
@@ -95,9 +105,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     ):
         # Setup args
         args = MagicMock()
-        args.project_dir = Path("/tmp/test_project")
+        args.project_dir = self.project_dir
         args.agent = "cursor"
-        args.spec = Path("/tmp/spec.txt")
+        args.spec = self.spec_file
         args.dashboard_only = False
         args.login = False
         args.sprint = False
@@ -129,9 +139,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         mock_parse_args,
     ):
         args = MagicMock()
-        args.project_dir = Path("/tmp/test_project")
+        args.project_dir = self.project_dir
         args.agent = "gemini"
-        args.spec = Path("/tmp/spec.txt")
+        args.spec = self.spec_file
         args.dashboard_only = False
         args.sprint = True  # Enables Sprint Mode
         args.timeout = 600.0
@@ -204,7 +214,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.utils.generate_agent_id")
     async def test_main_missing_spec_exit(self, mock_gen, mock_logger, mock_parse_args):
         args = MagicMock()
-        args.project_dir = Path("/tmp/test_project")
+        args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
         mock_parse_args.return_value = args
@@ -238,9 +248,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         mock_parse_args,
     ):
         args = MagicMock()
-        args.project_dir = Path("/tmp/test_project")
+        args.project_dir = self.project_dir
         args.agent = "gemini"
-        args.spec = Path("/tmp/spec.txt")
+        args.spec = self.spec_file
         args.dashboard_only = False
         args.sprint = False
         args.timeout = None

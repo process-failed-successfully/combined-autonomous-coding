@@ -10,7 +10,7 @@ import platformdirs
 console = Console()
 
 CONFIG_KEYS: Dict[str, Dict[str, Any]] = {
-    "agent_type": {"description": "Agent backend to use (gemini, cursor, local)", "default": "gemini"},
+    "agent_type": {"description": "Agent backend to use (gemini, cursor, local, openrouter)", "default": "gemini"},
     "model": {"description": "Model to use (e.g., gemini-2.0-flash-exp)", "default": "auto"},
     "max_iterations": {"description": "Maximum number of iterations", "default": 50},
     "timeout": {"description": "Timeout in seconds", "default": 600.0},
@@ -26,7 +26,8 @@ CONFIG_KEYS: Dict[str, Dict[str, Any]] = {
 KNOWN_MODELS = {
     "gemini": ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash"],
     "cursor": ["gpt-4o", "claude-3-5-sonnet", "o1-mini"],
-    "local": ["Qwen2.5-Coder-14B-Instruct", "llama3.2"]
+    "local": ["Qwen2.5-Coder-14B-Instruct", "llama3.2"],
+    "openrouter": ["deepseek/deepseek-v3.2"]
 }
 
 

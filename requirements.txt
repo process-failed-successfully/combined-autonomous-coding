@@ -1,4 +1,5 @@
 typer
+SQLAlchemy
 rich
 docker
 requests

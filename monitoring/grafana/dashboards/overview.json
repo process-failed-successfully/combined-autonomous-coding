@@ -91,7 +91,7 @@
           "refId": "A"
         }
       ],
-      "title": "Global Error Rate",
+      "title": "Global Error Rate (5m avg)",
       "type": "stat"
     },
     {
@@ -127,7 +127,7 @@
           "refId": "A"
         }
       ],
-      "title": "Total LLM Tokens (1h)",
+      "title": "LLM Tokens (Last 1h)",
       "type": "stat"
     },
     {

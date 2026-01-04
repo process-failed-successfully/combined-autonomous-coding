@@ -125,7 +125,7 @@ if __name__ == "__main__":
     TEST_DIR.mkdir(parents=True)
 
     results = []
-    for agent in ["gemini", "cursor"]:
+    for agent in ["gemini", "cursor", "openrouter"]:
         test_dir = run_agent(agent)
         success = verify_output(test_dir)
         results.append(success)

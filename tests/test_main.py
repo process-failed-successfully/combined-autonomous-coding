@@ -67,6 +67,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_url = "http://test"
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
@@ -116,6 +117,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -150,6 +152,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -207,6 +210,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     async def test_main_dashboard_only_exit(self, mock_parse_args):
         args = MagicMock()
         args.dashboard_only = True
+        args.dry_run = False
         mock_parse_args.return_value = args
 
         with self.assertRaises(SystemExit) as cm:
@@ -221,6 +225,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
+        args.dry_run = False
         mock_parse_args.return_value = args
 
         # feature_list_path.exists() -> False (fresh)
@@ -260,6 +265,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = None
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -285,6 +291,59 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                     await main()
 
             # mock_cleaner.assert_called() - Obsolete as it's now handled in the agent loop
+
+    @patch("main.parse_args")
+    @patch("main.setup_logger")
+    @patch("main.ensure_git_safe")
+    @patch("shared.agent_client.AgentClient")
+    @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
+    @patch("shared.utils.generate_agent_id")
+    async def test_main_dry_run(
+        self,
+        mock_gen_id,
+        mock_run_gemini,
+        mock_client_cls,
+        mock_git_safe,
+        mock_setup_logger,
+        mock_parse_args,
+    ):
+        # Setup args
+        args = MagicMock()
+        args.project_dir = self.project_dir
+        args.agent = "gemini"
+        args.spec = self.spec_file
+        args.dry_run = True
+        args.jira_ticket = None
+        args.jira_label = None
+        # Add other necessary args to avoid None errors
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.no_stream = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.dashboard_only = False
+        args.login = False
+        args.sprint = False
+        args.max_agents = 2
+        args.timeout = None
+        args.dashboard_url = "http://test"
+        args.dind = False
+        args.max_error_wait = 600.0
+
+
+        mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
+        mock_gen_id.return_value = "dry_run_agent_test_123"
+
+        with self.assertRaises(SystemExit) as cm:
+            await main()
+        self.assertEqual(cm.exception.code, 0)
+
+        # Ensure no agent was called
+        mock_run_gemini.assert_not_called()
 
 
 if __name__ == "__main__":

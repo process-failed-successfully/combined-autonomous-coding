@@ -206,14 +206,15 @@ def execute_read_block(filename: str, cwd: Path) -> str:
             return f"Error: File {filename} does not exist."
 
         with open(file_path, "r") as f:
-            content = f.read()
+            # Optimization: Stream lines directly to avoid loading full file into memory
+            numbered_lines = [
+                f"{i + 1:4} | {line.rstrip('\n')}" for i, line in enumerate(f)
+            ]
 
         from shared.telemetry import get_telemetry
 
         get_telemetry().increment_counter("files_read_total")
 
-        lines = content.splitlines()
-        numbered_lines = [f"{i + 1:4} | {line}" for i, line in enumerate(lines)]
         return f"File: {filename}\n" + "\n".join(numbered_lines)
     except Exception as e:
         logger.error(f"[Error] {e}")

@@ -194,6 +194,65 @@ def run_configure():
         print(f"\n❌ Error saving configuration: {e}")
 
 
+def run_clean(args):
+    """Removes agent-generated artifacts from the project directory."""
+    import shutil
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Cleaning project directory: {project_dir} ---")
+
+    # List of agent-generated files and directories to be removed
+    artifacts_to_clean = [
+        ".agent_db.sqlite",
+        "COMPLETED",
+        "QA_PASSED",
+        "PROJECT_SIGNED_OFF",
+        "feature_list.json",
+        "qa_summary.txt",
+        "reviewer_report.txt",
+        "cleanup_report.txt",
+        "final_metrics.txt",
+        "temp_files.txt",
+        "dashboard_state.json",
+        "worktrees/",  # Directory
+    ]
+
+    existing_artifacts = []
+    for artifact in artifacts_to_clean:
+        path = project_dir / artifact
+        if path.exists():
+            existing_artifacts.append(path)
+
+    if not existing_artifacts:
+        print("No agent-generated artifacts found to clean.")
+        sys.exit(0)
+
+    print("The following agent-generated files and directories will be DELETED:")
+    for path in existing_artifacts:
+        print(f"  - {path.relative_to(project_dir)}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nCleaning artifacts...")
+    for path in existing_artifacts:
+        try:
+            if path.is_file():
+                path.unlink()
+                print(f"Deleted file: {path.relative_to(project_dir)}")
+            elif path.is_dir():
+                shutil.rmtree(path)
+                print(f"Deleted directory: {path.relative_to(project_dir)}")
+        except OSError as e:
+            print(f"Error deleting {path}: {e}", file=sys.stderr)
+
+    print("\n✅ Clean complete.")
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -344,6 +403,20 @@ def parse_args():
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
+    # Subparser for 'clean'
+    parser_clean = subparsers.add_parser("clean", help="Remove all agent-generated artifacts from a project")
+    parser_clean.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to clean (default: current directory)",
+    )
+    parser_clean.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt and automatically delete artifacts",
+    )
+
     return parser.parse_args()
 
 
@@ -358,6 +431,11 @@ async def main():
     # Handle `validate` command
     if args.command == "validate":
         run_validate()
+        return
+
+    # Handle `clean` command
+    if args.command == "clean":
+        run_clean(args)
         return
 
     # Handle `list-agents` command

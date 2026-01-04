@@ -10,6 +10,8 @@ import argparse
 import asyncio
 import sys
 import os
+import json
+import dataclasses
 from pathlib import Path
 
 from shared.config import Config
@@ -27,6 +29,18 @@ from agents.local import run_autonomous_agent as run_local
 from agents.openrouter import run_autonomous_agent as run_openrouter
 import yaml
 import platformdirs
+
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    """
+    A custom JSON encoder that handles dataclasses and pathlib.Path objects.
+    """
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        if isinstance(o, Path):
+            return str(o)
+        return super().default(o)
 
 
 def run_validate():
@@ -297,6 +311,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the final configuration and exit without running the agent.",
+    )
 
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
@@ -405,6 +424,10 @@ async def main():
     # Correction for boolean flags initialized with 'store_true' (default False)
     if file_config.get("run_manager_first"):
         config.run_manager_first = True
+
+    if args.dry_run:
+        print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2))
+        sys.exit(0)
 
     # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
     repo_root = Path(__file__).parent

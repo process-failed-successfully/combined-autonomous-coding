@@ -140,5 +140,36 @@ class TestMainClean(unittest.TestCase):
         self.assertFalse((self.test_dir / ".agent_trash").exists())
         self.assertTrue((self.test_dir / "COMPLETED").exists())
 
+    def test_clean_includes_agent_log(self):
+        """Test that the agent log file is included in the cleaned artifacts."""
+        mock_repo_root = self.test_dir / "repo"
+        mock_repo_root.mkdir(exist_ok=True)
+        mock_main_py_path = str(mock_repo_root / "main.py")
+
+        with patch('main.__file__', mock_main_py_path):
+            # Create a mock log file relative to our mocked repo root
+            log_dir = mock_repo_root / "agents/logs"
+            log_dir.mkdir(parents=True)
+            run_id = "test_run_123"
+            log_file = log_dir / f"{run_id}.log"
+            log_file.write_text("This is a test log.")
+
+            # Create the .agent_run_id file in the project dir
+            (self.test_dir / ".agent_run_id").write_text(run_id)
+
+            args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, yes=True)
+
+            with self.assertRaises(SystemExit) as cm:
+                run_clean(args)
+            self.assertEqual(cm.exception.code, 0)
+
+            trash_base_dir = self.test_dir / ".agent_trash"
+            self.assertTrue(trash_base_dir.exists())
+            trash_dir = list(trash_base_dir.iterdir())[0]
+
+            # Verify log file was moved
+            self.assertTrue((trash_dir / f"{run_id}.log").exists())
+            self.assertFalse(log_file.exists())
+
 if __name__ == '__main__':
     unittest.main()

@@ -241,11 +241,23 @@ def run_clean(args):
         "worktrees/",  # Directory
     ]
 
+    # Find artifacts in the project directory
     existing_artifacts = []
     for artifact in artifacts_to_clean:
         path = project_dir / artifact
         if path.exists():
             existing_artifacts.append(path)
+
+    # Also include the log file from the last run
+    run_id_file = project_dir / ".agent_run_id"
+    log_file_path = None
+    if run_id_file.exists():
+        run_id = run_id_file.read_text().strip()
+        repo_root = Path(__file__).parent
+        log_file_path = repo_root / f"agents/logs/{run_id}.log"
+        if log_file_path.exists():
+            # Add the log file to be cleaned
+            existing_artifacts.append(log_file_path)
 
     if not existing_artifacts:
         print("No agent-generated artifacts found to clean.")
@@ -263,7 +275,16 @@ def run_clean(args):
     action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {dest_dir_display_path}"
     print(f"The following agent-generated files and directories will be {action_verb}:")
     for path in existing_artifacts:
-        print(f"  - {path.relative_to(project_dir)}")
+        try:
+            display_path = path.relative_to(project_dir)
+        except ValueError:
+            # The path is not inside the project directory (e.g., agent log file)
+            repo_root = Path(__file__).parent
+            try:
+                display_path = f"(from repo root) {path.relative_to(repo_root)}"
+            except ValueError:
+                display_path = path  # Absolute path as a fallback
+        print(f"  - {display_path}")
 
     if not args.yes:
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
@@ -377,9 +398,24 @@ def _trash_list(trash_base_dir):
             if not contents:
                 print("    (empty)")
             else:
+                # Always list all contents first
                 for item in contents:
                     is_dir = "/ (dir)" if item.is_dir() else ""
                     print(f"    - {item.name}{is_dir}")
+
+                # If a log file exists, show a summary
+                log_file = next((item for item in contents if item.suffix == '.log'), None)
+                if log_file:
+                    print("    --- Log Summary (last 15 lines) ---")
+                    try:
+                        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                            lines = f.readlines()
+                            for line in lines[-15:]:
+                                stripped_line = line.strip()
+                                if stripped_line:
+                                    print(f"      {stripped_line}")
+                    except Exception as e:
+                        print(f"      [Error reading log summary: {e}]")
         except OSError as e:
             print(f"    Error reading archive contents: {e}", file=sys.stderr)
     sys.exit(0)

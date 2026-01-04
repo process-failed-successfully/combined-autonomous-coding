@@ -159,6 +159,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the resolved configuration and exit without running the agent.",
+    )
 
     return parser.parse_args()
 
@@ -347,6 +352,31 @@ async def main():
         git_host = os.environ.get("GIT_HOST", "github.com")
         git_user = os.environ.get("GIT_USERNAME", "x-access-token")
         configure_git_auth(git_token, git_host, git_user)
+
+    if args.dry_run:
+        import json
+        from dataclasses import asdict, is_dataclass
+
+        print("--- Dry Run: Resolved Configuration ---")
+
+        # Create a serializable representation of the config
+        config_dict = {}
+        for key, value in config.__dict__.items():
+            if isinstance(value, Path):
+                config_dict[key] = str(value)
+            elif is_dataclass(value):
+                config_dict[key] = asdict(value)
+            else:
+                config_dict[key] = value
+
+        # Also include properties
+        config_dict['feature_list_path'] = str(config.feature_list_path)
+
+        # Print as nicely formatted JSON
+        print(json.dumps(config_dict, indent=2))
+
+        print("\n--- End of Dry Run ---")
+        sys.exit(0)
 
     # Dispatch
     try:

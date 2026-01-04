@@ -1,0 +1,311 @@
+..INFO:agents.shared.base_agent:Manager triggered by TRIGGER_MANAGER file.
+....INFO:agents.shared.base_agent:Fresh start - copying spec to project
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+.INFO:agents.shared.base_agent:Continuing existing project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION 1 (CODING)
+INFO:agents.shared.base_agent:==================================================
+
+INFO:agents.shared.base_agent:Agent will auto-continue in 0s...
+INFO:agents.shared.base_agent:Agent signaled completion.
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+.INFO:agents.shared.base_agent:Resumed state from /tmp/test_base_agent_wd635o85/.agent_state.json (Iteration 42)
+...INFO:agents.shared.base_agent:Manager triggered by frequency (Iteration 5, Last 0).
+INFO:agents.shared.base_agent:Manager triggered by frequency (Iteration 10, Last 5).
+.INFO:agents.shared.base_agent:Manager triggered by frequency (Iteration 5, Last 0).
+INFO:agents.shared.base_agent:Project marked as COMPLETED but missing SIGN-OFF. Triggering Manager...
+INFO:agents.shared.base_agent:Project completed. Triggering QA Agent for verification...
+.INFO:agents.shared.base_agent:Resumed state from tests_output/test_persistence/.agent_state.json (Iteration 10)
+INFO:agents.shared.base_agent:Continuing existing project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION 11 (CODING)
+INFO:agents.shared.base_agent:==================================================
+
+INFO:agents.shared.base_agent:Manager triggered by frequency (Iteration 11, Last 0).
+INFO:agents.shared.base_agent:Agent will auto-continue in 0s...
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+.INFO:agents.shared.base_agent:Fresh start - copying spec to project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION 1 (INITIALIZATION)
+INFO:agents.shared.base_agent:==================================================
+
+INFO:agents.shared.base_agent:Agent will auto-continue in 0s...
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+.INFO:agents.shared.base_agent:Resumed state from tests_output/test_persistence/.agent_state.json (Iteration 5)
+.EINFO:shared.config_loader:No configuration found. Creating default at XDG location.
+INFO:shared.config_loader:Created default configuration at /tmp/tmpopesd9zp/xdg_config/agent_config.yaml
+....INFO:shared.config_loader:Loaded configuration from /tmp/tmpne0bf7d4/config.yaml
+.EINFO:agents.cursor.agent:Sending prompt to Cursor Agent...
+INFO:agents.cursor.agent:Received response from Cursor Agent.
+INFO:agents.cursor.agent:Processing response blocks...
+.INFO:agents.cursor.agent:Sending prompt to Cursor Agent...
+ERROR:agents.cursor.agent:Error during agent session
+Traceback (most recent call last):
+  File "/app/agents/cursor/agent.py", line 131, in run_agent_session
+    result = await client.run_command(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 2291, in _execute_mock_call
+    raise effect
+Exception: Run failed
+.ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063426442784'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063426442784'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063429846240'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063429846240'>?
+INFO:agents.shared.base_agent:Continuing existing project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION 1 (CODING)
+INFO:agents.shared.base_agent:==================================================
+
+INFO:agents.shared.base_agent:Agent will auto-continue in 0.1s...
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063426442784'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063426442784'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063429846240'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063429846240'>?
+.ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063425229024'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063425229024'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063425745008'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063425745008'>?
+INFO:agents.shared.base_agent:Fresh start - copying spec to project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION 1 (INITIALIZATION)
+INFO:agents.shared.base_agent:==================================================
+
+INFO:agents.shared.base_agent:Agent will auto-continue in 0.1s...
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063425229024'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063425229024'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063425745008'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063425745008'>?
+.ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063426638912'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063426638912'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063426630512'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063426630512'>?
+WARNING:agents.shared.base_agent:Failed to load agent state: the JSON object must be str, bytes or bytearray, not MagicMock
+INFO:agents.shared.base_agent:Continuing existing project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  HUMAN IN LOOP REQUESTED
+INFO:agents.shared.base_agent:==================================================
+INFO:agents.shared.base_agent:Reason: Need help
+ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063426638912'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063426638912'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063426630512'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063426630512'>?
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063426638912'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063426638912'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063426630512'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063426630512'>?
+.ERROR:agents.shared.base_client:Process exited with code 1
+ERROR:agents.cursor.client:Cursor process exited with code 1
+ERROR:agents.cursor.client:STDERR: error
+
+..ERROR:agents.shared.base_client:Command timed out (0.1s) and no recent file activity.
+/app/agents/shared/base_client.py:182: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+Coroutine created at (most recent call last)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 1991, in _run_once
+    handle._run()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1413, in patched
+    return await func(*newargs, **newkeywargs)
+  File "/app/tests/test_cursor_client.py", line 79, in test_run_command_timeout
+    await client.run_command("prompt", MagicMock())
+  File "/app/agents/cursor/client.py", line 115, in run_command
+    stdout, stderr, returncode = await self._run_subprocess(
+  File "/app/agents/shared/base_client.py", line 182, in _run_subprocess
+    process.kill()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  process.kill()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ERROR:agents.cursor.client:Cursor Agent CLI timed out (0.1s) and no recent output or file activity.
+.INFO:agents.cursor.client:VERIFICATION MODE: Returning mock response.
+.EINFO:agents.gemini.agent:Sending prompt to Gemini...
+INFO:agents.gemini.agent:Received response from Gemini.
+INFO:agents.gemini.agent:Processing response blocks...
+.INFO:agents.gemini.agent:Sending prompt to Gemini...
+{"timestamp": "2026-01-04 08:00:09,253", "level": "WARNING", "service": "default_agent", "message": "Failed to push metrics to gateway: <urlopen error [Errno 111] Connection refused>"}
+WARNING:default_agent:Failed to push metrics to gateway: <urlopen error [Errno 111] Connection refused>
+INFO:agents.gemini.agent:Received response from Gemini.
+INFO:agents.gemini.agent:Processing response blocks...
+INFO:agents.gemini.agent:LLM returned a response but no actions. Assuming completion.
+WARNING:asyncio:Executing <Task finished name='Task-70' coro=<TestGeminiAgent.test_run_agent_session_candidates_format() done, defined at /home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py:1408> result=None created at /home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/runners.py:100> took 0.521 seconds
+.INFO:agents.gemini.agent:Sending prompt to Gemini...
+ERROR:agents.gemini.agent:Error during agent session: Run failed
+Traceback (most recent call last):
+  File "/app/agents/gemini/agent.py", line 127, in run_agent_session
+    result = await client.run_command(
+                   ^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+Exception: Run failed
+.ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063424413968'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063424413968'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063424422272'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063424422272'>?
+INFO:agents.shared.base_agent:Fresh start - copying spec to project
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION 1 (INITIALIZATION)
+INFO:agents.shared.base_agent:==================================================
+
+INFO:agents.shared.base_agent:Agent will auto-continue in 0.1s...
+INFO:agents.shared.base_agent:Max iterations reached. Stopping.
+INFO:agents.shared.base_agent:
+==================================================
+INFO:agents.shared.base_agent:  SESSION COMPLETE
+INFO:agents.shared.base_agent:==================================================
+ERROR:shared.notifications:Failed to send Slack notification: Invalid URL "<MagicMock name='mock.slack_webhook_url' id='140063424413968'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.slack_webhook_url' id='140063424413968'>?
+ERROR:shared.notifications:Failed to send Discord notification: Invalid URL "<MagicMock name='mock.discord_webhook_url' id='140063424422272'>": No scheme supplied. Perhaps you meant https://<MagicMock name='mock.discord_webhook_url' id='140063424422272'>?
+./app/agents/shared/base_client.py:92: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+Coroutine created at (most recent call last)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 1991, in _run_once
+    handle._run()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1413, in patched
+    return await func(*newargs, **newkeywargs)
+  File "/app/tests/test_gemini_client.py", line 119, in test_run_command_failure
+    res = await client.run_command("prompt", MagicMock())
+  File "/app/agents/gemini/client.py", line 64, in run_command
+    stdout, stderr, _returncode = await self._run_subprocess(
+  File "/app/agents/shared/base_client.py", line 92, in _run_subprocess
+    process.stdin.write(input_str.encode())
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  process.stdin.write(input_str.encode())
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/app/agents/shared/base_client.py:94: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+Coroutine created at (most recent call last)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 1991, in _run_once
+    handle._run()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1413, in patched
+    return await func(*newargs, **newkeywargs)
+  File "/app/tests/test_gemini_client.py", line 119, in test_run_command_failure
+    res = await client.run_command("prompt", MagicMock())
+  File "/app/agents/gemini/client.py", line 64, in run_command
+    stdout, stderr, _returncode = await self._run_subprocess(
+  File "/app/agents/shared/base_client.py", line 94, in _run_subprocess
+    process.stdin.close()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  process.stdin.close()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ERROR:agents.shared.base_client:Process exited with code 1
+../app/agents/shared/base_client.py:92: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+Coroutine created at (most recent call last)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 1991, in _run_once
+    handle._run()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1413, in patched
+    return await func(*newargs, **newkeywargs)
+  File "/app/tests/test_gemini_client.py", line 72, in test_run_command_timeout
+    await client.run_command("prompt", MagicMock())
+  File "/app/agents/gemini/client.py", line 64, in run_command
+    stdout, stderr, _returncode = await self._run_subprocess(
+  File "/app/agents/shared/base_client.py", line 92, in _run_subprocess
+    process.stdin.write(input_str.encode())
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  process.stdin.write(input_str.encode())
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/app/agents/shared/base_client.py:94: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+Coroutine created at (most recent call last)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/base_events.py", line 1991, in _run_once
+    handle._run()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1413, in patched
+    return await func(*newargs, **newkeywargs)
+  File "/app/tests/test_gemini_client.py", line 72, in test_run_command_timeout
+    await client.run_command("prompt", MagicMock())
+  File "/app/agents/gemini/client.py", line 64, in run_command
+    stdout, stderr, _returncode = await self._run_subprocess(
+  File "/app/agents/shared/base_client.py", line 94, in _run_subprocess
+    process.stdin.close()
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  process.stdin.close()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ERROR:agents.shared.base_client:Command timed out (0.1s) and no recent file activity.
+ERROR:agents.gemini.client:Unexpected error running Gemini:
+Traceback (most recent call last):
+  File "/app/agents/gemini/client.py", line 64, in run_command
+    stdout, stderr, _returncode = await self._run_subprocess(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/agents/shared/base_client.py", line 185, in _run_subprocess
+    raise asyncio.TimeoutError
+TimeoutError
+.INFO:agents.gemini.client:VERIFICATION MODE: Returning mock response.
+.INFO:shared.git:Configuring Git Auth for host: github.corp.com (User: myuser)
+.INFO:shared.git:Configuring Git Auth for host: github.com (User: x-access-token)
+..........INFO:shared.github_client:Creating PR in owner/repo (github.com): Title
+ERROR:shared.github_client:Failed to create PR: 400 - <MagicMock name='post().text' id='140063424819760'>
+.WARNING:shared.github_client:No GIT_TOKEN found. Cannot create Pull Request.
+.INFO:shared.github_client:Creating PR in owner/repo (github.com): Title
+INFO:shared.github_client:Pull Request created successfully: http://github.com/owner/repo/pull/1
+..WARNING:shared.github_client:Failed to parse GitHub host/owner/repo from URL: invalid_url
+..INFO:shared.github_client:Fetching repo metadata for owner/repo
+ERROR:shared.github_client:Error fetching repo metadata: Network error
+.INFO:shared.github_client:Fetching repo metadata for owner/repo
+ERROR:shared.github_client:Failed to fetch repo metadata: 404 - <MagicMock name='get().text' id='140063424875840'>
+.INFO:shared.github_client:Fetching repo metadata for owner/repo
+...{"timestamp": "2026-01-04 08:00:14,950", "level": "WARNING", "service": "test_service", "message": "Failed to push metrics to gateway: <urlopen error [Errno 111] Connection refused>"}
+WARNING:test_service:Failed to push metrics to gateway: <urlopen error [Errno 111] Connection refused>

@@ -5,7 +5,8 @@ Shared Configuration Module
 Centralized configuration management for the Combined Autonomous Coding agent.
 """
 
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional, Any
 
@@ -105,3 +106,13 @@ class Config:
             return self.project_dir / "openrouter_progress.txt"
         else:
             return self.project_dir / "cursor_progress.txt"
+
+    def to_json(self) -> str:
+        """Serializes the configuration to a JSON string."""
+        class CustomJSONEncoder(json.JSONEncoder):
+            def default(self, o):
+                if isinstance(o, Path):
+                    return str(o)
+                return super().default(o)
+
+        return json.dumps(asdict(self), cls=CustomJSONEncoder, indent=2)

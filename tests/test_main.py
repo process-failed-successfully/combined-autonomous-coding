@@ -1,10 +1,15 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import unittest
+from unittest.mock import patch, MagicMock
 import tempfile
 import shutil
 import os
 from pathlib import Path
 from main import parse_args, main
+import sys
+import io
+import json
 
 
 class TestMain(unittest.IsolatedAsyncioTestCase):
@@ -59,7 +64,6 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.manager_frequency = 10
         args.manager_model = None
         args.manager_first = False
-        args.dashboard_only = False
         args.login = False
         args.sprint = False
         args.max_agents = 2
@@ -67,6 +71,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_url = "http://test"
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
@@ -110,12 +115,12 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.agent = "cursor"
         args.spec = self.spec_file
-        args.dashboard_only = False
         args.login = False
         args.sprint = False
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -145,11 +150,11 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.agent = "gemini"
         args.spec = self.spec_file
-        args.dashboard_only = False
-        args.sprint = True  # Enables Sprint Mode
+        args.sprint = True
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -204,24 +209,17 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             mock_run_sprint.assert_called()
 
     @patch("main.parse_args")
-    async def test_main_dashboard_only_exit(self, mock_parse_args):
-        args = MagicMock()
-        args.dashboard_only = True
-        mock_parse_args.return_value = args
-
-        with self.assertRaises(SystemExit) as cm:
-            await main()
-        self.assertEqual(cm.exception.code, 1)
-
-    @patch("main.parse_args")
     @patch("main.setup_logger")
     @patch("shared.utils.generate_agent_id")
-    async def test_main_missing_spec_exit(self, mock_gen, mock_logger, mock_parse_args):
+    async def test_main_missing_spec_exit(self, mock_gen, mock_setup_logger, mock_parse_args):
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
         args = MagicMock()
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
-        args.dashboard_only = False
         mock_parse_args.return_value = args
+        args.dry_run = False
+        args.jira_ticket = None
+        args.jira_label = None
 
         # feature_list_path.exists() -> False (fresh)
         with patch("main.Config") as mock_config_cls:
@@ -255,11 +253,11 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.agent = "gemini"
         args.spec = self.spec_file
-        args.dashboard_only = False
         args.sprint = False
         args.timeout = None
         args.jira_ticket = None
         args.jira_label = None
+        args.dry_run = False
 
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -285,6 +283,70 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                     await main()
 
             # mock_cleaner.assert_called() - Obsolete as it's now handled in the agent loop
+
+    @patch("main.parse_args")
+    @patch("main.setup_logger")
+    @patch("shared.utils.generate_agent_id")
+    async def test_dry_run_outputs_json_and_exits(self, mock_gen_id, mock_setup_logger, mock_parse_args):
+        args = MagicMock()
+        args.project_dir = self.project_dir
+        args.agent = "gemini"
+        args.model = "test-model"
+        args.max_iterations = 50
+        args.spec = self.spec_file
+        args.verbose = True
+        args.no_stream = True
+        args.manager_frequency = 5
+        args.manager_model = "manager-model"
+        args.manager_first = True
+        args.sprint = True
+        args.max_agents = 4
+        args.jira_ticket = None
+        args.jira_label = None
+        args.dry_run = True  # Enable dry run
+        args.dind = False
+        args.login = False
+        args.dashboard_url = "http://localhost:7654"
+        args.timeout = 300.0
+        args.max_error_wait = 120.0
+        args.verify_creation = False
+
+
+        mock_parse_args.return_value = args
+        mock_gen_id.return_value = "dry_run_agent_id"
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
+
+        # Capture stdout
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
+
+        with self.assertRaises(SystemExit) as cm:
+            await main()
+
+        # Restore stdout
+        sys.stdout = sys.__stdout__
+
+        self.assertEqual(cm.exception.code, 0)
+
+        # Verify the output is valid JSON
+        output = captured_output.getvalue()
+        try:
+            config_json = json.loads(output)
+        except json.JSONDecodeError:
+            self.fail("Dry run output was not valid JSON.")
+
+        # Verify a few key configuration values
+        self.assertEqual(config_json["agent_type"], "gemini")
+        self.assertEqual(config_json["model"], "test-model")
+        self.assertEqual(config_json["max_iterations"], 50)
+        self.assertTrue(config_json["verbose"])
+        self.assertFalse(config_json["stream_output"])
+        self.assertEqual(config_json["manager_frequency"], 5)
+        self.assertEqual(config_json["manager_model"], "manager-model")
+        self.assertTrue(config_json["run_manager_first"])
+        self.assertTrue(config_json["sprint_mode"])
+        self.assertEqual(config_json["max_agents"], 4)
+        self.assertEqual(config_json["project_dir"], str(self.project_dir))
 
 
 if __name__ == "__main__":

@@ -493,22 +493,28 @@ class SprintManager:
                     merged = self.worktree_manager.merge_worktree(task.id)
                     if merged:
                          logger.info(f"Task {task.id} merged successfully.")
+                         self.worktree_manager.cleanup_worktree(task.id)
                     else:
-                         logger.error(f"Task {task.id} FAILED TO MERGE. Marking as failed (or manual intervention needed).")
-                         # For now, mark as failed if merge fails?
-                         # Or keep completed but warn?
-                         # Strict Sprint: Fail.
+                         logger.error(f"Task {task.id} FAILED TO MERGE. Marking as failed, but PRESERVING BRANCH.")
+
                          task.status = "FAILED"
                          self.failed_tasks.add(task.id)
                          self.running_tasks.remove(task.id)
-                         # Remove from completed if we added it?
                          self.completed_tasks.remove(task.id) 
-                         # We added it lines above: self.completed_tasks.add(task.id)
-                         # So revert that.
-                         self.worktree_manager.cleanup_worktree(task.id)
+
+                         # Metrics
+                         get_telemetry().increment_counter("sprint_tasks_failed", labels={"reason": "merge_conflict"})
+
+                         # Notify User
+                         self.notifier.notify(
+                             "sprint_merge_failed",
+                             f"Task {task.title} ({task.id}) failed to merge. Branch preserved."
+                         )
+
+                         # Cleanup worktree but KEEP BRANCH for manual merge
+                         self.worktree_manager.cleanup_worktree(task.id, delete_branch=False)
                          return
 
-                    self.worktree_manager.cleanup_worktree(task.id)
                     return
 
                 if "SPRINT_TASK_FAILED" in response:

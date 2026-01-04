@@ -69,8 +69,8 @@ class TestWorktreeManager(unittest.TestCase):
         # Verify commit exists on branch
         # (Git commit would have happened in worktree)
         # Check if file is tracked in the branch now
-        res = subprocess.run(["git", "show", "sprint/task-t_rescue:wip_file.txt"], cwd=self.repo_dir, capture_output=True, text=True)
-        self.assertEqual(res.stdout.strip(), "WIP")
+        proc_res = subprocess.run(["git", "show", "sprint/task-t_rescue:wip_file.txt"], cwd=self.repo_dir, capture_output=True, text=True)
+        self.assertEqual(proc_res.stdout.strip(), "WIP")
 
     def test_cleanup_preserve_branch(self):
         wt_path = self.manager.create_worktree("t_preserve")

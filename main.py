@@ -25,6 +25,80 @@ from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
 from agents.local import run_autonomous_agent as run_local
 from agents.openrouter import run_autonomous_agent as run_openrouter
+import yaml
+import platformdirs
+
+
+def run_configure():
+    """Interactively create or update the agent_config.yaml file."""
+    print("--- Agent Configuration ---")
+
+    # Use XDG path as the primary location
+    config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
+    config_path = config_dir / "agent_config.yaml"
+
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load existing config if it exists
+    existing_config = {}
+    if config_path.exists():
+        print(f"Loading existing configuration from: {config_path}")
+        with open(config_path, 'r') as f:
+            existing_config = yaml.safe_load(f) or {}
+    else:
+        print(f"Creating new configuration file at: {config_path}")
+
+    # Helper for user input
+    def get_input(prompt, default_value=None):
+        if default_value:
+            prompt_text = f"{prompt} [{default_value}]: "
+        else:
+            prompt_text = f"{prompt}: "
+
+        user_input = input(prompt_text).strip()
+        return user_input or default_value
+
+    # --- JIRA Configuration ---
+    print("\n--- Jira Integration (optional) ---")
+    jira_config = existing_config.get('jira', {})
+
+    jira_url = get_input("Jira URL (e.g., https://your-domain.atlassian.net)", jira_config.get('url'))
+    if jira_url:
+        jira_email = get_input("Jira Email", jira_config.get('email'))
+        jira_token = get_input("Jira API Token", jira_config.get('token'))
+
+        updated_jira_config = {
+            'url': jira_url,
+            'email': jira_email,
+            'token': jira_token
+        }
+        if 'status_map' in jira_config:
+            updated_jira_config['status_map'] = jira_config['status_map']
+
+        existing_config['jira'] = updated_jira_config
+    elif 'jira' in existing_config:
+        del existing_config['jira']
+
+    # --- Notifications ---
+    print("\n--- Notifications (optional) ---")
+    slack_url = get_input("Slack Webhook URL", existing_config.get('slack_webhook_url'))
+    discord_url = get_input("Discord Webhook URL", existing_config.get('discord_webhook_url'))
+
+    if slack_url:
+        existing_config['slack_webhook_url'] = slack_url
+    if discord_url:
+        existing_config['discord_webhook_url'] = discord_url
+
+    # Clean up empty keys
+    final_config = {k: v for k, v in existing_config.items() if v}
+
+    # --- Save Configuration ---
+    try:
+        with open(config_path, 'w') as f:
+            yaml.dump(final_config, f, sort_keys=False, indent=2)
+        print(f"\n✅ Configuration saved successfully to {config_path}")
+    except Exception as e:
+        print(f"\n❌ Error saving configuration: {e}")
 
 
 def parse_args():
@@ -160,11 +234,21 @@ def parse_args():
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
 
+    # Subparsers for commands like 'configure'
+    subparsers = parser.add_subparsers(dest="command", help="sub-command help")
+    parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
+    # No additional arguments for configure, it's interactive
+
     return parser.parse_args()
 
 
 async def main():
     args = parse_args()
+
+    # Handle `configure` command
+    if args.command == "configure":
+        run_configure()
+        return
 
     # Initialize Agent Client
     from shared.agent_client import AgentClient

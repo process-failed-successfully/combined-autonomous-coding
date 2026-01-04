@@ -79,9 +79,14 @@ class WorktreeManager:
             return True
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to merge worktree {task_id}: {e.stderr}")
-            # TODO: Handle conflicts?
-            # For now, we fail the task or leave it for manual resolution?
-            # If merge fails, future tasks depending on this might fail or miss code.
+
+            # Abort the merge to return main repo to clean state
+            try:
+                logger.info("Aborting merge to clean up...")
+                self._run_git(["merge", "--abort"])
+            except subprocess.CalledProcessError as abort_err:
+                logger.error(f"Failed to abort merge: {abort_err.stderr}")
+
             return False
 
     def rescue_worktree(self, task_id: str) -> bool:

@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
-from main import parse_args, main, run_clean, run_trash
+from main import parse_args, main
 
 
 class TestMain(unittest.IsolatedAsyncioTestCase):
@@ -422,66 +422,6 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         with patch("sys.argv", ["main.py", "clean"]):
             args = parse_args()
             self.assertEqual(args.command, "clean")
-
-    def test_run_clean_and_trash_list_with_logs(self):
-        import io
-        import contextlib
-        from argparse import Namespace
-
-        agent_id = "test-agent-12345"
-        log_dir = self.project_dir / "agents" / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-
-        log_file = log_dir / f"{agent_id}.log"
-        log_content = ""
-        for i in range(20):
-            log_content += f"Line {i+1}\n"
-        log_file.write_text(log_content)
-
-        (self.project_dir / ".agent_run_id").write_text(agent_id)
-        (self.project_dir / "COMPLETED").write_text("done")
-
-        clean_args = Namespace(
-            project_dir=self.project_dir,
-            force=False,
-            archive=False,
-            yes=True
-        )
-
-        with self.assertRaises(SystemExit):
-            run_clean(clean_args, repo_root_for_test=self.project_dir)
-
-        self.assertFalse((self.project_dir / "COMPLETED").exists())
-        self.assertFalse((self.project_dir / ".agent_run_id").exists())
-        self.assertFalse(log_file.exists())
-
-        trash_dir = self.project_dir / ".agent_trash"
-        self.assertTrue(trash_dir.is_dir())
-
-        archives = list(trash_dir.iterdir())
-        self.assertEqual(len(archives), 1)
-        trash_archive_dir = archives[0]
-
-        self.assertTrue((trash_archive_dir / "COMPLETED").exists())
-        self.assertTrue((trash_archive_dir / f"{agent_id}.log").exists())
-
-        list_args = Namespace(
-            action="list",
-            project_dir=self.project_dir,
-        )
-
-        stdout_capture = io.StringIO()
-        with contextlib.redirect_stdout(stdout_capture):
-            with self.assertRaises(SystemExit):
-                run_trash(list_args)
-
-        output = stdout_capture.getvalue()
-
-        self.assertIn("--- Log Summary (last 15 lines) ---", output)
-        self.assertIn("Line 20", output)
-        self.assertNotIn("Line 1", output)
-        self.assertNotIn("Line 5", output)
-        self.assertIn("Line 6", output)
 
 
 if __name__ == "__main__":

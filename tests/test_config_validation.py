@@ -27,9 +27,8 @@ class TestConfigValidation(unittest.TestCase):
         return config_path
 
     @patch('sys.stdout', new_callable=MagicMock)
-    @patch('shared.config_loader.load_config_from_file')
     @patch('shared.config_loader.get_config_path')
-    def test_valid_config(self, mock_get_config_path, mock_load_config, mock_stdout):
+    def test_valid_config(self, mock_get_config_path, mock_stdout):
         """Test a completely valid configuration."""
         valid_data = {
             'model': 'gemini-1.5-pro',
@@ -44,7 +43,6 @@ class TestConfigValidation(unittest.TestCase):
         }
         config_path = self.write_config(valid_data)
         mock_get_config_path.return_value = config_path
-        mock_load_config.return_value = valid_data
 
         with self.assertRaises(SystemExit) as cm:
             run_validate()
@@ -65,16 +63,14 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     @patch('sys.stdout', new_callable=MagicMock)
-    @patch('shared.config_loader.load_config_from_file')
     @patch('shared.config_loader.get_config_path')
-    def test_invalid_yaml(self, mock_get_config_path, mock_load_config, mock_stdout):
+    def test_invalid_yaml(self, mock_get_config_path, mock_stdout):
         """Test with a syntactically incorrect YAML file."""
         config_path = self.temp_path / "agent_config.yaml"
         with open(config_path, 'w') as f:
             f.write("jira: { url: 'test',") # Invalid YAML
 
         mock_get_config_path.return_value = config_path
-        mock_load_config.side_effect = yaml.YAMLError("YAML parsing failed")
 
         with self.assertRaises(SystemExit) as cm:
             run_validate()
@@ -82,9 +78,8 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     @patch('sys.stdout', new_callable=MagicMock)
-    @patch('shared.config_loader.load_config_from_file')
     @patch('shared.config_loader.get_config_path')
-    def test_missing_jira_keys(self, mock_get_config_path, mock_load_config, mock_stdout):
+    def test_missing_jira_keys(self, mock_get_config_path, mock_stdout):
         """Test Jira config with missing required keys."""
         invalid_data = {
             'jira': {
@@ -95,7 +90,6 @@ class TestConfigValidation(unittest.TestCase):
         }
         config_path = self.write_config(invalid_data)
         mock_get_config_path.return_value = config_path
-        mock_load_config.return_value = invalid_data
 
         with self.assertRaises(SystemExit) as cm:
             run_validate()
@@ -103,14 +97,12 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     @patch('sys.stdout', new_callable=MagicMock)
-    @patch('shared.config_loader.load_config_from_file')
     @patch('shared.config_loader.get_config_path')
-    def test_invalid_slack_url(self, mock_get_config_path, mock_load_config, mock_stdout):
+    def test_invalid_slack_url(self, mock_get_config_path, mock_stdout):
         """Test with an invalid Slack webhook URL."""
         invalid_data = {'slack_webhook_url': 'https://wrong.url.com/FAKE'}
         config_path = self.write_config(invalid_data)
         mock_get_config_path.return_value = config_path
-        mock_load_config.return_value = invalid_data
 
         with self.assertRaises(SystemExit) as cm:
             run_validate()
@@ -118,14 +110,12 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     @patch('sys.stdout', new_callable=MagicMock)
-    @patch('shared.config_loader.load_config_from_file')
     @patch('shared.config_loader.get_config_path')
-    def test_invalid_discord_url(self, mock_get_config_path, mock_load_config, mock_stdout):
+    def test_invalid_discord_url(self, mock_get_config_path, mock_stdout):
         """Test with an invalid Discord webhook URL."""
         invalid_data = {'discord_webhook_url': 'https://wrong.url.com/FAKE'}
         config_path = self.write_config(invalid_data)
         mock_get_config_path.return_value = config_path
-        mock_load_config.return_value = invalid_data
 
         with self.assertRaises(SystemExit) as cm:
             run_validate()
@@ -133,14 +123,12 @@ class TestConfigValidation(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     @patch('sys.stdout', new_callable=MagicMock)
-    @patch('shared.config_loader.load_config_from_file')
     @patch('shared.config_loader.get_config_path')
-    def test_incorrect_data_type(self, mock_get_config_path, mock_load_config, mock_stdout):
+    def test_incorrect_data_type(self, mock_get_config_path, mock_stdout):
         """Test a key with an incorrect data type."""
         invalid_data = {'max_iterations': 'fifty'} # Should be int
         config_path = self.write_config(invalid_data)
         mock_get_config_path.return_value = config_path
-        mock_load_config.return_value = invalid_data
 
         with self.assertRaises(SystemExit) as cm:
             run_validate()

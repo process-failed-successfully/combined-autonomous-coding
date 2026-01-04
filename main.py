@@ -59,7 +59,7 @@ def run_validate():
     print(f"Found configuration file at: {config_path}")
 
     try:
-        config_data = load_config_from_file()
+        config_data = load_config_from_file(config_path)
     except Exception as e:
         print(f"❌ Error loading or parsing YAML from {config_path}: {e}")
         sys.exit(1)

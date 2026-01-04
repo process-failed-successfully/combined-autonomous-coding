@@ -14,3 +14,5 @@ psutil
 platformdirs
 google-generativeai
 textual
+jira
+SQLAlchemy

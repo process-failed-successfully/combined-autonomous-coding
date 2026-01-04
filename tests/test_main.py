@@ -67,6 +67,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_url = "http://test"
         args.jira_ticket = None
         args.jira_label = None
+        args.tui = False
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
@@ -114,6 +115,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.tui = False
 
         mock_parse_args.return_value = args
 
@@ -147,6 +149,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = 600.0
         args.jira_ticket = None
         args.jira_label = None
+        args.tui = False
 
         mock_parse_args.return_value = args
 
@@ -203,6 +206,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     async def test_main_dashboard_only_exit(self, mock_parse_args):
         args = MagicMock()
         args.dashboard_only = True
+        args.tui = False
         mock_parse_args.return_value = args
 
         with self.assertRaises(SystemExit) as cm:
@@ -217,6 +221,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
+        args.tui = False
         mock_parse_args.return_value = args
 
         # feature_list_path.exists() -> False (fresh)
@@ -256,6 +261,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = None
         args.jira_ticket = None
         args.jira_label = None
+        args.tui = False
 
         mock_parse_args.return_value = args
 

@@ -8,9 +8,11 @@ Main entry point for running autonomous coding agents (Gemini or Cursor).
 
 import argparse
 import asyncio
+import json
 import sys
 import os
 from pathlib import Path
+from dataclasses import asdict
 
 from shared.config import Config
 from shared.logger import setup_logger
@@ -159,6 +161,11 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the final configuration as JSON and exit without running the agent.",
+    )
 
     return parser.parse_args()
 
@@ -251,6 +258,11 @@ async def main():
     # Correction for boolean flags initialized with 'store_true' (default False)
     if file_config.get("run_manager_first"):
         config.run_manager_first = True
+
+    # DRY RUN LOGIC
+    if args.dry_run:
+        print(config.to_json())
+        sys.exit(0)
 
     # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
     repo_root = Path(__file__).parent

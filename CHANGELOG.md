@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.7.1 (2026-01-04)
+
+### Bug Fixes
+
+- **ci**: Add missing SQLAlchemy dependency
+  ([`fbdbaae`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/fbdbaae51f7eda58754b01a65cfc80a43c4c55eb))
+
+- **ci**: Configure git identity for worktree manager tests
+  ([`76701c3`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/76701c30c1ced0f08fb8212cf82703e556811b94))
+
+
 ## v0.7.0 (2025-12-27)
 
 ### Features

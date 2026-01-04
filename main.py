@@ -378,6 +378,77 @@ def run_empty_trash(args):
     sys.exit(0)
 
 
+def run_restore(args):
+    """Restores agent-generated artifacts from the most recent trash directory."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    trash_base_dir = project_dir / ".agent_trash"
+
+    print(f"--- Restoring artifacts in project: {project_dir} ---")
+
+    if not trash_base_dir.exists() or not trash_base_dir.is_dir():
+        print("Trash directory (.agent_trash) not found. Nothing to restore.")
+        sys.exit(0)
+
+    # Find the most recent trash directory (they are timestamped)
+    try:
+        latest_trash_dir = max(d for d in trash_base_dir.iterdir() if d.is_dir())
+    except ValueError:
+        print("No trash archives found in .agent_trash directory.")
+        sys.exit(0)
+
+    print(f"Found latest trash archive: {latest_trash_dir.name}")
+
+    artifacts_to_restore = list(latest_trash_dir.iterdir())
+    if not artifacts_to_restore:
+        print("Trash archive is empty. Nothing to restore.")
+        latest_trash_dir.rmdir() # Clean up empty dir
+        print(f"Removed empty trash archive: {latest_trash_dir.name}")
+        sys.exit(0)
+
+    # Check for conflicts
+    conflicting_files = []
+    for artifact in artifacts_to_restore:
+        destination_path = project_dir / artifact.name
+        if destination_path.exists():
+            conflicting_files.append(artifact.name)
+
+    if conflicting_files:
+        print("\n❌ Error: The following files already exist in the project directory:")
+        for f in conflicting_files:
+            print(f"  - {f}")
+        print("Please move or delete these files manually before running restore.")
+        sys.exit(1)
+
+    print("\nThe following artifacts will be restored to the project directory:")
+    for artifact in artifacts_to_restore:
+        print(f"  - {artifact.name}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nRestoring artifacts...")
+    try:
+        for artifact in artifacts_to_restore:
+            dest = project_dir / artifact.name
+            shutil.move(str(artifact), str(dest))
+            print(f"Restored: {artifact.name}")
+
+        # Clean up the now-empty trash directory
+        latest_trash_dir.rmdir()
+        print(f"Removed empty trash archive: {latest_trash_dir.name}")
+
+    except OSError as e:
+        print(f"Error during restore: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n✅ Restore complete.")
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -570,6 +641,20 @@ def parse_args():
         help="Skip confirmation prompt",
     )
 
+    # Subparser for 'restore'
+    parser_restore = subparsers.add_parser("restore", help="Restore artifacts from the most recent trash archive")
+    parser_restore.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the trash is located (default: current directory)",
+    )
+    parser_restore.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
     return parser.parse_args()
 
 
@@ -599,6 +684,11 @@ async def main():
     # Handle `empty-trash` command
     if args.command == "empty-trash":
         run_empty_trash(args)
+        return
+
+    # Handle `restore` command
+    if args.command == "restore":
+        run_restore(args)
         return
 
     # Handle `list-agents` command

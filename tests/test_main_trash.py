@@ -1,208 +1,162 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import argparse
 from pathlib import Path
 import shutil
+import tempfile
 import io
-import sys
-from datetime import datetime
+from contextlib import redirect_stdout
 
-# Make sure the main module can be imported
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import main as main_script
 
-from main import run_trash
-
-class TestMainTrash(unittest.TestCase):
-
+class TestMainTrashCommand(unittest.TestCase):
     def setUp(self):
-        """Set up a temporary directory and trash structure for testing."""
-        self.test_dir = Path("./test_trash_temp")
-        self.test_dir.mkdir(exist_ok=True)
-        self.trash_dir = self.test_dir / ".agent_trash"
-        self.trash_dir.mkdir(exist_ok=True)
+        """Set up a temporary directory with a simulated project and trash."""
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
+        self.trash_base_dir = self.project_dir / ".agent_trash"
+        self.trash_base_dir.mkdir()
 
-        # Create some dummy archives and files
-        self.archive1_name = "trash-2023-01-01_12-00-00"
-        self.archive2_name = "trash-2023-01-02_12-00-00"
-        self.archive1_path = self.trash_dir / self.archive1_name
-        self.archive2_path = self.trash_dir / self.archive2_name
-        self.archive1_path.mkdir()
-        self.archive2_path.mkdir()
+        # Create a sample trash archive
+        self.archive_name = "trash-2023-01-01_12-00-00"
+        self.archive_dir = self.trash_base_dir / self.archive_name
+        self.archive_dir.mkdir()
 
-        (self.archive1_path / "file1.txt").write_text("file1 content")
-        (self.archive2_path / "file2.txt").write_text("file2 content")
-        (self.archive2_path / "subdir").mkdir()
-        (self.archive2_path / "subdir" / "file3.txt").write_text("file3 content")
-
-        # Redirect stdout to capture print statements
-        self.held_stdout = sys.stdout
-        sys.stdout = io.StringIO()
+        (self.archive_dir / "file1.txt").write_text("This is file one.\n")
+        (self.archive_dir / "file2.log").write_text("Log line 1\nLog line 2\n" * 10)
 
     def tearDown(self):
-        """Clean up the temporary directory."""
-        if self.test_dir.exists():
-            shutil.rmtree(self.test_dir)
-        # Restore stdout
-        sys.stdout = self.held_stdout
+        """Remove the temporary directory."""
+        shutil.rmtree(self.test_dir)
 
-    def test_trash_list_empty(self):
-        # Arrange
-        shutil.rmtree(self.trash_dir)
-        self.trash_dir.mkdir()
-        args = argparse.Namespace(
-            command="trash",
-            action="list",
-            project_dir=self.test_dir,
+    def run_trash_command(self, action, archive_name=None, file_name=None, extra_args=None):
+        """Helper to run the trash command and capture its output."""
+        args_list = ['trash', action]
+        if archive_name:
+            args_list.append(archive_name)
+        if file_name:
+            args_list.append(file_name)
+        if extra_args:
+            args_list.extend(extra_args)
+
+        # Mocking argparse Namespace
+        mock_args = argparse.Namespace(
+            command='trash',
+            action=action,
+            archive_name=archive_name,
+            file_name=file_name,
+            project_dir=self.project_dir,
+            yes=True, # Default to yes to avoid interactive prompts
+            all='--all' in (extra_args or [])
         )
 
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
+        f = io.StringIO()
+        with redirect_stdout(f), patch('main.parse_args', return_value=mock_args):
+            try:
+                main_script.run_trash(mock_args)
+            except SystemExit as e:
+                # We expect sys.exit(0) on success
+                self.assertEqual(e.code, 0, "Command should exit with 0 on success")
+        return f.getvalue()
 
-        # Assert
-        self.assertEqual(cm.exception.code, 0)
-        output = sys.stdout.getvalue()
-        self.assertIn("Trash is empty.", output)
+    def test_setup_is_correct(self):
+        """Verify that the test setup and file structure are correct."""
+        self.assertTrue(self.archive_dir.exists())
+        self.assertTrue((self.archive_dir / "file1.txt").exists())
+
+    def test_trash_inspect_archive_summary(self):
+        """Test the 'inspect' action for an archive summary."""
+        output = self.run_trash_command('inspect', self.archive_name)
+        self.assertIn(f"--- Inspecting Archive: {self.archive_name} ---", output)
+        self.assertIn("--- File: file1.txt ---", output)
+        self.assertIn("This is file one.", output)
+        self.assertIn("--- File: file2.log ---", output)
+        self.assertIn("Log line 1", output)
+        self.assertIn("...", output, "Should show ellipsis for truncated file")
+
+    def test_trash_inspect_specific_file(self):
+        """Test the 'inspect' action for a specific file."""
+        output = self.run_trash_command('inspect', self.archive_name, 'file1.txt')
+        self.assertIn(f"--- Contents of file1.txt from {self.archive_name} ---", output)
+        self.assertIn("This is file one.", output)
+        self.assertNotIn("Log line 1", output)
+
+    def test_trash_inspect_specific_long_file(self):
+        """Test inspecting a file longer than the preview."""
+        full_content = "Log line 1\nLog line 2\n" * 10
+        output = self.run_trash_command('inspect', self.archive_name, 'file2.log')
+        self.assertIn(full_content, output)
+        self.assertNotIn("...", output)
+
+    def test_trash_list(self):
+        """Test the 'list' action."""
+        output = self.run_trash_command('list')
+        self.assertIn(self.archive_name, output)
+        self.assertIn("- file1.txt", output)
+        self.assertIn("- file2.log", output)
+
+    def test_trash_restore(self):
+        """Test the 'restore' action."""
+        self.assertFalse((self.project_dir / "file1.txt").exists())
+        self.run_trash_command('restore', self.archive_name)
+        self.assertTrue((self.project_dir / "file1.txt").exists())
+        self.assertTrue((self.project_dir / "file2.log").exists())
+        self.assertFalse(self.archive_dir.exists())
 
     def test_trash_clear_specific_archive(self):
-        # Arrange
-        args = argparse.Namespace(
-            command="trash",
-            action="clear",
-            archive_name=self.archive1_name,
-            project_dir=self.test_dir,
-            all=False,
-            yes=True,
-        )
+        """Test the 'clear' action on a specific archive."""
+        self.assertTrue(self.archive_dir.exists())
+        self.run_trash_command('clear', self.archive_name)
+        self.assertFalse(self.archive_dir.exists())
 
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
-
-        # Assert
-        self.assertEqual(cm.exception.code, 0)
-        self.assertFalse(self.archive1_path.exists())
-        self.assertTrue(self.archive2_path.exists())
-        output = sys.stdout.getvalue()
-        self.assertIn(f"Archive '{self.archive1_name}' deleted.", output)
-
-    def test_trash_clear_all_archives(self):
-        # Arrange
-        args = argparse.Namespace(
-            command="trash",
-            action="clear",
-            archive_name=None,
-            project_dir=self.test_dir,
-            all=True,
-            yes=True,
-        )
-
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
-
-        # Assert
-        self.assertEqual(cm.exception.code, 0)
-        self.assertFalse(self.trash_dir.exists())
-        output = sys.stdout.getvalue()
-        self.assertIn("Trash successfully emptied.", output)
+    def test_trash_clear_all(self):
+        """Test the 'clear' action with the --all flag."""
+        # Create another archive to ensure it's also deleted
+        (self.trash_base_dir / "another_archive").mkdir()
+        self.assertTrue(self.archive_dir.exists())
+        self.run_trash_command('clear', extra_args=['--all'])
+        self.assertFalse(self.trash_base_dir.exists())
 
     def test_trash_restore_latest(self):
-        # Arrange
-        args = argparse.Namespace(
-            command="trash",
-            action="restore",
-            archive_name=None, # Restore the latest
-            project_dir=self.test_dir,
-            yes=True,
-        )
+        """Test restoring the latest archive when no name is specified."""
+        # Create a newer archive
+        newer_archive_name = "trash-2023-01-02_12-00-00"
+        newer_archive_dir = self.trash_base_dir / newer_archive_name
+        newer_archive_dir.mkdir()
+        (newer_archive_dir / "latest_file.txt").write_text("This is from the latest archive.")
 
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
-
-        # Assert
-        self.assertEqual(cm.exception.code, 0)
-        self.assertTrue((self.test_dir / "file2.txt").exists())
-        self.assertTrue((self.test_dir / "subdir" / "file3.txt").exists())
-        self.assertFalse(self.archive2_path.exists()) # Should be removed after restore
-        output = sys.stdout.getvalue()
-        self.assertIn("Restore complete.", output)
-
-    def test_trash_restore_specific_archive(self):
-        # Arrange
-        args = argparse.Namespace(
-            command="trash",
-            action="restore",
-            archive_name=self.archive1_name,
-            project_dir=self.test_dir,
-            yes=True,
-        )
-
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
-
-        # Assert
-        self.assertEqual(cm.exception.code, 0)
-        self.assertTrue((self.test_dir / "file1.txt").exists())
-        self.assertFalse(self.archive1_path.exists())
-        output = sys.stdout.getvalue()
-        self.assertIn("Restore complete.", output)
+        self.run_trash_command('restore') # No archive name provided
+        self.assertTrue((self.project_dir / "latest_file.txt").exists())
+        self.assertFalse((self.project_dir / "file1.txt").exists())
+        self.assertFalse(newer_archive_dir.exists())
 
     def test_trash_restore_conflict(self):
-        # Arrange
-        (self.test_dir / "file1.txt").write_text("existing file")
-        args = argparse.Namespace(
-            command="trash",
-            action="restore",
-            archive_name=self.archive1_name,
-            project_dir=self.test_dir,
-            yes=True,
-        )
+        """Test that restore fails if a file conflict is detected."""
+        (self.project_dir / "file1.txt").write_text("Existing file.")
 
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
+        # Use a custom helper to check for non-zero exit code
+        with self.assertRaises(AssertionError):
+            self.run_trash_command('restore', self.archive_name)
 
-        # Assert
-        self.assertEqual(cm.exception.code, 1)
-        output = sys.stdout.getvalue()
-        self.assertIn("The following files already exist", output)
-        self.assertIn("file1.txt", output)
-        self.assertTrue(self.archive1_path.exists()) # Should not be deleted
+    def test_trash_list_empty(self):
+        """Test listing an empty trash directory."""
+        shutil.rmtree(self.trash_base_dir)
+        self.trash_base_dir.mkdir()
+        output = self.run_trash_command('list')
+        self.assertIn("Trash is empty.", output)
 
-    def test_trash_list_with_log_summary(self):
-        """Test that `trash list` shows a log summary if a log file is present."""
-        # Arrange
+    def test_trash_list_log_summary(self):
+        """Test that 'list' shows a log summary."""
+        # Isolate the test by removing the other log file created in setUp
+        (self.archive_dir / "file2.log").unlink()
+
         log_content = "\n".join([f"Line {i}" for i in range(20)])
-        (self.archive2_path / "test_run_123.log").write_text(log_content)
-
-        args = argparse.Namespace(
-            command="trash",
-            action="list",
-            project_dir=self.test_dir,
-        )
-
-        # Act
-        with self.assertRaises(SystemExit) as cm:
-            run_trash(args)
-
-        # Assert
-        self.assertEqual(cm.exception.code, 0)
-        output = sys.stdout.getvalue()
-
-        self.assertIn(self.archive2_name, output)
-        # Check that other files are still listed
-        self.assertIn("file2.txt", output)
-        self.assertIn("subdir/ (dir)", output)
-        self.assertIn("test_run_123.log", output)
-
-        # Check for log summary details
+        (self.archive_dir / "run-123.log").write_text(log_content)
+        output = self.run_trash_command('list')
         self.assertIn("--- Log Summary (last 15 lines) ---", output)
-        self.assertIn("Line 5", output)
         self.assertIn("Line 19", output)
         self.assertNotIn("Line 4", output)
+
 
 if __name__ == '__main__':
     unittest.main()

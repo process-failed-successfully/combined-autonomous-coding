@@ -10,6 +10,8 @@ import argparse
 import asyncio
 import sys
 import os
+import shutil
+import subprocess
 from pathlib import Path
 
 from shared.config import Config
@@ -1608,13 +1610,18 @@ def parse_args():
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
         "action",
-        choices=["list", "show", "clean", "revert"],
+        choices=["list", "show", "clean", "revert", "create"],
         help="Action to perform on the worktrees",
     )
     parser_worktrees.add_argument(
         "worktree_name",
         nargs="?",
-        help="The name of the worktree to show or clean (e.g., 'agent-sprint-task-1')",
+        help="The name of the worktree to create, show, or clean (e.g., 'agent-sprint-task-1')",
+    )
+    parser_worktrees.add_argument(
+        "--branch",
+        type=str,
+        help="Specify a branch name to create for the worktree (for 'create' action)",
     )
     parser_worktrees.add_argument(
         "-p", "--project-dir",
@@ -1638,9 +1645,6 @@ def parse_args():
 
 def run_worktrees(args):
     """Manages agent-created git worktrees."""
-    import subprocess
-    import shutil
-
     project_dir = args.project_dir.resolve()
     worktrees_base_dir = project_dir / "worktrees"
 
@@ -1655,8 +1659,43 @@ def run_worktrees(args):
         print("❌ Error: Not a git repository. Cannot manage worktrees.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Action: create ---
+    if args.action == "create":
+        if not args.worktree_name:
+            print("❌ Error: 'create' action requires a worktree name.", file=sys.stderr)
+            sys.exit(1)
+
+        worktree_path = worktrees_base_dir / args.worktree_name
+        if worktree_path.exists():
+            print(f"❌ Error: Worktree path '{worktree_path}' already exists.", file=sys.stderr)
+            sys.exit(1)
+
+        # If branch is not specified, it defaults to the worktree name
+        branch_name = args.branch if args.branch else args.worktree_name
+
+        # Ensure the base directory for worktrees exists
+        worktrees_base_dir.mkdir(parents=True, exist_ok=True)
+
+        print(f"--- Creating new worktree: {args.worktree_name} ---")
+        print(f"  Directory: ./{worktree_path.relative_to(project_dir)}")
+        print(f"  Branch:    {branch_name}")
+
+        try:
+            cmd = [git_path, "-C", str(project_dir), "worktree", "add", "-b", branch_name, str(worktree_path), "HEAD"]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            print(f"\n✅ Successfully created worktree '{args.worktree_name}' on branch '{branch_name}'.")
+
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.strip()
+            print(f"❌ Error creating worktree: {stderr}", file=sys.stderr)
+            # Clean up partial directory if git failed
+            if worktree_path.exists():
+                shutil.rmtree(worktree_path)
+            sys.exit(1)
+        sys.exit(0)
+
     # --- Action: list ---
-    if args.action == "list":
+    elif args.action == "list":
         print(f"--- Listing Agent Worktrees in: {worktrees_base_dir} ---")
         try:
             result = subprocess.run(

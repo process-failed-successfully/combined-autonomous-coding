@@ -953,6 +953,309 @@ def _trash_diff(args, trash_base_dir):
     sys.exit(0)
 
 
+def _archive_list(archive_base_dir):
+    """Helper function to list archives."""
+    print(f"--- Archives in: {archive_base_dir} ---")
+    try:
+        archives = sorted([d for d in archive_base_dir.iterdir() if d.is_dir()], reverse=True)
+    except OSError as e:
+        print(f"Error reading archives directory: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not archives:
+        print("No archives found.")
+        sys.exit(0)
+
+    for i, archive_dir in enumerate(archives):
+        latest_marker = " (latest)" if i == 0 else ""
+        print(f"\n[{i+1}] {archive_dir.name}{latest_marker}")
+        try:
+            contents = list(archive_dir.iterdir())
+            if not contents:
+                print("    (empty)")
+            else:
+                for item in contents:
+                    is_dir = "/ (dir)" if item.is_dir() else ""
+                    print(f"    - {item.name}{is_dir}")
+        except OSError as e:
+            print(f"    Error reading archive contents: {e}", file=sys.stderr)
+    sys.exit(0)
+
+
+def _archive_restore(args, archive_base_dir):
+    """Helper function to restore from an archive."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Restoring from archive in: {project_dir} ---")
+    archive_to_restore = None
+    try:
+        archives = sorted([d for d in archive_base_dir.iterdir() if d.is_dir()], reverse=True)
+        if not archives:
+            print("No archives found to restore.")
+            sys.exit(0)
+
+        if args.archive_name:
+            target_path = archive_base_dir / args.archive_name
+            if not target_path.is_dir():
+                print(f"❌ Error: Archive '{args.archive_name}' not found.")
+                sys.exit(1)
+            archive_to_restore = target_path
+        else:
+            print("Please select an archive to restore:")
+            for i, archive_dir in enumerate(archives):
+                print(f"  [{i+1}] {archive_dir.name}")
+
+            while True:
+                try:
+                    selection = input(f"Enter number (1-{len(archives)}): ").strip()
+                    if not selection:
+                        print("Aborted.")
+                        sys.exit(0)
+                    choice_index = int(selection) - 1
+                    if 0 <= choice_index < len(archives):
+                        archive_to_restore = archives[choice_index]
+                        break
+                    else:
+                        print("Invalid selection. Please try again.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+                except (EOFError, KeyboardInterrupt):
+                    print("\nAborted.")
+                    sys.exit(0)
+
+    except (OSError, ValueError) as e:
+        print(f"Error accessing archives: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Found archive to restore: {archive_to_restore.name}")
+
+    artifacts = list(archive_to_restore.iterdir())
+    if not artifacts:
+        print("Archive is empty. Nothing to restore.")
+        sys.exit(0)
+
+    conflicts = [p.name for p in artifacts if (project_dir / p.name).exists()]
+    if conflicts:
+        print("\n❌ Error: The following files already exist in the project directory:")
+        for f in conflicts:
+            print(f"  - {f}")
+        print("Please move or delete these conflicting files before running restore.")
+        sys.exit(1)
+
+    print("\nThe following artifacts will be restored (copied):")
+    for artifact in artifacts:
+        print(f"  - {artifact.name}")
+
+    if args.dry_run:
+        print("\n-- DRY RUN --")
+        print("The following actions would be taken:")
+        for artifact in artifacts:
+            print(f"  - COPY: {artifact.name} from archive to project directory")
+        print("\nNo changes were made.")
+        sys.exit(0)
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nRestoring artifacts...")
+    try:
+        for artifact in artifacts:
+            dest = project_dir / artifact.name
+            if artifact.is_dir():
+                shutil.copytree(str(artifact), str(dest))
+            else:
+                shutil.copy2(str(artifact), str(dest))
+            print(f"Restored: {artifact.name}")
+    except OSError as e:
+        print(f"Error during restore: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n✅ Restore complete. Original archive remains untouched.")
+    sys.exit(0)
+
+
+def _archive_clear(args, archive_base_dir):
+    """Helper function to clear archives."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Clearing archives in: {project_dir} ---")
+    if args.all:
+        if args.dry_run:
+            print("\n-- DRY RUN --")
+            print(f"Would permanently delete the entire '{archive_base_dir.name}' directory and all its contents.")
+            print("\nNo changes were made.")
+            sys.exit(0)
+        if not args.yes:
+            print(f"This will permanently delete the entire '{archive_base_dir.name}' directory and all its contents.")
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+        try:
+            shutil.rmtree(archive_base_dir)
+            print("✅ Archives successfully cleared.")
+        except OSError as e:
+            print(f"Error clearing archives: {e}", file=sys.stderr)
+            sys.exit(1)
+    elif args.archive_name:
+        target_path = archive_base_dir / args.archive_name
+        if not target_path.is_dir():
+            print(f"❌ Error: Archive '{args.archive_name}' not found.")
+            sys.exit(1)
+
+        if args.dry_run:
+            print("\n-- DRY RUN --")
+            print(f"Would permanently delete the archive: {args.archive_name}")
+            print("\nNo changes were made.")
+            sys.exit(0)
+        if not args.yes:
+            print(f"This will permanently delete the archive: {args.archive_name}")
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+        try:
+            shutil.rmtree(target_path)
+            print(f"✅ Archive '{args.archive_name}' deleted.")
+        except OSError as e:
+            print(f"Error deleting archive: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("Error: 'clear' action requires either an archive name or the --all flag.")
+        sys.exit(1)
+    sys.exit(0)
+
+
+def _archive_inspect(args, archive_base_dir):
+    """Helper function to inspect archives."""
+    if not args.archive_name:
+        print("❌ Error: 'inspect' action requires an archive name.", file=sys.stderr)
+        sys.exit(1)
+
+    archive_dir = archive_base_dir / args.archive_name
+    if not archive_dir.is_dir():
+        print(f"❌ Error: Archive '{args.archive_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.file_name:
+        file_path = archive_dir / args.file_name
+        if not file_path.exists():
+            print(f"❌ Error: File '{args.file_name}' not found in archive '{args.archive_name}'.", file=sys.stderr)
+            sys.exit(1)
+        if file_path.is_dir():
+            print(f"❌ Error: '{args.file_name}' is a directory. Cannot inspect directories.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Contents of {args.file_name} from {args.archive_name} ---")
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                print(f.read())
+        except Exception as e:
+            print(f"Error reading file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"--- Inspecting Archive: {archive_dir.name} ---")
+        try:
+            contents = sorted(list(archive_dir.iterdir()))
+            if not contents:
+                print("(empty)")
+                sys.exit(0)
+            for item in contents:
+                is_dir = "/ (dir)" if item.is_dir() else ""
+                print(f"  - {item.name}{is_dir}")
+        except OSError as e:
+            print(f"Error reading archive contents: {e}", file=sys.stderr)
+            sys.exit(1)
+    sys.exit(0)
+
+
+def _archive_diff(args, archive_base_dir):
+    """Helper function to diff a file in an archive with the project version."""
+    import difflib
+
+    project_dir = args.project_dir.resolve()
+    archive_name = args.archive_name
+    file_name = args.file_name
+
+    if not archive_name or not file_name:
+        print("❌ Error: 'diff' action requires an archive name and a file name.", file=sys.stderr)
+        sys.exit(1)
+
+    archive_dir = archive_base_dir / archive_name
+    if not archive_dir.is_dir():
+        print(f"❌ Error: Archive '{archive_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    archived_file_path = archive_dir / file_name
+    if not archived_file_path.is_file():
+        print(f"❌ Error: File '{file_name}' not found in archive '{archive_name}'.", file=sys.stderr)
+        sys.exit(1)
+
+    project_file_path = project_dir / file_name
+
+    try:
+        with open(archived_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            archived_lines = f.readlines()
+    except Exception as e:
+        print(f"Error reading archived file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if project_file_path.exists():
+        try:
+            with open(project_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                project_lines = f.readlines()
+            from_file = f"a/{file_name} (Project Version)"
+            to_file = f"b/{file_name} (Archived Version)"
+        except Exception as e:
+            print(f"Error reading project file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        project_lines = []
+        from_file = f"a/{file_name} (Project Version - File does not exist)"
+        to_file = f"b/{file_name} (Archived Version)"
+
+    diff = list(difflib.unified_diff(
+        project_lines,
+        archived_lines,
+        fromfile=from_file,
+        tofile=to_file,
+    ))
+
+    if not diff:
+        print(f"✅ No differences found between the project version and the archived version of '{file_name}'.")
+        sys.exit(0)
+
+    print(f"--- Diff for {file_name} ---")
+    for line in diff:
+        print(line, end="")
+
+    sys.exit(0)
+
+
+def run_archives(args):
+    """Manages the agent archives directory."""
+    project_dir = args.project_dir.resolve()
+    archive_base_dir = project_dir / ".agent_archives"
+
+    if not archive_base_dir.exists() or not archive_base_dir.is_dir():
+        print("Archives directory (.agent_archives) not found. Nothing to do.")
+        sys.exit(0)
+
+    if args.action == "list":
+        _archive_list(archive_base_dir)
+    elif args.action == "restore":
+        _archive_restore(args, archive_base_dir)
+    elif args.action == "clear":
+        _archive_clear(args, archive_base_dir)
+    elif args.action == "inspect":
+        _archive_inspect(args, archive_base_dir)
+    elif args.action == "diff":
+        _archive_diff(args, archive_base_dir)
+
+
 def run_revert(args):
     """Discards uncommitted changes for specified files or for the entire repository."""
     import subprocess
@@ -1787,6 +2090,45 @@ def parse_args():
         help="Skip confirmation prompt",
     )
 
+    # Subparser for 'archives' - mirrors 'trash' but for .agent_archives/
+    parser_archives = subparsers.add_parser("archives", help="Manage the agent archives directory")
+    parser_archives.add_argument(
+        "action",
+        choices=["list", "restore", "clear", "inspect", "diff"],
+        help="Action to perform on the archives",
+    )
+    parser_archives.add_argument(
+        "archive_name",
+        nargs="?",
+        help="The name of the archive to restore, clear, or inspect",
+    )
+    parser_archives.add_argument(
+        "file_name",
+        nargs="?",
+        help="The name of the file to inspect or diff within the archive",
+    )
+    parser_archives.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the archives are located",
+    )
+    parser_archives.add_argument(
+        "--all",
+        action="store_true",
+        help="Option for 'clear' action to remove all archives",
+    )
+    parser_archives.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts",
+    )
+    parser_archives.add_argument(
+        "-n", "--dry-run",
+        action="store_true",
+        help="Show what would be done without making any changes",
+    )
+
     return parser.parse_args()
 
 
@@ -2287,6 +2629,11 @@ async def main():
     # Handle `revert` command
     if args.command == "revert":
         run_revert(args)
+        return
+
+    # Handle `archives' command
+    if args.command == "archives":
+        run_archives(args)
         return
 
     # Handle `worktrees` command

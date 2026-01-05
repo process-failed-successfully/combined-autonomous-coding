@@ -5,6 +5,7 @@ import shutil
 import os
 from pathlib import Path
 from main import parse_args, main
+import io
 
 
 class TestMain(unittest.IsolatedAsyncioTestCase):
@@ -415,6 +416,49 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(cm.exception.code, 0)
         mock_json_dumps.assert_called_once()
         self.assertTrue(any("Warning: --dry-run is deprecated" in call.args[0] for call in mock_stderr.write.call_args_list))
+
+    @patch('main.run_clean')
+    @patch('sys.argv', ['main.py', 'clean', '--list'])
+    async def test_main_clean_list_command(self, mock_run_clean):
+        # This test ensures that when 'clean --list' is invoked, the run_clean function is called.
+        # The actual logic of run_clean is tested in a dedicated test below.
+        try:
+            await main()
+        except SystemExit:
+            pass  # Expected exit
+        mock_run_clean.assert_called_once()
+
+    def test_run_clean_list_functionality(self):
+        # Create dummy artifacts
+        (self.project_dir / "COMPLETED").touch()
+        (self.project_dir / "feature_list.json").touch()
+
+        args = MagicMock()
+        args.project_dir = self.project_dir
+        args.force = False
+        args.archive = False
+        args.list = True
+        args.yes = True
+
+        # Capture output
+        from main import run_clean
+        from contextlib import redirect_stdout
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            with self.assertRaises(SystemExit) as cm:
+                run_clean(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        output = f.getvalue()
+        self.assertIn("COMPLETED", output)
+        self.assertIn("feature_list.json", output)
+        self.assertIn("would be cleaned", output)
+
+        # Verify files were not deleted
+        self.assertTrue((self.project_dir / "COMPLETED").exists())
+        self.assertTrue((self.project_dir / "feature_list.json").exists())
 
 
 if __name__ == "__main__":

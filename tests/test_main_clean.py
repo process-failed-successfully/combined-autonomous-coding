@@ -42,7 +42,7 @@ class TestMainClean(unittest.TestCase):
 
     def test_clean_default_trash_mode(self):
         """Test the default 'clean' command moves artifacts to .agent_trash."""
-        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, yes=True)
+        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, list=False, yes=True)
 
         with self.assertRaises(SystemExit) as cm:
             run_clean(args)
@@ -63,7 +63,7 @@ class TestMainClean(unittest.TestCase):
 
     def test_clean_force_delete_mode(self):
         """Test 'clean --force' permanently deletes artifacts."""
-        args = argparse.Namespace(project_dir=self.test_dir, force=True, archive=False, yes=True)
+        args = argparse.Namespace(project_dir=self.test_dir, force=True, archive=False, list=False, yes=True)
 
         with self.assertRaises(SystemExit) as cm:
             run_clean(args)
@@ -78,7 +78,7 @@ class TestMainClean(unittest.TestCase):
 
     def test_clean_archive_mode(self):
         """Test 'clean --archive' moves artifacts to .agent_archives."""
-        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=True, yes=True)
+        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=True, list=False, yes=True)
 
         with self.assertRaises(SystemExit) as cm:
             run_clean(args)
@@ -108,7 +108,7 @@ class TestMainClean(unittest.TestCase):
             elif path.is_file():
                 path.unlink()
 
-        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, yes=True)
+        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, list=False, yes=True)
 
         f = io.StringIO()
         with redirect_stdout(f), self.assertRaises(SystemExit) as cm:
@@ -121,7 +121,7 @@ class TestMainClean(unittest.TestCase):
     @patch('builtins.input', return_value='y')
     def test_interactive_confirm_yes(self, mock_input):
         """Test interactive confirmation 'y' proceeds with cleaning."""
-        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, yes=False)
+        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, list=False, yes=False)
         with self.assertRaises(SystemExit):
             run_clean(args)
 
@@ -131,7 +131,7 @@ class TestMainClean(unittest.TestCase):
     @patch('builtins.input', return_value='n')
     def test_interactive_confirm_no(self, mock_input):
         """Test interactive confirmation 'n' aborts the cleaning."""
-        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, yes=False)
+        args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, list=False, yes=False)
         with self.assertRaises(SystemExit) as cm:
             run_clean(args)
 
@@ -157,7 +157,7 @@ class TestMainClean(unittest.TestCase):
             # Create the .agent_run_id file in the project dir
             (self.test_dir / ".agent_run_id").write_text(run_id)
 
-            args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, yes=True)
+            args = argparse.Namespace(project_dir=self.test_dir, force=False, archive=False, list=False, yes=True)
 
             with self.assertRaises(SystemExit) as cm:
                 run_clean(args)

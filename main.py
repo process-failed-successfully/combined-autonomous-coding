@@ -1733,7 +1733,7 @@ def parse_args():
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
         "action",
-        choices=["list", "show", "clean", "revert", "create", "merge"],
+        choices=["list", "show", "clean", "revert", "create", "merge", "diff"],
         help="Action to perform on the worktrees",
     )
     parser_worktrees.add_argument(
@@ -1958,6 +1958,49 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
     sys.exit(0)
 
 
+def _worktree_diff(args, git_path, worktrees_base_dir):
+    """Helper function to show a diff of the worktree against the main repo's HEAD."""
+    import subprocess
+
+    if not args.worktree_name:
+        print("❌ Error: 'diff' action requires a worktree name.", file=sys.stderr)
+        sys.exit(1)
+
+    worktree_name = args.worktree_name
+    worktree_path = worktrees_base_dir / worktree_name
+    if not worktree_path.is_dir():
+        print(f"❌ Error: Worktree '{worktree_name}' not found at '{worktree_path}'.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Diff for worktree: {worktree_name} (compared to main repo HEAD) ---")
+
+    try:
+        # We run 'diff' from within the worktree's directory.
+        # This automatically compares the worktree's state against the main repo's HEAD.
+        result = subprocess.run(
+            [git_path, "-C", str(worktree_path), "diff", "HEAD"],
+            capture_output=True, text=True
+        )
+
+        if result.returncode != 0:
+            # This could happen if git itself fails, which is unlikely here.
+            print(f"❌ Error running git diff: {result.stderr}", file=sys.stderr)
+            sys.exit(1)
+
+        if not result.stdout.strip():
+            print("✅ No changes detected. Worktree is in sync with HEAD.")
+        else:
+            # Print the diff output directly
+            print(result.stdout)
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode().strip() if e.stderr else str(e)
+        print(f"❌ Error getting diff for worktree: {stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_worktrees(args):
     """Manages agent-created git worktrees."""
     project_dir = args.project_dir.resolve()
@@ -2127,6 +2170,10 @@ def run_worktrees(args):
     # --- Action: merge ---
     elif args.action == "merge":
         _worktree_merge(args, git_path, project_dir, worktrees_base_dir)
+
+    # --- Action: diff ---
+    elif args.action == "diff":
+        _worktree_diff(args, git_path, worktrees_base_dir)
 
     # --- Action: clean ---
     elif args.action == "clean":

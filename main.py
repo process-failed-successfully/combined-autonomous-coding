@@ -729,6 +729,69 @@ def _trash_inspect(args, trash_base_dir):
     sys.exit(0)
 
 
+def run_revert(args):
+    """Discards all uncommitted changes in the project directory."""
+    import subprocess
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Reverting uncommitted changes in: {project_dir} ---")
+
+    # 1. Find git executable
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. Check if it's a git repository
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot revert.", file=sys.stderr)
+        sys.exit(1)
+
+    # 3. Show the user what will be reverted
+    print("\nUncommitted changes (will be discarded):")
+    try:
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if not status_result.stdout.strip():
+            print("  ✅ No uncommitted changes to revert.")
+            sys.exit(0)
+
+        for line in status_result.stdout.strip().split('\n'):
+            print(f"  {line}")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"❌ Error checking git status: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # 4. Ask for confirmation
+    if not args.yes:
+        confirm = input("\nAre you sure you want to discard ALL uncommitted changes? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    # 5. Execute git reset and clean
+    print("\nReverting changes...")
+    try:
+        # Discard changes to tracked files
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        # Remove untracked files and directories
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "clean", "-fd"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        print("✅ Revert complete. Working directory is now clean.")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"❌ Error during revert: {getattr(e, 'stderr', e)}", file=sys.stderr)
+        sys.exit(1)
+    sys.exit(0)
+
+
 def run_trash(args):
     """Manages the agent trash directory."""
     project_dir = args.project_dir.resolve()
@@ -1353,6 +1416,20 @@ def parse_args():
         help="Skip confirmation prompts",
     )
 
+    # Subparser for 'revert'
+    parser_revert = subparsers.add_parser("revert", help="Discard all uncommitted changes")
+    parser_revert.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to revert changes in (default: current directory)",
+    )
+    parser_revert.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
     return parser.parse_args()
 
 
@@ -1397,6 +1474,11 @@ async def main():
     # Handle `trash` command
     if args.command == "trash":
         run_trash(args)
+        return
+
+    # Handle `revert` command
+    if args.command == "revert":
+        run_revert(args)
         return
 
     # Handle `list-agents` command

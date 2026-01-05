@@ -7,6 +7,8 @@ from pathlib import Path
 import shutil
 import tempfile
 import argparse
+import io
+from datetime import datetime
 
 # Ensure the script can find the main module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -39,15 +41,23 @@ class TestSnapshotCommand(unittest.TestCase):
 
         self.archive_dir = self.project_dir / ".agent_archives"
 
+        # Mock datetime to control snapshot names
+        self.mock_datetime = MagicMock()
+        self.mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        self.patcher = patch('datetime.datetime', self.mock_datetime)
+        self.patcher.start()
+
     def tearDown(self):
         """Clean up the temporary directory."""
         shutil.rmtree(self.test_dir)
         if self.mock_log_file.exists():
             self.mock_log_file.unlink()
+        self.patcher.stop()
 
     def test_snapshot_creates_timestamped_archive(self):
         """Verify snapshot creates a correctly named archive and copies files."""
         args = argparse.Namespace(
+            action='create',
             project_dir=self.project_dir,
             name=None,
             yes=True
@@ -77,6 +87,7 @@ class TestSnapshotCommand(unittest.TestCase):
     def test_snapshot_with_custom_name(self):
         """Verify snapshot works with a user-provided custom name."""
         args = argparse.Namespace(
+            action='create',
             project_dir=self.project_dir,
             name="my-custom-snapshot",
             yes=True
@@ -97,6 +108,7 @@ class TestSnapshotCommand(unittest.TestCase):
         existing_snapshot_dir.mkdir(parents=True)
 
         args = argparse.Namespace(
+            action='create',
             project_dir=self.project_dir,
             name="my-custom-snapshot",
             yes=True
@@ -114,6 +126,7 @@ class TestSnapshotCommand(unittest.TestCase):
         self.mock_log_file.unlink()
 
         args = argparse.Namespace(
+            action='create',
             project_dir=self.project_dir,
             name=None,
             yes=True
@@ -128,6 +141,7 @@ class TestSnapshotCommand(unittest.TestCase):
     def test_snapshot_interactive_confirmation(self, mock_input):
         """Verify the interactive prompt works correctly."""
         args = argparse.Namespace(
+            action='create',
             project_dir=self.project_dir,
             name="interactive-test",
             yes=False
@@ -142,6 +156,7 @@ class TestSnapshotCommand(unittest.TestCase):
     def test_snapshot_interactive_abort(self, mock_input):
         """Verify the interactive prompt aborts correctly."""
         args = argparse.Namespace(
+            action='create',
             project_dir=self.project_dir,
             name="interactive-abort-test",
             yes=False
@@ -151,6 +166,36 @@ class TestSnapshotCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         mock_input.assert_called_once()
         self.assertFalse((self.archive_dir / "interactive-abort-test").exists())
+
+    def test_snapshot_diff(self):
+        # First, create a snapshot
+        create_args = argparse.Namespace(
+            action='create',
+            name='snapshot-to-diff',
+            project_dir=self.project_dir,
+            yes=True
+        )
+        with patch('sys.stdout', new_callable=io.StringIO):
+            with self.assertRaises(SystemExit):
+                run_snapshot(create_args)
+
+        # Now, modify a file
+        (self.project_dir / "feature_list.json").write_text('["feature1", "feature2"]')
+
+        diff_args = argparse.Namespace(
+            action='diff',
+            name='snapshot-to-diff',
+            project_dir=self.project_dir
+        )
+
+        with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+            with self.assertRaises(SystemExit) as cm:
+                run_snapshot(diff_args)
+            self.assertEqual(cm.exception.code, 0)
+            output = mock_stdout.getvalue()
+            self.assertIn('feature_list.json', output)
+            self.assertIn('--- a', output)
+            self.assertIn('+++ b', output)
 
 
 if __name__ == '__main__':

@@ -44,8 +44,8 @@ class TestMainHistory(unittest.TestCase):
             args = Namespace(project_dir=self.project_dir)
 
             (self.project_dir / ".agent_history").write_text("run-001\nrun-002\n")
-            (self.logs_dir / "run-001.log").write_text("2024-01-01 10:00:00,000 - INFO - Start of run 1\n...run 1 complete")
-            (self.logs_dir / "run-002.log").write_text("2024-01-02 11:00:00,000 - INFO - Start of run 2\n...run 2 complete")
+            (self.logs_dir / "run-001.log").write_text("2024-01-01 10:00:00,000 - INFO - Start of run 1\nrun 1 complete")
+            (self.logs_dir / "run-002.log").write_text("2024-01-02 11:00:00,000 - INFO - Start of run 2\nrun 2 complete")
 
             with self.assertRaises(SystemExit) as cm:
                 main.run_history(args)
@@ -55,10 +55,10 @@ class TestMainHistory(unittest.TestCase):
             self.assertIn(f"--- Agent Run History: {self.project_dir.resolve()} ---", output)
             self.assertIn("[2] Run ID: run-002 (latest)", output)
             self.assertIn("Timestamp: 2024-01-02 11:00:00,000", output)
-            self.assertIn("...run 2 complete", output)
+            self.assertIn("run 2 complete", output)
             self.assertIn("[1] Run ID: run-001", output)
             self.assertIn("Timestamp: 2024-01-01 10:00:00,000", output)
-            self.assertIn("...run 1 complete", output)
+            self.assertIn("run 1 complete", output)
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_run_history_with_missing_log(self, mock_stdout):
@@ -66,7 +66,7 @@ class TestMainHistory(unittest.TestCase):
         with patch('main.__file__', str(self.main_py_path)):
             args = Namespace(project_dir=self.project_dir)
             (self.project_dir / ".agent_history").write_text("run-001\nrun-MISSING\n")
-            (self.logs_dir / "run-001.log").write_text("2024-01-01 10:00:00,000 - INFO - Start of run 1\n...run 1 complete")
+            (self.logs_dir / "run-001.log").write_text("2024-01-01 10:00:00,000 - INFO - Start of run 1\nrun 1 complete")
 
             with self.assertRaises(SystemExit) as cm:
                 main.run_history(args)
@@ -78,7 +78,7 @@ class TestMainHistory(unittest.TestCase):
             self.assertIn("Log file not found", output)
             self.assertIn("[1] Run ID: run-001", output)
             self.assertIn("Timestamp: 2024-01-01 10:00:00,000", output)
-            self.assertIn("...run 1 complete", output)
+            self.assertIn("run 1 complete", output)
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,8 +41,11 @@ class TestTrashInteractiveRestore(unittest.TestCase):
         args = argparse.Namespace(
             action="restore",
             archive_name=None,
+            file_name=None,
             project_dir=self.project_dir,
-            yes=True  # Bypasses the confirmation prompt
+            all=False,
+            yes=True,  # Bypasses the confirmation prompt
+            dry_run=False
         )
 
         with self.assertRaises(SystemExit) as cm:

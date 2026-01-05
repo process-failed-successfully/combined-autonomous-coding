@@ -21,8 +21,10 @@ class TestMainTrashCommand(unittest.TestCase):
         self.archive_name = "trash-2023-01-01_12-00-00"
         self.archive_dir = self.trash_base_dir / self.archive_name
         self.archive_dir.mkdir()
+        self.file_name = "file1.txt"
+        self.trashed_file = self.archive_dir / self.file_name
 
-        (self.archive_dir / "file1.txt").write_text("This is file one.\n")
+        (self.trashed_file).write_text("This is file one.\n")
         (self.archive_dir / "file2.log").write_text("Log line 1\nLog line 2\n" * 10)
 
     def tearDown(self):
@@ -47,7 +49,8 @@ class TestMainTrashCommand(unittest.TestCase):
             file_name=file_name,
             project_dir=self.project_dir,
             yes=True, # Default to yes to avoid interactive prompts
-            all='--all' in (extra_args or [])
+            all='--all' in (extra_args or []),
+            dry_run='--dry-run' in (extra_args or [])
         )
 
         f = io.StringIO()
@@ -134,7 +137,8 @@ class TestMainTrashCommand(unittest.TestCase):
             file_name=None,
             project_dir=self.project_dir,
             yes=True,
-            all=False
+            all=False,
+            dry_run=False
         )
 
         f = io.StringIO()
@@ -173,6 +177,47 @@ class TestMainTrashCommand(unittest.TestCase):
         self.assertIn("--- Log Summary (last 15 lines) ---", output)
         self.assertIn("Line 19", output)
         self.assertNotIn("Line 4", output)
+
+    def test_restore_dry_run(self):
+        """Verify that 'trash restore --dry-run' shows actions without restoring."""
+        output = self.run_trash_command('restore', self.archive_name, extra_args=['--dry-run'])
+
+        # Check that the output indicates a dry run
+        self.assertIn("-- DRY RUN --", output)
+        self.assertIn("The following actions would be taken:", output)
+        self.assertIn(f"MOVE: {self.file_name} from trash to project directory", output)
+        self.assertIn(f"DELETE: Empty archive '{self.archive_name}'", output)
+        self.assertIn("No changes were made.", output)
+
+        # Verify that no changes were actually made
+        self.assertTrue(self.trashed_file.exists())
+        self.assertFalse((self.project_dir / self.file_name).exists())
+
+    def test_clear_archive_dry_run(self):
+        """Verify that 'trash clear <archive> --dry-run' shows actions without deleting."""
+        output = self.run_trash_command('clear', self.archive_name, extra_args=['--dry-run'])
+
+        self.assertIn("-- DRY RUN --", output)
+        self.assertIn(f"Would permanently delete the archive: {self.archive_name}", output)
+        self.assertIn("No changes were made.", output)
+
+        # Verify that the archive still exists
+        self.assertTrue(self.archive_dir.exists())
+
+    def test_clear_all_dry_run(self):
+        """Verify that 'trash clear --all --dry-run' shows actions without deleting."""
+        # Create a second archive to ensure it would clear all
+        (self.trash_base_dir / "trash-2023-01-02_12-00-00").mkdir()
+
+        output = self.run_trash_command('clear', extra_args=['--all', '--dry-run'])
+
+        self.assertIn("-- DRY RUN --", output)
+        self.assertIn("Would permanently delete the entire '.agent_trash' directory", output)
+        self.assertIn("No changes were made.", output)
+
+        # Verify that the trash directory and its contents still exist
+        self.assertTrue(self.trash_base_dir.exists())
+        self.assertEqual(len(list(self.trash_base_dir.iterdir())), 2)
 
 
 if __name__ == '__main__':

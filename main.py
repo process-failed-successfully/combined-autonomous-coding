@@ -636,6 +636,15 @@ def _trash_restore(args, trash_base_dir):
     for artifact in artifacts:
         print(f"  - {artifact.name}")
 
+    if args.dry_run:
+        print("\n-- DRY RUN --")
+        print("The following actions would be taken:")
+        for artifact in artifacts:
+            print(f"  - MOVE: {artifact.name} from trash to project directory")
+        print(f"  - DELETE: Empty archive '{archive_to_restore.name}'")
+        print("\nNo changes were made.")
+        sys.exit(0)
+
     if not args.yes:
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
@@ -664,6 +673,11 @@ def _trash_clear(args, trash_base_dir):
     project_dir = args.project_dir.resolve()
     print(f"--- Clearing trash in: {project_dir} ---")
     if args.all:
+        if args.dry_run:
+            print("\n-- DRY RUN --")
+            print(f"Would permanently delete the entire '.agent_trash' directory and all its contents.")
+            print("\nNo changes were made.")
+            sys.exit(0)
         if not args.yes:
             print(f"This will permanently delete the entire '.agent_trash' directory and all its contents.")
             confirm = input("Are you sure? [y/N]: ").strip().lower()
@@ -682,6 +696,11 @@ def _trash_clear(args, trash_base_dir):
             print(f"❌ Error: Archive '{args.archive_name}' not found.")
             sys.exit(1)
 
+        if args.dry_run:
+            print("\n-- DRY RUN --")
+            print(f"Would permanently delete the archive: {args.archive_name}")
+            print("\nNo changes were made.")
+            sys.exit(0)
         if not args.yes:
             print(f"This will permanently delete the archive: {args.archive_name}")
             confirm = input("Are you sure? [y/N]: ").strip().lower()
@@ -1585,6 +1604,11 @@ def parse_args():
         "-y", "--yes",
         action="store_true",
         help="Skip confirmation prompts",
+    )
+    parser_trash.add_argument(
+        "-n", "--dry-run",
+        action="store_true",
+        help="Show what would be done without making any changes",
     )
 
     # Subparser for 'revert'

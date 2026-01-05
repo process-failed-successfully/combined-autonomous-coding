@@ -156,4 +156,4 @@ def load_config_from_file(
         return base_config
     except Exception as e:
         logger.error(f"Error loading config file {config_path}: {e}")
-        return {}
+        raise

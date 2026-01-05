@@ -10,12 +10,15 @@ import argparse
 import asyncio
 import sys
 import os
+import shutil
 from pathlib import Path
 
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
-from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.config_loader import load_config_from_file, ensure_config_exists, get_config_path
+from shared.jira_client import JiraClient
+from shared.config import JiraConfig
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -44,7 +47,6 @@ def run_validate():
     print("--- Validating Agent Configuration ---")
     errors = []
 
-    from shared.config_loader import get_config_path, load_config_from_file
     config_path = get_config_path()
 
     if not config_path or not config_path.exists():
@@ -196,7 +198,6 @@ def run_configure():
 
 def run_clean(args):
     """Moves or removes agent-generated artifacts from the project directory."""
-    import shutil
     from datetime import datetime
 
     project_dir = args.project_dir.resolve()
@@ -325,7 +326,6 @@ def run_archive(args):
     """Archives agent-generated artifacts to a timestamped directory."""
     print("Warning: The 'archive' command is deprecated and will be removed in a future version. "
           "Use 'clean --archive' instead.", file=sys.stderr)
-    import shutil
     from datetime import datetime
 
     project_dir = args.project_dir.resolve()
@@ -423,7 +423,6 @@ def _trash_list(trash_base_dir):
 
 def _trash_restore(args, trash_base_dir):
     """Helper function to restore from trash."""
-    import shutil
     project_dir = args.project_dir.resolve()
     print(f"--- Restoring from trash in: {project_dir} ---")
     archive_to_restore = None
@@ -490,7 +489,6 @@ def _trash_restore(args, trash_base_dir):
 
 def _trash_clear(args, trash_base_dir):
     """Helper function to clear trash."""
-    import shutil
     project_dir = args.project_dir.resolve()
     print(f"--- Clearing trash in: {project_dir} ---")
     if args.all:
@@ -551,7 +549,6 @@ def run_empty_trash(args):
     """Permanently deletes the .agent_trash directory."""
     print("Warning: The 'empty-trash' command is deprecated and will be removed in a future version. "
           "Use 'trash clear --all' instead.", file=sys.stderr)
-    import shutil
     project_dir = args.project_dir.resolve()
     trash_dir = project_dir / ".agent_trash"
 
@@ -597,7 +594,6 @@ def run_restore(args):
     """Restores agent-generated artifacts from the most recent trash directory."""
     print("Warning: The 'restore' command is deprecated and will be removed in a future version. "
           "Use 'trash restore' instead.", file=sys.stderr)
-    import shutil
     project_dir = args.project_dir.resolve()
     trash_base_dir = project_dir / ".agent_trash"
 
@@ -772,8 +768,98 @@ def run_status(args):
         print(f"  Error checking git status: {e.stderr}")
     except Exception as e:
         print(f"  An unexpected error occurred while checking git status: {e}")
-
     sys.exit(0)
+
+
+def run_doctor(args):
+    """Runs a series of diagnostic checks to validate the environment and configuration."""
+    print("--- Running Agent Doctor ---")
+    all_checks_passed = True
+
+    def check(description, success, details="", is_critical=False):
+        nonlocal all_checks_passed
+        if success:
+            print(f"  ✅ {description}")
+        else:
+            print(f"  ❌ {description}")
+            if details:
+                print(f"     └─ {details}")
+            all_checks_passed = False
+            if is_critical:
+                print("\nCritical check failed. Aborting doctor.")
+                sys.exit(1)
+        return success
+
+    # --- 1. Configuration File ---
+    print("\n[1. Configuration]")
+    config_path = get_config_path()
+
+    check("Configuration file (agent_config.yaml) found", config_path and config_path.exists(), f"Searched in: ./, {platformdirs.user_config_dir('combined-autonomous-coding')}, ~/.gemini/", is_critical=True)
+
+    print(f"     ✓ Located at: {config_path}")
+
+    config_data = {}
+    try:
+        config_data = load_config_from_file()
+        check("Configuration file is valid YAML", True)
+    except Exception as e:
+        check("Configuration file is valid YAML", False, f"Error parsing YAML: {e}", is_critical=True)
+
+
+    # --- 2. Dependencies ---
+    print("\n[2. System Dependencies]")
+    git_path = shutil.which("git")
+    check("`git` command is installed and in PATH", bool(git_path), f"Found at: {git_path}" if git_path else "Git is required for version control.")
+
+    docker_path = shutil.which("docker")
+    check("`docker` command is installed and in PATH", bool(docker_path), f"Found at: {docker_path}" if docker_path else "Docker is required to run the agent in a containerized environment.")
+
+
+    # --- 3. Connectivity ---
+    print("\n[3. Connectivity]")
+    # Jira Connectivity
+    if 'jira' in config_data and all(config_data['jira'].get(k) for k in ['url', 'email', 'token']):
+        if check("Jira configuration is present", True):
+            try:
+                jira_config = JiraConfig(**config_data['jira'])
+                jira_client = JiraClient(jira_config)
+                # A lightweight call to check credentials
+                jira_client.client.myself()
+                check("Jira connection and authentication successful", True, f"Successfully connected to {jira_config.url}")
+            except Exception as e:
+                check("Jira connection and authentication successful", False, f"Failed to connect. Check URL, credentials, and network. Error: {e}")
+    else:
+        print("     - Jira not configured (skipped)")
+
+    # Webhook format validation
+    if config_data.get('slack_webhook_url'):
+        is_valid_slack = isinstance(config_data['slack_webhook_url'], str) and config_data['slack_webhook_url'].startswith("https://hooks.slack.com/")
+        check("Slack webhook URL format is valid", is_valid_slack)
+    else:
+        print("     - Slack not configured (skipped)")
+
+    if config_data.get('discord_webhook_url'):
+        is_valid_discord = isinstance(config_data['discord_webhook_url'], str) and config_data['discord_webhook_url'].startswith("https://discord.com/api/webhooks/")
+        check("Discord webhook URL format is valid", is_valid_discord)
+    else:
+        print("     - Discord not configured (skipped)")
+
+
+    # --- 4. Permissions ---
+    print("\n[4. Filesystem Permissions]")
+    project_dir = args.project_dir.resolve()
+    is_writable = os.access(project_dir, os.W_OK)
+    check(f"Project directory is writable: {project_dir}", is_writable, "The agent needs write permissions to create and modify files.")
+
+
+    # --- Final Summary ---
+    print("\n--- Diagnosis Complete ---")
+    if all_checks_passed:
+        print("✅ All checks passed. Your environment is ready!")
+        sys.exit(0)
+    else:
+        print("❌ Some checks failed. Please review the errors above and resolve them.")
+        sys.exit(1)
 
 
 def run_history(args):
@@ -999,6 +1085,15 @@ def parse_args():
         help="The project directory to check history for (default: current directory)",
     )
 
+    # Subparser for 'doctor'
+    parser_doctor = subparsers.add_parser("doctor", help="Run diagnostic checks to verify the environment and configuration")
+    parser_doctor.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check (default: current directory)",
+    )
+
     # Subparser for 'clean'
     parser_clean = subparsers.add_parser("clean", help="Move agent-generated artifacts to a trash directory")
     parser_clean.add_argument(
@@ -1141,6 +1236,11 @@ async def main():
         run_status(args)
         return
 
+    # Handle `doctor` command
+    if args.command == "doctor":
+        run_doctor(args)
+        return
+
     # Handle `history` command
     if args.command == "history":
         run_history(args)
@@ -1208,7 +1308,6 @@ async def main():
     init_db(config.project_dir / ".agent_db.sqlite")
 
     # Load Jira Config
-    from shared.config import JiraConfig
     jira_cfg_data = file_config.get("jira", {})
     jira_env_url = os.environ.get("JIRA_URL")
     jira_env_email = os.environ.get("JIRA_EMAIL")
@@ -1256,8 +1355,6 @@ async def main():
     jira_spec_content = ""
 
     if config.jira and (args.jira_ticket or args.jira_label):
-        from shared.jira_client import JiraClient
-
         try:
             jira_client = JiraClient(config.jira)
 
@@ -1302,6 +1399,7 @@ async def main():
             print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
 
     # Generate deterministic ID
+    from shared.utils import generate_agent_id
     agent_id = generate_agent_id(project_name, spec_content, args.agent)
     config.agent_id = agent_id
 
@@ -1321,6 +1419,8 @@ async def main():
     except IOError as e:
         logger.warning(f"Could not write to history file {history_file}: {e}")
 
+    # Initialize Agent Client
+    from shared.agent_client import AgentClient
     client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
 
     # Check spec requirement for fresh projects (Updated for Jira)

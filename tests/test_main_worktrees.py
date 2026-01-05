@@ -172,5 +172,41 @@ class TestMainWorktrees(unittest.TestCase):
             self.assertIn("Removed worktree: wt1", output)
             self.assertIn("Removed worktree: wt2", output)
 
+    @patch('shutil.which', return_value='/usr/bin/git')
+    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
+    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
+    def test_revert_worktree_yes(self, mock_exists, mock_is_dir, mock_which):
+        """Test 'worktrees revert <name> --yes'."""
+        worktree_path_str = str(self.worktrees_dir / 'agent-sprint-task-1')
+
+        # First call to check status, second and third for the revert commands.
+        mock_status_run = MagicMock()
+        mock_status_run.stdout = " M README.md\\n?? new_file.txt"
+
+        mock_revert_run = MagicMock()
+        mock_revert_run.stdout = ""
+        mock_revert_run.stderr = ""
+
+        with patch('subprocess.run') as mock_subprocess_run:
+            mock_subprocess_run.side_effect = [mock_status_run, mock_revert_run, mock_revert_run]
+
+            output = self._run_worktrees(['revert', 'agent-sprint-task-1', '--yes', '-p', str(self.temp_dir)])
+
+            expected_status_cmd = ['/usr/bin/git', '-C', worktree_path_str, 'status', '--porcelain']
+            expected_reset_cmd = ['/usr/bin/git', '-C', worktree_path_str, 'reset', '--hard', 'HEAD']
+            expected_clean_cmd = ['/usr/bin/git', '-C', worktree_path_str, 'clean', '-fd']
+
+            calls = [
+                call(expected_status_cmd, capture_output=True, text=True, check=True),
+                call(expected_reset_cmd, check=True, stdout=unittest.mock.ANY, stderr=unittest.mock.ANY),
+                call(expected_clean_cmd, check=True, stdout=unittest.mock.ANY, stderr=unittest.mock.ANY)
+            ]
+
+            mock_subprocess_run.assert_has_calls(calls)
+            self.assertIn("✅ Revert complete. Worktree is now clean.", output)
+            self.assertIn("Uncommitted changes (will be discarded):", output)
+            self.assertIn("M README.md", output)
+            self.assertIn("?? new_file.txt", output)
+
 if __name__ == '__main__':
     unittest.main()

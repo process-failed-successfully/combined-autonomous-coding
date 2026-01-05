@@ -659,6 +659,76 @@ def _trash_clear(args, trash_base_dir):
     sys.exit(0)
 
 
+def _trash_inspect(args, trash_base_dir):
+    """Helper function to inspect trash archives."""
+    if not args.archive_name:
+        print("❌ Error: 'inspect' action requires an archive name.", file=sys.stderr)
+        sys.exit(1)
+
+    archive_dir = trash_base_dir / args.archive_name
+    if not archive_dir.is_dir():
+        print(f"❌ Error: Archive '{args.archive_name}' not found in trash.", file=sys.stderr)
+        sys.exit(1)
+
+    # Inspecting a specific file
+    if args.file_name:
+        file_path = archive_dir / args.file_name
+        if not file_path.exists():
+            print(f"❌ Error: File '{args.file_name}' not found in archive '{args.archive_name}'.", file=sys.stderr)
+            sys.exit(1)
+        if file_path.is_dir():
+            print(f"❌ Error: '{args.file_name}' is a directory. Cannot inspect directories.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Contents of {args.file_name} from {args.archive_name} ---")
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                print(f.read())
+        except Exception as e:
+            print(f"Error reading file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Inspecting the whole archive (summary)
+    else:
+        print(f"--- Inspecting Archive: {archive_dir.name} ---")
+        try:
+            contents = sorted(list(archive_dir.iterdir()))
+            if not contents:
+                print("(empty)")
+                sys.exit(0)
+
+            for item in contents:
+                print(f"\n--- File: {item.name} ---")
+                if item.is_dir():
+                    print("    (Directory)")
+                    continue
+                try:
+                    with open(item, 'r', encoding='utf-8', errors='ignore') as f:
+                        lines = []
+                        try:
+                            for _ in range(10):
+                                lines.append(next(f))
+                        except StopIteration:
+                            pass  # File has fewer than 10 lines, which is fine.
+
+                        for line in lines:
+                            print(f"    {line.strip()}")
+
+                        # Check if there are more lines by trying to read one more.
+                        try:
+                            next(f)
+                            print("    ...")
+                        except StopIteration:
+                            pass  # End of file, no more lines.
+                except Exception:
+                    print("    (Could not display preview - possibly a binary file)")
+
+        except OSError as e:
+            print(f"Error reading archive contents: {e}", file=sys.stderr)
+            sys.exit(1)
+    sys.exit(0)
+
+
 def run_trash(args):
     """Manages the agent trash directory."""
     project_dir = args.project_dir.resolve()
@@ -674,6 +744,8 @@ def run_trash(args):
         _trash_restore(args, trash_base_dir)
     elif args.action == "clear":
         _trash_clear(args, trash_base_dir)
+    elif args.action == "inspect":
+        _trash_inspect(args, trash_base_dir)
 
 
 def run_empty_trash(args):
@@ -1251,13 +1323,18 @@ def parse_args():
     parser_trash = subparsers.add_parser("trash", help="Manage the agent trash directory")
     parser_trash.add_argument(
         "action",
-        choices=["list", "restore", "clear"],
+        choices=["list", "restore", "clear", "inspect"],
         help="Action to perform on the trash",
     )
     parser_trash.add_argument(
         "archive_name",
         nargs="?",
-        help="The name of the trash archive to restore or clear (e.g., trash-2023-10-27_12-30-00)",
+        help="The name of the trash archive to restore, clear, or inspect (e.g., trash-2023-10-27_12-30-00)",
+    )
+    parser_trash.add_argument(
+        "file_name",
+        nargs="?",
+        help="The name of the file to inspect within the archive (for 'inspect' action only)",
     )
     parser_trash.add_argument(
         "-p", "--project-dir",

@@ -1585,7 +1585,7 @@ def parse_args():
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
         "action",
-        choices=["list", "show", "clean"],
+        choices=["list", "show", "clean", "revert"],
         help="Action to perform on the worktrees",
     )
     parser_worktrees.add_argument(
@@ -1698,6 +1698,52 @@ def run_worktrees(args):
                 print("✅ Worktree is clean.")
         except subprocess.CalledProcessError as e:
             print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+
+    # --- Action: revert ---
+    elif args.action == "revert":
+        if not args.worktree_name:
+            print("❌ Error: 'revert' action requires a worktree name.", file=sys.stderr)
+            sys.exit(1)
+        worktree_path = worktrees_base_dir / args.worktree_name
+        if not worktree_path.is_dir():
+            print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Reverting uncommitted changes in worktree: {args.worktree_name} ---")
+        try:
+            status_result = subprocess.run(
+                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if not status_result.stdout.strip():
+                print("✅ No uncommitted changes to revert.")
+                sys.exit(0)
+
+            print("\nUncommitted changes (will be discarded):")
+            for line in status_result.stdout.strip().split('\n'):
+                print(f"  {line}")
+
+            if not args.yes:
+                confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
+                if confirm != 'y':
+                    print("Aborted.")
+                    sys.exit(0)
+
+            print("\nReverting changes...")
+            subprocess.run(
+                [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            subprocess.run(
+                [git_path, "-C", str(worktree_path), "clean", "-fd"],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            print("✅ Revert complete. Worktree is now clean.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip() if e.stderr else str(e)
+            print(f"❌ Error during revert: {stderr}", file=sys.stderr)
             sys.exit(1)
         sys.exit(0)
 

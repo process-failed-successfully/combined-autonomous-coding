@@ -1733,7 +1733,7 @@ def parse_args():
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
         "action",
-        choices=["list", "show", "clean", "revert", "create"],
+        choices=["list", "show", "clean", "revert", "create", "merge"],
         help="Action to perform on the worktrees",
     )
     parser_worktrees.add_argument(
@@ -1762,6 +1762,11 @@ def parse_args():
         action="store_true",
         help="Skip confirmation prompts (for 'clean' action)",
     )
+    parser_worktrees.add_argument(
+        "--clean",
+        action="store_true",
+        help="Remove the worktree after a successful merge (for 'merge' action)",
+    )
 
     # Subparser for 'snapshot'
     parser_snapshot = subparsers.add_parser("snapshot", help="Create a snapshot of key agent artifacts without deleting them")
@@ -1783,6 +1788,174 @@ def parse_args():
     )
 
     return parser.parse_args()
+
+
+def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
+    """Helper function to merge a worktree branch back into the main branch."""
+    import subprocess
+
+    if not args.worktree_name:
+        print("❌ Error: 'merge' action requires a worktree name.", file=sys.stderr)
+        sys.exit(1)
+
+    worktree_name = args.worktree_name
+    worktree_path = worktrees_base_dir / worktree_name
+    if not worktree_path.is_dir():
+        print(f"❌ Error: Worktree '{worktree_name}' not found at '{worktree_path}'.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Merging worktree: {worktree_name} ---")
+
+    # 1. Get the branch name associated with the worktree
+    branch_name = None
+    try:
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        current_worktree = {}
+        for line in result.stdout.strip().split('\n'):
+            if not line.strip():
+                if current_worktree:
+                    path = Path(current_worktree.get("worktree", ""))
+                    if path.resolve() == worktree_path.resolve():
+                        branch_ref = current_worktree.get("branch", "")
+                        branch_name = branch_ref.split('/')[-1]
+                        break
+                current_worktree = {}
+            else:
+                key, value = line.split(" ", 1)
+                current_worktree[key] = value
+        if not branch_name and current_worktree: # Check last block
+             path = Path(current_worktree.get("worktree", ""))
+             if path.resolve() == worktree_path.resolve():
+                 branch_ref = current_worktree.get("branch", "")
+                 branch_name = branch_ref.split('/')[-1]
+
+        if not branch_name:
+            print(f"❌ Error: Could not determine branch for worktree '{worktree_name}'.", file=sys.stderr)
+            sys.exit(1)
+        print(f"  - Found worktree branch: {branch_name}")
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error getting worktree branch: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. Check for and commit uncommitted changes in the worktree
+    try:
+        status_result = subprocess.run(
+            [git_path, "-C", str(worktree_path), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if status_result.stdout.strip():
+            print("  - Uncommitted changes detected. Staging and committing...")
+            # Add all changes
+            subprocess.run(
+                [git_path, "-C", str(worktree_path), "add", "."],
+                check=True, capture_output=True
+            )
+            # Commit changes
+            commit_message = f"Autocommit: Worktree merge for {worktree_name}"
+            subprocess.run(
+                [git_path, "-C", str(worktree_path), "commit", "-m", commit_message],
+                check=True, capture_output=True
+            )
+            print(f"  - Created commit on branch '{branch_name}'.")
+        else:
+            print("  - No uncommitted changes in worktree.")
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode().strip() if e.stderr else str(e)
+        print(f"❌ Error committing changes in worktree: {stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    # 3. Checkout main branch and merge
+    # For simplicity, assuming 'main'. A more robust solution might detect the default branch.
+    main_branch = "main"
+    print(f"  - Checking out '{main_branch}' branch in main repository...")
+    try:
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "checkout", main_branch],
+            check=True, capture_output=True, text=True
+        )
+    except subprocess.CalledProcessError as e:
+        if "did not match any file(s) known to git" in e.stderr:
+             main_branch = "master" # Fallback to master
+             print(f"  - '{main_branch}' not found, trying 'master'...")
+             try:
+                 subprocess.run(
+                     [git_path, "-C", str(project_dir), "checkout", main_branch],
+                     check=True, capture_output=True, text=True
+                 )
+             except subprocess.CalledProcessError as e2:
+                 stderr = e2.stderr.strip()
+                 print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+                 sys.exit(1)
+        else:
+             stderr = e.stderr.strip()
+             print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+             sys.exit(1)
+
+
+    print(f"  - Merging branch '{branch_name}' into '{main_branch}'...")
+    try:
+        merge_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "merge", "--no-ff", branch_name],
+            check=True, capture_output=True, text=True
+        )
+        print("  - Merge successful.")
+        print("\n--- Merge Output ---")
+        print(merge_result.stdout.strip())
+        print("--------------------")
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip()
+        print(f"❌ Error merging branch: {stderr}", file=sys.stderr)
+        print("  - Merge conflict detected or another error occurred. Aborting merge.")
+        # Attempt to abort the merge to leave the repo in a clean state
+        subprocess.run([git_path, "-C", str(project_dir), "merge", "--abort"])
+        sys.exit(1)
+
+    # 4. Optionally clean up the worktree and branch
+    if args.clean:
+        print("\n--- Cleaning up worktree and branch ---")
+        if not args.yes:
+            confirm = input(f"This will remove the worktree '{worktree_name}' and delete the branch '{branch_name}'. Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Cleanup aborted. Worktree and branch preserved.")
+                print("\n✅ Merge complete.")
+                sys.exit(0)
+
+        # Remove worktree
+        try:
+            print(f"  - Removing worktree '{worktree_name}'...")
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "worktree", "remove", worktree_name],
+                check=True, capture_output=True, text=True
+            )
+            print(f"  - Successfully removed worktree.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.strip()
+            print(f"❌ Error removing worktree: {stderr}", file=sys.stderr)
+            # Don't exit, still try to delete branch
+
+        # Delete branch
+        try:
+            print(f"  - Deleting branch '{branch_name}'...")
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "branch", "-d", branch_name],
+                check=True, capture_output=True, text=True
+            )
+            print(f"  - Successfully deleted branch.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.strip()
+            print(f"❌ Error deleting branch: {stderr}", file=sys.stderr)
+            sys.exit(1)
+
+        print("\n✅ Merge and cleanup complete.")
+    else:
+        print("\n✅ Merge complete. Worktree and branch preserved.")
+
+    sys.exit(0)
 
 
 def run_worktrees(args):
@@ -1950,6 +2123,10 @@ def run_worktrees(args):
             print(f"❌ Error during revert: {stderr}", file=sys.stderr)
             sys.exit(1)
         sys.exit(0)
+
+    # --- Action: merge ---
+    elif args.action == "merge":
+        _worktree_merge(args, git_path, project_dir, worktrees_base_dir)
 
     # --- Action: clean ---
     elif args.action == "clean":

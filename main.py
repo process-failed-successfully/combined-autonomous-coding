@@ -20,6 +20,10 @@ from shared.config_loader import load_config_from_file, ensure_config_exists
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
 # though structure should be clean.
+try:
+    from shared.jira_client import JiraClient
+except ImportError:
+    JiraClient = None
 from agents.gemini import run_autonomous_agent as run_gemini
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
@@ -101,6 +105,131 @@ def run_validate():
     else:
         print("\n✅ Configuration is valid!")
         sys.exit(0)
+
+
+def run_doctor(args):
+    """Runs a comprehensive health check on the environment."""
+    import shutil
+    import requests
+
+    print("--- Running Environment Health Check (Doctor) ---")
+    project_dir = args.project_dir.resolve()
+    all_checks_passed = True
+    error_messages = []
+
+    # 1. Configuration File Check
+    print("\n[1] Checking Configuration File...")
+    from shared.config_loader import get_config_path, load_config_from_file
+    config_path = get_config_path()
+    config_data = {}
+
+    if not config_path or not config_path.exists():
+        print("  ❌ Configuration file (agent_config.yaml) not found.")
+        all_checks_passed = False
+    else:
+        print(f"  ✅ Found configuration file at: {config_path}")
+        try:
+            # Re-using validation logic from run_validate without exiting
+            config_data = load_config_from_file() or {}
+            validation_errors = []
+            if 'jira' in config_data:
+                jira_config = config_data.get('jira', {})
+                if not all(k in jira_config for k in ['url', 'email', 'token']):
+                    validation_errors.append("Jira config is missing 'url', 'email', or 'token'.")
+
+            if config_data.get('slack_webhook_url') and not str(config_data['slack_webhook_url']).startswith("https://hooks.slack.com/"):
+                validation_errors.append("Invalid Slack webhook URL format.")
+
+            if config_data.get('discord_webhook_url') and not str(config_data['discord_webhook_url']).startswith("https://discord.com/api/webhooks/"):
+                validation_errors.append("Invalid Discord webhook URL format.")
+
+            if validation_errors:
+                all_checks_passed = False
+                for err in validation_errors:
+                    print(f"  ❌ {err}")
+                    error_messages.append(f"Config validation: {err}")
+            else:
+                print("  ✅ Configuration file format appears valid.")
+        except Exception as e:
+            print(f"  ❌ Error loading or parsing configuration: {e}")
+            all_checks_passed = False
+            error_messages.append(f"Config loading error: {e}")
+
+    # 2. Dependency Checks (Git)
+    print("\n[2] Checking Dependencies...")
+    if shutil.which("git"):
+        print("  ✅ Git executable found.")
+    else:
+        print("  ❌ Git executable not found. Git is required for version control.")
+        all_checks_passed = False
+        error_messages.append("Dependency check: Git not found.")
+
+    # 3. Connectivity Checks
+    print("\n[3] Checking API Connectivity...")
+    # Jira Connectivity
+    if 'jira' in config_data and all(k in config_data['jira'] for k in ['url', 'email', 'token']):
+        print("  - Checking Jira connection...")
+        try:
+            from shared.jira_client import JiraClient
+            from shared.config import JiraConfig
+            jira_config = JiraConfig(**config_data['jira'])
+            jira_client = JiraClient(jira_config)
+            jira_client.check_connection()
+            print("    ✅ Jira connection successful.")
+        except Exception as e:
+            print(f"    ❌ Jira connection failed: {e}")
+            all_checks_passed = False
+            error_messages.append(f"Jira connection: {e}")
+    else:
+        print("  - Jira not configured, skipping check.")
+
+    # Webhook Connectivity (using requests to avoid heavy deps)
+    for service, url_key in [("Slack", "slack_webhook_url"), ("Discord", "discord_webhook_url")]:
+        webhook_url = config_data.get(url_key)
+        if webhook_url:
+            print(f"  - Checking {service} webhook...")
+            try:
+                response = requests.head(webhook_url, timeout=5)
+                # Most webhooks will return 405 for HEAD but it confirms reachability. 200 is also fine.
+                if response.status_code in [200, 405]:
+                    print(f"    ✅ {service} webhook is reachable.")
+                else:
+                    print(f"    ❌ {service} webhook returned status {response.status_code}.")
+                    all_checks_passed = False
+                    error_messages.append(f"{service} webhook check failed with status {response.status_code}.")
+            except requests.RequestException as e:
+                print(f"    ❌ Could not connect to {service} webhook: {e}")
+                all_checks_passed = False
+                error_messages.append(f"{service} webhook connection error: {e}")
+        else:
+            print(f"  - {service} not configured, skipping check.")
+
+    # 4. Permissions Check
+    print("\n[4] Checking File System Permissions...")
+    try:
+        if not project_dir.exists():
+            project_dir.mkdir(parents=True, exist_ok=True)
+            print(f"  ✅ Project directory created at: {project_dir}")
+
+        if os.access(project_dir, os.W_OK):
+            print(f"  ✅ Project directory is writable: {project_dir}")
+        else:
+            print(f"  ❌ Project directory is not writable: {project_dir}")
+            all_checks_passed = False
+            error_messages.append(f"Permissions: Project directory '{project_dir}' not writable.")
+    except Exception as e:
+        print(f"  ❌ Error checking permissions for {project_dir}: {e}")
+        all_checks_passed = False
+        error_messages.append(f"Permissions check error: {e}")
+
+    # Final Summary
+    print("\n--- Health Check Summary ---")
+    if all_checks_passed:
+        print("✅ All checks passed. Your environment is ready!")
+        sys.exit(0)
+    else:
+        print(f"❌ Found {len(error_messages)} issue(s). Please review the errors above.")
+        sys.exit(1)
 
 
 def run_show_config(config):
@@ -981,6 +1110,15 @@ def parse_args():
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
+    # Subparser for 'doctor'
+    parser_doctor = subparsers.add_parser("doctor", help="Run a comprehensive health check on the environment")
+    parser_doctor.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check (default: current directory)",
+    )
+
     # Subparser for 'status'
     parser_status = subparsers.add_parser("status", help="Show the current status of the agent project")
     parser_status.add_argument(
@@ -1104,6 +1242,11 @@ async def main():
     # Handle `validate` command
     if args.command == "validate":
         run_validate()
+        return
+
+    # Handle `doctor` command
+    if args.command == "doctor":
+        run_doctor(args)
         return
 
     # Handle `clean` command

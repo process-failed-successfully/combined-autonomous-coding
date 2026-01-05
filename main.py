@@ -750,6 +750,71 @@ def _trash_inspect(args, trash_base_dir):
     sys.exit(0)
 
 
+def _trash_diff(args, trash_base_dir):
+    """Helper function to diff a file in trash with the project version."""
+    import difflib
+
+    project_dir = args.project_dir.resolve()
+    archive_name = args.archive_name
+    file_name = args.file_name
+
+    if not archive_name or not file_name:
+        print("❌ Error: 'diff' action requires an archive name and a file name.", file=sys.stderr)
+        sys.exit(1)
+
+    archive_dir = trash_base_dir / archive_name
+    if not archive_dir.is_dir():
+        print(f"❌ Error: Archive '{archive_name}' not found in trash.", file=sys.stderr)
+        sys.exit(1)
+
+    trashed_file_path = archive_dir / file_name
+    if not trashed_file_path.is_file():
+        print(f"❌ Error: File '{file_name}' not found in archive '{archive_name}'.", file=sys.stderr)
+        sys.exit(1)
+
+    project_file_path = project_dir / file_name
+
+    try:
+        with open(trashed_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            trashed_lines = f.readlines()
+    except Exception as e:
+        print(f"Error reading trashed file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if project_file_path.exists():
+        try:
+            with open(project_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                project_lines = f.readlines()
+            from_file = f"a/{file_name}"
+            to_file = f"b/{file_name}"
+        except Exception as e:
+            print(f"Error reading project file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        project_lines = []
+        from_file = f"a/{file_name}"
+        to_file = f"b/{file_name} (deleted)"
+
+    diff = list(difflib.unified_diff(
+        project_lines,
+        trashed_lines,
+        fromfile=from_file,
+        tofile=to_file,
+    ))
+
+    if not diff:
+        print(f"✅ No differences found between the trashed version and the project version of '{file_name}'.")
+        sys.exit(0)
+
+    print(f"--- Diff for {file_name} ---")
+    print(f"--- a/{file_name} (Project Version)")
+    print(f"+++ b/{file_name} (Trashed Version in {archive_name})")
+    for line in diff[2:]:  # Skip the original '---' and '+++' lines as we have custom ones
+        print(line, end="")
+
+    sys.exit(0)
+
+
 def run_revert(args):
     """Discards uncommitted changes for specified files or for the entire repository."""
     import subprocess
@@ -888,6 +953,8 @@ def run_trash(args):
         _trash_clear(args, trash_base_dir)
     elif args.action == "inspect":
         _trash_inspect(args, trash_base_dir)
+    elif args.action == "diff":
+        _trash_diff(args, trash_base_dir)
 
 
 def run_empty_trash(args):
@@ -1465,7 +1532,7 @@ def parse_args():
     parser_trash = subparsers.add_parser("trash", help="Manage the agent trash directory")
     parser_trash.add_argument(
         "action",
-        choices=["list", "restore", "clear", "inspect"],
+        choices=["list", "restore", "clear", "inspect", "diff"],
         help="Action to perform on the trash",
     )
     parser_trash.add_argument(

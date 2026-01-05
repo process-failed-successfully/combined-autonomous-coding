@@ -1,8 +1,6 @@
 name: Robust CI
 
 on:
-  push:
-    branches: ["**"]
   pull_request:
     branches: ["**"]
   workflow_dispatch:

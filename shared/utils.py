@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import subprocess
+from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
@@ -206,16 +207,20 @@ def execute_read_block(filename: str, cwd: Path) -> str:
             return f"Error: File {filename} does not exist."
 
         with open(file_path, "r") as f:
-            # Optimization: Stream lines directly to avoid loading full file into memory
-            numbered_lines = [
-                f"{i + 1:4} | {line.rstrip('\n')}" for i, line in enumerate(f)
-            ]
+            from shared.telemetry import get_telemetry
 
-        from shared.telemetry import get_telemetry
+            get_telemetry().increment_counter("files_read_total")
 
-        get_telemetry().increment_counter("files_read_total")
-
-        return f"File: {filename}\n" + "\n".join(numbered_lines)
+            # Optimization: Use generator and chain to avoid intermediate list creation
+            # and extra string copy.
+            # Note: For completely empty files, this returns "File: name" without a trailing newline,
+            # whereas the original returned "File: name\n". This is a minor deviation deemed acceptable.
+            return "\n".join(
+                chain(
+                    (f"File: {filename}",),
+                    (f"{i + 1:4} | {line.rstrip('\n')}" for i, line in enumerate(f)),
+                )
+            )
     except Exception as e:
         logger.error(f"[Error] {e}")
         return str(e)

@@ -331,9 +331,12 @@ def run_clean(args):
     project_dir = args.project_dir.resolve()
     is_force_delete = args.force
     is_archive = args.archive
+    is_list = args.list
 
     # Determine action and destination
-    if is_force_delete:
+    if is_list:
+        action_desc = "Listing"
+    elif is_force_delete:
         action_desc = "Permanently DELETING"
         log_verb = "Cleaning"
         dest_base_dir_name = None
@@ -390,6 +393,21 @@ def run_clean(args):
 
     if not existing_artifacts:
         print("No agent-generated artifacts found to clean.")
+        sys.exit(0)
+
+    # If --list is used, just print the files and exit
+    if is_list:
+        print("The following agent-generated artifacts would be cleaned:")
+        for path in existing_artifacts:
+            try:
+                display_path = path.relative_to(project_dir)
+            except ValueError:
+                repo_root = Path(__file__).parent
+                try:
+                    display_path = f"(from repo root) {path.relative_to(repo_root)}"
+                except ValueError:
+                    display_path = path
+            print(f"  - {display_path}")
         sys.exit(0)
 
     # Prepare destination directory path if needed
@@ -1489,6 +1507,11 @@ def parse_args():
         "--archive",
         action="store_true",
         help="Archive artifacts to the `.agent_archives/` directory instead of moving them to trash",
+    )
+    clean_exclusive_group.add_argument(
+        "--list",
+        action="store_true",
+        help="List the artifacts that would be cleaned without taking any action",
     )
 
     # Subparser for 'archive'

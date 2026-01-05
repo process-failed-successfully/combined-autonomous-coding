@@ -1,6 +1,283 @@
 # CHANGELOG
 
 
+## v0.10.0 (2026-01-05)
+
+### Features
+
+- Add 'trash inspect' subcommand
+  ([#91](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/91),
+  [`e86d0f4`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/e86d0f40e09452d0b211ecd2e0e87581ea1946c6))
+
+This commit introduces a new 'inspect' action to the 'trash' subcommand. This feature allows users
+  to view the contents of files within a specified trash archive directly from the CLI, which helps
+  in deciding whether to restore or permanently delete artifacts.
+
+The 'inspect' action supports two modes: - `trash inspect <archive_name>`: Shows a summary of all
+  files in the archive, with a preview of the first 10 lines for each text file. - `trash inspect
+  <archive_name> <file_name>`: Displays the full content of a specific file within the archive.
+
+Additionally, this commit introduces a new, comprehensive test suite for the `trash` subcommand in
+  `tests/test_main_trash.py`. This suite verifies the functionality of the new `inspect` action and
+  also provides full test coverage for the existing `list`, `restore`, and `clear` actions to
+  prevent regressions.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add --list option to clean subcommand
+  ([#98](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/98),
+  [`a3b3c87`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/a3b3c87cc2e5b73d618ca1d37718041cbe215d0e))
+
+This commit introduces a `--list` option to the `clean` subcommand, providing a non-destructive "dry
+  run" mode.
+
+When `clean --list` is used, the command will print a list of all agent-generated artifacts that
+  would be removed or archived without actually modifying any files. This enhances safety by
+  allowing users to preview the impact of the clean operation before committing to it.
+
+The implementation includes: - A new `--list` argument in an exclusive group within the `clean`
+  subcommand's parser. - Updated logic in the `run_clean` function to handle the `--list` argument.
+  - A new unit test to verify that `--list` correctly prints the targeted files and does not delete
+  them. - Patches to existing tests to ensure they are compatible with the new argument, preventing
+  regressions.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `create` action to `worktrees` subcommand
+  ([#99](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/99),
+  [`1059f92`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1059f92959450aa31fdef571aba4af1310aa4b4e))
+
+Adds a new `create` action to the `worktrees` subcommand in `main.py`.
+
+This feature allows users to manually create new git worktrees for isolated development and testing
+  environments.
+
+Key changes: - Extended the `argparse` configuration to include the `create` action and an optional
+  `--branch` argument. - Implemented the logic to call `git worktree add` with appropriate
+  arguments. - Added comprehensive unit tests for the new functionality, covering success and
+  failure cases. - Refactored `main.py` to move `subprocess` and `shutil` imports to the top level,
+  enabling proper mocking in tests.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `logs` subcommand to view agent logs
+  ([#90](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/90),
+  [`fbe6b44`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/fbe6b44e46a4d5ccf1044ac6a02b51f81d20c07c))
+
+This commit introduces a new `logs` subcommand to the CLI, allowing users to easily view and manage
+  agent log files.
+
+The `logs` subcommand supports two modes of operation: - `logs`: Lists the 10 most recent log files
+  from the `agents/logs/` directory. - `logs <run_id>`: Displays the full content of the specified
+  log file.
+
+This feature improves the usability of the CLI for debugging and monitoring agent runs.
+
+A comprehensive suite of unit tests has been added in `tests/test_main_logs.py` to ensure the new
+  functionality is robust and reliable.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `worktrees` subcommand for git worktree management
+  ([#95](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/95),
+  [`98e1844`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/98e1844eeacff94c13150b93cfecf3dbfcfe7c69))
+
+Adds a new `worktrees` subcommand to the main CLI to provide better visibility and control over the
+  git worktrees used by the agent for concurrent tasks.
+
+This command helps users debug and manage the repository state when agents are running in sprint
+  mode or if a worktree is left in an inconsistent state after an error.
+
+The subcommand supports three actions: - `list`: Displays all active worktrees created by the agent
+  within the `worktrees/` directory. - `show`: Provides the `git status` for a specific worktree to
+  inspect uncommitted changes. - `clean`: Safely removes a specific worktree or all agent-created
+  worktrees, with an interactive confirmation prompt to prevent accidental data loss.
+
+Includes comprehensive unit tests for the new subcommand, mocking filesystem and git subprocess
+  interactions to validate all actions and edge cases.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add diff action to trash subcommand
+  ([#96](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/96),
+  [`47c6ba4`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/47c6ba47cd438744e2b6e588f5f0a12a59efc086))
+
+Adds a `diff` action to the `trash` subcommand to compare a trashed file with its counterpart in the
+  project directory.
+
+This feature enhances the usability of the trash utility by allowing users to see the changes
+  between a trashed file and the current version before deciding to restore it.
+
+The implementation includes: - A new `diff` action in the `trash` subcommand's argument parser. - A
+  `_trash_diff` helper function that uses `difflib` to generate and print a unified diff. - Robust
+  error handling for cases where the archive or file does not exist. - A new test file
+  `tests/test_main_trash_diff.py` with comprehensive unit tests for the new functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add non-destructive `snapshot` command to CLI
+  ([#101](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/101),
+  [`9006943`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/90069437c60156da0a111be2471390b43a5fef04))
+
+This commit introduces a new `snapshot` subcommand to the `main.py` CLI.
+
+The `snapshot` command provides a non-destructive way to save a copy of key agent-generated
+  artifacts to a timestamped or custom-named directory in `.agent_archives/`. This is useful for
+  capturing the agent's state at a specific moment for debugging, comparison, or milestone tracking
+  without interrupting its workflow by cleaning the directory.
+
+The command copies: - `feature_list.json` - `qa_summary.txt` - `reviewer_report.txt` -
+  `final_metrics.txt` - The log file from the last agent run
+
+A comprehensive suite of unit tests has been added in `tests/test_main_snapshot.py` to ensure the
+  command functions correctly, handles edge cases, and provides a good user experience.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add revert command to discard uncommitted changes
+  ([#92](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/92),
+  [`bcff62c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/bcff62c228aaf13ab2e9652570402aee855c15e7))
+
+This commit introduces a new `revert` command to the CLI.
+
+The `revert` command provides a safe and convenient way for users to discard all uncommitted changes
+  in the project directory, including modifications, new files, and deletions.
+
+Key features: - Shows a list of changes that will be discarded. - Prompts the user for confirmation
+  before proceeding. - Includes a `--yes` flag to bypass the confirmation prompt for scripting. -
+  Dynamically locates the `git` executable for improved portability.
+
+A comprehensive test suite is included to ensure the command functions correctly and safely.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add worktrees merge subcommand
+  ([#102](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/102),
+  [`549e3f3`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/549e3f38e7a351332c3bf000bf9daef36e2d0aa2))
+
+Adds a new 'merge' subcommand to the 'worktrees' command group.
+
+This feature streamlines the development workflow by allowing a completed agent's work from a git
+  worktree to be merged back into the main branch.
+
+Key features: - Automatically commits uncommitted changes in the worktree before merging. - Merges
+  the worktree branch into the main branch using a no-fast-forward merge. - Provides an optional
+  '--clean' flag to remove the worktree and its associated branch after a successful merge. -
+  Includes unit tests to verify the functionality of the new subcommand.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Enhance `revert` command to support specific files
+  ([#93](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/93),
+  [`0ee497a`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/0ee497abfcb5788b65d1b119fb79ad1115389182))
+
+The `revert` subcommand has been enhanced to allow users to revert specific files instead of the
+  entire repository.
+
+This change modifies the `revert` command in `main.py` to accept an optional list of file paths. If
+  no paths are provided, the command maintains its original behavior, reverting all uncommitted
+  changes. If paths are provided, only those specific files are reverted.
+
+The implementation correctly distinguishes between tracked and untracked files, using `git checkout`
+  for the former and `git clean` for the latter.
+
+A new test suite in `tests/test_main_revert.py` has been added to verify the new functionality,
+  including tests for reverting all files, specific files, and handling repositories with no
+  changes.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Implement interactive trash restore
+  ([#94](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/94),
+  [`10a8157`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/10a815753b5824d399f89a77e8918d6a021bebb9))
+
+Improves the `trash restore` command by making it interactive.
+
+Previously, running `trash restore` without specifying an archive would only restore the most recent
+  item.
+
+This change introduces an interactive prompt that displays a numbered list of available archives,
+  allowing the user to select which one to restore. This makes the command more user-friendly and
+  flexible.
+
+- Modified `_trash_restore` in `main.py` to present an interactive list. - Added a new test file
+  `tests/test_main_trash_interactive.py` to verify the new functionality. - Updated
+  `tests/test_main_trash.py` to align with the new interactive behavior.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add --dry-run to trash subcommand
+  ([#100](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/100),
+  [`4d6a10d`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/4d6a10d4be02217566b5181fc40089f8331422c9))
+
+Adds a `--dry-run` flag to the `trash` subcommand for the `restore` and `clear` actions. This allows
+  users to preview the changes without modifying the filesystem.
+
+- Adds `--dry-run` argument to the `trash` subparser in `main.py`. - Updates `_trash_restore` and
+  `_trash_clear` to show intended actions when `--dry-run` is used. - Adds comprehensive unit tests
+  for the `--dry-run` functionality in `tests/test_main_trash.py`. - Fixes a bug in
+  `tests/test_main_trash_interactive.py` where the mock `argparse.Namespace` was missing attributes.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add archives subcommand for managing snapshots
+  ([#104](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/104),
+  [`c743621`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/c74362163d17aee20a4276d1df5d0cd6dd8cc2a6))
+
+Adds a new 'archives' subcommand to the CLI to manage agent-generated archives and snapshots in the
+  .agent_archives/ directory.
+
+This feature mirrors the functionality of the existing 'trash' subcommand, providing a consistent
+  user experience for artifact management.
+
+The new command includes the following actions: - list: Lists all available archives. - inspect:
+  Shows the contents of a specific archive or a file within it. - diff: Compares a file in an
+  archive with the version in the project directory. - restore: Copies artifacts from an archive
+  back to the project directory, with conflict detection. - clear: Permanently deletes a specific
+  archive or all archives.
+
+Comprehensive unit tests have been added in tests/test_main_archives.py to ensure the correctness
+  and safety of all actions.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add revert action to worktrees subcommand
+  ([#97](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/97),
+  [`12692bc`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/12692bc65bba90c1408a151165bf8c4e03f3a240))
+
+This commit introduces a `revert` action to the `worktrees` subcommand.
+
+The new `worktrees revert` action provides a safe and convenient way to discard all uncommitted
+  changes in a specified worktree, resetting it to the last committed state. This is particularly
+  useful for developers who need to quickly reset an agent's progress in a worktree without having
+  to manually delete and recreate it.
+
+Key features of this implementation include: - A confirmation prompt to prevent accidental data
+  loss, which can be bypassed with the `--yes` flag. - Robust error handling that checks for the
+  existence of the worktree and catches potential errors from the underlying git commands. - A
+  comprehensive unit test that verifies the core logic of the `revert` action, ensuring that the
+  correct `git` commands are executed in the right sequence.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add worktrees diff command
+  ([#103](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/103),
+  [`0081463`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/00814638ec2e6913406a73a76251c322c4f15362))
+
+Adds a new `diff` action to the `worktrees` subcommand.
+
+This command allows users to quickly view the changes within a specific worktree by running `git
+  diff HEAD` from the worktree's directory. This is a useful usability improvement for monitoring
+  the agent's progress in Sprint Mode.
+
+The implementation includes: - A new `diff` choice in the `worktrees` subparser. - A
+  `_worktree_diff` helper function to execute the diff and handle output. - A new test file,
+  `tests/test_main_worktrees_diff.py`, with comprehensive unit tests covering success, no-change,
+  and error cases.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+
 ## v0.9.0 (2026-01-05)
 
 ### Features

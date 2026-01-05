@@ -960,6 +960,46 @@ def run_history(args):
     sys.exit(0)
 
 
+def run_logs(args):
+    """Displays agent logs."""
+    repo_root = Path(__file__).parent
+    logs_dir = repo_root / "agents/logs"
+    run_id = args.run_id
+
+    if not logs_dir.exists():
+        print("Logs directory not found.")
+        sys.exit(1)
+
+    if run_id:
+        log_file = logs_dir / f"{run_id}.log"
+        if not log_file.exists():
+            print(f"Log file not found for Run ID: {run_id}")
+            sys.exit(1)
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                print(f.read())
+        except IOError as e:
+            print(f"Error reading log file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("--- Last 10 Agent Logs ---")
+        try:
+            logs = sorted(logs_dir.glob('*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
+            if not logs:
+                print("No logs found.")
+                sys.exit(0)
+
+            for i, log_file in enumerate(logs[:10]):
+                run_id = log_file.stem
+                latest_marker = " (latest)" if i == 0 else ""
+                print(f"  - {run_id}{latest_marker}")
+        except OSError as e:
+            print(f"Error listing logs: {e}", file=sys.stderr)
+            sys.exit(1)
+        print("\nUse 'logs <Run ID>' to view a specific log.")
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -1137,6 +1177,14 @@ def parse_args():
         help="The project directory to check history for (default: current directory)",
     )
 
+    # Subparser for 'logs'
+    parser_logs = subparsers.add_parser("logs", help="Show agent logs")
+    parser_logs.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID of the log to view (optional)",
+    )
+
     # Subparser for 'clean'
     parser_clean = subparsers.add_parser("clean", help="Move agent-generated artifacts to a trash directory")
     parser_clean.add_argument(
@@ -1287,6 +1335,10 @@ async def main():
     # Handle `history` command
     if args.command == "history":
         run_history(args)
+        return
+
+    if args.command == "logs":
+        run_logs(args)
         return
 
     # Initialize Agent Client

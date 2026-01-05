@@ -1514,7 +1514,190 @@ def parse_args():
         help="Skip confirmation prompt",
     )
 
+    # Subparser for 'worktrees'
+    parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
+    parser_worktrees.add_argument(
+        "action",
+        choices=["list", "show", "clean"],
+        help="Action to perform on the worktrees",
+    )
+    parser_worktrees.add_argument(
+        "worktree_name",
+        nargs="?",
+        help="The name of the worktree to show or clean (e.g., 'agent-sprint-task-1')",
+    )
+    parser_worktrees.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the worktrees are located",
+    )
+    parser_worktrees.add_argument(
+        "--force",
+        action="store_true",
+        help="Force removal of the worktree, even if it has uncommitted changes (for 'clean' action)",
+    )
+    parser_worktrees.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts (for 'clean' action)",
+    )
+
     return parser.parse_args()
+
+
+def run_worktrees(args):
+    """Manages agent-created git worktrees."""
+    import subprocess
+    import shutil
+
+    project_dir = args.project_dir.resolve()
+    worktrees_base_dir = project_dir / "worktrees"
+
+    # --- Pre-flight Checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot manage worktrees.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Action: list ---
+    if args.action == "list":
+        print(f"--- Listing Agent Worktrees in: {worktrees_base_dir} ---")
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            worktrees = []
+            current_worktree = {}
+            for line in result.stdout.strip().split('\n'):
+                if not line.strip():  # End of a block
+                    if current_worktree:
+                        # Only list worktrees inside the agent's 'worktrees/' directory
+                        worktree_path = Path(current_worktree.get("worktree", ""))
+                        if worktrees_base_dir in worktree_path.parents:
+                            worktrees.append(current_worktree)
+                    current_worktree = {}
+                else:
+                    key, value = line.split(" ", 1)
+                    current_worktree[key] = value
+
+            # Append the last worktree if it exists
+            if current_worktree:
+                worktree_path = Path(current_worktree.get("worktree", ""))
+                if worktrees_base_dir in worktree_path.parents:
+                    worktrees.append(current_worktree)
+
+            if not worktrees:
+                print("No active agent worktrees found.")
+                sys.exit(0)
+
+            for wt in worktrees:
+                path = Path(wt['worktree'])
+                branch = wt.get('branch', 'detached HEAD').split('/')[-1]
+                print(f"  - {path.name} (branch: {branch})")
+
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error listing worktrees: {e.stderr}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+
+    # --- Action: show ---
+    elif args.action == "show":
+        if not args.worktree_name:
+            print("❌ Error: 'show' action requires a worktree name.", file=sys.stderr)
+            sys.exit(1)
+        worktree_path = worktrees_base_dir / args.worktree_name
+        if not worktree_path.is_dir():
+            print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Status for Worktree: {args.worktree_name} ---")
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if result.stdout.strip():
+                print("Uncommitted changes:")
+                for line in result.stdout.strip().split('\n'):
+                    print(f"  {line}")
+            else:
+                print("✅ Worktree is clean.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+
+    # --- Action: clean ---
+    elif args.action == "clean":
+        worktrees_to_clean = []
+        if args.worktree_name:
+            # Clean a specific worktree
+            path = worktrees_base_dir / args.worktree_name
+            if not path.is_dir():
+                print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
+                sys.exit(1)
+            worktrees_to_clean.append(args.worktree_name)
+        else:
+            # Clean all agent worktrees
+            if worktrees_base_dir.is_dir():
+                worktrees_to_clean = [d.name for d in worktrees_base_dir.iterdir() if d.is_dir()]
+
+        if not worktrees_to_clean:
+            print("No agent worktrees found to clean.")
+            sys.exit(0)
+
+        print("The following worktrees will be removed:")
+        for name in worktrees_to_clean:
+            print(f"  - {name}")
+
+        if not args.yes:
+            confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+
+        print("\nCleaning worktrees...")
+        for name in worktrees_to_clean:
+            try:
+                cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
+                if args.force:
+                    cmd.append("--force")
+                cmd.append(name) # Can just be the name if it's in worktrees/ dir
+
+                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                print(f"✅ Removed worktree: {name}")
+
+                # After successful removal via git, ensure the directory is gone
+                worktree_dir = worktrees_base_dir / name
+                if worktree_dir.exists():
+                     print(f"Warning: Git removed worktree but directory '{worktree_dir}' still exists.", file=sys.stderr)
+
+            except subprocess.CalledProcessError as e:
+                # Try to parse the error
+                stderr = e.stderr.strip()
+                if "is not a working tree" in stderr:
+                     # Git doesn't know about it, maybe it was partially deleted.
+                     # Let's try to clean up the directory.
+                    print(f"Git worktree '{name}' is in an inconsistent state. Attempting to clean up directory...")
+                    worktree_dir = worktrees_base_dir / name
+                    if worktree_dir.exists():
+                         try:
+                            shutil.rmtree(worktree_dir)
+                            print(f"✅ Forcefully removed directory: {worktree_dir}")
+                         except OSError as rm_e:
+                            print(f"❌ Failed to remove directory {worktree_dir}: {rm_e}", file=sys.stderr)
+                    else:
+                         print(f"Directory for '{name}' not found, already clean.")
+                else:
+                    print(f"❌ Error removing worktree '{name}': {stderr}", file=sys.stderr)
+        sys.exit(0)
 
 
 async def main():
@@ -1563,6 +1746,11 @@ async def main():
     # Handle `revert` command
     if args.command == "revert":
         run_revert(args)
+        return
+
+    # Handle `worktrees` command
+    if args.command == "worktrees":
+        run_worktrees(args)
         return
 
     # Handle `list-agents` command

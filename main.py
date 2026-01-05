@@ -730,11 +730,11 @@ def _trash_inspect(args, trash_base_dir):
 
 
 def run_revert(args):
-    """Discards all uncommitted changes in the project directory."""
+    """Discards uncommitted changes for specified files or for the entire repository."""
     import subprocess
     import shutil
     project_dir = args.project_dir.resolve()
-    print(f"--- Reverting uncommitted changes in: {project_dir} ---")
+    files_to_revert = args.files
 
     # 1. Find git executable
     git_path = shutil.which("git")
@@ -748,47 +748,105 @@ def run_revert(args):
         print("❌ Error: Not a git repository. Cannot revert.", file=sys.stderr)
         sys.exit(1)
 
-    # 3. Show the user what will be reverted
-    print("\nUncommitted changes (will be discarded):")
-    try:
+    # --- Mode 1: Revert specific files ---
+    if files_to_revert:
+        print(f"--- Reverting specified files in: {project_dir} ---")
+
+        # Get the status of all files in the repo to identify untracked files
         status_result = subprocess.run(
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
-        if not status_result.stdout.strip():
-            print("  ✅ No uncommitted changes to revert.")
+        all_untracked_files = {
+            line[3:] for line in status_result.stdout.strip().split('\n') if line.startswith('??')
+        }
+
+        # Separate the user's list into files that are tracked vs. untracked
+        tracked_to_revert = [f for f in files_to_revert if f not in all_untracked_files]
+        untracked_to_revert = [f for f in files_to_revert if f in all_untracked_files]
+
+        # Get the status of only the files the user wants to revert to confirm there are changes
+        final_revert_list = []
+        if files_to_revert:
+            status_of_selection = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain", "--"] + files_to_revert,
+                capture_output=True, text=True
+            )
+            final_revert_list = [line[3:] for line in status_of_selection.stdout.strip().split('\n') if line.strip()]
+
+        if not final_revert_list:
+            print("✅ No uncommitted changes to revert for the specified files.")
             sys.exit(0)
 
-        for line in status_result.stdout.strip().split('\n'):
-            print(f"  {line}")
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"❌ Error checking git status: {e}", file=sys.stderr)
-        sys.exit(1)
+        print("\nThe following files will be reverted to their last committed state:")
+        for f in final_revert_list:
+            print(f"  - {f}")
 
-    # 4. Ask for confirmation
-    if not args.yes:
-        confirm = input("\nAre you sure you want to discard ALL uncommitted changes? [y/N]: ").strip().lower()
-        if confirm != 'y':
-            print("Aborted.")
-            sys.exit(0)
+        if not args.yes:
+            confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
 
-    # 5. Execute git reset and clean
-    print("\nReverting changes...")
-    try:
-        # Discard changes to tracked files
-        subprocess.run(
-            [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        # Remove untracked files and directories
-        subprocess.run(
-            [git_path, "-C", str(project_dir), "clean", "-fd"],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        print("✅ Revert complete. Working directory is now clean.")
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"❌ Error during revert: {getattr(e, 'stderr', e)}", file=sys.stderr)
-        sys.exit(1)
+        print("\nReverting files...")
+        try:
+            if tracked_to_revert:
+                cmd = [git_path, "-C", str(project_dir), "checkout", "HEAD", "--"] + tracked_to_revert
+                subprocess.run(cmd, check=True, capture_output=True)
+
+            if untracked_to_revert:
+                cmd = [git_path, "-C", str(project_dir), "clean", "-f", "--"] + untracked_to_revert
+                subprocess.run(cmd, check=True, capture_output=True)
+
+            print("✅ Specified files have been reverted.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip() if e.stderr else str(e)
+            print(f"❌ Error during revert: {stderr}", file=sys.stderr)
+            sys.exit(1)
+
+    # --- Mode 2: Revert all changes (original logic) ---
+    else:
+        print(f"--- Reverting ALL uncommitted changes in: {project_dir} ---")
+        try:
+            status_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if not status_result.stdout.strip():
+                print("  ✅ No uncommitted changes to revert.")
+                sys.exit(0)
+
+            print("\nUncommitted changes (will be discarded):")
+            for line in status_result.stdout.strip().split('\n'):
+                print(f"  {line}")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"❌ Error checking git status: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        if not args.yes:
+            confirm = input("\nAre you sure you want to discard ALL uncommitted changes? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+
+        print("\nReverting changes...")
+        try:
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "clean", "-fd"],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            print("✅ Revert complete. Working directory is now clean.")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            stderr = getattr(e, 'stderr', str(e))
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode().strip()
+            print(f"❌ Error during revert: {stderr}", file=sys.stderr)
+            sys.exit(1)
+
     sys.exit(0)
 
 
@@ -1417,7 +1475,12 @@ def parse_args():
     )
 
     # Subparser for 'revert'
-    parser_revert = subparsers.add_parser("revert", help="Discard all uncommitted changes")
+    parser_revert = subparsers.add_parser("revert", help="Discard uncommitted changes to specified files or all files")
+    parser_revert.add_argument(
+        "files",
+        nargs="*",
+        help="Specific file(s) to revert. If not provided, all uncommitted changes will be discarded.",
+    )
     parser_revert.add_argument(
         "-p", "--project-dir",
         type=Path,

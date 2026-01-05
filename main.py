@@ -557,7 +557,7 @@ def _trash_restore(args, trash_base_dir):
     print(f"--- Restoring from trash in: {project_dir} ---")
     archive_to_restore = None
     try:
-        archives = sorted([d for d in trash_base_dir.iterdir() if d.is_dir()])
+        archives = sorted([d for d in trash_base_dir.iterdir() if d.is_dir()], reverse=True)
         if not archives:
             print("Trash is empty. Nothing to restore.")
             sys.exit(0)
@@ -569,7 +569,28 @@ def _trash_restore(args, trash_base_dir):
                 sys.exit(1)
             archive_to_restore = target_path
         else:
-            archive_to_restore = archives[-1]
+            print("Please select an archive to restore:")
+            for i, archive_dir in enumerate(archives):
+                print(f"  [{i+1}] {archive_dir.name}")
+
+            while True:
+                try:
+                    selection = input(f"Enter number (1-{len(archives)}): ").strip()
+                    if not selection:
+                        print("Aborted.")
+                        sys.exit(0)
+                    choice_index = int(selection) - 1
+                    if 0 <= choice_index < len(archives):
+                        archive_to_restore = archives[choice_index]
+                        break
+                    else:
+                        print("Invalid selection. Please try again.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+                except (EOFError, KeyboardInterrupt):
+                    print("\nAborted.")
+                    sys.exit(0)
+
     except (OSError, ValueError) as e:
         print(f"Error accessing trash archives: {e}", file=sys.stderr)
         sys.exit(1)

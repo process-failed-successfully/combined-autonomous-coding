@@ -117,15 +117,32 @@ class TestMainTrashCommand(unittest.TestCase):
         self.run_trash_command('clear', extra_args=['--all'])
         self.assertFalse(self.trash_base_dir.exists())
 
-    def test_trash_restore_latest(self):
-        """Test restoring the latest archive when no name is specified."""
+    @patch('builtins.input', side_effect=['1'])  # Simulate user selecting the first (latest) archive
+    def test_trash_restore_latest_interactive(self, mock_input):
+        """Test restoring the latest archive interactively when no name is specified."""
         # Create a newer archive
         newer_archive_name = "trash-2023-01-02_12-00-00"
         newer_archive_dir = self.trash_base_dir / newer_archive_name
         newer_archive_dir.mkdir()
         (newer_archive_dir / "latest_file.txt").write_text("This is from the latest archive.")
 
-        self.run_trash_command('restore') # No archive name provided
+        # run_trash_command is not used here due to the need for a custom mock setup
+        mock_args = argparse.Namespace(
+            command='trash',
+            action='restore',
+            archive_name=None,
+            file_name=None,
+            project_dir=self.project_dir,
+            yes=True,
+            all=False
+        )
+
+        f = io.StringIO()
+        with redirect_stdout(f), patch('main.parse_args', return_value=mock_args):
+            with self.assertRaises(SystemExit) as cm:
+                main_script.run_trash(mock_args)
+            self.assertEqual(cm.exception.code, 0)
+
         self.assertTrue((self.project_dir / "latest_file.txt").exists())
         self.assertFalse((self.project_dir / "file1.txt").exists())
         self.assertFalse(newer_archive_dir.exists())

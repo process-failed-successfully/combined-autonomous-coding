@@ -22,6 +22,7 @@ jobs:
             YOUR GOAL:
             1. Propose and implement this 1 useful feature.
             2. You MUST add strong testing (unit or integration) to verify it.
+            3. Be bold and innovative.
 
             Constraints:
             - Do not break existing tests.

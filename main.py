@@ -526,6 +526,105 @@ def run_archive(args):
     sys.exit(0)
 
 
+def run_snapshot(args):
+    """Copies key agent artifacts to a timestamped archive directory without deleting them."""
+    import shutil
+    from datetime import datetime
+
+    project_dir = args.project_dir.resolve()
+    snapshot_name = args.name
+    archive_base_dir = project_dir / ".agent_archives"
+
+    # Define the name of the snapshot directory
+    if snapshot_name:
+        snapshot_dir_name = snapshot_name
+    else:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        snapshot_dir_name = f"snapshot-{timestamp}"
+
+    snapshot_dir = archive_base_dir / snapshot_dir_name
+
+    print(f"--- Creating snapshot of artifacts in: {project_dir} ---")
+
+    # List of key agent-generated files to be snapshotted
+    artifacts_to_snapshot = [
+        "feature_list.json",
+        "qa_summary.txt",
+        "reviewer_report.txt",
+        "final_metrics.txt",
+        "dashboard_state.json",
+    ]
+
+    # Find artifacts that actually exist in the project directory
+    existing_artifacts = []
+    for artifact in artifacts_to_snapshot:
+        path = project_dir / artifact
+        if path.exists():
+            existing_artifacts.append(path)
+
+    # Also include the log file from the last run, if it exists
+    run_id_file = project_dir / ".agent_run_id"
+    log_file_path = None
+    if run_id_file.exists():
+        run_id = run_id_file.read_text().strip()
+        repo_root = Path(__file__).parent
+        log_file_path = repo_root / f"agents/logs/{run_id}.log"
+        if log_file_path.exists():
+            existing_artifacts.append(log_file_path)
+
+    if not existing_artifacts:
+        print("No key agent-generated artifacts found to snapshot.")
+        sys.exit(0)
+
+    # Check for conflicts before proceeding
+    if snapshot_dir.exists():
+        print(f"❌ Error: A snapshot named '{snapshot_dir_name}' already exists in .agent_archives.")
+        print("Please choose a different name or remove the existing one.")
+        sys.exit(1)
+
+    print(f"Snapshot will be saved to: .agent_archives/{snapshot_dir_name}")
+    print("The following artifacts will be copied:")
+    for path in existing_artifacts:
+        try:
+            display_path = path.relative_to(project_dir)
+        except ValueError:
+            repo_root = Path(__file__).parent
+            try:
+                display_path = f"(from repo root) {path.relative_to(repo_root)}"
+            except ValueError:
+                display_path = path
+        print(f"  - {display_path}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nCreating snapshot...")
+    try:
+        archive_base_dir.mkdir(exist_ok=True)
+        snapshot_dir.mkdir()
+
+        for path in existing_artifacts:
+            dest = snapshot_dir / path.name
+            if path.is_file():
+                shutil.copy2(path, dest)
+            elif path.is_dir():
+                shutil.copytree(path, dest)
+        print(f"Copied {len(existing_artifacts)} artifact(s).")
+
+    except OSError as e:
+        print(f"❌ Error creating snapshot: {e}", file=sys.stderr)
+        # Clean up partially created snapshot directory on error
+        if snapshot_dir.exists():
+            shutil.rmtree(snapshot_dir)
+        sys.exit(1)
+
+    print(f"\n✅ Snapshot '{snapshot_dir_name}' created successfully.")
+    sys.exit(0)
+
+
 def _trash_list(trash_base_dir):
     """Helper function to list trash archives."""
     print(f"--- Trash Archives in: {trash_base_dir} ---")
@@ -1664,6 +1763,25 @@ def parse_args():
         help="Skip confirmation prompts (for 'clean' action)",
     )
 
+    # Subparser for 'snapshot'
+    parser_snapshot = subparsers.add_parser("snapshot", help="Create a snapshot of key agent artifacts without deleting them")
+    parser_snapshot.add_argument(
+        "name",
+        nargs="?",
+        help="A custom name for the snapshot. If not provided, a timestamped name will be used.",
+    )
+    parser_snapshot.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to take a snapshot of (default: current directory)",
+    )
+    parser_snapshot.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
     return parser.parse_args()
 
 
@@ -1950,6 +2068,11 @@ async def main():
     # Handle `worktrees` command
     if args.command == "worktrees":
         run_worktrees(args)
+        return
+
+    # Handle `snapshot` command
+    if args.command == "snapshot":
+        run_snapshot(args)
         return
 
     # Handle `list-agents` command

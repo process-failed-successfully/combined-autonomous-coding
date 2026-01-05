@@ -22,16 +22,18 @@ class TestJiraModeIntegration(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp(prefix="test_jira_")
         self.project_dir = Path(self.tmp_dir)
+        (self.project_dir / "agent_config.yaml").write_text("jira:\n  url: https://test.jira.com")
 
     def tearDown(self):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
+    @patch("builtins.open")
     @patch("main.run_gemini")
     @patch("shared.jira_client.JiraClient")
     @patch("main.parse_args")
     @patch("sys.exit")  # Prevent actual exit
-    def test_main_with_jira_ticket(self, mock_exit, mock_parse_args, mock_jira_class, mock_run_agent):
+    def test_main_with_jira_ticket(self, mock_exit, mock_parse_args, mock_jira_class, mock_run_agent, mock_open):
         """
         Test that main.py correctly initializes JiraClient, gets the ticket,
         transitions it, and passes the correct config to the agent runner.

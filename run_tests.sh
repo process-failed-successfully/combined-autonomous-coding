@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e # Exit on error
 
+# Activate venv if it exists
+if [ -d ".venv" ]; then
+    echo "Activating virtual environment..."
+    source .venv/bin/activate
+fi
+
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 echo "========================================"
@@ -24,11 +30,7 @@ echo "  UNIT & INTEGRATION TESTS (PYTEST)"
 echo "========================================"
 
 echo "[4/4] Running Tests with Coverage..."
-if [ -d ".venv" ]; then
-    .venv/bin/pytest --cov=. --cov-report=term-missing tests/
-else
-    pytest --cov=. --cov-report=term-missing tests/
-fi
+pytest --cov=. --cov-report=term-missing tests/
 
 echo -e "\nRunning Setup Verification..."
 python3 tests/verify_setup.py

@@ -13,6 +13,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.project_dir = Path(self.tmp_dir)
         self.spec_file = self.project_dir / "spec.txt"
         self.spec_file.write_text("Spec content")
+        (self.project_dir / "agent_config.yaml").write_text("jira:\n  url: https://test.jira.com")
 
     def tearDown(self):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
@@ -23,6 +24,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             parse_args()
             mock_parse.assert_called()
 
+    @patch("builtins.open")
     @patch("main.parse_args")
     @patch("main.setup_logger")
     @patch("main.ensure_git_safe")
@@ -45,6 +47,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         mock_git_safe,
         mock_setup_logger,
         mock_parse_args,
+        mock_open
     ):
         # Setup args
         args = MagicMock()

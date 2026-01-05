@@ -5,3 +5,4 @@ types-requests
 pytest
 pytest-cov
 types-PyYAML
+jira

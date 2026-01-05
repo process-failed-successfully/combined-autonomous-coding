@@ -14,8 +14,3 @@ psutil
 platformdirs
 google-generativeai
 textual
-jira
-SQLAlchemy
-typer
-docker
-pytest

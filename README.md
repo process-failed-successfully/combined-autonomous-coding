@@ -1,3 +1,13 @@
+# ⚠️ DEPRECATION NOTICE ⚠️
+
+# THIS REPOSITORY HAS BEEN REPLACED
+
+**Please switch to [https://github.com/process-failed-successfully/recac](https://github.com/process-failed-successfully/recac) to take advantage of Go CLI and TUI libraries.**
+
+**Going forward, this repository will be maintained by agentic AI.**
+
+---
+
 # Combined Autonomous Coding Agent
 
 [![Robust CI](https://github.com/process-failed-successfully/combined-autonomous-coding/actions/workflows/ci.yml/badge.svg)](https://github.com/process-failed-successfully/combined-autonomous-coding/actions/workflows/ci.yml)
@@ -96,6 +106,9 @@ The `start_agent` script passes arguments directly to the agent runner. Here are
 | `--manager-first`          | Run the Manager Agent _before_ the first coding session.                    | `False`                 |
 | `--jira-ticket [ID]`       | Use a Jira ticket as the work spec (e.g., `PROJ-123`).                      | None                    |
 | `--jira-label [Label]`     | Find and pick first 'To Do' ticket with this label.                         | None                    |
+| `clean`                    | Subcommand to manage agent-generated artifacts.                             | N/A                     |
+| `clean --archive`          | Archives artifacts to `.agent_archives/` instead of trashing.               | N/A                     |
+| `clean --force`            | Permanently deletes artifacts instead of moving them to `.agent_trash/`.      | N/A                     |
 
 ### Example: Custom Project Directory and Model
 

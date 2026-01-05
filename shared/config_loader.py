@@ -101,12 +101,15 @@ def ensure_config_exists() -> None:
     create_default_config(target_path)
 
 
-def load_config_from_file(config_path: Optional[Path] = None) -> Dict[str, Any]:
+def load_config_from_file(
+    config_path: Optional[Path] = None, profile: Optional[str] = None
+) -> Dict[str, Any]:
     """
-    Load configuration from a YAML file.
+    Load configuration from a YAML file and merge a specific profile if requested.
 
     Args:
         config_path: Specific path to load. If None, resolves using get_config_path().
+        profile: The name of the profile to merge from the 'profiles' section.
 
     Returns:
         Dict containing configuration values, or empty dict if file not found/error.
@@ -120,11 +123,37 @@ def load_config_from_file(config_path: Optional[Path] = None) -> Dict[str, Any]:
 
     try:
         with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-            if not config:
-                return {}
-            logger.info(f"Loaded configuration from {config_path}")
-            return config
+            full_config = yaml.safe_load(f) or {}
+
+        # Base config is everything except the 'profiles' section
+        base_config = {k: v for k, v in full_config.items() if k != "profiles"}
+
+        # If a profile is specified, merge it
+        if profile:
+            profiles = full_config.get("profiles", {})
+            if not isinstance(profiles, dict):
+                logger.warning(
+                    f"'profiles' section in {config_path} is not a dictionary. Skipping profile loading."
+                )
+                return base_config
+
+            profile_config = profiles.get(profile)
+            if profile_config:
+                if isinstance(profile_config, dict):
+                    logger.info(f"Loading profile '{profile}' from {config_path}")
+                    # Merge profile into base config
+                    base_config.update(profile_config)
+                else:
+                    logger.warning(
+                        f"Profile '{profile}' in {config_path} is not a dictionary. Skipping."
+                    )
+            else:
+                logger.warning(
+                    f"Profile '{profile}' not found in {config_path}. Using default configuration."
+                )
+
+        logger.info(f"Loaded configuration from {config_path}")
+        return base_config
     except Exception as e:
         logger.error(f"Error loading config file {config_path}: {e}")
         return {}

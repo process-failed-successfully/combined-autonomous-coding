@@ -1,0 +1,158 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7f6;
+    color: #333;
+}
+
+header {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#agents-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.agent-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 1.5rem;
+    transition: transform 0.2s;
+    border-left: 5px solid #bdc3c7; /* Default gray for offline */
+}
+
+.agent-card.active {
+    border-left-color: #27ae60;
+}
+
+.agent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.agent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.agent-id {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.agent-status {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    background-color: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.agent-card.active .agent-status {
+    background-color: #e8f8f5;
+    color: #27ae60;
+}
+
+.agent-details {
+    margin-bottom: 1.5rem;
+}
+
+.detail-row {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.detail-label {
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.agent-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-stop {
+    background-color: #e74c3c;
+    color: white;
+}
+.btn-stop:hover { background-color: #c0392b; }
+
+.btn-pause {
+    background-color: #f39c12;
+    color: white;
+}
+.btn-pause:hover { background-color: #d35400; }
+
+.btn-resume {
+    background-color: #2ecc71;
+    color: white;
+}
+.btn-resume:hover { background-color: #27ae60; }
+
+.btn-skip {
+    background-color: #3498db;
+    color: white;
+}
+.btn-skip:hover { background-color: #2980b9; }
+
+.loading {
+    text-align: center;
+    color: #7f8c8d;
+    grid-column: 1 / -1;
+}
+
+/* Scrollable log area if needed later */
+.log-preview {
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-family: monospace;
+}

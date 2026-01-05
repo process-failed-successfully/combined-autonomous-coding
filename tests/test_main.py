@@ -68,9 +68,16 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_ticket = None
         args.jira_label = None
         args.tui = False
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.max_error_wait = None
+        args.no_dashboard = False
 
         mock_parse_args.return_value = args
         mock_gen_id.return_value = "gemini_agent_test_123"
+
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         # Spec file exists
         with patch.object(Path, "exists", return_value=True):
@@ -116,8 +123,24 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_ticket = None
         args.jira_label = None
         args.tui = False
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
 
         mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         with patch.object(Path, "exists", return_value=True):
             with patch.object(Path, "read_text", return_value="Spec"):
@@ -150,8 +173,25 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_ticket = None
         args.jira_label = None
         args.tui = False
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
 
         mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         # We need to ensure config.sprint_mode is True.
         # Main creates Config(..., agent_type=args.agent, ..., )
@@ -207,6 +247,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args = MagicMock()
         args.dashboard_only = True
         args.tui = False
+        args.dry_run = False
+        args.dind = False
+        args.command = None
         mock_parse_args.return_value = args
 
         with self.assertRaises(SystemExit) as cm:
@@ -222,7 +265,27 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.spec = None  # Missing spec
         args.dashboard_only = False
         args.tui = False
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
+        args.jira_ticket = None
+        args.jira_label = None
+
         mock_parse_args.return_value = args
+        mock_logger.return_value = (MagicMock(), MagicMock())
 
         # feature_list_path.exists() -> False (fresh)
         with patch("main.Config") as mock_config_cls:
@@ -262,8 +325,25 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_ticket = None
         args.jira_label = None
         args.tui = False
+        args.dry_run = False
+        args.dind = False
+        args.command = None
+        args.login = False
+        args.max_error_wait = None
+        args.no_dashboard = False
+        args.dashboard_url = "http://localhost:7654"
+        args.no_stream = False
+        args.model = None
+        args.max_iterations = None
+        args.verbose = False
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.max_agents = 2
 
         mock_parse_args.return_value = args
+        mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         with patch("main.Config") as mock_config_cls:
             mock_conf = MagicMock()
@@ -286,6 +366,92 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
                     await main()
 
             # mock_cleaner.assert_called() - Obsolete as it's now handled in the agent loop
+
+    @patch("main.parse_args")
+    @patch("shared.config_loader.ensure_config_exists")
+    @patch("shared.config_loader.load_config_from_file")
+    @patch("shared.database.init_db")
+    @patch("json.dumps", return_value="{}")
+    async def test_main_show_config_command(self, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
+        args = MagicMock()
+        args.command = "show-config"
+        args.dry_run = False
+        args.profile = None
+        args.project_dir = self.project_dir
+        args.agent = 'gemini'
+        args.model = None
+        args.max_iterations = None
+        args.spec = self.spec_file
+        args.verbose = False
+        args.no_stream = True
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.login = False
+        args.timeout = None
+        args.max_error_wait = None
+        args.sprint = False
+        args.max_agents = 1
+        args.jira_ticket = None
+        args.jira_label = None
+        args.dind = False
+        args.no_dashboard = True
+        args.dashboard_url = None
+        args.tui = False
+
+        mock_parse_args.return_value = args
+        mock_load_config.return_value = {}
+
+        with self.assertRaises(SystemExit) as cm:
+            await main()
+
+        self.assertEqual(cm.exception.code, 0)
+        mock_json_dumps.assert_called_once()
+
+    @patch("main.parse_args")
+    @patch("shared.config_loader.ensure_config_exists")
+    @patch("shared.config_loader.load_config_from_file")
+    @patch("shared.database.init_db")
+    @patch("json.dumps", return_value="{}")
+    @patch("sys.stderr")
+    async def test_main_dry_run_deprecation(self, mock_stderr, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
+        args = MagicMock()
+        args.command = None
+        args.dry_run = True
+        args.profile = None
+        args.project_dir = self.project_dir
+        args.agent = 'gemini'
+        args.model = None
+        args.max_iterations = None
+        args.spec = self.spec_file
+        args.verbose = False
+        args.no_stream = True
+        args.verify_creation = False
+        args.manager_frequency = 10
+        args.manager_model = None
+        args.manager_first = False
+        args.login = False
+        args.timeout = None
+        args.max_error_wait = None
+        args.sprint = False
+        args.max_agents = 1
+        args.jira_ticket = None
+        args.jira_label = None
+        args.dind = False
+        args.no_dashboard = True
+        args.dashboard_url = None
+        args.tui = False
+
+        mock_parse_args.return_value = args
+        mock_load_config.return_value = {}
+
+        with self.assertRaises(SystemExit) as cm:
+            await main()
+
+        self.assertEqual(cm.exception.code, 0)
+        mock_json_dumps.assert_called_once()
+        self.assertTrue(any("Warning: --dry-run is deprecated" in call.args[0] for call in mock_stderr.write.call_args_list))
 
 
 if __name__ == "__main__":

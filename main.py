@@ -18,11 +18,947 @@ from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
+# We import these lazily or handled via dispatch to avoid circular deps if any,
+# though structure should be clean.
+try:
+    from shared.jira_client import JiraClient
+except ImportError:
+    JiraClient = None
+
 from agents.gemini import run_autonomous_agent as run_gemini
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor
 from agents.local import run_autonomous_agent as run_local
 from agents.openrouter import run_autonomous_agent as run_openrouter
+import json
+import yaml
+import platformdirs
+from dataclasses import asdict, is_dataclass
+
+# Agent Definitions
+AVAILABLE_AGENTS = {
+    "gemini": "Uses Google's Gemini model via the official API.",
+    "cursor": "Interacts with the Cursor IDE's AI features.",
+    "local": "Runs a local model (e.g., Ollama).",
+    "openrouter": "Uses a model from the OpenRouter API.",
+}
+
+
+def run_validate():
+    """Validates the agent_config.yaml file."""
+    print("--- Validating Agent Configuration ---")
+    errors = []
+
+    from shared.config_loader import get_config_path, load_config_from_file
+    config_path = get_config_path()
+
+    if not config_path or not config_path.exists():
+        print("❌ Configuration file (agent_config.yaml) not found in any of the searched paths.")
+        print("   Searched in ./, ~/.config/combined-autonomous-coding/, and ~/.gemini/")
+        sys.exit(1)
+
+    print(f"Found configuration file at: {config_path}")
+
+    try:
+        config_data = load_config_from_file()
+    except Exception as e:
+        print(f"❌ Error loading or parsing YAML from {config_path}: {e}")
+        sys.exit(1)
+
+    # Jira Validation
+    if 'jira' in config_data:
+        jira_config = config_data['jira']
+        if not isinstance(jira_config, dict):
+            errors.append("Jira config ('jira') must be a dictionary.")
+        else:
+            required_jira_keys = ['url', 'email', 'token']
+            for key in required_jira_keys:
+                if key not in jira_config or not jira_config.get(key):
+                    errors.append(f"Jira config in {config_path} is missing required key or value: '{key}'")
+
+    # Notification Validation (check for non-empty strings)
+    if 'slack_webhook_url' in config_data and config_data.get('slack_webhook_url'):
+        url = config_data['slack_webhook_url']
+        if not isinstance(url, str) or not url.startswith("https://hooks.slack.com/"):
+            errors.append(f"Invalid Slack webhook URL format in {config_path}.")
+
+    if 'discord_webhook_url' in config_data and config_data.get('discord_webhook_url'):
+        url = config_data['discord_webhook_url']
+        if not isinstance(url, str) or not url.startswith("https://discord.com/api/webhooks/"):
+            errors.append(f"Invalid Discord webhook URL format in {config_path}.")
+
+    # Type checks for other common keys
+    type_checks = {
+        'model': str, 'max_iterations': int, 'manager_frequency': int,
+        'manager_model': str, 'timeout': (int, float), 'max_error_wait': (int, float),
+        'max_agents': int, 'dind_enabled': bool, 'run_manager_first': bool,
+        'notification_settings': dict,
+    }
+    for key, expected_type in type_checks.items():
+        if key in config_data and config_data.get(key) is not None and not isinstance(config_data[key], expected_type):
+            errors.append(f"'{key}' has incorrect type in {config_path}. Expected {expected_type}, got {type(config_data[key]).__name__}.")
+
+    if errors:
+        print(f"\n❌ Configuration validation failed with {len(errors)} error(s):")
+        for error in errors:
+            print(f"  - {error}")
+        sys.exit(1)
+    else:
+        print("\n✅ Configuration is valid!")
+        sys.exit(0)
+
+
+def run_doctor(args):
+    """Runs a comprehensive health check on the environment."""
+    import shutil
+    import requests
+
+    print("--- Running Environment Health Check (Doctor) ---")
+    project_dir = args.project_dir.resolve()
+    all_checks_passed = True
+    error_messages = []
+
+    # 1. Configuration File Check
+    print("\n[1] Checking Configuration File...")
+    from shared.config_loader import get_config_path, load_config_from_file
+    config_path = get_config_path()
+    config_data = {}
+
+    if not config_path or not config_path.exists():
+        print("  ❌ Configuration file (agent_config.yaml) not found.")
+        all_checks_passed = False
+    else:
+        print(f"  ✅ Found configuration file at: {config_path}")
+        try:
+            # Re-using validation logic from run_validate without exiting
+            config_data = load_config_from_file() or {}
+            validation_errors = []
+            if 'jira' in config_data:
+                jira_config = config_data.get('jira', {})
+                if not all(k in jira_config for k in ['url', 'email', 'token']):
+                    validation_errors.append("Jira config is missing 'url', 'email', or 'token'.")
+
+            if config_data.get('slack_webhook_url') and not str(config_data['slack_webhook_url']).startswith("https://hooks.slack.com/"):
+                validation_errors.append("Invalid Slack webhook URL format.")
+
+            if config_data.get('discord_webhook_url') and not str(config_data['discord_webhook_url']).startswith("https://discord.com/api/webhooks/"):
+                validation_errors.append("Invalid Discord webhook URL format.")
+
+            if validation_errors:
+                all_checks_passed = False
+                for err in validation_errors:
+                    print(f"  ❌ {err}")
+                    error_messages.append(f"Config validation: {err}")
+            else:
+                print("  ✅ Configuration file format appears valid.")
+        except Exception as e:
+            print(f"  ❌ Error loading or parsing configuration: {e}")
+            all_checks_passed = False
+            error_messages.append(f"Config loading error: {e}")
+
+    # 2. Dependency Checks (Git)
+    print("\n[2] Checking Dependencies...")
+    if shutil.which("git"):
+        print("  ✅ Git executable found.")
+    else:
+        print("  ❌ Git executable not found. Git is required for version control.")
+        all_checks_passed = False
+        error_messages.append("Dependency check: Git not found.")
+
+    # 3. Connectivity Checks
+    print("\n[3] Checking API Connectivity...")
+    # Jira Connectivity
+    if 'jira' in config_data and all(k in config_data['jira'] for k in ['url', 'email', 'token']):
+        print("  - Checking Jira connection...")
+        try:
+            from shared.jira_client import JiraClient
+            from shared.config import JiraConfig
+            jira_config = JiraConfig(**config_data['jira'])
+            jira_client = JiraClient(jira_config)
+            jira_client.check_connection()
+            print("    ✅ Jira connection successful.")
+        except Exception as e:
+            print(f"    ❌ Jira connection failed: {e}")
+            all_checks_passed = False
+            error_messages.append(f"Jira connection: {e}")
+    else:
+        print("  - Jira not configured, skipping check.")
+
+    # Webhook Connectivity (using requests to avoid heavy deps)
+    for service, url_key in [("Slack", "slack_webhook_url"), ("Discord", "discord_webhook_url")]:
+        webhook_url = config_data.get(url_key)
+        if webhook_url:
+            print(f"  - Checking {service} webhook...")
+            try:
+                response = requests.head(webhook_url, timeout=5)
+                # Most webhooks will return 405 for HEAD but it confirms reachability. 200 is also fine.
+                if response.status_code in [200, 405]:
+                    print(f"    ✅ {service} webhook is reachable.")
+                else:
+                    print(f"    ❌ {service} webhook returned status {response.status_code}.")
+                    all_checks_passed = False
+                    error_messages.append(f"{service} webhook check failed with status {response.status_code}.")
+            except requests.RequestException as e:
+                print(f"    ❌ Could not connect to {service} webhook: {e}")
+                all_checks_passed = False
+                error_messages.append(f"{service} webhook connection error: {e}")
+        else:
+            print(f"  - {service} not configured, skipping check.")
+
+    # 4. Permissions Check
+    print("\n[4] Checking File System Permissions...")
+    try:
+        if not project_dir.exists():
+            project_dir.mkdir(parents=True, exist_ok=True)
+            print(f"  ✅ Project directory created at: {project_dir}")
+
+        if os.access(project_dir, os.W_OK):
+            print(f"  ✅ Project directory is writable: {project_dir}")
+        else:
+            print(f"  ❌ Project directory is not writable: {project_dir}")
+            all_checks_passed = False
+            error_messages.append(f"Permissions: Project directory '{project_dir}' not writable.")
+    except Exception as e:
+        print(f"  ❌ Error checking permissions for {project_dir}: {e}")
+        all_checks_passed = False
+        error_messages.append(f"Permissions check error: {e}")
+
+    # Final Summary
+    print("\n--- Health Check Summary ---")
+    if all_checks_passed:
+        print("✅ All checks passed. Your environment is ready!")
+        sys.exit(0)
+    else:
+        print(f"❌ Found {len(error_messages)} issue(s). Please review the errors above.")
+        sys.exit(1)
+
+
+def run_show_config(config):
+    """Prints the final resolved configuration as JSON and exits."""
+    from shared.utils import EnhancedJSONEncoder
+    print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
+    sys.exit(0)
+
+
+def run_list_agents():
+    """Prints a list of available agents and their descriptions."""
+    print("--- Available Agents ---")
+    # Find the longest agent name for alignment
+    max_len = max(len(name) for name in AVAILABLE_AGENTS.keys())
+
+    for name, description in AVAILABLE_AGENTS.items():
+        # Format with padding for alignment
+        print(f"  {name.ljust(max_len)} : {description}")
+    sys.exit(0)
+
+
+def run_configure():
+    """Interactively create or update the agent_config.yaml file."""
+    print("--- Agent Configuration ---")
+
+    # Use XDG path as the primary location
+    config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
+    config_path = config_dir / "agent_config.yaml"
+
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load existing config if it exists
+    existing_config = {}
+    if config_path.exists():
+        print(f"Loading existing configuration from: {config_path}")
+        with open(config_path, 'r') as f:
+            existing_config = yaml.safe_load(f) or {}
+    else:
+        print(f"Creating new configuration file at: {config_path}")
+
+    # Helper for user input
+    def get_input(prompt, default_value=None):
+        if default_value:
+            prompt_text = f"{prompt} [{default_value}]: "
+        else:
+            prompt_text = f"{prompt}: "
+
+        user_input = input(prompt_text).strip()
+        return user_input or default_value
+
+    # --- JIRA Configuration ---
+    print("\n--- Jira Integration (optional) ---")
+    jira_config = existing_config.get('jira', {})
+
+    jira_url = get_input("Jira URL (e.g., https://your-domain.atlassian.net)", jira_config.get('url'))
+    if jira_url:
+        jira_email = get_input("Jira Email", jira_config.get('email'))
+        jira_token = get_input("Jira API Token", jira_config.get('token'))
+
+        updated_jira_config = {
+            'url': jira_url,
+            'email': jira_email,
+            'token': jira_token
+        }
+        if 'status_map' in jira_config:
+            updated_jira_config['status_map'] = jira_config['status_map']
+
+        existing_config['jira'] = updated_jira_config
+    elif 'jira' in existing_config:
+        del existing_config['jira']
+
+    # --- Notifications ---
+    print("\n--- Notifications (optional) ---")
+    slack_url = get_input("Slack Webhook URL", existing_config.get('slack_webhook_url'))
+    discord_url = get_input("Discord Webhook URL", existing_config.get('discord_webhook_url'))
+
+    if slack_url:
+        existing_config['slack_webhook_url'] = slack_url
+    if discord_url:
+        existing_config['discord_webhook_url'] = discord_url
+
+    # Clean up empty keys
+    final_config = {k: v for k, v in existing_config.items() if v}
+
+    # --- Save Configuration ---
+    try:
+        with open(config_path, 'w') as f:
+            yaml.dump(final_config, f, sort_keys=False, indent=2)
+        print(f"\n✅ Configuration saved successfully to {config_path}")
+    except Exception as e:
+        print(f"\n❌ Error saving configuration: {e}")
+
+
+def run_clean(args):
+    """Moves or removes agent-generated artifacts from the project directory."""
+    import shutil
+    from datetime import datetime
+
+    project_dir = args.project_dir.resolve()
+    is_force_delete = args.force
+    is_archive = args.archive
+
+    # Determine action and destination
+    if is_force_delete:
+        action_desc = "Permanently DELETING"
+        log_verb = "Cleaning"
+        dest_base_dir_name = None
+        dest_dir_prefix = None
+        completion_message = "\n✅ Clean complete."
+    elif is_archive:
+        action_desc = "Archiving"
+        log_verb = "Archiving"
+        dest_base_dir_name = ".agent_archives"
+        dest_dir_prefix = "archive"
+        completion_message = "\n✅ Archive complete. Artifacts moved to {dest_dir_display_path}"
+    else:  # Default is trash
+        action_desc = "Moving to trash"
+        log_verb = "Trashing"
+        dest_base_dir_name = ".agent_trash"
+        dest_dir_prefix = "trash"
+        completion_message = "\n✅ Trash complete. Artifacts moved to {dest_dir_display_path}"
+
+    print(f"--- {action_desc} artifacts in project directory: {project_dir} ---")
+
+    # List of agent-generated files and directories to be cleaned
+    artifacts_to_clean = [
+        ".agent_db.sqlite",
+        "COMPLETED",
+        "QA_PASSED",
+        "PROJECT_SIGNED_OFF",
+        "feature_list.json",
+        "qa_summary.txt",
+        "reviewer_report.txt",
+        "cleanup_report.txt",
+        "final_metrics.txt",
+        "temp_files.txt",
+        "dashboard_state.json",
+        "worktrees/",  # Directory
+    ]
+
+    # Find artifacts in the project directory
+    existing_artifacts = []
+    for artifact in artifacts_to_clean:
+        path = project_dir / artifact
+        if path.exists():
+            existing_artifacts.append(path)
+
+    # Also include the log file from the last run
+    run_id_file = project_dir / ".agent_run_id"
+    log_file_path = None
+    if run_id_file.exists():
+        run_id = run_id_file.read_text().strip()
+        repo_root = Path(__file__).parent
+        log_file_path = repo_root / f"agents/logs/{run_id}.log"
+        if log_file_path.exists():
+            # Add the log file to be cleaned
+            existing_artifacts.append(log_file_path)
+
+    if not existing_artifacts:
+        print("No agent-generated artifacts found to clean.")
+        sys.exit(0)
+
+    # Prepare destination directory path if needed
+    dest_dir = None
+    dest_dir_display_path = None
+    if not is_force_delete:
+        dest_base_dir = project_dir / dest_base_dir_name
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        dest_dir = dest_base_dir / f"{dest_dir_prefix}-{timestamp}"
+        dest_dir_display_path = dest_dir.relative_to(project_dir)
+
+    action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {dest_dir_display_path}"
+    print(f"The following agent-generated files and directories will be {action_verb}:")
+    for path in existing_artifacts:
+        try:
+            display_path = path.relative_to(project_dir)
+        except ValueError:
+            # The path is not inside the project directory (e.g., agent log file)
+            repo_root = Path(__file__).parent
+            try:
+                display_path = f"(from repo root) {path.relative_to(repo_root)}"
+            except ValueError:
+                display_path = path  # Absolute path as a fallback
+        print(f"  - {display_path}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print(f"\n{log_verb} artifacts...")
+
+    # Create destination directory now that we have confirmation
+    if not is_force_delete and dest_dir:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+    for path in existing_artifacts:
+        try:
+            if is_force_delete:
+                if path.is_file():
+                    path.unlink()
+                    print(f"Deleted file: {path.relative_to(project_dir)}")
+                elif path.is_dir():
+                    shutil.rmtree(path)
+                    print(f"Deleted directory: {path.relative_to(project_dir)}")
+            else:
+                dest = dest_dir / path.name
+                shutil.move(str(path), str(dest))
+                print(f"Moved to {dest_dir_prefix}: {path.relative_to(project_dir)}")
+        except OSError as e:
+            print(f"Error processing {path}: {e}", file=sys.stderr)
+
+    if not is_force_delete:
+        print(completion_message.format(dest_dir_display_path=dest_dir.relative_to(project_dir)))
+    else:
+        print(completion_message)
+    sys.exit(0)
+
+
+def run_archive(args):
+    """Archives agent-generated artifacts to a timestamped directory."""
+    print("Warning: The 'archive' command is deprecated and will be removed in a future version. "
+          "Use 'clean --archive' instead.", file=sys.stderr)
+    import shutil
+    from datetime import datetime
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Archiving artifacts in project directory: {project_dir} ---")
+
+    # List of agent-generated files and directories to be archived
+    artifacts_to_archive = [
+        ".agent_db.sqlite",
+        "COMPLETED",
+        "QA_PASSED",
+        "PROJECT_SIGNED_OFF",
+        "feature_list.json",
+        "qa_summary.txt",
+        "reviewer_report.txt",
+        "cleanup_report.txt",
+        "final_metrics.txt",
+        "temp_files.txt",
+        "dashboard_state.json",
+        "worktrees/",  # Directory
+    ]
+
+    existing_artifacts = []
+    for artifact in artifacts_to_archive:
+        path = project_dir / artifact
+        if path.exists():
+            existing_artifacts.append(path)
+
+    if not existing_artifacts:
+        print("No agent-generated artifacts found to archive.")
+        sys.exit(0)
+
+    # Create archive directory
+    archive_base_dir = project_dir / ".agent_archives"
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    archive_dir = archive_base_dir / f"archive-{timestamp}"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Archiving to: {archive_dir}")
+
+    for path in existing_artifacts:
+        try:
+            dest = archive_dir / path.name
+            shutil.move(str(path), str(dest))
+            print(f"Archived: {path.relative_to(project_dir)}")
+        except OSError as e:
+            print(f"Error archiving {path}: {e}", file=sys.stderr)
+
+    print(f"\n✅ Archiving complete. Artifacts moved to {archive_dir.relative_to(project_dir)}")
+    sys.exit(0)
+
+
+def _trash_list(trash_base_dir):
+    """Helper function to list trash archives."""
+    print(f"--- Trash Archives in: {trash_base_dir} ---")
+    try:
+        archives = sorted([d for d in trash_base_dir.iterdir() if d.is_dir()], reverse=True)
+    except OSError as e:
+        print(f"Error reading trash directory: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not archives:
+        print("Trash is empty.")
+        sys.exit(0)
+
+    for i, archive_dir in enumerate(archives):
+        latest_marker = " (latest)" if i == 0 else ""
+        print(f"\n[{i+1}] {archive_dir.name}{latest_marker}")
+        try:
+            contents = list(archive_dir.iterdir())
+            if not contents:
+                print("    (empty)")
+            else:
+                # Always list all contents first
+                for item in contents:
+                    is_dir = "/ (dir)" if item.is_dir() else ""
+                    print(f"    - {item.name}{is_dir}")
+
+                # If a log file exists, show a summary
+                log_file = next((item for item in contents if item.suffix == '.log'), None)
+                if log_file:
+                    print("    --- Log Summary (last 15 lines) ---")
+                    try:
+                        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                            lines = f.readlines()
+                            for line in lines[-15:]:
+                                stripped_line = line.strip()
+                                if stripped_line:
+                                    print(f"      {stripped_line}")
+                    except Exception as e:
+                        print(f"      [Error reading log summary: {e}]")
+        except OSError as e:
+            print(f"    Error reading archive contents: {e}", file=sys.stderr)
+    sys.exit(0)
+
+
+def _trash_restore(args, trash_base_dir):
+    """Helper function to restore from trash."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Restoring from trash in: {project_dir} ---")
+    archive_to_restore = None
+    try:
+        archives = sorted([d for d in trash_base_dir.iterdir() if d.is_dir()])
+        if not archives:
+            print("Trash is empty. Nothing to restore.")
+            sys.exit(0)
+
+        if args.archive_name:
+            target_path = trash_base_dir / args.archive_name
+            if not target_path.is_dir():
+                print(f"❌ Error: Archive '{args.archive_name}' not found.")
+                sys.exit(1)
+            archive_to_restore = target_path
+        else:
+            archive_to_restore = archives[-1]
+    except (OSError, ValueError) as e:
+        print(f"Error accessing trash archives: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Found archive to restore: {archive_to_restore.name}")
+
+    artifacts = list(archive_to_restore.iterdir())
+    if not artifacts:
+        print("Archive is empty. Nothing to restore.")
+        archive_to_restore.rmdir()
+        print(f"Removed empty archive: {archive_to_restore.name}")
+        sys.exit(0)
+
+    conflicts = [p.name for p in artifacts if (project_dir / p.name).exists()]
+    if conflicts:
+        print("\n❌ Error: The following files already exist in the project directory:")
+        for f in conflicts:
+            print(f"  - {f}")
+        print("Please move or delete these conflicting files before running restore.")
+        sys.exit(1)
+
+    print("\nThe following artifacts will be restored:")
+    for artifact in artifacts:
+        print(f"  - {artifact.name}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nRestoring artifacts...")
+    try:
+        for artifact in artifacts:
+            dest = project_dir / artifact.name
+            shutil.move(str(artifact), str(dest))
+            print(f"Restored: {artifact.name}")
+        archive_to_restore.rmdir()
+        print(f"Removed empty archive: {archive_to_restore.name}")
+    except OSError as e:
+        print(f"Error during restore: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n✅ Restore complete.")
+    sys.exit(0)
+
+
+def _trash_clear(args, trash_base_dir):
+    """Helper function to clear trash."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    print(f"--- Clearing trash in: {project_dir} ---")
+    if args.all:
+        if not args.yes:
+            print(f"This will permanently delete the entire '.agent_trash' directory and all its contents.")
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+        try:
+            shutil.rmtree(trash_base_dir)
+            print("✅ Trash successfully emptied.")
+        except OSError as e:
+            print(f"Error emptying trash: {e}", file=sys.stderr)
+            sys.exit(1)
+    elif args.archive_name:
+        target_path = trash_base_dir / args.archive_name
+        if not target_path.is_dir():
+            print(f"❌ Error: Archive '{args.archive_name}' not found.")
+            sys.exit(1)
+
+        if not args.yes:
+            print(f"This will permanently delete the archive: {args.archive_name}")
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+        try:
+            shutil.rmtree(target_path)
+            print(f"✅ Archive '{args.archive_name}' deleted.")
+        except OSError as e:
+            print(f"Error deleting archive: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("Error: 'clear' action requires either an archive name or the --all flag.")
+        sys.exit(1)
+    sys.exit(0)
+
+
+def run_trash(args):
+    """Manages the agent trash directory."""
+    project_dir = args.project_dir.resolve()
+    trash_base_dir = project_dir / ".agent_trash"
+
+    if not trash_base_dir.exists() or not trash_base_dir.is_dir():
+        print("Trash directory (.agent_trash) not found. Nothing to do.")
+        sys.exit(0)
+
+    if args.action == "list":
+        _trash_list(trash_base_dir)
+    elif args.action == "restore":
+        _trash_restore(args, trash_base_dir)
+    elif args.action == "clear":
+        _trash_clear(args, trash_base_dir)
+
+
+def run_empty_trash(args):
+    """Permanently deletes the .agent_trash directory."""
+    print("Warning: The 'empty-trash' command is deprecated and will be removed in a future version. "
+          "Use 'trash clear --all' instead.", file=sys.stderr)
+    import shutil
+    project_dir = args.project_dir.resolve()
+    trash_dir = project_dir / ".agent_trash"
+
+    print(f"--- Permanently emptying trash in project: {project_dir} ---")
+
+    if not trash_dir.exists() or not trash_dir.is_dir():
+        print("Trash directory (.agent_trash) not found. Nothing to do.")
+        sys.exit(0)
+
+    # Count items for user confirmation
+    trash_items = list(trash_dir.iterdir())
+    if not trash_items:
+        print("Trash directory is already empty.")
+        # Also remove the empty .agent_trash directory itself
+        try:
+            trash_dir.rmdir()
+            print("Removed empty .agent_trash directory.")
+        except OSError as e:
+            print(f"Could not remove empty .agent_trash directory: {e}", file=sys.stderr)
+        sys.exit(0)
+
+    print(f"The trash directory (.agent_trash) contains {len(trash_items)} item(s).")
+    print("This action will permanently delete its contents.")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nEmptying trash...")
+    try:
+        shutil.rmtree(trash_dir)
+        print("✅ Trash successfully emptied.")
+    except OSError as e:
+        print(f"Error while emptying trash: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+def run_restore(args):
+    """Restores agent-generated artifacts from the most recent trash directory."""
+    print("Warning: The 'restore' command is deprecated and will be removed in a future version. "
+          "Use 'trash restore' instead.", file=sys.stderr)
+    import shutil
+    project_dir = args.project_dir.resolve()
+    trash_base_dir = project_dir / ".agent_trash"
+
+    print(f"--- Restoring artifacts in project: {project_dir} ---")
+
+    if not trash_base_dir.exists() or not trash_base_dir.is_dir():
+        print("Trash directory (.agent_trash) not found. Nothing to restore.")
+        sys.exit(0)
+
+    # Find the most recent trash directory (they are timestamped)
+    try:
+        latest_trash_dir = max(d for d in trash_base_dir.iterdir() if d.is_dir())
+    except ValueError:
+        print("No trash archives found in .agent_trash directory.")
+        sys.exit(0)
+
+    print(f"Found latest trash archive: {latest_trash_dir.name}")
+
+    artifacts_to_restore = list(latest_trash_dir.iterdir())
+    if not artifacts_to_restore:
+        print("Trash archive is empty. Nothing to restore.")
+        latest_trash_dir.rmdir() # Clean up empty dir
+        print(f"Removed empty trash archive: {latest_trash_dir.name}")
+        sys.exit(0)
+
+    # Check for conflicts
+    conflicting_files = []
+    for artifact in artifacts_to_restore:
+        destination_path = project_dir / artifact.name
+        if destination_path.exists():
+            conflicting_files.append(artifact.name)
+
+    if conflicting_files:
+        print("\n❌ Error: The following files already exist in the project directory:")
+        for f in conflicting_files:
+            print(f"  - {f}")
+        print("Please move or delete these files manually before running restore.")
+        sys.exit(1)
+
+    print("\nThe following artifacts will be restored to the project directory:")
+    for artifact in artifacts_to_restore:
+        print(f"  - {artifact.name}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nRestoring artifacts...")
+    try:
+        for artifact in artifacts_to_restore:
+            dest = project_dir / artifact.name
+            shutil.move(str(artifact), str(dest))
+            print(f"Restored: {artifact.name}")
+
+        # Clean up the now-empty trash directory
+        latest_trash_dir.rmdir()
+        print(f"Removed empty trash archive: {latest_trash_dir.name}")
+
+    except OSError as e:
+        print(f"Error during restore: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n✅ Restore complete.")
+    sys.exit(0)
+
+
+def run_status(args):
+    """Displays the current status of the agent project."""
+    import subprocess
+    import json
+    project_dir = args.project_dir.resolve()
+    print(f"--- Project Status: {project_dir} ---")
+
+    # 1. Workflow Stage
+    print("\n[ Workflow Stage ]")
+    if (project_dir / "PROJECT_SIGNED_OFF").exists():
+        print("  ✅ Project Signed Off: The project is complete and verified.")
+    elif (project_dir / "QA_PASSED").exists():
+        print("  🤔 QA Passed: Ready for final manager review and sign-off.")
+    elif (project_dir / "COMPLETED").exists():
+        print("  ⏳ Completed: Agent has finished coding, pending QA verification.")
+    else:
+        print("  🏃 In Progress: Agent is actively working or ready to start.")
+
+    # 2. Feature Summary
+    print("\n[ Feature Summary ]")
+    feature_file = project_dir / "feature_list.json"
+    if feature_file.exists():
+        try:
+            with open(feature_file, 'r') as f:
+                features = json.load(f)
+            if isinstance(features, list) and features:
+                print(f"  Found {len(features)} features in feature_list.json:")
+                for i, feature in enumerate(features[:5]):
+                    print(f"    - {feature}")
+                if len(features) > 5:
+                    print("    ...")
+            else:
+                print("  feature_list.json is empty or invalid.")
+        except json.JSONDecodeError:
+            print("  Error: Could not parse feature_list.json.")
+        except Exception as e:
+            print(f"  An error occurred: {e}")
+    else:
+        print("  No feature_list.json found.")
+
+    # 3. Last Agent Run
+    print("\n[ Last Agent Run ]")
+    run_id_file = project_dir / ".agent_run_id"
+    if run_id_file.exists():
+        run_id = run_id_file.read_text().strip()
+        print(f"  Last Run ID: {run_id}")
+        repo_root = Path(__file__).parent
+        # Use a relative path for display if possible, but resolve the actual path for reading
+        log_file_path = repo_root / f"agents/logs/{run_id}.log"
+
+        try:
+            display_path = log_file_path.relative_to(project_dir.parent)
+        except ValueError:
+            display_path = log_file_path
+
+        if log_file_path.exists():
+            try:
+                lines = []
+                with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    # More robust way to get last N lines without seeking on special files (like in /proc)
+                    all_lines = f.readlines()
+                    lines = all_lines[-5:]
+
+                if lines:
+                    print("  Log Snippet (last 5 lines):")
+                    for line in lines:
+                        print(f"    {line.strip()}")
+                else:
+                    print("  Log file is empty.")
+            except Exception as e:
+                print(f"  Error reading log file: {e}")
+        else:
+            print(f"  Log file not found at: {display_path}")
+    else:
+        print("  No .agent_run_id file found. Has the agent been run yet?")
+
+    # 4. Git Status
+    print("\n[ Git Status ]")
+    try:
+        # Using absolute path for git to comply with Bandit B607
+        git_path = "/usr/bin/git"
+        # Check if it's a git repo first
+        check_repo = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True
+        )
+        if check_repo.returncode == 0 and check_repo.stdout.strip() == "true":
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if result.stdout:
+                print("  Uncommitted changes detected:")
+                for line in result.stdout.strip().split('\n'):
+                    print(f"    {line}")
+            else:
+                print("  ✅ Working directory is clean.")
+        else:
+            print("  Directory is not a Git repository.")
+
+    except FileNotFoundError:
+        print("  Git not found. Cannot determine repository status.")
+    except subprocess.CalledProcessError as e:
+        print(f"  Error checking git status: {e.stderr}")
+    except Exception as e:
+        print(f"  An unexpected error occurred while checking git status: {e}")
+
+    sys.exit(0)
+
+
+def run_history(args):
+    """Displays a history of agent runs for the project."""
+    project_dir = args.project_dir.resolve()
+    history_file = project_dir / ".agent_history"
+    repo_root = Path(__file__).parent
+    logs_dir = repo_root / "agents/logs"
+
+    print(f"--- Agent Run History: {project_dir} ---")
+
+    if not history_file.exists():
+        print("No agent run history found for this project.")
+        sys.exit(0)
+
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+    except IOError as e:
+        print(f"Error reading history file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not run_ids:
+        print("History is empty.")
+        sys.exit(0)
+
+    # Display in reverse chronological order
+    for i, run_id in enumerate(reversed(run_ids)):
+        latest_marker = " (latest)" if i == 0 else ""
+        print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
+        log_file = logs_dir / f"{run_id}.log"
+
+        if log_file.exists():
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+                # Attempt to get timestamp from the first line
+                first_line = lines[0].strip() if lines else ""
+                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
+                print(f"  Timestamp: {timestamp}")
+
+                if lines:
+                    print("  Log Summary (last 5 lines):")
+                    # Find last 5 non-empty lines
+                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
+                    for line in last_lines:
+                        print(f"    {line}")
+                else:
+                    print("  Log file is empty.")
+            except Exception as e:
+                print(f"  Error reading log file: {e}")
+        else:
+            print("  Log file not found.")
+
+    sys.exit(0)
 
 
 def parse_args():
@@ -31,6 +967,11 @@ def parse_args():
     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")
     core_group.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
+    )
+    core_group.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -38,7 +979,7 @@ def parse_args():
     )
     core_group.add_argument(
         "-a", "--agent",
-        choices=["gemini", "cursor", "local", "openrouter"],
+        choices=list(AVAILABLE_AGENTS.keys()),
         default="gemini",
         help="Which agent to use (default: gemini)",
     )
@@ -162,12 +1103,197 @@ def parse_args():
         action="store_true",
         help="Enable Docker-in-Docker support (mounts docker socket). Can also be set via config.",
     )
+    adv_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="DEPRECATED: Use the 'show-config' command instead. Prints the final configuration and exits.",
+    )
+
+    # Subparsers for commands like 'configure'
+    subparsers = parser.add_subparsers(dest="command", help="sub-command help")
+    parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
+    parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
+    parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
+    parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
+
+    # Subparser for 'doctor'
+    parser_doctor = subparsers.add_parser("doctor", help="Run a comprehensive health check on the environment")
+    parser_doctor.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check (default: current directory)",
+    )
+
+    # Subparser for 'status'
+    parser_status = subparsers.add_parser("status", help="Show the current status of the agent project")
+    parser_status.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check status for (default: current directory)",
+    )
+
+    # Subparser for 'history'
+    parser_history = subparsers.add_parser("history", help="Show the history of agent runs for the project")
+    parser_history.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check history for (default: current directory)",
+    )
+
+    # Subparser for 'clean'
+    parser_clean = subparsers.add_parser("clean", help="Move agent-generated artifacts to a trash directory")
+    parser_clean.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to clean (default: current directory)",
+    )
+    parser_clean.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+    clean_exclusive_group = parser_clean.add_mutually_exclusive_group()
+    clean_exclusive_group.add_argument(
+        "--force",
+        action="store_true",
+        help="Permanently delete artifacts instead of moving them to the trash directory",
+    )
+    clean_exclusive_group.add_argument(
+        "--archive",
+        action="store_true",
+        help="Archive artifacts to the `.agent_archives/` directory instead of moving them to trash",
+    )
+
+    # Subparser for 'archive'
+    parser_archive = subparsers.add_parser("archive", help="Archive all agent-generated artifacts to a timestamped directory")
+    parser_archive.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to clean (default: current directory)",
+    )
+
+    # Subparser for 'empty-trash'
+    parser_empty_trash = subparsers.add_parser("empty-trash", help="DEPRECATED: Use 'trash clear --all' instead.")
+    parser_empty_trash.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the trash is located (default: current directory)",
+    )
+    parser_empty_trash.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
+    # Subparser for 'restore'
+    parser_restore = subparsers.add_parser("restore", help="DEPRECATED: Use 'trash restore' instead.")
+    parser_restore.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the trash is located (default: current directory)",
+    )
+    parser_restore.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
+    # Subparser for 'trash'
+    parser_trash = subparsers.add_parser("trash", help="Manage the agent trash directory")
+    parser_trash.add_argument(
+        "action",
+        choices=["list", "restore", "clear"],
+        help="Action to perform on the trash",
+    )
+    parser_trash.add_argument(
+        "archive_name",
+        nargs="?",
+        help="The name of the trash archive to restore or clear (e.g., trash-2023-10-27_12-30-00)",
+    )
+    parser_trash.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the trash is located",
+    )
+    parser_trash.add_argument(
+        "--all",
+        action="store_true",
+        help="Option for 'clear' action to remove all archives",
+    )
+    parser_trash.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts",
+    )
 
     return parser.parse_args()
 
 
 async def main():
     args = parse_args()
+
+    # Handle `configure` command
+    if args.command == "configure":
+        run_configure()
+        return
+
+    # Handle `validate` command
+    if args.command == "validate":
+        run_validate()
+        return
+
+    # Handle `doctor` command
+    if args.command == "doctor":
+        run_doctor(args)
+        return
+
+    # Handle `clean` command
+    if args.command == "clean":
+        run_clean(args)
+        return
+
+    # Handle `archive` command
+    if args.command == "archive":
+        run_archive(args)
+        return
+
+    # Handle `empty-trash` command
+    if args.command == "empty-trash":
+        run_empty_trash(args)
+        return
+
+    # Handle `restore` command
+    if args.command == "restore":
+        run_restore(args)
+        return
+
+    # Handle `trash` command
+    if args.command == "trash":
+        run_trash(args)
+        return
+
+    # Handle `list-agents` command
+    if args.command == "list-agents":
+        run_list_agents()
+        return
+
+    # Handle `status` command
+    if args.command == "status":
+        run_status(args)
+        return
+
+    # Handle `history` command
+    if args.command == "history":
+        run_history(args)
+        return
 
     # Initialize Agent Client
     from shared.agent_client import AgentClient
@@ -179,7 +1305,7 @@ async def main():
 
     # Load Configuration from File
     ensure_config_exists()
-    file_config = load_config_from_file()
+    file_config = load_config_from_file(profile=args.profile)
 
     # Helper to resolve configuration priority: CLI > Config File > Default
     def resolve(cli_arg, config_key, default_val):
@@ -256,6 +1382,19 @@ async def main():
     agents_log_dir = repo_root / "agents/logs"
     agents_log_dir.mkdir(parents=True, exist_ok=True)
 
+    # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
+    # But for now, we can use a generic one or wait.
+    # Let's setup a basic console logger first?
+    # existing setup_logger requires a file. We will update it later.
+
+    # Handle `show-config` command and deprecated `--dry-run`
+    if args.command == "show-config":
+        run_show_config(config)
+
+    if args.dry_run:
+        print("Warning: --dry-run is deprecated. Please use the 'show-config' command instead.", file=sys.stderr)
+        run_show_config(config)
+
     # JIRA LOGIC
     jira_client = None
     jira_spec_content = ""
@@ -298,19 +1437,22 @@ async def main():
 
     log_file = agents_log_dir / f"{agent_id}.log"
 
-    # Configure Logger
+    # Configure Root Logger to capture all module logs (e.g. shared.git)
     # If TUI is enabled, we disable console output here because the TUI app will handle it.
-    logger = setup_logger(
-        name="",
-        log_file=log_file,
-        verbose=args.verbose,
-        console_output=not args.tui
-    )
+    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=args.verbose, console_output=not args.tui)
 
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
 
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url)
+    # Append the current run ID to the history file
+    try:
+        history_file = config.project_dir / ".agent_history"
+        with open(history_file, "a") as f:
+            f.write(f"{agent_id}\n")
+    except IOError as e:
+        logger.warning(f"Could not write to history file {history_file}: {e}")
+
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
 
     is_fresh = not config.feature_list_path.exists()
     if is_fresh and not args.spec and not jira_spec_content:

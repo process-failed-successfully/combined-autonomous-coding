@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import subprocess
+from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
@@ -206,16 +207,20 @@ def execute_read_block(filename: str, cwd: Path) -> str:
             return f"Error: File {filename} does not exist."
 
         with open(file_path, "r") as f:
-            # Optimization: Stream lines directly to avoid loading full file into memory
-            numbered_lines = [
-                f"{i + 1:4} | {line.rstrip('\n')}" for i, line in enumerate(f)
-            ]
+            from shared.telemetry import get_telemetry
 
-        from shared.telemetry import get_telemetry
+            get_telemetry().increment_counter("files_read_total")
 
-        get_telemetry().increment_counter("files_read_total")
-
-        return f"File: {filename}\n" + "\n".join(numbered_lines)
+            # Optimization: Use generator and chain to avoid intermediate list creation
+            # and extra string copy.
+            # Note: For completely empty files, this returns "File: name" without a trailing newline,
+            # whereas the original returned "File: name\n". This is a minor deviation deemed acceptable.
+            return "\n".join(
+                chain(
+                    (f"File: {filename}",),
+                    (f"{i + 1:4} | {line.rstrip('\n')}" for i, line in enumerate(f)),
+                )
+            )
     except Exception as e:
         logger.error(f"[Error] {e}")
         return str(e)
@@ -457,6 +462,27 @@ def generate_agent_id(project_name: str, spec_content: str, agent_type: str) -> 
 
     # Combine to match requested format: cursor_agent_hello_world_uuid
     return f"{agent_type}_agent_{project_name}_{short_hash}"
+
+
+import json
+from dataclasses import asdict, is_dataclass
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if is_dataclass(o):
+            # For dataclasses, convert them to a dict.
+            # We use a dict comprehension to recursively apply this logic.
+            return {f: self.default(getattr(o, f)) for f in o.__dataclass_fields__}
+        elif isinstance(o, Path):
+            return str(o)
+        else:
+            # For MagicMock, return a string representation
+            if "MagicMock" in str(type(o)):
+                return f"MagicMock(id={id(o)})"
+            try:
+                return super().default(o)
+            except TypeError:
+                return str(o)
 
 
 def sanitize_url(url: str) -> str:

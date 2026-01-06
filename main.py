@@ -1305,6 +1305,79 @@ def run_restore(args):
     sys.exit(0)
 
 
+def run_summary(args):
+    """Displays a high-level summary of the project's status."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Project Summary: {project_dir} ---")
+
+    # 1. Workflow Stage
+    stage_key = _get_workflow_stage(project_dir)
+    stage_name = WORKFLOW_STAGES[stage_key]['name']
+    print(f"  {'Workflow Stage':<20}: {stage_name}")
+
+    # 2. Key Artifacts
+    artifacts = {
+        "Feature Plan": "feature_list.json",
+        "QA Summary": "qa_summary.txt",
+        "Reviewer Report": "reviewer_report.txt",
+    }
+    found_artifacts = []
+    for name, path in artifacts.items():
+        if (project_dir / path).exists():
+            found_artifacts.append(name)
+
+    if found_artifacts:
+        print(f"  {'Key Artifacts':<20}: {', '.join(found_artifacts)}")
+    else:
+        print(f"  {'Key Artifacts':<20}: None")
+
+
+    # 3. Git Status
+    try:
+        git_path = shutil.which("git")
+        if not git_path or not (project_dir / ".git").is_dir():
+            print(f"  {'Git Status':<20}: Not a git repository.")
+        else:
+            # Get branch and status in one call
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain", "-b"],
+                capture_output=True, text=True, check=True
+            )
+            lines = result.stdout.strip().split('\n')
+            branch_line = lines[0]
+            status_lines = lines[1:]
+
+            branch_name = branch_line.split(' ')[1].split('...')[0] # '## main...origin/main' -> 'main'
+            status = "Clean"
+            if status_lines:
+                status = f"{len(status_lines)} uncommitted change(s)"
+
+            print(f"  {'Git Branch':<20}: {branch_name}")
+            print(f"  {'Git Status':<20}: {status}")
+
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"  {'Git Status':<20}: Error checking status ({e})")
+
+
+    # 4. Last Activity
+    history_file = project_dir / ".agent_history"
+    if history_file.exists():
+        try:
+            with open(history_file, "r") as f:
+                run_ids = [line.strip() for line in f if line.strip()]
+            if run_ids:
+                last_run_id = run_ids[-1]
+                print(f"  {'Last Run ID':<20}: {last_run_id}")
+            else:
+                print(f"  {'Last Activity':<20}: No runs in history.")
+        except IOError:
+            print(f"  {'Last Activity':<20}: Error reading history file.")
+    else:
+        print(f"  {'Last Activity':<20}: No agent runs recorded.")
+
+    sys.exit(0)
+
+
 def run_status(args):
     """Displays the current status of the agent project."""
     import subprocess
@@ -1922,6 +1995,15 @@ def parse_args():
         type=Path,
         default=Path("."),
         help="The project directory to check status for (default: current directory)",
+    )
+
+    # Subparser for 'summary'
+    parser_summary = subparsers.add_parser("summary", help="Show a high-level summary of the agent project")
+    parser_summary.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to summarize (default: current directory)",
     )
 
     # Subparser for 'history'
@@ -3023,6 +3105,11 @@ async def main():
     # Handle `status` command
     if args.command == "status":
         run_status(args)
+        return
+
+    # Handle `summary` command
+    if args.command == "summary":
+        run_summary(args)
         return
 
     # Handle `history` command

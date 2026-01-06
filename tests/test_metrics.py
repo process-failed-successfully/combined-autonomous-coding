@@ -30,6 +30,8 @@ class TestTelemetry(unittest.TestCase):
 
     def test_counter_increment(self):
         self.telemetry.register_counter("test_counter", "Test doc", ["label1"])
+        # Manually reset last push time to bypass throttling in test
+        self.telemetry._last_push_time = 0.0
         self.telemetry.increment_counter("test_counter", 1, {"label1": "A"})
 
         # Check if push was called

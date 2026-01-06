@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import os
 import sys
+import yaml
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -48,6 +49,63 @@ class TestDoctorCommand(unittest.TestCase):
     @patch('shared.config_loader.get_config_path', return_value=None)
     def test_doctor_no_config_file(self, mock_get_config_path):
         """Test the doctor command when the config file is not found."""
+        # Act & Assert
+        with self.assertRaises(SystemExit) as cm:
+            run_doctor(self.args)
+        self.assertEqual(cm.exception.code, 1)
+
+    @patch('shared.config_loader.get_config_path')
+    @patch('shared.config_loader.load_config_from_file')
+    def test_doctor_malformed_config_file(self, mock_load_config, mock_get_config_path):
+        """Test the doctor command with a malformed YAML config file."""
+        # Arrange
+        config_path = self.test_dir / "agent_config.yaml"
+        # This write is not strictly needed since we mock the load, but good practice
+        config_path.write_text("this is not valid yaml:")
+        mock_get_config_path.return_value = config_path
+        mock_load_config.side_effect = yaml.YAMLError("Malformed YAML")
+
+        # Act & Assert
+        with self.assertRaises(SystemExit) as cm:
+            run_doctor(self.args)
+        self.assertEqual(cm.exception.code, 1)
+
+    @patch('shared.config_loader.get_config_path')
+    @patch('shared.config_loader.load_config_from_file')
+    @patch('shutil.which', return_value="/usr/bin/git")
+    @patch('os.access', return_value=True)
+    def test_doctor_invalid_jira_config(self, mock_os_access, mock_shutil_which, mock_load_config, mock_get_config_path):
+        """Test doctor with a config file that has invalid Jira details."""
+        # Arrange
+        config_path = self.test_dir / "agent_config.yaml"
+        config_path.touch()
+        mock_get_config_path.return_value = config_path
+        mock_load_config.return_value = {
+            'jira': {
+                'url': 'https://test.atlassian.net',
+                # Missing email and token
+            }
+        }
+
+        # Act & Assert
+        with self.assertRaises(SystemExit) as cm:
+            run_doctor(self.args)
+        self.assertEqual(cm.exception.code, 1)
+
+    @patch('shared.config_loader.get_config_path')
+    @patch('shared.config_loader.load_config_from_file')
+    @patch('shutil.which', return_value="/usr/bin/git")
+    @patch('os.access', return_value=True)
+    def test_doctor_invalid_webhook_format(self, mock_os_access, mock_shutil_which, mock_load_config, mock_get_config_path):
+        """Test doctor with an invalidly formatted webhook URL."""
+        # Arrange
+        config_path = self.test_dir / "agent_config.yaml"
+        config_path.touch()
+        mock_get_config_path.return_value = config_path
+        mock_load_config.return_value = {
+            'slack_webhook_url': 'https://not-slack.com/fake'
+        }
+
         # Act & Assert
         with self.assertRaises(SystemExit) as cm:
             run_doctor(self.args)
@@ -128,6 +186,26 @@ class TestDoctorCommand(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 404
         mock_requests_head.return_value = mock_response
+
+        # Act & Assert
+        with self.assertRaises(SystemExit) as cm:
+            run_doctor(self.args)
+        self.assertEqual(cm.exception.code, 1)
+
+    @patch('shared.config_loader.get_config_path')
+    @patch('shared.config_loader.load_config_from_file')
+    @patch('shutil.which', return_value=None) # First failure
+    @patch('os.access', return_value=False) # Second failure
+    def test_doctor_multiple_failures(self, mock_os_access, mock_shutil_which, mock_load_config, mock_get_config_path):
+        """Test the doctor command with multiple simultaneous failures."""
+        # Arrange
+        config_path = self.test_dir / "agent_config.yaml"
+        config_path.touch()
+        mock_get_config_path.return_value = config_path
+        # Also, an invalid Jira config to add a third failure
+        mock_load_config.return_value = {
+            'jira': { 'url': 'https://test.atlassian.net' }
+        }
 
         # Act & Assert
         with self.assertRaises(SystemExit) as cm:

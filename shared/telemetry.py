@@ -1,3 +1,4 @@
+import atexit
 import logging
 import os
 import socket
@@ -36,6 +37,8 @@ class Telemetry:
         self.registry = CollectorRegistry()
         self.metrics: Dict[str, Any] = {}
         self._last_push_error_time = 0.0
+        self._last_push_time = 0.0
+        self._push_interval = 2.0  # Throttle pushes to every 2 seconds
 
         # Ensure log directory exists
         os.makedirs(LOG_DIR, exist_ok=True)
@@ -69,6 +72,9 @@ class Telemetry:
             target=self._system_monitoring_loop, daemon=True
         )
         self.monitoring_active = False
+
+        # Ensure final metrics are pushed on exit
+        atexit.register(self._push_metrics, force=True)
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
@@ -361,7 +367,14 @@ class Telemetry:
         self.logger.error(message)
         self.increment_counter("agent_errors_total", labels={"error_type": "log_error"})
 
-    def _push_metrics(self):
+    def _push_metrics(self, force: bool = False):
+        now = time.time()
+        if not force and (now - self._last_push_time < self._push_interval):
+            return
+
+        # Update last push time immediately to prevent hammering if push fails
+        self._last_push_time = now
+
         try:
             # We group metrics by job, instance, and other high-level identifiers to act as "global labels"
             # grouping_key = {'instance': socket.gethostname(), 'service': self.service_name, 'project': self.project_name, 'agent_type': self.agent_type}

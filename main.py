@@ -263,6 +263,54 @@ def run_list_agents():
     sys.exit(0)
 
 
+RECOMMENDED_MODELS = {
+    "gemini": [
+        {"model": "gemini-1.5-pro-latest", "description": "Most capable model, multi-modal, large context.", "recommended": True},
+        {"model": "gemini-1.5-flash-latest", "description": "Fast and cost-effective, multi-modal.", "recommended": False},
+        {"model": "gemini-1.0-pro", "description": "Previous generation, balanced performance.", "recommended": False},
+    ],
+    "cursor": [
+        {"model": "claude-3.5-sonnet", "description": "Strong performance, good for complex reasoning.", "recommended": True},
+        {"model": "gpt-4o", "description": "Fast, multi-modal, high performance.", "recommended": False},
+        {"model": "claude-3-opus", "description": "Most powerful Claude model for highly complex tasks.", "recommended": False},
+    ],
+    "openrouter": [
+        {"model": "anthropic/claude-3.5-sonnet", "description": "Top-tier model, good for reasoning.", "recommended": True},
+        {"model": "openai/gpt-4o", "description": "Flagship OpenAI model, multi-modal.", "recommended": False},
+        {"model": "google/gemini-flash-1.5", "description": "Fast and efficient model from Google.", "recommended": False},
+        {"model": "mistralai/mistral-large", "description": "Flagship model from Mistral AI.", "recommended": False},
+    ],
+    "local": [
+        {"model": "ollama/llama3", "description": "High-performing open source model.", "recommended": True},
+        {"model": "ollama/codellama", "description": "Specialized for code generation.", "recommended": False},
+    ]
+}
+
+def run_models(args):
+    """Prints a list of recommended models for each agent."""
+    agent_filter = args.agent
+
+    if agent_filter and agent_filter not in RECOMMENDED_MODELS:
+        print(f"❌ Error: Agent '{agent_filter}' not found. Use 'list-agents' to see available agents.", file=sys.stderr)
+        sys.exit(1)
+
+    print("--- Recommended Models ---")
+
+    for agent_name, models in RECOMMENDED_MODELS.items():
+        if agent_filter and agent_name != agent_filter:
+            continue
+
+        print(f"\n# {agent_name.capitalize()} Agent")
+        header = f"  {'Model Name':<30} | {'Description'}"
+        print(header)
+        print(f"  {'-'*30}-+-{'-'*40}")
+
+        for model_info in models:
+            rec_marker = " (recommended)" if model_info["recommended"] else ""
+            print(f"  {model_info['model']:<30} | {model_info['description']}{rec_marker}")
+    sys.exit(0)
+
+
 def run_configure():
     """Interactively create or update the agent_config.yaml file."""
     print("--- Agent Configuration ---")
@@ -2418,6 +2466,14 @@ def parse_args(argv=None):
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
+    # Subparser for 'models'
+    parser_models = subparsers.add_parser("models", help="List recommended models for each agent")
+    parser_models.add_argument(
+        "-a", "--agent",
+        choices=list(RECOMMENDED_MODELS.keys()),
+        help="Filter models for a specific agent.",
+    )
+
     # Subparser for 'doctor'
     parser_doctor = subparsers.add_parser("doctor", help="Run a comprehensive health check on the environment")
     parser_doctor.add_argument(
@@ -3717,6 +3773,11 @@ async def main():
     # Handle `list-agents` command
     if args.command == "list-agents":
         run_list_agents()
+        return
+
+    # Handle `models` command
+    if args.command == "models":
+        run_models(args)
         return
 
     # Handle `status` command

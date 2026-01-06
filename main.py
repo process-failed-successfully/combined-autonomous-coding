@@ -31,6 +31,7 @@ from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
+from shared.shell import InteractiveShell
 import json
 import yaml
 import platformdirs
@@ -1305,9 +1306,9 @@ def run_restore(args):
     sys.exit(0)
 
 
-def run_summary(args):
-    """Displays a high-level summary of the project's status."""
-    project_dir = args.project_dir.resolve()
+def _run_summary_logic(project_dir):
+    """The core logic for displaying the project summary."""
+    project_dir = project_dir.resolve()
     print(f"--- Project Summary: {project_dir} ---")
 
     # 1. Workflow Stage
@@ -1331,14 +1332,12 @@ def run_summary(args):
     else:
         print(f"  {'Key Artifacts':<20}: None")
 
-
     # 3. Git Status
     try:
         git_path = shutil.which("git")
         if not git_path or not (project_dir / ".git").is_dir():
             print(f"  {'Git Status':<20}: Not a git repository.")
         else:
-            # Get branch and status in one call
             result = subprocess.run(
                 [git_path, "-C", str(project_dir), "status", "--porcelain", "-b"],
                 capture_output=True, text=True, check=True
@@ -1346,18 +1345,14 @@ def run_summary(args):
             lines = result.stdout.strip().split('\n')
             branch_line = lines[0]
             status_lines = lines[1:]
-
-            branch_name = branch_line.split(' ')[1].split('...')[0] # '## main...origin/main' -> 'main'
+            branch_name = branch_line.split(' ')[1].split('...')[0]
             status = "Clean"
             if status_lines:
                 status = f"{len(status_lines)} uncommitted change(s)"
-
             print(f"  {'Git Branch':<20}: {branch_name}")
             print(f"  {'Git Status':<20}: {status}")
-
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"  {'Git Status':<20}: Error checking status ({e})")
-
 
     # 4. Last Activity
     history_file = project_dir / ".agent_history"
@@ -1375,14 +1370,17 @@ def run_summary(args):
     else:
         print(f"  {'Last Activity':<20}: No agent runs recorded.")
 
+def run_summary(args):
+    """Displays a high-level summary of the project's status."""
+    _run_summary_logic(project_dir=args.project_dir)
     sys.exit(0)
 
 
-def run_status(args):
-    """Displays the current status of the agent project."""
+def _run_status_logic(project_dir):
+    """The core logic for displaying the project status."""
     import subprocess
     import json
-    project_dir = args.project_dir.resolve()
+    project_dir = project_dir.resolve()
     print(f"--- Project Status: {project_dir} ---")
 
     # 1. Workflow Stage
@@ -1425,9 +1423,7 @@ def run_status(args):
         run_id = run_id_file.read_text().strip()
         print(f"  Last Run ID: {run_id}")
         repo_root = Path(__file__).parent
-        # Use a relative path for display if possible, but resolve the actual path for reading
         log_file_path = repo_root / f"agents/logs/{run_id}.log"
-
         try:
             display_path = log_file_path.relative_to(project_dir.parent)
         except ValueError:
@@ -1435,12 +1431,9 @@ def run_status(args):
 
         if log_file_path.exists():
             try:
-                lines = []
                 with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    # More robust way to get last N lines without seeking on special files (like in /proc)
                     all_lines = f.readlines()
                     lines = all_lines[-5:]
-
                 if lines:
                     print("  Log Snippet (last 5 lines):")
                     for line in lines:
@@ -1457,9 +1450,7 @@ def run_status(args):
     # 4. Git Status
     print("\n[ Git Status ]")
     try:
-        # Using absolute path for git to comply with Bandit B607
         git_path = "/usr/bin/git"
-        # Check if it's a git repo first
         check_repo = subprocess.run(
             [git_path, "-C", str(project_dir), "rev-parse", "--is-inside-work-tree"],
             capture_output=True, text=True
@@ -1477,7 +1468,6 @@ def run_status(args):
                 print("  ✅ Working directory is clean.")
         else:
             print("  Directory is not a Git repository.")
-
     except FileNotFoundError:
         print("  Git not found. Cannot determine repository status.")
     except subprocess.CalledProcessError as e:
@@ -1485,12 +1475,14 @@ def run_status(args):
     except Exception as e:
         print(f"  An unexpected error occurred while checking git status: {e}")
 
+def run_status(args):
+    """Displays the current status of the agent project."""
+    _run_status_logic(project_dir=args.project_dir)
     sys.exit(0)
 
 
-def run_history(args):
-    """Displays a history of agent runs for the project."""
-    project_dir = args.project_dir.resolve()
+def _run_history_logic(project_dir):
+    """The core logic for displaying agent run history."""
     history_file = project_dir / ".agent_history"
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
@@ -1499,37 +1491,32 @@ def run_history(args):
 
     if not history_file.exists():
         print("No agent run history found for this project.")
-        sys.exit(0)
+        return
 
     try:
         with open(history_file, "r") as f:
             run_ids = [line.strip() for line in f if line.strip()]
     except IOError as e:
         print(f"Error reading history file: {e}", file=sys.stderr)
-        sys.exit(1)
+        return
 
     if not run_ids:
         print("History is empty.")
-        sys.exit(0)
+        return
 
-    # Display in reverse chronological order
     for i, run_id in enumerate(reversed(run_ids)):
         latest_marker = " (latest)" if i == 0 else ""
         print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
         log_file = logs_dir / f"{run_id}.log"
-
         if log_file.exists():
             try:
                 with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
                     lines = f.readlines()
-                # Attempt to get timestamp from the first line
                 first_line = lines[0].strip() if lines else ""
                 timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
                 print(f"  Timestamp: {timestamp}")
-
                 if lines:
                     print("  Log Summary (last 5 lines):")
-                    # Find last 5 non-empty lines
                     last_lines = [line.strip() for line in lines if line.strip()][-5:]
                     for line in last_lines:
                         print(f"    {line}")
@@ -1540,82 +1527,88 @@ def run_history(args):
         else:
             print("  Log file not found.")
 
+def run_history(args):
+    """Displays a history of agent runs for the project."""
+    _run_history_logic(project_dir=args.project_dir)
     sys.exit(0)
 
 
-def run_diff_summary(args):
-    """Displays a summary of uncommitted git changes."""
-    project_dir = args.project_dir.resolve()
+def _run_diff_summary_logic(project_dir):
+    """The core logic for displaying a git diff summary."""
     git_path = shutil.which("git")
-
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
+        return False
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot show diff summary.", file=sys.stderr)
-        sys.exit(1)
+        return False
 
     print(f"--- Diff Summary: {project_dir} ---")
     try:
         cmd = [git_path, "-C", str(project_dir), "diff", "--stat"]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-
         if not result.stdout.strip():
             print("✅ No uncommitted changes.")
-            sys.exit(0)
-
-        print(result.stdout)
-
+        else:
+            print(result.stdout)
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.strip()
         print(f"❌ Error getting diff summary: {stderr}", file=sys.stderr)
-        sys.exit(1)
+        return False
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
-        sys.exit(1)
-    sys.exit(0)
+        return False
+    return True
+
+def run_diff_summary(args):
+    """Displays a summary of uncommitted git changes."""
+    success = _run_diff_summary_logic(project_dir=args.project_dir)
+    sys.exit(0 if success else 1)
 
 
-def run_logs(args):
-    """Displays agent logs."""
+def _run_logs_logic(run_id=None):
+    """The core logic for displaying agent logs."""
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
-    run_id = args.run_id
 
     if not logs_dir.exists():
         print("Logs directory not found.")
-        sys.exit(1)
+        return False
 
     if run_id:
         log_file = logs_dir / f"{run_id}.log"
         if not log_file.exists():
             print(f"Log file not found for Run ID: {run_id}")
-            sys.exit(1)
+            return False
         try:
             with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
                 print(f.read())
         except IOError as e:
             print(f"Error reading log file: {e}", file=sys.stderr)
-            sys.exit(1)
+            return False
     else:
         print("--- Last 10 Agent Logs ---")
         try:
             logs = sorted(logs_dir.glob('*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
             if not logs:
                 print("No logs found.")
-                sys.exit(0)
-
-            for i, log_file in enumerate(logs[:10]):
-                run_id = log_file.stem
-                latest_marker = " (latest)" if i == 0 else ""
-                print(f"  - {run_id}{latest_marker}")
+            else:
+                for i, log_file in enumerate(logs[:10]):
+                    run_id_from_file = log_file.stem
+                    latest_marker = " (latest)" if i == 0 else ""
+                    print(f"  - {run_id_from_file}{latest_marker}")
         except OSError as e:
             print(f"Error listing logs: {e}", file=sys.stderr)
-            sys.exit(1)
+            return False
         print("\nUse 'logs <Run ID>' to view a specific log.")
-    sys.exit(0)
+    return True
+
+def run_logs(args):
+    """Displays agent logs."""
+    success = _run_logs_logic(run_id=args.run_id)
+    sys.exit(0 if success else 1)
 
 
 # --- Workflow Subcommand Helpers ---
@@ -1738,6 +1731,13 @@ def run_workflow(args):
         _workflow_advance(args)
     elif args.action == "revert":
         _workflow_revert(args)
+    sys.exit(0)
+
+
+def run_shell(args):
+    """Starts the interactive shell."""
+    shell = InteractiveShell(sys.modules[__name__])
+    shell.cmdloop()
     sys.exit(0)
 
 
@@ -2385,6 +2385,9 @@ def parse_args():
         help="Select a configuration profile from agent_config.yaml.",
     )
 
+    # Subparser for 'shell'
+    parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
+
 
     return parser.parse_args()
 
@@ -3026,6 +3029,11 @@ def run_worktrees(args):
 
 async def main():
     args = parse_args()
+
+    # Handle `shell` command
+    if args.command == "shell":
+        run_shell(args)
+        return
 
     # Handle `plan` command
     if args.command == "plan":

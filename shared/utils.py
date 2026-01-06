@@ -177,7 +177,15 @@ def execute_write_block(filename: str, content: str, cwd: Path) -> str:
         return "Error: No filename provided."
     logger.info(f"[Writing File] {filename}")
     try:
-        file_path = cwd / filename
+        file_path = (cwd / filename).resolve()
+        resolved_cwd = cwd.resolve()
+
+        # Security Check: Ensure file_path is within cwd
+        try:
+            file_path.relative_to(resolved_cwd)
+        except ValueError:
+            return f"Error: Access denied. Cannot write to {filename} outside of project directory."
+
         # Create parent directories
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -200,9 +208,17 @@ def execute_read_block(filename: str, cwd: Path) -> str:
         return "Error: No filename provided."
     logger.info(f"[Reading File] {filename}")
     try:
-        file_path = (
-            cwd / filename
-        )  # Kept cwd, assuming 'project_dir' was a typo in instruction
+        file_path = (cwd / filename).resolve()
+        resolved_cwd = cwd.resolve()
+
+        # Security Check: Ensure file_path is within cwd
+        # We allow reading logs/artifacts if explicitly in a subdirectory,
+        # but generally stick to project_dir
+        try:
+            file_path.relative_to(resolved_cwd)
+        except ValueError:
+             return f"Error: Access denied. Cannot read {filename} outside of project directory."
+
         if not file_path.exists():
             return f"Error: File {filename} does not exist."
 

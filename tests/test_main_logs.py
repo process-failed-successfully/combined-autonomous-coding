@@ -1,117 +1,186 @@
 import unittest
-from unittest.mock import patch, MagicMock, mock_open
-import argparse
+from unittest.mock import patch, MagicMock
+import sys
+import io
 from pathlib import Path
-import main
+import tempfile
+import time
 
-class TestMainLogs(unittest.TestCase):
+# Add the parent directory to the sys.path to allow for absolute imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-    @patch('main.Path')
-    def test_run_logs_no_logs_dir(self, mock_Path_class):
-        mock_repo_root = MagicMock(spec=Path)
-        mock_logs_dir = MagicMock(spec=Path)
-        mock_Path_class.return_value.parent = mock_repo_root
-        mock_repo_root.__truediv__.return_value = mock_logs_dir
-        mock_logs_dir.exists.return_value = False
+from main import _run_logs_logic
 
-        args = argparse.Namespace(run_id=None)
+class TestLogsCommand(unittest.TestCase):
 
-        with self.assertRaises(SystemExit) as cm:
-            with patch('builtins.print') as mock_print:
-                main.run_logs(args)
+    def setUp(self):
+        """Set up a temporary directory and fake log files."""
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.repo_root = Path(self.temp_dir.name)
+        self.logs_dir = self.repo_root / "agents" / "logs"
+        self.logs_dir.mkdir(parents=True)
 
-        self.assertEqual(cm.exception.code, 1)
-        mock_print.assert_any_call("Logs directory not found.")
+        # Create dummy log files
+        self.log_content_1 = [
+            "INFO - Starting process\n",
+            "DEBUG - Step 1: Initialization\n",
+            "INFO - Connecting to database\n",
+            "WARNING - Weak password detected\n",
+            "ERROR - Connection failed\n",
+            "INFO - Retrying...\n",
+        ]
+        self.log_file_1 = self.logs_dir / "run_123.log"
+        self.log_file_1.write_text("".join(self.log_content_1))
 
-    @patch('main.Path')
-    @patch('builtins.print')
-    def test_run_logs_no_logs_found(self, mock_print, mock_Path_class):
-        mock_repo_root = MagicMock(spec=Path)
-        mock_logs_dir = MagicMock(spec=Path)
-        mock_Path_class.return_value.parent = mock_repo_root
-        mock_repo_root.__truediv__.return_value = mock_logs_dir
-        mock_logs_dir.exists.return_value = True
-        mock_logs_dir.glob.return_value = []
+        time.sleep(0.01) # Ensure timestamps are different
 
-        args = argparse.Namespace(run_id=None)
+        self.log_content_2 = [
+            "INFO - Application started\n",
+            "DEBUG - Loading configuration\n",
+            "INFO - All systems nominal\n",
+            "DEBUG - Checking for updates\n",
+        ]
+        self.log_file_2 = self.logs_dir / "run_456.log" # This one is newer
+        self.log_file_2.write_text("".join(self.log_content_2))
 
-        with self.assertRaises(SystemExit) as cm:
-            main.run_logs(args)
-
-        self.assertEqual(cm.exception.code, 0)
-        mock_print.assert_any_call("No logs found.")
-
-    @patch('main.Path')
-    def test_run_logs_list_logs(self, mock_Path_class):
-        mock_repo_root = MagicMock(spec=Path)
-        mock_logs_dir = MagicMock(spec=Path)
-        mock_Path_class.return_value.parent = mock_repo_root
-        mock_repo_root.__truediv__.return_value = mock_logs_dir
-        mock_logs_dir.exists.return_value = True
-
-        # Create mock log files
-        log1 = MagicMock(spec=Path); log1.stem = 'log1'; log1.stat.return_value.st_mtime = 1
-        log2 = MagicMock(spec=Path); log2.stem = 'log2'; log2.stat.return_value.st_mtime = 2
-        log3 = MagicMock(spec=Path); log3.stem = 'log3'; log3.stat.return_value.st_mtime = 3
-
-        # Return them in a non-sorted order
-        mock_logs_dir.glob.return_value = [log2, log1, log3]
-
-        args = argparse.Namespace(run_id=None)
-
-        with patch('builtins.print') as mock_print:
-            with self.assertRaises(SystemExit) as cm:
-                main.run_logs(args)
-
-        self.assertEqual(cm.exception.code, 0)
-        mock_print.assert_any_call("--- Last 10 Agent Logs ---")
-        calls = mock_print.call_args_list
-        # The sorted order should be log3, log2, log1
-        self.assertEqual(calls[1].args[0], "  - log3 (latest)")
-        self.assertEqual(calls[2].args[0], "  - log2")
-        self.assertEqual(calls[3].args[0], "  - log1")
+    def tearDown(self):
+        """Clean up the temporary directory."""
+        self.temp_dir.cleanup()
 
     @patch('main.Path')
-    def test_run_logs_view_log_not_found(self, mock_Path_class):
-        mock_repo_root = MagicMock(spec=Path)
-        mock_logs_dir = MagicMock(spec=Path)
-        mock_log_file = MagicMock(spec=Path)
-        mock_Path_class.return_value.parent = mock_repo_root
-        mock_repo_root.__truediv__.return_value = mock_logs_dir
-        mock_logs_dir.exists.return_value = True
-        mock_logs_dir.__truediv__.return_value = mock_log_file
-        mock_log_file.exists.return_value = False
+    def test_list_logs_no_id(self, mock_path):
+        """Test listing logs when no run_id or flags are provided."""
+        mock_path.return_value.parent = self.repo_root
 
-        args = argparse.Namespace(run_id='test_log')
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            result = _run_logs_logic()
 
-        with self.assertRaises(SystemExit) as cm:
-            with patch('builtins.print') as mock_print:
-                main.run_logs(args)
-
-        self.assertEqual(cm.exception.code, 1)
-        mock_print.assert_any_call("Log file not found for Run ID: test_log")
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        self.assertIn("--- Last 10 Agent Logs ---", output)
+        self.assertIn("run_456 (latest)", output)
+        self.assertIn("run_123", output)
 
     @patch('main.Path')
-    @patch('builtins.open', new_callable=mock_open, read_data="Log content")
-    def test_run_logs_view_log_success(self, mock_open_file, mock_Path_class):
-        mock_repo_root = MagicMock(spec=Path)
-        mock_logs_dir = MagicMock(spec=Path)
-        mock_log_file = MagicMock(spec=Path)
-        mock_Path_class.return_value.parent = mock_repo_root
-        mock_repo_root.__truediv__.return_value = mock_logs_dir
-        mock_logs_dir.exists.return_value = True
-        mock_logs_dir.__truediv__.return_value = mock_log_file
-        mock_log_file.exists.return_value = True
+    def test_view_specific_log(self, mock_path):
+        """Test viewing a whole specific log file."""
+        mock_path.return_value.parent = self.repo_root
 
-        args = argparse.Namespace(run_id='test_log')
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            result = _run_logs_logic(run_id="run_123")
 
-        with patch('builtins.print') as mock_print:
-            with self.assertRaises(SystemExit) as cm:
-                main.run_logs(args)
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        self.assertIn("--- Displaying logs for: run_123.log ---", output)
+        self.assertIn("ERROR - Connection failed", output)
+        # +1 for the header line printed
+        self.assertEqual(output.count('\n'), len(self.log_content_1) + 1)
 
-        self.assertEqual(cm.exception.code, 0)
-        mock_open_file.assert_called_with(mock_log_file, 'r', encoding='utf-8', errors='ignore')
-        mock_print.assert_called_with("Log content")
+    @patch('main.Path')
+    def test_line_limit(self, mock_path):
+        """Test the --lines flag to limit output."""
+        mock_path.return_value.parent = self.repo_root
+
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            result = _run_logs_logic(run_id="run_123", lines=3)
+
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        # Should contain the last 3 lines
+        self.assertIn("WARNING - Weak password detected", output)
+        self.assertIn("ERROR - Connection failed", output)
+        self.assertIn("INFO - Retrying...", output)
+        # Should not contain earlier lines
+        self.assertNotIn("INFO - Starting process", output)
+        self.assertEqual(output.count('\n'), 3 + 1)
+
+    @patch('main.Path')
+    def test_grep_filter(self, mock_path):
+        """Test the --grep flag to filter output."""
+        mock_path.return_value.parent = self.repo_root
+
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            result = _run_logs_logic(run_id="run_123", grep="INFO")
+
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        # Should only contain lines with "INFO"
+        self.assertIn("INFO - Starting process", output)
+        self.assertIn("INFO - Connecting to database", output)
+        self.assertIn("INFO - Retrying...", output)
+        # Should not contain other lines
+        self.assertNotIn("DEBUG", output)
+        self.assertNotIn("WARNING", output)
+        self.assertNotIn("ERROR", output)
+        self.assertEqual(output.count('\n'), 3 + 1)
+
+    @patch('main.Path')
+    def test_lines_and_grep_combined(self, mock_path):
+        """Test combining --lines and --grep."""
+        mock_path.return_value.parent = self.repo_root
+
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+             result = _run_logs_logic(run_id="run_123", lines=4, grep="INFO")
+
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        # From the last 4 lines of the log, 2 contain "INFO"
+        self.assertIn("INFO - Retrying...", output)
+        self.assertIn("INFO - Connecting to database", output)
+        self.assertNotIn("INFO - Starting process", output)
+        self.assertEqual(output.count('\n'), 2 + 1)
+
+    @patch('main.Path')
+    def test_lines_on_latest_log(self, mock_path):
+        """Test using --lines without a run_id targets the latest log."""
+        mock_path.return_value.parent = self.repo_root
+
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            result = _run_logs_logic(lines=2)
+
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        self.assertIn("--- Displaying logs for: run_456.log ---", output)
+        # Should have the last 2 lines of the newest log
+        self.assertIn("INFO - All systems nominal", output)
+        self.assertIn("DEBUG - Checking for updates", output)
+        self.assertEqual(output.count('\n'), 2 + 1)
+
+    @patch('main.Path')
+    def test_log_not_found(self, mock_path):
+        """Test correct handling of a non-existent log file."""
+        mock_path.return_value.parent = self.repo_root
+
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            result = _run_logs_logic(run_id="non_existent_run")
+
+        self.assertFalse(result)
+        self.assertIn("Log file not found for Run ID: non_existent_run", captured_output.getvalue())
+
+    @patch('time.sleep', side_effect=KeyboardInterrupt)
+    @patch('main.Path')
+    def test_follow_mode_interrupt(self, mock_path, mock_sleep):
+        """Test that --follow mode can be interrupted."""
+        mock_path.return_value.parent = self.repo_root
+
+        captured_output = io.StringIO()
+        with patch('sys.stdout', captured_output):
+            # Also use --lines to ensure initial content is printed before follow loop
+            result = _run_logs_logic(run_id="run_123", follow=True, lines=10)
+
+        self.assertTrue(result)
+        output = captured_output.getvalue()
+        # Check that it printed the initial content
+        self.assertIn("ERROR - Connection failed", output)
+        # Check that it printed the exit message
+        self.assertIn("--- Stopped following log ---", output)
 
 if __name__ == '__main__':
     unittest.main()

@@ -2088,7 +2088,7 @@ def parse_args():
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
         "action",
-        choices=["list", "show", "clean", "revert", "create", "merge", "diff"],
+        choices=["list", "show", "clean", "revert", "create", "merge", "diff", "manage"],
         help="Action to perform on the worktrees",
     )
     parser_worktrees.add_argument(
@@ -2400,6 +2400,186 @@ def _worktree_diff(args, git_path, worktrees_base_dir):
     sys.exit(0)
 
 
+def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
+    """Helper function for interactive worktree management."""
+    import subprocess
+
+    # 1. Get the list of worktrees
+    try:
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        worktrees = []
+        current_worktree = {}
+        for line in result.stdout.strip().split('\n'):
+            if not line.strip():
+                if current_worktree:
+                    worktree_path = Path(current_worktree.get("worktree", ""))
+                    if worktrees_base_dir in worktree_path.parents:
+                        worktrees.append(current_worktree)
+                current_worktree = {}
+            else:
+                key, value = line.split(" ", 1)
+                current_worktree[key] = value
+        if current_worktree:
+            worktree_path = Path(current_worktree.get("worktree", ""))
+            if worktrees_base_dir in worktree_path.parents:
+                worktrees.append(current_worktree)
+
+        if not worktrees:
+            print("No active agent worktrees found to manage.")
+            sys.exit(0)
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error listing worktrees: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. Prompt user to select a worktree
+    print("--- Interactive Worktree Management ---")
+    print("Please select a worktree to manage:")
+    for i, wt in enumerate(worktrees):
+        path = Path(wt['worktree'])
+        branch = wt.get('branch', 'detached HEAD').split('/')[-1]
+        print(f"  [{i+1}] {path.name} (branch: {branch})")
+
+    selected_worktree = None
+    while True:
+        try:
+            selection = input(f"Enter number (1-{len(worktrees)}), or press Enter to cancel: ").strip()
+            if not selection:
+                print("Aborted.")
+                sys.exit(0)
+            choice_index = int(selection) - 1
+            if 0 <= choice_index < len(worktrees):
+                selected_worktree_path = Path(worktrees[choice_index]['worktree'])
+                selected_worktree = selected_worktree_path.name
+                break
+            else:
+                print("Invalid selection. Please try again.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            sys.exit(0)
+
+    print(f"\nManaging worktree: {selected_worktree}")
+
+    # 3. Display menu and get action
+    actions = ["show", "diff", "merge", "revert", "clean"]
+    while True:
+        print("\nAvailable actions:")
+        for i, action in enumerate(actions):
+            print(f"  [{i+1}] {action.capitalize()}")
+
+        try:
+            action_selection = input(f"Select an action (1-{len(actions)}), or press Enter to exit: ").strip()
+            if not action_selection:
+                print("Exiting.")
+                sys.exit(0)
+            action_index = int(action_selection) - 1
+            if 0 <= action_index < len(actions):
+                selected_action = actions[action_index]
+                break
+            else:
+                print("Invalid selection. Please try again.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+        except (EOFError, KeyboardInterrupt):
+            print("\nExiting.")
+            sys.exit(0)
+
+    # 4. Execute the action
+    mock_args = argparse.Namespace(
+        worktree_name=selected_worktree,
+        project_dir=project_dir,
+        yes=False,
+        force=False,
+        clean=False,
+    )
+
+    print(f"\n--- Executing '{selected_action.upper()}' on '{selected_worktree}' ---")
+
+    if selected_action == "show":
+        worktree_path = worktrees_base_dir / selected_worktree
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if result.stdout.strip():
+                print("Uncommitted changes:")
+                for line in result.stdout.strip().split('\n'):
+                    print(f"  {line}")
+            else:
+                print("✅ Worktree is clean.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
+
+    elif selected_action == "diff":
+        _worktree_diff(mock_args, git_path, worktrees_base_dir)
+
+    elif selected_action == "merge":
+        print("For merge, you can choose to clean up the worktree afterwards.")
+        clean_choice = input("Clean up worktree and branch after successful merge? [y/N]: ").strip().lower()
+        mock_args.clean = (clean_choice == 'y')
+        _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
+
+    elif selected_action == "revert":
+        worktree_path = worktrees_base_dir / selected_worktree
+        try:
+            status_result = subprocess.run(
+                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if not status_result.stdout.strip():
+                print("✅ No uncommitted changes to revert.")
+            else:
+                print("\nUncommitted changes (will be discarded):")
+                for line in status_result.stdout.strip().split('\n'):
+                    print(f"  {line}")
+
+                confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
+                if confirm == 'y':
+                     print("\nReverting changes...")
+                     subprocess.run(
+                         [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
+                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                     )
+                     subprocess.run(
+                         [git_path, "-C", str(worktree_path), "clean", "-fd"],
+                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                     )
+                     print("✅ Revert complete. Worktree is now clean.")
+                else:
+                    print("Aborted.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip() if e.stderr else str(e)
+            print(f"❌ Error during revert: {stderr}", file=sys.stderr)
+
+    elif selected_action == "clean":
+        print("This will remove the worktree. This can be forced if there are uncommitted changes.")
+        force_choice = input("Force removal even with uncommitted changes? [y/N]: ").strip().lower()
+        mock_args.force = (force_choice == 'y')
+        confirm = input(f"Are you sure you want to remove the worktree '{selected_worktree}'? [y/N]: ").strip().lower()
+        if confirm == 'y':
+            try:
+                cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
+                if mock_args.force:
+                    cmd.append("--force")
+                cmd.append(selected_worktree)
+
+                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                print(f"✅ Removed worktree: {selected_worktree}")
+            except subprocess.CalledProcessError as e:
+                 stderr = e.stderr.strip()
+                 print(f"❌ Error removing worktree '{selected_worktree}': {stderr}", file=sys.stderr)
+        else:
+            print("Aborted.")
+
+    sys.exit(0)
+
+
 def run_worktrees(args):
     """Manages agent-created git worktrees."""
     project_dir = args.project_dir.resolve()
@@ -2573,6 +2753,10 @@ def run_worktrees(args):
     # --- Action: diff ---
     elif args.action == "diff":
         _worktree_diff(args, git_path, worktrees_base_dir)
+
+    # --- Action: manage (interactive) ---
+    elif args.action == "manage":
+        _worktree_manage(args, git_path, project_dir, worktrees_base_dir)
 
     # --- Action: clean ---
     elif args.action == "clean":

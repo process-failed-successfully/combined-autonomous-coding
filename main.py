@@ -1734,6 +1734,41 @@ def run_history(args):
     sys.exit(0)
 
 
+def run_diff_summary(args):
+    """Displays a summary of uncommitted git changes."""
+    project_dir = args.project_dir.resolve()
+    git_path = shutil.which("git")
+
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot show diff summary.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Diff Summary: {project_dir} ---")
+    try:
+        cmd = [git_path, "-C", str(project_dir), "diff", "--stat"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        if not result.stdout.strip():
+            print("✅ No uncommitted changes.")
+            sys.exit(0)
+
+        print(result.stdout)
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip()
+        print(f"❌ Error getting diff summary: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    sys.exit(0)
+
+
 def run_logs(args):
     """Displays agent logs."""
     repo_root = Path(__file__).parent
@@ -1949,6 +1984,15 @@ def parse_args():
         type=Path,
         default=Path("."),
         help="The project directory to check history for (default: current directory)",
+    )
+
+    # Subparser for 'diff-summary'
+    parser_diff_summary = subparsers.add_parser("diff-summary", help="Show a summary of uncommitted git changes")
+    parser_diff_summary.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check for changes (default: current directory)",
     )
 
     # Subparser for 'logs'
@@ -2900,6 +2944,10 @@ async def main():
     # Handle `history` command
     if args.command == "history":
         run_history(args)
+        return
+
+    if args.command == "diff-summary":
+        run_diff_summary(args)
         return
 
     if args.command == "logs":

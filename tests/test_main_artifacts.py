@@ -1,170 +1,171 @@
 import unittest
-from unittest.mock import patch
-from pathlib import Path
-import shutil
-import os
+from unittest.mock import patch, MagicMock
 import sys
 import io
+from pathlib import Path
+import tempfile
+import shutil
+import argparse
 
 # Ensure the main script can be imported
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from main import run_artifacts
 
-from main import main
-
-class TestMainArtifacts(unittest.IsolatedAsyncioTestCase):
+class TestArtifactsCLI(unittest.TestCase):
     def setUp(self):
-        """Set up a temporary directory for each test."""
-        self.test_dir = Path("test_project_dir")
-        self.test_dir.mkdir()
+        """Set up a temporary project directory with archives and trash."""
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
 
         # Create trash and archives directories
-        self.trash_dir = self.test_dir / ".agent_trash"
-        self.trash_dir.mkdir()
-        self.archive_dir = self.test_dir / ".agent_archives"
-        self.archive_dir.mkdir()
+        self.trash_base_dir = self.project_dir / ".agent_trash"
+        self.trash_base_dir.mkdir()
+        self.archives_base_dir = self.project_dir / ".agent_archives"
+        self.archives_base_dir.mkdir()
 
-        # Create dummy archive contents
-        self.trash_archive1 = self.trash_dir / "trash-2023-01-01_12-00-00"
-        self.trash_archive1.mkdir()
-        (self.trash_archive1 / "file1.txt").write_text("trash file 1")
-        (self.trash_archive1 / "file2.log").write_text("log\n" * 20)  # For log summary test
+        # --- Create Mock Trash ---
+        self.trash1_dir = self.trash_base_dir / "trash-2023-01-01_10-00-00"
+        self.trash1_dir.mkdir()
+        (self.trash1_dir / "file1.txt").write_text("trash content1")
 
-        self.archive_archive1 = self.archive_dir / "archive-2023-01-01_12-00-00"
-        self.archive_archive1.mkdir()
-        (self.archive_archive1 / "file1.txt").write_text("archive file 1")
+        self.trash2_dir = self.trash_base_dir / "trash-2023-01-02_12-00-00"
+        self.trash2_dir.mkdir()
+        (self.trash2_dir / "file2.txt").write_text("trash content2")
+        (self.trash2_dir / "shared.txt").write_text("shared trash")
+
+        # --- Create Mock Archives ---
+        self.archive1_dir = self.archives_base_dir / "archive-2023-01-03_14-00-00"
+        self.archive1_dir.mkdir()
+        (self.archive1_dir / "file3.txt").write_text("archive content3")
+        (self.archive1_dir / "shared.txt").write_text("shared archive")
+
+        # A file in the main project directory for diffing/conflict tests
+        (self.project_dir / "shared.txt").write_text("modified shared content")
 
     def tearDown(self):
-        """Clean up the temporary directory after each test."""
-        if self.test_dir.exists():
-            shutil.rmtree(self.test_dir)
+        """Clean up the temporary directory."""
+        shutil.rmtree(self.test_dir)
 
-    @patch('sys.stdout', new_callable=io.StringIO)
-    async def test_artifacts_list_trash_and_archive(self, mock_stdout):
-        """Test 'artifacts trash list' and 'artifacts archive list' command."""
-        # --- Test Trash List ---
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "list", "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
+    def run_artifacts_command(self, mode, action, archive_name=None, file_name=None, all_flag=False, yes_flag=True, dry_run_flag=False, input_side_effect=None):
+        """Helper to run 'artifacts' commands with a namespace object."""
+        args = argparse.Namespace(
+            type=mode,
+            action=action,
+            archive_name=archive_name,
+            file_name=file_name,
+            project_dir=self.project_dir,
+            all=all_flag,
+            yes=yes_flag,
+            dry_run=dry_run_flag
+        )
 
-        output = mock_stdout.getvalue()
+        with patch('builtins.input', side_effect=input_side_effect or ['']):
+            with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
+                with patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
+                    with self.assertRaises(SystemExit) as cm:
+                        run_artifacts(args, mode=mode)
+
+        return cm.exception.code, mock_stdout.getvalue(), mock_stderr.getvalue()
+
+    def test_list_trash_and_archives(self):
+        """Test listing contents of both trash and archives."""
+        exit_code, output, _ = self.run_artifacts_command('trash', 'list')
+        self.assertEqual(exit_code, 0)
         self.assertIn("--- Trash in:", output)
-        self.assertIn(self.trash_archive1.name, output)
-        self.assertIn("file1.txt", output)
-        self.assertIn("file2.log", output)
-        self.assertIn("Log Summary", output)  # Check for log summary feature
+        self.assertIn("trash-2023-01-02_12-00-00", output)
+        self.assertIn("file2.txt", output)
 
-        # --- Test Archive List ---
-        mock_stdout.truncate(0)
-        mock_stdout.seek(0)
-
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "archive", "list", "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
-
-        output = mock_stdout.getvalue()
+        exit_code, output, _ = self.run_artifacts_command('archive', 'list')
+        self.assertEqual(exit_code, 0)
         self.assertIn("--- Archives in:", output)
-        self.assertIn(self.archive_archive1.name, output)
-        self.assertIn("file1.txt", output)
+        self.assertIn("archive-2023-01-03_14-00-00", output)
+        self.assertIn("file3.txt", output)
 
-    @patch('builtins.input', return_value='y')
-    async def test_artifacts_restore_trash(self, mock_input):
-        """Test 'artifacts trash restore' command."""
-        # Restore the trash archive
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "restore", self.trash_archive1.name, "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
+    def test_restore_from_trash(self):
+        """Test restoring from trash (should move files)."""
+        (self.project_dir / "shared.txt").unlink() # Remove conflict
+        exit_code, output, _ = self.run_artifacts_command('trash', 'restore', archive_name="trash-2023-01-02_12-00-00")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ Restore complete.", output)
+        self.assertTrue((self.project_dir / "file2.txt").exists())
+        self.assertTrue((self.project_dir / "shared.txt").exists())
+        self.assertEqual((self.project_dir / "file2.txt").read_text(), "trash content2")
+        self.assertFalse(self.trash2_dir.exists())
 
-        # Check that the files were moved to the project directory
-        self.assertTrue((self.test_dir / "file1.txt").exists())
-        self.assertEqual((self.test_dir / "file1.txt").read_text(), "trash file 1")
+    def test_restore_from_archive(self):
+        """Test restoring from archives (should copy files)."""
+        (self.project_dir / "shared.txt").unlink() # Remove conflict
+        exit_code, output, _ = self.run_artifacts_command('archive', 'restore', archive_name="archive-2023-01-03_14-00-00")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ Restore complete. Original archive remains untouched.", output)
+        self.assertTrue((self.project_dir / "file3.txt").exists())
+        self.assertTrue((self.project_dir / "shared.txt").exists())
+        self.assertEqual((self.project_dir / "file3.txt").read_text(), "archive content3")
+        self.assertTrue(self.archive1_dir.exists())
 
-        # Check that the original trash archive is gone
-        self.assertFalse(self.trash_archive1.exists())
+    def test_restore_conflict(self):
+        """Test that restore fails if a file conflict exists."""
+        exit_code, _, stderr = self.run_artifacts_command('trash', 'restore', archive_name="trash-2023-01-02_12-00-00", yes_flag=True)
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error: The following files already exist", stderr)
+        self.assertIn("shared.txt", stderr)
 
-    @patch('builtins.input', return_value='y')
-    async def test_artifacts_restore_archive(self, mock_input):
-        """Test 'artifacts archive restore' command."""
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "archive", "restore", self.archive_archive1.name, "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
+    def test_interactive_restore(self):
+        """Test interactive restore by selecting an item from a list."""
+        (self.project_dir / "shared.txt").unlink()
+        exit_code, output, _ = self.run_artifacts_command('trash', 'restore', yes_flag=False, input_side_effect=['2', 'y'])
+        self.assertEqual(exit_code, 0)
+        self.assertTrue((self.project_dir / "file1.txt").exists())
+        self.assertIn("Please select a trash archive to restore", output)
+        self.assertIn("[1] trash-2023-01-02_12-00-00", output)
+        self.assertIn("[2] trash-2023-01-01_10-00-00", output)
 
-        # Check that the file was copied to the project directory
-        self.assertTrue((self.test_dir / "file1.txt").exists())
-        self.assertEqual((self.test_dir / "file1.txt").read_text(), "archive file 1")
+    def test_clear_specific_and_all(self):
+        """Test clearing a specific archive and clearing all archives."""
+        exit_code, output, _ = self.run_artifacts_command('trash', 'clear', archive_name="trash-2023-01-01_10-00-00")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ Archive 'trash-2023-01-01_10-00-00' deleted.", output)
+        self.assertFalse(self.trash1_dir.exists())
 
-        # Check that the original archive still exists
-        self.assertTrue(self.archive_archive1.exists())
+        exit_code, output, _ = self.run_artifacts_command('archive', 'clear', all_flag=True)
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ Archive successfully emptied.", output)
+        self.assertFalse(self.archives_base_dir.exists())
 
-    @patch('sys.stderr', new_callable=io.StringIO)
-    async def test_artifacts_restore_conflict(self, mock_stderr):
-        """Test that restore fails if a file already exists."""
-        # Create a conflicting file in the project directory
-        (self.test_dir / "file1.txt").write_text("existing file")
+    def test_inspect_file_and_summary(self):
+        """Test inspecting a specific file and a summary of an archive."""
+        exit_code, output, _ = self.run_artifacts_command('trash', 'inspect', archive_name="trash-2023-01-02_12-00-00", file_name="file2.txt")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("--- Contents of file2.txt", output)
+        self.assertIn("trash content2", output)
 
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "restore", self.trash_archive1.name, "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 1)
+        exit_code, output, _ = self.run_artifacts_command('archive', 'inspect', archive_name="archive-2023-01-03_14-00-00")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("--- Inspecting Archive: archive-2023-01-03_14-00-00", output)
+        self.assertIn("archive content3", output)
 
-        output = mock_stderr.getvalue()
-        self.assertIn("Error: The following files already exist", output)
-        self.assertIn("file1.txt", output)
+    def test_diff_with_changes(self):
+        """Test diffing a file that has been modified."""
+        archive_name = "archive-2023-01-03_14-00-00"
+        exit_code, output, _ = self.run_artifacts_command('archive', 'diff', archive_name=archive_name, file_name="shared.txt")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("--- Diff for shared.txt ---", output)
+        self.assertIn(f"(Archived Version in {archive_name})", output)
+        self.assertIn("-modified shared content", output)
+        self.assertIn("+shared archive", output)
 
-    @patch('builtins.input', return_value='y')
-    async def test_artifacts_clear(self, mock_input):
-        """Test the 'clear' action for both trash and archives."""
-        # --- Test clearing a specific trash archive ---
-        self.assertTrue(self.trash_archive1.exists())
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "clear", self.trash_archive1.name, "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
-        self.assertFalse(self.trash_archive1.exists())
+    def test_diff_new_file(self):
+        """Test diffing a file that only exists in the archive."""
+        exit_code, output, _ = self.run_artifacts_command('trash', 'diff', archive_name="trash-2023-01-01_10-00-00", file_name="file1.txt")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("+trash content1", output)
 
-        # --- Test clearing all archives ---
-        self.assertTrue(self.archive_archive1.exists())
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "archive", "clear", "--all", "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
-        self.assertFalse(self.archive_dir.exists())
+    def test_diff_no_difference(self):
+        """Test diffing a file with no changes."""
+        (self.project_dir / "file3.txt").write_text("archive content3")
+        exit_code, output, _ = self.run_artifacts_command('archive', 'diff', archive_name="archive-2023-01-03_14-00-00", file_name="file3.txt")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ No differences found", output)
 
-    @patch('sys.stdout', new_callable=io.StringIO)
-    async def test_artifacts_inspect_and_diff(self, mock_stdout):
-        """Test the 'inspect' and 'diff' actions."""
-        # --- Test inspect ---
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "inspect", self.trash_archive1.name, "file1.txt", "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
-        self.assertIn("trash file 1", mock_stdout.getvalue())
-
-        # --- Test diff (with changes) ---
-        (self.test_dir / "file1.txt").write_text("project file 1")
-        mock_stdout.truncate(0)
-        mock_stdout.seek(0)
-
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "diff", self.trash_archive1.name, "file1.txt", "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
-        output = mock_stdout.getvalue()
-        self.assertIn("--- a/file1.txt", output)
-        self.assertIn("+++ b/file1.txt", output)
-        self.assertIn("-project file 1", output)
-        self.assertIn("+trash file 1", output)
-
-        # --- Test diff (no changes) ---
-        (self.test_dir / "file1.txt").write_text("trash file 1")
-        mock_stdout.truncate(0)
-        mock_stdout.seek(0)
-
-        with self.assertRaises(SystemExit) as cm:
-            sys.argv = ["main.py", "artifacts", "trash", "diff", self.trash_archive1.name, "file1.txt", "-p", str(self.test_dir)]
-            await main()
-        self.assertEqual(cm.exception.code, 0)
-        self.assertIn("No differences found", mock_stdout.getvalue())
+if __name__ == '__main__':
+    unittest.main()

@@ -476,6 +476,39 @@ class BaseAgent(abc.ABC):
 
         await self._handle_session_result(status, response, new_actions, iter_start_time, using_manager)
 
+    async def run_planning_session(self) -> bool:
+        """
+        Run a single, non-interactive session to generate the feature plan.
+        Returns True if the plan was successfully generated.
+        """
+        # Ensure project directory and spec exist
+        self.config.project_dir.mkdir(parents=True, exist_ok=True)
+        copy_spec_to_project(self.config.project_dir, self.config.spec_file)
+
+        # Force is_first_run to be true for planning
+        self.is_first_run = True
+        self.print_session_header(0, is_first=True)
+
+        prompt, _ = self.select_prompt()
+        prompt = self.inject_jira_context(prompt)  # JIRA context might be in spec
+        prompt = self.inject_dind_context(prompt)
+
+        logger.info("Generating plan...")
+        status, response, new_actions = await self.run_agent_session(prompt)
+
+        if status == "error":
+            logger.error(f"Planning session failed: {response}")
+            return False
+
+        # After the session, the initializer prompt should have created the feature list.
+        # We don't need to check for other actions.
+        if (self.config.project_dir / "feature_list.json").exists():
+            return True
+        else:
+            logger.warning("Agent session finished, but no feature_list.json was created.")
+            logger.debug(f"Full response:\n{response}")
+            return False
+
     async def run_autonomous_loop(self) -> None:
         """
         Run the autonomous agent loop.

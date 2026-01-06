@@ -26,11 +26,11 @@ try:
     from shared.jira_client import JiraClient
 except ImportError:
     JiraClient = None
-from agents.gemini import run_autonomous_agent as run_gemini
+from agents.gemini import run_autonomous_agent as run_gemini, GeminiAgent
 from agents.shared.sprint import run_sprint as run_sprint
-from agents.cursor import run_autonomous_agent as run_cursor
-from agents.local import run_autonomous_agent as run_local
-from agents.openrouter import run_autonomous_agent as run_openrouter
+from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
+from agents.local import run_autonomous_agent as run_local, LocalAgent
+from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 import json
 import yaml
 import platformdirs
@@ -1668,6 +1668,94 @@ def run_workflow(args):
     sys.exit(0)
 
 
+async def run_plan(args):
+    """Generates a feature plan from a spec file without executing it."""
+    # This is a stripped down version of the main() function's setup
+    logger, _ = setup_logger(name="plan_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    logger.info("--- Generating Agent Plan ---")
+
+    # Basic validation
+    if not args.spec or not Path(args.spec).exists():
+        logger.error("❌ Error: A valid --spec file is required for the 'plan' command.")
+        sys.exit(1)
+
+    # Load config from file to respect profiles and base settings
+    ensure_config_exists()
+    file_config = load_config_from_file(profile=args.profile)
+
+    def resolve(cli_arg, config_key, default_val):
+        if cli_arg is not None:
+            return cli_arg
+        if config_key in file_config:
+            return file_config[config_key]
+        return default_val
+
+    # Create a minimal config for planning
+    config = Config(
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=resolve(args.model, "model", None),
+        spec_file=args.spec,
+        verbose=args.verbose,
+        # Force settings for planning mode
+        max_iterations=1,
+        stream_output=False,
+    )
+
+    project_name = os.environ.get("PROJECT_NAME", config.project_dir.resolve().name)
+
+    from shared.utils import generate_agent_id
+    try:
+        spec_content = config.spec_file.read_text()
+        agent_id = generate_agent_id(project_name, spec_content, args.agent)
+        config.agent_id = agent_id
+    except Exception as e:
+        logger.warning(f"Could not generate agent ID: {e}")
+        config.agent_id = generate_agent_id(project_name, "", args.agent)
+
+    logger.info(f"Generating plan for spec: {config.spec_file}")
+    logger.info(f"Using agent: {config.agent_type}, Model: {config.model or 'default'}")
+
+    # Dispatch to the correct agent type
+    agent_class_map = {
+        "gemini": GeminiAgent,
+        "cursor": CursorAgent,
+        "local": LocalAgent,
+        "openrouter": OpenRouterAgent,
+    }
+    agent_class = agent_class_map.get(config.agent_type)
+
+    if not agent_class:
+        logger.error(f"Unknown agent type: {config.agent_type}")
+        sys.exit(1)
+
+    agent = agent_class(config)
+
+    try:
+        # This method will be created in the next step
+        plan_generated = await agent.run_planning_session()
+
+        if plan_generated:
+            feature_file = config.project_dir / "feature_list.json"
+            if feature_file.exists():
+                logger.info("\n--- Generated Plan (feature_list.json) ---")
+                # Use print to avoid logger formatting for the JSON output
+                print(feature_file.read_text())
+                logger.info("------------------------------------")
+                logger.info("✅ Plan generated successfully.")
+            else:
+                logger.error("\n❌ Agent finished but did not produce a plan (feature_list.json).")
+        else:
+            logger.error("\n❌ Agent failed to generate a plan.")
+
+    except Exception as e:
+        logger.error(f"An error occurred during planning: {e}", exc_info=True)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -2173,6 +2261,46 @@ def parse_args():
         "-y", "--yes",
         action="store_true",
         help="Skip confirmation prompts for 'advance' or 'revert' actions.",
+    )
+
+
+    # --- New 'plan' command ---
+    parser_plan = subparsers.add_parser(
+        "plan",
+        help="Generate a feature plan from a spec file without executing any code."
+    )
+    parser_plan.add_argument(
+        "-s", "--spec",
+        type=Path,
+        required=True,
+        help="Path to the application specification file (e.g., app_spec.txt).",
+    )
+    parser_plan.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="Directory where the plan file will be generated (default: current directory).",
+    )
+    parser_plan.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for planning (default: gemini).",
+    )
+    parser_plan.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use for planning (overrides agent's default).",
+    )
+    parser_plan.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging during the planning phase.",
+    )
+    parser_plan.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
     )
 
 
@@ -2816,6 +2944,11 @@ def run_worktrees(args):
 
 async def main():
     args = parse_args()
+
+    # Handle `plan` command
+    if args.command == "plan":
+        await run_plan(args)
+        return
 
     # Handle `configure` command
     if args.command == "configure":

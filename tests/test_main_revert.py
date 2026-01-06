@@ -1,156 +1,168 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
-import sys
-from pathlib import Path
-import os
-import shutil
 import tempfile
+import shutil
+from pathlib import Path
+import sys
+import io
 
-# Add project root to sys.path to allow importing main
-project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root))
+# Add the root of the project to the Python path
+# This is necessary for the test runner to find the 'main' module
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_revert
+import main
 
 class TestMainRevert(unittest.TestCase):
     def setUp(self):
-        """Set up a temporary git repository for testing."""
+        """Set up a temporary git repository for each test."""
         self.test_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.test_dir)
 
         # Initialize a git repository
-        subprocess.run(["git", "init"], cwd=self.project_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.project_dir, check=True)
+        # Suppress git hints
+        subprocess.run(["git", "-c", "advice.detachedHead=false", "init"], cwd=self.project_dir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.project_dir, check=True)
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.project_dir, check=True)
 
-        # Create and commit initial files
-        self.initial_files = {
-            "file1.txt": "Initial content for file1.",
-            "file2.txt": "Initial content for file2.",
-            "dir1/file3.txt": "Initial content for file3 in dir1."
-        }
-        for file_path, content in self.initial_files.items():
-            path = self.project_dir / file_path
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
-        subprocess.run(["git", "add", "."], cwd=self.project_dir, check=True)
-        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.project_dir, check=True, capture_output=True)
+        # Create and commit an initial file
+        self.initial_file = self.project_dir / "initial_file.txt"
+        self.initial_file.write_text("initial content")
+        subprocess.run(["git", "add", self.initial_file], cwd=self.project_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.project_dir, check=True)
+
+        # Create a modified file and commit it
+        self.modified_file = self.project_dir / "modified_file.txt"
+        self.modified_file.write_text("original content")
+        subprocess.run(["git", "add", self.modified_file], cwd=self.project_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "Add modified_file"], cwd=self.project_dir, check=True)
+        # Now modify it
+        self.modified_file.write_text("modified content")
+
+        # Create an untracked file
+        self.untracked_file = self.project_dir / "untracked_file.txt"
+        self.untracked_file.write_text("untracked content")
 
     def tearDown(self):
         """Clean up the temporary directory."""
         shutil.rmtree(self.test_dir)
 
-    def _get_git_status(self):
-        """Helper to get the output of git status --porcelain."""
-        result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=self.project_dir,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        return result.stdout.strip()
+    def _run_revert(self, args_list):
+        """Helper function to run the revert command with patched stdin, stdout, and stderr."""
+        # Use a copy of argv to avoid conflicts between tests
+        argv = ['revert'] + args_list + ['--project-dir', str(self.project_dir)]
+        args = main.parse_args(argv)
+        with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout, \
+             patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
+            with self.assertRaises(SystemExit) as cm:
+                main.run_revert(args)
+            return cm.exception.code, mock_stdout.getvalue(), mock_stderr.getvalue()
 
-    @patch('builtins.input', return_value='y')
-    @patch('sys.exit')
-    def test_revert_all_changes(self, mock_exit, mock_input):
-        """Test reverting all uncommitted changes."""
-        # 1. Modify a tracked file
-        (self.project_dir / "file1.txt").write_text("Modified content.")
-        # 2. Create an untracked file
-        (self.project_dir / "new_file.txt").write_text("This is a new file.")
-        # 3. Create a new directory with a file
-        (self.project_dir / "dir2").mkdir()
-        (self.project_dir / "dir2/new_file2.txt").write_text("Another new file.")
+    # --- Tests for Non-Interactive Mode ---
+    def test_revert_all_changes(self):
+        """Test reverting all changes with --yes."""
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
+        self.assertTrue((self.project_dir / "untracked_file.txt").exists())
 
-        # Check that changes are present
-        status_before = self._get_git_status()
-        self.assertIn("M file1.txt", status_before)
-        self.assertIn("?? new_file.txt", status_before)
-        self.assertIn("?? dir2/", status_before)
+        exit_code, output, stderr = self._run_revert(['--yes'])
 
-        # Run revert command for all files
-        args = MagicMock()
-        args.project_dir = self.project_dir
-        args.files = []
-        args.yes = True  # Skip confirmation for tests
-        run_revert(args)
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Reverting ALL uncommitted changes", output)
+        self.assertIn("Revert complete", output)
 
-        # Check that the working directory is clean
-        status_after = self._get_git_status()
-        self.assertEqual(status_after, "")
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "original content")
+        self.assertFalse((self.project_dir / "untracked_file.txt").exists())
 
-        # Check that the modified file is back to its original state
-        content = (self.project_dir / "file1.txt").read_text()
-        self.assertEqual(content, self.initial_files["file1.txt"])
+    def test_revert_specific_files(self):
+        """Test reverting a specific modified and untracked file with --yes."""
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
+        self.assertTrue((self.project_dir / "untracked_file.txt").exists())
 
-        # Check that the new files and directory are gone
-        self.assertFalse((self.project_dir / "new_file.txt").exists())
-        self.assertFalse((self.project_dir / "dir2").exists())
-        mock_exit.assert_called_with(0)
+        exit_code, output, stderr = self._run_revert(['modified_file.txt', 'untracked_file.txt', '--yes'])
 
-    @patch('builtins.input', return_value='y')
-    @patch('sys.exit')
-    def test_revert_specific_files(self, mock_exit, mock_input):
-        """Test reverting only specified files."""
-        # 1. Modify two tracked files
-        (self.project_dir / "file1.txt").write_text("Modified content for file1.")
-        (self.project_dir / "file2.txt").write_text("Modified content for file2.")
-        # 2. Create two untracked files
-        (self.project_dir / "untracked1.txt").write_text("Untracked file 1.")
-        (self.project_dir / "untracked2.txt").write_text("Untracked file 2.")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Reverting specified files", output)
+        self.assertIn("✅ Specified files have been reverted.", output)
 
-        # Check that changes are present
-        status_before = self._get_git_status()
-        self.assertIn("M file1.txt", status_before)
-        self.assertIn("M file2.txt", status_before)
-        self.assertIn("?? untracked1.txt", status_before)
-        self.assertIn("?? untracked2.txt", status_before)
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "original content")
+        self.assertFalse((self.project_dir / "untracked_file.txt").exists())
 
-        # Run revert command for one modified and one untracked file
-        args = MagicMock()
-        args.project_dir = self.project_dir
-        args.files = ["file1.txt", "untracked1.txt"]
-        args.yes = True
-        run_revert(args)
 
-        # Check the git status after reverting
-        status_after = self._get_git_status()
-        self.assertNotIn("M file1.txt", status_after)
-        self.assertNotIn("?? untracked1.txt", status_after)
-        self.assertIn("M file2.txt", status_after)  # Should remain modified
-        self.assertIn("?? untracked2.txt", status_after) # Should remain untracked
+    # --- Tests for Interactive Mode ---
+    @patch('builtins.input', side_effect=['1', 'y'])
+    def test_revert_interactive_select_modified(self, mock_input):
+        """Test reverting a single modified file in interactive mode."""
+        self.assertTrue((self.project_dir / "modified_file.txt").exists())
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
 
-        # Check file contents and existence
-        self.assertEqual((self.project_dir / "file1.txt").read_text(), self.initial_files["file1.txt"])
-        self.assertEqual((self.project_dir / "file2.txt").read_text(), "Modified content for file2.")
-        self.assertFalse((self.project_dir / "untracked1.txt").exists())
-        self.assertTrue((self.project_dir / "untracked2.txt").exists())
-        mock_exit.assert_called_with(0)
+        exit_code, output, stderr = self._run_revert(['--interactive'])
 
-    @patch('sys.exit')
-    def test_revert_no_changes(self, mock_exit):
-        """Test revert command when there are no uncommitted changes."""
-        # Ensure the directory is clean
-        self.assertEqual(self._get_git_status(), "")
+        self.assertEqual(exit_code, 0)
+        self.assertIn("--- Interactive Revert", output)
+        self.assertIn("M: modified_file.txt", output)
+        self.assertIn("✅ Specified files have been reverted.", output)
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "original content")
 
-        # Run revert for all files
-        args = MagicMock()
-        args.project_dir = self.project_dir
-        args.files = []
-        args.yes = True
-        run_revert(args)
+    @patch('builtins.input', side_effect=['2', 'y'])
+    def test_revert_interactive_select_untracked(self, mock_input):
+        """Test reverting a single untracked file in interactive mode."""
+        self.assertTrue((self.project_dir / "untracked_file.txt").exists())
 
-        # Should exit gracefully
-        mock_exit.assert_called_with(0)
-        self.assertEqual(self._get_git_status(), "") # Still clean
+        exit_code, output, stderr = self._run_revert(['--interactive'])
 
-        # Run revert for specific files
-        args.files = ["file1.txt"]
-        run_revert(args)
-        mock_exit.assert_called_with(0)
-        self.assertEqual(self._get_git_status(), "") # Still clean
+        self.assertEqual(exit_code, 0)
+        self.assertIn("??: untracked_file.txt", output)
+        self.assertIn("✅ Specified files have been reverted.", output)
+        self.assertFalse((self.project_dir / "untracked_file.txt").exists())
+
+    @patch('builtins.input', side_effect=['1 2', 'y'])
+    def test_revert_interactive_select_mixed(self, mock_input):
+        """Test reverting both a modified and an untracked file."""
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
+        self.assertTrue((self.project_dir / "untracked_file.txt").exists())
+
+        exit_code, output, stderr = self._run_revert(['--interactive'])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ Specified files have been reverted.", output)
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "original content")
+        self.assertFalse((self.project_dir / "untracked_file.txt").exists())
+
+    @patch('builtins.input', return_value='')
+    def test_revert_interactive_cancel_with_enter(self, mock_input):
+        """Test cancelling the interactive prompt by pressing Enter."""
+        exit_code, output, stderr = self._run_revert(['--interactive'])
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Aborted.", output)
+        # Assert files are unchanged
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
+        self.assertTrue((self.project_dir / "untracked_file.txt").exists())
+
+    @patch('builtins.input', return_value='not-a-number')
+    def test_revert_interactive_invalid_input(self, mock_input):
+        """Test that non-numeric input results in a graceful exit."""
+        exit_code, output, stderr = self._run_revert(['--interactive'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Invalid input", stderr)
+        # Assert files are unchanged
+        self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
+        self.assertTrue((self.project_dir / "untracked_file.txt").exists())
+
+    def test_revert_interactive_no_changes(self):
+        """Test interactive revert when the repository is clean."""
+        # Clean the repo first
+        subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=self.project_dir, check=True)
+        subprocess.run(["git", "clean", "-fd"], cwd=self.project_dir, check=True)
+
+        exit_code, output, stderr = self._run_revert(['--interactive'])
+        self.assertEqual(exit_code, 0)
+        self.assertIn("✅ No uncommitted changes to revert.", output)
+
+    def test_revert_files_and_interactive_fails(self):
+        """Test that using --interactive with specified files is not allowed."""
+        exit_code, output, stderr = self._run_revert(['--interactive', 'some_file.txt'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Error: Cannot use --interactive mode when specifying individual files.", stderr)
 
 if __name__ == '__main__':
     unittest.main()

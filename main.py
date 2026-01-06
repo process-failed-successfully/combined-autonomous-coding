@@ -1065,21 +1065,69 @@ def run_revert(args):
     import subprocess
     import shutil
     project_dir = args.project_dir.resolve()
-    files_to_revert = args.files
 
-    # 1. Find git executable
+    # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
         sys.exit(1)
 
-    # 2. Check if it's a git repository
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot revert.", file=sys.stderr)
         sys.exit(1)
 
-    # --- Mode 1: Revert specific files ---
+    # Validate arguments
+    if args.files and args.interactive:
+        print("❌ Error: Cannot use --interactive mode when specifying individual files.", file=sys.stderr)
+        sys.exit(1)
+
+    files_to_revert = args.files
+
+    # --- Mode 1: Interactive Revert ---
+    if args.interactive:
+        print(f"--- Interactive Revert in: {project_dir} ---")
+        try:
+            status_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            changes = [line for line in status_result.stdout.splitlines() if line]
+            if not changes:
+                print("✅ No uncommitted changes to revert.")
+                sys.exit(0)
+
+            print("Select files to revert (e.g., 1 3 4), or press Enter to cancel:")
+            all_files = []
+            for i, change in enumerate(changes):
+                status, filename = change[:2], change[3:]
+                all_files.append(filename)
+                print(f"  [{i+1}] {status.strip()}: {filename}")
+
+            selection = input("> ").strip()
+            if not selection:
+                print("Aborted.")
+                sys.exit(0)
+
+            try:
+                indices = [int(i) - 1 for i in selection.split()]
+                files_to_revert = [all_files[i] for i in indices if 0 <= i < len(all_files)]
+            except ValueError:
+                print("❌ Invalid input. Please enter numbers separated by spaces.", file=sys.stderr)
+                sys.exit(1)
+
+            if not files_to_revert:
+                print("No valid files selected. Aborting.")
+                sys.exit(0)
+
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"❌ Error checking git status: {e}", file=sys.stderr)
+            sys.exit(1)
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            sys.exit(0)
+
+    # --- Mode 2: Revert specific files (also used by interactive mode) ---
     if files_to_revert:
         print(f"--- Reverting specified files in: {project_dir} ---")
 
@@ -1135,8 +1183,8 @@ def run_revert(args):
             print(f"❌ Error during revert: {stderr}", file=sys.stderr)
             sys.exit(1)
 
-    # --- Mode 2: Revert all changes (original logic) ---
-    else:
+    # --- Mode 3: Revert all changes (if no files and no interactive) ---
+    elif not args.interactive:
         print(f"--- Reverting ALL uncommitted changes in: {project_dir} ---")
         try:
             status_result = subprocess.run(
@@ -1890,7 +1938,7 @@ async def run_plan(args):
     sys.exit(0)
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
@@ -2228,6 +2276,11 @@ def parse_args():
         help="The project directory to revert changes in (default: current directory)",
     )
     parser_revert.add_argument(
+        "-i", "--interactive",
+        action="store_true",
+        help="Interactively select which files to revert.",
+    )
+    parser_revert.add_argument(
         "-y", "--yes",
         action="store_true",
         help="Skip confirmation prompt",
@@ -2465,7 +2518,7 @@ def parse_args():
     parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
 
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):

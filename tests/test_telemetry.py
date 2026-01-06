@@ -13,6 +13,12 @@ class TestTelemetry(unittest.TestCase):
     def test_record_gauge(self, mock_push):
         # Enable metrics for test
         with patch("shared.telemetry.ENABLE_METRICS", True):
+            # Since _push_metrics is throttled, we need to force it or mock time.
+            # For this test, we can force a push by passing force=True to _push_metrics,
+            # but record_gauge doesn't expose that.
+            # Instead, we can ensure the time check passes by manipulating _last_push_time.
+            self.telemetry._last_push_time = 0.0
+
             # Gauges created with register_gauge can have empty labels,
             # but record_gauge logic might try to apply default labels if they exist in _labelnames.
             # If register_gauge is called with empty list, _labelnames is empty tuple.

@@ -13,6 +13,8 @@ class TestTelemetryExtended(unittest.TestCase):
     def test_record_histogram(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):
             self.telemetry.register_histogram("test_hist", "doc", ["agent_id"])
+            # Manually reset last push time to bypass throttling in test
+            self.telemetry._last_push_time = 0.0
             self.telemetry.record_histogram("test_hist", 5.0)
 
             mock_push.assert_called_once()
@@ -25,6 +27,8 @@ class TestTelemetryExtended(unittest.TestCase):
     def test_increment_counter(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):
             self.telemetry.register_counter("test_counter", "doc", ["agent_id"])
+            # Manually reset last push time to bypass throttling in test
+            self.telemetry._last_push_time = 0.0
             self.telemetry.increment_counter("test_counter")
 
             mock_push.assert_called_once()

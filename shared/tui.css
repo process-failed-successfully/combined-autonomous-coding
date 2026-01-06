@@ -1,0 +1,17 @@
+Dashboard {
+    layout: grid;
+    grid-size: 2;
+    grid-gutter: 1 2;
+}
+
+#left-pane {
+    width: 1fr;
+    height: 100%;
+    overflow: auto;
+}
+
+#log-viewer {
+    width: 4fr;
+    height: 100%;
+    border: round white;
+}

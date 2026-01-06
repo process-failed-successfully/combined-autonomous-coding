@@ -114,17 +114,18 @@ class TestWorkflowCommand(unittest.TestCase):
         self.assertIn("Aborted", output)
 
     def test_get_workflow_stage_logic(self):
+        from shared.cli_utils import get_workflow_stage
         # Test In Progress
-        self.assertEqual(main_script._get_workflow_stage(self.project_dir), "IN_PROGRESS")
+        self.assertEqual(get_workflow_stage(self.project_dir), "IN_PROGRESS")
         # Test Completed
         (self.project_dir / "COMPLETED").touch()
-        self.assertEqual(main_script._get_workflow_stage(self.project_dir), "COMPLETED")
+        self.assertEqual(get_workflow_stage(self.project_dir), "COMPLETED")
         # Test QA Passed (should override Completed)
         (self.project_dir / "QA_PASSED").touch()
-        self.assertEqual(main_script._get_workflow_stage(self.project_dir), "QA_PASSED")
+        self.assertEqual(get_workflow_stage(self.project_dir), "QA_PASSED")
         # Test Signed Off (should override everything)
         (self.project_dir / "PROJECT_SIGNED_OFF").touch()
-        self.assertEqual(main_script._get_workflow_stage(self.project_dir), "SIGNED_OFF")
+        self.assertEqual(get_workflow_stage(self.project_dir), "SIGNED_OFF")
 
 
 if __name__ == '__main__':

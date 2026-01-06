@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e # Exit on error
 
+echo "========================================"
+echo "  INSTALLING DEPENDENCIES"
+echo "========================================"
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+echo "========================================"
+
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 echo "========================================"

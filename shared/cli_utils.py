@@ -91,6 +91,79 @@ def get_project_summary(project_dir: Path) -> str:
     return "\n".join(summary_lines)
 
 
+def _has_uncommitted_changes(project_dir: Path) -> bool:
+    """Checks if there are uncommitted changes in the Git repository."""
+    try:
+        git_path = shutil.which("git")
+        if not git_path or not (project_dir / ".git").is_dir():
+            return False
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        return bool(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+def get_suggestions(project_dir: Path) -> list[dict]:
+    """
+    Analyzes the project state and returns a list of suggested next commands.
+    """
+    suggestions = []
+    stage = get_workflow_stage(project_dir)
+    has_changes = _has_uncommitted_changes(project_dir)
+
+    # 1. Git-based suggestions
+    if has_changes:
+        suggestions.append({
+            "command": "main.py diff-summary",
+            "reason": "You have uncommitted changes. This command will show a summary of what has been modified."
+        })
+        suggestions.append({
+            "command": "main.py revert --interactive",
+            "reason": "If the uncommitted changes are unwanted, you can use this command to interactively discard them."
+        })
+
+    # 2. Workflow-based suggestions
+    if stage == "COMPLETED":
+        suggestions.append({
+            "command": "main.py workflow advance",
+            "reason": "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."
+        })
+    elif stage == "QA_PASSED":
+        suggestions.append({
+            "command": "main.py workflow advance",
+            "reason": "The project has passed QA. Advance to 'Signed Off' to finalize the project."
+        })
+    elif stage == "SIGNED_OFF":
+        suggestions.append({
+            "command": "main.py clean --archive",
+            "reason": "The project is complete. Archive the agent-generated artifacts to keep the directory clean."
+        })
+
+    # 3. Artifact-based suggestions
+    trash_dir = project_dir / ".agent_trash"
+    if trash_dir.exists() and any(trash_dir.iterdir()):
+        suggestions.append({
+            "command": "main.py artifacts trash list",
+            "reason": "You have items in the trash. Use this command to see what's there."
+        })
+        suggestions.append({
+            "command": "main.py artifacts trash restore",
+            "reason": "If you need to recover deleted artifacts, you can restore them from the trash."
+        })
+
+    # 4. General "what happened" suggestions
+    if (project_dir / ".agent_run_id").exists():
+        suggestions.append({
+            "command": "main.py logs",
+            "reason": "To see the logs from the last agent run."
+        })
+
+    return suggestions
+
+
 def get_latest_log_file() -> Path | None:
     """Finds the most recent agent log file."""
     # This assumes the script is run from the repo root, so paths are relative to `main.py`

@@ -2517,9 +2517,218 @@ def parse_args(argv=None):
     # Subparser for 'shell'
     parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
 
+    # --- New 'sprint' command for monitoring ---
+    parser_sprint = subparsers.add_parser(
+        "sprint",
+        help="Observe and manage an ongoing sprint."
+    )
+    sprint_subparsers = parser_sprint.add_subparsers(
+        dest="action",
+        required=True,
+        help="Sprint action"
+    )
+
+    # Sprint status action
+    parser_sprint_status = sprint_subparsers.add_parser(
+        "status",
+        help="Display the status of the current sprint, including tasks and worktrees."
+    )
+    parser_sprint_status.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the sprint (default: current directory).",
+    )
+
+    # Sprint diff action
+    parser_sprint_diff = sprint_subparsers.add_parser(
+        "diff",
+        help="Show a git diff for a specific sprint task's worktree."
+    )
+    parser_sprint_diff.add_argument(
+        "task_id",
+        help="The ID of the task to diff (e.g., 'task-1').",
+    )
+    parser_sprint_diff.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the sprint (default: current directory).",
+    )
+
+    # Sprint merge action
+    parser_sprint_merge = sprint_subparsers.add_parser(
+        "merge",
+        help="Merge a specific sprint task's worktree back into the main branch."
+    )
+    parser_sprint_merge.add_argument(
+        "task_id",
+        help="The ID of the task to merge (e.g., 'task-1').",
+    )
+    parser_sprint_merge.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the sprint (default: current directory).",
+    )
+    parser_sprint_merge.add_argument(
+        "--clean",
+        action="store_true",
+        help="Remove the worktree and branch after a successful merge.",
+    )
+    parser_sprint_merge.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts.",
+    )
 
     return parser.parse_args(argv)
 
+
+def _sprint_status(args):
+    """Displays the status of the current sprint."""
+    project_dir = args.project_dir.resolve()
+    sprint_plan_path = project_dir / "sprint_plan.json"
+    feature_list_path = project_dir / "feature_list.json"
+    worktrees_base_dir = project_dir / "worktrees"
+
+    print(f"--- Sprint Status: {project_dir} ---")
+
+    # 1. Load Feature List (Overall Goal)
+    if feature_list_path.exists():
+        try:
+            with open(feature_list_path, 'r') as f:
+                features = json.load(f)
+            completed = sum(1 for f in features if isinstance(f, dict) and f.get('status') == 'completed')
+            total = len(features)
+            print(f"\n[ Overall Progress: {completed}/{total} features completed ]")
+        except (json.JSONDecodeError, TypeError):
+            print("\n[ Overall Progress: Could not parse feature_list.json ]")
+    else:
+        print("\n[ Overall Progress: feature_list.json not found ]")
+
+
+    # 2. Load Sprint Plan
+    if not sprint_plan_path.exists():
+        print("\nNo active sprint plan (sprint_plan.json) found.")
+        sys.exit(0)
+
+    try:
+        with open(sprint_plan_path, 'r') as f:
+            sprint_plan = json.load(f)
+        tasks = sprint_plan.get("tasks", [])
+        goal = sprint_plan.get("sprint_goal", "No goal defined.")
+        print(f"\n[ Current Sprint Goal: {goal} ]")
+    except json.JSONDecodeError:
+        print("\nError: Could not parse sprint_plan.json.")
+        sys.exit(1)
+
+    if not tasks:
+        print("\nCurrent sprint plan has no tasks.")
+        sys.exit(0)
+
+    # 3. Check Git and Worktree Status
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("\nWarning: Not a git repository. Cannot display worktree status.")
+        worktree_info = {}
+    else:
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            worktree_info = {}
+            current_wt = {}
+            for line in result.stdout.strip().split('\n'):
+                if not line.strip():
+                    if current_wt:
+                        path = Path(current_wt.get("worktree", ""))
+                        if worktrees_base_dir in path.parents:
+                            branch_ref = current_wt.get("branch", "")
+                            branch = branch_ref.replace("refs/heads/", "") if branch_ref else "detached"
+                            worktree_info[path.name] = {"branch": branch, "status": "Unknown"}
+                    current_wt = {}
+                else:
+                    key, value = line.split(" ", 1)
+                    current_wt[key] = value
+            if current_wt: # last entry
+                path = Path(current_wt.get("worktree", ""))
+                if worktrees_base_dir in path.parents:
+                    branch_ref = current_wt.get("branch", "detached")
+                    branch = branch_ref.replace("refs/heads/", "")
+                    worktree_info[path.name] = {"branch": branch, "status": "Unknown"}
+
+            # Get status for each worktree
+            for name in worktree_info.keys():
+                status_res = subprocess.run(
+                    [git_path, "-C", str(worktrees_base_dir / name), "status", "--porcelain"],
+                    capture_output=True, text=True
+                )
+                if status_res.stdout.strip():
+                    worktree_info[name]["status"] = "Changes"
+                else:
+                    worktree_info[name]["status"] = "Clean"
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            worktree_info = {}
+
+
+    # 4. Display Task Table
+    print("\n[ Tasks ]")
+    # Headers
+    print(f"{'ID':<15} {'TITLE':<40} {'STATUS':<25} {'COMMANDS'}")
+    print(f"{'-'*14:<15} {'-'*39:<40} {'-'*24:<25} {'-'*30}")
+
+    for task in tasks:
+        task_id = task.get('id', 'N/A')
+        title = task.get('title', 'No Title')
+
+        wt_info = worktree_info.get(task_id)
+        if wt_info:
+            status_str = f"In Progress ({wt_info['status']}) on branch '{wt_info['branch']}'"
+            commands = f"sprint diff {task_id}, sprint merge {task_id}"
+        else:
+            # Check if it was a rescued branch
+            try:
+                branch_name = f"sprint/{task_id}"
+                subprocess.run(
+                    [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{branch_name}"],
+                    capture_output=True, text=True, check=True
+                )
+                status_str = "Failed (branch preserved)"
+                commands = f"git diff main..{branch_name}"
+            except (subprocess.CalledProcessError, NameError): # git_path not defined or branch not found
+                status_str = "Pending / Completed"
+                commands = ""
+
+
+        print(f"{task_id:<15} {title[:38]:<40} {status_str:<25} {commands}")
+
+    sys.exit(0)
+
+
+def run_sprint_command(args):
+    """Dispatches sprint subcommands."""
+    if args.action == "status":
+        _sprint_status(args)
+    elif args.action == "diff":
+        # This is a shortcut to `worktrees diff <task_id>`
+        mock_args = argparse.Namespace(
+            action="diff",
+            worktree_name=args.task_id,
+            project_dir=args.project_dir
+        )
+        run_worktrees(mock_args) # This will exit
+    elif args.action == "merge":
+        # This is a shortcut to `worktrees merge <task_id>`
+        mock_args = argparse.Namespace(
+            action="merge",
+            worktree_name=args.task_id,
+            project_dir=args.project_dir,
+            clean=args.clean,
+            yes=args.yes
+        )
+        run_worktrees(mock_args) # This will exit
 
 def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
     """Helper function to merge a worktree branch back into the main branch."""
@@ -2551,7 +2760,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
                     path = Path(current_worktree.get("worktree", ""))
                     if path.resolve() == worktree_path.resolve():
                         branch_ref = current_worktree.get("branch", "")
-                        branch_name = branch_ref.split('/')[-1]
+                        branch_name = branch_ref.replace("refs/heads/", "") if branch_ref else None
                         break
                 current_worktree = {}
             else:
@@ -2772,7 +2981,8 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     print("Please select a worktree to manage:")
     for i, wt in enumerate(worktrees):
         path = Path(wt['worktree'])
-        branch = wt.get('branch', 'detached HEAD').split('/')[-1]
+        branch_ref = wt.get('branch', 'detached HEAD')
+        branch = branch_ref.replace("refs/heads/", "")
         print(f"  [{i+1}] {path.name} (branch: {branch})")
 
     selected_worktree = None
@@ -3265,6 +3475,11 @@ async def main():
     # Handle `workflow` command
     if args.command == "workflow":
         run_workflow(args)
+        return
+
+    # Handle `sprint` command (for observing, not running)
+    if args.command == "sprint":
+        run_sprint_command(args)
         return
 
     # Initialize Agent Client

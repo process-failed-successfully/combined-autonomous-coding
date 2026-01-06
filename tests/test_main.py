@@ -460,6 +460,26 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertTrue((self.project_dir / "COMPLETED").exists())
         self.assertTrue((self.project_dir / "feature_list.json").exists())
 
+    @patch('main.argcomplete', new_callable=MagicMock)
+    @patch('main.parse_args')
+    async def test_main_completion_command(self, mock_parse_args, mock_argcomplete):
+        args = MagicMock()
+        args.command = "completion"
+        mock_parse_args.return_value = args
+
+        mock_argcomplete.shellcode.return_value = "completion_script"
+
+        # Capture stdout
+        from contextlib import redirect_stdout
+        f = io.StringIO()
+        with redirect_stdout(f):
+            with self.assertRaises(SystemExit) as cm:
+                await main()
+
+        self.assertEqual(cm.exception.code, 0)
+        output = f.getvalue()
+        self.assertIn("completion_script", output)
+
 
 if __name__ == "__main__":
     unittest.main()

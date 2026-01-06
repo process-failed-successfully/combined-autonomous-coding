@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 Combined Autonomous Coding Agent
 ================================
@@ -8,6 +9,10 @@ Main entry point for running autonomous coding agents (Gemini or Cursor).
 
 import argparse
 import asyncio
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
 import sys
 import os
 import shutil
@@ -2851,6 +2856,12 @@ def parse_args(argv=None):
         help="The project directory to view in the TUI (default: current directory)",
     )
 
+    # --- New 'completion' command ---
+    parser_completion = subparsers.add_parser(
+        "completion",
+        help="Display shell completion scripts. To install, use: 'eval \"$(main.py completion)\"'",
+    )
+
     # --- New 'benchmark' command ---
     parser_benchmark = subparsers.add_parser(
         "benchmark",
@@ -2969,6 +2980,9 @@ def parse_args(argv=None):
         action="store_true",
         help="Skip confirmation prompts.",
     )
+
+    if argcomplete:
+        argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
 
@@ -3620,6 +3634,15 @@ async def main():
     if args.command == "tui":
         run_tui(args)
         return
+
+    # Handle `completion` command
+    if args.command == "completion":
+        if argcomplete:
+            print(argcomplete.shellcode([os.path.basename(sys.argv[0])]))
+            sys.exit(0)
+        else:
+            print("argcomplete is not installed. Please install it with 'pip install argcomplete'.", file=sys.stderr)
+            sys.exit(1)
 
     # Handle `plan` command
     if args.command == "plan":

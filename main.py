@@ -1411,12 +1411,28 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary
+from shared.cli_utils import get_project_summary, get_suggestions
 
 def run_summary(args):
     """Displays a high-level summary of the project's status."""
     summary_text = get_project_summary(project_dir=args.project_dir)
     print(summary_text)
+    sys.exit(0)
+
+
+def run_suggest(args):
+    """Analyzes the project and suggests the next logical commands to run."""
+    suggestions = get_suggestions(project_dir=args.project_dir)
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific actions to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    print("--- Suggested Next Steps ---")
+    print("Based on the current project state, here are some suggested commands:\n")
+    for suggestion in suggestions:
+        print(f"👉 {suggestion['command']}")
+        print(f"   Reason: {suggestion['reason']}\n")
     sys.exit(0)
 
 
@@ -2499,6 +2515,15 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to summarize (default: current directory)",
+    )
+
+    # Subparser for 'suggest'
+    parser_suggest = subparsers.add_parser("suggest", help="Suggest next logical commands based on project state")
+    parser_suggest.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory)",
     )
 
     # Subparser for 'history'
@@ -3788,6 +3813,11 @@ async def main():
     # Handle `summary` command
     if args.command == "summary":
         run_summary(args)
+        return
+
+    # Handle `suggest` command
+    if args.command == "suggest":
+        run_suggest(args)
         return
 
     # Handle `history` command

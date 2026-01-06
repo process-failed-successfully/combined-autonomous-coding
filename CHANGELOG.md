@@ -1,6 +1,112 @@
 # CHANGELOG
 
 
+## v0.11.0 (2026-01-06)
+
+### Bug Fixes
+
+- **tests**: Refactor artifacts tests to fix CI failures
+  ([#112](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/112),
+  [`2f89780`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/2f897803f69f9a531ab5c18a98a69bd8e81e9805))
+
+This commit addresses a CI failure by refactoring the tests for the deprecated 'archives' and
+  'trash' commands.
+
+The root cause of the failure was that the old test files (`tests/test_main_archives.py`,
+  `tests/test_main_trash_diff.py`, `tests/test_main_trash_interactive.py`) were still testing the
+  deprecated command structure and using brittle `sys.argv` patching.
+
+The following changes were made: - Consolidated all relevant test logic into a single, robust test
+  file: `tests/test_main_artifacts.py`. - Refactored all tests to call the `run_artifacts` function
+  directly with a mock `argparse.Namespace` object, making them more resilient to future changes. -
+  Deleted the old, redundant test files. - Corrected assertion errors in the new test suite to align
+  with the actual command output.
+
+This resolves the CI failures and improves the overall quality and stability of the test suite.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+### Features
+
+- Add diff-summary subcommand
+  ([#111](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/111),
+  [`21e90d5`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/21e90d5646a69c996dd915e43431caa16f0dd8cf))
+
+Adds a new `diff-summary` subcommand to the CLI.
+
+This command provides a concise, high-level summary of uncommitted git changes by running `git diff
+  --stat`. It is designed to give developers a quick overview of their work-in-progress without
+  leaving the context of the agent CLI.
+
+The feature includes: - A new `run_diff_summary` function to handle the logic. - An `argparse`
+  subparser to expose the command. - Robust error handling for cases where `git` is not installed or
+  the directory is not a git repository. - A new test file `tests/test_main_diff_summary.py` with
+  unit tests covering success, no-changes, and error scenarios.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add interactive worktree management
+  ([#107](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/107),
+  [`15c8e8a`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/15c8e8aa9009973e26a10f49ac747668d5eed5c7))
+
+This commit introduces a new `manage` action to the `worktrees` subcommand, providing an interactive
+  TUI for managing worktrees.
+
+The new interactive mode streamlines the workflow for managing concurrent agent tasks by allowing
+  users to select a worktree from a list and then choose an action to perform (e.g., show status,
+  diff, merge, clean, revert) from a menu. This is a significant usability improvement over the
+  previous manual process, which required users to copy and paste worktree names.
+
+The implementation reuses existing helper functions by constructing a mock `argparse.Namespace`
+  object, and it includes comprehensive unit tests for the new functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Unify artifact management with `artifacts` command
+  ([`1e464bb`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1e464bb8c421c5104c4a0937eecc14aaf1c8b662))
+
+This commit introduces a new `artifacts` subcommand to provide a single, unified interface for
+  managing agent-generated artifacts. The `trash` and `archives` commands have been refactored into
+  this new structure, eliminating duplicated code and improving maintainability.
+
+Key changes: - A new `artifacts` command with `trash` and `archive` subcommands. - Generic helper
+  functions (`_artifacts_*`) to handle listing, restoring, clearing, inspecting, and diffing
+  artifacts. - Deprecation warnings for the old `trash` and `archives` commands, which now act as
+  wrappers for the new `artifacts` command to ensure backward compatibility. - Comprehensive unit
+  tests for the new `artifacts` command, covering all actions and modes.
+
+- Unify artifact management with `artifacts` command
+  ([`056a5cf`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/056a5cf5b3d58d35bb477e195ee1fbc005b45203))
+
+This commit introduces a new `artifacts` subcommand to provide a single, unified interface for
+  managing agent-generated artifacts. The `trash` and `archives` commands have been refactored into
+  this new structure, eliminating duplicated code and improving maintainability.
+
+Key changes: - A new `artifacts` command with `trash` and `archive` subcommands. - Generic helper
+  functions (`_artifacts_*`) to handle listing, restoring, clearing, inspecting, and diffing
+  artifacts. - Deprecation warnings for the old `trash` and `archives` commands, which now act as
+  wrappers for the new `artifacts` command to ensure backward compatibility. - Comprehensive unit
+  tests for the new `artifacts` command, covering all actions and modes.
+
+- **cli**: Add snapshot diff command
+  ([#105](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/105),
+  [`056020d`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/056020d0986dc1976ca7894c7b7937169fdd2ad3))
+
+Implements a new `snapshot diff` command to compare the current project state against a previously
+  created snapshot.
+
+This enhances the CLI by providing a powerful tool for reviewing changes made by the agent over
+  time.
+
+The `snapshot` command has been refactored to use sub-actions: - `snapshot create [name]`: Creates a
+  new snapshot. - `snapshot diff <name>`: Diffs the project against a named snapshot.
+
+Existing tests have been updated to reflect this new structure, and new tests have been added to
+  cover the `diff` functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+
 ## v0.10.0 (2026-01-05)
 
 ### Features

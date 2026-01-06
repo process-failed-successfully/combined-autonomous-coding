@@ -526,8 +526,8 @@ def run_archive(args):
     sys.exit(0)
 
 
-def run_snapshot(args):
-    """Copies key agent artifacts to a timestamped archive directory without deleting them."""
+def _snapshot_create(args):
+    """Helper function to create a snapshot."""
     import shutil
     from datetime import datetime
 
@@ -564,7 +564,6 @@ def run_snapshot(args):
 
     # Also include the log file from the last run, if it exists
     run_id_file = project_dir / ".agent_run_id"
-    log_file_path = None
     if run_id_file.exists():
         run_id = run_id_file.read_text().strip()
         repo_root = Path(__file__).parent
@@ -576,7 +575,6 @@ def run_snapshot(args):
         print("No key agent-generated artifacts found to snapshot.")
         sys.exit(0)
 
-    # Check for conflicts before proceeding
     if snapshot_dir.exists():
         print(f"❌ Error: A snapshot named '{snapshot_dir_name}' already exists in .agent_archives.")
         print("Please choose a different name or remove the existing one.")
@@ -589,10 +587,7 @@ def run_snapshot(args):
             display_path = path.relative_to(project_dir)
         except ValueError:
             repo_root = Path(__file__).parent
-            try:
-                display_path = f"(from repo root) {path.relative_to(repo_root)}"
-            except ValueError:
-                display_path = path
+            display_path = f"(from repo root) {path.relative_to(repo_root)}"
         print(f"  - {display_path}")
 
     if not args.yes:
@@ -616,13 +611,70 @@ def run_snapshot(args):
 
     except OSError as e:
         print(f"❌ Error creating snapshot: {e}", file=sys.stderr)
-        # Clean up partially created snapshot directory on error
         if snapshot_dir.exists():
             shutil.rmtree(snapshot_dir)
         sys.exit(1)
 
     print(f"\n✅ Snapshot '{snapshot_dir_name}' created successfully.")
     sys.exit(0)
+
+
+def _snapshot_diff(args):
+    """Helper function to diff a snapshot against the current project state."""
+    project_dir = args.project_dir.resolve()
+    snapshot_name = args.name
+    archive_base_dir = project_dir / ".agent_archives"
+    snapshot_dir = archive_base_dir / snapshot_name
+
+    if not snapshot_name:
+        print("❌ Error: 'snapshot diff' requires a snapshot name.", file=sys.stderr)
+        sys.exit(1)
+
+    if not snapshot_dir.is_dir():
+        print(f"❌ Error: Snapshot '{snapshot_name}' not found in '{archive_base_dir}'.", file=sys.stderr)
+        sys.exit(1)
+
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Diff functionality requires Git.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Diffing current project against snapshot: {snapshot_name} ---")
+
+    try:
+        # Using --no-index to compare paths on the filesystem directly
+        # --ignore-cr-at-eol helps with cross-platform line ending differences
+        # --ignore-space-change ignores changes in the amount of whitespace
+        cmd = [
+            git_path, "diff", "--no-index", "--color=always",
+            "--ignore-cr-at-eol", "--ignore-space-change",
+            str(snapshot_dir), str(project_dir)
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        # git diff exits with 1 if there are differences, 0 if not.
+        if result.returncode == 0:
+            print("✅ No differences found.")
+        else:
+            print(result.stdout)
+            # You can also print stderr if you want to see potential git warnings/errors
+            if result.stderr:
+                print("\n--- Git Errors/Warnings ---", file=sys.stderr)
+                print(result.stderr, file=sys.stderr)
+
+    except Exception as e:
+        print(f"❌ An unexpected error occurred during diff: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+def run_snapshot(args):
+    """Dispatches snapshot actions."""
+    if args.action == "create":
+        _snapshot_create(args)
+    elif args.action == "diff":
+        _snapshot_diff(args)
 
 
 def _artifacts_list(base_dir, mode):
@@ -1808,22 +1860,27 @@ def parse_args():
     )
 
     # Subparser for 'snapshot'
-    parser_snapshot = subparsers.add_parser("snapshot", help="Create a snapshot of key agent artifacts without deleting them")
+    parser_snapshot = subparsers.add_parser("snapshot", help="Manage snapshots of key agent artifacts")
+    parser_snapshot.add_argument(
+        "action",
+        choices=["create", "diff"],
+        help="Action to perform: 'create' a new snapshot or 'diff' against an existing one.",
+    )
     parser_snapshot.add_argument(
         "name",
         nargs="?",
-        help="A custom name for the snapshot. If not provided, a timestamped name will be used.",
+        help="Name of the snapshot. Optional for 'create', required for 'diff'.",
     )
     parser_snapshot.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
-        help="The project directory to take a snapshot of (default: current directory)",
+        help="The project directory (default: current directory)",
     )
     parser_snapshot.add_argument(
         "-y", "--yes",
         action="store_true",
-        help="Skip confirmation prompt",
+        help="Skip confirmation prompt for 'create' action",
     )
 
     # Subparser for 'archives' - mirrors 'trash' but for .agent_archives/

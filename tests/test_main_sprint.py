@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import sys
 import io
+import subprocess
 
 # Make sure the main script can be imported
 from main import run_sprint_command, parse_args

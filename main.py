@@ -1854,6 +1854,272 @@ def run_shell(args):
     sys.exit(0)
 
 
+def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
+    """Finds the final_metrics.txt file for a given run_id."""
+    # 1. Check the main project directory
+    metrics_file = project_dir / "final_metrics.txt"
+    if metrics_file.exists():
+        try:
+            with open(metrics_file, 'r') as f:
+                content = f.read()
+            if f"Run ID: {run_id}" in content:
+                return metrics_file
+        except IOError:
+            pass
+
+    # 2. Check archives and trash directories
+    for base_dir_name in [".agent_archives", ".agent_trash"]:
+        base_dir = project_dir / base_dir_name
+        if base_dir.is_dir():
+            for archive_dir in base_dir.iterdir():
+                if archive_dir.is_dir():
+                    metrics_file = archive_dir / "final_metrics.txt"
+                    if metrics_file.exists():
+                        try:
+                            with open(metrics_file, 'r') as f:
+                                content = f.read()
+                            if f"Run ID: {run_id}" in content:
+                                return metrics_file
+                        except IOError:
+                            continue
+    return None
+
+
+def _parse_metrics(metrics_file: Path) -> dict:
+    """Parses a final_metrics.txt file into a dictionary."""
+    metrics = {}
+    try:
+        with open(metrics_file, 'r') as f:
+            for line in f:
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # Attempt to convert to float/int if possible
+                    try:
+                        if '.' in value:
+                            metrics[key] = float(value)
+                        else:
+                            metrics[key] = int(value)
+                    except ValueError:
+                        metrics[key] = value
+    except (IOError, FileNotFoundError) as e:
+        print(f"Error reading metrics file {metrics_file}: {e}", file=sys.stderr)
+        return {}
+    return metrics
+
+
+def _format_duration(seconds: float) -> str:
+    """Formats seconds into a human-readable string (m s)."""
+    seconds = float(seconds)
+    minutes, seconds = divmod(seconds, 60)
+    return f"{int(minutes)}m {seconds:.2f}s"
+
+
+def _display_metrics_table(metrics: dict, title: str):
+    """Displays a formatted table of metrics."""
+    print(f"--- {title} ---")
+    if not metrics:
+        print("No metrics available.")
+        return
+
+    # Key metrics to display in a specific order
+    key_metrics = [
+        "Run ID", "Agent Type", "Model", "Timestamp",
+        "Total Execution Time (s)", "Total Iterations",
+        "Total Errors", "LLM API Calls", "LLM Tokens Used"
+    ]
+
+    # Format values for display
+    display_data = {}
+    for key, value in metrics.items():
+        if "Time" in key and isinstance(value, (int, float)):
+            display_data[key] = _format_duration(value)
+        else:
+            display_data[key] = value
+
+    max_key_len = max(len(k) for k in key_metrics if k in metrics)
+
+    for key in key_metrics:
+        if key in metrics:
+            print(f"  {key.ljust(max_key_len)} : {display_data.get(key, 'N/A')}")
+
+    # Display any other metrics that weren't in the key list
+    other_metrics = {k: v for k, v in metrics.items() if k not in key_metrics}
+    if other_metrics:
+        print("\n  --- Other Metrics ---")
+        max_other_len = max(len(k) for k in other_metrics)
+        for key, value in other_metrics.items():
+            print(f"  {key.ljust(max_other_len)} : {display_data.get(key, 'N/A')}")
+
+
+def _benchmark_show(args):
+    """Handles the 'benchmark show' action."""
+    run_id = args.run_id
+    project_dir = args.project_dir.resolve()
+
+    if not run_id:
+        # If no run_id, use the metrics from the current project directory
+        metrics_file = project_dir / "final_metrics.txt"
+        if not metrics_file.exists():
+            print("❌ Error: final_metrics.txt not found in the current project directory.", file=sys.stderr)
+            print("Please specify a Run ID.", file=sys.stderr)
+            sys.exit(1)
+        metrics = _parse_metrics(metrics_file)
+        if not metrics.get("Run ID"):
+             print("❌ Error: Could not determine Run ID from final_metrics.txt.", file=sys.stderr)
+             sys.exit(1)
+        run_id = metrics["Run ID"]
+    else:
+        metrics_file = _find_metrics_file(run_id, project_dir)
+        if not metrics_file:
+            print(f"❌ Error: Could not find metrics for Run ID: {run_id}", file=sys.stderr)
+            sys.exit(1)
+        metrics = _parse_metrics(metrics_file)
+
+    _display_metrics_table(metrics, f"Metrics for Run: {run_id}")
+    sys.exit(0)
+
+
+def _benchmark_compare(args):
+    """Handles the 'benchmark compare' action."""
+    project_dir = args.project_dir.resolve()
+    run_id_1, run_id_2 = args.run_id_1, args.run_id_2
+
+    file1 = _find_metrics_file(run_id_1, project_dir)
+    file2 = _find_metrics_file(run_id_2, project_dir)
+
+    if not file1:
+        print(f"❌ Error: Could not find metrics for Run ID: {run_id_1}", file=sys.stderr)
+        sys.exit(1)
+    if not file2:
+        print(f"❌ Error: Could not find metrics for Run ID: {run_id_2}", file=sys.stderr)
+        sys.exit(1)
+
+    metrics1 = _parse_metrics(file1)
+    metrics2 = _parse_metrics(file2)
+
+    all_keys = sorted(list(set(metrics1.keys()) | set(metrics2.keys())))
+    numeric_keys = [
+        "Total Execution Time (s)", "Total Iterations", "Total Errors",
+        "LLM API Calls", "LLM Tokens Used"
+    ]
+
+    print(f"--- Comparison: {run_id_1} vs {run_id_2} ---")
+    header = f"{'Metric':<30} | {'Run: ' + run_id_1:<25} | {'Run: ' + run_id_2:<25} | {'Difference'}"
+    print(header)
+    print("-" * len(header))
+
+    for key in all_keys:
+        val1 = metrics1.get(key, "N/A")
+        val2 = metrics2.get(key, "N/A")
+
+        diff_str = ""
+        if key in numeric_keys and isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+            diff = val2 - val1
+            is_improvement = (key != "Total Errors" and diff < 0) or (key == "Total Errors" and diff < 0)
+            prefix = "✅ " if is_improvement else "🔻 "
+            diff_str = f"{prefix}{diff:+.2f}"
+            if "Time" in key:
+                 val1_str = _format_duration(val1)
+                 val2_str = _format_duration(val2)
+                 diff_str = f"{prefix}{_format_duration(abs(diff))}"
+            else:
+                 val1_str = str(val1)
+                 val2_str = str(val2)
+        else:
+            val1_str = str(val1)
+            val2_str = str(val2)
+            if val1_str != val2_str:
+                diff_str = "(changed)"
+
+        print(f"{key:<30} | {val1_str:<25} | {val2_str:<25} | {diff_str}")
+
+    sys.exit(0)
+
+
+def _benchmark_summary(args):
+    """Handles the 'benchmark summary' action."""
+    project_dir = args.project_dir.resolve()
+    count = args.count
+    history_file = project_dir / ".agent_history"
+
+    if not history_file.exists():
+        print("No .agent_history file found. Cannot generate summary.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        with open(history_file, 'r') as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+    except IOError:
+        print("Error reading .agent_history file.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Metrics Summary (Last {count} Runs) ---")
+
+    metrics_list = []
+    for run_id in reversed(run_ids):
+        if len(metrics_list) >= count:
+            break
+        metrics_file = _find_metrics_file(run_id, project_dir)
+        if metrics_file:
+            metrics_list.append(_parse_metrics(metrics_file))
+
+    if not metrics_list:
+        print("No metrics found for any runs in the history.")
+        sys.exit(0)
+
+    # Define columns and their widths
+    columns = {
+        "Run ID": 20,
+        "Agent": 10,
+        "Time": 12,
+        "Iterations": 10,
+        "Errors": 8,
+        "Tokens": 10,
+    }
+    header = (
+        f"{'Run ID':<{columns['Run ID']}} | "
+        f"{'Agent':<{columns['Agent']}} | "
+        f"{'Time':<{columns['Time']}} | "
+        f"{'Iterations':<{columns['Iterations']}} | "
+        f"{'Errors':<{columns['Errors']}} | "
+        f"{'Tokens':<{columns['Tokens']}}"
+    )
+    print(header)
+    print("-" * len(header))
+
+    for metrics in metrics_list:
+        run_id = metrics.get("Run ID", "N/A")
+        agent = metrics.get("Agent Type", "N/A")
+        time_val = _format_duration(metrics.get("Total Execution Time (s)", 0))
+        iters = metrics.get("Total Iterations", "N/A")
+        errors = metrics.get("Total Errors", "N/A")
+        tokens = metrics.get("LLM Tokens Used", "N/A")
+
+        row = (
+            f"{str(run_id):<{columns['Run ID']}} | "
+            f"{str(agent):<{columns['Agent']}} | "
+            f"{str(time_val):<{columns['Time']}} | "
+            f"{str(iters):<{columns['Iterations']}} | "
+            f"{str(errors):<{columns['Errors']}} | "
+            f"{str(tokens):<{columns['Tokens']}}"
+        )
+        print(row)
+
+    sys.exit(0)
+
+
+def run_benchmark(args):
+    """Dispatches benchmark actions."""
+    if args.action == "show":
+        _benchmark_show(args)
+    elif args.action == "compare":
+        _benchmark_compare(args)
+    elif args.action == "summary":
+        _benchmark_summary(args)
+
+
 async def run_plan(args):
     """Generates a feature plan from a spec file without executing it."""
     # This is a stripped down version of the main() function's setup
@@ -2521,6 +2787,65 @@ def parse_args(argv=None):
     # Subparser for 'shell'
     parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
 
+    # --- New 'benchmark' command ---
+    parser_benchmark = subparsers.add_parser(
+        "benchmark",
+        help="Analyze and compare performance metrics from agent runs."
+    )
+    benchmark_subparsers = parser_benchmark.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify benchmark action"
+    )
+
+    # Benchmark 'show' action
+    parser_benchmark_show = benchmark_subparsers.add_parser(
+        "show",
+        help="Display performance metrics for a specific agent run."
+    )
+    parser_benchmark_show.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID to inspect. If omitted, shows metrics for the latest run in the current project.",
+    )
+    parser_benchmark_show.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the run occurred.",
+    )
+
+    # Benchmark 'compare' action
+    parser_benchmark_compare = benchmark_subparsers.add_parser(
+        "compare",
+        help="Compare the performance metrics of two agent runs side-by-side."
+    )
+    parser_benchmark_compare.add_argument("run_id_1", help="The first Run ID for comparison.")
+    parser_benchmark_compare.add_argument("run_id_2", help="The second Run ID for comparison.")
+    parser_benchmark_compare.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the runs occurred.",
+    )
+
+    # Benchmark 'summary' action
+    parser_benchmark_summary = benchmark_subparsers.add_parser(
+        "summary",
+        help="Display a summary table of metrics from recent agent runs."
+    )
+    parser_benchmark_summary.add_argument(
+        "-n", "--count",
+        type=int,
+        default=10,
+        help="Number of recent runs to include in the summary (default: 10).",
+    )
+    parser_benchmark_summary.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to generate the summary from.",
+    )
 
     return parser.parse_args(argv)
 
@@ -3269,6 +3594,11 @@ async def main():
     # Handle `workflow` command
     if args.command == "workflow":
         run_workflow(args)
+        return
+
+    # Handle `benchmark` command
+    if args.command == "benchmark":
+        run_benchmark(args)
         return
 
     # Initialize Agent Client

@@ -47,6 +47,23 @@ class TestMainRevert(unittest.TestCase):
         """Clean up the temporary directory."""
         shutil.rmtree(self.test_dir)
 
+    def _get_file_selection_index(self, filename_to_find):
+        """
+        Gets the list of changed files from git status and returns the 1-based
+        index of the specified filename.
+        """
+        status_result = subprocess.run(
+            ["git", "-C", str(self.project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        changes = [line for line in status_result.stdout.splitlines() if line]
+        all_files = [change[3:] for change in changes]
+        try:
+            # Return 1-based index for user input
+            return all_files.index(filename_to_find) + 1
+        except ValueError:
+            self.fail(f"File '{filename_to_find}' not found in git status output: {all_files}")
+
     def _run_revert(self, args_list):
         """Helper function to run the revert command with patched stdin, stdout, and stderr."""
         # Use a copy of argv to avoid conflicts between tests
@@ -89,11 +106,15 @@ class TestMainRevert(unittest.TestCase):
 
 
     # --- Tests for Interactive Mode ---
-    @patch('builtins.input', side_effect=['1', 'y'])
+    @patch('builtins.input')
     def test_revert_interactive_select_modified(self, mock_input):
         """Test reverting a single modified file in interactive mode."""
         self.assertTrue((self.project_dir / "modified_file.txt").exists())
         self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
+
+        # Dynamically find the index of the file to revert
+        file_index = self._get_file_selection_index("modified_file.txt")
+        mock_input.side_effect = [str(file_index), 'y']
 
         exit_code, output, stderr = self._run_revert(['--interactive'])
 
@@ -103,10 +124,14 @@ class TestMainRevert(unittest.TestCase):
         self.assertIn("✅ Specified files have been reverted.", output)
         self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "original content")
 
-    @patch('builtins.input', side_effect=['2', 'y'])
+    @patch('builtins.input')
     def test_revert_interactive_select_untracked(self, mock_input):
         """Test reverting a single untracked file in interactive mode."""
         self.assertTrue((self.project_dir / "untracked_file.txt").exists())
+
+        # Dynamically find the index of the file to revert
+        file_index = self._get_file_selection_index("untracked_file.txt")
+        mock_input.side_effect = [str(file_index), 'y']
 
         exit_code, output, stderr = self._run_revert(['--interactive'])
 
@@ -115,11 +140,16 @@ class TestMainRevert(unittest.TestCase):
         self.assertIn("✅ Specified files have been reverted.", output)
         self.assertFalse((self.project_dir / "untracked_file.txt").exists())
 
-    @patch('builtins.input', side_effect=['1 2', 'y'])
+    @patch('builtins.input')
     def test_revert_interactive_select_mixed(self, mock_input):
         """Test reverting both a modified and an untracked file."""
         self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "modified content")
         self.assertTrue((self.project_dir / "untracked_file.txt").exists())
+
+        # Dynamically find the indices of the files to revert
+        modified_index = self._get_file_selection_index("modified_file.txt")
+        untracked_index = self._get_file_selection_index("untracked_file.txt")
+        mock_input.side_effect = [f"{modified_index} {untracked_index}", 'y']
 
         exit_code, output, stderr = self._run_revert(['--interactive'])
 

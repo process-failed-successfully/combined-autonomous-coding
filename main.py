@@ -5,7 +5,7 @@ Combined Autonomous Coding Agent
 
 Main entry point for running autonomous coding agents (Gemini or Cursor).
 """
-
+from __future__ import annotations
 import argparse
 import asyncio
 import sys
@@ -32,10 +32,13 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
+from shared.cli_utils import _run_summary_logic, _run_status_logic
+from shared.workflow import WORKFLOW_STAGES, _get_workflow_stage, WORKFLOW_ORDER, complete_jira_ticket
 import json
 import yaml
 import platformdirs
 from dataclasses import asdict, is_dataclass
+
 
 # Agent Definitions
 AVAILABLE_AGENTS = {
@@ -1354,178 +1357,17 @@ def run_restore(args):
     sys.exit(0)
 
 
-def _run_summary_logic(project_dir):
-    """The core logic for displaying the project summary."""
-    project_dir = project_dir.resolve()
-    print(f"--- Project Summary: {project_dir} ---")
-
-    # 1. Workflow Stage
-    stage_key = _get_workflow_stage(project_dir)
-    stage_name = WORKFLOW_STAGES[stage_key]['name']
-    print(f"  {'Workflow Stage':<20}: {stage_name}")
-
-    # 2. Key Artifacts
-    artifacts = {
-        "Feature Plan": "feature_list.json",
-        "QA Summary": "qa_summary.txt",
-        "Reviewer Report": "reviewer_report.txt",
-    }
-    found_artifacts = []
-    for name, path in artifacts.items():
-        if (project_dir / path).exists():
-            found_artifacts.append(name)
-
-    if found_artifacts:
-        print(f"  {'Key Artifacts':<20}: {', '.join(found_artifacts)}")
-    else:
-        print(f"  {'Key Artifacts':<20}: None")
-
-    # 3. Git Status
-    try:
-        git_path = shutil.which("git")
-        if not git_path or not (project_dir / ".git").is_dir():
-            print(f"  {'Git Status':<20}: Not a git repository.")
-        else:
-            result = subprocess.run(
-                [git_path, "-C", str(project_dir), "status", "--porcelain", "-b"],
-                capture_output=True, text=True, check=True
-            )
-            lines = result.stdout.strip().split('\n')
-            branch_line = lines[0]
-            status_lines = lines[1:]
-            branch_name = branch_line.split(' ')[1].split('...')[0]
-            status = "Clean"
-            if status_lines:
-                status = f"{len(status_lines)} uncommitted change(s)"
-            print(f"  {'Git Branch':<20}: {branch_name}")
-            print(f"  {'Git Status':<20}: {status}")
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"  {'Git Status':<20}: Error checking status ({e})")
-
-    # 4. Last Activity
-    history_file = project_dir / ".agent_history"
-    if history_file.exists():
-        try:
-            with open(history_file, "r") as f:
-                run_ids = [line.strip() for line in f if line.strip()]
-            if run_ids:
-                last_run_id = run_ids[-1]
-                print(f"  {'Last Run ID':<20}: {last_run_id}")
-            else:
-                print(f"  {'Last Activity':<20}: No runs in history.")
-        except IOError:
-            print(f"  {'Last Activity':<20}: Error reading history file.")
-    else:
-        print(f"  {'Last Activity':<20}: No agent runs recorded.")
-
 def run_summary(args):
     """Displays a high-level summary of the project's status."""
-    _run_summary_logic(project_dir=args.project_dir)
+    summary = _run_summary_logic(project_dir=args.project_dir)
+    print(summary)
     sys.exit(0)
 
 
-def _run_status_logic(project_dir):
-    """The core logic for displaying the project status."""
-    import subprocess
-    import json
-    project_dir = project_dir.resolve()
-    print(f"--- Project Status: {project_dir} ---")
-
-    # 1. Workflow Stage
-    print("\n[ Workflow Stage ]")
-    if (project_dir / "PROJECT_SIGNED_OFF").exists():
-        print("  ✅ Project Signed Off: The project is complete and verified.")
-    elif (project_dir / "QA_PASSED").exists():
-        print("  🤔 QA Passed: Ready for final manager review and sign-off.")
-    elif (project_dir / "COMPLETED").exists():
-        print("  ⏳ Completed: Agent has finished coding, pending QA verification.")
-    else:
-        print("  🏃 In Progress: Agent is actively working or ready to start.")
-
-    # 2. Feature Summary
-    print("\n[ Feature Summary ]")
-    feature_file = project_dir / "feature_list.json"
-    if feature_file.exists():
-        try:
-            with open(feature_file, 'r') as f:
-                features = json.load(f)
-            if isinstance(features, list) and features:
-                print(f"  Found {len(features)} features in feature_list.json:")
-                for i, feature in enumerate(features[:5]):
-                    print(f"    - {feature}")
-                if len(features) > 5:
-                    print("    ...")
-            else:
-                print("  feature_list.json is empty or invalid.")
-        except json.JSONDecodeError:
-            print("  Error: Could not parse feature_list.json.")
-        except Exception as e:
-            print(f"  An error occurred: {e}")
-    else:
-        print("  No feature_list.json found.")
-
-    # 3. Last Agent Run
-    print("\n[ Last Agent Run ]")
-    run_id_file = project_dir / ".agent_run_id"
-    if run_id_file.exists():
-        run_id = run_id_file.read_text().strip()
-        print(f"  Last Run ID: {run_id}")
-        repo_root = Path(__file__).parent
-        log_file_path = repo_root / f"agents/logs/{run_id}.log"
-        try:
-            display_path = log_file_path.relative_to(project_dir.parent)
-        except ValueError:
-            display_path = log_file_path
-
-        if log_file_path.exists():
-            try:
-                with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    all_lines = f.readlines()
-                    lines = all_lines[-5:]
-                if lines:
-                    print("  Log Snippet (last 5 lines):")
-                    for line in lines:
-                        print(f"    {line.strip()}")
-                else:
-                    print("  Log file is empty.")
-            except Exception as e:
-                print(f"  Error reading log file: {e}")
-        else:
-            print(f"  Log file not found at: {display_path}")
-    else:
-        print("  No .agent_run_id file found. Has the agent been run yet?")
-
-    # 4. Git Status
-    print("\n[ Git Status ]")
-    try:
-        git_path = "/usr/bin/git"
-        check_repo = subprocess.run(
-            [git_path, "-C", str(project_dir), "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True
-        )
-        if check_repo.returncode == 0 and check_repo.stdout.strip() == "true":
-            result = subprocess.run(
-                [git_path, "-C", str(project_dir), "status", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            if result.stdout:
-                print("  Uncommitted changes detected:")
-                for line in result.stdout.strip().split('\n'):
-                    print(f"    {line}")
-            else:
-                print("  ✅ Working directory is clean.")
-        else:
-            print("  Directory is not a Git repository.")
-    except FileNotFoundError:
-        print("  Git not found. Cannot determine repository status.")
-    except subprocess.CalledProcessError as e:
-        print(f"  Error checking git status: {e.stderr}")
-    except Exception as e:
-        print(f"  An unexpected error occurred while checking git status: {e}")
-
 def run_status(args):
     """Displays the current status of the agent project."""
-    _run_status_logic(project_dir=args.project_dir)
+    status = _run_status_logic(project_dir=args.project_dir)
+    print(status)
     sys.exit(0)
 
 
@@ -1722,28 +1564,6 @@ def run_logs(args):
 
 # --- Workflow Subcommand Helpers ---
 
-WORKFLOW_STAGES = {
-    "IN_PROGRESS": {"name": "In Progress", "file": None},
-    "COMPLETED": {"name": "Completed", "file": "COMPLETED"},
-    "QA_PASSED": {"name": "QA Passed", "file": "QA_PASSED"},
-    "SIGNED_OFF": {"name": "Signed Off", "file": "PROJECT_SIGNED_OFF"},
-}
-
-# Ordered list of stages for advancing/reverting
-WORKFLOW_ORDER = ["IN_PROGRESS", "COMPLETED", "QA_PASSED", "SIGNED_OFF"]
-
-
-def _get_workflow_stage(project_dir: Path):
-    """Determines the current workflow stage by checking for marker files."""
-    if (project_dir / WORKFLOW_STAGES["SIGNED_OFF"]["file"]).exists():
-        return "SIGNED_OFF"
-    if (project_dir / WORKFLOW_STAGES["QA_PASSED"]["file"]).exists():
-        return "QA_PASSED"
-    if (project_dir / WORKFLOW_STAGES["COMPLETED"]["file"]).exists():
-        return "COMPLETED"
-    return "IN_PROGRESS"
-
-
 def _workflow_status(args):
     """Displays the current workflow status."""
     project_dir = args.project_dir.resolve()
@@ -1847,6 +1667,14 @@ def run_shell(args):
     """Starts the interactive shell."""
     shell = InteractiveShell(sys.modules[__name__])
     shell.cmdloop()
+    sys.exit(0)
+
+
+def run_tui(args):
+    """Starts the Textual User Interface."""
+    from ui.tui import TUI
+    app = TUI()
+    app.run()
     sys.exit(0)
 
 
@@ -2517,6 +2345,9 @@ def parse_args(argv=None):
     # Subparser for 'shell'
     parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
 
+    # Subparser for 'tui'
+    parser_tui = subparsers.add_parser("tui", help="Start the Textual User Interface")
+
 
     return parser.parse_args(argv)
 
@@ -3164,6 +2995,11 @@ async def main():
         run_shell(args)
         return
 
+    # Handle `tui` command
+    if args.command == "tui":
+        run_tui(args)
+        return
+
     # Handle `plan` command
     if args.command == "plan":
         await run_plan(args)
@@ -3492,7 +3328,6 @@ async def main():
     if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
         # Final safety check for Jira completion (in case iteration loop didn't hit it)
         if config.jira and config.jira_ticket_key:
-            from shared.workflow import complete_jira_ticket
             await complete_jira_ticket(config)
 
         logger.info("Project signed off. Finalizing...")

@@ -83,7 +83,7 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
 
         mock_jira_instance = mock_jira_cls.return_value
         mock_jira_instance.transition_issue.return_value = True
-        mock_jira_instance.get_issue.return_value = None  # No existing comments
+        mock_jira_instance.get_issue_comments.return_value = []
 
         result = await complete_jira_ticket(config)
         self.assertTrue(result)

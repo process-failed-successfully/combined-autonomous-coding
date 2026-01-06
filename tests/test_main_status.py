@@ -37,12 +37,8 @@ class TestMainStatus(unittest.TestCase):
 
     def run_status(self):
         """Helper to run the status command against the temp project directory."""
-        args = argparse.Namespace(project_dir=self.project_path)
-        # The run_status function always calls sys.exit(0)
-        with self.assertRaises(SystemExit) as cm:
-            main.run_status(args)
-        self.assertEqual(cm.exception.code, 0)
-        return self.captured_output.getvalue()
+        from shared.cli_utils import _run_status_logic
+        return _run_status_logic(project_dir=self.project_path)
 
     def create_file(self, file_path, content=""):
         """Creates a file in the temporary project directory."""

@@ -265,7 +265,7 @@ def run_configure():
     config_dir.mkdir(parents=True, exist_ok=True)
 
     # Load existing config if it exists
-    existing_config = {}
+    existing_config: dict = {}
     if config_path.exists():
         print(f"Loading existing configuration from: {config_path}")
         with open(config_path, 'r') as f:
@@ -1568,7 +1568,8 @@ def run_diff_summary(args):
     sys.exit(0 if success else 1)
 
 
-def _run_logs_logic(run_id=None):
+import time
+def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
     """The core logic for displaying agent logs."""
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
@@ -1577,37 +1578,97 @@ def _run_logs_logic(run_id=None):
         print("Logs directory not found.")
         return False
 
+    # --- Step 1: Determine which log file to use ---
+    log_file = None
     if run_id:
         log_file = logs_dir / f"{run_id}.log"
         if not log_file.exists():
             print(f"Log file not found for Run ID: {run_id}")
             return False
-        try:
-            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                print(f.read())
-        except IOError as e:
-            print(f"Error reading log file: {e}", file=sys.stderr)
-            return False
     else:
-        print("--- Last 10 Agent Logs ---")
+        # If no run_id, we either list logs or operate on the latest one
         try:
-            logs = sorted(logs_dir.glob('*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
-            if not logs:
+            all_logs = sorted(logs_dir.glob('*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
+            # Default action: list logs
+            if not all_logs and not (lines or follow or grep):
+                print("--- Last 10 Agent Logs ---")
                 print("No logs found.")
+                print("\nUse 'logs <Run ID>' to view a specific log.")
+                return True
+
+            if not all_logs:
+                print("No logs found to perform the action on.")
+                return False
+
+            # If any flags are present, use the latest log
+            if lines or follow or grep:
+                log_file = all_logs[0]
             else:
-                for i, log_file in enumerate(logs[:10]):
-                    run_id_from_file = log_file.stem
+                # Default behavior: list the last 10 logs
+                print("--- Last 10 Agent Logs ---")
+                for i, log_f in enumerate(all_logs[:10]):
+                    run_id_from_file = log_f.stem
                     latest_marker = " (latest)" if i == 0 else ""
                     print(f"  - {run_id_from_file}{latest_marker}")
+                print("\nUse 'logs <Run ID>' or flags like --lines, --follow on the latest log.")
+                return True
         except OSError as e:
-            print(f"Error listing logs: {e}", file=sys.stderr)
+            print(f"Error accessing logs directory: {e}", file=sys.stderr)
             return False
-        print("\nUse 'logs <Run ID>' to view a specific log.")
+
+    # If we fall through, we have a log_file to process.
+    if log_file:
+        print(f"--- Displaying logs for: {log_file.name} ---")
+
+    def print_filtered(line):
+        if not grep or grep in line:
+            print(line, end='')
+
+    try:
+        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+            # If not following, it's simple: read, filter, print.
+            if not follow:
+                log_lines = f.readlines()
+                if lines is not None:
+                    log_lines = log_lines[-lines:]
+                for line in log_lines:
+                    print_filtered(line)
+                return True
+
+            # If following, the logic is more complex.
+            if lines is not None:
+                # Print tail first
+                all_lines = f.readlines()
+                tail_lines = all_lines[-lines:]
+                for line in tail_lines:
+                    print_filtered(line)
+
+            # Now, start following from the end of the file
+            f.seek(0, 2)
+            while True:
+                line = f.readline()
+                if not line:
+                    time.sleep(0.1)
+                    continue
+                print_filtered(line)
+
+    except IOError as e:
+        print(f"Error reading log file: {e}", file=sys.stderr)
+        return False
+    except KeyboardInterrupt:
+        print("\n--- Stopped following log ---")
+        return True
+
     return True
 
 def run_logs(args):
     """Displays agent logs."""
-    success = _run_logs_logic(run_id=args.run_id)
+    success = _run_logs_logic(
+        run_id=args.run_id,
+        lines=args.lines,
+        follow=args.follow,
+        grep=args.grep
+    )
     sys.exit(0 if success else 1)
 
 
@@ -2025,11 +2086,26 @@ def parse_args():
     )
 
     # Subparser for 'logs'
-    parser_logs = subparsers.add_parser("logs", help="Show agent logs")
+    parser_logs = subparsers.add_parser("logs", help="Show agent logs with advanced filtering")
     parser_logs.add_argument(
         "run_id",
         nargs="?",
-        help="The Run ID of the log to view (optional)",
+        help="The Run ID of the log to view. If omitted, lists recent logs or operates on the latest.",
+    )
+    parser_logs.add_argument(
+        "-n", "--lines",
+        type=int,
+        help="Number of recent lines to display.",
+    )
+    parser_logs.add_argument(
+        "-f", "--follow",
+        action="store_true",
+        help="Follow the log output in real-time.",
+    )
+    parser_logs.add_argument(
+        "-g", "--grep",
+        type=str,
+        help="Filter log lines to only those containing this string.",
     )
 
     # Subparser for 'clean'
@@ -2415,7 +2491,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
             [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
             capture_output=True, text=True, check=True
         )
-        current_worktree = {}
+        current_worktree: dict = {}
         for line in result.stdout.strip().split('\n'):
             if not line.strip():
                 if current_worktree:
@@ -2614,7 +2690,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
             capture_output=True, text=True, check=True
         )
         worktrees = []
-        current_worktree = {}
+        current_worktree: dict = {}
         for line in result.stdout.strip().split('\n'):
             if not line.strip():
                 if current_worktree:
@@ -2843,7 +2919,7 @@ def run_worktrees(args):
                 capture_output=True, text=True, check=True
             )
             worktrees = []
-            current_worktree = {}
+            current_worktree: dict = {}
             for line in result.stdout.strip().split('\n'):
                 if not line.strip():  # End of a block
                     if current_worktree:

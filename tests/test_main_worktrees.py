@@ -1,212 +1,137 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, call
+import subprocess
+import tempfile
+import shutil
 from pathlib import Path
-import argparse
-import sys
-import io
 
-# It's challenging to import main.py directly due to its structure.
-# A common pattern is to add the repo root to sys.path for testing.
-sys.path.insert(0, str(Path(__file__).parent.parent))
-import main
+from main import parse_args
 
-def mock_fs_check(path_obj):
-    """A side effect for Path.exists and Path.is_dir to handle various test conditions."""
-    # .git directory check
-    if path_obj.name == '.git':
-        return True
-    # worktrees directory check for cleaning all
-    if path_obj.name == 'worktrees':
-        return True
-    # Specific worktree directory check for show/clean
-    if 'agent-sprint-task' in str(path_obj) or path_obj.name in ['wt1', 'wt2']:
-        return True
-    return False
-
-class TestMainWorktrees(unittest.TestCase):
+class TestWorktreesCommand(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = Path("/tmp/test_project")
-        self.worktrees_dir = self.temp_dir / "worktrees"
+        self.temp_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.temp_dir) / "project"
+        self.project_dir.mkdir()
 
-    def _run_worktrees(self, args_list):
-        """Helper to run the worktrees command with mocked args."""
-        full_args = ['main.py', 'worktrees'] + args_list
-        with patch('sys.argv', full_args), \
-             patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-            try:
-                # We need to re-parse args inside the context manager
-                # so it picks up the patched sys.argv
-                args = main.parse_args()
-                main.run_worktrees(args)
-            except SystemExit as e:
-                if e.code != 0:
-                    raise
-            return mock_stdout.getvalue()
+        subprocess.run(["git", "init"], cwd=self.project_dir, capture_output=True)
+        (self.project_dir / "README.md").write_text("initial commit")
+        subprocess.run(["git", "add", "."], cwd=self.project_dir, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.project_dir, capture_output=True)
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_list_worktrees_success(self, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees list' with successful git output."""
-        porcelain_output = (
-            "worktree /tmp/test_project/worktrees/agent-sprint-task-1\n"
-            "branch refs/heads/agent-sprint-task-1\n"
-            "\n"
-            "worktree /tmp/test_project/worktrees/agent-sprint-task-2\n"
-            "HEAD 1234567890abcdef\n"
-            "branch refs/heads/agent-sprint-task-2\n"
-            "\n"
-        )
-        mock_run = MagicMock()
-        mock_run.stdout = porcelain_output
-        with patch('subprocess.run', return_value=mock_run) as mock_subprocess_run:
-            output = self._run_worktrees(['list', '-p', str(self.temp_dir)])
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
 
-            expected_cmd = ['/usr/bin/git', '-C', str(self.temp_dir), 'worktree', 'list', '--porcelain']
-            mock_subprocess_run.assert_called_once_with(
-                expected_cmd, capture_output=True, text=True, check=True
-            )
-            self.assertIn("agent-sprint-task-1 (branch: agent-sprint-task-1)", output)
-            self.assertIn("agent-sprint-task-2 (branch: agent-sprint-task-2)", output)
+    def test_worktree_create(self):
+        args = parse_args(["worktrees", "create", "test-worktree", "-p", str(self.project_dir)])
+        with patch("sys.exit") as mock_exit:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_list_worktrees_empty(self, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees list' when no agent worktrees are found."""
-        porcelain_output = (
-            "worktree /tmp/other_project/some-other-worktree\\n"
-            "branch refs/heads/feature-branch\\n"
-            "\\n"
-        )
-        mock_run = MagicMock()
-        mock_run.stdout = porcelain_output
-        with patch('subprocess.run', return_value=mock_run):
-            output = self._run_worktrees(['list', '-p', str(self.temp_dir)])
-            self.assertIn("No active agent worktrees found.", output)
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        self.assertTrue(worktree_path.is_dir())
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_show_worktree_clean(self, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees show' on a clean worktree."""
-        mock_run = MagicMock()
-        mock_run.stdout = ""
-        with patch('subprocess.run', return_value=mock_run) as mock_subprocess_run:
-            output = self._run_worktrees(['show', 'agent-sprint-task-1', '-p', str(self.temp_dir)])
+        result = subprocess.run(["git", "worktree", "list"], cwd=self.project_dir, capture_output=True, text=True)
+        self.assertIn(str(worktree_path), result.stdout)
 
-            expected_cmd = ['/usr/bin/git', '-C', str(self.worktrees_dir / 'agent-sprint-task-1'), 'status', '--porcelain']
-            mock_subprocess_run.assert_called_once_with(
-                expected_cmd, capture_output=True, text=True, check=True
-            )
-            self.assertIn("✅ Worktree is clean.", output)
+    def test_worktree_list(self):
+        subprocess.run(["git", "worktree", "add", "worktrees/test-worktree-1"], cwd=self.project_dir, capture_output=True)
+        subprocess.run(["git", "worktree", "add", "worktrees/test-worktree-2"], cwd=self.project_dir, capture_output=True)
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_show_worktree_dirty(self, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees show' on a worktree with uncommitted changes."""
-        mock_run = MagicMock()
-        mock_run.stdout = " M README.md\\n?? new_file.txt"
-        with patch('subprocess.run', return_value=mock_run):
-            output = self._run_worktrees(['show', 'agent-sprint-task-1', '-p', str(self.temp_dir)])
-            self.assertIn("Uncommitted changes:", output)
-            self.assertIn("M README.md", output)
-            self.assertIn("?? new_file.txt", output)
+        args = parse_args(["worktrees", "list", "-p", str(self.project_dir)])
+        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    @patch('builtins.input', return_value='y')
-    def test_clean_single_worktree_yes(self, mock_input, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees clean <name>' with user confirmation."""
-        with patch('subprocess.run') as mock_subprocess_run:
-            output = self._run_worktrees(['clean', 'agent-sprint-task-1', '-p', str(self.temp_dir)])
+            self.assertIn(call("  - test-worktree-1 (branch: test-worktree-1)"), mock_print.call_args_list)
+            self.assertIn(call("  - test-worktree-2 (branch: test-worktree-2)"), mock_print.call_args_list)
 
-            expected_cmd = ['/usr/bin/git', '-C', str(self.temp_dir), 'worktree', 'remove', 'agent-sprint-task-1']
-            mock_subprocess_run.assert_called_once_with(
-                expected_cmd, check=True, capture_output=True, text=True
-            )
-            self.assertIn("Removed worktree: agent-sprint-task-1", output)
+    def test_worktree_show(self):
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+        (worktree_path / "new_file.txt").write_text("uncommitted change")
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    @patch('builtins.input', return_value='n')
-    def test_clean_single_worktree_no(self, mock_input, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees clean <name>' with user aborting."""
-        with patch('subprocess.run') as mock_subprocess_run:
-            output = self._run_worktrees(['clean', 'agent-sprint-task-1', '-p', str(self.temp_dir)])
+        args = parse_args(["worktrees", "show", "test-worktree", "-p", str(self.project_dir)])
+        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
+            mock_print.assert_any_call("  ?? new_file.txt")
 
-            mock_subprocess_run.assert_not_called()
-            self.assertIn("Aborted.", output)
+    def test_worktree_clean(self):
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+        self.assertTrue(worktree_path.exists())
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_clean_single_worktree_force(self, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees clean <name> --force --yes'."""
-        with patch('subprocess.run') as mock_subprocess_run:
-            output = self._run_worktrees(['clean', 'agent-sprint-task-1', '--force', '--yes', '-p', str(self.temp_dir)])
+        args = parse_args(["worktrees", "clean", "test-worktree", "-p", str(self.project_dir), "-y"])
+        with patch("sys.exit") as mock_exit:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
 
-            expected_cmd = ['/usr/bin/git', '-C', str(self.temp_dir), 'worktree', 'remove', '--force', 'agent-sprint-task-1']
-            mock_subprocess_run.assert_called_once_with(
-                expected_cmd, check=True, capture_output=True, text=True
-            )
-            self.assertIn("Removed worktree: agent-sprint-task-1", output)
+        self.assertFalse(worktree_path.exists())
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.iterdir', return_value=[Path('/tmp/test_project/worktrees/wt1'), Path('/tmp/test_project/worktrees/wt2')])
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_clean_all_worktrees_yes(self, mock_exists, mock_is_dir, mock_iterdir, mock_which):
-        """Test 'worktrees clean --yes' to remove all worktrees."""
-        with patch('subprocess.run') as mock_subprocess_run:
-            output = self._run_worktrees(['clean', '--yes', '-p', str(self.temp_dir)])
+    def test_worktree_revert(self):
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+        (worktree_path / "new_file.txt").write_text("uncommitted change")
 
-            calls = [
-                call(['/usr/bin/git', '-C', str(self.temp_dir), 'worktree', 'remove', 'wt1'], check=True, capture_output=True, text=True),
-                call(['/usr/bin/git', '-C', str(self.temp_dir), 'worktree', 'remove', 'wt2'], check=True, capture_output=True, text=True)
-            ]
-            mock_subprocess_run.assert_has_calls(calls, any_order=True)
-            self.assertIn("Removed worktree: wt1", output)
-            self.assertIn("Removed worktree: wt2", output)
+        args = parse_args(["worktrees", "revert", "test-worktree", "-p", str(self.project_dir), "-y"])
+        with patch("sys.exit") as mock_exit:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
 
-    @patch('shutil.which', return_value='/usr/bin/git')
-    @patch('pathlib.Path.is_dir', side_effect=mock_fs_check, autospec=True)
-    @patch('pathlib.Path.exists', side_effect=mock_fs_check, autospec=True)
-    def test_revert_worktree_yes(self, mock_exists, mock_is_dir, mock_which):
-        """Test 'worktrees revert <name> --yes'."""
-        worktree_path_str = str(self.worktrees_dir / 'agent-sprint-task-1')
+        result = subprocess.run(["git", "status", "--porcelain"], cwd=worktree_path, capture_output=True, text=True)
+        self.assertEqual(result.stdout.strip(), "")
 
-        # First call to check status, second and third for the revert commands.
-        mock_status_run = MagicMock()
-        mock_status_run.stdout = " M README.md\\n?? new_file.txt"
+    def test_worktree_merge(self):
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        subprocess.run(["git", "worktree", "add", "-b", "feature-branch", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+        (worktree_path / "feature.txt").write_text("new feature")
+        subprocess.run(["git", "add", "."], cwd=worktree_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "Add feature"], cwd=worktree_path, capture_output=True)
 
-        mock_revert_run = MagicMock()
-        mock_revert_run.stdout = ""
-        mock_revert_run.stderr = ""
+        args = parse_args(["worktrees", "merge", "test-worktree", "-p", str(self.project_dir), "--clean", "-y"])
+        with patch("sys.exit") as mock_exit:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
 
-        with patch('subprocess.run') as mock_subprocess_run:
-            mock_subprocess_run.side_effect = [mock_status_run, mock_revert_run, mock_revert_run]
+        result = subprocess.run(["git", "log", "--oneline"], cwd=self.project_dir, capture_output=True, text=True)
+        self.assertIn("Merge branch 'feature-branch'", result.stdout)
+        self.assertFalse(worktree_path.exists())
 
-            output = self._run_worktrees(['revert', 'agent-sprint-task-1', '--yes', '-p', str(self.temp_dir)])
+    def test_worktree_diff(self):
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+        (worktree_path / "new_file.txt").write_text("diff content")
+        subprocess.run(["git", "add", "new_file.txt"], cwd=worktree_path, capture_output=True)
 
-            expected_status_cmd = ['/usr/bin/git', '-C', worktree_path_str, 'status', '--porcelain']
-            expected_reset_cmd = ['/usr/bin/git', '-C', worktree_path_str, 'reset', '--hard', 'HEAD']
-            expected_clean_cmd = ['/usr/bin/git', '-C', worktree_path_str, 'clean', '-fd']
+        args = parse_args(["worktrees", "diff", "test-worktree", "-p", str(self.project_dir)])
+        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
 
-            calls = [
-                call(expected_status_cmd, capture_output=True, text=True, check=True),
-                call(expected_reset_cmd, check=True, stdout=unittest.mock.ANY, stderr=unittest.mock.ANY),
-                call(expected_clean_cmd, check=True, stdout=unittest.mock.ANY, stderr=unittest.mock.ANY)
-            ]
+            output = "".join([str(call_arg) for call_arg in mock_print.call_args_list])
+            self.assertIn("diff --git", output)
+            self.assertIn("new_file.txt", output)
+            self.assertIn("+diff content", output)
 
-            mock_subprocess_run.assert_has_calls(calls)
-            self.assertIn("✅ Revert complete. Worktree is now clean.", output)
-            self.assertIn("Uncommitted changes (will be discarded):", output)
-            self.assertIn("M README.md", output)
-            self.assertIn("?? new_file.txt", output)
+    @patch("builtins.input", side_effect=["1", "1", "exit"])
+    def test_worktree_manage_show(self, mock_input):
+        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+        subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+        (worktree_path / "new_file.txt").write_text("uncommitted change")
 
-if __name__ == '__main__':
+        args = parse_args(["worktrees", "manage", "-p", str(self.project_dir)])
+        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
+            from main import run_worktrees
+            run_worktrees(args)
+            mock_exit.assert_called_once_with(0)
+            mock_print.assert_any_call("  ?? new_file.txt")
+
+if __name__ == "__main__":
     unittest.main()

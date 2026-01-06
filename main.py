@@ -137,8 +137,8 @@ def run_doctor(args):
             validation_errors = []
             if 'jira' in config_data:
                 jira_config = config_data.get('jira', {})
-                if not all(k in jira_config for k in ['url', 'email', 'token']):
-                    validation_errors.append("Jira config is missing 'url', 'email', or 'token'.")
+                if not all(k in jira_config and jira_config[k] for k in ['url', 'email', 'token']):
+                    validation_errors.append("Jira config is missing required values for 'url', 'email', or 'token'.")
 
             if config_data.get('slack_webhook_url') and not str(config_data['slack_webhook_url']).startswith("https://hooks.slack.com/"):
                 validation_errors.append("Invalid Slack webhook URL format.")
@@ -153,6 +153,10 @@ def run_doctor(args):
                     error_messages.append(f"Config validation: {err}")
             else:
                 print("  ✅ Configuration file format appears valid.")
+        except yaml.YAMLError as e:
+            print(f"  ❌ Error parsing YAML configuration: {e}")
+            all_checks_passed = False
+            error_messages.append(f"Config parsing error: {e}")
         except Exception as e:
             print(f"  ❌ Error loading or parsing configuration: {e}")
             all_checks_passed = False

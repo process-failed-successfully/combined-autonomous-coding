@@ -1545,6 +1545,129 @@ def run_logs(args):
     sys.exit(0)
 
 
+# --- Workflow Subcommand Helpers ---
+
+WORKFLOW_STAGES = {
+    "IN_PROGRESS": {"name": "In Progress", "file": None},
+    "COMPLETED": {"name": "Completed", "file": "COMPLETED"},
+    "QA_PASSED": {"name": "QA Passed", "file": "QA_PASSED"},
+    "SIGNED_OFF": {"name": "Signed Off", "file": "PROJECT_SIGNED_OFF"},
+}
+
+# Ordered list of stages for advancing/reverting
+WORKFLOW_ORDER = ["IN_PROGRESS", "COMPLETED", "QA_PASSED", "SIGNED_OFF"]
+
+
+def _get_workflow_stage(project_dir: Path):
+    """Determines the current workflow stage by checking for marker files."""
+    if (project_dir / WORKFLOW_STAGES["SIGNED_OFF"]["file"]).exists():
+        return "SIGNED_OFF"
+    if (project_dir / WORKFLOW_STAGES["QA_PASSED"]["file"]).exists():
+        return "QA_PASSED"
+    if (project_dir / WORKFLOW_STAGES["COMPLETED"]["file"]).exists():
+        return "COMPLETED"
+    return "IN_PROGRESS"
+
+
+def _workflow_status(args):
+    """Displays the current workflow status."""
+    project_dir = args.project_dir.resolve()
+    current_stage_key = _get_workflow_stage(project_dir)
+    current_stage = WORKFLOW_STAGES[current_stage_key]
+    current_index = WORKFLOW_ORDER.index(current_stage_key)
+
+    print(f"--- Workflow Status: {project_dir} ---")
+    print(f"  Current Stage: {current_stage['name']}")
+
+    if current_stage_key == "SIGNED_OFF":
+        print("\n  Project is complete. No further workflow actions.")
+    else:
+        next_stage_key = WORKFLOW_ORDER[current_index + 1]
+        next_stage = WORKFLOW_STAGES[next_stage_key]
+        print(f"\n  Next action: 'workflow advance' to move to '{next_stage['name']}'.")
+
+
+def _workflow_advance(args):
+    """Advances the project to the next workflow stage."""
+    project_dir = args.project_dir.resolve()
+    current_stage_key = _get_workflow_stage(project_dir)
+    current_index = WORKFLOW_ORDER.index(current_stage_key)
+
+    if current_stage_key == "SIGNED_OFF":
+        print("Project is already at the final 'Signed Off' stage. Cannot advance further.")
+        sys.exit(0)
+
+    next_stage_key = WORKFLOW_ORDER[current_index + 1]
+    next_stage = WORKFLOW_STAGES[next_stage_key]
+    marker_file_path = project_dir / next_stage["file"]
+
+    print(f"--- Advancing Workflow Stage ---")
+    print(f"  Current stage: {WORKFLOW_STAGES[current_stage_key]['name']}")
+    print(f"  Next stage:    {next_stage['name']}")
+    print(f"  Action:        Create the marker file '{next_stage['file']}'")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    try:
+        marker_file_path.touch()
+        print(f"\n✅ Successfully advanced workflow to '{next_stage['name']}'.")
+    except OSError as e:
+        print(f"\n❌ Error creating marker file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _workflow_revert(args):
+    """Reverts the project to the previous workflow stage."""
+    project_dir = args.project_dir.resolve()
+    current_stage_key = _get_workflow_stage(project_dir)
+    current_index = WORKFLOW_ORDER.index(current_stage_key)
+
+    if current_stage_key == "IN_PROGRESS":
+        print("Project is already at the initial 'In Progress' stage. Cannot revert further.")
+        sys.exit(0)
+
+    previous_stage_key = WORKFLOW_ORDER[current_index - 1]
+    previous_stage = WORKFLOW_STAGES[previous_stage_key]
+    marker_to_remove = WORKFLOW_STAGES[current_stage_key]["file"]
+    marker_file_path = project_dir / marker_to_remove
+
+    print(f"--- Reverting Workflow Stage ---")
+    print(f"  Current stage:  {WORKFLOW_STAGES[current_stage_key]['name']}")
+    print(f"  Previous stage: {previous_stage['name']}")
+    print(f"  Action:         Delete the marker file '{marker_to_remove}'")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    try:
+        marker_file_path.unlink()
+        print(f"\n✅ Successfully reverted workflow to '{previous_stage['name']}'.")
+    except FileNotFoundError:
+        print(f"\n- Warning: Marker file '{marker_to_remove}' was already missing.", file=sys.stderr)
+        print(f"  Workflow is now effectively at the '{previous_stage['name']}' stage.")
+    except OSError as e:
+        print(f"\n❌ Error deleting marker file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def run_workflow(args):
+    """Manages the agent's high-level workflow state."""
+    if args.action == "status":
+        _workflow_status(args)
+    elif args.action == "advance":
+        _workflow_advance(args)
+    elif args.action == "revert":
+        _workflow_revert(args)
+    sys.exit(0)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -2029,6 +2152,28 @@ def parse_args():
         help="Manage the agent archives directory (.agent_archives)"
     )
     add_artifact_actions(parser_artifacts_archive)
+
+    # --- New 'workflow' command ---
+    parser_workflow = subparsers.add_parser(
+        "workflow",
+        help="Manually manage the agent's high-level workflow state (e.g., advancing from QA to Sign-off)."
+    )
+    parser_workflow.add_argument(
+        "action",
+        choices=["status", "advance", "revert"],
+        help="Action to perform: 'status' to check, 'advance' to move forward, 'revert' to move back.",
+    )
+    parser_workflow.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to manage the workflow for (default: current directory)",
+    )
+    parser_workflow.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts for 'advance' or 'revert' actions.",
+    )
 
 
     return parser.parse_args()
@@ -2758,6 +2903,11 @@ async def main():
 
     if args.command == "logs":
         run_logs(args)
+        return
+
+    # Handle `workflow` command
+    if args.command == "workflow":
+        run_workflow(args)
         return
 
     # Initialize Agent Client

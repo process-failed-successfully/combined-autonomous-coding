@@ -1,0 +1,37 @@
+/* ui/tui.css */
+#main-container {
+    layout: horizontal;
+    height: 100%;
+}
+
+#left-pane {
+    width: 30%;
+    height: 100%;
+    border-right: solid $accent;
+    padding: 1;
+}
+
+#right-pane {
+    width: 70%;
+    height: 100%;
+    padding: 1;
+}
+
+LogViewer {
+    height: 100%;
+}
+
+ProjectInfo {
+    height: 50%;
+    margin-bottom: 1;
+}
+
+ActionButtons {
+    height: 50%;
+    align: center middle;
+}
+
+Button {
+    width: 80%;
+    margin: 1;
+}

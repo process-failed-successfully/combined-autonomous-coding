@@ -32,6 +32,11 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
+from shared.cli_utils import _run_summary_logic, _get_workflow_stage, WORKFLOW_STAGES
+try:
+    from ui.tui import TuiApp
+except ImportError:
+    TuiApp = None
 import json
 import yaml
 import platformdirs
@@ -326,148 +331,92 @@ def run_configure():
         print(f"\n❌ Error saving configuration: {e}")
 
 
-def run_clean(args):
-    """Moves or removes agent-generated artifacts from the project directory."""
+def _run_clean_logic(project_dir, force=False, archive=False, list_only=False):
+    """Shared logic for cleaning agent-generated artifacts."""
     import shutil
     from datetime import datetime
 
-    project_dir = args.project_dir.resolve()
-    is_force_delete = args.force
-    is_archive = args.archive
-    is_list = args.list
+    project_dir = project_dir.resolve()
 
     # Determine action and destination
-    if is_list:
+    if list_only:
         action_desc = "Listing"
-    elif is_force_delete:
+    elif force:
         action_desc = "Permanently DELETING"
         log_verb = "Cleaning"
         dest_base_dir_name = None
-        dest_dir_prefix = None
-        completion_message = "\n✅ Clean complete."
-    elif is_archive:
+    elif archive:
         action_desc = "Archiving"
         log_verb = "Archiving"
         dest_base_dir_name = ".agent_archives"
-        dest_dir_prefix = "archive"
-        completion_message = "\n✅ Archive complete. Artifacts moved to {dest_dir_display_path}"
     else:  # Default is trash
         action_desc = "Moving to trash"
         log_verb = "Trashing"
         dest_base_dir_name = ".agent_trash"
-        dest_dir_prefix = "trash"
-        completion_message = "\n✅ Trash complete. Artifacts moved to {dest_dir_display_path}"
-
-    print(f"--- {action_desc} artifacts in project directory: {project_dir} ---")
 
     # List of agent-generated files and directories to be cleaned
     artifacts_to_clean = [
-        ".agent_db.sqlite",
-        "COMPLETED",
-        "QA_PASSED",
-        "PROJECT_SIGNED_OFF",
-        "feature_list.json",
-        "qa_summary.txt",
-        "reviewer_report.txt",
-        "cleanup_report.txt",
-        "final_metrics.txt",
-        "temp_files.txt",
-        "dashboard_state.json",
-        "worktrees/",  # Directory
+        ".agent_db.sqlite", "COMPLETED", "QA_PASSED", "PROJECT_SIGNED_OFF",
+        "feature_list.json", "qa_summary.txt", "reviewer_report.txt",
+        "cleanup_report.txt", "final_metrics.txt", "temp_files.txt",
+        "dashboard_state.json", "worktrees/",
     ]
 
-    # Find artifacts in the project directory
-    existing_artifacts = []
-    for artifact in artifacts_to_clean:
-        path = project_dir / artifact
-        if path.exists():
-            existing_artifacts.append(path)
+    existing_artifacts = [p for p in [project_dir / a for a in artifacts_to_clean] if p.exists()]
 
-    # Also include the log file from the last run
     run_id_file = project_dir / ".agent_run_id"
-    log_file_path = None
     if run_id_file.exists():
         run_id = run_id_file.read_text().strip()
-        repo_root = Path(__file__).parent
-        log_file_path = repo_root / f"agents/logs/{run_id}.log"
+        log_file_path = Path(__file__).parent / f"agents/logs/{run_id}.log"
         if log_file_path.exists():
-            # Add the log file to be cleaned
             existing_artifacts.append(log_file_path)
 
     if not existing_artifacts:
-        print("No agent-generated artifacts found to clean.")
-        sys.exit(0)
+        return "No agent-generated artifacts found to clean."
 
-    # If --list is used, just print the files and exit
-    if is_list:
-        print("The following agent-generated artifacts would be cleaned:")
+    if list_only:
+        output = ["The following agent-generated artifacts would be cleaned:"]
         for path in existing_artifacts:
             try:
                 display_path = path.relative_to(project_dir)
             except ValueError:
-                repo_root = Path(__file__).parent
-                try:
-                    display_path = f"(from repo root) {path.relative_to(repo_root)}"
-                except ValueError:
-                    display_path = path
-            print(f"  - {display_path}")
-        sys.exit(0)
+                display_path = f"(from repo root) {path.relative_to(Path(__file__).parent)}"
+            output.append(f"  - {display_path}")
+        return "\n".join(output)
 
-    # Prepare destination directory path if needed
+    # Prepare destination directory
     dest_dir = None
-    dest_dir_display_path = None
-    if not is_force_delete:
+    if not force:
         dest_base_dir = project_dir / dest_base_dir_name
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        dest_dir = dest_base_dir / f"{dest_dir_prefix}-{timestamp}"
-        dest_dir_display_path = dest_dir.relative_to(project_dir)
+        prefix = "archive" if archive else "trash"
+        dest_dir = dest_base_dir / f"{prefix}-{timestamp}"
+        dest_dir.mkdir(parents=True, exist_ok=True)
 
-    action_verb = "permanently DELETED" if is_force_delete else f"MOVED to {dest_dir_display_path}"
-    print(f"The following agent-generated files and directories will be {action_verb}:")
+    # Perform the file operations
     for path in existing_artifacts:
         try:
-            display_path = path.relative_to(project_dir)
-        except ValueError:
-            # The path is not inside the project directory (e.g., agent log file)
-            repo_root = Path(__file__).parent
-            try:
-                display_path = f"(from repo root) {path.relative_to(repo_root)}"
-            except ValueError:
-                display_path = path  # Absolute path as a fallback
-        print(f"  - {display_path}")
+            if force:
+                if path.is_file(): path.unlink()
+                elif path.is_dir(): shutil.rmtree(path)
+            else:
+                shutil.move(str(path), str(dest_dir / path.name))
+        except OSError as e:
+            return f"Error processing {path}: {e}"
 
+    if force: return "Clean complete."
+    return f"Artifacts moved to {dest_dir.relative_to(project_dir)}"
+
+def run_clean(args):
+    """Moves or removes agent-generated artifacts from the project directory."""
     if not args.yes:
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
             sys.exit(0)
 
-    print(f"\n{log_verb} artifacts...")
-
-    # Create destination directory now that we have confirmation
-    if not is_force_delete and dest_dir:
-        dest_dir.mkdir(parents=True, exist_ok=True)
-
-    for path in existing_artifacts:
-        try:
-            if is_force_delete:
-                if path.is_file():
-                    path.unlink()
-                    print(f"Deleted file: {path.relative_to(project_dir)}")
-                elif path.is_dir():
-                    shutil.rmtree(path)
-                    print(f"Deleted directory: {path.relative_to(project_dir)}")
-            else:
-                dest = dest_dir / path.name
-                shutil.move(str(path), str(dest))
-                print(f"Moved to {dest_dir_prefix}: {path.relative_to(project_dir)}")
-        except OSError as e:
-            print(f"Error processing {path}: {e}", file=sys.stderr)
-
-    if not is_force_delete:
-        print(completion_message.format(dest_dir_display_path=dest_dir.relative_to(project_dir)))
-    else:
-        print(completion_message)
+    result = _run_clean_logic(args.project_dir, args.force, args.archive, args.list)
+    print(result)
     sys.exit(0)
 
 
@@ -1354,73 +1303,10 @@ def run_restore(args):
     sys.exit(0)
 
 
-def _run_summary_logic(project_dir):
-    """The core logic for displaying the project summary."""
-    project_dir = project_dir.resolve()
-    print(f"--- Project Summary: {project_dir} ---")
-
-    # 1. Workflow Stage
-    stage_key = _get_workflow_stage(project_dir)
-    stage_name = WORKFLOW_STAGES[stage_key]['name']
-    print(f"  {'Workflow Stage':<20}: {stage_name}")
-
-    # 2. Key Artifacts
-    artifacts = {
-        "Feature Plan": "feature_list.json",
-        "QA Summary": "qa_summary.txt",
-        "Reviewer Report": "reviewer_report.txt",
-    }
-    found_artifacts = []
-    for name, path in artifacts.items():
-        if (project_dir / path).exists():
-            found_artifacts.append(name)
-
-    if found_artifacts:
-        print(f"  {'Key Artifacts':<20}: {', '.join(found_artifacts)}")
-    else:
-        print(f"  {'Key Artifacts':<20}: None")
-
-    # 3. Git Status
-    try:
-        git_path = shutil.which("git")
-        if not git_path or not (project_dir / ".git").is_dir():
-            print(f"  {'Git Status':<20}: Not a git repository.")
-        else:
-            result = subprocess.run(
-                [git_path, "-C", str(project_dir), "status", "--porcelain", "-b"],
-                capture_output=True, text=True, check=True
-            )
-            lines = result.stdout.strip().split('\n')
-            branch_line = lines[0]
-            status_lines = lines[1:]
-            branch_name = branch_line.split(' ')[1].split('...')[0]
-            status = "Clean"
-            if status_lines:
-                status = f"{len(status_lines)} uncommitted change(s)"
-            print(f"  {'Git Branch':<20}: {branch_name}")
-            print(f"  {'Git Status':<20}: {status}")
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"  {'Git Status':<20}: Error checking status ({e})")
-
-    # 4. Last Activity
-    history_file = project_dir / ".agent_history"
-    if history_file.exists():
-        try:
-            with open(history_file, "r") as f:
-                run_ids = [line.strip() for line in f if line.strip()]
-            if run_ids:
-                last_run_id = run_ids[-1]
-                print(f"  {'Last Run ID':<20}: {last_run_id}")
-            else:
-                print(f"  {'Last Activity':<20}: No runs in history.")
-        except IOError:
-            print(f"  {'Last Activity':<20}: Error reading history file.")
-    else:
-        print(f"  {'Last Activity':<20}: No agent runs recorded.")
-
 def run_summary(args):
     """Displays a high-level summary of the project's status."""
-    _run_summary_logic(project_dir=args.project_dir)
+    summary_text = _run_summary_logic(project_dir=args.project_dir)
+    print(summary_text)
     sys.exit(0)
 
 
@@ -1722,26 +1608,8 @@ def run_logs(args):
 
 # --- Workflow Subcommand Helpers ---
 
-WORKFLOW_STAGES = {
-    "IN_PROGRESS": {"name": "In Progress", "file": None},
-    "COMPLETED": {"name": "Completed", "file": "COMPLETED"},
-    "QA_PASSED": {"name": "QA Passed", "file": "QA_PASSED"},
-    "SIGNED_OFF": {"name": "Signed Off", "file": "PROJECT_SIGNED_OFF"},
-}
-
 # Ordered list of stages for advancing/reverting
 WORKFLOW_ORDER = ["IN_PROGRESS", "COMPLETED", "QA_PASSED", "SIGNED_OFF"]
-
-
-def _get_workflow_stage(project_dir: Path):
-    """Determines the current workflow stage by checking for marker files."""
-    if (project_dir / WORKFLOW_STAGES["SIGNED_OFF"]["file"]).exists():
-        return "SIGNED_OFF"
-    if (project_dir / WORKFLOW_STAGES["QA_PASSED"]["file"]).exists():
-        return "QA_PASSED"
-    if (project_dir / WORKFLOW_STAGES["COMPLETED"]["file"]).exists():
-        return "COMPLETED"
-    return "IN_PROGRESS"
 
 
 def _workflow_status(args):
@@ -1760,6 +1628,7 @@ def _workflow_status(args):
         next_stage_key = WORKFLOW_ORDER[current_index + 1]
         next_stage = WORKFLOW_STAGES[next_stage_key]
         print(f"\n  Next action: 'workflow advance' to move to '{next_stage['name']}'.")
+
 
 
 def _workflow_advance(args):
@@ -1847,6 +1716,18 @@ def run_shell(args):
     """Starts the interactive shell."""
     shell = InteractiveShell(sys.modules[__name__])
     shell.cmdloop()
+    sys.exit(0)
+
+
+def run_tui(args):
+    """Starts the Textual User Interface."""
+    if TuiApp is None:
+        print("Error: The 'textual' package is required to run the TUI.", file=sys.stderr)
+        print("Please run 'pip install textual' to install it.", file=sys.stderr)
+        sys.exit(1)
+
+    app = TuiApp(project_dir=args.project_dir)
+    app.run()
     sys.exit(0)
 
 
@@ -2517,6 +2398,15 @@ def parse_args(argv=None):
     # Subparser for 'shell'
     parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
 
+    # Subparser for 'tui'
+    parser_tui = subparsers.add_parser("tui", help="Start the interactive Textual User Interface")
+    parser_tui.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to manage with the TUI (default: current directory)",
+    )
+
 
     return parser.parse_args(argv)
 
@@ -3156,142 +3046,112 @@ def run_worktrees(args):
         sys.exit(0)
 
 
+async def run_agent_task(config, args):
+    """The main asynchronous logic for running the agent."""
+    from shared.agent_client import AgentClient
+    from shared.utils import generate_agent_id
+    from shared.git import ensure_git_safe, configure_git_auth
+    from shared.database import init_db
+    from shared.config import JiraConfig
+
+    project_name = os.environ.get("PROJECT_NAME", config.project_dir.resolve().name)
+
+    init_db(config.project_dir / ".agent_db.sqlite")
+
+    jira_spec_content = ""
+    if config.jira and (args.jira_ticket or args.jira_label):
+        from shared.jira_client import JiraClient
+        try:
+            jira_client = JiraClient(config.jira)
+            issue = jira_client.get_issue(args.jira_ticket) if args.jira_ticket else jira_client.get_first_todo_by_label(args.jira_label)
+            if issue:
+                jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{issue.fields.description or ''}"
+                config.jira_ticket_key = issue.key
+                project_name = issue.key
+                start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
+                jira_client.transition_issue(issue.key, start_status)
+            else:
+                print("No suitable Jira ticket found.")
+                return
+        except Exception as e:
+            print(f"Jira Integration Error: {e}", file=sys.stderr)
+            return
+
+    spec_content = jira_spec_content or (args.spec.read_text() if args.spec and args.spec.exists() else "")
+    agent_id = generate_agent_id(project_name, spec_content, args.agent)
+    config.agent_id = agent_id
+
+    log_file = Path(__file__).parent / "agents/logs" / f"{agent_id}.log"
+    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=config.verbose)
+    logger.info(f"Starting {config.agent_type.capitalize()} Agent on {config.project_dir}")
+
+    try:
+        with open(config.project_dir / ".agent_history", "a") as f:
+            f.write(f"{agent_id}\n")
+    except IOError as e:
+        logger.warning(f"Could not write to history file: {e}")
+
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
+
+    if not config.feature_list_path.exists() and not args.spec and not jira_spec_content:
+        logger.error("Error: --spec argument or --jira-ticket is required for new projects!")
+        return
+
+    ensure_git_safe(config.project_dir, ticket_key=config.jira_ticket_key)
+    if git_token := os.environ.get("GIT_TOKEN"):
+        configure_git_auth(git_token, os.environ.get("GIT_HOST", "github.com"), os.environ.get("GIT_USERNAME", "x-access-token"))
+
+    try:
+        if config.sprint_mode:
+            from agents.shared.sprint import run_sprint
+            await run_sprint(config, agent_client=client)
+        else:
+            agent_runners = {
+                "gemini": run_gemini, "cursor": run_cursor,
+                "local": run_local, "openrouter": run_openrouter
+            }
+            await agent_runners[args.agent](config, agent_client=client)
+    except KeyboardInterrupt:
+        logger.info("\nExecution interrupted by user.")
+    except Exception as e:
+        logger.exception(f"Fatal error: {e}")
+
+    if (config.project_dir / "PROJECT_SIGNED_OFF").exists() and config.jira and config.jira_ticket_key:
+        from shared.workflow import complete_jira_ticket
+        await complete_jira_ticket(config)
+
 async def main():
     args = parse_args()
 
-    # Handle `shell` command
-    if args.command == "shell":
-        run_shell(args)
+    # Command dispatching
+    command_map = {
+        "shell": run_shell, "tui": run_tui, "configure": run_configure,
+        "validate": run_validate, "doctor": run_doctor, "clean": run_clean,
+        "archive": run_archive, "empty-trash": run_empty_trash,
+        "restore": run_restore, "trash": run_trash, "revert": run_revert,
+        "archives": run_archives, "artifacts": lambda a: run_artifacts(a, mode=a.type),
+        "worktrees": run_worktrees, "snapshot": run_snapshot,
+        "list-agents": run_list_agents, "status": run_status,
+        "summary": run_summary, "history": run_history,
+        "diff-summary": run_diff_summary, "logs": run_logs,
+        "workflow": run_workflow
+    }
+    if args.command in command_map:
+        command_map[args.command](args)
         return
-
-    # Handle `plan` command
     if args.command == "plan":
         await run_plan(args)
         return
 
-    # Handle `configure` command
-    if args.command == "configure":
-        run_configure()
-        return
-
-    # Handle `validate` command
-    if args.command == "validate":
-        run_validate()
-        return
-
-    # Handle `doctor` command
-    if args.command == "doctor":
-        run_doctor(args)
-        return
-
-    # Handle `clean` command
-    if args.command == "clean":
-        run_clean(args)
-        return
-
-    # Handle `archive` command
-    if args.command == "archive":
-        run_archive(args)
-        return
-
-    # Handle `empty-trash` command
-    if args.command == "empty-trash":
-        run_empty_trash(args)
-        return
-
-    # Handle `restore` command
-    if args.command == "restore":
-        run_restore(args)
-        return
-
-    # Handle `trash` command
-    if args.command == "trash":
-        run_trash(args)
-        return
-
-    # Handle `revert` command
-    if args.command == "revert":
-        run_revert(args)
-        return
-
-    # Handle `archives' command
-    if args.command == "archives":
-        run_archives(args)
-        return
-
-    # Handle `artifacts` command
-    if args.command == "artifacts":
-        run_artifacts(args, mode=args.type)
-        return
-
-    # Handle `worktrees` command
-    if args.command == "worktrees":
-        run_worktrees(args)
-        return
-
-    # Handle `snapshot` command
-    if args.command == "snapshot":
-        run_snapshot(args)
-        return
-
-    # Handle `list-agents` command
-    if args.command == "list-agents":
-        run_list_agents()
-        return
-
-    # Handle `status` command
-    if args.command == "status":
-        run_status(args)
-        return
-
-    # Handle `summary` command
-    if args.command == "summary":
-        run_summary(args)
-        return
-
-    # Handle `history` command
-    if args.command == "history":
-        run_history(args)
-        return
-
-    if args.command == "diff-summary":
-        run_diff_summary(args)
-        return
-
-    if args.command == "logs":
-        run_logs(args)
-        return
-
-    # Handle `workflow` command
-    if args.command == "workflow":
-        run_workflow(args)
-        return
-
-    # Initialize Agent Client
-    from shared.agent_client import AgentClient
-    from shared.utils import generate_agent_id
-
-    project_name = os.environ.get("PROJECT_NAME")
-    if not project_name:
-        project_name = args.project_dir.resolve().name
-
-    # Load Configuration from File
-    # Priority resolved in config_loader: ./ > XDG > Legacy
+    # Main execution logic
     ensure_config_exists()
     file_config = load_config_from_file(profile=args.profile)
 
-    # Helper to resolve configuration priority: CLI > Config File > Default
-    def resolve(cli_arg, config_key, default_val):
-        if cli_arg is not None:
-            return cli_arg
-        if config_key in file_config:
-            return file_config[config_key]
-        return default_val
+    def resolve(cli_arg, key, default):
+        return cli_arg if cli_arg is not None else file_config.get(key, default)
 
-    # Create Config
     config = Config(
         project_dir=args.project_dir,
-        agent_id=None,  # Placeholder, set later
         agent_type=args.agent,
         model=resolve(args.model, "model", None),
         max_iterations=resolve(args.max_iterations, "max_iterations", None),
@@ -3299,205 +3159,37 @@ async def main():
         stream_output=not args.no_stream,
         spec_file=args.spec,
         verify_creation=args.verify_creation,
-
-        # Manager
         manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10),
         manager_model=resolve(args.manager_model, "manager_model", None),
-        run_manager_first=args.manager_first,
+        run_manager_first=args.manager_first or file_config.get("run_manager_first", False),
         login_mode=args.login or file_config.get("login_mode", False),
-
         timeout=resolve(args.timeout, "timeout", 600.0),
         max_error_wait=resolve(args.max_error_wait, "max_error_wait", 600.0),
-
-        # Sprint
         sprint_mode=args.sprint or file_config.get("sprint_mode", False),
         max_agents=resolve(args.max_agents, "max_agents", 1),
-
-        # Notifications
         slack_webhook_url=file_config.get("slack_webhook_url"),
         discord_webhook_url=file_config.get("discord_webhook_url"),
         notification_settings=file_config.get("notification_settings"),
-
-        # Docker-in-Docker
         dind_enabled=args.dind or file_config.get("dind_enabled", False),
     )
 
-    # Initialize Database
-    from shared.database import init_db
-    # Ensure project dir exists for DB creation
-    config.project_dir.mkdir(parents=True, exist_ok=True)
-    init_db(config.project_dir / ".agent_db.sqlite")
-
-    # Load Jira Config
-    from shared.config import JiraConfig
-    jira_cfg_data = file_config.get("jira", {})
-    jira_env_url = os.environ.get("JIRA_URL")
-    jira_env_email = os.environ.get("JIRA_EMAIL")
-    jira_env_token = os.environ.get("JIRA_TOKEN")
-
-    if jira_env_url:
-        jira_cfg_data["url"] = jira_env_url
-    if jira_env_email:
-        jira_cfg_data["email"] = jira_env_email
-    if jira_env_token:
-        jira_cfg_data["token"] = jira_env_token
-
     if args.jira_ticket or args.jira_label:
-        if not jira_cfg_data:
-            print("Error: Jira arguments provided but no Jira configuration found (config file or env vars).", file=sys.stderr)
-            print("Please set JIRA_URL, JIRA_EMAIL, JIRA_TOKEN or configure agent_config.yaml", file=sys.stderr)
+        from shared.config import JiraConfig
+        jira_cfg_data = file_config.get("jira", {})
+        for key, env_var in [("url", "JIRA_URL"), ("email", "JIRA_EMAIL"), ("token", "JIRA_TOKEN")]:
+            if env_val := os.environ.get(env_var):
+                jira_cfg_data[key] = env_val
+        if not jira_cfg_data.get("url"):
+            print("Error: Jira arguments provided but no Jira configuration found.", file=sys.stderr)
             sys.exit(1)
         config.jira = JiraConfig(**jira_cfg_data)
 
-    # Correction for boolean flags initialized with 'store_true' (default False)
-    if file_config.get("run_manager_first"):
-        config.run_manager_first = True
-
-    # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
-    repo_root = Path(__file__).parent
-    agents_log_dir = repo_root / "agents/logs"
-    agents_log_dir.mkdir(parents=True, exist_ok=True)
-
-    # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
-    # But for now, we can use a generic one or wait.
-    # Let's setup a basic console logger first?
-    # existing setup_logger requires a file. We will update it later.
-
-    # Handle `show-config` command and deprecated `--dry-run`
-    if args.command == "show-config":
+    if args.command == "show-config" or args.dry_run:
+        if args.dry_run:
+            print("Warning: --dry-run is deprecated. Use 'show-config' instead.", file=sys.stderr)
         run_show_config(config)
 
-    if args.dry_run:
-        print("Warning: --dry-run is deprecated. Please use the 'show-config' command instead.", file=sys.stderr)
-        run_show_config(config)
-
-    # JIRA LOGIC
-    jira_client = None
-    # jira_ticket = None  # Unused
-    jira_spec_content = ""
-
-    if config.jira and (args.jira_ticket or args.jira_label):
-        from shared.jira_client import JiraClient
-
-        try:
-            jira_client = JiraClient(config.jira)
-
-            if args.jira_ticket:
-                issue = jira_client.get_issue(args.jira_ticket)
-            elif args.jira_label:
-                issue = jira_client.get_first_todo_by_label(args.jira_label)
-
-            if issue:
-                # jira_ticket = issue  # Unused
-                print(f"Working on Jira Ticket: {issue.key} - {issue.fields.summary}")
-
-                # Parse Description (for context only)
-                desc = issue.fields.description or ""
-
-                # Construct Spec
-                jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{desc}"
-                config.jira_ticket_key = issue.key
-                config.jira_spec_content = jira_spec_content
-                project_name = issue.key
-
-                # Transition to In Progress (default 'Start' status)
-                start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
-                jira_client.transition_issue(issue.key, start_status)
-
-            else:
-                print("No suitable Jira ticket found.")
-                sys.exit(0)
-
-        except Exception as e:
-            print(f"Jira Integration Error: {e}", file=sys.stderr)
-            sys.exit(1)
-
-    # Read spec content for ID generation
-    spec_content = ""
-    if jira_spec_content:
-        spec_content = jira_spec_content
-    elif args.spec and args.spec.exists():
-        try:
-            spec_content = args.spec.read_text()
-        except Exception as e:
-            print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
-
-    # Generate deterministic ID
-    agent_id = generate_agent_id(project_name, spec_content, args.agent)
-    config.agent_id = agent_id
-
-    log_file = agents_log_dir / f"{agent_id}.log"
-
-    # Configure Root Logger to capture all module logs (e.g. shared.git)
-    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=args.verbose)
-
-    logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
-    logger.info(f"Generated Agent ID: {agent_id}")
-
-    # Append the current run ID to the history file
-    try:
-        history_file = config.project_dir / ".agent_history"
-        with open(history_file, "a") as f:
-            f.write(f"{agent_id}\n")
-    except IOError as e:
-        logger.warning(f"Could not write to history file {history_file}: {e}")
-
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
-
-    # Check spec requirement for fresh projects (Updated for Jira)
-    is_fresh = not config.feature_list_path.exists()
-    if is_fresh and not args.spec and not jira_spec_content:
-        logger.error(
-            "Error: --spec argument or --jira-ticket is required for new projects!"
-        )
-        sys.exit(1)
-
-    # Git Safety
-    # Ensure we are on a safe branch before starting any agent work
-    jira_key = config.jira_ticket_key if config.jira else None
-    ensure_git_safe(args.project_dir, ticket_key=jira_key)
-
-    # Git Authentication (Env Var Check)
-    git_token = os.environ.get("GIT_TOKEN")
-    if git_token:
-        from shared.git import configure_git_auth
-        git_host = os.environ.get("GIT_HOST", "github.com")
-        git_user = os.environ.get("GIT_USERNAME", "x-access-token")
-        configure_git_auth(git_token, git_host, git_user)
-
-    # Dispatch
-    try:
-        if config.sprint_mode:
-            logger.info("Running in SPRINT MODE")
-            await run_sprint(config, agent_client=client)
-            return
-
-        if args.agent == "gemini":
-            await run_gemini(config, agent_client=client)
-        elif args.agent == "cursor":
-            await run_cursor(config, agent_client=client)
-        elif args.agent == "local":
-            await run_local(config, agent_client=client)
-        elif args.agent == "openrouter":
-            await run_openrouter(config, agent_client=client)
-    except KeyboardInterrupt:
-        logger.info("\nExecution interrupted by user.")
-        sys.exit(0)
-    except Exception as e:
-        logger.exception(f"Fatal error: {e}")
-        sys.exit(1)
-
-    # Post-Execution Cleanup
-    # If project is signed off, run the completion flow and cleaner
-    if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
-        # Final safety check for Jira completion (in case iteration loop didn't hit it)
-        if config.jira and config.jira_ticket_key:
-            from shared.workflow import complete_jira_ticket
-            await complete_jira_ticket(config)
-
-        logger.info("Project signed off. Finalizing...")
-        # note: the autonomous loop itself now handles triggering the cleaner agent
-        # if cleanup_report.txt is missing.
+    await run_agent_task(config, args)
 
 
 if __name__ == "__main__":

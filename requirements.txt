@@ -14,3 +14,4 @@ psutil
 platformdirs
 google-generativeai
 prometheus-client
+textual

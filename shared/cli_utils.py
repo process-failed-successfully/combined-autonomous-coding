@@ -175,6 +175,52 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
     except (subprocess.CalledProcessError, FileNotFoundError):
         lines.append("  Could not retrieve git status.")
 
+    # 5. Latest Run Metrics
+    lines.append("\n[ Latest Run Metrics ]")
+    metrics_file = project_dir / "final_metrics.txt"
+    if metrics_file.exists():
+        metrics = _parse_metrics(metrics_file)
+        if metrics:
+            time_val = metrics.get("Total Execution Time (s)")
+            time_str = _format_duration(time_val) if isinstance(time_val, (int, float)) else "N/A"
+
+            lines.append(f"  - Run Time:     {time_str}")
+            lines.append(f"  - Iterations:   {metrics.get('Total Iterations', 'N/A')}")
+            lines.append(f"  - Errors:       {metrics.get('Total Errors', 'N/A')}")
+            lines.append(f"  - Tokens Used:  {metrics.get('LLM Tokens Used', 'N/A')}")
+        else:
+            lines.append("  Could not parse metrics file.")
+    else:
+        lines.append("  No metrics file found for the last run.")
+
+    # 6. Actionable Suggestions
+    lines.append("\n[ Next Steps ]")
+    suggestions = get_suggestions(project_dir)
+    if suggestions:
+        for suggestion in suggestions[:3]: # Show top 3
+            lines.append(f"  - {suggestion['reason']}")
+            lines.append(f"    👉 `{suggestion['command']}`")
+    else:
+        lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
+
+    # 4. Latest Run Metrics
+    lines.append("\n[ Latest Run Metrics ]")
+    metrics_file = project_dir / "final_metrics.txt"
+    if metrics_file.exists():
+        metrics = _parse_metrics(metrics_file)
+        if metrics:
+            time_val = metrics.get("Total Execution Time (s)")
+            time_str = _format_duration(time_val) if isinstance(time_val, (int, float)) else "N/A"
+
+            lines.append(f"  - Run Time:     {time_str}")
+            lines.append(f"  - Iterations:   {metrics.get('Total Iterations', 'N/A')}")
+            lines.append(f"  - Errors:       {metrics.get('Total Errors', 'N/A')}")
+            lines.append(f"  - Tokens Used:  {metrics.get('LLM Tokens Used', 'N/A')}")
+        else:
+            lines.append("  Could not parse metrics file.")
+    else:
+        lines.append("  No metrics file found for the last run.")
+
     # 5. Actionable Suggestions
     lines.append("\n[ Next Steps ]")
     suggestions = get_suggestions(project_dir)
@@ -186,6 +232,36 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
         lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
 
     return "\n".join(lines)
+
+
+def _parse_metrics(metrics_file: Path) -> dict:
+    """Parses a final_metrics.txt file into a dictionary."""
+    metrics = {}
+    try:
+        with open(metrics_file, 'r') as f:
+            for line in f:
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # Attempt to convert to float/int if possible
+                    try:
+                        metrics[key] = float(value)
+                    except ValueError:
+                        try:
+                            metrics[key] = int(value)
+                        except ValueError:
+                            metrics[key] = value
+    except (IOError, FileNotFoundError):
+        return {}
+    return metrics
+
+
+def _format_duration(seconds: float) -> str:
+    """Formats seconds into a human-readable string (m s)."""
+    seconds = float(seconds)
+    minutes, seconds = divmod(seconds, 60)
+    return f"{int(minutes)}m {seconds:.2f}s"
 
 
 def _has_uncommitted_changes(project_dir: Path) -> bool:

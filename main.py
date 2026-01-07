@@ -2602,6 +2602,7 @@ def parse_args(argv=None):
     )
 
     # Subparser for 'worktrees'
+    # Subparser for 'worktrees'
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
         "action",
@@ -3183,6 +3184,119 @@ def _worktree_diff(args, git_path, worktrees_base_dir):
     sys.exit(0)
 
 
+def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
+    """Helper function to show a comprehensive dashboard for a worktree."""
+    import subprocess
+    import json
+
+    if not args.worktree_name:
+        print("❌ Error: 'show' action requires a worktree name.", file=sys.stderr)
+        return False
+
+    worktree_name = args.worktree_name
+    worktree_path = (worktrees_base_dir / worktree_name).resolve()
+    if not worktree_path.is_dir():
+        print(f"❌ Error: Worktree '{worktree_name}' not found at '{worktree_path}'.", file=sys.stderr)
+        return False
+
+    print(f"--- Dashboard for Worktree: {worktree_name} ---")
+
+    # 1. Get Core Information (Path, Branch)
+    branch_name = "N/A"
+    try:
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        current_worktree: dict = {}
+        for line in result.stdout.strip().split('\n'):
+            if not line.strip():
+                if current_worktree:
+                    path = Path(current_worktree.get("worktree", ""))
+                    if path.resolve() == worktree_path.resolve():
+                        branch_ref = current_worktree.get("branch", "")
+                        if branch_ref:
+                             branch_name = branch_ref.replace("refs/heads/", "")
+                        break
+                current_worktree = {}
+            else:
+                key, value = line.split(" ", 1)
+                current_worktree[key] = value
+        if branch_name == "N/A" and current_worktree: # Check last block
+             path = Path(current_worktree.get("worktree", ""))
+             if path.resolve() == worktree_path.resolve():
+                 branch_ref = current_worktree.get("branch", "")
+                 if branch_ref:
+                     branch_name = branch_ref.replace("refs/heads/", "")
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Warning: Could not determine branch for worktree: {e.stderr}", file=sys.stderr)
+
+    print(f"  Path:   {worktree_path}")
+    print(f"  Branch: {branch_name}")
+
+    # 2. Get Sprint Task Context
+    sprint_plan_path = project_dir / "sprint_plan.json"
+    if sprint_plan_path.exists():
+        try:
+            with open(sprint_plan_path, 'r') as f:
+                plan = json.load(f)
+            tasks = plan.get("tasks", [])
+            # Assuming worktree name is sprint-task-<id>
+            if "sprint-task-" in worktree_name:
+                task_id = worktree_name.split("sprint-task-")[-1]
+                task = next((t for t in tasks if t.get("id") == task_id), None)
+                if task:
+                    print("\n--- Sprint Task Info ---")
+                    print(f"  Title: {task.get('title', 'N/A')}")
+                    print(f"  Description: {task.get('description', 'N/A')}")
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"❌ Warning: Could not read or parse sprint_plan.json: {e}", file=sys.stderr)
+
+    # 3. Get Git Status
+    print("\n--- Git Status ---")
+    try:
+        result = subprocess.run(
+            [git_path, "-C", str(worktree_path), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if result.stdout.strip():
+            print("  Uncommitted changes:")
+            for line in result.stdout.strip().split('\n'):
+                # Don't strip leading whitespace as it breaks alignment
+                print(f"    {line}")
+        else:
+            print("  ✅ Worktree is clean (no uncommitted changes).")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
+
+    # 4. Get Diff Summary
+    print("\n--- Diff Summary (vs HEAD) ---")
+    try:
+        result = subprocess.run(
+            [git_path, "-C", str(worktree_path), "diff", "--stat", "HEAD"],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            print(f"❌ Error running git diff: {result.stderr}", file=sys.stderr)
+        elif not result.stdout.strip():
+            print("  ✅ No differences with HEAD.")
+        else:
+            # Indent the output for better readability
+            for line in result.stdout.strip().split('\n'):
+                print(f"  {line.strip()}")
+    except Exception as e:
+        print(f"❌ An unexpected error occurred during diff: {e}", file=sys.stderr)
+
+    return True
+
+
+def _worktree_show(args, git_path, project_dir, worktrees_base_dir):
+    """Entry point for the 'show' command that calls the logic and exits."""
+    success = _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir)
+    sys.exit(0 if success else 1)
+
+
 def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     """Helper function for interactive worktree management."""
     import subprocess
@@ -3458,30 +3572,7 @@ def run_worktrees(args):
 
     # --- Action: show ---
     elif args.action == "show":
-        if not args.worktree_name:
-            print("❌ Error: 'show' action requires a worktree name.", file=sys.stderr)
-            sys.exit(1)
-        worktree_path = worktrees_base_dir / args.worktree_name
-        if not worktree_path.is_dir():
-            print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
-            sys.exit(1)
-
-        print(f"--- Status for Worktree: {args.worktree_name} ---")
-        try:
-            result = subprocess.run(
-                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            if result.stdout.strip():
-                print("Uncommitted changes:")
-                for line in result.stdout.strip().split('\n'):
-                    print(f"  {line}")
-            else:
-                print("✅ Worktree is clean.")
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
-            sys.exit(1)
-        sys.exit(0)
+        _worktree_show(args, git_path, project_dir, worktrees_base_dir)
 
     # --- Action: revert ---
     elif args.action == "revert":

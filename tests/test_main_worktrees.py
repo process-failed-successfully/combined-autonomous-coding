@@ -4,6 +4,8 @@ import subprocess
 import tempfile
 import shutil
 from pathlib import Path
+import io
+from contextlib import redirect_stdout, redirect_stderr
 
 from main import parse_args
 
@@ -47,17 +49,73 @@ class TestWorktreesCommand(unittest.TestCase):
             self.assertIn(call("  - test-worktree-1 (branch: test-worktree-1)"), mock_print.call_args_list)
             self.assertIn(call("  - test-worktree-2 (branch: test-worktree-2)"), mock_print.call_args_list)
 
-    def test_worktree_show(self):
-        worktree_path = self.project_dir / "worktrees" / "test-worktree"
+    def test_worktree_show_sprint_worktree(self):
+        # Setup: Create a real worktree and a sprint plan
+        worktree_name = "sprint-task-123"
+        worktree_path = self.project_dir / "worktrees" / worktree_name
         subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
-        (worktree_path / "new_file.txt").write_text("uncommitted change")
 
-        args = parse_args(["worktrees", "show", "test-worktree", "-p", str(self.project_dir)])
-        with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
-            from main import run_worktrees
-            run_worktrees(args)
-            mock_exit.assert_called_once_with(0)
-            mock_print.assert_any_call("  ?? new_file.txt")
+        sprint_plan = {
+            "tasks": [
+                {
+                    "id": "123",
+                    "title": "Implement feature X",
+                    "description": "This is a test task."
+                }
+            ]
+        }
+        (self.project_dir / "sprint_plan.json").write_text(str(sprint_plan).replace("'", '"'))
+
+        args = parse_args(["worktrees", "show", worktree_name, "-p", str(self.project_dir)])
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            with self.assertRaises(SystemExit) as cm:
+                from main import run_worktrees
+                run_worktrees(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        output = f.getvalue()
+
+        self.assertIn(f"Dashboard for Worktree: {worktree_name}", output)
+        self.assertIn("Sprint Task Info", output)
+        self.assertIn("Implement feature X", output)
+        self.assertIn("This is a test task.", output)
+        self.assertIn("Worktree is clean", output)
+
+    def test_worktree_show_clean_worktree(self):
+        # Setup: Create a real worktree
+        worktree_name = "clean-worktree"
+        worktree_path = self.project_dir / "worktrees" / worktree_name
+        subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
+
+        args = parse_args(["worktrees", "show", worktree_name, "-p", str(self.project_dir)])
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            with self.assertRaises(SystemExit) as cm:
+                from main import run_worktrees
+                run_worktrees(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        output = f.getvalue()
+
+        self.assertIn(f"Dashboard for Worktree: {worktree_name}", output)
+        self.assertIn("Worktree is clean", output)
+        self.assertIn("No differences with HEAD", output)
+
+    def test_worktree_show_non_existent_worktree(self):
+        args = parse_args(["worktrees", "show", "non-existent-worktree", "-p", str(self.project_dir)])
+
+        f = io.StringIO()
+        with redirect_stderr(f):
+            with self.assertRaises(SystemExit) as cm:
+                from main import run_worktrees
+                run_worktrees(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        output = f.getvalue()
+        self.assertIn("Worktree 'non-existent-worktree' not found", output)
 
     def test_worktree_clean(self):
         worktree_path = self.project_dir / "worktrees" / "test-worktree"

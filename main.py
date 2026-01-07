@@ -41,6 +41,7 @@ import json
 import yaml
 import platformdirs
 from dataclasses import asdict, is_dataclass
+from datetime import datetime
 
 # Agent Definitions
 AVAILABLE_AGENTS = {
@@ -1582,7 +1583,25 @@ def _discard_all(project_dir, git_path, yes=False):
             print("Aborted.")
             sys.exit(0)
 
-    print("\nDiscarding changes...")
+    # Stash changes before discarding to allow for recovery
+    print("\nStashing changes before discarding...")
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        stash_message = f"agent-discard-stash-{timestamp}"
+        # Use -u to include untracked files
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "stash", "push", "-u", "-m", stash_message],
+            check=True, capture_output=True, text=True
+        )
+        print(f"✅ Changes stashed safely. To recover, use the 'undo' command.")
+    except subprocess.CalledProcessError as e:
+        # It's possible there are no changes to stash if only ignored files are present
+        if "No local changes to save" not in e.stderr:
+            print(f"❌ Error while stashing changes: {e.stderr}", file=sys.stderr)
+            print("Aborting discard to prevent data loss.", file=sys.stderr)
+            sys.exit(1)
+
+    print("\nCleaning working directory...")
     try:
         subprocess.run(
             [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
@@ -1599,6 +1618,64 @@ def _discard_all(project_dir, git_path, yes=False):
             stderr = stderr.decode().strip()
         print(f"❌ Error during discard: {stderr}", file=sys.stderr)
         sys.exit(1)
+
+
+def run_undo(args):
+    """Restores uncommitted changes that were stashed by the 'discard' command."""
+    project_dir = args.project_dir.resolve()
+    git_path = shutil.which("git")
+
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot run undo.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Searching for stashed discards in: {project_dir} ---")
+
+    try:
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "stash", "list"],
+            capture_output=True, text=True, check=True
+        )
+        stashes = result.stdout.strip().split('\n')
+        discard_stashes = [s for s in stashes if "agent-discard-stash" in s]
+
+        if not discard_stashes:
+            print("No stashed discards found to undo.")
+            sys.exit(0)
+
+        print("Please select a discard to undo (press Enter to cancel):")
+        for i, stash in enumerate(discard_stashes):
+            print(f"  [{i+1}] {stash}")
+
+        selection = input("> ").strip()
+        if not selection:
+            print("Aborted.")
+            sys.exit(0)
+
+        choice_index = int(selection) - 1
+        if 0 <= choice_index < len(discard_stashes):
+            stash_to_apply = discard_stashes[choice_index].split(':')[0]
+            print(f"\nRestoring selected stash: {stash_to_apply}...")
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "stash", "pop", stash_to_apply],
+                check=True
+            )
+            print("✅ Undo complete. Your changes have been restored.")
+            sys.exit(0)
+        else:
+            print("❌ Invalid selection.", file=sys.stderr)
+            sys.exit(1)
+
+    except (ValueError, IndexError):
+        print("❌ Invalid input. Please enter a valid number.", file=sys.stderr)
+        sys.exit(1)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        stderr = getattr(e, 'stderr', str(e))
+        print(f"❌ Error during undo process: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except (EOFError, KeyboardInterrupt):
+        print("\nAborted.")
+        sys.exit(0)
 
 
 def run_discard(args):
@@ -3388,6 +3465,14 @@ def parse_args(argv=None):
         action="store_true",
         help="Skip confirmation prompt",
     )
+    # Subparser for 'undo'
+    parser_undo = subparsers.add_parser("undo", help="Undo a 'discard' operation by restoring the stashed changes.")
+    parser_undo.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run undo in (default: current directory)",
+    )
     parser_trash.add_argument(
         "archive_name",
         nargs="?",
@@ -4751,6 +4836,11 @@ async def main():
     # Handle `discard` command
     if args.command == "discard":
         run_discard(args)
+        return
+
+    # Handle `undo` command
+    if args.command == "undo":
+        run_undo(args)
         return
 
     # Handle `archives' command

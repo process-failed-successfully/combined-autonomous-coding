@@ -2158,6 +2158,110 @@ def _sprint_status(args):
     sys.exit(0)
 
 
+def run_branch(args):
+    """Manages the agent's dedicated feature branch."""
+    project_dir = args.project_dir.resolve()
+    git_path = shutil.which("git")
+    branch_file = project_dir / ".agent_branch"
+
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot manage branches.", file=sys.stderr)
+        sys.exit(1)
+
+    action = args.action
+    branch_name = args.branch_name
+
+    current_agent_branch = branch_file.read_text().strip() if branch_file.exists() else None
+
+    if action == "create":
+        if not branch_name:
+            print("❌ Error: 'create' action requires a branch name.", file=sys.stderr)
+            sys.exit(1)
+        try:
+            print(f"Creating and checking out new branch: {branch_name}")
+            subprocess.run([git_path, "-C", str(project_dir), "checkout", "-b", branch_name], check=True, capture_output=True)
+            branch_file.write_text(branch_name)
+            print(f"✅ Agent branch set to '{branch_name}'.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip()
+            print(f"❌ Error creating branch: {stderr}", file=sys.stderr)
+            sys.exit(1)
+
+    elif action == "checkout":
+        if not branch_name:
+            print("❌ Error: 'checkout' action requires a branch name.", file=sys.stderr)
+            sys.exit(1)
+        try:
+            print(f"Checking out branch: {branch_name}")
+            subprocess.run([git_path, "-C", str(project_dir), "checkout", branch_name], check=True, capture_output=True)
+            branch_file.write_text(branch_name)
+            print(f"✅ Agent branch set to '{branch_name}'.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip()
+            print(f"❌ Error checking out branch: {stderr}", file=sys.stderr)
+            sys.exit(1)
+
+    elif action == "status":
+        if current_agent_branch:
+            print(f"Agent is currently working on branch: '{current_agent_branch}'")
+        else:
+            print("Agent is not configured to use a specific branch. Using default behavior.")
+
+    elif action == "merge":
+        if not current_agent_branch:
+            print("❌ Error: No agent branch is set. Nothing to merge.", file=sys.stderr)
+            sys.exit(1)
+
+        main_branch = "main"
+        try:
+            subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            if "did not match any file(s) known to git" in e.stderr:
+                main_branch = "master" # Fallback to master
+                try:
+                    subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
+                except subprocess.CalledProcessError as e2:
+                    stderr = e2.stderr.strip()
+                    print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                stderr = e.stderr.strip()
+                print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+                sys.exit(1)
+
+        print(f"Merging '{current_agent_branch}' into '{main_branch}'...")
+        try:
+            subprocess.run([git_path, "-C", str(project_dir), "merge", current_agent_branch], check=True, capture_output=True)
+            print("✅ Merge successful.")
+            if not args.keep_branch:
+                print(f"Deleting branch '{current_agent_branch}'...")
+                subprocess.run([git_path, "-C", str(project_dir), "branch", "-d", current_agent_branch], check=True, capture_output=True)
+                branch_file.unlink()
+                print("✅ Branch deleted and agent branch config removed.")
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.decode().strip()
+            print(f"❌ Error during merge: {stderr}", file=sys.stderr)
+            print("Please resolve conflicts manually.")
+            sys.exit(1)
+
+    elif action == "list":
+        print("--- Agent-Related Branches ---")
+        if current_agent_branch:
+            print(f"  * {current_agent_branch} (active)")
+        try:
+            result = subprocess.run([git_path, "-C", str(project_dir), "branch", "--list"], capture_output=True, text=True, check=True)
+            for line in result.stdout.strip().split('\n'):
+                line = line.strip()
+                if line.startswith("*"):
+                    line = line[2:]
+                if line != current_agent_branch:
+                    print(f"    {line}")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error listing branches: {e.stderr}", file=sys.stderr)
+
+    sys.exit(0)
+
+
 def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
@@ -3022,6 +3126,33 @@ def parse_args(argv=None):
         "-y", "--yes",
         action="store_true",
         help="Skip confirmation prompts.",
+    )
+
+    # --- New 'branch' command ---
+    parser_branch = subparsers.add_parser(
+        "branch",
+        help="Manage a dedicated feature branch for the agent to work on."
+    )
+    parser_branch.add_argument(
+        "action",
+        choices=["create", "checkout", "status", "merge", "list"],
+        help="Action to perform.",
+    )
+    parser_branch.add_argument(
+        "branch_name",
+        nargs="?",
+        help="The name of the branch to create or checkout.",
+    )
+    parser_branch.add_argument(
+        "--keep-branch",
+        action="store_true",
+        help="Do not delete the branch after a successful merge.",
+    )
+    parser_branch.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
     )
 
     if argcomplete:
@@ -3902,6 +4033,10 @@ async def main():
     # Handle `sprint` command
     if args.command == "sprint":
         run_sprint_command(args)
+        return
+
+    if args.command == "branch":
+        run_branch(args)
         return
 
     # Initialize Agent Client

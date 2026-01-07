@@ -108,6 +108,7 @@ class TestMainTestSubcommand(unittest.TestCase):
         (self.project_dir / "pyproject.toml").touch()
         test_args = ['-k', 'specific_test', '--verbose']
         args = self._create_mock_args(test_args=test_args)
+        mock_run.return_value = MagicMock(returncode=0)
 
         with self.assertRaises(SystemExit):
             run_test(args)

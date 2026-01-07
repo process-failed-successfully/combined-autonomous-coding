@@ -2388,6 +2388,49 @@ def run_sprint_command(args):
         _sprint_status(args)
         sys.exit(0)
 
+def _run_tree_logic(directory: Path, prefix: str = "", depth: int = 3, full: bool = False):
+    """Recursively prints the directory tree."""
+    ignore_dirs = {".git", "__pycache__", "node_modules", ".pytest_cache", ".vscode", ".idea"}
+    ignore_files = {".DS_Store"}
+
+    if prefix == "":
+        print(f"{directory.name}/")
+
+    # Get contents
+    try:
+        contents = sorted([p for p in directory.iterdir()], key=lambda p: (p.is_file(), p.name.lower()))
+    except OSError as e:
+        print(f"Error reading directory {directory}: {e}", file=sys.stderr)
+        return
+
+    # Filter contents
+    if not full:
+        contents = [
+            p for p in contents
+            if p.name not in ignore_dirs and p.name not in ignore_files
+        ]
+
+    for i, path in enumerate(contents):
+        is_current_last = (i == len(contents) - 1)
+        connector = "└── " if is_current_last else "├── "
+        print(f"{prefix}{connector}", end="")
+
+        if path.is_dir():
+            print(f"{path.name}/")
+            if depth > 1:
+                new_prefix = prefix + ("    " if is_current_last else "│   ")
+                _run_tree_logic(path, prefix=new_prefix, depth=depth - 1, full=full)
+        else:
+            print(path.name)
+
+def run_tree(args):
+    """Displays a tree view of the project directory."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Tree view of: {project_dir} ---")
+    _run_tree_logic(project_dir, depth=args.depth, full=args.full)
+    sys.exit(0)
+
+
     if not args.task_id:
         print("❌ Error: 'diff' and 'merge' actions require a task_id.", file=sys.stderr)
         sys.exit(1)
@@ -3302,6 +3345,29 @@ def parse_args(argv=None):
         help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
     )
 
+    # --- New 'tree' command ---
+    parser_tree = subparsers.add_parser(
+        "tree",
+        help="Display a tree view of the project directory, ignoring common artifacts."
+    )
+    parser_tree.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to display (default: current directory).",
+    )
+    parser_tree.add_argument(
+        "-d", "--depth",
+        type=int,
+        default=3,
+        help="Maximum depth to display (default: 3).",
+    )
+    parser_tree.add_argument(
+        "--full",
+        action="store_true",
+        help="Show all files and directories, including ignored ones like .git and __pycache__.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4193,6 +4259,10 @@ async def main():
 
     if args.command == "test":
         run_test(args)
+        return
+
+    if args.command == "tree":
+        run_tree(args)
         return
 
     # Initialize Agent Client

@@ -81,9 +81,29 @@ def run_git(cmd: list[str], cwd: Path) -> bool:
 def ensure_git_safe(project_dir: Path, ticket_key: Optional[str] = None) -> None:
     """
     Ensure the project is in a safe git state.
-    - If not a repo: init, commit, checkout branch.
-    - If repo: checkout new timestamped branch.
+    - If a .agent_branch file exists, check out that branch.
+    - If not a repo: init, commit, checkout a new branch.
+    - If repo without .agent_branch: checkout new timestamped branch.
     """
+    agent_branch_file = project_dir / ".agent_branch"
+
+    if agent_branch_file.exists():
+        try:
+            agent_branch = agent_branch_file.read_text().strip()
+            if agent_branch:
+                logger.info(f"Found agent branch file. Attempting to switch to '{agent_branch}'...")
+                # Verify branch exists before checking out
+                if run_git(["rev-parse", "--verify", agent_branch], project_dir):
+                    if run_git(["checkout", agent_branch], project_dir):
+                        logger.info(f"Successfully checked out existing agent branch: {agent_branch}")
+                        return  # Branch is set, our work is done.
+                    else:
+                        logger.warning(f"Failed to checkout branch '{agent_branch}'. Will proceed with default behavior.")
+                else:
+                    logger.warning(f"Branch '{agent_branch}' from .agent_branch file not found. Will proceed with default behavior.")
+        except Exception as e:
+            logger.error(f"Error reading .agent_branch file: {e}. Will proceed with default behavior.")
+
     if not (project_dir / ".git").exists():
         logger.info("Initializing new git repository...")
         if is_git_safeguard_active():
@@ -94,9 +114,7 @@ def ensure_git_safe(project_dir: Path, ticket_key: Optional[str] = None) -> None
         # We ensure we are on main
         run_git(["branch", "-M", "main"], project_dir)
 
-    # Check if we are already on an agent branch?
-    # Maybe. But safer to always create a new one for a new run session.
-
+    # If .agent_branch logic didn't succeed, fall back to creating a new branch.
     timestamp = int(time.time())
     if ticket_key:
         # Sanitize ticket key

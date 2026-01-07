@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 import shutil
 import subprocess
@@ -246,12 +247,12 @@ def _parse_metrics(metrics_file: Path) -> dict:
                     value = value.strip()
                     # Attempt to convert to float/int if possible
                     try:
-                        metrics[key] = float(value)
-                    except ValueError:
-                        try:
+                        if '.' in value:
+                            metrics[key] = float(value)
+                        else:
                             metrics[key] = int(value)
-                        except ValueError:
-                            metrics[key] = value
+                    except ValueError:
+                        metrics[key] = value
     except (IOError, FileNotFoundError):
         return {}
     return metrics
@@ -336,6 +337,126 @@ def get_latest_log_file() -> Path | None:
         return None
     return None
 
+
+def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
+    """Finds the final_metrics.txt file for a given run_id."""
+    # 1. Check the main project directory
+    metrics_file = project_dir / "final_metrics.txt"
+    if metrics_file.exists():
+        try:
+            with open(metrics_file, 'r') as f:
+                content = f.read()
+            if f"Run ID: {run_id}" in content:
+                return metrics_file
+        except IOError:
+            pass
+
+    # 2. Check archives and trash directories
+    for base_dir_name in [".agent_archives", ".agent_trash"]:
+        base_dir = project_dir / base_dir_name
+        if base_dir.is_dir():
+            for archive_dir in base_dir.iterdir():
+                if archive_dir.is_dir():
+                    metrics_file = archive_dir / "final_metrics.txt"
+                    if metrics_file.exists():
+                        try:
+                            with open(metrics_file, 'r') as f:
+                                content = f.read()
+                            if f"Run ID: {run_id}" in content:
+                                return metrics_file
+                        except IOError:
+                            continue
+    return None
+
+
+def _run_report_logic(run_id: str, output_path: Optional[Path], project_dir: Path, repo_root_for_test: Optional[Path] = None) -> bool:
+    """The core logic for generating a run report."""
+    project_dir = project_dir.resolve()
+    repo_root = repo_root_for_test or Path(__file__).parent.parent
+    log_file = repo_root / f"agents/logs/{run_id}.log"
+    metrics_file = _find_metrics_file(run_id, project_dir)
+
+    # --- Data Gathering ---
+    if not log_file.exists():
+        print(f"❌ Error: Log file not found for Run ID: {run_id}", file=sys.stderr)
+        return False
+
+    metrics = _parse_metrics(metrics_file) if metrics_file else {}
+    log_content = log_file.read_text(encoding='utf-8', errors='ignore')
+    log_lines = log_content.splitlines()
+
+    # --- Report Generation ---
+    report = [f"# Agent Run Report: {run_id}\n"]
+
+    # 1. Summary Table
+    report.append("## 📊 Summary\n")
+    summary_table = [
+        "| Metric | Value |",
+        "|---|---|"
+    ]
+    timestamp = metrics.get("Timestamp", log_lines[0].split(" - ")[0] if log_lines else "N/A")
+    summary_table.append(f"| **Run ID** | `{run_id}` |")
+    summary_table.append(f"| **Timestamp** | {timestamp} |")
+    summary_table.append(f"| **Agent** | {metrics.get('Agent Type', 'N/A')} |")
+    summary_table.append(f"| **Model** | {metrics.get('Model', 'N/A')} |")
+    time_val = metrics.get("Total Execution Time (s)")
+    time_str = _format_duration(time_val) if isinstance(time_val, (int, float)) else "N/A"
+    summary_table.append(f"| **Total Time** | {time_str} |")
+    summary_table.append(f"| **Total Iterations** | {metrics.get('Total Iterations', 'N/A')} |")
+    summary_table.append(f"| **Total Errors** | {metrics.get('Total Errors', 'N/A')} |")
+    summary_table.append(f"| **Tokens Used** | {metrics.get('LLM Tokens Used', 'N/A')} |")
+    report.extend(summary_table)
+    report.append("\n")
+
+    # 2. Code Changes (Git Commit)
+    report.append("## 💻 Code Changes\n")
+    git_path = shutil.which("git")
+    commit_hash = None
+    for line in log_lines:
+        if "Git commit:" in line:
+            commit_hash = line.split("Git commit:")[1].strip()
+            break
+
+    if commit_hash and git_path and (project_dir / ".git").is_dir():
+        report.append(f"Found commit associated with this run: `{commit_hash}`\n")
+        try:
+            cmd = [git_path, "-C", str(project_dir), "show", "--stat", commit_hash]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            report.append("```diff")
+            report.append(result.stdout.strip())
+            report.append("```\n")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            stderr = getattr(e, 'stderr', str(e))
+            report.append(f"Could not retrieve commit details: {stderr}\n")
+    else:
+        report.append("No Git commit was explicitly linked in the logs for this run.\n")
+
+    # 3. Notable Log Events
+    report.append("## 📝 Notable Log Events\n")
+    notable_events = []
+    for line in log_lines:
+        if any(keyword in line for keyword in ["ERROR", "WARNING", "Manager", "Human-in-the-loop", "COMPLETED", "QA_PASSED", "PROJECT_SIGNED_OFF"]):
+            notable_events.append(f"- `{line.strip()}`")
+
+    if notable_events:
+        report.extend(notable_events)
+    else:
+        report.append("No specific high-priority events found in the log.")
+    report.append("\n")
+
+    # --- Output ---
+    final_report = "\n".join(report)
+    if output_path:
+        try:
+            output_path.write_text(final_report, encoding='utf-8')
+            print(f"✅ Report saved successfully to: {output_path}")
+        except IOError as e:
+            print(f"❌ Error writing report to file: {e}", file=sys.stderr)
+            return False
+    else:
+        print(final_report)
+
+    return True
 
 def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
     """

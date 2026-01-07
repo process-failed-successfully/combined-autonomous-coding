@@ -1854,6 +1854,16 @@ def run_restore(args):
 
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic
+from shared.cli_utils import _run_report_logic
+
+def run_report(args):
+    """Generates a summary report for a specific agent run."""
+    success = _run_report_logic(
+        run_id=args.run_id,
+        output_path=args.output,
+        project_dir=args.project_dir
+    )
+    sys.exit(0 if success else 1)
 
 def run_tree(args):
     """Displays a tree view of the project directory."""
@@ -3871,6 +3881,26 @@ def parse_args(argv=None):
         "test",
         help="Automatically detect and run tests for the project."
     )
+    # --- New 'report' command ---
+    parser_report = subparsers.add_parser(
+        "report",
+        help="Generate a summary report for a specific agent run."
+    )
+    parser_report.add_argument(
+        "run_id",
+        help="The Run ID to generate the report for.",
+    )
+    parser_report.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the Markdown report file. If omitted, prints to console.",
+    )
+    parser_report.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the run occurred.",
+    )
     parser_test.add_argument(
         "-p", "--project-dir",
         type=Path,
@@ -4819,6 +4849,9 @@ async def main():
 
     if args.command == "tree":
         run_tree(args)
+        return
+    if args.command == "report":
+        run_report(args)
         return
 
     # Initialize Agent Client

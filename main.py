@@ -1463,6 +1463,174 @@ def run_trash(args):
     run_artifacts(args, mode='trash')
 
 
+def _discard_interactive(project_dir, git_path):
+    """Handles the interactive discard logic."""
+    print(f"--- Interactive Discard in: {project_dir} ---")
+    try:
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        changes = [line for line in status_result.stdout.splitlines() if line]
+        if not changes:
+            print("✅ No uncommitted changes to discard.")
+            sys.exit(0)
+
+        print("Select files to discard (e.g., 1 3 4), or press Enter to cancel:")
+        all_files = []
+        for i, change in enumerate(changes):
+            status, filename = change[:2], change[3:]
+            all_files.append(filename)
+            print(f"  [{i+1}] {status.strip()}: {filename}")
+
+        selection = input("> ").strip()
+        if not selection:
+            print("Aborted.")
+            sys.exit(0)
+
+        try:
+            indices = [int(i) - 1 for i in selection.split()]
+            files_to_discard = [all_files[i] for i in indices if 0 <= i < len(all_files)]
+            if not files_to_discard:
+                print("No valid files selected. Aborting.")
+                sys.exit(0)
+            return files_to_discard
+        except ValueError:
+            print("❌ Invalid input. Please enter numbers separated by spaces.", file=sys.stderr)
+            sys.exit(1)
+
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"❌ Error checking git status: {e}", file=sys.stderr)
+        sys.exit(1)
+    except (EOFError, KeyboardInterrupt):
+        print("\nAborted.")
+        sys.exit(0)
+    return []
+
+
+def _discard_files(project_dir, git_path, files_to_discard, yes=False):
+    """Handles discarding a specific list of files."""
+    print(f"--- Discarding specified files in: {project_dir} ---")
+    status_result = subprocess.run(
+        [git_path, "-C", str(project_dir), "status", "--porcelain"],
+        capture_output=True, text=True, check=True
+    )
+    all_untracked_files = {
+        line[3:] for line in status_result.stdout.strip().split('\n') if line.startswith('??')
+    }
+
+    tracked_to_discard = [f for f in files_to_discard if f not in all_untracked_files]
+    untracked_to_discard = [f for f in files_to_discard if f in all_untracked_files]
+
+    status_of_selection = subprocess.run(
+        [git_path, "-C", str(project_dir), "status", "--porcelain", "--"] + files_to_discard,
+        capture_output=True, text=True
+    )
+    final_discard_list = [line[3:] for line in status_of_selection.stdout.strip().split('\n') if line.strip()]
+
+    if not final_discard_list:
+        print("✅ No uncommitted changes to discard for the specified files.")
+        sys.exit(0)
+
+    print("\nThe following files will be discarded:")
+    for f in final_discard_list:
+        print(f"  - {f}")
+
+    if not yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nDiscarding files...")
+    try:
+        if tracked_to_discard:
+            cmd = [git_path, "-C", str(project_dir), "checkout", "HEAD", "--"] + tracked_to_discard
+            subprocess.run(cmd, check=True, capture_output=True)
+        if untracked_to_discard:
+            cmd = [git_path, "-C", str(project_dir), "clean", "-f", "--"] + untracked_to_discard
+            subprocess.run(cmd, check=True, capture_output=True)
+        print("✅ Specified files have been discarded.")
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode().strip() if e.stderr else str(e)
+        print(f"❌ Error during discard: {stderr}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _discard_all(project_dir, git_path, yes=False):
+    """Handles discarding all uncommitted changes."""
+    print(f"--- Discarding ALL uncommitted changes in: {project_dir} ---")
+    try:
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if not status_result.stdout.strip():
+            print("  ✅ No uncommitted changes to discard.")
+            sys.exit(0)
+
+        print("\nUncommitted changes (will be discarded):")
+        for line in status_result.stdout.strip().split('\n'):
+            print(f"  {line}")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"❌ Error checking git status: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not yes:
+        confirm = input("\nAre you sure you want to discard ALL uncommitted changes? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nDiscarding changes...")
+    try:
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "clean", "-fd"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        print("✅ Discard complete. Working directory is now clean.")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        stderr = getattr(e, 'stderr', str(e))
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode().strip()
+        print(f"❌ Error during discard: {stderr}", file=sys.stderr)
+        sys.exit(1)
+
+
+def run_discard(args):
+    """Discards uncommitted changes for specified files or for the entire repository."""
+    project_dir = args.project_dir.resolve()
+
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot discard changes.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.files and args.interactive:
+        print("❌ Error: Cannot use --interactive mode when specifying individual files.", file=sys.stderr)
+        sys.exit(1)
+
+    files_to_discard = args.files
+    if args.interactive:
+        files_to_discard = _discard_interactive(project_dir, git_path)
+
+    if files_to_discard:
+        _discard_files(project_dir, git_path, files_to_discard, args.yes)
+    else:
+        _discard_all(project_dir, git_path, args.yes)
+
+    sys.exit(0)
+
+
 def run_empty_trash(args):
     """Permanently deletes the .agent_trash directory."""
     print("Warning: The 'empty-trash' command is deprecated and will be removed in a future version. "
@@ -3083,6 +3251,30 @@ def parse_args(argv=None):
         choices=["list", "restore", "clear", "inspect", "diff"],
         help="Action to perform on the trash",
     )
+
+    # Subparser for 'discard'
+    parser_discard = subparsers.add_parser("discard", help="Discard uncommitted changes to specified files or all files")
+    parser_discard.add_argument(
+        "files",
+        nargs="*",
+        help="Specific file(s) to discard. If not provided, all uncommitted changes will be discarded.",
+    )
+    parser_discard.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to discard changes in (default: current directory)",
+    )
+    parser_discard.add_argument(
+        "-i", "--interactive",
+        action="store_true",
+        help="Interactively select which files to discard.",
+    )
+    parser_discard.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
     parser_trash.add_argument(
         "archive_name",
         nargs="?",
@@ -4396,6 +4588,11 @@ async def main():
     # Handle `revert` command
     if args.command == "revert":
         run_revert(args)
+        return
+
+    # Handle `discard` command
+    if args.command == "discard":
+        run_discard(args)
         return
 
     # Handle `archives' command

@@ -3966,6 +3966,18 @@ def parse_args(argv=None):
         "test",
         help="Automatically detect and run tests for the project."
     )
+    parser_test.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run tests in (default: current directory).",
+    )
+    parser_test.add_argument(
+        "test_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
+    )
+
     # --- New 'report' command ---
     parser_report = subparsers.add_parser(
         "report",
@@ -3985,17 +3997,6 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory where the run occurred.",
-    )
-    parser_test.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory to run tests in (default: current directory).",
-    )
-    parser_test.add_argument(
-        "test_args",
-        nargs=argparse.REMAINDER,
-        help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
     )
 
     # --- New 'git' command ---

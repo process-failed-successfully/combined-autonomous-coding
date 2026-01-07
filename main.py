@@ -1411,10 +1411,12 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic
 
 def run_summary(args):
     """Displays a high-level summary of the project's status."""
+    print("Warning: The 'summary' command is deprecated and will be removed in a future version. "
+          "Please use the 'status' command instead.", file=sys.stderr)
     summary_text = get_project_summary(project_dir=args.project_dir)
     print(summary_text)
     sys.exit(0)
@@ -1436,108 +1438,10 @@ def run_suggest(args):
     sys.exit(0)
 
 
-def _run_status_logic(project_dir):
-    """The core logic for displaying the project status."""
-    import subprocess
-    import json
-    project_dir = project_dir.resolve()
-    print(f"--- Project Status: {project_dir} ---")
-
-    # 1. Workflow Stage
-    print("\n[ Workflow Stage ]")
-    if (project_dir / "PROJECT_SIGNED_OFF").exists():
-        print("  ✅ Project Signed Off: The project is complete and verified.")
-    elif (project_dir / "QA_PASSED").exists():
-        print("  🤔 QA Passed: Ready for final manager review and sign-off.")
-    elif (project_dir / "COMPLETED").exists():
-        print("  ⏳ Completed: Agent has finished coding, pending QA verification.")
-    else:
-        print("  🏃 In Progress: Agent is actively working or ready to start.")
-
-    # 2. Feature Summary
-    print("\n[ Feature Summary ]")
-    feature_file = project_dir / "feature_list.json"
-    if feature_file.exists():
-        try:
-            with open(feature_file, 'r') as f:
-                features = json.load(f)
-            if isinstance(features, list) and features:
-                print(f"  Found {len(features)} features in feature_list.json:")
-                for i, feature in enumerate(features[:5]):
-                    print(f"    - {feature}")
-                if len(features) > 5:
-                    print("    ...")
-            else:
-                print("  feature_list.json is empty or invalid.")
-        except json.JSONDecodeError:
-            print("  Error: Could not parse feature_list.json.")
-        except Exception as e:
-            print(f"  An error occurred: {e}")
-    else:
-        print("  No feature_list.json found.")
-
-    # 3. Last Agent Run
-    print("\n[ Last Agent Run ]")
-    run_id_file = project_dir / ".agent_run_id"
-    if run_id_file.exists():
-        run_id = run_id_file.read_text().strip()
-        print(f"  Last Run ID: {run_id}")
-        repo_root = Path(__file__).parent
-        log_file_path = repo_root / f"agents/logs/{run_id}.log"
-        try:
-            display_path = log_file_path.relative_to(project_dir.parent)
-        except ValueError:
-            display_path = log_file_path
-
-        if log_file_path.exists():
-            try:
-                with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    all_lines = f.readlines()
-                    lines = all_lines[-5:]
-                if lines:
-                    print("  Log Snippet (last 5 lines):")
-                    for line in lines:
-                        print(f"    {line.strip()}")
-                else:
-                    print("  Log file is empty.")
-            except Exception as e:
-                print(f"  Error reading log file: {e}")
-        else:
-            print(f"  Log file not found at: {display_path}")
-    else:
-        print("  No .agent_run_id file found. Has the agent been run yet?")
-
-    # 4. Git Status
-    print("\n[ Git Status ]")
-    try:
-        git_path = "/usr/bin/git"
-        check_repo = subprocess.run(
-            [git_path, "-C", str(project_dir), "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True
-        )
-        if check_repo.returncode == 0 and check_repo.stdout.strip() == "true":
-            result = subprocess.run(
-                [git_path, "-C", str(project_dir), "status", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            if result.stdout:
-                print("  Uncommitted changes detected:")
-                for line in result.stdout.strip().split('\n'):
-                    print(f"    {line}")
-            else:
-                print("  ✅ Working directory is clean.")
-        else:
-            print("  Directory is not a Git repository.")
-    except FileNotFoundError:
-        print("  Git not found. Cannot determine repository status.")
-    except subprocess.CalledProcessError as e:
-        print(f"  Error checking git status: {e.stderr}")
-    except Exception as e:
-        print(f"  An unexpected error occurred while checking git status: {e}")
-
 def run_status(args):
     """Displays the current status of the agent project."""
-    _run_status_logic(project_dir=args.project_dir)
+    status_text = _run_enhanced_status_logic(project_dir=args.project_dir)
+    print(status_text)
     sys.exit(0)
 
 

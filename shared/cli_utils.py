@@ -1,6 +1,8 @@
 from pathlib import Path
 import shutil
 import subprocess
+import json
+from datetime import datetime
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -89,6 +91,100 @@ def get_project_summary(project_dir: Path) -> str:
         summary_lines.append(f"  {'Last Activity':<20}: No agent runs recorded.")
 
     return "\n".join(summary_lines)
+
+
+def _run_enhanced_status_logic(project_dir: Path) -> str:
+    """The core logic for the enhanced status command, returned as a string."""
+    project_dir = project_dir.resolve()
+    lines = [f"--- Project Status: {project_dir} ---"]
+
+    # 1. Workflow Stage
+    stage_key = get_workflow_stage(project_dir)
+    stage_name = WORKFLOW_STAGES[stage_key]['name']
+    lines.append(f"\n[ Workflow: {stage_name} ]")
+
+    # 2. Feature Summary
+    lines.append("\n[ Feature Summary ]")
+    feature_file = project_dir / "feature_list.json"
+    if feature_file.exists():
+        try:
+            with open(feature_file, 'r') as f:
+                features = json.load(f)
+            if isinstance(features, list) and features:
+                lines.append(f"  Found {len(features)} features in feature_list.json:")
+                for i, feature in enumerate(features[:3]): # Show top 3
+                    lines.append(f"    - {feature}")
+                if len(features) > 3:
+                    lines.append("    ...")
+            else:
+                lines.append("  feature_list.json is empty or invalid.")
+        except (json.JSONDecodeError, IOError):
+            lines.append("  Could not parse feature_list.json.")
+    else:
+        lines.append("  No feature_list.json found.")
+
+    # 3. Recent Activity Timeline
+    lines.append("\n[ Recent Activity ]")
+    history_file = project_dir / ".agent_history"
+    if history_file.exists():
+        try:
+            with open(history_file, "r") as f:
+                run_ids = [line.strip() for line in f if line.strip()]
+            if run_ids:
+                # Display last 5 runs
+                for run_id in reversed(run_ids[-5:]):
+                    # Extract timestamp from run_id
+                    try:
+                        dt_part = run_id.split('-')[-1]
+                        # Handling different timestamp formats that might exist
+                        if len(dt_part) == 14: # YYYYMMDDHHMMSS
+                            timestamp = datetime.strptime(dt_part, "%Y%m%d%H%M%S")
+                            lines.append(f"  - {timestamp.strftime('%Y-%m-%d %H:%M:%S')} : Agent Run ({run_id})")
+                        elif len(dt_part) > 14: # ISO format with microseconds
+                             timestamp = datetime.fromisoformat(dt_part.replace('Z', '+00:00'))
+                             lines.append(f"  - {timestamp.strftime('%Y-%m-%d %H:%M:%S')} : Agent Run ({run_id})")
+                        else:
+                             lines.append(f"  - Agent Run ({run_id})")
+                    except (ValueError, IndexError):
+                        lines.append(f"  - Agent Run ({run_id})")
+            else:
+                lines.append("  No agent runs recorded in history.")
+        except IOError:
+            lines.append("  Could not read agent history file.")
+    else:
+        lines.append("  No agent activity recorded.")
+
+    # 4. Git Status / Recent File Changes
+    lines.append("\n[ Recent File Changes ]")
+    try:
+        git_path = shutil.which("git")
+        if not git_path or not (project_dir / ".git").is_dir():
+            lines.append("  Not a git repository.")
+        else:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            changes = result.stdout.strip()
+            if not changes:
+                lines.append("  ✅ No uncommitted changes.")
+            else:
+                for line in changes.split('\n'):
+                    lines.append(f"  {line}")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        lines.append("  Could not retrieve git status.")
+
+    # 5. Actionable Suggestions
+    lines.append("\n[ Next Steps ]")
+    suggestions = get_suggestions(project_dir)
+    if suggestions:
+        for suggestion in suggestions[:3]: # Show top 3
+            lines.append(f"  - {suggestion['reason']}")
+            lines.append(f"    👉 `{suggestion['command']}`")
+    else:
+        lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
+
+    return "\n".join(lines)
 
 
 def _has_uncommitted_changes(project_dir: Path) -> bool:

@@ -1631,6 +1631,109 @@ def run_discard(args):
     sys.exit(0)
 
 
+def run_rewind(args):
+    """Resets the project to a previous state (git commit)."""
+    project_dir = args.project_dir.resolve()
+    target = args.target
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot rewind.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if status_result.stdout.strip():
+            print("❌ Error: Your repository has uncommitted changes.", file=sys.stderr)
+            print("Please commit or stash them before using rewind.", file=sys.stderr)
+            sys.exit(1)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"❌ Error checking git status: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+    # --- Interactive Mode ---
+    if not target:
+        print(f"--- Interactive Rewind in: {project_dir} ---")
+        try:
+            log_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "log", "--oneline", "--pretty=format:%h|%s|%cr", "-n", "15"],
+                capture_output=True, text=True, check=True
+            )
+            commits = [line.split('|') for line in log_result.stdout.strip().split('\n')]
+            if not commits or not commits[0]:
+                print("No commits found in the repository.")
+                sys.exit(0)
+
+            print("Select a commit to rewind to (press Enter to cancel):")
+            for i, (hash, subject, time) in enumerate(commits):
+                print(f"  [{i+1}] {hash} - {subject} ({time})")
+
+            selection = input("> ").strip()
+            if not selection:
+                print("Aborted.")
+                sys.exit(0)
+
+            try:
+                index = int(selection) - 1
+                if 0 <= index < len(commits):
+                    target = commits[index][0]
+                else:
+                    print("❌ Invalid selection.", file=sys.stderr)
+                    sys.exit(1)
+            except ValueError:
+                print("❌ Invalid input. Please enter a number.", file=sys.stderr)
+                sys.exit(1)
+
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"❌ Error getting git log: {e}", file=sys.stderr)
+            sys.exit(1)
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            sys.exit(0)
+
+    # --- Confirmation and Execution ---
+    print(f"\nThis will perform a 'git reset --hard' to '{target}'.")
+    print("This action is destructive and will discard all commits made after this point.")
+    if not args.yes:
+        confirm = input("Are you absolutely sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print(f"\nRewinding to {target}...")
+    try:
+        # Step 1: Clean any ignored files that might be lingering
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "clean", "-fdx"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        # Step 2: Reset to the target commit
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "reset", "--hard", target],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        print("✅ Rewind complete.")
+        print("Project state has been reset.")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        stderr = getattr(e, 'stderr', str(e))
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode().strip()
+        print(f"❌ Error during rewind: {stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_empty_trash(args):
     """Permanently deletes the .agent_trash directory."""
     print("Warning: The 'empty-trash' command is deprecated and will be removed in a future version. "
@@ -3332,6 +3435,26 @@ def parse_args(argv=None):
     )
 
 
+    # Subparser for 'rewind'
+    parser_rewind = subparsers.add_parser("rewind", help="Reset the project to a previous state (git commit)")
+    parser_rewind.add_argument(
+        "target",
+        nargs="?",
+        help="The git commit hash, reference (e.g., HEAD~2), or Run ID to rewind to. Launches interactive mode if omitted.",
+    )
+    parser_rewind.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to rewind (default: current directory)",
+    )
+    parser_rewind.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
+
     # Subparser for 'worktrees'
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(
@@ -4588,6 +4711,11 @@ async def main():
     # Handle `revert` command
     if args.command == "revert":
         run_revert(args)
+        return
+
+    # Handle `rewind` command
+    if args.command == "rewind":
+        run_rewind(args)
         return
 
     # Handle `discard` command

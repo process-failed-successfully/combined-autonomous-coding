@@ -4,6 +4,7 @@ import os
 import socket
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import psutil
 from typing import Dict, Any, Optional, List, Tuple
 from prometheus_client import (
@@ -40,6 +41,11 @@ class Telemetry:
         self._last_push_time = 0.0
         self._push_interval = 2.0  # Throttle pushes to every 2 seconds
 
+        # Optimization: Use a ThreadPoolExecutor for non-blocking pushes
+        # Max workers = 1 to serialize pushes and avoid overwhelming the gateway
+        self._push_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="MetricsPusher")
+        self.synchronous_mode = False  # Set to True for testing
+
         # Ensure log directory exists
         os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -74,7 +80,12 @@ class Telemetry:
         self.monitoring_active = False
 
         # Ensure final metrics are pushed on exit
-        atexit.register(self._push_metrics, force=True)
+        atexit.register(self._shutdown)
+
+    def _shutdown(self):
+        """Shutdown handler to ensure pending metrics are pushed."""
+        self._push_metrics(force=True, sync=True)
+        self._push_executor.shutdown(wait=True)
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
@@ -367,20 +378,9 @@ class Telemetry:
         self.logger.error(message)
         self.increment_counter("agent_errors_total", labels={"error_type": "log_error"})
 
-    def _push_metrics(self, force: bool = False):
-        now = time.time()
-        if not force and (now - self._last_push_time < self._push_interval):
-            return
-
-        # Update last push time immediately to prevent hammering if push fails
-        self._last_push_time = now
-
+    def _push_metrics_sync(self):
+        """Synchronous version of push metrics for background thread or final flush."""
         try:
-            # We group metrics by job, instance, and other high-level identifiers to act as "global labels"
-            # grouping_key = {'instance': socket.gethostname(), 'service': self.service_name, 'project': self.project_name, 'agent_type': self.agent_type}
-            # Prometheus Pushgateway grouping keys overwrite previous pushes
-            # with the same key.
-
             grouping_key = {
                 "instance": socket.gethostname(),
                 "service": self.service_name,
@@ -401,6 +401,25 @@ class Telemetry:
             if now - self._last_push_error_time > 60:  # Log once per minute
                 self.logger.warning(f"Failed to push metrics to gateway: {e}")
                 self._last_push_error_time = now
+
+    def _push_metrics(self, force: bool = False, sync: bool = False):
+        """
+        Push metrics to the gateway.
+        If sync=True, blocks until completion (used for shutdown).
+        Otherwise, offloads to a thread pool to avoid blocking the main thread.
+        """
+        now = time.time()
+        if not force and (now - self._last_push_time < self._push_interval):
+            return
+
+        # Update last push time immediately to prevent hammering
+        self._last_push_time = now
+
+        if sync or self.synchronous_mode:
+            self._push_metrics_sync()
+        else:
+            # Offload to thread pool
+            self._push_executor.submit(self._push_metrics_sync)
 
     def start_system_monitoring(self, interval: int = 15):
         if self.monitoring_active:

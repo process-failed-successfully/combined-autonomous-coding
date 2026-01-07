@@ -51,6 +51,177 @@ AVAILABLE_AGENTS = {
 }
 
 
+def run_init(args):
+    """Runs an interactive setup wizard for a new project."""
+    import subprocess
+    import shutil
+
+    project_dir = args.project_dir.resolve()
+    print("--- Interactive Project Initialization ---")
+    print(f"This wizard will set up your project in: {project_dir}\n")
+
+    # --- Step 1: Git Repository Check ---
+    print("--- [1/4] Git Repository ---")
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Warning: 'git' command not found. It's highly recommended to use version control.")
+    elif (project_dir / ".git").is_dir():
+        print("✅ Git repository already exists.")
+    else:
+        print("No Git repository found.")
+        if not args.yes:
+            confirm_git = input("Do you want to initialize a new Git repository? [Y/n]: ").strip().lower()
+        if args.yes or confirm_git in ['y', '']:
+            try:
+                project_dir.mkdir(parents=True, exist_ok=True)
+                subprocess.run([git_path, "init", "-b", "main", str(project_dir)], check=True, capture_output=True)
+                print("✅ Successfully initialized a new Git repository.")
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                stderr = getattr(e, 'stderr', str(e))
+                if isinstance(stderr, bytes): stderr = stderr.decode()
+                print(f"❌ Error initializing Git repository: {stderr}")
+
+    # --- Step 2: .gitignore ---
+    print("\n--- [2/4] .gitignore file ---")
+    gitignore_path = project_dir / ".gitignore"
+    if gitignore_path.exists():
+        print("✅ .gitignore file already exists.")
+    else:
+        print("No .gitignore file found.")
+        if not args.yes:
+            confirm_gitignore = input("Do you want to create a Python-focused .gitignore file? [Y/n]: ").strip().lower()
+        if args.yes or confirm_gitignore in ['y', '']:
+            try:
+                gitignore_content = """
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Agent artifacts
+.agent_trash/
+.agent_archives/
+.agent_db.sqlite
+.agent_run_id
+.agent_history
+.agent_branch
+worktrees/
+final_metrics.txt
+dashboard_state.json
+"""
+                gitignore_path.write_text(gitignore_content.strip())
+                print("✅ Created a .gitignore file.")
+            except IOError as e:
+                print(f"❌ Error creating .gitignore file: {e}")
+
+    # --- Step 3: app_spec.txt ---
+    print("\n--- [3/4] Application Specification ---")
+    spec_path = project_dir / "app_spec.txt"
+    if spec_path.exists():
+        print(f"✅ Application spec file already exists: {spec_path.name}")
+        if not args.yes:
+             overwrite_spec = input("Do you want to overwrite it? [y/N]: ").strip().lower()
+             if overwrite_spec != 'y':
+                 spec_path = None # Skip writing
+
+    if spec_path:
+        print("Please describe the application you want to build.")
+        print("Be detailed. The more information you provide, the better the agent will perform.")
+        print("Press Enter twice to save and continue.")
+
+        spec_lines = []
+        try:
+            while True:
+                line = input("> ")
+                if not line and len(spec_lines) > 0 and spec_lines[-1] == "":
+                    # Two consecutive empty lines
+                    spec_lines.pop() # Remove the last empty line
+                    break
+                spec_lines.append(line)
+        except (EOFError, KeyboardInterrupt):
+            print("\nSkipping spec creation.")
+            spec_lines = []
+
+        if spec_lines:
+            try:
+                spec_path.write_text("\n".join(spec_lines))
+                print(f"✅ Saved application specification to {spec_path.name}")
+            except IOError as e:
+                print(f"❌ Error writing to {spec_path.name}: {e}")
+
+    # --- Step 4: Next Steps ---
+    print("\n--- [4/4] Next Steps ---")
+    print("✅ Project initialization complete!")
+    print("\nYou're ready to start working with the agent. Here are some common next steps:")
+    executable_name = os.path.basename(sys.argv[0])
+    print(f"  - To start the agent and build your app:")
+    print(f"    {executable_name} --spec app_spec.txt")
+    print(f"  - To see all available commands:")
+    print(f"    {executable_name} --help")
+    print(f"  - For a detailed health check of your environment:")
+    print(f"    {executable_name} doctor")
+
+    sys.exit(0)
+
+
 def run_validate():
     """Validates the agent_config.yaml file."""
     print("--- Validating Agent Configuration ---")
@@ -2681,6 +2852,20 @@ def parse_args(argv=None):
         help="The project directory to check (default: current directory)",
     )
 
+    # Subparser for 'init'
+    parser_init = subparsers.add_parser("init", help="Run an interactive setup wizard for a new project")
+    parser_init.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to initialize (default: current directory)",
+    )
+    parser_init.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip all confirmation prompts",
+    )
+
     # Subparser for 'status'
     # Subparser for 'glance'
     parser_glance = subparsers.add_parser("glance", help="Show a compact, high-level overview of the project status")
@@ -4074,6 +4259,11 @@ async def main():
     # Handle `tui` command
     if args.command == "tui":
         run_tui(args)
+        return
+
+    # Handle `init` command
+    if args.command == "init":
+        run_init(args)
         return
 
     # Handle `completion` command

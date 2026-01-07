@@ -8,6 +8,7 @@ class TestTelemetryExtended(unittest.TestCase):
     def setUp(self):
         # Reset singleton logic if needed or just instantiate directly
         self.telemetry = Telemetry("test_agent", "test_job")
+        self.telemetry.synchronous_mode = True
 
     @patch("shared.telemetry.push_to_gateway")
     def test_record_histogram(self, mock_push):

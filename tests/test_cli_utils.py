@@ -121,5 +121,29 @@ class TestCliUtils(unittest.TestCase):
         self.assertIn("...", output)
         self.assertNotIn("- feature 4", output)
 
+    def test_run_enhanced_status_logic_with_metrics(self):
+        """Test the enhanced status logic displays metrics when the file exists."""
+        metrics_file = self.project_dir / "final_metrics.txt"
+        metrics_content = """
+Total Execution Time (s): 123.45
+Total Iterations: 10
+Total Errors: 2
+LLM Tokens Used: 5000
+"""
+        metrics_file.write_text(metrics_content)
+
+        output = _run_enhanced_status_logic(self.project_dir)
+        self.assertIn("[ Latest Run Metrics ]", output)
+        self.assertIn("Run Time:     2m 3.45s", output)
+        self.assertIn("Iterations:   10", output)
+        self.assertIn("Errors:       2", output)
+        self.assertIn("Tokens Used:  5000", output)
+
+    def test_run_enhanced_status_logic_without_metrics(self):
+        """Test the enhanced status logic handles a missing metrics file gracefully."""
+        output = _run_enhanced_status_logic(self.project_dir)
+        self.assertIn("[ Latest Run Metrics ]", output)
+        self.assertIn("No metrics file found for the last run.", output)
+
 if __name__ == '__main__':
     unittest.main()

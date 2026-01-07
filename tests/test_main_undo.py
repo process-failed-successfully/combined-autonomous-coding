@@ -7,9 +7,6 @@ import shutil
 import os
 import sys
 
-# Add the parent directory to the sys.path to allow imports from the 'shared' module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from main import run_undo, run_discard
 
 class TestUndoCommand(unittest.TestCase):

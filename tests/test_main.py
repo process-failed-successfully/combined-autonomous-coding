@@ -252,6 +252,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
+        args.command = None
         mock_parse_args.return_value = args
 
         # feature_list_path.exists() -> False (fresh)

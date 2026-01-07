@@ -2386,7 +2386,34 @@ def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
         _sprint_status(args)
-        sys.exit(0)
+    elif args.action in ["diff", "merge"]:
+        if not hasattr(args, 'task_id') or not args.task_id:
+            print("❌ Error: 'diff' and 'merge' actions require a task_id.", file=sys.stderr)
+            sys.exit(1)
+
+        worktree_name = f"sprint-task-{args.task_id}"
+
+        # We need to construct a mock `args` object for the worktree functions,
+        # as they expect a different structure.
+        mock_args = argparse.Namespace(
+            worktree_name=worktree_name,
+            project_dir=args.project_dir,
+            yes=getattr(args, 'yes', False),
+            force=False, # Not used in diff/merge from sprint context
+            clean=getattr(args, 'clean', False)
+        )
+
+        project_dir = args.project_dir.resolve()
+        worktrees_base_dir = project_dir / "worktrees"
+        git_path = shutil.which("git")
+        if not git_path:
+            print("❌ Error: 'git' command not found.", file=sys.stderr)
+            sys.exit(1)
+
+        if args.action == "diff":
+            _worktree_diff(mock_args, git_path, worktrees_base_dir)
+        elif args.action == "merge":
+            _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
 
 def _run_tree_logic(directory: Path, prefix: str = "", depth: int = 3, full: bool = False):
     """Recursively prints the directory tree."""

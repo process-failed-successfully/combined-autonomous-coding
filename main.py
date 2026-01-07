@@ -2314,6 +2314,74 @@ def run_branch(args):
     sys.exit(0)
 
 
+def run_test(args):
+    """Detects the project type and runs the appropriate test command."""
+    project_dir = args.project_dir.resolve()
+    passthrough_args = args.test_args
+
+    print(f"--- Running tests in: {project_dir} ---")
+
+    # --- Project Detection ---
+    command_base = []
+
+    # 1. Node.js Project
+    if (project_dir / "package.json").exists():
+        print("Detected Node.js project.")
+        # Prefer specific package managers if lock files exist
+        if (project_dir / "yarn.lock").exists():
+            command_base = ["yarn", "test"]
+        elif (project_dir / "pnpm-lock.yaml").exists():
+            command_base = ["pnpm", "test"]
+        else:
+            command_base = ["npm", "test"]
+
+    # 2. Python Project
+    elif (project_dir / "pyproject.toml").exists() or (project_dir / "requirements.txt").exists():
+        print("Detected Python project.")
+        # Prefer pytest if available
+        if shutil.which("pytest"):
+            command_base = ["pytest"]
+        else:
+            command_base = [sys.executable, "-m", "unittest", "discover"]
+
+    # 3. Go Project
+    elif (project_dir / "go.mod").exists():
+        print("Detected Go project.")
+        command_base = ["go", "test", "./..."]
+
+    # --- Command Construction & Execution ---
+    if not command_base:
+        print("❌ Error: Could not detect a recognizable project type (Node.js, Python, Go).", file=sys.stderr)
+        print("  Please ensure the project has a `package.json`, `pyproject.toml`, `requirements.txt`, or `go.mod` file.", file=sys.stderr)
+        sys.exit(1)
+
+    # Construct the full command
+    full_command = command_base
+    if passthrough_args:
+        # npm requires a '--' separator before passing args to the script
+        if command_base == ["npm", "test"]:
+            full_command.append("--")
+        full_command.extend(passthrough_args)
+
+
+    print(f"Executing command: {' '.join(full_command)}")
+    try:
+        # Stream the output directly and run in the target project directory
+        result = subprocess.run(full_command, cwd=project_dir)
+        # Exit with the same code as the test runner
+        sys.exit(result.returncode)
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nTest execution interrupted by user.")
+        sys.exit(130) # Standard exit code for Ctrl+C
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
@@ -3217,6 +3285,23 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'test' command ---
+    parser_test = subparsers.add_parser(
+        "test",
+        help="Automatically detect and run tests for the project."
+    )
+    parser_test.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run tests in (default: current directory).",
+    )
+    parser_test.add_argument(
+        "test_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4104,6 +4189,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "test":
+        run_test(args)
         return
 
     # Initialize Agent Client

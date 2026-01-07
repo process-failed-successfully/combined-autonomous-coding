@@ -1532,6 +1532,49 @@ def run_diff_summary(args):
     sys.exit(0 if success else 1)
 
 
+def _run_log_logic(project_dir, count=None):
+    """The core logic for displaying the git commit history."""
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        return False
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot show log.", file=sys.stderr)
+        return False
+
+    print(f"--- Git Commit History: {project_dir} ---")
+    try:
+        cmd = [
+            git_path,
+            "-C", str(project_dir),
+            "log",
+            "--color=always",
+            "--graph",
+            "--pretty=format:%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset",
+            "--abbrev-commit",
+        ]
+        if count is not None:
+            cmd.extend(["-n", str(count)])
+
+        result = subprocess.run(cmd)
+
+        if result.returncode != 0:
+            print(f"\n❌ Error: git log command failed with exit code {result.returncode}.", file=sys.stderr)
+            return False
+
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        return False
+    return True
+
+def run_log(args):
+    """Displays the git commit history for the project."""
+    success = _run_log_logic(project_dir=args.project_dir, count=args.count)
+    sys.exit(0 if success else 1)
+
+
 import time
 def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
     """The core logic for displaying agent logs."""
@@ -2446,6 +2489,20 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check for changes (default: current directory)",
+    )
+
+    # Subparser for 'log' (git log)
+    parser_log = subparsers.add_parser("log", help="Show the git commit history for the project")
+    parser_log.add_argument(
+        "-n", "--count",
+        type=int,
+        help="Number of recent commits to display.",
+    )
+    parser_log.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to show the log for (default: current directory)",
     )
 
     # Subparser for 'logs'
@@ -3822,6 +3879,10 @@ async def main():
 
     if args.command == "diff-summary":
         run_diff_summary(args)
+        return
+
+    if args.command == "log":
+        run_log(args)
         return
 
     if args.command == "logs":

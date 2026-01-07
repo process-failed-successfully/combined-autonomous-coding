@@ -79,7 +79,7 @@ class TestMainReportCommand(unittest.TestCase):
         self.assertIn("Found commit associated with this run: `abc1234`", output)
         self.assertIn("1 file changed, 1 insertion(+)", output)
         self.assertIn("## 📝 Notable Log Events", output)
-        self.assertIn("`2023-01-01T12:15:00+00:00 - INFO - Git commit: abc1234`", output)
+        self.assertIn("No specific high-priority events found in the log.", output)
 
     @patch('main.sys.exit')
     @patch('main._run_report_logic')

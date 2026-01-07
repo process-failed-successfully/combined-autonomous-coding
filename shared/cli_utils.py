@@ -202,7 +202,7 @@ def _has_uncommitted_changes(project_dir: Path) -> bool:
         return False
 
 
-def get_suggestions(project_dir: Path) -> list[dict]:
+def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
     """
     Analyzes the project state and returns a list of suggested next commands.
     """
@@ -210,52 +210,34 @@ def get_suggestions(project_dir: Path) -> list[dict]:
     stage = get_workflow_stage(project_dir)
     has_changes = _has_uncommitted_changes(project_dir)
 
+    def add_suggestion(command, reason):
+        if limit is not None and len(suggestions) >= limit:
+            return False
+        suggestions.append({"command": command, "reason": reason})
+        return True
+
     # 1. Git-based suggestions
     if has_changes:
-        suggestions.append({
-            "command": "main.py diff-summary",
-            "reason": "You have uncommitted changes. This command will show a summary of what has been modified."
-        })
-        suggestions.append({
-            "command": "main.py revert --interactive",
-            "reason": "If the uncommitted changes are unwanted, you can use this command to interactively discard them."
-        })
+        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
+        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
 
     # 2. Workflow-based suggestions
     if stage == "COMPLETED":
-        suggestions.append({
-            "command": "main.py workflow advance",
-            "reason": "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."
-        })
+        if not add_suggestion("main.py workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."): return suggestions
     elif stage == "QA_PASSED":
-        suggestions.append({
-            "command": "main.py workflow advance",
-            "reason": "The project has passed QA. Advance to 'Signed Off' to finalize the project."
-        })
+        if not add_suggestion("main.py workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."): return suggestions
     elif stage == "SIGNED_OFF":
-        suggestions.append({
-            "command": "main.py clean --archive",
-            "reason": "The project is complete. Archive the agent-generated artifacts to keep the directory clean."
-        })
+        if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
 
     # 3. Artifact-based suggestions
     trash_dir = project_dir / ".agent_trash"
     if trash_dir.exists() and any(trash_dir.iterdir()):
-        suggestions.append({
-            "command": "main.py artifacts trash list",
-            "reason": "You have items in the trash. Use this command to see what's there."
-        })
-        suggestions.append({
-            "command": "main.py artifacts trash restore",
-            "reason": "If you need to recover deleted artifacts, you can restore them from the trash."
-        })
+        if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
+        if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."): return suggestions
 
     # 4. General "what happened" suggestions
     if (project_dir / ".agent_run_id").exists():
-        suggestions.append({
-            "command": "main.py logs",
-            "reason": "To see the logs from the last agent run."
-        })
+        if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
 
     return suggestions
 

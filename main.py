@@ -1445,6 +1445,58 @@ def run_status(args):
     sys.exit(0)
 
 
+def run_glance(args):
+    """Displays a compact, high-level overview of the project's status."""
+    project_dir = args.project_dir.resolve()
+
+    # 1. Get Workflow Stage
+    stage_key = get_workflow_stage(project_dir)
+    stage_info = WORKFLOW_STAGES.get(stage_key, {"name": "Unknown"})
+
+    # 2. Get Git Status Summary (brief)
+    git_path = shutil.which("git")
+    git_summary = "Git not found"
+    if git_path and (project_dir / ".git").is_dir():
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            changes = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            if not changes:
+                git_summary = "✅ Clean"
+            else:
+                untracked = sum(1 for line in changes if line.startswith('??'))
+                tracked_changes = [line for line in changes if not line.startswith('??')]
+                staged = sum(1 for line in tracked_changes if line and line[0] != ' ')
+                unstaged = sum(1 for line in tracked_changes if line and len(line) > 1 and line[1] != ' ')
+                summary_parts = []
+                if staged: summary_parts.append(f"{staged} staged")
+                if unstaged: summary_parts.append(f"{unstaged} unstaged")
+                if untracked: summary_parts.append(f"{untracked} untracked")
+                git_summary = f"⚠️ {', '.join(summary_parts)}"
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            git_summary = "Error checking status"
+
+    # 3. Get Next Suggested Action
+    suggestions = get_suggestions(project_dir, limit=1)
+    next_action = suggestions[0]['command'] if suggestions else "No specific suggestion."
+
+    # --- Formatting the Output ---
+    # Use ANSI escape codes for color and boldness
+    BOLD = '\033[1m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    CYAN = '\033[96m'
+    ENDC = '\033[0m'
+    CYAN_BOLD = BOLD + CYAN
+
+    print(f"{BOLD}--- Project Glance: {project_dir.name} ---{ENDC}")
+    print(f"  {CYAN_BOLD}Stage{ENDC}:     {stage_info['name']}")
+    print(f"  {CYAN_BOLD}Git Status{ENDC}: {git_summary}")
+    print(f"  {CYAN_BOLD}Next Step{ENDC}:  `{next_action}`")
+
+
 def _run_history_logic(project_dir):
     """The core logic for displaying agent run history."""
     history_file = project_dir / ".agent_history"
@@ -2548,6 +2600,16 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check (default: current directory)",
+    )
+
+    # Subparser for 'status'
+    # Subparser for 'glance'
+    parser_glance = subparsers.add_parser("glance", help="Show a compact, high-level overview of the project status")
+    parser_glance.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check status for (default: current directory)",
     )
 
     # Subparser for 'status'
@@ -3986,6 +4048,11 @@ async def main():
     # Handle `models` command
     if args.command == "models":
         run_models(args)
+        return
+
+    # Handle `glance` command
+    if args.command == "glance":
+        run_glance(args)
         return
 
     # Handle `status` command

@@ -1411,7 +1411,18 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic
+
+def run_tree(args):
+    """Displays a tree view of the project directory."""
+    tree_output = _run_tree_logic(
+        project_dir=args.project_dir,
+        depth=args.depth,
+        full=args.full
+    )
+    print(tree_output)
+    sys.exit(0)
+
 
 def run_summary(args):
     """Displays a high-level summary of the project's status."""
@@ -3133,6 +3144,25 @@ def parse_args(argv=None):
         help="The project directory to view in the TUI (default: current directory)",
     )
 
+    # Subparser for 'tree'
+    parser_tree = subparsers.add_parser("tree", help="Show a tree view of the project directory")
+    parser_tree.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to display (default: current directory)",
+    )
+    parser_tree.add_argument(
+        "--depth",
+        type=int,
+        help="Limit the depth of the directory traversal.",
+    )
+    parser_tree.add_argument(
+        "--full",
+        action="store_true",
+        help="Show all files, including those ignored by Git.",
+    )
+
     # --- New 'completion' command ---
     parser_completion = subparsers.add_parser(
         "completion",
@@ -4193,6 +4223,10 @@ async def main():
 
     if args.command == "test":
         run_test(args)
+        return
+
+    if args.command == "tree":
+        run_tree(args)
         return
 
     # Initialize Agent Client

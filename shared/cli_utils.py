@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import json
 from datetime import datetime
+from typing import Optional
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -258,3 +259,66 @@ def get_latest_log_file() -> Path | None:
     except OSError:
         return None
     return None
+
+
+def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
+    """
+    The core logic for generating a tree view of a directory.
+    - project_dir: The root directory to start the tree from.
+    - depth: How many levels of the tree to display. None for unlimited.
+    - full: If False, respects .gitignore. If True, shows all files.
+    """
+    project_dir = project_dir.resolve()
+    if not project_dir.is_dir():
+        return f"Error: '{project_dir}' is not a valid directory."
+
+    output_lines = [f"{project_dir.name}/"]
+    git_path = shutil.which("git")
+    is_git_repo = git_path and (project_dir / ".git").is_dir()
+
+    def is_ignored(path: Path) -> bool:
+        """Checks if a path is ignored by Git."""
+        if full or not is_git_repo:
+            return False
+        try:
+            # Use relative path from the project root for check-ignore
+            relative_path = path.relative_to(project_dir)
+            # The command returns 0 if the path is ignored, 1 if not.
+            return subprocess.run(
+                [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
+            ).returncode == 0
+        except Exception:
+            # If any error occurs (e.g., path is outside repo), treat as not ignored
+            return False
+
+    def generate_tree_recursive(directory: Path, prefix: str, current_depth: int):
+        if depth is not None and current_depth >= depth:
+            return
+
+        try:
+            # Sort entries, directories first, then by name
+            entries = sorted(directory.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+        except OSError:
+            # Could be a permissions error
+            return
+
+        # Filter out ignored entries before determining pointers
+        visible_entries = [e for e in entries if not is_ignored(e)]
+
+        if not visible_entries:
+            return
+
+        # Use appropriate connectors for the last item in a directory
+        pointers = ["├── "] * (len(visible_entries) - 1) + ["└── "]
+        for pointer, path in zip(pointers, visible_entries):
+            # Check if path is a directory for the suffix
+            suffix = "/" if path.is_dir() else ""
+            output_lines.append(f"{prefix}{pointer}{path.name}{suffix}")
+
+            if path.is_dir():
+                # Determine the prefix for the next level of recursion
+                extension = "│   " if pointer == "├── " else "    "
+                generate_tree_recursive(path, prefix + extension, current_depth + 1)
+
+    generate_tree_recursive(project_dir, "", 0)
+    return "\n".join(output_lines)

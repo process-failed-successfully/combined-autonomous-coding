@@ -3088,7 +3088,7 @@ def parse_args(argv=None):
         help="Skip confirmation prompt",
     )
 
-    # Subparser for 'worktrees'
+
     # Subparser for 'worktrees'
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
     parser_worktrees.add_argument(

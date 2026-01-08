@@ -7,9 +7,9 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, RichLog
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.containers import VerticalScroll
+from textual.containers import VerticalScroll, Horizontal, Container
 
-from shared.cli_utils import get_project_summary, get_latest_log_file
+from shared.cli_utils import _run_enhanced_status_logic, get_suggestions, _run_history_logic, get_latest_log_file
 
 class Welcome(Static):
     """A welcome widget."""
@@ -18,8 +18,8 @@ class Welcome(Static):
                     "Press 'd' to toggle dark mode.\n"
                     "Press 'q' to quit.")
 
-class ProjectInfo(Static):
-    """A widget to display project information."""
+class ProjectStatus(Static):
+    """A widget to display the project status."""
 
     project_dir = reactive(Path("."))
 
@@ -29,13 +29,59 @@ class ProjectInfo(Static):
 
     def on_mount(self) -> None:
         """Event handler called when widget is added to the app."""
-        self.update_info()
-        self.set_interval(5, self.update_info)
+        self.update_status()
+        self.set_interval(5, self.update_status)
 
-    def update_info(self) -> None:
-        """Update the project information text."""
-        summary_text = get_project_summary(self.project_dir)
-        self.update(summary_text)
+    def update_status(self) -> None:
+        """Update the project status text."""
+        status_text = _run_enhanced_status_logic(self.project_dir)
+        self.update(status_text)
+
+class Suggestions(Static):
+    """A widget to display suggested next steps."""
+
+    project_dir = reactive(Path("."))
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def on_mount(self) -> None:
+        """Event handler called when widget is added to the app."""
+        self.update_suggestions()
+        self.set_interval(10, self.update_suggestions)
+
+    def update_suggestions(self) -> None:
+        """Update the suggestions text."""
+        suggestions = get_suggestions(self.project_dir, limit=3)
+        if not suggestions:
+            self.update("✅ [bold green]Project is in a clean state.[/bold green]")
+            return
+
+        lines = ["[bold]Suggested Next Steps:[/bold]"]
+        for suggestion in suggestions:
+            lines.append(f"👉 [yellow]{suggestion['command']}[/yellow]")
+            lines.append(f"   [dim]{suggestion['reason']}[/dim]")
+        self.update("\n".join(lines))
+
+class History(Static):
+    """A widget to display agent run history."""
+
+    project_dir = reactive(Path("."))
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def on_mount(self) -> None:
+        """Event handler called when widget is added to the app."""
+        self.update_history()
+        self.set_interval(10, self.update_history)
+
+    def update_history(self) -> None:
+        """Update the history text."""
+        history_text = _run_history_logic(self.project_dir)
+        self.update(history_text)
 
 class Dashboard(Screen):
     """The main dashboard screen for the TUI."""
@@ -46,10 +92,14 @@ class Dashboard(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with VerticalScroll(id="left-pane"):
-            yield Welcome()
-            yield ProjectInfo(self.project_dir, id="project-info")
-        yield RichLog(id="log-viewer", wrap=True, highlight=True)
+        with Container(id="main-container"):
+            with Horizontal(id="top-pane"):
+                with VerticalScroll(id="left-column"):
+                    yield ProjectStatus(self.project_dir, id="project-status")
+                    yield Suggestions(self.project_dir, id="suggestions")
+                with VerticalScroll(id="right-column"):
+                    yield History(self.project_dir, id="history")
+            yield RichLog(id="log-viewer", wrap=True, highlight=True)
         yield Footer()
 
     def on_mount(self) -> None:

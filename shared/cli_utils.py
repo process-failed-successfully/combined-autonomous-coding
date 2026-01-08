@@ -519,3 +519,50 @@ def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
 
     generate_tree_recursive(project_dir, "", 0)
     return "\n".join(output_lines)
+def _run_history_logic(project_dir: Path) -> str:
+    """The core logic for displaying agent run history."""
+    output_lines = []
+    history_file = project_dir / ".agent_history"
+    repo_root = Path(__file__).parent.parent
+    logs_dir = repo_root / "agents/logs"
+
+    output_lines.append(f"--- Agent Run History: {project_dir} ---")
+
+    if not history_file.exists():
+        output_lines.append("No agent run history found for this project.")
+        return "\n".join(output_lines)
+
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+    except IOError as e:
+        output_lines.append(f"Error reading history file: {e}")
+        return "\n".join(output_lines)
+
+    if not run_ids:
+        output_lines.append("History is empty.")
+        return "\n".join(output_lines)
+
+    for i, run_id in enumerate(reversed(run_ids)):
+        latest_marker = " (latest)" if i == 0 else ""
+        output_lines.append(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
+        log_file = logs_dir / f"{run_id}.log"
+        if log_file.exists():
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+                first_line = lines[0].strip() if lines else ""
+                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
+                output_lines.append(f"  Timestamp: {timestamp}")
+                if lines:
+                    output_lines.append("  Log Summary (last 5 lines):")
+                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
+                    for line in last_lines:
+                        output_lines.append(f"    {line}")
+                else:
+                    output_lines.append("  Log file is empty.")
+            except Exception as e:
+                output_lines.append(f"  Error reading log file: {e}")
+        else:
+            output_lines.append("  Log file not found.")
+    return "\n".join(output_lines)

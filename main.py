@@ -1992,7 +1992,7 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_history_logic
 from shared.cli_utils import _run_report_logic
 
 def run_report(args):
@@ -2099,55 +2099,10 @@ def run_glance(args):
     print(f"  {CYAN_BOLD}Next Step{ENDC}:  `{next_action}`")
 
 
-def _run_history_logic(project_dir):
-    """The core logic for displaying agent run history."""
-    history_file = project_dir / ".agent_history"
-    repo_root = Path(__file__).parent
-    logs_dir = repo_root / "agents/logs"
-
-    print(f"--- Agent Run History: {project_dir} ---")
-
-    if not history_file.exists():
-        print("No agent run history found for this project.")
-        return
-
-    try:
-        with open(history_file, "r") as f:
-            run_ids = [line.strip() for line in f if line.strip()]
-    except IOError as e:
-        print(f"Error reading history file: {e}", file=sys.stderr)
-        return
-
-    if not run_ids:
-        print("History is empty.")
-        return
-
-    for i, run_id in enumerate(reversed(run_ids)):
-        latest_marker = " (latest)" if i == 0 else ""
-        print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
-        log_file = logs_dir / f"{run_id}.log"
-        if log_file.exists():
-            try:
-                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = f.readlines()
-                first_line = lines[0].strip() if lines else ""
-                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
-                print(f"  Timestamp: {timestamp}")
-                if lines:
-                    print("  Log Summary (last 5 lines):")
-                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
-                    for line in last_lines:
-                        print(f"    {line}")
-                else:
-                    print("  Log file is empty.")
-            except Exception as e:
-                print(f"  Error reading log file: {e}")
-        else:
-            print("  Log file not found.")
-
 def run_history(args):
     """Displays a history of agent runs for the project."""
-    _run_history_logic(project_dir=args.project_dir)
+    history_text = _run_history_logic(project_dir=args.project_dir)
+    print(history_text)
     sys.exit(0)
 
 

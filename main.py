@@ -2218,6 +2218,30 @@ def run_last(args):
     sys.exit(0 if success else 1)
 
 
+def run_last_run_id(args):
+    """Prints the ID of the last agent run to stdout."""
+    project_dir = args.project_dir.resolve()
+    history_file = project_dir / ".agent_history"
+
+    if not history_file.exists():
+        # Using stderr for errors to not pollute stdout, which is meant for the ID
+        print("No agent run history found for this project.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+        if not run_ids:
+            print("History is empty.", file=sys.stderr)
+            sys.exit(1)
+        last_run_id = run_ids[-1]
+        print(last_run_id)  # Print the ID to stdout
+        sys.exit(0)
+    except IOError as e:
+        print(f"Error reading history file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def _run_diff_summary_logic(project_dir):
     """The core logic for displaying a git diff summary."""
     git_path = shutil.which("git")
@@ -3614,6 +3638,15 @@ def parse_args(argv=None):
     # Subparser for 'last'
     parser_last = subparsers.add_parser("last", help="Show a summary of the last agent run.")
     parser_last.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check (default: current directory)",
+    )
+
+    # Subparser for 'last-run-id'
+    parser_last_run_id = subparsers.add_parser("last-run-id", help="Print the ID of the last agent run to stdout.")
+    parser_last_run_id.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -5721,6 +5754,10 @@ async def main():
 
     if args.command == "last":
         run_last(args)
+        return
+
+    if args.command == "last-run-id":
+        run_last_run_id(args)
         return
 
     if args.command == "diff-summary":

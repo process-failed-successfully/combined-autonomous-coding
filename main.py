@@ -2396,6 +2396,17 @@ def run_tui(args):
         sys.exit(1)
 
 
+def run_completion():
+    """Prints the argcomplete shell script."""
+    if argcomplete:
+        executable_name = os.path.basename(sys.argv[0])
+        print(argcomplete.shellcode([executable_name]))
+        sys.exit(0)
+    else:
+        print("argcomplete is not installed. Please install it with 'pip install argcomplete'.", file=sys.stderr)
+        sys.exit(1)
+
+
 def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
     """Finds the final_metrics.txt file for a given run_id."""
     # 1. Check the main project directory
@@ -4771,12 +4782,8 @@ async def main():
 
     # Handle `completion` command
     if args.command == "completion":
-        if argcomplete:
-            print(argcomplete.shellcode([os.path.basename(sys.argv[0])]))
-            sys.exit(0)
-        else:
-            print("argcomplete is not installed. Please install it with 'pip install argcomplete'.", file=sys.stderr)
-            sys.exit(1)
+        run_completion()
+        return
 
     # Handle `plan` command
     if args.command == "plan":

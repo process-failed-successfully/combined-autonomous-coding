@@ -178,3 +178,24 @@ def clone_repo(url: str, dest_path: Path) -> bool:
     except Exception as e:
         logger.error(f"Error cloning repo: {e}")
         return False
+
+
+def get_current_branch(project_dir: Path) -> Optional[str]:
+    """Gets the current active git branch name."""
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            text=True,
+            stderr=subprocess.PIPE,
+        )
+        branch_name = res.stdout.strip()
+        return branch_name if branch_name else None
+    except subprocess.CalledProcessError as e:
+        logger.debug(f"Could not get current branch: {e.stderr.strip()}")
+        return None
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while getting the current branch: {e}")
+        return None

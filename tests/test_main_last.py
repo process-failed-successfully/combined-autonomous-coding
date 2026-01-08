@@ -9,11 +9,15 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from main import run_last
 
+import tempfile
+import shutil
+
+
 class TestMainLast(unittest.TestCase):
 
     def setUp(self):
-        self.project_dir = Path("/tmp/test_project")
-        self.project_dir.mkdir(exist_ok=True)
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
         self.run_id_file = self.project_dir / ".agent_run_id"
         self.metrics_file = self.project_dir / "final_metrics.txt"
         self.qa_file = self.project_dir / "qa_summary.txt"
@@ -22,16 +26,9 @@ class TestMainLast(unittest.TestCase):
         self.log_file = None
 
     def tearDown(self):
-        if self.run_id_file.exists():
-            self.run_id_file.unlink()
-        if self.metrics_file.exists():
-            self.metrics_file.unlink()
-        if self.qa_file.exists():
-            self.qa_file.unlink()
         if self.log_file and self.log_file.exists():
             self.log_file.unlink()
-        if self.project_dir.exists():
-            self.project_dir.rmdir()
+        shutil.rmtree(self.test_dir)
 
     def test_run_last_success(self):
         # Create dummy files

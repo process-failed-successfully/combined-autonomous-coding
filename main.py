@@ -4375,6 +4375,44 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'pr' command ---
+    parser_pr = subparsers.add_parser(
+        "pr",
+        help="Manage GitHub pull requests for the project."
+    )
+    pr_subparsers = parser_pr.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify pr action"
+    )
+
+    # PR 'create' action
+    parser_pr_create = pr_subparsers.add_parser(
+        "create",
+        help="Create a new pull request on GitHub."
+    )
+    parser_pr_create.add_argument(
+        "--title",
+        required=True,
+        help="The title of the pull request."
+    )
+    parser_pr_create.add_argument(
+        "--body",
+        default="",
+        help="The body content of the pull request."
+    )
+    parser_pr_create.add_argument(
+        "--base",
+        default="main",
+        help="The base branch to merge into (default: main)."
+    )
+    parser_pr_create.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'commit' command ---
     parser_commit = subparsers.add_parser(
         "commit",
@@ -4526,7 +4564,7 @@ def run_pull(args):
         sys.exit(1)
 
 
-def _pr_create(args, config):
+def _pr_create(args, config, _capture_output=False):
     """Helper function to create a pull request."""
     import shutil
     import subprocess
@@ -4535,25 +4573,30 @@ def _pr_create(args, config):
     from shared.github_client import GitHubClient
 
     project_dir = args.project_dir.resolve()
-    print(f"--- Creating Pull Request in: {project_dir} ---")
+    if not _capture_output:
+        print(f"--- Creating Pull Request in: {project_dir} ---")
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path or not (project_dir / ".git").is_dir():
-        print("❌ Error: Not a git repository.", file=sys.stderr)
+        if not _capture_output:
+            print("❌ Error: Not a git repository.", file=sys.stderr)
         sys.exit(1)
 
     if not config.github_token:
-        print("❌ Error: GitHub token not found. Please set GITHUB_TOKEN environment variable or run 'configure' to set 'github_token'.", file=sys.stderr)
+        if not _capture_output:
+            print("❌ Error: GitHub token not found. Please set GITHUB_TOKEN environment variable or run 'configure' to set 'github_token'.", file=sys.stderr)
         sys.exit(1)
 
     try:
         # 1. Get current branch
         current_branch = get_current_branch(project_dir)
         if not current_branch or current_branch in ["main", "master"]:
-            print("❌ Error: You must be on a feature branch to create a pull request.", file=sys.stderr)
+            if not _capture_output:
+                print("❌ Error: You must be on a feature branch to create a pull request.", file=sys.stderr)
             sys.exit(1)
-        print(f"  - On branch: {current_branch}")
+        if not _capture_output:
+            print(f"  - On branch: {current_branch}")
 
         # 2. Check if the branch is pushed to remote
         result = subprocess.run(
@@ -4561,13 +4604,15 @@ def _pr_create(args, config):
             capture_output=True, text=True
         )
         if result.returncode != 0:
-            print("❌ Error: Your branch has not been pushed to the remote repository.", file=sys.stderr)
-            print("  Please run 'push' first.", file=sys.stderr)
+            if not _capture_output:
+                print("❌ Error: Your branch has not been pushed to the remote repository.", file=sys.stderr)
+                print("  Please run 'push' first.", file=sys.stderr)
             sys.exit(1)
 
         # 3. Create GitHub client and PR
         client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
-        print("  - Creating pull request...")
+        if not _capture_output:
+            print("  - Creating pull request...")
         pr_data = client.create_pull_request(
             project_dir=project_dir,
             title=args.title,
@@ -4576,14 +4621,17 @@ def _pr_create(args, config):
             base_branch=args.base
         )
 
-        print("\n✅ Pull request created successfully!")
-        print(f"   URL: {pr_data['html_url']}")
+        if not _capture_output:
+            print("\n✅ Pull request created successfully!")
+            print(f"   URL: {pr_data['html_url']}")
 
     except (subprocess.CalledProcessError, ValueError, requests.exceptions.RequestException) as e:
-        print(f"❌ An error occurred: {e}", file=sys.stderr)
+        if not _capture_output:
+            print(f"❌ An error occurred: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        if not _capture_output:
+            print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)
 
     sys.exit(0)
@@ -4596,10 +4644,14 @@ def run_pr(args):
         github_host=file_config.get("github_host")
     )
 
+    # This is a bit of a hack for testing, but it prevents noisy output.
+    _capture_output = getattr(args, '_capture_output', False)
+
     if args.action == "create":
-        _pr_create(args, config)
+        _pr_create(args, config, _capture_output=_capture_output)
     else:
-        print(f"Unknown pr action: {args.action}", file=sys.stderr)
+        if not _capture_output:
+            print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -5609,6 +5661,10 @@ async def main():
 
     if args.command == "pull":
         run_pull(args)
+        return
+
+    if args.command == "pr":
+        run_pr(args)
         return
 
     if args.command == "pr":

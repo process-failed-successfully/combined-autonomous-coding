@@ -1,69 +1,66 @@
-import os
+import subprocess
 import requests
-from urllib.parse import urlparse
+from pathlib import Path
+import re
 
 class GitHubClient:
-    """A client for interacting with the GitHub API."""
-
     def __init__(self, token: str, host: str = "github.com"):
         self.token = token
         self.host = host
-        if host == "github.com":
-            self.api_base_url = "https://api.github.com"
-        else:
-            self.api_base_url = f"https://{host}/api/v3"
+        self.api_base_url = f"https://api.{host}" if host == "github.com" else f"https://{host}/api/v3"
 
-    def _get_headers(self):
-        return {
-            "Authorization": f"token {self.token}",
-            "Accept": "application/vnd.github.v3+json",
-        }
-
-    def _get_repo_owner_and_name(self, project_dir):
-        import subprocess
+    def _get_repo_owner_and_name(self, project_dir: Path):
         try:
-            # Get the remote URL
             result = subprocess.run(
-                ["git", "-C", str(project_dir), "config", "--get", "remote.origin.url"],
+                ["git", "-C", str(project_dir), "remote", "get-url", "origin"],
                 capture_output=True, text=True, check=True
             )
             remote_url = result.stdout.strip()
 
-            # Parse the URL to get the owner and repo name
-            if remote_url.startswith("git@"):
-                # SSH URL format: git@hostname:owner/repo.git
-                path = remote_url.split(":")[1]
-                owner, repo = path.replace(".git", "").split("/")
-            else:
-                # HTTPS URL format: https://hostname/owner/repo.git
-                parsed_url = urlparse(remote_url)
-                path_parts = parsed_url.path.strip("/").replace(".git", "").split("/")
-                if len(path_parts) >= 2:
-                    owner, repo = path_parts[-2], path_parts[-1]
-                else:
-                    return None, None
-            return owner, repo
-        except (subprocess.CalledProcessError, IndexError):
-            return None, None
+            # Handle SSH URLs (e.g., git@github.com:owner/repo.git)
+            ssh_match = re.search(r'git@[\w.-]+:([\w-]+)/([\w.-]+?)(?:\.git)?$', remote_url)
+            if ssh_match:
+                return ssh_match.group(1), ssh_match.group(2)
 
-    def create_pull_request(self, project_dir, title: str, body: str, head_branch: str, base_branch: str):
-        """Creates a pull request on GitHub."""
+            # Handle HTTPS URLs (e.g., https://github.com/owner/repo.git)
+            https_match = re.search(r'https://[\w.-]+/([\w-]+)/([\w.-]+?)(?:\.git)?$', remote_url)
+            if https_match:
+                return https_match.group(1), https_match.group(2)
+
+            raise ValueError(f"Could not parse repository owner and name from remote URL: {remote_url}")
+        except subprocess.CalledProcessError as e:
+            raise ValueError(f"Could not get remote URL: {e.stderr}")
+
+    def create_pull_request(self, project_dir: Path, title: str, body: str, head_branch: str, base_branch: str):
+        """
+        Creates a pull request on GitHub.
+
+        Args:
+            project_dir: The path to the local git repository.
+            title: The title of the pull request.
+            body: The body content of the pull request.
+            head_branch: The name of the branch with the changes.
+            base_branch: The name of the branch to merge into.
+
+        Returns:
+            A dictionary representing the JSON response from the GitHub API.
+
+        Raises:
+            ValueError: If the repository owner and name cannot be determined.
+            requests.exceptions.RequestException: For network or API errors.
+        """
         owner, repo = self._get_repo_owner_and_name(project_dir)
-        if not owner or not repo:
-            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
-
         url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls"
-        headers = self._get_headers()
+        headers = {
+            "Authorization": f"token {self.token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
         data = {
             "title": title,
             "body": body,
             "head": head_branch,
             "base": base_branch,
         }
-
-        response = requests.post(url, headers=headers, json=data, timeout=10)
-
-        if response.status_code == 201:
-            return response.json()
-        else:
-            response.raise_for_status()
+        response = requests.post(url, headers=headers, json=data, timeout=15)
+        response.raise_for_status()
+        return response.json()

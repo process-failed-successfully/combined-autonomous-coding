@@ -31,17 +31,17 @@ class TestMainHistory(unittest.TestCase):
     def test_run_history_no_history_file(self, mock_stdout):
         """Test that the command exits gracefully when no .agent_history file is found."""
         with patch('main.__file__', str(self.main_py_path)):
-            args = Namespace(project_dir=self.project_dir)
+            args = Namespace(project_dir=self.project_dir, repo_root_for_test=self.repo_root)
             with self.assertRaises(SystemExit) as cm:
                 main.run_history(args)
             self.assertEqual(cm.exception.code, 0)
             self.assertIn("No agent run history found for this project", mock_stdout.getvalue())
 
     @patch('sys.stdout', new_callable=io.StringIO)
-    def test_run_history_with_valid_logs(self, mock_stdout):
+    def test_run_history_with__logs(self, mock_stdout):
         """Test the happy path with an existing history file and all corresponding log files."""
         with patch('main.__file__', str(self.main_py_path)):
-            args = Namespace(project_dir=self.project_dir)
+            args = Namespace(project_dir=self.project_dir, repo_root_for_test=self.repo_root)
 
             (self.project_dir / ".agent_history").write_text("run-001\nrun-002\n")
             (self.logs_dir / "run-001.log").write_text("2024-01-01 10:00:00,000 - INFO - Start of run 1\n...run 1 complete")
@@ -64,7 +64,7 @@ class TestMainHistory(unittest.TestCase):
     def test_run_history_with_missing_log(self, mock_stdout):
         """Test that the command handles a missing log file gracefully."""
         with patch('main.__file__', str(self.main_py_path)):
-            args = Namespace(project_dir=self.project_dir)
+            args = Namespace(project_dir=self.project_dir, repo_root_for_test=self.repo_root)
             (self.project_dir / ".agent_history").write_text("run-001\nrun-MISSING\n")
             (self.logs_dir / "run-001.log").write_text("2024-01-01 10:00:00,000 - INFO - Start of run 1\n...run 1 complete")
 

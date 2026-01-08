@@ -2101,7 +2101,7 @@ def run_glance(args):
 
 def run_history(args):
     """Displays a history of agent runs for the project."""
-    history_text = _run_history_logic(project_dir=args.project_dir)
+    history_text = _run_history_logic(project_dir=args.project_dir, repo_root_for_test=getattr(args, 'repo_root_for_test', None))
     print(history_text)
     sys.exit(0)
 

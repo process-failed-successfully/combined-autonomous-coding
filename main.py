@@ -416,23 +416,30 @@ def run_doctor(args):
         sys.exit(1)
 
 
-def run_show_config(config):
-    """Prints the final resolved configuration as JSON and exits."""
+def _run_show_config_logic(config):
+    """The core logic for showing the configuration."""
     from shared.utils import EnhancedJSONEncoder
     print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
-    sys.exit(0)
+    return 0
 
+def run_show_config(config):
+    """Prints the final resolved configuration as JSON and exits."""
+    result = _run_show_config_logic(config)
+    sys.exit(result)
+
+
+def _run_list_agents_logic():
+    """The core logic for listing agents."""
+    print("--- Available Agents ---")
+    max_len = max(len(name) for name in AVAILABLE_AGENTS.keys())
+    for name, description in AVAILABLE_AGENTS.items():
+        print(f"  {name.ljust(max_len)} : {description}")
+    return 0
 
 def run_list_agents():
     """Prints a list of available agents and their descriptions."""
-    print("--- Available Agents ---")
-    # Find the longest agent name for alignment
-    max_len = max(len(name) for name in AVAILABLE_AGENTS.keys())
-
-    for name, description in AVAILABLE_AGENTS.items():
-        # Format with padding for alignment
-        print(f"  {name.ljust(max_len)} : {description}")
-    sys.exit(0)
+    result = _run_list_agents_logic()
+    sys.exit(result)
 
 
 RECOMMENDED_MODELS = {
@@ -458,16 +465,13 @@ RECOMMENDED_MODELS = {
     ]
 }
 
-def run_models(args):
-    """Prints a list of recommended models for each agent."""
-    agent_filter = args.agent
-
+def _run_models_logic(agent_filter=None):
+    """The core logic for listing recommended models."""
     if agent_filter and agent_filter not in RECOMMENDED_MODELS:
         print(f"❌ Error: Agent '{agent_filter}' not found. Use 'list-agents' to see available agents.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     print("--- Recommended Models ---")
-
     for agent_name, models in RECOMMENDED_MODELS.items():
         if agent_filter and agent_name != agent_filter:
             continue
@@ -480,11 +484,19 @@ def run_models(args):
         for model_info in models:
             rec_marker = " (recommended)" if model_info["recommended"] else ""
             print(f"  {model_info['model']:<30} | {model_info['description']}{rec_marker}")
-    sys.exit(0)
+    return 0
+
+def run_models(args):
+    """Prints a list of recommended models for each agent."""
+    sys.exit(_run_models_logic(agent_filter=args.agent))
 
 
 def run_configure():
     """Interactively create or update the agent_config.yaml file."""
+    sys.exit(_run_configure_logic())
+
+def _run_configure_logic():
+    """The core logic for interactive configuration."""
     print("--- Agent Configuration ---")
 
     # Use XDG path as the primary location
@@ -563,12 +575,18 @@ def run_configure():
         # Set file permissions to 600 (owner read/write only) to protect secrets
         os.chmod(config_path, 0o600)
         print(f"\n✅ Configuration saved successfully to {config_path}")
+        return 0
     except Exception as e:
         print(f"\n❌ Error saving configuration: {e}")
+        return 1
 
 
 def run_clean(args):
     """Moves or removes agent-generated artifacts from the project directory."""
+    sys.exit(_run_clean_logic(args))
+
+def _run_clean_logic(args):
+    """The core logic for cleaning artifacts."""
     import shutil
     from datetime import datetime
 
@@ -637,7 +655,7 @@ def run_clean(args):
 
     if not existing_artifacts:
         print("No agent-generated artifacts found to clean.")
-        sys.exit(0)
+        return 0
 
     # If --list is used, just print the files and exit
     if is_list:
@@ -652,7 +670,7 @@ def run_clean(args):
                 except ValueError:
                     display_path = path
             print(f"  - {display_path}")
-        sys.exit(0)
+        return 0
 
     # Prepare destination directory path if needed
     dest_dir = None
@@ -681,7 +699,7 @@ def run_clean(args):
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
     print(f"\n{log_verb} artifacts...")
 
@@ -689,6 +707,7 @@ def run_clean(args):
     if not is_force_delete and dest_dir:
         dest_dir.mkdir(parents=True, exist_ok=True)
 
+    errors = False
     for path in existing_artifacts:
         try:
             if is_force_delete:
@@ -704,16 +723,22 @@ def run_clean(args):
                 print(f"Moved to {dest_dir_prefix}: {path.relative_to(project_dir)}")
         except OSError as e:
             print(f"Error processing {path}: {e}", file=sys.stderr)
+            errors = True
 
     if not is_force_delete:
         print(completion_message.format(dest_dir_display_path=dest_dir.relative_to(project_dir)))
     else:
         print(completion_message)
-    sys.exit(0)
+
+    return 1 if errors else 0
 
 
 def run_archive(args):
     """Archives agent-generated artifacts to a timestamped directory."""
+    sys.exit(_run_archive_logic(args))
+
+def _run_archive_logic(args):
+    """The core logic for archiving artifacts."""
     print("Warning: The 'archive' command is deprecated and will be removed in a future version. "
           "Use 'clean --archive' instead.", file=sys.stderr)
     import shutil
@@ -913,10 +938,15 @@ def _snapshot_diff(args):
 
 def run_snapshot(args):
     """Dispatches snapshot actions."""
+    sys.exit(_run_snapshot_logic(args))
+
+def _run_snapshot_logic(args):
+    """The core logic for dispatching snapshot actions."""
     if args.action == "create":
-        _snapshot_create(args)
+        return _snapshot_create(args)
     elif args.action == "diff":
-        _snapshot_diff(args)
+        return _snapshot_diff(args)
+    return 1
 
 
 def _artifacts_list(base_dir, mode):
@@ -1303,6 +1333,10 @@ def run_archives(args):
 
 def run_revert(args):
     """Discards uncommitted changes for specified files or for the entire repository."""
+    sys.exit(_run_revert_logic(args))
+
+def _run_revert_logic(args):
+    """The core logic for reverting changes."""
     import subprocess
     import shutil
     project_dir = args.project_dir.resolve()
@@ -1311,17 +1345,17 @@ def run_revert(args):
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot revert.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     # Validate arguments
     if args.files and args.interactive:
         print("❌ Error: Cannot use --interactive mode when specifying individual files.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     files_to_revert = args.files
 
@@ -1336,7 +1370,7 @@ def run_revert(args):
             changes = [line for line in status_result.stdout.splitlines() if line]
             if not changes:
                 print("✅ No uncommitted changes to revert.")
-                sys.exit(0)
+                return 0
 
             print("Select files to revert (e.g., 1 3 4), or press Enter to cancel:")
             all_files = []
@@ -1348,25 +1382,25 @@ def run_revert(args):
             selection = input("> ").strip()
             if not selection:
                 print("Aborted.")
-                sys.exit(0)
+                return 0
 
             try:
                 indices = [int(i) - 1 for i in selection.split()]
                 files_to_revert = [all_files[i] for i in indices if 0 <= i < len(all_files)]
             except ValueError:
                 print("❌ Invalid input. Please enter numbers separated by spaces.", file=sys.stderr)
-                sys.exit(1)
+                return 1
 
             if not files_to_revert:
                 print("No valid files selected. Aborting.")
-                sys.exit(0)
+                return 0
 
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             print(f"❌ Error checking git status: {e}", file=sys.stderr)
-            sys.exit(1)
+            return 1
         except (EOFError, KeyboardInterrupt):
             print("\nAborted.")
-            sys.exit(0)
+            return 0
 
     # --- Mode 2: Revert specific files (also used by interactive mode) ---
     if files_to_revert:
@@ -1396,7 +1430,7 @@ def run_revert(args):
 
         if not final_revert_list:
             print("✅ No uncommitted changes to revert for the specified files.")
-            sys.exit(0)
+            return 0
 
         print("\nThe following files will be reverted to their last committed state:")
         for f in final_revert_list:
@@ -1406,7 +1440,7 @@ def run_revert(args):
             confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
             if confirm != 'y':
                 print("Aborted.")
-                sys.exit(0)
+                return 0
 
         print("\nReverting files...")
         try:
@@ -1422,7 +1456,7 @@ def run_revert(args):
         except subprocess.CalledProcessError as e:
             stderr = e.stderr.decode().strip() if e.stderr else str(e)
             print(f"❌ Error during revert: {stderr}", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     # --- Mode 3: Revert all changes (if no files and no interactive) ---
     elif not args.interactive:
@@ -1434,20 +1468,20 @@ def run_revert(args):
             )
             if not status_result.stdout.strip():
                 print("  ✅ No uncommitted changes to revert.")
-                sys.exit(0)
+                return 0
 
             print("\nUncommitted changes (will be discarded):")
             for line in status_result.stdout.strip().split('\n'):
                 print(f"  {line}")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             print(f"❌ Error checking git status: {e}", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
         if not args.yes:
             confirm = input("\nAre you sure you want to discard ALL uncommitted changes? [y/N]: ").strip().lower()
             if confirm != 'y':
                 print("Aborted.")
-                sys.exit(0)
+                return 0
 
         print("\nReverting changes...")
         try:
@@ -1465,15 +1499,15 @@ def run_revert(args):
             if isinstance(stderr, bytes):
                 stderr = stderr.decode().strip()
             print(f"❌ Error during revert: {stderr}", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
-    sys.exit(0)
+    return 0
 
 
 def run_trash(args):
     """Manages the agent trash directory."""
     print("Warning: The 'trash' command is deprecated. Use 'artifacts trash <action>' instead.", file=sys.stderr)
-    run_artifacts(args, mode='trash')
+    sys.exit(run_artifacts(args, mode='trash'))
 
 
 def _discard_interactive(project_dir, git_path):
@@ -1487,7 +1521,7 @@ def _discard_interactive(project_dir, git_path):
         changes = [line for line in status_result.stdout.splitlines() if line]
         if not changes:
             print("✅ No uncommitted changes to discard.")
-            sys.exit(0)
+            return None, 0
 
         print("Select files to discard (e.g., 1 3 4), or press Enter to cancel:")
         all_files = []
@@ -1499,26 +1533,25 @@ def _discard_interactive(project_dir, git_path):
         selection = input("> ").strip()
         if not selection:
             print("Aborted.")
-            sys.exit(0)
+            return None, 0
 
         try:
             indices = [int(i) - 1 for i in selection.split()]
             files_to_discard = [all_files[i] for i in indices if 0 <= i < len(all_files)]
             if not files_to_discard:
                 print("No valid files selected. Aborting.")
-                sys.exit(0)
-            return files_to_discard
+                return None, 0
+            return files_to_discard, 0
         except ValueError:
             print("❌ Invalid input. Please enter numbers separated by spaces.", file=sys.stderr)
-            sys.exit(1)
+            return None, 1
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"❌ Error checking git status: {e}", file=sys.stderr)
-        sys.exit(1)
+        return None, 1
     except (EOFError, KeyboardInterrupt):
         print("\nAborted.")
-        sys.exit(0)
-    return []
+        return None, 0
 
 
 def _discard_files(project_dir, git_path, files_to_discard, yes=False):
@@ -1543,7 +1576,7 @@ def _discard_files(project_dir, git_path, files_to_discard, yes=False):
 
     if not final_discard_list:
         print("✅ No uncommitted changes to discard for the specified files.")
-        sys.exit(0)
+        return 0
 
     print("\nThe following files will be discarded:")
     for f in final_discard_list:
@@ -1553,7 +1586,7 @@ def _discard_files(project_dir, git_path, files_to_discard, yes=False):
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
     print("\nDiscarding files...")
     try:
@@ -1564,10 +1597,11 @@ def _discard_files(project_dir, git_path, files_to_discard, yes=False):
             cmd = [git_path, "-C", str(project_dir), "clean", "-f", "--"] + untracked_to_discard
             subprocess.run(cmd, check=True, capture_output=True)
         print("✅ Specified files have been discarded.")
+        return 0
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.decode().strip() if e.stderr else str(e)
         print(f"❌ Error during discard: {stderr}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def _discard_all(project_dir, git_path, yes=False):
@@ -1580,20 +1614,20 @@ def _discard_all(project_dir, git_path, yes=False):
         )
         if not status_result.stdout.strip():
             print("  ✅ No uncommitted changes to discard.")
-            sys.exit(0)
+            return 0
 
         print("\nUncommitted changes (will be discarded):")
         for line in status_result.stdout.strip().split('\n'):
             print(f"  {line}")
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"❌ Error checking git status: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     if not yes:
         confirm = input("\nAre you sure you want to discard ALL uncommitted changes? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
     # Stash changes before discarding to allow for recovery
     print("\nStashing changes before discarding...")
@@ -1611,7 +1645,7 @@ def _discard_all(project_dir, git_path, yes=False):
         if "No local changes to save" not in e.stderr:
             print(f"❌ Error while stashing changes: {e.stderr}", file=sys.stderr)
             print("Aborting discard to prevent data loss.", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     print("\nCleaning working directory...")
     try:
@@ -1624,22 +1658,27 @@ def _discard_all(project_dir, git_path, yes=False):
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         print("✅ Discard complete. Working directory is now clean.")
+        return 0
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         stderr = getattr(e, 'stderr', str(e))
         if isinstance(stderr, bytes):
             stderr = stderr.decode().strip()
         print(f"❌ Error during discard: {stderr}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def run_undo(args):
     """Restores uncommitted changes that were stashed by the 'discard' command."""
+    sys.exit(_run_undo_logic(args))
+
+def _run_undo_logic(args):
+    """The core logic for undoing a discard."""
     project_dir = args.project_dir.resolve()
     git_path = shutil.which("git")
 
     if not git_path or not (project_dir / ".git").is_dir():
         print("❌ Error: Not a git repository. Cannot run undo.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     print(f"--- Searching for stashed discards in: {project_dir} ---")
 
@@ -1653,7 +1692,7 @@ def run_undo(args):
 
         if not discard_stashes:
             print("No stashed discards found to undo.")
-            sys.exit(0)
+            return 0
 
         print("Please select a discard to undo (press Enter to cancel):")
         for i, stash in enumerate(discard_stashes):
@@ -1662,7 +1701,7 @@ def run_undo(args):
         selection = input("> ").strip()
         if not selection:
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
         choice_index = int(selection) - 1
         if 0 <= choice_index < len(discard_stashes):
@@ -1673,55 +1712,65 @@ def run_undo(args):
                 check=True
             )
             print("✅ Undo complete. Your changes have been restored.")
-            sys.exit(0)
+            return 0
         else:
             print("❌ Invalid selection.", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     except (ValueError, IndexError):
         print("❌ Invalid input. Please enter a valid number.", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         stderr = getattr(e, 'stderr', str(e))
         print(f"❌ Error during undo process: {stderr}", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except (EOFError, KeyboardInterrupt):
         print("\nAborted.")
-        sys.exit(0)
+        return 0
 
 
 def run_discard(args):
     """Discards uncommitted changes for specified files or for the entire repository."""
+    sys.exit(_run_discard_logic(args))
+
+def _run_discard_logic(args):
+    """The core logic for discarding changes."""
     project_dir = args.project_dir.resolve()
 
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot discard changes.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     if args.files and args.interactive:
         print("❌ Error: Cannot use --interactive mode when specifying individual files.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     files_to_discard = args.files
     if args.interactive:
-        files_to_discard = _discard_interactive(project_dir, git_path)
+        files_to_discard, exit_code = _discard_interactive(project_dir, git_path)
+        if exit_code != 0:
+            return exit_code
+        if files_to_discard is None: # User aborted interactive session
+            return 0
 
     if files_to_discard:
-        _discard_files(project_dir, git_path, files_to_discard, args.yes)
+        return _discard_files(project_dir, git_path, files_to_discard, args.yes)
     else:
-        _discard_all(project_dir, git_path, args.yes)
-
-    sys.exit(0)
+        return _discard_all(project_dir, git_path, args.yes)
 
 
 def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
+    sys.exit(_run_rewind_logic(args))
+
+def _run_rewind_logic(args):
+    """The core logic for rewinding to a previous state."""
     project_dir = args.project_dir.resolve()
     target = args.target
 
@@ -1729,12 +1778,12 @@ def run_rewind(args):
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot rewind.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     try:
         status_result = subprocess.run(
@@ -1744,10 +1793,10 @@ def run_rewind(args):
         if status_result.stdout.strip():
             print("❌ Error: Your repository has uncommitted changes.", file=sys.stderr)
             print("Please commit or stash them before using rewind.", file=sys.stderr)
-            sys.exit(1)
+            return 1
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"❌ Error checking git status: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
     # --- Interactive Mode ---
@@ -1761,7 +1810,7 @@ def run_rewind(args):
             commits = [line.split('|') for line in log_result.stdout.strip().split('\n')]
             if not commits or not commits[0]:
                 print("No commits found in the repository.")
-                sys.exit(0)
+                return 0
 
             print("Select a commit to rewind to (press Enter to cancel):")
             for i, (hash, subject, time) in enumerate(commits):
@@ -1770,7 +1819,7 @@ def run_rewind(args):
             selection = input("> ").strip()
             if not selection:
                 print("Aborted.")
-                sys.exit(0)
+                return 0
 
             try:
                 index = int(selection) - 1
@@ -1778,17 +1827,17 @@ def run_rewind(args):
                     target = commits[index][0]
                 else:
                     print("❌ Invalid selection.", file=sys.stderr)
-                    sys.exit(1)
+                    return 1
             except ValueError:
                 print("❌ Invalid input. Please enter a number.", file=sys.stderr)
-                sys.exit(1)
+                return 1
 
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             print(f"❌ Error getting git log: {e}", file=sys.stderr)
-            sys.exit(1)
+            return 1
         except (EOFError, KeyboardInterrupt):
             print("\nAborted.")
-            sys.exit(0)
+            return 0
 
     # --- Confirmation and Execution ---
     print(f"\nThis will perform a 'git reset --hard' to '{target}'.")
@@ -1797,7 +1846,7 @@ def run_rewind(args):
         confirm = input("Are you absolutely sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
     print(f"\nRewinding to {target}...")
     try:
@@ -1818,13 +1867,17 @@ def run_rewind(args):
         if isinstance(stderr, bytes):
             stderr = stderr.decode().strip()
         print(f"❌ Error during rewind: {stderr}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    sys.exit(0)
+    return 0
 
 
 def run_empty_trash(args):
     """Permanently deletes the .agent_trash directory."""
+    sys.exit(_run_empty_trash_logic(args))
+
+def _run_empty_trash_logic(args):
+    """The core logic for emptying the trash."""
     print("Warning: The 'empty-trash' command is deprecated and will be removed in a future version. "
           "Use 'trash clear --all' instead.", file=sys.stderr)
     import shutil
@@ -1835,7 +1888,7 @@ def run_empty_trash(args):
 
     if not trash_dir.exists() or not trash_dir.is_dir():
         print("Trash directory (.agent_trash) not found. Nothing to do.")
-        sys.exit(0)
+        return 0
 
     # Count items for user confirmation
     trash_items = list(trash_dir.iterdir())
@@ -1847,7 +1900,7 @@ def run_empty_trash(args):
             print("Removed empty .agent_trash directory.")
         except OSError as e:
             print(f"Could not remove empty .agent_trash directory: {e}", file=sys.stderr)
-        sys.exit(0)
+        return 0
 
     print(f"The trash directory (.agent_trash) contains {len(trash_items)} item(s).")
     print("This action will permanently delete its contents.")
@@ -1856,21 +1909,24 @@ def run_empty_trash(args):
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
     print("\nEmptying trash...")
     try:
         shutil.rmtree(trash_dir)
         print("✅ Trash successfully emptied.")
+        return 0
     except OSError as e:
         print(f"Error while emptying trash: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    sys.exit(0)
+        return 1
 
 
 def run_restore(args):
     """Restores agent-generated artifacts from the most recent trash directory."""
+    sys.exit(_run_restore_logic(args))
+
+def _run_restore_logic(args):
+    """The core logic for restoring from trash."""
     print("Warning: The 'restore' command is deprecated and will be removed in a future version. "
           "Use 'trash restore' instead.", file=sys.stderr)
     import shutil
@@ -1881,14 +1937,14 @@ def run_restore(args):
 
     if not trash_base_dir.exists() or not trash_base_dir.is_dir():
         print("Trash directory (.agent_trash) not found. Nothing to restore.")
-        sys.exit(0)
+        return 0
 
     # Find the most recent trash directory (they are timestamped)
     try:
         latest_trash_dir = max(d for d in trash_base_dir.iterdir() if d.is_dir())
     except ValueError:
         print("No trash archives found in .agent_trash directory.")
-        sys.exit(0)
+        return 0
 
     print(f"Found latest trash archive: {latest_trash_dir.name}")
 
@@ -1897,7 +1953,7 @@ def run_restore(args):
         print("Trash archive is empty. Nothing to restore.")
         latest_trash_dir.rmdir() # Clean up empty dir
         print(f"Removed empty trash archive: {latest_trash_dir.name}")
-        sys.exit(0)
+        return 0
 
     # Check for conflicts
     conflicting_files = []
@@ -1911,7 +1967,7 @@ def run_restore(args):
         for f in conflicting_files:
             print(f"  - {f}")
         print("Please move or delete these files manually before running restore.")
-        sys.exit(1)
+        return 1
 
     print("\nThe following artifacts will be restored to the project directory:")
     for artifact in artifacts_to_restore:
@@ -1921,7 +1977,7 @@ def run_restore(args):
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
-            sys.exit(0)
+            return 0
 
     print("\nRestoring artifacts...")
     try:
@@ -1936,10 +1992,10 @@ def run_restore(args):
 
     except OSError as e:
         print(f"Error during restore: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     print("\n✅ Restore complete.")
-    sys.exit(0)
+    return 0
 
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic
@@ -1956,49 +2012,69 @@ def run_report(args):
 
 def run_tree(args):
     """Displays a tree view of the project directory."""
+    sys.exit(_run_tree_command_logic(args))
+
+def _run_tree_command_logic(args):
+    """The core logic for displaying a tree view."""
     tree_output = _run_tree_logic(
         project_dir=args.project_dir,
         depth=args.depth,
         full=args.full
     )
     print(tree_output)
-    sys.exit(0)
+    return 0
 
 
 def run_summary(args):
     """Displays a high-level summary of the project's status."""
+    sys.exit(_run_summary_logic(args))
+
+def _run_summary_logic(args):
+    """The core logic for displaying a summary."""
     print("Warning: The 'summary' command is deprecated and will be removed in a future version. "
           "Please use the 'status' command instead.", file=sys.stderr)
     summary_text = get_project_summary(project_dir=args.project_dir)
     print(summary_text)
-    sys.exit(0)
+    return 0
 
 
 def run_suggest(args):
     """Analyzes the project and suggests the next logical commands to run."""
+    sys.exit(_run_suggest_logic(args))
+
+def _run_suggest_logic(args):
+    """The core logic for suggesting commands."""
     suggestions = get_suggestions(project_dir=args.project_dir)
     if not suggestions:
         print("✅ Project is in a clean state. No specific actions to suggest.")
         print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
-        sys.exit(0)
+        return 0
 
     print("--- Suggested Next Steps ---")
     print("Based on the current project state, here are some suggested commands:\n")
     for suggestion in suggestions:
         print(f"👉 {suggestion['command']}")
         print(f"   Reason: {suggestion['reason']}\n")
-    sys.exit(0)
+    return 0
 
 
 def run_status(args):
     """Displays the current status of the agent project."""
+    sys.exit(_run_status_logic(args))
+
+def _run_status_logic(args):
+    """The core logic for displaying status."""
     status_text = _run_enhanced_status_logic(project_dir=args.project_dir)
     print(status_text)
-    sys.exit(0)
+    return 0
 
 
 def run_glance(args):
     """Displays a compact, high-level overview of the project's status."""
+    sys.exit(_run_glance_logic(args))
+
+def _run_glance_logic(args):
+    """The core logic for displaying a glance."""
     project_dir = args.project_dir.resolve()
 
     # 1. Get Workflow Stage
@@ -2047,10 +2123,12 @@ def run_glance(args):
     print(f"  {CYAN_BOLD}Stage{ENDC}:     {stage_info['name']}")
     print(f"  {CYAN_BOLD}Git Status{ENDC}: {git_summary}")
     print(f"  {CYAN_BOLD}Next Step{ENDC}:  `{next_action}`")
+    return 0
 
 
-def _run_history_logic(project_dir):
+def _run_history_logic(args):
     """The core logic for displaying agent run history."""
+    project_dir = args.project_dir
     history_file = project_dir / ".agent_history"
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
@@ -2059,18 +2137,18 @@ def _run_history_logic(project_dir):
 
     if not history_file.exists():
         print("No agent run history found for this project.")
-        return
+        return 0
 
     try:
         with open(history_file, "r") as f:
             run_ids = [line.strip() for line in f if line.strip()]
     except IOError as e:
         print(f"Error reading history file: {e}", file=sys.stderr)
-        return
+        return 1
 
     if not run_ids:
         print("History is empty.")
-        return
+        return 0
 
     for i, run_id in enumerate(reversed(run_ids)):
         latest_marker = " (latest)" if i == 0 else ""
@@ -2094,34 +2172,35 @@ def _run_history_logic(project_dir):
                 print(f"  Error reading log file: {e}")
         else:
             print("  Log file not found.")
+    return 0
 
 def run_history(args):
     """Displays a history of agent runs for the project."""
-    _run_history_logic(project_dir=args.project_dir)
-    sys.exit(0)
+    sys.exit(_run_history_logic(args))
 
 
-def _run_last_logic(project_dir):
+def _run_last_logic(args):
     """The core logic for displaying a summary of the last agent run."""
+    project_dir = args.project_dir
     print(f"--- Summary of Last Run: {project_dir} ---")
 
     # 1. Get the last run ID
     history_file = project_dir / ".agent_history"
     if not history_file.exists():
         print("No agent run history found for this project.")
-        return False
+        return 1
 
     try:
         with open(history_file, "r") as f:
             run_ids = [line.strip() for line in f if line.strip()]
         if not run_ids:
             print("History is empty.")
-            return False
+            return 1
         last_run_id = run_ids[-1]
         print(f"Last Run ID: {last_run_id}")
     except IOError as e:
         print(f"Error reading history file: {e}", file=sys.stderr)
-        return False
+        return 1
 
     # 2. Display Metrics
     metrics_file = _find_metrics_file(last_run_id, project_dir)
@@ -2160,25 +2239,25 @@ def _run_last_logic(project_dir):
     else:
         print("Log file not found.")
 
-    return True
+    return 0
 
 def run_last(args):
     """Displays a summary of the last agent run."""
-    success = _run_last_logic(project_dir=args.project_dir)
-    sys.exit(0 if success else 1)
+    sys.exit(_run_last_logic(args))
 
 
-def _run_diff_summary_logic(project_dir):
+def _run_diff_summary_logic(args):
     """The core logic for displaying a git diff summary."""
+    project_dir = args.project_dir
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        return False
+        return 1
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot show diff summary.", file=sys.stderr)
-        return False
+        return 1
 
     print(f"--- Diff Summary: {project_dir} ---")
     try:
@@ -2191,29 +2270,30 @@ def _run_diff_summary_logic(project_dir):
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.strip()
         print(f"❌ Error getting diff summary: {stderr}", file=sys.stderr)
-        return False
+        return 1
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
-        return False
-    return True
+        return 1
+    return 0
 
 def run_diff_summary(args):
     """Displays a summary of uncommitted git changes."""
-    success = _run_diff_summary_logic(project_dir=args.project_dir)
-    sys.exit(0 if success else 1)
+    sys.exit(_run_diff_summary_logic(args))
 
 
-def _run_log_logic(project_dir, count=None):
+def _run_log_logic(args):
     """The core logic for displaying the git commit history."""
+    project_dir = args.project_dir
+    count = args.count
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        return False
+        return 1
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot show log.", file=sys.stderr)
-        return False
+        return 1
 
     print(f"--- Git Commit History: {project_dir} ---")
     try:
@@ -2233,28 +2313,31 @@ def _run_log_logic(project_dir, count=None):
 
         if result.returncode != 0:
             print(f"\n❌ Error: git log command failed with exit code {result.returncode}.", file=sys.stderr)
-            return False
+            return 1
 
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
-        return False
-    return True
+        return 1
+    return 0
 
 def run_log(args):
     """Displays the git commit history for the project."""
-    success = _run_log_logic(project_dir=args.project_dir, count=args.count)
-    sys.exit(0 if success else 1)
+    sys.exit(_run_log_logic(args))
 
 
 import time
-def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
+def _run_logs_logic(args):
     """The core logic for displaying agent logs."""
+    run_id = args.run_id
+    lines = args.lines
+    follow = args.follow
+    grep = args.grep
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
 
     if not logs_dir.exists():
         print("Logs directory not found.")
-        return False
+        return 1
 
     # --- Step 1: Determine which log file to use ---
     log_file = None
@@ -2262,7 +2345,7 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
         log_file = logs_dir / f"{run_id}.log"
         if not log_file.exists():
             print(f"Log file not found for Run ID: {run_id}")
-            return False
+            return 1
     else:
         # If no run_id, we either list logs or operate on the latest one
         try:
@@ -2272,11 +2355,11 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
                 print("--- Last 10 Agent Logs ---")
                 print("No logs found.")
                 print("\nUse 'logs <Run ID>' to view a specific log.")
-                return True
+                return 0
 
             if not all_logs:
                 print("No logs found to perform the action on.")
-                return False
+                return 1
 
             # If any flags are present, use the latest log
             if lines or follow or grep:
@@ -2289,10 +2372,10 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
                     latest_marker = " (latest)" if i == 0 else ""
                     print(f"  - {run_id_from_file}{latest_marker}")
                 print("\nUse 'logs <Run ID>' or flags like --lines, --follow on the latest log.")
-                return True
+                return 0
         except OSError as e:
             print(f"Error accessing logs directory: {e}", file=sys.stderr)
-            return False
+            return 1
 
     # If we fall through, we have a log_file to process.
     if log_file:
@@ -2311,7 +2394,7 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
                     log_lines = log_lines[-lines:]
                 for line in log_lines:
                     print_filtered(line)
-                return True
+                return 0
 
             # If following, the logic is more complex.
             if lines is not None:
@@ -2332,22 +2415,16 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
 
     except IOError as e:
         print(f"Error reading log file: {e}", file=sys.stderr)
-        return False
+        return 1
     except KeyboardInterrupt:
         print("\n--- Stopped following log ---")
-        return True
+        return 0
 
-    return True
+    return 0
 
 def run_logs(args):
     """Displays agent logs."""
-    success = _run_logs_logic(
-        run_id=args.run_id,
-        lines=args.lines,
-        follow=args.follow,
-        grep=args.grep
-    )
-    sys.exit(0 if success else 1)
+    sys.exit(_run_logs_logic(args))
 
 
 # --- Workflow Subcommand Helpers ---
@@ -2443,47 +2520,63 @@ def _workflow_revert(args):
 
 def run_workflow(args):
     """Manages the agent's high-level workflow state."""
+    sys.exit(_run_workflow_logic(args))
+
+def _run_workflow_logic(args):
+    """The core logic for dispatching workflow actions."""
     if args.action == "status":
-        _workflow_status(args)
+        return _workflow_status(args)
     elif args.action == "advance":
-        _workflow_advance(args)
+        return _workflow_advance(args)
     elif args.action == "revert":
-        _workflow_revert(args)
-    sys.exit(0)
+        return _workflow_revert(args)
+    return 1
 
 
 def run_shell(args):
     """Starts the interactive shell."""
+    sys.exit(_run_shell_logic(args))
+
+def _run_shell_logic(args):
+    """The core logic for running the interactive shell."""
     shell = InteractiveShell(sys.modules[__name__])
     shell.cmdloop()
-    sys.exit(0)
+    return 0
 
 
 def run_tui(args):
     """Starts the Textual TUI."""
+    sys.exit(_run_tui_logic(args))
+
+def _run_tui_logic(args):
+    """The core logic for running the TUI."""
     try:
         from shared.tui import AgentTUI
         app = AgentTUI(project_dir=args.project_dir)
         app.run()
-        sys.exit(0)
+        return 0
     except ImportError as e:
         print("Error: Could not import TUI dependencies. Please run 'pip install -r requirements-dev.txt'", file=sys.stderr)
         print(f"Details: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except Exception as e:
         print(f"An unexpected error occurred while running the TUI: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def run_completion():
     """Prints the argcomplete shell script."""
+    sys.exit(_run_completion_logic())
+
+def _run_completion_logic():
+    """The core logic for generating completion scripts."""
     if argcomplete:
         executable_name = os.path.basename(sys.argv[0])
         print(argcomplete.shellcode([executable_name]))
-        sys.exit(0)
+        return 0
     else:
         print("argcomplete is not installed. Please install it with 'pip install argcomplete'.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
@@ -2596,21 +2689,21 @@ def _benchmark_show(args):
         if not metrics_file.exists():
             print("❌ Error: final_metrics.txt not found in the current project directory.", file=sys.stderr)
             print("Please specify a Run ID.", file=sys.stderr)
-            sys.exit(1)
+            return 1
         metrics = _parse_metrics(metrics_file)
         if not metrics.get("Run ID"):
              print("❌ Error: Could not determine Run ID from final_metrics.txt.", file=sys.stderr)
-             sys.exit(1)
+             return 1
         run_id = metrics["Run ID"]
     else:
         metrics_file = _find_metrics_file(run_id, project_dir)
         if not metrics_file:
             print(f"❌ Error: Could not find metrics for Run ID: {run_id}", file=sys.stderr)
-            sys.exit(1)
+            return 1
         metrics = _parse_metrics(metrics_file)
 
     _display_metrics_table(metrics, f"Metrics for Run: {run_id}")
-    sys.exit(0)
+    return 0
 
 
 def _benchmark_compare(args):
@@ -2623,10 +2716,10 @@ def _benchmark_compare(args):
 
     if not file1:
         print(f"❌ Error: Could not find metrics for Run ID: {run_id_1}", file=sys.stderr)
-        sys.exit(1)
+        return 1
     if not file2:
         print(f"❌ Error: Could not find metrics for Run ID: {run_id_2}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     metrics1 = _parse_metrics(file1)
     metrics2 = _parse_metrics(file2)
@@ -2667,7 +2760,7 @@ def _benchmark_compare(args):
 
         print(f"{key:<30} | {val1_str:<25} | {val2_str:<25} | {diff_str}")
 
-    sys.exit(0)
+    return 0
 
 
 def _benchmark_summary(args):
@@ -2678,14 +2771,14 @@ def _benchmark_summary(args):
 
     if not history_file.exists():
         print("No .agent_history file found. Cannot generate summary.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     try:
         with open(history_file, 'r') as f:
             run_ids = [line.strip() for line in f if line.strip()]
     except IOError:
         print("Error reading .agent_history file.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     print(f"--- Metrics Summary (Last {count} Runs) ---")
 
@@ -2699,7 +2792,7 @@ def _benchmark_summary(args):
 
     if not metrics_list:
         print("No metrics found for any runs in the history.")
-        sys.exit(0)
+        return 0
 
     # Define columns and their widths
     columns = {
@@ -2739,17 +2832,22 @@ def _benchmark_summary(args):
         )
         print(row)
 
-    sys.exit(0)
+    return 0
 
 
 def run_benchmark(args):
     """Dispatches benchmark actions."""
+    sys.exit(_run_benchmark_logic(args))
+
+def _run_benchmark_logic(args):
+    """The core logic for dispatching benchmark actions."""
     if args.action == "show":
-        _benchmark_show(args)
+        return _benchmark_show(args)
     elif args.action == "compare":
-        _benchmark_compare(args)
+        return _benchmark_compare(args)
     elif args.action == "summary":
-        _benchmark_summary(args)
+        return _benchmark_summary(args)
+    return 1
 
 
 def _sprint_status(args):
@@ -2763,7 +2861,7 @@ def _sprint_status(args):
 
     if not sprint_plan_path.exists():
         print("❌ Error: sprint_plan.json not found. Are you in a sprint project?", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     try:
         with open(sprint_plan_path, 'r') as f:
@@ -2771,7 +2869,7 @@ def _sprint_status(args):
         tasks = plan.get("tasks", [])
     except (json.JSONDecodeError, IOError) as e:
         print(f"❌ Error reading or parsing sprint_plan.json: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     print(f"--- Sprint Status: {project_dir} ---")
     if plan.get("sprint_goal"):
@@ -2779,7 +2877,7 @@ def _sprint_status(args):
 
     if not tasks:
         print("\nNo tasks found in the sprint plan.")
-        sys.exit(0)
+        return 0
 
     # Get worktree status
     active_worktrees = set()
@@ -2837,18 +2935,22 @@ def _sprint_status(args):
 
         print(f"{task_id:<20} | {status:<15} | {title}")
 
-    sys.exit(0)
+    return 0
 
 
 def run_branch(args):
     """Manages the agent's dedicated feature branch."""
+    sys.exit(_run_branch_logic(args))
+
+def _run_branch_logic(args):
+    """The core logic for managing the agent's feature branch."""
     project_dir = args.project_dir.resolve()
     git_path = shutil.which("git")
     branch_file = project_dir / ".agent_branch"
 
     if not git_path or not (project_dir / ".git").is_dir():
         print("❌ Error: Not a git repository. Cannot manage branches.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     action = args.action
     branch_name = args.branch_name
@@ -2858,7 +2960,7 @@ def run_branch(args):
     if action == "create":
         if not branch_name:
             print("❌ Error: 'create' action requires a branch name.", file=sys.stderr)
-            sys.exit(1)
+            return 1
         try:
             print(f"Creating and checking out new branch: {branch_name}")
             subprocess.run([git_path, "-C", str(project_dir), "checkout", "-b", branch_name], check=True, capture_output=True)
@@ -2867,12 +2969,12 @@ def run_branch(args):
         except subprocess.CalledProcessError as e:
             stderr = e.stderr.decode().strip()
             print(f"❌ Error creating branch: {stderr}", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     elif action == "checkout":
         if not branch_name:
             print("❌ Error: 'checkout' action requires a branch name.", file=sys.stderr)
-            sys.exit(1)
+            return 1
         try:
             print(f"Checking out branch: {branch_name}")
             subprocess.run([git_path, "-C", str(project_dir), "checkout", branch_name], check=True, capture_output=True)
@@ -2881,7 +2983,7 @@ def run_branch(args):
         except subprocess.CalledProcessError as e:
             stderr = e.stderr.decode().strip()
             print(f"❌ Error checking out branch: {stderr}", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     elif action == "status":
         if current_agent_branch:
@@ -2892,7 +2994,7 @@ def run_branch(args):
     elif action == "merge":
         if not current_agent_branch:
             print("❌ Error: No agent branch is set. Nothing to merge.", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
         main_branch = "main"
         try:
@@ -2905,11 +3007,11 @@ def run_branch(args):
                 except subprocess.CalledProcessError as e2:
                     stderr = e2.stderr.strip()
                     print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
-                    sys.exit(1)
+                    return 1
             else:
                 stderr = e.stderr.strip()
                 print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
-                sys.exit(1)
+                return 1
 
         print(f"Merging '{current_agent_branch}' into '{main_branch}'...")
         try:
@@ -2924,7 +3026,7 @@ def run_branch(args):
             stderr = e.stderr.decode().strip()
             print(f"❌ Error during merge: {stderr}", file=sys.stderr)
             print("Please resolve conflicts manually.")
-            sys.exit(1)
+            return 1
 
     elif action == "list":
         print("--- Agent-Related Branches ---")
@@ -2941,22 +3043,26 @@ def run_branch(args):
         except subprocess.CalledProcessError as e:
             print(f"❌ Error listing branches: {e.stderr}", file=sys.stderr)
 
-    sys.exit(0)
+    return 0
 
 
 def run_git(args):
     """Acts as a proxy to run git commands within a specified task's worktree."""
+    sys.exit(_run_git_logic(args))
+
+def _run_git_logic(args):
+    """The core logic for running git commands in a worktree."""
     project_dir = args.project_dir.resolve()
     task_id = args.task
     git_command = args.git_args
 
     if not task_id:
         print("❌ Error: The '--task' argument is required.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     if not git_command:
         print("❌ Error: No git command provided.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     worktree_name = f"sprint-task-{task_id}"
     worktree_path = project_dir / "worktrees" / worktree_name
@@ -2964,11 +3070,11 @@ def run_git(args):
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     if not worktree_path.is_dir():
         print(f"❌ Error: Worktree for task '{task_id}' not found at '{worktree_path}'.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     full_command = [git_path] + git_command
 
@@ -2986,17 +3092,21 @@ def run_git(args):
         if result.stderr:
             sys.stderr.write(result.stderr)
         # Exit with the same code as the git command
-        sys.exit(result.returncode)
+        return result.returncode
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found.", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def run_test(args):
     """Detects the project type and runs the appropriate test command."""
+    sys.exit(_run_test_logic(args))
+
+def _run_test_logic(args):
+    """The core logic for running tests."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.test_args
 
@@ -3034,7 +3144,7 @@ def run_test(args):
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type (Node.js, Python, Go).", file=sys.stderr)
         print("  Please ensure the project has a `package.json`, `pyproject.toml`, `requirements.txt`, or `go.mod` file.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     # Construct the full command
     full_command = command_base
@@ -3050,21 +3160,25 @@ def run_test(args):
         # Stream the output directly and run in the target project directory
         result = subprocess.run(full_command, cwd=project_dir)
         # Exit with the same code as the test runner
-        sys.exit(result.returncode)
+        return result.returncode
 
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nTest execution interrupted by user.")
-        sys.exit(130) # Standard exit code for Ctrl+C
+        return 130 # Standard exit code for Ctrl+C
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def run_lint(args):
     """Detects the project type and runs the appropriate linter."""
+    sys.exit(_run_lint_logic(args))
+
+def _run_lint_logic(args):
+    """The core logic for running linters."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.lint_args
     is_fix_mode = args.fix
@@ -3120,7 +3234,7 @@ def run_lint(args):
     # --- Command Construction & Execution ---
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type or find a suitable linter.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     # Construct the full command
     full_command = command_base + (fix_flags if is_fix_mode else []) + passthrough_args
@@ -3129,21 +3243,25 @@ def run_lint(args):
     try:
         # Stream the output directly and run in the target project directory
         result = subprocess.run(full_command, cwd=project_dir)
-        sys.exit(result.returncode)
+        return result.returncode
 
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nLinting process interrupted by user.")
-        sys.exit(130)
+        return 130
     except Exception as e:
         print(f"❌ An unexpected error occurred while running linter: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def run_format(args):
     """Detects the project type and runs the appropriate code formatter."""
+    sys.exit(_run_format_logic(args))
+
+def _run_format_logic(args):
+    """The core logic for running code formatters."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.format_args
     is_check_mode = args.check
@@ -3191,7 +3309,7 @@ def run_format(args):
     # --- Command Construction & Execution ---
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type or find a suitable formatter.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     # Construct the full command
     full_command = command_base + check_flags + passthrough_args
@@ -3200,28 +3318,31 @@ def run_format(args):
     try:
         # Stream the output directly and run in the target project directory
         result = subprocess.run(full_command, cwd=project_dir)
-        sys.exit(result.returncode)
+        return result.returncode
 
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nFormatting process interrupted by user.")
-        sys.exit(130)
+        return 130
     except Exception as e:
         print(f"❌ An unexpected error occurred while running formatter: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
-def run_sprint_command(args):
+def run_sprint(args):
     """Dispatches sprint actions."""
+    sys.exit(_run_sprint_logic(args))
+
+def _run_sprint_logic(args):
+    """The core logic for dispatching sprint actions."""
     if args.action == "status":
-        _sprint_status(args)
-        sys.exit(0)
+        return _sprint_status(args)
 
     if not args.task_id:
         print("❌ Error: 'diff' and 'merge' actions require a task_id.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     worktree_name = f"sprint-task-{args.task_id}"
 
@@ -3238,16 +3359,21 @@ def run_sprint_command(args):
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     if args.action == "diff":
-        _worktree_diff(mock_args, git_path, worktrees_base_dir)
+        return _worktree_diff(mock_args, git_path, worktrees_base_dir)
     elif args.action == "merge":
-        _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
+        return _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
+    return 0
 
 
 async def run_plan(args):
     """Generates a feature plan from a spec file without executing it."""
+    sys.exit(await _run_plan_logic(args))
+
+async def _run_plan_logic(args):
+    """The core logic for generating a plan."""
     # This is a stripped down version of the main() function's setup
     logger, _ = setup_logger(name="plan_logger", log_file=None, verbose=args.verbose, console_output=True)
 
@@ -3256,7 +3382,7 @@ async def run_plan(args):
     # Basic validation
     if not args.spec or not Path(args.spec).exists():
         logger.error("❌ Error: A valid --spec file is required for the 'plan' command.")
-        sys.exit(1)
+        return 1
 
     # Load config from file to respect profiles and base settings
     ensure_config_exists()
@@ -3306,7 +3432,7 @@ async def run_plan(args):
 
     if not agent_class:
         logger.error(f"Unknown agent type: {config.agent_type}")
-        sys.exit(1)
+        return 1
 
     agent = agent_class(config)
 
@@ -3329,12 +3455,13 @@ async def run_plan(args):
 
     except Exception as e:
         logger.error(f"An error occurred during planning: {e}", exc_info=True)
-        sys.exit(1)
+        return 1
 
-    sys.exit(0)
+    return 0
 
 
-def parse_args(argv=None):
+def get_parser():
+    """Creates and returns the ArgumentParser object for the CLI."""
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
@@ -4378,6 +4505,11 @@ def parse_args(argv=None):
     if argcomplete:
         argcomplete.autocomplete(parser)
 
+    return parser
+
+def parse_args(argv=None):
+    """Parses command-line arguments."""
+    parser = get_parser()
     return parser.parse_args(argv)
 
 
@@ -5477,7 +5609,7 @@ async def main():
 
     # Handle `sprint` command
     if args.command == "sprint":
-        run_sprint_command(args)
+        run_sprint(args)
         return
 
     if args.command == "branch":

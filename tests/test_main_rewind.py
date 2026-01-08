@@ -122,5 +122,38 @@ class TestRewindCommand(unittest.TestCase):
         # second commit is [2]
         self.assertEqual(current_hash, self.second_commit_hash)
 
+    def test_rewind_by_run_id(self):
+        # Create a fourth commit with a Run ID in the message
+        run_id = "gemini_agent_test_project_12345678"
+        commit_message = f"Feature: Add user authentication\n\nRun ID: {run_id}"
+        (self.project_dir / "file3.txt").write_text("user auth file")
+        subprocess.run(["git", "add", "."], cwd=self.project_dir, check=True)
+        subprocess.run(["git", "commit", "-m", commit_message], cwd=self.project_dir, check=True)
+        fourth_commit_hash = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=self.project_dir, text=True
+        ).strip()
+
+        # Create a fifth commit on top
+        (self.project_dir / "file4.txt").write_text("another file")
+        subprocess.run(["git", "add", "."], cwd=self.project_dir, check=True)
+        subprocess.run(["git", "commit", "-m", "Add file4.txt"], cwd=self.project_dir, check=True)
+
+        # Now, rewind to the Run ID
+        with self.assertRaises(SystemExit) as cm:
+            args = parse_args(["rewind", run_id, "--project-dir", str(self.project_dir), "--yes"])
+            run_rewind(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        # Check that the HEAD is now at the fourth commit
+        current_hash = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=self.project_dir, text=True
+        ).strip()
+        self.assertEqual(current_hash, fourth_commit_hash)
+
+        # Check the file state
+        self.assertTrue((self.project_dir / "file3.txt").exists())
+        self.assertFalse((self.project_dir / "file4.txt").exists())
+
 if __name__ == '__main__':
     unittest.main()

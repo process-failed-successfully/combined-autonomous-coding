@@ -1720,10 +1720,27 @@ def run_discard(args):
     sys.exit(0)
 
 
+def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str | None:
+    """Searches the git log for a commit associated with a Run ID."""
+    try:
+        # Search the entire commit history for the Run ID in the message body
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+            capture_output=True, text=True, check=True
+        )
+        if result.stdout.strip():
+            # Return the first commit hash found
+            return result.stdout.strip().split('\n')[0]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return None
+
+
 def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
     project_dir = args.project_dir.resolve()
     target = args.target
+    original_target = target  # Keep a copy for error messages
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
@@ -1789,6 +1806,39 @@ def run_rewind(args):
         except (EOFError, KeyboardInterrupt):
             print("\nAborted.")
             sys.exit(0)
+    else:
+        # --- Target Resolution: Commit Hash vs. Run ID ---
+        # First, check if the target is a valid git object (commit, tag, etc.)
+        is_git_ref = False
+        try:
+            check_ref_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{target}"],
+                capture_output=True, text=True
+            )
+            if check_ref_result.returncode == 0:
+                is_git_ref = True
+            else:
+                # Also check if it's a commit hash
+                check_commit_result = subprocess.run(
+                    [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                    capture_output=True, text=True
+                )
+                if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+                    is_git_ref = True
+        except Exception:
+            pass  # Ignore errors, we'll handle the 'not found' case below
+
+        if not is_git_ref:
+            print(f"'{target}' is not a known git reference. Assuming it is a Run ID and searching history...")
+            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            if commit_hash:
+                print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
+                target = commit_hash
+            else:
+                print(f"❌ Error: Could not find a git commit for Run ID '{target}'.", file=sys.stderr)
+                print("Please provide a valid commit hash, reference, or a Run ID from the agent's history.", file=sys.stderr)
+                sys.exit(1)
+
 
     # --- Confirmation and Execution ---
     print(f"\nThis will perform a 'git reset --hard' to '{target}'.")

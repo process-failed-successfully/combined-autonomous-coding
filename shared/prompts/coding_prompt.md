@@ -208,6 +208,8 @@ git commit -m "Implement [feature name] - verified end-to-end
 - Added [specific changes]
 - Verified with [method]
 - Updated feature_list.json: marked test #X as passing
+
+Run ID: {run_id}
 "
 git push origin HEAD
 ```

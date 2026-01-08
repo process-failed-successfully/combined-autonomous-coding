@@ -392,6 +392,10 @@ class BaseAgent(abc.ABC):
         # Inject dind Context
         prompt = self.inject_dind_context(prompt)
 
+        # Inject Run ID
+        if self.config.agent_id:
+            prompt = prompt.replace("{run_id}", self.config.agent_id)
+
         # Run session
         if self.agent_client:
             self.agent_client.report_state(

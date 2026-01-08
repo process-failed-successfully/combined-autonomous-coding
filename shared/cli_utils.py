@@ -519,11 +519,11 @@ def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
 
     generate_tree_recursive(project_dir, "", 0)
     return "\n".join(output_lines)
-def _run_history_logic(project_dir: Path) -> str:
+def _run_history_logic(project_dir: Path, repo_root_for_test: Optional[Path] = None) -> str:
     """The core logic for displaying agent run history."""
     output_lines = []
     history_file = project_dir / ".agent_history"
-    repo_root = Path(__file__).parent.parent
+    repo_root = repo_root_for_test or Path(__file__).parent.parent
     logs_dir = repo_root / "agents/logs"
 
     output_lines.append(f"--- Agent Run History: {project_dir} ---")

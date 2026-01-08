@@ -67,7 +67,7 @@ class TestPushCommand(unittest.TestCase):
         # The first call is for 'git status', the second for 'git push' which will fail
         mock_run.side_effect = [
             MagicMock(stdout="", returncode=0),  # Clean status
-            subprocess.CalledProcessError(1, "git push", stderr="error")
+            MagicMock(returncode=128)  # Failed push
         ]
 
         args = MagicMock()
@@ -76,7 +76,7 @@ class TestPushCommand(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             run_push(args)
 
-        self.assertEqual(cm.exception.code, 1)
+        self.assertEqual(cm.exception.code, 128)
 
     def test_push_to_protected_branch_denied(self):
         """Test that pushing to protected branches is denied."""
@@ -124,9 +124,12 @@ class TestPushCommand(unittest.TestCase):
 
         shutil.rmtree(non_git_dir)
 
+    @patch('subprocess.run')
     @patch('shared.git.get_current_branch', return_value=None)
-    def test_push_no_branch_found(self, mock_get_branch):
+    def test_push_no_branch_found(self, mock_get_branch, mock_run):
         """Test that the command fails gracefully if the current branch cannot be determined."""
+        mock_run.return_value = MagicMock(stdout="", returncode=0)  # Clean status
+
         args = MagicMock()
         args.project_dir = self.project_dir
 

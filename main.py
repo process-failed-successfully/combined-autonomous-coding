@@ -2039,6 +2039,79 @@ def run_glance(args):
     print(f"  {CYAN_BOLD}Next Step{ENDC}:  `{next_action}`")
 
 
+def run_last(args):
+    """Displays a summary of the last agent run."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Summary of Last Agent Run in: {project_dir} ---")
+
+    # 1. Get the last run ID
+    run_id_file = project_dir / ".agent_run_id"
+    if not run_id_file.exists():
+        print("No last run found (.agent_run_id file is missing).")
+        sys.exit(0)
+
+    try:
+        last_run_id = run_id_file.read_text().strip()
+        print(f"  Run ID: {last_run_id}")
+    except IOError as e:
+        print(f"Error reading .agent_run_id file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. Display Final Metrics
+    print("\n--- Final Metrics ---")
+    metrics_file = project_dir / "final_metrics.txt"
+    if metrics_file.exists():
+        try:
+            metrics_content = metrics_file.read_text().strip()
+            if metrics_content:
+                # Indent the content for better readability
+                for line in metrics_content.split('\n'):
+                    print(f"  {line}")
+            else:
+                print("  final_metrics.txt is empty.")
+        except IOError as e:
+            print(f"  Error reading final_metrics.txt: {e}")
+    else:
+        print("  final_metrics.txt not found.")
+
+    # 3. Display QA Summary
+    print("\n--- QA Summary ---")
+    qa_file = project_dir / "qa_summary.txt"
+    if qa_file.exists():
+        try:
+            qa_content = qa_file.read_text().strip()
+            if qa_content:
+                for line in qa_content.split('\n'):
+                    print(f"  {line}")
+            else:
+                print("  qa_summary.txt is empty.")
+        except IOError as e:
+            print(f"  Error reading qa_summary.txt: {e}")
+    else:
+        print("  qa_summary.txt not found.")
+
+    # 4. Display Log Summary
+    print("\n--- Log Summary (Last 15 lines) ---")
+    repo_root = Path(__file__).parent
+    log_file = repo_root / "agents/logs" / f"{last_run_id}.log"
+    if log_file.exists():
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+            last_lines = [line.strip() for line in lines if line.strip()][-15:]
+            if last_lines:
+                for line in last_lines:
+                    print(f"  {line}")
+            else:
+                print("  Log file is empty.")
+        except IOError as e:
+            print(f"  Error reading log file: {e}")
+    else:
+        print(f"  Log file not found for run ID {last_run_id}.")
+
+    sys.exit(0)
+
+
 def _run_history_logic(project_dir):
     """The core logic for displaying agent run history."""
     history_file = project_dir / ".agent_history"
@@ -3446,6 +3519,15 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check status for (default: current directory)",
+    )
+
+    # Subparser for 'last'
+    parser_last = subparsers.add_parser("last", help="Show a summary of the last agent run")
+    parser_last.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check (default: current directory)",
     )
 
     # Subparser for 'status'
@@ -5161,6 +5243,11 @@ async def main():
     # Handle `glance` command
     if args.command == "glance":
         run_glance(args)
+        return
+
+    # Handle `last` command
+    if args.command == "last":
+        run_last(args)
         return
 
     # Handle `status` command

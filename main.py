@@ -21,7 +21,12 @@ from pathlib import Path
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+import shutil
+import os
+from typing import Optional
+from urllib.parse import urlparse
+from shared.git import ensure_git_safe, get_current_branch, get_remote_url
+from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -542,6 +547,13 @@ def run_configure():
         existing_config['slack_webhook_url'] = slack_url
     if discord_url:
         existing_config['discord_webhook_url'] = discord_url
+
+    # --- GitHub Configuration ---
+    print("\n--- GitHub Integration (for PR creation) ---")
+    github_token = get_input("GitHub Personal Access Token", existing_config.get('github_token'))
+    if github_token:
+        existing_config['github_token'] = github_token
+
 
     # Clean up empty keys
     final_config = {k: v for k, v in existing_config.items() if v}
@@ -4239,6 +4251,46 @@ def parse_args(argv=None):
         help="The project directory to run the push command in (default: current directory).",
     )
 
+    # --- New 'pr' command ---
+    parser_pr = subparsers.add_parser(
+        "pr",
+        help="Manage pull requests for the current project."
+    )
+    pr_subparsers = parser_pr.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify PR action"
+    )
+
+    # PR 'create' action
+    parser_pr_create = pr_subparsers.add_parser(
+        "create",
+        help="Create a new pull request on GitHub."
+    )
+    parser_pr_create.add_argument(
+        "--title",
+        type=str,
+        help="The title of the pull request. If omitted, uses the last commit message.",
+    )
+    parser_pr_create.add_argument(
+        "--body",
+        type=str,
+        help="The body of the pull request. If omitted, uses commit history.",
+    )
+    parser_pr_create.add_argument(
+        "--base",
+        type=str,
+        default="main",
+        help="The base branch to merge into (default: main).",
+    )
+    parser_pr_create.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4312,6 +4364,134 @@ def run_push(args):
         sys.exit(1)
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _get_repo_info_from_url(url: str) -> tuple[Optional[str], Optional[str]]:
+    """Extracts the owner and repo name from a git URL."""
+    # Handle SSH URLs like git@github.com:owner/repo.git
+    if url.startswith('git@') and ':' in url:
+        path = url.split(':', 1)[1]
+        if path.endswith('.git'):
+            path = path[:-4]
+        if len(path.split('/')) == 2:
+            owner, repo = path.split('/')
+            return owner, repo
+        return None, None  # Invalid SSH URL format
+
+    # Handle HTTP/HTTPS URLs
+    parsed_url = urlparse(url)
+    path = parsed_url.path.strip('/')
+
+    if path.endswith('.git'):
+        path = path[:-4]
+
+    parts = path.split('/')
+    if len(parts) == 2:
+        return parts[0], parts[1]
+
+    return None, None
+
+
+def run_pr(args, config):
+    """Handles the pull request creation."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Creating Pull Request in: {project_dir} ---")
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot create a pull request.", file=sys.stderr)
+        sys.exit(1)
+
+    # 1. Get repository info
+    remote_url = get_remote_url(project_dir)
+    if not remote_url:
+        print("❌ Error: Could not determine the remote URL. Is 'origin' configured?", file=sys.stderr)
+        sys.exit(1)
+
+    owner, repo = _get_repo_info_from_url(remote_url)
+    if not owner or not repo:
+        print(f"❌ Error: Could not parse repository owner and name from remote URL: {remote_url}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"  Repository: {owner}/{repo}")
+
+    # 2. Get current branch
+    head_branch = get_current_branch(project_dir)
+    if not head_branch:
+        print("❌ Error: Could not determine the current branch.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"  Head Branch: {head_branch}")
+    print(f"  Base Branch: {args.base}")
+
+    # 3. Determine PR title
+    title = args.title
+    if not title:
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "log", "-1", "--pretty=%s"],
+                capture_output=True, text=True, check=True
+            )
+            title = result.stdout.strip()
+        except subprocess.CalledProcessError:
+            print("❌ Error: Could not get the last commit message for the PR title.", file=sys.stderr)
+            sys.exit(1)
+
+    print(f"  Title: {title}")
+
+    # 4. Determine PR body
+    body = args.body
+    if not body:
+        try:
+            # Get the merge base to list commits on the feature branch
+            merge_base_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "merge-base", f"origin/{args.base}", "HEAD"],
+                capture_output=True, text=True, check=True
+            )
+            merge_base = merge_base_result.stdout.strip()
+
+            log_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "log", f"{merge_base}..HEAD", "--pretty=- %s"],
+                capture_output=True, text=True, check=True
+            )
+            body = f"Commits for this PR:\n{log_result.stdout.strip()}"
+        except subprocess.CalledProcessError:
+            body = "Could not automatically generate PR body."
+
+    print("  Body:\n---\n" + body + "\n---")
+
+    # 5. Create the pull request
+    try:
+        github_token = os.environ.get("GITHUB_TOKEN") or config.github_token
+
+        if not github_token:
+            print("\n❌ Error: GitHub token not found.", file=sys.stderr)
+            print("Please set the GITHUB_TOKEN environment variable or add 'github_token' to your agent_config.yaml.", file=sys.stderr)
+            sys.exit(1)
+
+        from urllib.parse import urlparse
+        hostname = urlparse(remote_url).hostname
+
+        client = GitHubClient(token=github_token, host=hostname)
+        pr = client.create_pull_request(
+            owner=owner,
+            repo=repo,
+            title=title,
+            body=body,
+            head=head_branch,
+            base=args.base
+        )
+        print(f"\n✅ Successfully created pull request: {pr['html_url']}")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n❌ An error occurred while creating the pull request: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -5294,6 +5474,9 @@ async def main():
 
         # Docker-in-Docker
         dind_enabled=args.dind or file_config.get("dind_enabled", False),
+
+        # GitHub
+        github_token=file_config.get("github_token"),
     )
 
     # Initialize Database
@@ -5472,6 +5655,11 @@ async def main():
         logger.info("Project signed off. Finalizing...")
         # note: the autonomous loop itself now handles triggering the cleaner agent
         # if cleanup_report.txt is missing.
+
+    if args.command == "pr":
+        if args.action == "create":
+            run_pr(args, config)
+        return
 
 
 if __name__ == "__main__":

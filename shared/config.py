@@ -72,6 +72,9 @@ class Config:
     # Docker-in-Docker
     dind_enabled: bool = False
 
+    # GitHub
+    github_token: Optional[str] = None
+
     # Jira Configuration
     jira: Optional["JiraConfig"] = None
 

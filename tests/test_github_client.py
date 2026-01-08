@@ -1,94 +1,65 @@
-from shared.github_client import GitHubClient
 import unittest
 from unittest.mock import patch, MagicMock
-import sys
-from pathlib import Path
-
-# Add project root to path
-sys.path.append(str(Path(__file__).parent.parent))
-
+from shared.github_client import GitHubClient
 
 class TestGitHubClient(unittest.TestCase):
 
-    def setUp(self):
-        self.token = "fake_token"
-        self.client = GitHubClient(token=self.token)
-
-    def test_init_defaults(self):
-        client = GitHubClient(token="token")
-        self.assertEqual(client.api_base, "https://api.github.com")
-
-    def test_init_enterprise(self):
-        client = GitHubClient(token="token", host="github.enterprise.com")
-        self.assertEqual(client.api_base, "https://github.enterprise.com/api/v3")
-
-    @patch("requests.get")
-    def test_get_repo_metadata_success(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"name": "repo", "default_branch": "main"}
-        mock_get.return_value = mock_response
-
-        meta = self.client.get_repo_metadata("owner", "repo")
-        self.assertEqual(meta["name"], "repo")
-        mock_get.assert_called_once()
-
-    @patch("requests.get")
-    def test_get_repo_metadata_failure(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_get.return_value = mock_response
-
-        meta = self.client.get_repo_metadata("owner", "repo")
-        self.assertIsNone(meta)
-
-    @patch("requests.get")
-    def test_get_repo_metadata_exception(self, mock_get):
-        mock_get.side_effect = Exception("Network error")
-        meta = self.client.get_repo_metadata("owner", "repo")
-        self.assertIsNone(meta)
-
-    @patch("requests.post")
-    def test_create_pr_success(self, mock_post):
+    @patch('shared.github_client.requests.post')
+    def test_create_pull_request_success(self, mock_post):
+        # Arrange
         mock_response = MagicMock()
         mock_response.status_code = 201
-        mock_response.json.return_value = {"html_url": "http://github.com/owner/repo/pull/1"}
+        mock_response.json.return_value = {"html_url": "https://github.com/owner/repo/pull/1"}
         mock_post.return_value = mock_response
 
-        url = self.client.create_pr("owner", "repo", "Title", "Body", "feature")
-        self.assertEqual(url, "http://github.com/owner/repo/pull/1")
+        client = GitHubClient(token="test_token")
 
-    @patch("requests.post")
-    def test_create_pr_failure(self, mock_post):
+        # Act
+        pr = client.create_pull_request(
+            owner="owner",
+            repo="repo",
+            title="Test PR",
+            body="This is a test.",
+            head="feature-branch",
+            base="main"
+        )
+
+        # Assert
+        self.assertEqual(pr["html_url"], "https://github.com/owner/repo/pull/1")
+        mock_post.assert_called_once()
+        call_args, call_kwargs = mock_post.call_args
+        self.assertIn("https://api.github.com/repos/owner/repo/pulls", call_args)
+        self.assertIn('"title": "Test PR"', call_kwargs['data'])
+
+    @patch('shared.github_client.requests.post')
+    def test_create_pull_request_enterprise(self, mock_post):
+        # Arrange
         mock_response = MagicMock()
-        mock_response.status_code = 400
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"html_url": "https://ghe.example.com/owner/repo/pull/1"}
         mock_post.return_value = mock_response
 
-        url = self.client.create_pr("owner", "repo", "Title", "Body", "feature")
-        self.assertIsNone(url)
+        client = GitHubClient(token="test_token", host="ghe.example.com")
 
-    def test_create_pr_no_token(self):
-        client = GitHubClient(token="")
-        # Force token to empty just in case env var is set
-        client.token = ""
-        url = client.create_pr("owner", "repo", "Title", "Body", "feature")
-        self.assertIsNone(url)
+        # Act
+        client.create_pull_request(
+            owner="owner",
+            repo="repo",
+            title="Test PR",
+            body="This is a test.",
+            head="feature-branch",
+            base="main"
+        )
 
-    def test_get_repo_info_from_remote_https(self):
-        url = "https://github.com/owner/repo.git"
-        host, owner, repo = self.client.get_repo_info_from_remote(url)
-        self.assertEqual(host, "github.com")
-        self.assertEqual(owner, "owner")
-        self.assertEqual(repo, "repo")
+        # Assert
+        mock_post.assert_called_once()
+        call_args, call_kwargs = mock_post.call_args
+        self.assertIn("https://ghe.example.com/api/v3/repos/owner/repo/pulls", call_args)
 
-    def test_get_repo_info_from_remote_ssh(self):
-        url = "git@github.com:owner/repo.git"
-        host, owner, repo = self.client.get_repo_info_from_remote(url)
-        self.assertEqual(host, "github.com")
-        self.assertEqual(owner, "owner")
-        self.assertEqual(repo, "repo")
+    def test_token_missing(self):
+        with patch.dict('os.environ', {}, clear=True):
+            with self.assertRaises(ValueError):
+                GitHubClient(token=None)
 
-    def test_get_repo_info_from_remote_invalid(self):
-        url = "invalid_url"
-        host, owner, repo = self.client.get_repo_info_from_remote(url)
-        self.assertIsNone(host)
+if __name__ == '__main__':
+    unittest.main()

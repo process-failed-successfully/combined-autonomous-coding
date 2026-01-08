@@ -180,6 +180,26 @@ def clone_repo(url: str, dest_path: Path) -> bool:
         return False
 
 
+def get_remote_url(project_dir: Path, remote_name: str = "origin") -> Optional[str]:
+    """Gets the URL of a specific git remote."""
+    try:
+        res = subprocess.run(
+            ["git", "config", "--get", f"remote.{remote_name}.url"],
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            text=True,
+            stderr=subprocess.PIPE,
+        )
+        return res.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        logger.debug(f"Could not get remote URL for '{remote_name}': {e.stderr.strip()}")
+        return None
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while getting remote URL: {e}")
+        return None
+
+
 def get_current_branch(project_dir: Path) -> Optional[str]:
     """Gets the current active git branch name."""
     try:

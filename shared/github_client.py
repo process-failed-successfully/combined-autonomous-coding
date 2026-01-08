@@ -1,113 +1,63 @@
 import os
-import logging
 import requests
-import re
-from typing import Optional, Any
-from shared.utils import sanitize_url
-
-logger = logging.getLogger(__name__)
-
+import json
+from typing import Optional, Dict, Any
 
 class GitHubClient:
+    """A client for interacting with the GitHub API."""
+
     def __init__(self, token: Optional[str] = None, host: str = "github.com"):
-        self.token = token or os.environ.get("GIT_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        """
+        Initializes the GitHub client.
+
+        Args:
+            token: The GitHub personal access token. If not provided, it will
+                   try to fall back to the GITHUB_TOKEN environment variable.
+            host: The GitHub host. Defaults to 'github.com'. This can be changed
+                  for GitHub Enterprise instances.
+        """
+        self.token = token or os.environ.get("GITHUB_TOKEN")
         self.host = host
-        self._set_api_base()
-
-    def _set_api_base(self):
-        """Set the API base based on the host."""
         if self.host == "github.com":
-            self.api_base = "https://api.github.com"
+            self.api_base_url = "https://api.github.com"
         else:
-            # GitHub Enterprise uses /api/v3
-            self.api_base = f"https://{self.host}/api/v3"
+            self.api_base_url = f"https://{self.host}/api/v3"
 
-    def get_repo_metadata(self, owner: str, repo: str) -> Optional[dict[str, Any]]:
-        """Fetch repository metadata from the API."""
         if not self.token:
-            return None
+            raise ValueError("GitHub token is required. Please provide it directly or set the GITHUB_TOKEN environment variable.")
 
-        url = f"{self.api_base}/repos/{owner}/{repo}"
-        headers = {
+        self.headers = {
             "Authorization": f"token {self.token}",
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json",
         }
 
-        try:
-            logger.info(f"Fetching repo metadata for {owner}/{repo}")
-            response = requests.get(url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.error(f"Failed to fetch repo metadata: {response.status_code} - {response.text}")
-                return None
-        except Exception as e:
-            logger.error(f"Error fetching repo metadata: {e}")
-            return None
-
-    def create_pr(self, owner: str, repo: str, title: str, body: str, head: str, base: str = "main") -> Optional[str]:
+    def create_pull_request(self, owner: str, repo: str, title: str, body: str, head: str, base: str) -> Dict[str, Any]:
         """
-        Create a Pull Request.
-        Returns the HTML URL of the created PR, or None if failed.
-        """
-        if not self.token:
-            logger.warning("No GIT_TOKEN found. Cannot create Pull Request.")
-            return None
+        Creates a new pull request on GitHub.
 
-        url = f"{self.api_base}/repos/{owner}/{repo}/pulls"
-        headers = {
-            "Authorization": f"token {self.token}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        data = {
+        Args:
+            owner: The owner of the repository.
+            repo: The name of the repository.
+            title: The title of the pull request.
+            body: The body content of the pull request.
+            head: The name of the branch where your changes are implemented.
+            base: The name of the branch you want the changes pulled into.
+
+        Returns:
+            A dictionary representing the JSON response from the GitHub API.
+
+        Raises:
+            requests.exceptions.RequestException: For network errors or HTTP error statuses.
+        """
+        pr_url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls"
+        payload = {
             "title": title,
             "body": body,
             "head": head,
-            "base": base
+            "base": base,
         }
 
-        try:
-            logger.info(f"Creating PR in {owner}/{repo} ({self.host}): {title}")
-            response = requests.post(url, json=data, headers=headers, timeout=10)
-
-            if response.status_code == 201:
-                pr_data = response.json()
-                pr_url = pr_data.get("html_url")
-                logger.info(f"Pull Request created successfully: {pr_url}")
-                return pr_url
-            else:
-                logger.error(f"Failed to create PR: {response.status_code} - {response.text}")
-                return None
-        except Exception as e:
-            logger.error(f"Error creating PR: {e}")
-            return None
-
-    def get_repo_info_from_remote(self, remote_url: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
-        """
-        Extract host, owner and repo name from remote URL.
-        Supports:
-        - https://github.com/owner/repo.git
-        - git@github.com:owner/repo.git
-        - https://token@custom-domain.net/owner/repo.git
-        Returns (host, owner, repo)
-        """
-        try:
-            clean_url = remote_url.strip()
-            if clean_url.endswith(".git"):
-                clean_url = clean_url[:-4]
-
-            # Pattern for HTTPS: https://[token@]host/owner/repo
-            https_match = re.search(r"https?://(?:[^@/]+@)?(?P<host>[^/]+)/(?P<owner>[^/]+)/(?P<repo>[^/]+)/?$", clean_url)
-            if https_match:
-                return https_match.group("host"), https_match.group("owner"), https_match.group("repo")
-
-            # Pattern for SSH: git@host:owner/repo
-            ssh_match = re.search(r"git@(?P<host>[^:]+):(?P<owner>[^/]+)/(?P<repo>[^/]+)/?$", clean_url)
-            if ssh_match:
-                return ssh_match.group("host"), ssh_match.group("owner"), ssh_match.group("repo")
-
-            logger.warning(f"Failed to parse GitHub host/owner/repo from URL: {sanitize_url(clean_url)}")
-            return None, None, None
-        except Exception as e:
-            logger.error(f"Error parsing remote URL: {e}")
-            return None, None, None
+        response = requests.post(pr_url, headers=self.headers, data=json.dumps(payload))
+        response.raise_for_status()  # Will raise an HTTPError for bad responses (4xx or 5xx)
+        return response.json()

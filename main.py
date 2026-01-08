@@ -550,6 +550,8 @@ def run_configure():
     try:
         with open(config_path, 'w') as f:
             yaml.dump(final_config, f, sort_keys=False, indent=2)
+        # Set file permissions to 600 (owner read/write only) to protect secrets
+        os.chmod(config_path, 0o600)
         print(f"\n✅ Configuration saved successfully to {config_path}")
     except Exception as e:
         print(f"\n❌ Error saving configuration: {e}")

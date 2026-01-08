@@ -543,6 +543,12 @@ def run_configure():
     if discord_url:
         existing_config['discord_webhook_url'] = discord_url
 
+    # --- GitHub Configuration ---
+    print("\n--- GitHub Integration (optional) ---")
+    github_token = get_input("GitHub Token (for creating PRs)", existing_config.get('github_token'))
+    if github_token:
+        existing_config['github_token'] = github_token
+
     # Clean up empty keys
     final_config = {k: v for k, v in existing_config.items() if v}
 
@@ -4239,10 +4245,147 @@ def parse_args(argv=None):
         help="The project directory to run the push command in (default: current directory).",
     )
 
+    # --- New 'pr' command ---
+    parser_pr = subparsers.add_parser(
+        "pr",
+        help="Create and manage GitHub pull requests."
+    )
+    pr_subparsers = parser_pr.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify PR action"
+    )
+
+    # PR 'create' action
+    parser_pr_create = pr_subparsers.add_parser(
+        "create",
+        help="Create a new pull request."
+    )
+    parser_pr_create.add_argument(
+        "-t", "--title",
+        type=str,
+        help="The title of the pull request. If omitted, it will be auto-generated.",
+    )
+    parser_pr_create.add_argument(
+        "-b", "--body",
+        type=str,
+        help="The body/description of the pull request. If omitted, it will be auto-generated.",
+    )
+    parser_pr_create.add_argument(
+        "--base",
+        type=str,
+        default="main",
+        help="The base branch to merge into (default: main).",
+    )
+    parser_pr_create.add_argument(
+        "--draft",
+        action="store_true",
+        help="Create the pull request as a draft.",
+    )
+    parser_pr_create.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the command in (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_pr(args):
+    """Dispatches PR actions."""
+    import shutil
+    import subprocess
+    from shared.git import get_current_branch, get_remote_url
+    from shared.github_client import GitHubClient
+    from shared.config_loader import load_config_from_file
+
+    project_dir = args.project_dir.resolve()
+
+    # Load config to get token
+    file_config = load_config_from_file(profile=getattr(args, 'profile', None))
+    github_token = file_config.get("github_token")
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot create a pull request.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.action == "create":
+        print(f"--- Creating Pull Request in: {project_dir} ---")
+        try:
+            # 1. Get current branch
+            head_branch = get_current_branch(project_dir)
+            if not head_branch:
+                print("❌ Error: Could not determine the current branch.", file=sys.stderr)
+                sys.exit(1)
+            print(f"  - From branch: {head_branch}")
+
+            # 2. Get remote URL and parse it
+            remote_url = get_remote_url(project_dir)
+            if not remote_url:
+                print("❌ Error: Could not determine the remote git URL.", file=sys.stderr)
+                sys.exit(1)
+
+            # Temp client to parse URL
+            temp_client = GitHubClient(token=github_token)
+            host, owner, repo = temp_client.get_repo_info_from_remote(remote_url)
+            if not all([host, owner, repo]):
+                print(f"❌ Error: Could not parse repository info from remote URL: {remote_url}", file=sys.stderr)
+                sys.exit(1)
+            print(f"  - To repository: {owner}/{repo} on {host}")
+
+            # 3. Determine PR title and body
+            title = args.title
+            body = args.body
+            if not title or not body:
+                print("  - Title or body not provided, using info from the latest commit.")
+                log_result = subprocess.run(
+                    [git_path, "-C", str(project_dir), "log", "-1", "--pretty=%s%n%b"],
+                    capture_output=True, text=True, check=True
+                )
+                commit_message = log_result.stdout.strip()
+                parts = commit_message.split('\n', 1)
+                commit_title = parts[0]
+                commit_body = parts[1].strip() if len(parts) > 1 else ""
+
+                if not title:
+                    title = commit_title
+                if not body:
+                    body = commit_body if commit_body else f"PR for branch `{head_branch}`."
+
+            print(f"  - Title: {title}")
+
+            # 4. Create the PR
+            github_client = GitHubClient(token=github_token, host=host)
+            pr_url = github_client.create_pr(
+                owner=owner,
+                repo=repo,
+                title=title,
+                body=body,
+                head=head_branch,
+                base=args.base,
+                draft=args.draft
+            )
+
+            if pr_url:
+                print(f"\n✅ Successfully created Pull Request: {pr_url}")
+                sys.exit(0)
+            else:
+                print("\n❌ Failed to create Pull Request. Check logs for details.", file=sys.stderr)
+                sys.exit(1)
+
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.strip() if e.stderr else str(e)
+            print(f"❌ A git command failed: {stderr}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+            sys.exit(1)
 
 
 def run_push(args):
@@ -5241,6 +5384,10 @@ async def main():
         run_push(args)
         return
 
+    if args.command == "pr":
+        run_pr(args)
+        return
+
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id
@@ -5294,6 +5441,7 @@ async def main():
 
         # Docker-in-Docker
         dind_enabled=args.dind or file_config.get("dind_enabled", False),
+
     )
 
     # Initialize Database

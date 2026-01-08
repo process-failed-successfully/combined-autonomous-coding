@@ -45,7 +45,7 @@ class GitHubClient:
             logger.error(f"Error fetching repo metadata: {e}")
             return None
 
-    def create_pr(self, owner: str, repo: str, title: str, body: str, head: str, base: str = "main") -> Optional[str]:
+    def create_pr(self, owner: str, repo: str, title: str, body: str, head: str, base: str = "main", draft: bool = False) -> Optional[str]:
         """
         Create a Pull Request.
         Returns the HTML URL of the created PR, or None if failed.
@@ -63,7 +63,8 @@ class GitHubClient:
             "title": title,
             "body": body,
             "head": head,
-            "base": base
+            "base": base,
+            "draft": draft
         }
 
         try:

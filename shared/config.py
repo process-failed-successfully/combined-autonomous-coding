@@ -75,6 +75,9 @@ class Config:
     # Jira Configuration
     jira: Optional["JiraConfig"] = None
 
+    # GitHub Configuration
+    github_token: Optional[str] = None
+
     def __post_init__(self):
         if self.model is None:
             if self.agent_type == "gemini":

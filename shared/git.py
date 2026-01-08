@@ -199,3 +199,19 @@ def get_current_branch(project_dir: Path) -> Optional[str]:
     except Exception as e:
         logger.error(f"An unexpected error occurred while getting the current branch: {e}")
         return None
+
+
+def get_remote_url(project_dir: Path, remote_name: str = "origin") -> Optional[str]:
+    """Gets the URL of the specified remote."""
+    import shutil
+    try:
+        git_path = shutil.which("git")
+        if not git_path:
+            return None
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "remote", "get-url", remote_name],
+            capture_output=True, text=True, check=True
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None

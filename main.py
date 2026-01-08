@@ -4239,6 +4239,18 @@ def parse_args(argv=None):
         help="The project directory to run the push command in (default: current directory).",
     )
 
+    # --- New 'pull' command ---
+    parser_pull = subparsers.add_parser(
+        "pull",
+        help="Pull the latest changes from the remote repository with safety checks."
+    )
+    parser_pull.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the pull command in (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4305,6 +4317,59 @@ def run_push(args):
             print(f"\n❌ Git push command failed with exit code {push_result.returncode}.", file=sys.stderr)
             # Git's own error messages will be printed to stderr by subprocess.run
             sys.exit(push_result.returncode)
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip() if e.stderr else str(e)
+        print(f"❌ An error occurred: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def run_pull(args):
+    """Handles the git pull command with safety checks."""
+    import shutil
+    import subprocess
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Pulling latest changes in: {project_dir} ---")
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot pull.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        # Check for uncommitted changes
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if status_result.stdout.strip():
+            print("❌ Error: You have uncommitted changes. Please commit or stash them before pulling.", file=sys.stderr)
+            sys.exit(1)
+
+        # Execute the pull command
+        print(f"Pulling latest changes...")
+        pull_cmd = [git_path, "-C", str(project_dir), "pull"]
+
+        # We stream the output directly to the user's console
+        pull_result = subprocess.run(pull_cmd, text=True)
+
+        if pull_result.returncode == 0:
+            print("\n✅ Pull successful.")
+            sys.exit(0)
+        else:
+            print(f"\n❌ Git pull command failed with exit code {pull_result.returncode}.", file=sys.stderr)
+            # Git's own error messages will be printed to stderr by subprocess.run
+            sys.exit(pull_result.returncode)
 
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.strip() if e.stderr else str(e)
@@ -5239,6 +5304,10 @@ async def main():
 
     if args.command == "push":
         run_push(args)
+        return
+
+    if args.command == "pull":
+        run_pull(args)
         return
 
     # Initialize Agent Client

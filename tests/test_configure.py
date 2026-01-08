@@ -38,6 +38,8 @@ class TestConfigureCommand(unittest.TestCase):
             "https://test.atlassian.net",  # Jira URL
             "test@example.com",           # Jira Email
             "jira_api_token",             # Jira Token
+            "github_token_123",           # GitHub Token
+            "github.enterprise.com",      # GitHub Host
             "https://hooks.slack.com/...",  # Slack Webhook
             "https://discord.com/..."      # Discord Webhook
         ]
@@ -66,6 +68,8 @@ class TestConfigureCommand(unittest.TestCase):
                 'email': 'test@example.com',
                 'token': 'jira_api_token'
             },
+            'github_token': 'github_token_123',
+            'github_host': 'github.enterprise.com',
             'slack_webhook_url': 'https://hooks.slack.com/...',
             'discord_webhook_url': 'https://discord.com/...'
         }

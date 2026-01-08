@@ -533,6 +533,16 @@ def run_configure():
     elif 'jira' in existing_config:
         del existing_config['jira']
 
+    # --- GitHub Configuration ---
+    print("\n--- GitHub Integration (optional) ---")
+    github_token = get_input("GitHub Personal Access Token", existing_config.get('github_token'))
+    github_host = get_input("GitHub Host (e.g., github.my-company.com for Enterprise)", existing_config.get('github_host'))
+
+    if github_token:
+        existing_config['github_token'] = github_token
+    if github_host:
+        existing_config['github_host'] = github_host
+
     # --- Notifications ---
     print("\n--- Notifications (optional) ---")
     slack_url = get_input("Slack Webhook URL", existing_config.get('slack_webhook_url'))
@@ -4327,6 +4337,44 @@ def parse_args(argv=None):
         help="The project directory to run the pull command in (default: current directory).",
     )
 
+    # --- New 'pr' command ---
+    parser_pr = subparsers.add_parser(
+        "pr",
+        help="Manage GitHub pull requests for the project."
+    )
+    pr_subparsers = parser_pr.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify pr action"
+    )
+
+    # PR 'create' action
+    parser_pr_create = pr_subparsers.add_parser(
+        "create",
+        help="Create a new pull request on GitHub."
+    )
+    parser_pr_create.add_argument(
+        "--title",
+        required=True,
+        help="The title of the pull request."
+    )
+    parser_pr_create.add_argument(
+        "--body",
+        default="",
+        help="The body content of the pull request."
+    )
+    parser_pr_create.add_argument(
+        "--base",
+        default="main",
+        help="The base branch to merge into (default: main)."
+    )
+    parser_pr_create.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4453,6 +4501,83 @@ def run_pull(args):
         sys.exit(1)
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _pr_create(args, config):
+    """Helper function to create a pull request."""
+    import shutil
+    import subprocess
+    import requests
+    from shared.git import get_current_branch
+    from shared.github_client import GitHubClient
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Creating Pull Request in: {project_dir} ---")
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository.", file=sys.stderr)
+        sys.exit(1)
+
+    if not config.github_token:
+        print("❌ Error: GitHub token not found. Please set GITHUB_TOKEN environment variable or run 'configure' to set 'github_token'.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        # 1. Get current branch
+        current_branch = get_current_branch(project_dir)
+        if not current_branch or current_branch in ["main", "master"]:
+            print("❌ Error: You must be on a feature branch to create a pull request.", file=sys.stderr)
+            sys.exit(1)
+        print(f"  - On branch: {current_branch}")
+
+        # 2. Check if the branch is pushed to remote
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "ls-remote", "--exit-code", "--heads", "origin", current_branch],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            print("❌ Error: Your branch has not been pushed to the remote repository.", file=sys.stderr)
+            print("  Please run 'push' first.", file=sys.stderr)
+            sys.exit(1)
+
+        # 3. Create GitHub client and PR
+        client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+        print("  - Creating pull request...")
+        pr_data = client.create_pull_request(
+            project_dir=project_dir,
+            title=args.title,
+            body=args.body,
+            head_branch=current_branch,
+            base_branch=args.base
+        )
+
+        print("\n✅ Pull request created successfully!")
+        print(f"   URL: {pr_data['html_url']}")
+
+    except (subprocess.CalledProcessError, ValueError, requests.exceptions.RequestException) as e:
+        print(f"❌ An error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+def run_pr(args):
+    """Handles the creation of GitHub pull requests."""
+    file_config = load_config_from_file(profile=getattr(args, 'profile', None))
+    config = argparse.Namespace(
+        github_token=os.environ.get("GITHUB_TOKEN") or file_config.get("github_token"),
+        github_host=file_config.get("github_host")
+    )
+
+    if args.action == "create":
+        _pr_create(args, config)
+    else:
+        print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -5388,6 +5513,10 @@ async def main():
 
     if args.command == "pull":
         run_pull(args)
+        return
+
+    if args.command == "pr":
+        run_pr(args)
         return
 
     # Initialize Agent Client

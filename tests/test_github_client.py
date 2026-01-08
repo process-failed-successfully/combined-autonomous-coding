@@ -1,94 +1,85 @@
-from shared.github_client import GitHubClient
 import unittest
 from unittest.mock import patch, MagicMock
-import sys
 from pathlib import Path
+import sys
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
+from shared.github_client import GitHubClient
 
 class TestGitHubClient(unittest.TestCase):
 
-    def setUp(self):
-        self.token = "fake_token"
-        self.client = GitHubClient(token=self.token)
+    @patch('subprocess.run')
+    def test_get_repo_owner_and_name_https(self, mock_subprocess_run):
+        mock_subprocess_run.return_value = MagicMock(
+            stdout="https://github.com/test-owner/test-repo.git\n",
+            returncode=0
+        )
+        client = GitHubClient(token="fake_token")
+        owner, name = client._get_repo_owner_and_name(Path("/fake/dir"))
+        self.assertEqual(owner, "test-owner")
+        self.assertEqual(name, "test-repo")
 
-    def test_init_defaults(self):
-        client = GitHubClient(token="token")
-        self.assertEqual(client.api_base, "https://api.github.com")
+    @patch('subprocess.run')
+    def test_get_repo_owner_and_name_ssh(self, mock_subprocess_run):
+        mock_subprocess_run.return_value = MagicMock(
+            stdout="git@github.com:test-owner/test-repo.git\n",
+            returncode=0
+        )
+        client = GitHubClient(token="fake_token")
+        owner, name = client._get_repo_owner_and_name(Path("/fake/dir"))
+        self.assertEqual(owner, "test-owner")
+        self.assertEqual(name, "test-repo")
 
-    def test_init_enterprise(self):
-        client = GitHubClient(token="token", host="github.enterprise.com")
-        self.assertEqual(client.api_base, "https://github.enterprise.com/api/v3")
+    @patch('subprocess.run')
+    def test_get_repo_owner_and_name_enterprise(self, mock_subprocess_run):
+        mock_subprocess_run.return_value = MagicMock(
+            stdout="https://github.my-company.com/test-owner/test-repo.git\n",
+            returncode=0
+        )
+        client = GitHubClient(token="fake_token", host="github.my-company.com")
+        owner, name = client._get_repo_owner_and_name(Path("/fake/dir"))
+        self.assertEqual(owner, "test-owner")
+        self.assertEqual(name, "test-repo")
 
-    @patch("requests.get")
-    def test_get_repo_metadata_success(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"name": "repo", "default_branch": "main"}
-        mock_get.return_value = mock_response
-
-        meta = self.client.get_repo_metadata("owner", "repo")
-        self.assertEqual(meta["name"], "repo")
-        mock_get.assert_called_once()
-
-    @patch("requests.get")
-    def test_get_repo_metadata_failure(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_get.return_value = mock_response
-
-        meta = self.client.get_repo_metadata("owner", "repo")
-        self.assertIsNone(meta)
-
-    @patch("requests.get")
-    def test_get_repo_metadata_exception(self, mock_get):
-        mock_get.side_effect = Exception("Network error")
-        meta = self.client.get_repo_metadata("owner", "repo")
-        self.assertIsNone(meta)
-
-    @patch("requests.post")
-    def test_create_pr_success(self, mock_post):
+    @patch('shared.github_client.requests.post')
+    @patch('shared.github_client.GitHubClient._get_repo_owner_and_name')
+    def test_create_pull_request_success(self, mock_get_repo, mock_post):
+        mock_get_repo.return_value = ("test-owner", "test-repo")
         mock_response = MagicMock()
         mock_response.status_code = 201
-        mock_response.json.return_value = {"html_url": "http://github.com/owner/repo/pull/1"}
+        mock_response.json.return_value = {"html_url": "https://github.com/test-owner/test-repo/pull/1"}
         mock_post.return_value = mock_response
 
-        url = self.client.create_pr("owner", "repo", "Title", "Body", "feature")
-        self.assertEqual(url, "http://github.com/owner/repo/pull/1")
+        client = GitHubClient(token="fake_token")
+        pr = client.create_pull_request(
+            project_dir=Path("/fake/dir"),
+            title="Test PR",
+            body="Test body",
+            head_branch="feature",
+            base_branch="main"
+        )
+        self.assertEqual(pr, {"html_url": "https://github.com/test-owner/test-repo/pull/1"})
 
-    @patch("requests.post")
-    def test_create_pr_failure(self, mock_post):
+    @patch('shared.github_client.requests.post')
+    @patch('shared.github_client.GitHubClient._get_repo_owner_and_name')
+    def test_create_pull_request_failure(self, mock_get_repo, mock_post):
+        mock_get_repo.return_value = ("test-owner", "test-repo")
         mock_response = MagicMock()
-        mock_response.status_code = 400
+        mock_response.status_code = 422
+        mock_response.raise_for_status.side_effect = Exception("API Error")
         mock_post.return_value = mock_response
 
-        url = self.client.create_pr("owner", "repo", "Title", "Body", "feature")
-        self.assertIsNone(url)
+        client = GitHubClient(token="fake_token")
+        with self.assertRaises(Exception):
+            client.create_pull_request(
+                project_dir=Path("/fake/dir"),
+                title="Test PR",
+                body="Test body",
+                head_branch="feature",
+                base_branch="main"
+            )
 
-    def test_create_pr_no_token(self):
-        client = GitHubClient(token="")
-        # Force token to empty just in case env var is set
-        client.token = ""
-        url = client.create_pr("owner", "repo", "Title", "Body", "feature")
-        self.assertIsNone(url)
-
-    def test_get_repo_info_from_remote_https(self):
-        url = "https://github.com/owner/repo.git"
-        host, owner, repo = self.client.get_repo_info_from_remote(url)
-        self.assertEqual(host, "github.com")
-        self.assertEqual(owner, "owner")
-        self.assertEqual(repo, "repo")
-
-    def test_get_repo_info_from_remote_ssh(self):
-        url = "git@github.com:owner/repo.git"
-        host, owner, repo = self.client.get_repo_info_from_remote(url)
-        self.assertEqual(host, "github.com")
-        self.assertEqual(owner, "owner")
-        self.assertEqual(repo, "repo")
-
-    def test_get_repo_info_from_remote_invalid(self):
-        url = "invalid_url"
-        host, owner, repo = self.client.get_repo_info_from_remote(url)
-        self.assertIsNone(host)
+if __name__ == '__main__':
+    unittest.main()

@@ -4375,6 +4375,30 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'push' command ---
+    parser_push = subparsers.add_parser(
+        "push",
+        help="Push the current feature branch to the remote repository with safety checks."
+    )
+    parser_push.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the push command in (default: current directory).",
+    )
+
+    # --- New 'pull' command ---
+    parser_pull = subparsers.add_parser(
+        "pull",
+        help="Pull the latest changes from the remote repository with safety checks."
+    )
+    parser_pull.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the pull command in (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4580,6 +4604,127 @@ def run_pr(args):
         print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)
 
+
+def _git_pre_flight_checks(project_dir: Path, check_clean: bool = True) -> str:
+    """
+    Performs common git pre-flight checks.
+
+    Args:
+        project_dir: The project directory to check.
+        check_clean: If True, checks if the working directory is clean.
+
+    Returns:
+        The path to the git executable if all checks pass.
+
+    Exits:
+        If a check fails, prints an error and exits the program.
+    """
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print(f"❌ Error: Not a git repository: {project_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    if check_clean:
+        try:
+            status_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if status_result.stdout.strip():
+                print("❌ Error: You have uncommitted changes. Please commit or stash them before proceeding.", file=sys.stderr)
+                sys.exit(1)
+        except subprocess.CalledProcessError as e:
+            stderr = e.stderr.strip() if e.stderr else str(e)
+            print(f"❌ An error occurred while checking git status: {stderr}", file=sys.stderr)
+            sys.exit(1)
+
+    return git_path
+
+
+def run_push(args):
+    """Handles the git push command with safety checks."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Pushing feature branch in: {project_dir} ---")
+
+    try:
+        git_path = _git_pre_flight_checks(project_dir)
+
+        # 1. Get the current branch name
+        from shared.git import get_current_branch
+        branch_name = get_current_branch(project_dir)
+
+        if not branch_name:
+            print("❌ Error: Could not determine the current branch name.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Current branch is '{branch_name}'.")
+
+        # 2. Safety check for restricted branches
+        restricted_branches = ["main", "master"]
+        if branch_name.lower() in restricted_branches:
+            print(f"❌ Error: Pushing directly to the protected branch '{branch_name}' is not allowed.", file=sys.stderr)
+            print("Please create a feature branch to push your changes.", file=sys.stderr)
+            sys.exit(1)
+
+        # 3. Execute the push command
+        print(f"Pushing branch '{branch_name}' to remote 'origin'...")
+        push_cmd = [git_path, "-C", str(project_dir), "push", "-u", "origin", branch_name]
+
+        # We stream the output directly to the user's console
+        push_result = subprocess.run(push_cmd, text=True)
+
+        if push_result.returncode == 0:
+            print("\n✅ Push successful.")
+            sys.exit(0)
+        else:
+            print(f"\n❌ Git push command failed with exit code {push_result.returncode}.", file=sys.stderr)
+            # Git's own error messages will be printed to stderr by subprocess.run
+            sys.exit(push_result.returncode)
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip() if e.stderr else str(e)
+        print(f"❌ An error occurred: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def run_pull(args):
+    """Handles the git pull command with safety checks."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Pulling latest changes in: {project_dir} ---")
+
+    try:
+        git_path = _git_pre_flight_checks(project_dir)
+
+        # Execute the pull command
+        print(f"Pulling latest changes...")
+        pull_cmd = [git_path, "-C", str(project_dir), "pull"]
+
+        # We stream the output directly to the user's console
+        pull_result = subprocess.run(pull_cmd, text=True)
+
+        if pull_result.returncode == 0:
+            print("\n✅ Pull successful.")
+            sys.exit(0)
+        else:
+            print(f"\n❌ Git pull command failed with exit code {pull_result.returncode}.", file=sys.stderr)
+            # Git's own error messages will be printed to stderr by subprocess.run
+            sys.exit(pull_result.returncode)
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip() if e.stderr else str(e)
+        print(f"❌ An error occurred: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
     """Helper function to merge a worktree branch back into the main branch."""
@@ -5513,6 +5658,10 @@ async def main():
 
     if args.command == "pull":
         run_pull(args)
+        return
+
+    if args.command == "push":
+        run_push(args)
         return
 
     if args.command == "pr":

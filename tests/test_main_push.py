@@ -124,8 +124,9 @@ class TestPushCommand(unittest.TestCase):
 
         shutil.rmtree(non_git_dir)
 
+    @patch('subprocess.run', return_value=MagicMock(stdout="", returncode=0))
     @patch('shared.git.get_current_branch', return_value=None)
-    def test_push_no_branch_found(self, mock_get_branch):
+    def test_push_no_branch_found(self, mock_get_branch, mock_run):
         """Test that the command fails gracefully if the current branch cannot be determined."""
         args = MagicMock()
         args.project_dir = self.project_dir

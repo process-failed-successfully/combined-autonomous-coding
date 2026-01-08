@@ -22,65 +22,100 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // We re-render all for simplicity, can be optimized to diff later
-        container.innerHTML = '';
+        // Optimization: Track seen agents to remove stale ones later
+        const seenIds = new Set();
 
         agents.forEach(agent => {
-            const card = document.createElement('div');
-            card.className = `agent-card ${agent.status === 'Active' ? 'active' : ''}`;
+            seenIds.add(agent.id);
+            const cardId = `agent-${agent.id}`;
+            let card = document.getElementById(cardId);
+            const htmlContent = buildAgentCardHtml(agent);
+            const className = `agent-card ${agent.status === 'Active' ? 'active' : ''}`;
 
-            // Build Controls based on state (simplified)
-            // You might want to disable Resume if not paused, etc. but let's just show all for now.
-            const controlsHtml = `
-                <div class="agent-controls">
-                    <button class="btn btn-pause" onclick="sendCommand('${agent.id}', 'pause')">Pause</button>
-                    <button class="btn btn-resume" onclick="sendCommand('${agent.id}', 'resume')">Resume</button>
-                    <button class="btn btn-skip" onclick="sendCommand('${agent.id}', 'skip')">Skip Step</button>
-                    <button class="btn btn-stop" onclick="sendCommand('${agent.id}', 'stop')">Stop</button>
-                </div>
-            `;
-
-            // Display interesting state props
-            let stateDetails = '';
-            if (agent.state) {
-                 // Common properties in state
-                 const props = ['step', 'status', 'current_file'];
-                 props.forEach(prop => {
-                     if (agent.state[prop]) {
-                         stateDetails += `
-                            <div class="detail-row">
-                                <span class="detail-label">${prop}:</span>
-                                <span class="detail-value">${agent.state[prop]}</span>
-                            </div>
-                         `;
-                     }
-                 });
+            if (card) {
+                // Update existing card only if content changed
+                if (card.innerHTML !== htmlContent) {
+                    card.innerHTML = htmlContent;
+                }
+                if (card.className !== className) {
+                    card.className = className;
+                }
+            } else {
+                // Create new card
+                card = document.createElement('div');
+                card.id = cardId;
+                card.className = className;
+                card.innerHTML = htmlContent;
+                container.appendChild(card);
             }
-
-            // Build log view
-            let logsHtml = '';
-            if (agent.state && agent.state.logs && agent.state.logs.length > 0) {
-                logsHtml = `
-                    <div class="log-preview">
-                        ${agent.state.logs.map(line => `<div>${line}</div>`).join('')}
-                    </div>
-                `;
-            }
-
-            card.innerHTML = `
-                <div class="agent-header">
-                    <span class="agent-id">${agent.id}</span>
-                    <span class="agent-status">${agent.status}</span>
-                </div>
-                <div class="agent-details">
-                    ${stateDetails || '<div class="detail-row">Waiting for heartbeat...</div>'}
-                </div>
-                ${logsHtml}
-                ${controlsHtml}
-            `;
-
-            container.appendChild(card);
         });
+
+        // Clean up agents that are no longer present
+        // Convert to array to avoid live collection issues during removal
+        const currentCards = Array.from(container.getElementsByClassName('agent-card'));
+        currentCards.forEach(card => {
+            const agentId = card.id.replace('agent-', '');
+            if (!seenIds.has(agentId)) {
+                card.remove();
+            }
+        });
+
+        // Remove loading message if it exists and we have agents
+        const loadingMsg = container.querySelector('.loading');
+        if (loadingMsg && agents.length > 0) {
+            loadingMsg.remove();
+        }
+    }
+
+    function buildAgentCardHtml(agent) {
+        // Build Controls based on state (simplified)
+        const controlsHtml = `
+            <div class="agent-controls">
+                <button class="btn btn-pause" onclick="sendCommand('${agent.id}', 'pause')">Pause</button>
+                <button class="btn btn-resume" onclick="sendCommand('${agent.id}', 'resume')">Resume</button>
+                <button class="btn btn-skip" onclick="sendCommand('${agent.id}', 'skip')">Skip Step</button>
+                <button class="btn btn-stop" onclick="sendCommand('${agent.id}', 'stop')">Stop</button>
+            </div>
+        `;
+
+        // Display interesting state props
+        let stateDetails = '';
+        if (agent.state) {
+                // Common properties in state
+                const props = ['step', 'status', 'current_file'];
+                props.forEach(prop => {
+                    if (agent.state[prop]) {
+                        stateDetails += `
+                        <div class="detail-row">
+                            <span class="detail-label">${prop}:</span>
+                            <span class="detail-value">${agent.state[prop]}</span>
+                        </div>
+                        `;
+                    }
+                });
+        }
+
+        // Build log view
+        let logsHtml = '';
+        if (agent.state && agent.state.logs && agent.state.logs.length > 0) {
+            logsHtml = `
+                <div class="log-preview">
+                    ${agent.state.logs.map(line => `<div>${line}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="agent-header">
+                <span class="agent-id">${agent.id}</span>
+                <span class="agent-status">${agent.status}</span>
+            </div>
+            <div class="agent-details">
+                ${stateDetails || '<div class="detail-row">Waiting for heartbeat...</div>'}
+            </div>
+            ${logsHtml}
+            ${controlsHtml}
+        `;
     }
 
     window.sendCommand = async (agentId, command) => {

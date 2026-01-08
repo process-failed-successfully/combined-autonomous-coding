@@ -68,16 +68,16 @@ class TestCommitCommand(unittest.TestCase):
 
 
     @patch('main.shutil.which', return_value='git')
-    @patch('main.run_test')
+    @patch('main._run_test_logic')
     @patch('main.subprocess.run')
-    def test_commit_with_tests_success(self, mock_subprocess_run, mock_run_test, mock_which):
+    def test_commit_with_tests_success(self, mock_subprocess_run, mock_run_test_logic, mock_which):
         """Test commit with successful tests."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Test commit with tests",
             run_tests=True
         )
-        mock_run_test.return_value = None # Simulate successful test run
+        mock_run_test_logic.return_value = 0 # Simulate successful test run
 
         # Mocks for git commands
         mock_diff_with_changes = MagicMock(returncode=1)
@@ -93,22 +93,22 @@ class TestCommitCommand(unittest.TestCase):
             run_commit(args)
 
         self.assertEqual(cm.exception.code, 0)
-        mock_run_test.assert_called_once()
+        mock_run_test_logic.assert_called_once()
         self.assertTrue(mock_subprocess_run.call_count >= 2)
 
 
     @patch('main.shutil.which', return_value='git')
-    @patch('main.run_test')
+    @patch('main._run_test_logic')
     @patch('main.subprocess.run')
-    def test_commit_with_tests_failure(self, mock_subprocess_run, mock_run_test, mock_which):
+    def test_commit_with_tests_failure(self, mock_subprocess_run, mock_run_test_logic, mock_which):
         """Test that commit is aborted when tests fail."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="This should not be committed",
             run_tests=True
         )
-        # Simulate a test failure by raising SystemExit with a non-zero code
-        mock_run_test.side_effect = SystemExit(1)
+        # Simulate a test failure by returning a non-zero exit code
+        mock_run_test_logic.return_value = 1
 
         (Path.cwd() / "new_file.txt").write_text("some content")
 
@@ -116,7 +116,7 @@ class TestCommitCommand(unittest.TestCase):
             run_commit(args)
 
         self.assertEqual(cm.exception.code, 1)
-        mock_run_test.assert_called_once()
+        mock_run_test_logic.assert_called_once()
 
         # Ensure git commit was NOT called
         for call_args in mock_subprocess_run.call_args_list:

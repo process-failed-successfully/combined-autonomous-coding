@@ -2995,8 +2995,8 @@ def run_git(args):
         sys.exit(1)
 
 
-def run_test(args):
-    """Detects the project type and runs the appropriate test command."""
+def _run_test_logic(args):
+    """The core logic for running tests. Returns an exit code."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.test_args
 
@@ -3034,7 +3034,7 @@ def run_test(args):
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type (Node.js, Python, Go).", file=sys.stderr)
         print("  Please ensure the project has a `package.json`, `pyproject.toml`, `requirements.txt`, or `go.mod` file.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     # Construct the full command
     full_command = command_base
@@ -3049,18 +3049,23 @@ def run_test(args):
     try:
         # Stream the output directly and run in the target project directory
         result = subprocess.run(full_command, cwd=project_dir)
-        # Exit with the same code as the test runner
-        sys.exit(result.returncode)
+        # Return the exit code from the test runner
+        return result.returncode
 
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nTest execution interrupted by user.")
-        sys.exit(130) # Standard exit code for Ctrl+C
+        return 130 # Standard exit code for Ctrl+C
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+
+def run_test(args):
+    """Detects the project type and runs the appropriate test command."""
+    exit_code = _run_test_logic(args)
+    sys.exit(exit_code)
 
 
 def run_lint(args):
@@ -4677,20 +4682,14 @@ def run_commit(args):
     # --- Run tests if requested ---
     if args.run_tests:
         print("--- Running tests before commit ---")
-        # We need to construct a mock 'args' object for run_test
         test_args = argparse.Namespace(
             project_dir=project_dir,
-            test_args=[] # Pass no extra args to the test runner
+            test_args=[]  # Pass no extra args to the test runner
         )
-        try:
-            # run_test calls sys.exit(), so we need to catch it
-            # To do this properly, we should refactor run_test to not call sys.exit()
-            # For now, we'll assume a non-zero exit code on SystemExit is a failure.
-            run_test(test_args)
-        except SystemExit as e:
-            if e.code != 0:
-                print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
-                sys.exit(1)
+        exit_code = _run_test_logic(test_args)
+        if exit_code != 0:
+            print(f"\n❌ Tests failed with exit code {exit_code}. Commit aborted.", file=sys.stderr)
+            sys.exit(1)
         print("✅ Tests passed. Proceeding with commit.")
 
     # --- Stage all changes ---

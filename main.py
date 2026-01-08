@@ -4134,10 +4134,83 @@ def parse_args(argv=None):
         help="The git command and its arguments to run.",
     )
 
+    # --- New 'push' command ---
+    parser_push = subparsers.add_parser(
+        "push",
+        help="Push the current feature branch to the remote repository with safety checks."
+    )
+    parser_push.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the push command in (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_push(args):
+    """Handles the git push command with safety checks."""
+    import shutil
+    import subprocess
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Pushing feature branch in: {project_dir} ---")
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot push.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        # 1. Get the current branch name
+        from shared.git import get_current_branch
+        branch_name = get_current_branch(project_dir)
+
+        if not branch_name:
+            print("❌ Error: Could not determine the current branch name.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Current branch is '{branch_name}'.")
+
+        # 2. Safety check for restricted branches
+        restricted_branches = ["main", "master"]
+        if branch_name.lower() in restricted_branches:
+            print(f"❌ Error: Pushing directly to the protected branch '{branch_name}' is not allowed.", file=sys.stderr)
+            print("Please create a feature branch to push your changes.", file=sys.stderr)
+            sys.exit(1)
+
+        # 3. Execute the push command
+        print(f"Pushing branch '{branch_name}' to remote 'origin'...")
+        push_cmd = [git_path, "-C", str(project_dir), "push", "-u", "origin", branch_name]
+
+        # We stream the output directly to the user's console
+        push_result = subprocess.run(push_cmd, text=True)
+
+        if push_result.returncode == 0:
+            print("\n✅ Push successful.")
+            sys.exit(0)
+        else:
+            print(f"\n❌ Git push command failed with exit code {push_result.returncode}.", file=sys.stderr)
+            # Git's own error messages will be printed to stderr by subprocess.run
+            sys.exit(push_result.returncode)
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip() if e.stderr else str(e)
+        print(f"❌ An error occurred: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
@@ -5056,6 +5129,10 @@ async def main():
         return
     if args.command == "report":
         run_report(args)
+        return
+
+    if args.command == "push":
+        run_push(args)
         return
 
     # Initialize Agent Client

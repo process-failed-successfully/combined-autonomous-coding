@@ -2986,6 +2986,85 @@ def run_test(args):
         sys.exit(1)
 
 
+def run_lint(args):
+    """Detects the project type and runs the appropriate linter."""
+    project_dir = args.project_dir.resolve()
+    passthrough_args = args.lint_args
+    is_fix_mode = args.fix
+
+    print(f"--- Running linters in: {project_dir} ---")
+
+    # --- Project Detection ---
+    command_base = []
+    fix_flags = []
+
+    # 1. Node.js Project
+    if (project_dir / "package.json").exists():
+        print("Detected Node.js project.")
+        # Assumes a 'lint' script is defined in package.json
+        # E.g., "lint": "eslint ."
+        # E.g., "lint:fix": "eslint . --fix"
+        if is_fix_mode:
+            # Check for a dedicated fix script first
+            try:
+                with open(project_dir / "package.json", 'r') as f:
+                    package_data = json.load(f)
+                    if "lint:fix" in package_data.get("scripts", {}):
+                         command_base = ["npm", "run", "lint:fix"]
+                    else:
+                         command_base = ["npm", "run", "lint"]
+                         fix_flags = ["--", "--fix"]
+            except (IOError, json.JSONDecodeError):
+                 command_base = ["npm", "run", "lint"]
+                 fix_flags = ["--", "--fix"]
+
+        else:
+            command_base = ["npm", "run", "lint"]
+
+    # 2. Python Project
+    elif (project_dir / "pyproject.toml").exists() or (project_dir / "requirements.txt").exists():
+        print("Detected Python project.")
+        if shutil.which("ruff"):
+            command_base = ["ruff", "check", "."]
+            if is_fix_mode:
+                fix_flags = ["--fix"]
+        elif shutil.which("flake8"):
+            command_base = ["flake8", "."]
+            if is_fix_mode:
+                print("Warning: --fix is not supported by flake8. Ignoring.", file=sys.stderr)
+        elif shutil.which("pylint"):
+            # Pylint is harder to auto-configure well, but we can try
+            command_base = ["pylint", str(project_dir)]
+            if is_fix_mode:
+                print("Warning: --fix is not supported by pylint. Ignoring.", file=sys.stderr)
+        else:
+             print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
+
+    # --- Command Construction & Execution ---
+    if not command_base:
+        print("❌ Error: Could not detect a recognizable project type or find a suitable linter.", file=sys.stderr)
+        sys.exit(1)
+
+    # Construct the full command
+    full_command = command_base + (fix_flags if is_fix_mode else []) + passthrough_args
+
+    print(f"Executing command: {' '.join(full_command)}")
+    try:
+        # Stream the output directly and run in the target project directory
+        result = subprocess.run(full_command, cwd=project_dir)
+        sys.exit(result.returncode)
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nLinting process interrupted by user.")
+        sys.exit(130)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while running linter: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
@@ -4011,6 +4090,28 @@ def parse_args(argv=None):
         help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
     )
 
+    # --- New 'lint' command ---
+    parser_lint = subparsers.add_parser(
+        "lint",
+        help="Automatically detect and run linters for the project."
+    )
+    parser_lint.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run linters in (default: current directory).",
+    )
+    parser_lint.add_argument(
+        "--fix",
+        action="store_true",
+        help="Attempt to automatically fix linting issues.",
+    )
+    parser_lint.add_argument(
+        "lint_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass through to the underlying linter (e.g., specific files, flags).",
+    )
+
     # --- New 'git' command ---
     parser_git = subparsers.add_parser(
         "git",
@@ -4940,6 +5041,10 @@ async def main():
 
     if args.command == "test":
         run_test(args)
+        return
+
+    if args.command == "lint":
+        run_lint(args)
         return
 
     if args.command == "git":

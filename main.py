@@ -4447,10 +4447,134 @@ def parse_args(argv=None):
         help="The project directory to run the commit command in (default: current directory).",
     )
 
+    # --- New 'feature' command ---
+    parser_feature = subparsers.add_parser(
+        "feature",
+        help="Run a guided workflow for a new feature: branch -> commit -> push -> pr."
+    )
+    parser_feature.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the feature.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_feature(args):
+    """Runs a guided workflow for creating a feature branch, committing, pushing, and creating a PR."""
+    project_dir = args.project_dir.resolve()
+    print("--- Guided Feature Workflow ---")
+    print("This will walk you through: branch -> commit -> push -> pr.")
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot start feature workflow.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        # --- Step 1: Create Branch ---
+        print("\n--- [1/4] Create Branch ---")
+        branch_name = input("Enter the new branch name: ").strip()
+        if not branch_name:
+            print("Branch name cannot be empty. Aborting.")
+            sys.exit(1)
+
+        branch_args = argparse.Namespace(
+            action="create",
+            branch_name=branch_name,
+            project_dir=project_dir,
+            keep_branch=False # Not used in create
+        )
+        try:
+            run_branch(branch_args)
+        except SystemExit as e:
+            if e.code != 0:
+                print("❌ Branch creation failed. Aborting workflow.", file=sys.stderr)
+                sys.exit(1)
+
+        # --- Step 2: Commit ---
+        print("\n--- [2/4] Commit Changes ---")
+        print("This will stage and commit all current changes.")
+        commit_message = input("Enter the commit message: ").strip()
+        if not commit_message:
+            print("Commit message cannot be empty. Aborting.")
+            sys.exit(1)
+
+        commit_args = argparse.Namespace(
+            message=commit_message,
+            run_tests=False, # For simplicity, don't run tests in this guided flow
+            project_dir=project_dir
+        )
+        try:
+            run_commit(commit_args)
+        except SystemExit as e:
+            if e.code != 0:
+                print("❌ Commit failed. Aborting workflow.", file=sys.stderr)
+                # We should checkout the original branch or offer to. For now, we just exit.
+                sys.exit(1)
+
+        # --- Step 3: Push ---
+        print("\n--- [3/4] Push to Remote ---")
+        confirm_push = input(f"Push the branch '{branch_name}' to the remote repository? [Y/n]: ").strip().lower()
+        if confirm_push not in ['y', '']:
+            print("Push skipped. Aborting workflow.")
+            sys.exit(0)
+
+        push_args = argparse.Namespace(project_dir=project_dir)
+        try:
+            run_push(push_args)
+        except SystemExit as e:
+            if e.code != 0:
+                print("❌ Push failed. Aborting workflow.", file=sys.stderr)
+                sys.exit(1)
+
+        # --- Step 4: Create Pull Request ---
+        print("\n--- [4/4] Create Pull Request ---")
+        confirm_pr = input("Create a pull request on GitHub? [Y/n]: ").strip().lower()
+        if confirm_pr not in ['y', '']:
+            print("Pull request creation skipped.")
+            print("\n✅ Workflow complete up to push.")
+            sys.exit(0)
+
+        pr_title = input(f"PR Title [{commit_message}]: ").strip() or commit_message
+        pr_body = input("PR Body (optional): ").strip()
+        base_branch = input("Base branch [main]: ").strip() or "main"
+
+        pr_args = argparse.Namespace(
+            action="create",
+            title=pr_title,
+            body=pr_body,
+            base=base_branch,
+            project_dir=project_dir,
+            profile=getattr(args, 'profile', None)
+        )
+
+        # We need to call _pr_create directly to avoid its sys.exit() and to pass config
+        file_config = load_config_from_file(profile=getattr(args, 'profile', None))
+        config = argparse.Namespace(
+            github_token=os.environ.get("GITHUB_TOKEN") or file_config.get("github_token"),
+            github_host=file_config.get("github_host")
+        )
+
+        try:
+            _pr_create(pr_args, config)
+        except SystemExit as e:
+            if e.code != 0:
+                print("❌ Pull request creation failed.", file=sys.stderr)
+                sys.exit(1)
+
+        print("\n🎉 Feature workflow completed successfully!")
+        sys.exit(0)
+
+    except (KeyboardInterrupt, EOFError):
+        print("\n\nWorkflow aborted by user.")
+        sys.exit(1)
 
 
 def run_push(args):
@@ -5667,6 +5791,10 @@ async def main():
 
     if args.command == "commit":
         run_commit(args)
+        return
+
+    if args.command == "feature":
+        run_feature(args)
         return
 
     # Initialize Agent Client

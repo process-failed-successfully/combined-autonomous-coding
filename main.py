@@ -2091,6 +2091,73 @@ def run_history(args):
     sys.exit(0)
 
 
+def _run_last_logic(project_dir):
+    """The core logic for displaying a summary of the last agent run."""
+    print(f"--- Summary of Last Run: {project_dir} ---")
+
+    # 1. Get the last run ID
+    history_file = project_dir / ".agent_history"
+    if not history_file.exists():
+        print("No agent run history found for this project.")
+        return False
+
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+        if not run_ids:
+            print("History is empty.")
+            return False
+        last_run_id = run_ids[-1]
+        print(f"Last Run ID: {last_run_id}")
+    except IOError as e:
+        print(f"Error reading history file: {e}", file=sys.stderr)
+        return False
+
+    # 2. Display Metrics
+    metrics_file = _find_metrics_file(last_run_id, project_dir)
+    if metrics_file:
+        metrics = _parse_metrics(metrics_file)
+        # Reuse the display table but with a different title
+        _display_metrics_table(metrics, f"Performance Metrics")
+    else:
+        print("\n--- Performance Metrics ---")
+        print("No metrics file found for the last run.")
+
+    # 3. Display QA Summary
+    print("\n--- QA Summary ---")
+    qa_summary_file = project_dir / "qa_summary.txt"
+    if qa_summary_file.exists():
+        try:
+            summary_content = qa_summary_file.read_text().strip()
+            print(summary_content)
+        except IOError as e:
+            print(f"Error reading qa_summary.txt: {e}")
+    else:
+        print("No QA summary found for the last run.")
+
+    # 4. Display Log Summary
+    print("\n--- Log Summary (Last 10 lines) ---")
+    repo_root = Path(__file__).parent
+    log_file = repo_root / f"agents/logs/{last_run_id}.log"
+    if log_file.exists():
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = [line.strip() for line in f if line.strip()]
+                for line in lines[-10:]:
+                    print(f"  {line}")
+        except IOError as e:
+            print(f"Error reading log file: {e}")
+    else:
+        print("Log file not found.")
+
+    return True
+
+def run_last(args):
+    """Displays a summary of the last agent run."""
+    success = _run_last_logic(project_dir=args.project_dir)
+    sys.exit(0 if success else 1)
+
+
 def _run_diff_summary_logic(project_dir):
     """The core logic for displaying a git diff summary."""
     git_path = shutil.which("git")
@@ -3482,6 +3549,15 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check history for (default: current directory)",
+    )
+
+    # Subparser for 'last'
+    parser_last = subparsers.add_parser("last", help="Show a summary of the last agent run.")
+    parser_last.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to check (default: current directory)",
     )
 
     # Subparser for 'diff-summary'
@@ -5246,6 +5322,10 @@ async def main():
     # Handle `history` command
     if args.command == "history":
         run_history(args)
+        return
+
+    if args.command == "last":
+        run_last(args)
         return
 
     if args.command == "diff-summary":

@@ -4375,6 +4375,28 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'commit' command ---
+    parser_commit = subparsers.add_parser(
+        "commit",
+        help="Stage all changes and create a git commit with safety checks."
+    )
+    parser_commit.add_argument(
+        "-m", "--message",
+        required=True,
+        help="The commit message."
+    )
+    parser_commit.add_argument(
+        "--run-tests",
+        action="store_true",
+        help="Run project tests before committing. If tests fail, the commit is aborted."
+    )
+    parser_commit.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the commit command in (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4579,6 +4601,80 @@ def run_pr(args):
     else:
         print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)
+
+
+def run_commit(args):
+    """Handles the git commit command with safety checks."""
+    import shutil
+    import subprocess
+
+    project_dir = args.project_dir.resolve()
+    commit_message = args.message
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot commit.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Run tests if requested ---
+    if args.run_tests:
+        print("--- Running tests before commit ---")
+        # We need to construct a mock 'args' object for run_test
+        test_args = argparse.Namespace(
+            project_dir=project_dir,
+            test_args=[] # Pass no extra args to the test runner
+        )
+        try:
+            # run_test calls sys.exit(), so we need to catch it
+            # To do this properly, we should refactor run_test to not call sys.exit()
+            # For now, we'll assume a non-zero exit code on SystemExit is a failure.
+            run_test(test_args)
+        except SystemExit as e:
+            if e.code != 0:
+                print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
+                sys.exit(1)
+        print("✅ Tests passed. Proceeding with commit.")
+
+    # --- Stage all changes ---
+    print("--- Staging all changes ---")
+    try:
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "add", "-A"],
+            check=True, capture_output=True, text=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Check if there's anything to commit ---
+    # `git diff --cached --quiet` exits with 1 if there are staged changes, 0 otherwise.
+    check_staged_result = subprocess.run(
+        [git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"],
+        capture_output=True
+    )
+    if check_staged_result.returncode == 0:
+        print("✅ No changes staged for commit.")
+        sys.exit(0)
+
+    # --- Create the commit ---
+    print(f"--- Creating commit ---")
+    try:
+        commit_cmd = [git_path, "-C", str(project_dir), "commit", "-m", commit_message]
+        commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)
+        print(commit_result.stdout.strip())
+        print("\n✅ Commit created successfully.")
+        sys.exit(0)
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git commit command failed:", file=sys.stderr)
+        print(e.stdout, file=sys.stderr)
+        print(e.stderr, file=sys.stderr)
+        sys.exit(e.returncode)
 
 
 def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
@@ -5517,6 +5613,10 @@ async def main():
 
     if args.command == "pr":
         run_pr(args)
+        return
+
+    if args.command == "commit":
+        run_commit(args)
         return
 
     # Initialize Agent Client

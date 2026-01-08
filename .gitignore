@@ -48,6 +48,7 @@ ehthumbs.db
 Thumbs.db
 .env 
 # Agent
+.agent_history
 .agent_state.json
 blockers.txt
 gemini_progress.txt

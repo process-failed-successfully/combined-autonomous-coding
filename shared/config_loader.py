@@ -1,5 +1,6 @@
 import yaml
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 import platformdirs
@@ -77,6 +78,8 @@ notification_settings:
 
     try:
         path.write_text(default_content)
+        # Set file permissions to 600 (owner read/write only) to protect secrets
+        os.chmod(path, 0o600)
         logger.info(f"Created default configuration at {path}")
     except Exception as e:
         logger.error(f"Failed to create default config at {path}: {e}")

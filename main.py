@@ -3065,6 +3065,77 @@ def run_lint(args):
         sys.exit(1)
 
 
+def run_format(args):
+    """Detects the project type and runs the appropriate code formatter."""
+    project_dir = args.project_dir.resolve()
+    passthrough_args = args.format_args
+    is_check_mode = args.check
+
+    print(f"--- Running code formatter in: {project_dir} ---")
+
+    # --- Project Detection ---
+    command_base = []
+    check_flags = []
+
+    # 1. Python Project
+    if (project_dir / "pyproject.toml").exists() or (project_dir / "setup.py").exists():
+        print("Detected Python project.")
+        if shutil.which("black"):
+            command_base = ["black", "."]
+            if is_check_mode:
+                check_flags = ["--check"]
+        else:
+            print("Warning: Python formatter 'black' not found in PATH.", file=sys.stderr)
+
+    # 2. Node.js Project (assuming Prettier)
+    elif (project_dir / "package.json").exists():
+        print("Detected Node.js project.")
+        # Assumes prettier is installed locally or globally
+        prettier_executable = None
+        local_prettier = project_dir / "node_modules" / ".bin" / "prettier"
+        if local_prettier.exists():
+            prettier_executable = str(local_prettier)
+        elif shutil.which("prettier"):
+            prettier_executable = "prettier"
+        elif shutil.which("npx"):
+            prettier_executable = "npx prettier"
+
+
+        if prettier_executable:
+            command_base = [prettier_executable, "."]
+            if is_check_mode:
+                check_flags = ["--check"]
+            else:
+                check_flags = ["--write"] # Prettier's equivalent of formatting
+        else:
+            print("Warning: Node.js formatter 'prettier' not found.", file=sys.stderr)
+
+
+    # --- Command Construction & Execution ---
+    if not command_base:
+        print("❌ Error: Could not detect a recognizable project type or find a suitable formatter.", file=sys.stderr)
+        sys.exit(1)
+
+    # Construct the full command
+    full_command = command_base + check_flags + passthrough_args
+
+    print(f"Executing command: {' '.join(full_command)}")
+    try:
+        # Stream the output directly and run in the target project directory
+        result = subprocess.run(full_command, cwd=project_dir)
+        sys.exit(result.returncode)
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nFormatting process interrupted by user.")
+        sys.exit(130)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while running formatter: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
@@ -4112,6 +4183,28 @@ def parse_args(argv=None):
         help="Arguments to pass through to the underlying linter (e.g., specific files, flags).",
     )
 
+    # --- New 'format' command ---
+    parser_format = subparsers.add_parser(
+        "format",
+        help="Automatically detect and format code for the project."
+    )
+    parser_format.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to format (default: current directory).",
+    )
+    parser_format.add_argument(
+        "--check",
+        action="store_true",
+        help="Run the formatter in check-only mode (dry run).",
+    )
+    parser_format.add_argument(
+        "format_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass through to the underlying formatter (e.g., specific files, flags).",
+    )
+
     # --- New 'git' command ---
     parser_git = subparsers.add_parser(
         "git",
@@ -5118,6 +5211,10 @@ async def main():
 
     if args.command == "lint":
         run_lint(args)
+        return
+
+    if args.command == "format":
+        run_format(args)
         return
 
     if args.command == "git":

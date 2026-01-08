@@ -67,7 +67,7 @@ class TestPushCommand(unittest.TestCase):
         # The first call is for 'git status', the second for 'git push' which will fail
         mock_run.side_effect = [
             MagicMock(stdout="", returncode=0),  # Clean status
-            subprocess.CalledProcessError(1, "git push", stderr="error")
+            subprocess.CalledProcessError(128, "git push", stderr="error")
         ]
 
         args = MagicMock()

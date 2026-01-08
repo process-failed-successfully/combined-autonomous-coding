@@ -4378,15 +4378,10 @@ def run_push(args):
         push_cmd = [git_path, "-C", str(project_dir), "push", "-u", "origin", branch_name]
 
         # We stream the output directly to the user's console
-        push_result = subprocess.run(push_cmd, text=True)
+        subprocess.run(push_cmd, text=True, check=True)
 
-        if push_result.returncode == 0:
-            print("\n✅ Push successful.")
-            sys.exit(0)
-        else:
-            print(f"\n❌ Git push command failed with exit code {push_result.returncode}.", file=sys.stderr)
-            # Git's own error messages will be printed to stderr by subprocess.run
-            sys.exit(push_result.returncode)
+        print("\n✅ Push successful.")
+        sys.exit(0)
 
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.strip() if e.stderr else str(e)

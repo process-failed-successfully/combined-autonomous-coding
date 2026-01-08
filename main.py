@@ -4380,44 +4380,6 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
-    # --- New 'pr' command ---
-    parser_pr = subparsers.add_parser(
-        "pr",
-        help="Manage GitHub pull requests for the project."
-    )
-    pr_subparsers = parser_pr.add_subparsers(
-        dest="action",
-        required=True,
-        help="Specify pr action"
-    )
-
-    # PR 'create' action
-    parser_pr_create = pr_subparsers.add_parser(
-        "create",
-        help="Create a new pull request on GitHub."
-    )
-    parser_pr_create.add_argument(
-        "--title",
-        required=True,
-        help="The title of the pull request."
-    )
-    parser_pr_create.add_argument(
-        "--body",
-        default="",
-        help="The body content of the pull request."
-    )
-    parser_pr_create.add_argument(
-        "--base",
-        default="main",
-        help="The base branch to merge into (default: main)."
-    )
-    parser_pr_create.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory.",
-    )
-
     # --- New 'commit' command ---
     parser_commit = subparsers.add_parser(
         "commit",

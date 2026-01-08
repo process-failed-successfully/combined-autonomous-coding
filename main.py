@@ -4265,6 +4265,15 @@ def run_push(args):
         sys.exit(1)
 
     try:
+        # Check for uncommitted changes
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if status_result.stdout.strip():
+            print("❌ Error: You have uncommitted changes. Please commit or stash them before pushing.", file=sys.stderr)
+            sys.exit(1)
+
         # 1. Get the current branch name
         from shared.git import get_current_branch
         branch_name = get_current_branch(project_dir)

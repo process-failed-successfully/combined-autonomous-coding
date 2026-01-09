@@ -113,20 +113,21 @@ def has_recent_activity(
             dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
 
             for filename in files:
+                full_path = os.path.join(root, filename)
+
                 # Check ignore patterns for files
                 if ignore_patterns:
+                    relative_path = os.path.relpath(full_path, str(root_dir))
                     should_ignore = False
                     for pattern in ignore_patterns:
-                        if fnmatch.fnmatch(filename, pattern):
+                        if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(relative_path, pattern):
                             should_ignore = True
                             break
                     if should_ignore:
                         continue
 
                 try:
-                    # Construct path only when needed
-                    file_path = os.path.join(root, filename)
-                    mtime = os.stat(file_path).st_mtime
+                    mtime = os.stat(full_path).st_mtime
                     if now - mtime < seconds:
                         return True
                 except OSError:

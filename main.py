@@ -4692,6 +4692,27 @@ def parse_args(argv=None):
         help="The project directory for the feature.",
     )
 
+    # --- New 'profile' command ---
+    parser_profile = subparsers.add_parser(
+        "profile",
+        help="Manage configuration profiles."
+    )
+    parser_profile.add_argument(
+        "action",
+        choices=["list", "create", "show", "delete"],
+        help="Action to perform on profiles.",
+    )
+    parser_profile.add_argument(
+        "profile_name",
+        nargs="?",
+        help="The name of the profile to create, show, or delete.",
+    )
+    parser_profile.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts for 'delete' action.",
+    )
+
     # --- New 'watch' command ---
     parser_watch = subparsers.add_parser(
         "watch",
@@ -4713,6 +4734,137 @@ def parse_args(argv=None):
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_profile(args):
+    """Manages configuration profiles."""
+    config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
+    config_path = config_dir / "agent_config.yaml"
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config_data = yaml.safe_load(f) or {}
+        else:
+            config_data = {}
+    except (IOError, yaml.YAMLError) as e:
+        print(f"❌ Error reading configuration file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Ensure the 'profiles' key exists
+    if 'profiles' not in config_data or not isinstance(config_data.get('profiles'), dict):
+        config_data['profiles'] = {}
+
+    action = args.action
+    profile_name = args.profile_name
+
+    # --- LIST action ---
+    if action == "list":
+        print("--- Available Profiles ---")
+        profiles = config_data.get('profiles', {})
+        if not profiles:
+            print("No profiles found.")
+        else:
+            for name in profiles.keys():
+                print(f"  - {name}")
+        sys.exit(0)
+
+    # --- SHOW action ---
+    elif action == "show":
+        if not profile_name:
+            print("❌ Error: 'show' action requires a profile name.", file=sys.stderr)
+            sys.exit(1)
+
+        profile_data = config_data.get('profiles', {}).get(profile_name)
+        if not profile_data:
+            print(f"❌ Error: Profile '{profile_name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Configuration for Profile: {profile_name} ---")
+        print(yaml.dump(profile_data, indent=2, sort_keys=True))
+        sys.exit(0)
+
+    # --- DELETE action ---
+    elif action == "delete":
+        if not profile_name:
+            print("❌ Error: 'delete' action requires a profile name.", file=sys.stderr)
+            sys.exit(1)
+
+        if profile_name not in config_data.get('profiles', {}):
+            print(f"❌ Error: Profile '{profile_name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        if not args.yes:
+            confirm = input(f"Are you sure you want to delete the profile '{profile_name}'? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+
+        del config_data['profiles'][profile_name]
+
+        try:
+            with open(config_path, 'w') as f:
+                yaml.dump(config_data, f, indent=2, sort_keys=True)
+            os.chmod(config_path, 0o600)
+            print(f"✅ Profile '{profile_name}' deleted successfully.")
+        except (IOError, yaml.YAMLError) as e:
+            print(f"❌ Error writing configuration file: {e}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+
+    # --- CREATE action ---
+    elif action == "create":
+        if not profile_name:
+            print("❌ Error: 'create' action requires a profile name.", file=sys.stderr)
+            sys.exit(1)
+
+        if profile_name in config_data.get('profiles', {}):
+            print(f"❌ Error: Profile '{profile_name}' already exists.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Creating New Profile: {profile_name} ---")
+        print("Please provide the settings for this profile. Press Enter to skip a setting.")
+
+        # Re-use the interactive input logic from run_configure
+        def get_input(prompt, default_value=None):
+            if default_value:
+                prompt_text = f"{prompt} [{default_value}]: "
+            else:
+                prompt_text = f"{prompt}: "
+            user_input = input(prompt_text).strip()
+            return user_input or default_value
+
+        new_profile_data = {}
+
+        # Core settings
+        new_profile_data['model'] = get_input("Model name (e.g., gemini-1.5-pro-latest)")
+        new_profile_data['agent'] = get_input("Default agent (gemini, cursor, etc.)")
+
+        # Jira
+        print("\n--- Jira Integration (optional) ---")
+        jira_url = get_input("Jira URL")
+        if jira_url:
+            new_profile_data['jira'] = {
+                'url': jira_url,
+                'email': get_input("Jira Email"),
+                'token': get_input("Jira API Token"),
+            }
+
+        # Clean up empty values
+        new_profile_data = {k: v for k, v in new_profile_data.items() if v}
+
+        config_data['profiles'][profile_name] = new_profile_data
+
+        try:
+            with open(config_path, 'w') as f:
+                yaml.dump(config_data, f, indent=2, sort_keys=True)
+            os.chmod(config_path, 0o600)
+            print(f"\n✅ Profile '{profile_name}' created successfully.")
+        except (IOError, yaml.YAMLError) as e:
+            print(f"\n❌ Error writing configuration file: {e}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
 
 
 def run_watch(args):
@@ -6088,6 +6240,10 @@ async def main():
 
     if args.command == "feature":
         run_feature(args)
+        return
+
+    if args.command == "profile":
+        run_profile(args)
         return
 
     if args.command == "watch":

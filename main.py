@@ -18,6 +18,14 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+import time
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
+except ImportError:
+    Observer = None
+    FileSystemEventHandler = None
+
 
 from shared.config import Config
 from shared.logger import setup_logger
@@ -51,6 +59,17 @@ AVAILABLE_AGENTS = {
     "openrouter": "Uses a model from the OpenRouter API.",
 }
 
+if FileSystemEventHandler:
+    class CommandEventHandler(FileSystemEventHandler):
+        def __init__(self, command, project_dir):
+            self.command = command
+            self.project_dir = project_dir
+
+        def on_modified(self, event):
+            if event.is_directory:
+                return
+            print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
+            subprocess.run(self.command, cwd=self.project_dir)
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -4673,10 +4692,53 @@ def parse_args(argv=None):
         help="The project directory for the feature.",
     )
 
+    # --- New 'watch' command ---
+    parser_watch = subparsers.add_parser(
+        "watch",
+        help="Watch for file changes and run a command."
+    )
+    parser_watch.add_argument(
+        "watch_command",
+        nargs=argparse.REMAINDER,
+        help="The command to run when a file changes.",
+    )
+    parser_watch.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to watch.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_watch(args):
+    """Watches for file changes and runs a command."""
+    project_dir = args.project_dir.resolve()
+    command_to_run = args.watch_command
+
+    if Observer is None:
+        print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Watching for file changes in: {project_dir} ---")
+    print(f"--- Press Ctrl+C to stop ---")
+
+    event_handler = CommandEventHandler(command_to_run, project_dir)
+    observer = Observer()
+    observer.schedule(event_handler, project_dir, recursive=True)
+    observer.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+    sys.exit(0)
 
 
 def run_feature(args):
@@ -6026,6 +6088,10 @@ async def main():
 
     if args.command == "feature":
         run_feature(args)
+        return
+
+    if args.command == "watch":
+        run_watch(args)
         return
 
     # Initialize Agent Client

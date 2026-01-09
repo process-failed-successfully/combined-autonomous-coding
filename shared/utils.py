@@ -90,6 +90,10 @@ def get_file_tree(root_dir: Path) -> str:
     return tree_str
 
 
+# Common directories to skip for performance
+IGNORED_DIRS = {".git", "node_modules", "__pycache__", ".venv", ".idea", ".vscode"}
+
+
 def has_recent_activity(
     root_dir: Path, seconds: float = 60, ignore_patterns: Optional[List[str]] = None
 ) -> bool:
@@ -101,24 +105,28 @@ def has_recent_activity(
     import fnmatch
 
     now = time.time()
+
     try:
-        for path in root_dir.rglob("*"):
-            # Ignore .git and other hidden dirs
-            if ".git" in path.parts:
-                continue
-            if path.is_file():
-                # Check ignore patterns
+        # Use os.walk for better control over recursion and performance
+        for root, dirs, files in os.walk(str(root_dir)):
+            # Prune ignored directories in-place
+            dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
+
+            for filename in files:
+                # Check ignore patterns for files
                 if ignore_patterns:
                     should_ignore = False
                     for pattern in ignore_patterns:
-                        if fnmatch.fnmatch(path.name, pattern):
+                        if fnmatch.fnmatch(filename, pattern):
                             should_ignore = True
                             break
                     if should_ignore:
                         continue
 
                 try:
-                    mtime = path.stat().st_mtime
+                    # Construct path only when needed
+                    file_path = os.path.join(root, filename)
+                    mtime = os.stat(file_path).st_mtime
                     if now - mtime < seconds:
                         return True
                 except OSError:

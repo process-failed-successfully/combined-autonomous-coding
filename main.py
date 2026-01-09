@@ -3069,8 +3069,8 @@ def run_git(args):
         sys.exit(1)
 
 
-def run_test(args):
-    """Detects the project type and runs the appropriate test command."""
+def _run_test_logic(args):
+    """Core logic for detecting and running tests."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.test_args
 
@@ -3082,7 +3082,6 @@ def run_test(args):
     # 1. Node.js Project
     if (project_dir / "package.json").exists():
         print("Detected Node.js project.")
-        # Prefer specific package managers if lock files exist
         if (project_dir / "yarn.lock").exists():
             command_base = ["yarn", "test"]
         elif (project_dir / "pnpm-lock.yaml").exists():
@@ -3093,7 +3092,6 @@ def run_test(args):
     # 2. Python Project
     elif (project_dir / "pyproject.toml").exists() or (project_dir / "requirements.txt").exists():
         print("Detected Python project.")
-        # Prefer pytest if available
         if shutil.which("pytest"):
             command_base = ["pytest"]
         else:
@@ -3104,71 +3102,62 @@ def run_test(args):
         print("Detected Go project.")
         command_base = ["go", "test", "./..."]
 
-    # --- Command Construction & Execution ---
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type (Node.js, Python, Go).", file=sys.stderr)
-        print("  Please ensure the project has a `package.json`, `pyproject.toml`, `requirements.txt`, or `go.mod` file.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    # Construct the full command
     full_command = command_base
     if passthrough_args:
-        # npm requires a '--' separator before passing args to the script
         if command_base == ["npm", "test"]:
             full_command.append("--")
         full_command.extend(passthrough_args)
 
-
     print(f"Executing command: {' '.join(full_command)}")
     try:
-        # Stream the output directly and run in the target project directory
         result = subprocess.run(full_command, cwd=project_dir)
-        # Exit with the same code as the test runner
-        sys.exit(result.returncode)
-
+        return result.returncode
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nTest execution interrupted by user.")
-        sys.exit(130) # Standard exit code for Ctrl+C
+        return 130
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+
+def run_test(args):
+    """Detects the project type and runs the appropriate test command."""
+    result_code = _run_test_logic(args)
+    sys.exit(result_code)
 
 
-def run_lint(args):
-    """Detects the project type and runs the appropriate linter."""
+def _run_lint_logic(args):
+    """Core logic for detecting and running linters."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.lint_args
     is_fix_mode = args.fix
 
     print(f"--- Running linters in: {project_dir} ---")
 
-    # --- Project Detection ---
     command_base = []
     fix_flags = []
 
     # 1. Node.js Project
     if (project_dir / "package.json").exists():
         print("Detected Node.js project.")
-        # Assumes a 'lint' script is defined in package.json
-        # E.g., "lint": "eslint ."
-        # E.g., "lint:fix": "eslint . --fix"
         if is_fix_mode:
-            # Check for a dedicated fix script first
             try:
                 with open(project_dir / "package.json", 'r') as f:
                     package_data = json.load(f)
-                    if "lint:fix" in package_data.get("scripts", {}):
-                         command_base = ["npm", "run", "lint:fix"]
-                    else:
-                         command_base = ["npm", "run", "lint"]
-                         fix_flags = ["--", "--fix"]
+                if "lint:fix" in package_data.get("scripts", {}):
+                    command_base = ["npm", "run", "lint:fix"]
+                else:
+                    command_base = ["npm", "run", "lint"]
+                    fix_flags = ["--", "--fix"]
             except (IOError, json.JSONDecodeError):
-                 command_base = ["npm", "run", "lint"]
-                 fix_flags = ["--", "--fix"]
-
+                command_base = ["npm", "run", "lint"]
+                fix_flags = ["--", "--fix"]
         else:
             command_base = ["npm", "run", "lint"]
 
@@ -3184,47 +3173,46 @@ def run_lint(args):
             if is_fix_mode:
                 print("Warning: --fix is not supported by flake8. Ignoring.", file=sys.stderr)
         elif shutil.which("pylint"):
-            # Pylint is harder to auto-configure well, but we can try
             command_base = ["pylint", str(project_dir)]
             if is_fix_mode:
                 print("Warning: --fix is not supported by pylint. Ignoring.", file=sys.stderr)
         else:
-             print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
+            print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
 
-    # --- Command Construction & Execution ---
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type or find a suitable linter.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    # Construct the full command
     full_command = command_base + (fix_flags if is_fix_mode else []) + passthrough_args
-
     print(f"Executing command: {' '.join(full_command)}")
-    try:
-        # Stream the output directly and run in the target project directory
-        result = subprocess.run(full_command, cwd=project_dir)
-        sys.exit(result.returncode)
 
+    try:
+        result = subprocess.run(full_command, cwd=project_dir)
+        return result.returncode
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nLinting process interrupted by user.")
-        sys.exit(130)
+        return 130
     except Exception as e:
         print(f"❌ An unexpected error occurred while running linter: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+
+def run_lint(args):
+    """Detects the project type and runs the appropriate linter."""
+    result_code = _run_lint_logic(args)
+    sys.exit(result_code)
 
 
-def run_format(args):
-    """Detects the project type and runs the appropriate code formatter."""
+def _run_format_logic(args):
+    """Core logic for detecting and running code formatters."""
     project_dir = args.project_dir.resolve()
     passthrough_args = args.format_args
     is_check_mode = args.check
 
     print(f"--- Running code formatter in: {project_dir} ---")
 
-    # --- Project Detection ---
     command_base = []
     check_flags = []
 
@@ -3238,10 +3226,9 @@ def run_format(args):
         else:
             print("Warning: Python formatter 'black' not found in PATH.", file=sys.stderr)
 
-    # 2. Node.js Project (assuming Prettier)
+    # 2. Node.js Project
     elif (project_dir / "package.json").exists():
         print("Detected Node.js project.")
-        # Assumes prettier is installed locally or globally
         prettier_executable = None
         local_prettier = project_dir / "node_modules" / ".bin" / "prettier"
         if local_prettier.exists():
@@ -3251,40 +3238,39 @@ def run_format(args):
         elif shutil.which("npx"):
             prettier_executable = "npx prettier"
 
-
         if prettier_executable:
             command_base = [prettier_executable, "."]
             if is_check_mode:
                 check_flags = ["--check"]
             else:
-                check_flags = ["--write"] # Prettier's equivalent of formatting
+                check_flags = ["--write"]
         else:
             print("Warning: Node.js formatter 'prettier' not found.", file=sys.stderr)
 
-
-    # --- Command Construction & Execution ---
     if not command_base:
         print("❌ Error: Could not detect a recognizable project type or find a suitable formatter.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    # Construct the full command
     full_command = command_base + check_flags + passthrough_args
-
     print(f"Executing command: {' '.join(full_command)}")
-    try:
-        # Stream the output directly and run in the target project directory
-        result = subprocess.run(full_command, cwd=project_dir)
-        sys.exit(result.returncode)
 
+    try:
+        result = subprocess.run(full_command, cwd=project_dir)
+        return result.returncode
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except KeyboardInterrupt:
         print("\nFormatting process interrupted by user.")
-        sys.exit(130)
+        return 130
     except Exception as e:
         print(f"❌ An unexpected error occurred while running formatter: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
+
+def run_format(args):
+    """Detects the project type and runs the appropriate code formatter."""
+    result_code = _run_format_logic(args)
+    sys.exit(result_code)
 
 
 def run_sprint_command(args):
@@ -4492,6 +4478,18 @@ def parse_args(argv=None):
         help="The project directory for the feature.",
     )
 
+    # --- New 'interact' command ---
+    parser_interact = subparsers.add_parser(
+        "interact",
+        help="Launch a simple interactive menu for common commands."
+    )
+    parser_interact.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to interact with (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4810,78 +4808,119 @@ def run_pr(args):
         sys.exit(1)
 
 
-def run_commit(args):
-    """Handles the git commit command with safety checks."""
-    import shutil
-    import subprocess
+def run_interact(args):
+    """Launches a simple interactive menu for common commands."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Interactive Mode: {project_dir} ---")
 
+    while True:
+        print("\nSelect a command:")
+        print("  [1] Status: Show project status")
+        print("  [2] Suggest: Suggest next steps")
+        print("  [3] Test: Run tests")
+        print("  [4] Lint: Run linter")
+        print("  [5] Format: Run code formatter")
+        print("  [6] Commit: Create a new commit")
+        print("  [q] Quit")
+
+        try:
+            choice = input("> ").strip().lower()
+            if choice == 'q':
+                print("Exiting interactive mode.")
+                break
+            elif choice == '1':
+                run_status(args)
+            elif choice == '2':
+                run_suggest(args)
+            elif choice == '3':
+                test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+                _run_test_logic(test_args)
+            elif choice == '4':
+                lint_args = argparse.Namespace(project_dir=project_dir, lint_args=[], fix=False)
+                _run_lint_logic(lint_args)
+            elif choice == '5':
+                format_args = argparse.Namespace(project_dir=project_dir, format_args=[], check=False)
+                _run_format_logic(format_args)
+            elif choice == '6':
+                try:
+                    commit_message = input("Enter commit message: ").strip()
+                    if commit_message:
+                        commit_args = argparse.Namespace(
+                            project_dir=project_dir,
+                            message=commit_message,
+                            run_tests=False
+                        )
+                        _run_commit_logic(commit_args)
+                    else:
+                        print("Commit message cannot be empty. Aborted.")
+                except (KeyboardInterrupt, EOFError):
+                    print("\nCommit aborted.")
+            else:
+                print("Invalid choice. Please try again.")
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting interactive mode.")
+            break
+        except SystemExit as e:
+            # Intercept sys.exit to keep the interactive loop running
+            if e.code != 0:
+                print(f"Command finished with exit code {e.code}", file=sys.stderr)
+    sys.exit(0)
+
+
+def _run_commit_logic(args):
+    """Handles the git commit command with safety checks."""
     project_dir = args.project_dir.resolve()
     commit_message = args.message
-
-    # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    git_dir = project_dir / ".git"
-    if not git_dir.exists() or not git_dir.is_dir():
+    if not (project_dir / ".git").is_dir():
         print("❌ Error: Not a git repository. Cannot commit.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    # --- Run tests if requested ---
     if args.run_tests:
         print("--- Running tests before commit ---")
-        # We need to construct a mock 'args' object for run_test
-        test_args = argparse.Namespace(
-            project_dir=project_dir,
-            test_args=[] # Pass no extra args to the test runner
-        )
-        try:
-            # run_test calls sys.exit(), so we need to catch it
-            # To do this properly, we should refactor run_test to not call sys.exit()
-            # For now, we'll assume a non-zero exit code on SystemExit is a failure.
-            run_test(test_args)
-        except SystemExit as e:
-            if e.code != 0:
-                print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
-                sys.exit(1)
+        test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+        result = _run_test_logic(test_args)
+        if result.returncode != 0:
+            print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
+            return 1
         print("✅ Tests passed. Proceeding with commit.")
 
-    # --- Stage all changes ---
     print("--- Staging all changes ---")
     try:
-        subprocess.run(
-            [git_path, "-C", str(project_dir), "add", "-A"],
-            check=True, capture_output=True, text=True
-        )
+        subprocess.run([git_path, "-C", str(project_dir), "add", "-A"], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
-    # --- Check if there's anything to commit ---
-    # `git diff --cached --quiet` exits with 1 if there are staged changes, 0 otherwise.
     check_staged_result = subprocess.run(
         [git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"],
         capture_output=True
     )
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
-        sys.exit(0)
+        return 0
 
-    # --- Create the commit ---
     print(f"--- Creating commit ---")
     try:
         commit_cmd = [git_path, "-C", str(project_dir), "commit", "-m", commit_message]
         commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)
         print(commit_result.stdout.strip())
         print("\n✅ Commit created successfully.")
-        sys.exit(0)
+        return 0
     except subprocess.CalledProcessError as e:
         print(f"❌ Git commit command failed:", file=sys.stderr)
         print(e.stdout, file=sys.stderr)
         print(e.stderr, file=sys.stderr)
-        sys.exit(e.returncode)
+        return e.returncode
+
+def run_commit(args):
+    """Handles the git commit command with safety checks."""
+    return_code = _run_commit_logic(args)
+    sys.exit(return_code)
 
 
 def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
@@ -5832,6 +5871,10 @@ async def main():
 
     if args.command == "feature":
         run_feature(args)
+        return
+
+    if args.command == "interact":
+        run_interact(args)
         return
 
     # Initialize Agent Client

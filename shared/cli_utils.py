@@ -519,3 +519,95 @@ def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
 
     generate_tree_recursive(project_dir, "", 0)
     return "\n".join(output_lines)
+
+def _run_dashboard_logic(project_dir: Path) -> str:
+    """The core logic for the dashboard command, returned as a string."""
+    project_dir = project_dir.resolve()
+    lines = [f"--- Project Dashboard: {project_dir.name} ---\n"]
+
+    # --- 1. Workflow Status ---
+    lines.append("[ Workflow ]")
+    stage_key = get_workflow_stage(project_dir)
+    stage_info = WORKFLOW_STAGES.get(stage_key, {})
+    stage_name = stage_info.get("name", "Unknown")
+    lines.append(f"  Status: {stage_name}")
+
+    current_index = WORKFLOW_ORDER.index(stage_key)
+    if stage_key != "SIGNED_OFF":
+        next_stage_key = WORKFLOW_ORDER[current_index + 1]
+        next_stage_name = WORKFLOW_STAGES[next_stage_key]["name"]
+        lines.append(f"  Next: `main.py workflow advance` to move to '{next_stage_name}'.\n")
+    else:
+        lines.append("  Project is complete.\n")
+
+
+    # --- 2. Git Status ---
+    lines.append("[ Git ]")
+    try:
+        git_path = shutil.which("git")
+        if not git_path or not (project_dir / ".git").is_dir():
+            lines.append("  Not a git repository.\n")
+        else:
+            # Get branch
+            branch_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True, text=True, check=True
+            )
+            branch_name = branch_result.stdout.strip()
+            lines.append(f"  Branch: {branch_name}")
+
+            # Get status
+            status_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            changes = status_result.stdout.strip()
+            if not changes:
+                lines.append("  Status: ✅ Clean\n")
+            else:
+                lines.append("  Status: ⚠️ Uncommitted changes\n")
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        lines.append("  Could not retrieve git status.\n")
+
+
+    # --- 3. Last Run Summary ---
+    lines.append("[ Last Run ]")
+    history_file = project_dir / ".agent_history"
+    if history_file.exists():
+        try:
+            with open(history_file, "r") as f:
+                run_ids = [line.strip() for line in f if line.strip()]
+            if run_ids:
+                last_run_id = run_ids[-1]
+                lines.append(f"  Run ID: {last_run_id}")
+
+                metrics_file = _find_metrics_file(last_run_id, project_dir)
+                if metrics_file:
+                    metrics = _parse_metrics(metrics_file)
+                    time_val = metrics.get("Total Execution Time (s)")
+                    time_str = _format_duration(time_val) if isinstance(time_val, (int, float)) else "N/A"
+                    lines.append(f"  - Execution Time: {time_str}")
+                    lines.append(f"  - Iterations:     {metrics.get('Total Iterations', 'N/A')}")
+                    lines.append(f"  - Errors:         {metrics.get('Total Errors', 'N/A')}")
+                else:
+                    lines.append("  - No metrics file found for this run.")
+            else:
+                lines.append("  No runs in history.")
+        except IOError:
+            lines.append("  Could not read history file.")
+    else:
+        lines.append("  No agent runs recorded.")
+    lines.append("")
+
+    # --- 4. Suggested Commands ---
+    lines.append("[ Suggested Commands ]")
+    suggestions = get_suggestions(project_dir)
+    if suggestions:
+        for suggestion in suggestions[:3]:
+            lines.append(f"  - {suggestion['reason']}")
+            lines.append(f"    👉 `{suggestion['command']}`")
+    else:
+        lines.append("  ✅ Project is in a clean state.")
+
+    return "\n".join(lines)

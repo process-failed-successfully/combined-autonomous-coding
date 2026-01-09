@@ -611,3 +611,97 @@ def _run_dashboard_logic(project_dir: Path) -> str:
         lines.append("  ✅ Project is in a clean state.")
 
     return "\n".join(lines)
+
+
+def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
+    """
+    The core logic for the blame command. Shows the agent Run ID or author for each line.
+    """
+    project_dir = project_dir.resolve()
+    target_file = filepath.resolve()
+
+    # --- Pre-flight Checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        return "❌ Error: Not a git repository. Cannot run blame."
+
+    if not target_file.exists():
+        return f"❌ Error: File not found at '{target_file}'"
+
+    try:
+        relative_path = target_file.relative_to(project_dir)
+    except ValueError:
+        return f"❌ Error: The file '{target_file}' is not inside the project directory '{project_dir}'."
+
+    # --- Execute git blame ---
+    try:
+        # Use --porcelain format for machine-readable output
+        cmd = [git_path, "-C", str(project_dir), "blame", "--porcelain", str(relative_path)]
+        blame_result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        lines = blame_result.stdout.strip().split('\n')
+        if not lines:
+            return "Could not get blame information for this file."
+
+    except subprocess.CalledProcessError as e:
+        return f"❌ Error running git blame: {e.stderr}"
+
+    # --- Process blame output ---
+    output = []
+    commit_info_cache = {} # Cache for storing Run ID or author for a given commit hash
+
+    # First pass: Parse porcelain output to gather commit data for each line
+    line_blame_info = []
+    i = 0
+    while i < len(lines):
+        # The first line of a group is the commit hash and line info
+        commit_hash, orig_line, final_line, _ = lines[i].split(" ")
+
+        # Subsequent lines are metadata until the line starting with '\t'
+        j = i + 1
+        while not lines[j].startswith('\t'):
+            j += 1
+
+        code_line = lines[j][1:] # The actual line of code
+        line_blame_info.append({"hash": commit_hash, "code": code_line})
+        i = j + 1
+
+    # Second pass: Process unique commits to get Run IDs or author info
+    unique_commits = set(info["hash"] for info in line_blame_info)
+    for commit_hash in unique_commits:
+        if commit_hash not in commit_info_cache:
+            try:
+                # Get the full commit message to search for the Run ID
+                show_cmd = [git_path, "-C", str(project_dir), "show", "-s", "--format=%B", commit_hash]
+                show_result = subprocess.run(show_cmd, capture_output=True, text=True, check=True)
+                commit_message = show_result.stdout
+
+                # Search for "Run ID:"
+                run_id_found = None
+                for line in commit_message.split('\n'):
+                    if "Run ID:" in line:
+                        run_id_found = line.split("Run ID:")[1].strip()
+                        break
+
+                if run_id_found:
+                    commit_info_cache[commit_hash] = f"Run ID: {run_id_found}"
+                else:
+                    # Fallback to author name if no Run ID is found
+                    author_cmd = [git_path, "-C", str(project_dir), "show", "-s", "--format=%an", commit_hash]
+                    author_result = subprocess.run(author_cmd, capture_output=True, text=True, check=True)
+                    commit_info_cache[commit_hash] = f"Author: {author_result.stdout.strip()}"
+            except subprocess.CalledProcessError:
+                commit_info_cache[commit_hash] = "Unknown"
+
+    # --- Format the output ---
+    max_info_len = 0
+    if commit_info_cache:
+        max_info_len = max(len(info) for info in commit_info_cache.values())
+
+    for i, info in enumerate(line_blame_info):
+        commit_hash = info["hash"]
+        blame_info_str = commit_info_cache.get(commit_hash, "Unknown").ljust(max_info_len)
+        line_num = str(i + 1).rjust(4)
+        output.append(f"{commit_hash[:8]} ({blame_info_str}) {line_num}: {info['code']}")
+
+    return "\n".join(output)

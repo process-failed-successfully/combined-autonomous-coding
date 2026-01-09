@@ -2011,7 +2011,15 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
+
+def run_blame(args):
+    """Shows the agent Run ID or author for each line of a file."""
+    blame_output = _run_blame_logic(project_dir=args.project_dir, filepath=args.filepath)
+    print(blame_output)
+    if "❌ Error" in blame_output:
+        sys.exit(1)
+    sys.exit(0)
 
 def run_report(args):
     """Generates a summary report for a specific agent run."""
@@ -4742,6 +4750,23 @@ def parse_args(argv=None):
         help="The project directory to watch.",
     )
 
+    # --- New 'blame' command ---
+    parser_blame = subparsers.add_parser(
+        "blame",
+        help="Show the agent Run ID or author for each line of a file, similar to git blame."
+    )
+    parser_blame.add_argument(
+        "filepath",
+        type=Path,
+        help="The path to the file to blame.",
+    )
+    parser_blame.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -6330,6 +6355,10 @@ async def main():
 
     if args.command == "watch":
         run_watch(args)
+        return
+
+    if args.command == "blame":
+        run_blame(args)
         return
 
     # Initialize Agent Client

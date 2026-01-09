@@ -4883,8 +4883,8 @@ def _run_commit_logic(args):
     if args.run_tests:
         print("--- Running tests before commit ---")
         test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
-        result = _run_test_logic(test_args)
-        if result.returncode != 0:
+        result_code = _run_test_logic(test_args)
+        if result_code != 0:
             print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
             return 1
         print("✅ Tests passed. Proceeding with commit.")

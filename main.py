@@ -3413,6 +3413,92 @@ async def run_plan(args):
     sys.exit(0)
 
 
+def run_config(args):
+    """Manages agent configuration settings."""
+    config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
+    config_path = config_dir / "agent_config.yaml"
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config_data = yaml.safe_load(f) or {}
+        else:
+            config_data = {}
+    except (IOError, yaml.YAMLError) as e:
+        print(f"❌ Error reading configuration file: {e}", file=sys.stderr)
+        return 1
+
+    action = args.action
+    key = args.key
+    value = args.value
+
+    if action == "list":
+        print("--- Current Agent Configuration ---")
+        if not config_data:
+            print("Configuration is empty.")
+        else:
+            print(yaml.dump(config_data, indent=2, sort_keys=True))
+
+    elif action == "get":
+        if not key:
+            print("❌ Error: 'get' action requires a key.", file=sys.stderr)
+            return 1
+
+        # Handle nested keys if necessary, e.g., 'jira.url'
+        keys = key.split('.')
+        current_level = config_data
+        for k in keys:
+            if isinstance(current_level, dict) and k in current_level:
+                current_level = current_level[k]
+            else:
+                print(f"Key '{key}' not found in configuration.", file=sys.stderr)
+                return 1
+
+        print(current_level)
+
+    elif action == "set":
+        if not key or value is None:
+            print("❌ Error: 'set' action requires a key and a value.", file=sys.stderr)
+            return 1
+
+        # Handle nested keys
+        keys = key.split('.')
+        current_level = config_data
+        for i, k in enumerate(keys[:-1]):
+            if k not in current_level or not isinstance(current_level.get(k), dict):
+                current_level[k] = {}
+            current_level = current_level[k]
+
+        # Attempt to parse value as a number or boolean
+        if value.lower() == 'true':
+            parsed_value = True
+        elif value.lower() == 'false':
+            parsed_value = False
+        else:
+            try:
+                # Try parsing as integer, then float
+                parsed_value = int(value)
+            except ValueError:
+                try:
+                    parsed_value = float(value)
+                except ValueError:
+                    parsed_value = value # Keep as string
+
+        current_level[keys[-1]] = parsed_value
+
+        try:
+            with open(config_path, 'w') as f:
+                yaml.dump(config_data, f, indent=2, sort_keys=True)
+            os.chmod(config_path, 0o600)
+            print(f"✅ Set '{key}' to '{parsed_value}'.")
+        except (IOError, yaml.YAMLError) as e:
+            print(f"❌ Error writing configuration file: {e}", file=sys.stderr)
+            return 1
+
+    return 0
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -3559,6 +3645,13 @@ def parse_args(argv=None):
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
     parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
+
+    # Subparser for 'config'
+    parser_config = subparsers.add_parser("config", help="Manage agent configuration settings")
+    parser_config.add_argument("action", choices=["get", "set", "list"], help="Action to perform")
+    parser_config.add_argument("key", nargs="?", help="The configuration key to get or set (e.g., 'model', 'jira.url')")
+    parser_config.add_argument("value", nargs="?", help="The value to set for the specified key")
+
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
@@ -5650,6 +5743,10 @@ async def main():
     if args.command == "plan":
         await run_plan(args)
         return
+
+    # Handle `config` command
+    if args.command == "config":
+        sys.exit(run_config(args))
 
     # Handle `configure` command
     if args.command == "configure":

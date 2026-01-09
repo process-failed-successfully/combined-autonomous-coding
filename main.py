@@ -4692,6 +4692,18 @@ def parse_args(argv=None):
         help="The project directory for the feature.",
     )
 
+    # --- New 'interact' command ---
+    parser_interact = subparsers.add_parser(
+        "interact",
+        help="Start an interactive session to run common commands."
+    )
+    parser_interact.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the interactive session.",
+    )
+
     # --- New 'profile' command ---
     parser_profile = subparsers.add_parser(
         "profile",
@@ -5003,6 +5015,72 @@ def run_feature(args):
     except (KeyboardInterrupt, EOFError):
         print("\n\nWorkflow aborted by user.")
         sys.exit(1)
+
+
+def run_interact(args):
+    """Starts an interactive session to guide the user through common commands."""
+    project_dir = args.project_dir.resolve()
+    print("--- Interactive Session ---")
+    print(f"Project Directory: {project_dir}")
+    print("Type a number to select a command, or 'q' to quit.")
+
+    # A map of menu items to the function and args they will call
+    menu_items = {
+        "1": {"text": "Show project status", "func": run_status, "args": {"project_dir": project_dir}},
+        "2": {"text": "Run tests", "func": run_test, "args": {"project_dir": project_dir, "test_args": []}},
+        "3": {"text": "Run linter", "func": run_lint, "args": {"project_dir": project_dir, "fix": False, "lint_args": []}},
+        "4": {"text": "Format code", "func": run_format, "args": {"project_dir": project_dir, "check": False, "format_args": []}},
+        "5": {"text": "Commit changes", "func": run_commit}, # Special handling
+        "6": {"text": "Suggest next step", "func": run_suggest, "args": {"project_dir": project_dir}},
+    }
+
+    while True:
+        print("\n--- Main Menu ---")
+        for key, value in menu_items.items():
+            print(f"  [{key}] {value['text']}")
+        print("  [q] Quit")
+
+        try:
+            choice = input("> ").strip().lower()
+            if choice == 'q':
+                print("Exiting interactive session.")
+                break
+
+            if choice in menu_items:
+                item = menu_items[choice]
+                print(f"\n--- Running: {item['text']} ---")
+                try:
+                    # Special handling for commit as it requires a message
+                    if item["func"] == run_commit:
+                        message = input("Enter commit message: ").strip()
+                        if message:
+                            # Construct the args namespace for the command
+                            commit_args = argparse.Namespace(
+                                message=message,
+                                run_tests=False,
+                                project_dir=project_dir
+                            )
+                            run_commit(commit_args)
+                        else:
+                            print("Commit message cannot be empty. Aborting.")
+                    else:
+                        # Construct the args namespace for the command
+                        command_args = argparse.Namespace(**item["args"])
+                        item["func"](command_args)
+                except SystemExit as e:
+                    if e.code != 0:
+                        print(f"--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+                    else:
+                        print(f"--- Command finished successfully ---")
+                except Exception as e:
+                    print(f"An unexpected error occurred: {e}", file=sys.stderr)
+            else:
+                print("Invalid choice, please try again.")
+
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting interactive session.")
+            break
+    sys.exit(0)
 
 
 def run_push(args):
@@ -6240,6 +6318,10 @@ async def main():
 
     if args.command == "feature":
         run_feature(args)
+        return
+
+    if args.command == "interact":
+        run_interact(args)
         return
 
     if args.command == "profile":

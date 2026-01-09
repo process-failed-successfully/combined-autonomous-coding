@@ -2282,6 +2282,66 @@ def run_diff_summary(args):
     sys.exit(0 if success else 1)
 
 
+def run_diff(args):
+    """Shows a detailed, colorized diff of uncommitted changes or a specific commit."""
+    project_dir = args.project_dir.resolve()
+    target = args.target
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot show diff.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Logic ---
+    try:
+        if not target:
+            # Case 1: Show uncommitted changes
+            print(f"--- Uncommitted Changes (HEAD): {project_dir} ---")
+            cmd = [git_path, "-C", str(project_dir), "diff", "--color=always", "HEAD"]
+            # Use subprocess.run without capturing output to stream directly
+            result = subprocess.run(cmd)
+            sys.exit(result.returncode)
+
+        # Case 2: Target is provided (Run ID or commit hash)
+        original_target = target
+        # Check if it's a known git reference first
+        is_git_ref = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
+            capture_output=True, text=True
+        ).returncode == 0
+
+        if not is_git_ref:
+            # If not a direct git ref, assume it's a Run ID
+            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            if not commit_hash:
+                print(f"❌ Error: Target '{original_target}' is not a valid commit or Run ID.", file=sys.stderr)
+                sys.exit(1)
+            target = commit_hash
+            print(f"--- Showing diff for Run ID '{original_target}' (Commit: {target[:7]}) ---")
+        else:
+            print(f"--- Showing diff for Commit: {target} ---")
+
+        # Use 'git show' which nicely formats the commit info and the diff
+        cmd = [git_path, "-C", str(project_dir), "show", "--color=always", target]
+        result = subprocess.run(cmd)
+        sys.exit(result.returncode)
+
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        stderr = getattr(e, 'stderr', str(e))
+        if isinstance(stderr, bytes): stderr = stderr.decode().strip()
+        print(f"❌ An error occurred: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def _run_log_logic(project_dir, count=None):
     """The core logic for displaying the git commit history."""
     git_path = shutil.which("git")
@@ -3767,6 +3827,20 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check for changes (default: current directory)",
+    )
+
+    # Subparser for 'diff' (git diff)
+    parser_diff = subparsers.add_parser("diff", help="Show a detailed diff of uncommitted changes or a specific commit")
+    parser_diff.add_argument(
+        "target",
+        nargs="?",
+        help="Optional: A git commit hash or agent Run ID to diff against.",
+    )
+    parser_diff.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to show the diff for (default: current directory)",
     )
 
     # Subparser for 'log' (git log)
@@ -5878,6 +5952,10 @@ async def main():
 
     if args.command == "diff-summary":
         run_diff_summary(args)
+        return
+
+    if args.command == "diff":
+        run_diff(args)
         return
 
     if args.command == "log":

@@ -4599,6 +4599,23 @@ def parse_args(argv=None):
         help="The project directory for the feature.",
     )
 
+    # --- New 'safe-commit' command ---
+    parser_safe_commit = subparsers.add_parser(
+        "safe-commit",
+        help="Run formatter, linter, and tests before creating a git commit."
+    )
+    parser_safe_commit.add_argument(
+        "-m", "--message",
+        required=True,
+        help="The commit message."
+    )
+    parser_safe_commit.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run the commit command in (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -4983,6 +5000,96 @@ def run_commit(args):
         commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)
         print(commit_result.stdout.strip())
         print("\n✅ Commit created successfully.")
+        sys.exit(0)
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git commit command failed:", file=sys.stderr)
+        print(e.stdout, file=sys.stderr)
+        print(e.stderr, file=sys.stderr)
+        sys.exit(e.returncode)
+
+
+def run_safe_commit(args):
+    """Runs formatter, linter, and tests before committing."""
+    import shutil
+    import subprocess
+
+    project_dir = args.project_dir.resolve()
+    commit_message = args.message
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot commit.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Step 1: Format ---
+    print("--- [1/4] Formatting code ---")
+    format_args = argparse.Namespace(
+        project_dir=project_dir,
+        check=False,
+        format_args=[]
+    )
+    try:
+        run_format(format_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Formatting failed. Commit aborted.", file=sys.stderr)
+            sys.exit(1)
+    print("✅ Formatting check passed.")
+
+    # --- Step 2: Lint ---
+    print("\n--- [2/4] Linting code ---")
+    lint_args = argparse.Namespace(
+        project_dir=project_dir,
+        fix=False,
+        lint_args=[]
+    )
+    try:
+        run_lint(lint_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Linting failed. Commit aborted.", file=sys.stderr)
+            sys.exit(1)
+    print("✅ Linting check passed.")
+
+    # --- Step 3: Test ---
+    print("\n--- [3/4] Running tests ---")
+    test_args = argparse.Namespace(
+        project_dir=project_dir,
+        test_args=[]
+    )
+    try:
+        run_test(test_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
+            sys.exit(1)
+    print("✅ All tests passed.")
+
+    # --- Step 4: Commit ---
+    print("\n--- [4/4] Staging and committing ---")
+    try:
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "add", "-A"],
+            check=True, capture_output=True, text=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+    check_staged_result = subprocess.run(
+        [git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"],
+        capture_output=True
+    )
+    if check_staged_result.returncode == 0:
+        print("✅ No changes staged for commit.")
+        sys.exit(0)
+
+    try:
+        commit_cmd = [git_path, "-C", str(project_dir), "commit", "-m", commit_message]
+        commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)
+        print(commit_result.stdout.strip())
+        print("\n✅ Safe commit created successfully.")
         sys.exit(0)
     except subprocess.CalledProcessError as e:
         print(f"❌ Git commit command failed:", file=sys.stderr)
@@ -5948,6 +6055,10 @@ async def main():
 
     if args.command == "feature":
         run_feature(args)
+        return
+
+    if args.command == "safe-commit":
+        run_safe_commit(args)
         return
 
     # Initialize Agent Client

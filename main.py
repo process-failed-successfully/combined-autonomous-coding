@@ -4673,8 +4673,8 @@ def parse_args(argv=None):
     )
     parser_commit.add_argument(
         "-m", "--message",
-        required=True,
-        help="The commit message."
+        required=False,
+        help="The commit message. If not provided, an interactive prompt will be shown."
     )
     parser_commit.add_argument(
         "--run-tests",
@@ -5330,15 +5330,8 @@ def run_commit(args):
     # --- Run tests if requested ---
     if args.run_tests:
         print("--- Running tests before commit ---")
-        # We need to construct a mock 'args' object for run_test
-        test_args = argparse.Namespace(
-            project_dir=project_dir,
-            test_args=[] # Pass no extra args to the test runner
-        )
+        test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
         try:
-            # run_test calls sys.exit(), so we need to catch it
-            # To do this properly, we should refactor run_test to not call sys.exit()
-            # For now, we'll assume a non-zero exit code on SystemExit is a failure.
             run_test(test_args)
         except SystemExit as e:
             if e.code != 0:
@@ -5349,23 +5342,63 @@ def run_commit(args):
     # --- Stage all changes ---
     print("--- Staging all changes ---")
     try:
-        subprocess.run(
-            [git_path, "-C", str(project_dir), "add", "-A"],
-            check=True, capture_output=True, text=True
-        )
+        subprocess.run([git_path, "-C", str(project_dir), "add", "-A"], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
         sys.exit(1)
 
     # --- Check if there's anything to commit ---
-    # `git diff --cached --quiet` exits with 1 if there are staged changes, 0 otherwise.
-    check_staged_result = subprocess.run(
-        [git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"],
-        capture_output=True
-    )
+    check_staged_result = subprocess.run([git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"], capture_output=True)
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
         sys.exit(0)
+
+    # --- Interactive Commit Message Generation ---
+    if not commit_message:
+        try:
+            print("--- Interactive Commit ---")
+            print("Please provide the details for your commit message.")
+
+            commit_type = input("Commit type (e.g., feat, fix, chore, docs): ").strip()
+            while not commit_type:
+                print("Commit type cannot be empty.")
+                commit_type = input("Commit type: ").strip()
+
+            scope = input("Scope (optional, e.g., cli, agent): ").strip()
+            short_description = input("Short description (max 72 chars): ").strip()
+            while not short_description:
+                print("Short description cannot be empty.")
+                short_description = input("Short description: ").strip()
+
+            body = input("Body (optional, press Enter to skip): ").strip()
+            is_breaking_change = input("Is this a breaking change? [y/N]: ").strip().lower() == 'y'
+            breaking_change_description = ""
+            if is_breaking_change:
+                breaking_change_description = input("Describe the breaking change: ").strip()
+
+            # Assemble the commit message
+            header = f"{commit_type}"
+            if scope:
+                header += f"({scope})"
+            header += f": {short_description}"
+
+            commit_message = header
+            if body:
+                commit_message += f"\n\n{body}"
+            if breaking_change_description:
+                commit_message += f"\n\nBREAKING CHANGE: {breaking_change_description}"
+
+            print("\n--- Generated Commit Message ---")
+            print(commit_message)
+            print("------------------------------")
+            confirm = input("Confirm commit? [Y/n]: ").strip().lower()
+            if confirm not in ['y', '']:
+                print("Commit aborted.")
+                sys.exit(0)
+
+        except (KeyboardInterrupt, EOFError):
+            print("\nCommit aborted by user.")
+            sys.exit(1)
 
     # --- Create the commit ---
     print(f"--- Creating commit ---")

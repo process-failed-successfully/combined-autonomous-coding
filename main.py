@@ -1992,8 +1992,7 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic
-from shared.cli_utils import _run_report_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic
 
 def run_report(args):
     """Generates a summary report for a specific agent run."""
@@ -2003,6 +2002,12 @@ def run_report(args):
         project_dir=args.project_dir
     )
     sys.exit(0 if success else 1)
+
+def run_dashboard(args):
+    """Displays a comprehensive dashboard of the project's status."""
+    dashboard_text = _run_dashboard_logic(project_dir=args.project_dir)
+    print(dashboard_text)
+    sys.exit(0)
 
 def run_tree(args):
     """Displays a tree view of the project directory."""
@@ -3606,6 +3611,15 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check status for (default: current directory)",
+    )
+
+    # Subparser for 'dashboard'
+    parser_dashboard = subparsers.add_parser("dashboard", help="Show a comprehensive dashboard of the project status")
+    parser_dashboard.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to display the dashboard for (default: current directory)",
     )
 
     # Subparser for 'summary'
@@ -5735,6 +5749,11 @@ async def main():
     # Handle `status` command
     if args.command == "status":
         run_status(args)
+        return
+
+    # Handle `dashboard` command
+    if args.command == "dashboard":
+        run_dashboard(args)
         return
 
     # Handle `summary` command

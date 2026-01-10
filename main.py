@@ -45,6 +45,7 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
+from shared.commands import run_why
 import json
 import yaml
 import platformdirs
@@ -4750,6 +4751,17 @@ def parse_args(argv=None):
         help="The project directory to watch.",
     )
 
+    # --- New 'why' command ---
+    parser_why = subparsers.add_parser(
+        "why",
+        help="Explain what a command does and why you might use it."
+    )
+    parser_why.add_argument(
+        "command_name",
+        nargs="?",
+        help="The command you want an explanation for.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6388,6 +6400,10 @@ async def main():
 
     if args.command == "watch":
         run_watch(args)
+        return
+
+    if args.command == "why":
+        run_why(args)
         return
 
     if args.command == "blame":

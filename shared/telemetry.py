@@ -298,10 +298,16 @@ class Telemetry:
     def record_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
-        labels = labels or {}
         if name in self.metrics:
+            metric = self.metrics[name]
+            if not metric._labelnames:
+                metric.set(value)
+                self._push_metrics()
+                return
+
+            labels = labels or {}
             # Auto-fill common labels if missing and required
-            required_labels = self.metrics[name]._labelnames
+            required_labels = metric._labelnames
 
             # Create a copy to avoid mutating the passed dictionary if it's
             # reused by caller
@@ -318,7 +324,7 @@ class Telemetry:
                     elif lbl == "role":
                         final_labels[lbl] = "unknown"
 
-            self.metrics[name].labels(**final_labels).set(value)
+            metric.labels(**final_labels).set(value)
             self._push_metrics()
 
     def increment_counter(
@@ -326,8 +332,15 @@ class Telemetry:
     ):
         if not ENABLE_METRICS:
             return
-        labels = labels or {}
         if name in self.metrics:
+            metric = self.metrics[name]
+            if not metric._labelnames:
+                # For metrics without labels, inc is on the metric itself
+                metric.inc(value)
+                self._push_metrics()
+                return
+
+            labels = labels or {}
             required_labels = self.metrics[name]._labelnames
 
             # Create a copy
@@ -350,8 +363,15 @@ class Telemetry:
     def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
-        labels = labels or {}
         if name in self.metrics:
+            metric = self.metrics[name]
+            if not metric._labelnames:
+                # For metrics without labels, observe is on the metric itself
+                metric.observe(value)
+                self._push_metrics()
+                return
+
+            labels = labels or {}
             required_labels = self.metrics[name]._labelnames
 
             # Create a copy

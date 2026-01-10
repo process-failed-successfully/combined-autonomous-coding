@@ -19,6 +19,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
+import logging
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -4839,6 +4840,58 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'develop' command ---
+    parser_develop = subparsers.add_parser(
+        "develop",
+        help="Start a rapid development loop: watch spec -> run agent -> run tests."
+    )
+    parser_develop.add_argument(
+        "-s", "--spec",
+        type=Path,
+        default=Path("app_spec.txt"),
+        help="Path to the application specification file to watch (default: app_spec.txt).",
+    )
+    parser_develop.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    # Re-add agent/model selection for consistency
+    parser_develop.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)",
+    )
+    parser_develop.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default).",
+    )
+    parser_develop.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
+    )
+    parser_develop.add_argument(
+        "--max-iterations",
+        type=int,
+        help="Max iterations for each agent run.",
+    )
+    parser_develop.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging",
+    )
+    # Add dashboard URL for the client
+    parser_develop.add_argument(
+        "--dashboard-url",
+        default="http://localhost:7654",
+        help="URL of the dashboard server (default: http://localhost:7654)",
+    )
+
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6011,6 +6064,135 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     sys.exit(0)
 
 
+async def run_agent_task(config, client):
+    """A reusable function to run the agent's main task."""
+    logger = logging.getLogger()
+    if config.sprint_mode:
+        logger.info("Running in SPRINT MODE")
+        await run_sprint(config, agent_client=client)
+        return
+
+    agent_runner_map = {
+        "gemini": run_gemini,
+        "cursor": run_cursor,
+        "local": run_local,
+        "openrouter": run_openrouter,
+    }
+    agent_runner = agent_runner_map.get(config.agent_type)
+    if agent_runner:
+        await agent_runner(config, agent_client=client)
+    else:
+        logger.error(f"Unknown agent type: {config.agent_type}")
+        sys.exit(1)
+
+
+class SpecChangeHandler(FileSystemEventHandler):
+    """Handles file modification events for the 'develop' command."""
+    def __init__(self, args, config):
+        self.args = args
+        self.config = config
+        self.loop = asyncio.get_running_loop()
+        self.last_run_time = 0
+        self.debounce_period = 2.0  # 2 seconds
+
+    def on_modified(self, event):
+        if event.is_directory or Path(event.src_path) != self.config.spec_file.resolve():
+            return
+
+        current_time = time.time()
+        if current_time - self.last_run_time < self.debounce_period:
+            return
+        self.last_run_time = current_time
+
+        print(f"\n--- Spec file '{self.config.spec_file.name}' modified. Starting agent... ---")
+        asyncio.run_coroutine_threadsafe(self.run_dev_cycle(), self.loop)
+
+    async def run_dev_cycle(self):
+        """The async part of the development cycle."""
+        logger = logging.getLogger()
+        try:
+            # 1. Re-initialize client and run agent
+            from shared.agent_client import AgentClient
+            from shared.utils import generate_agent_id
+            client = AgentClient(agent_id=self.config.agent_id, dashboard_url=self.args.dashboard_url)
+
+            # Ensure git is in a clean state before running
+            ensure_git_safe(self.config.project_dir)
+
+            # Re-generate agent ID in case spec content changed
+            spec_content = self.config.spec_file.read_text()
+            project_name = self.config.project_dir.resolve().name
+            self.config.agent_id = generate_agent_id(project_name, spec_content, self.config.agent_type)
+
+            await run_agent_task(self.config, client)
+            print("--- Agent run finished. Running tests... ---")
+
+            # 2. Run tests
+            test_args = argparse.Namespace(project_dir=self.config.project_dir, test_args=[])
+            run_test(test_args)
+
+        except SystemExit as e:
+            if e.code != 0:
+                logger.error(f"Tests failed with exit code {e.code}. Please fix the issues and save the spec file to try again.")
+        except Exception as e:
+            logger.error(f"An error occurred during the dev cycle: {e}")
+        finally:
+            print("\n--- Watching for changes... ---")
+
+async def run_develop(args):
+    """Runs the agent in a watch-and-execute loop for rapid development."""
+    if Observer is None:
+        print("Error: 'watchdog' library is not installed. Please run 'pip install watchdog' to use the 'develop' command.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Initial Setup ---
+    # Most of this is borrowed from the main agent execution block
+    ensure_config_exists()
+    file_config = load_config_from_file(profile=args.profile)
+
+    def resolve(cli_arg, config_key, default_val):
+        return cli_arg if cli_arg is not None else file_config.get(config_key, default_val)
+
+    config = Config(
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=resolve(args.model, "model", None),
+        spec_file=args.spec,
+        verbose=args.verbose,
+        stream_output=False,  # Disable streaming for a cleaner dev loop output
+        max_iterations=resolve(args.max_iterations, "max_iterations", 25) # Sensible default for a dev cycle
+    )
+
+    if not config.spec_file or not config.spec_file.exists():
+        print(f"❌ Error: The spec file '{config.spec_file}' does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    # Setup logger, but less noisy for the dev loop
+    logger, _ = setup_logger(name="develop_logger", log_file=None, verbose=config.verbose, console_output=True)
+    logger.info("--- Starting Development Mode ---")
+    logger.info(f"Watching spec file: {config.spec_file}")
+
+    # --- Watchdog Setup ---
+    event_handler = SpecChangeHandler(args, config)
+    observer = Observer()
+    observer.schedule(event_handler, path=str(config.spec_file.parent), recursive=False)
+    observer.start()
+
+    print("\n--- Initial run to sync with current spec... ---")
+    await event_handler.run_dev_cycle()
+
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        print("\n--- Development mode stopped. ---")
+    finally:
+        if observer.is_alive():
+            observer.stop()
+        observer.join()
+    sys.exit(0)
+
+
 def run_worktrees(args):
     """Manages agent-created git worktrees."""
     project_dir = args.project_dir.resolve()
@@ -6243,6 +6425,11 @@ async def main():
     # Handle `tui` command
     if args.command == "tui":
         run_tui(args)
+        return
+
+    # Handle `develop` command
+    if args.command == "develop":
+        await run_develop(args)
         return
 
     # Handle `init` command

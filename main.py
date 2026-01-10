@@ -2656,6 +2656,7 @@ def run_help(args):
 
     print_header("Core Commands")
     print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
+    print_command("develop", "Start a live-reloading development session that re-runs the agent on file changes.")
     print_command("plan", "Generate a feature plan from a spec file without executing code.")
     print_command("test", "Automatically detect project type and run tests.")
     print_command("lint", "Automatically detect project type and run a linter.")
@@ -4833,6 +4834,46 @@ def parse_args(argv=None):
         "why",
         help="Explain what a command does and why you might use it."
     )
+
+    # --- New 'develop' command ---
+    parser_develop = subparsers.add_parser(
+        "develop",
+        help="Run the agent in a live-reloading development mode."
+    )
+    parser_develop.add_argument(
+        "-s", "--spec",
+        type=Path,
+        required=True,
+        help="Path to the application specification file to watch for changes.",
+    )
+    # Re-add common arguments needed for the agent run
+    parser_develop.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="Directory where the project will be created/modified.",
+    )
+    parser_develop.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use.",
+    )
+    parser_develop.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default).",
+    )
+    parser_develop.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging.",
+    )
+    parser_develop.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile.",
+    )
     parser_why.add_argument(
         "command_name",
         nargs="?",
@@ -6494,6 +6535,16 @@ async def main():
         run_help(args)
         return
 
+    # Handle `develop` command
+    if args.command == "develop":
+        await run_develop(args)
+        return
+
+    # --- Default agent execution flow ---
+    await run_agent_task(args)
+
+async def run_agent_task(args, client=None):
+    """The core logic for setting up and running a single agent task."""
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id
@@ -6503,14 +6554,17 @@ async def main():
         project_name = args.project_dir.resolve().name
 
     # Load Configuration from File
-    # Priority resolved in config_loader: ./ > XDG > Legacy
     ensure_config_exists()
     file_config = load_config_from_file(profile=args.profile)
 
     # Helper to resolve configuration priority: CLI > Config File > Default
     def resolve(cli_arg, config_key, default_val):
+        # Check for 'None' explicitly, as False is a valid value
         if cli_arg is not None:
             return cli_arg
+        # For agent-specific runs (like in develop mode), args might not have all keys
+        if hasattr(args, config_key) and getattr(args, config_key) is not None:
+            return getattr(args, config_key)
         if config_key in file_config:
             return file_config[config_key]
         return default_val
@@ -6518,40 +6572,31 @@ async def main():
     # Create Config
     config = Config(
         project_dir=args.project_dir,
-        agent_id=None,  # Placeholder, set later
+        agent_id=None,
         agent_type=args.agent,
         model=resolve(args.model, "model", None),
         max_iterations=resolve(args.max_iterations, "max_iterations", None),
         verbose=args.verbose,
-        stream_output=not args.no_stream,
+        stream_output=not getattr(args, 'no_stream', False),
         spec_file=args.spec,
-        verify_creation=args.verify_creation,
-
-        # Manager
+        verify_creation=getattr(args, 'verify_creation', False),
         manager_frequency=resolve(args.manager_frequency, "manager_frequency", 10),
         manager_model=resolve(args.manager_model, "manager_model", None),
-        run_manager_first=args.manager_first,
-        login_mode=args.login or file_config.get("login_mode", False),
-
+        run_manager_first=getattr(args, 'manager_first', False),
+        login_mode=getattr(args, 'login', False) or file_config.get("login_mode", False),
         timeout=resolve(args.timeout, "timeout", 600.0),
         max_error_wait=resolve(args.max_error_wait, "max_error_wait", 600.0),
-
-        # Sprint
-        sprint_mode=args.sprint or file_config.get("sprint_mode", False),
+        sprint_mode=getattr(args, 'sprint', False) or file_config.get("sprint_mode", False),
         max_agents=resolve(args.max_agents, "max_agents", 1),
-
-        # Notifications
         slack_webhook_url=file_config.get("slack_webhook_url"),
         discord_webhook_url=file_config.get("discord_webhook_url"),
         notification_settings=file_config.get("notification_settings"),
-
-        # Docker-in-Docker
-        dind_enabled=args.dind or file_config.get("dind_enabled", False),
+        dind_enabled=getattr(args, 'dind', False) or file_config.get("dind_enabled", False),
     )
+
 
     # Initialize Database
     from shared.database import init_db
-    # Ensure project dir exists for DB creation
     config.project_dir.mkdir(parents=True, exist_ok=True)
     init_db(config.project_dir / ".agent_db.sqlite")
 
@@ -6562,129 +6607,72 @@ async def main():
     jira_env_email = os.environ.get("JIRA_EMAIL")
     jira_env_token = os.environ.get("JIRA_TOKEN")
 
-    if jira_env_url:
-        jira_cfg_data["url"] = jira_env_url
-    if jira_env_email:
-        jira_cfg_data["email"] = jira_env_email
-    if jira_env_token:
-        jira_cfg_data["token"] = jira_env_token
+    if jira_env_url: jira_cfg_data["url"] = jira_env_url
+    if jira_env_email: jira_cfg_data["email"] = jira_env_email
+    if jira_env_token: jira_cfg_data["token"] = jira_env_token
 
-    if args.jira_ticket or args.jira_label:
+    if getattr(args, 'jira_ticket', None) or getattr(args, 'jira_label', None):
         if not jira_cfg_data:
-            print("Error: Jira arguments provided but no Jira configuration found (config file or env vars).", file=sys.stderr)
-            print("Please set JIRA_URL, JIRA_EMAIL, JIRA_TOKEN or configure agent_config.yaml", file=sys.stderr)
+            print("Error: Jira arguments provided but no Jira configuration found.", file=sys.stderr)
             sys.exit(1)
         config.jira = JiraConfig(**jira_cfg_data)
 
-    # Correction for boolean flags initialized with 'store_true' (default False)
     if file_config.get("run_manager_first"):
         config.run_manager_first = True
 
-    # SETUP LOGGER (Moved earlier to support logging during Jira fetch)
     repo_root = Path(__file__).parent
     agents_log_dir = repo_root / "agents/logs"
     agents_log_dir.mkdir(parents=True, exist_ok=True)
 
-    # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
-    # But for now, we can use a generic one or wait.
-    # Let's setup a basic console logger first?
-    # existing setup_logger requires a file. We will update it later.
-
-    # Handle `show-config` command and deprecated `--dry-run`
-    if args.command == "show-config":
-        run_show_config(config)
-
-    if args.dry_run:
-        print("Warning: --dry-run is deprecated. Please use the 'show-config' command instead.", file=sys.stderr)
-        run_show_config(config)
-
-    # JIRA LOGIC
-    jira_client = None
-    # jira_ticket = None  # Unused
     jira_spec_content = ""
-
-    if config.jira and (args.jira_ticket or args.jira_label):
+    if config.jira and (getattr(args, 'jira_ticket', None) or getattr(args, 'jira_label', None)):
         from shared.jira_client import JiraClient
-
         try:
             jira_client = JiraClient(config.jira)
-
-            if args.jira_ticket:
-                issue = jira_client.get_issue(args.jira_ticket)
-            elif args.jira_label:
-                issue = jira_client.get_first_todo_by_label(args.jira_label)
-
+            issue = jira_client.get_issue(args.jira_ticket) if args.jira_ticket else jira_client.get_first_todo_by_label(args.jira_label)
             if issue:
-                # jira_ticket = issue  # Unused
                 print(f"Working on Jira Ticket: {issue.key} - {issue.fields.summary}")
-
-                # Parse Description (for context only)
                 desc = issue.fields.description or ""
-
-                # Construct Spec
                 jira_spec_content = f"JIRA TICKET {issue.key}\nSUMMARY: {issue.fields.summary}\nDESCRIPTION:\n{desc}"
                 config.jira_ticket_key = issue.key
                 config.jira_spec_content = jira_spec_content
                 project_name = issue.key
-
-                # Transition to In Progress (default 'Start' status)
                 start_status = config.jira.status_map.get("start", "In Progress") if config.jira.status_map else "In Progress"
                 jira_client.transition_issue(issue.key, start_status)
-
             else:
                 print("No suitable Jira ticket found.")
                 sys.exit(0)
-
         except Exception as e:
             print(f"Jira Integration Error: {e}", file=sys.stderr)
             sys.exit(1)
 
-    # Read spec content for ID generation
-    spec_content = ""
-    if jira_spec_content:
-        spec_content = jira_spec_content
-    elif args.spec and args.spec.exists():
-        try:
-            spec_content = args.spec.read_text()
-        except Exception as e:
-            print(f"Warning: Could not read spec file for ID generation: {e}", file=sys.stderr)
-
-    # Generate deterministic ID
+    spec_content = jira_spec_content or (args.spec.read_text() if args.spec and args.spec.exists() else "")
     agent_id = generate_agent_id(project_name, spec_content, args.agent)
     config.agent_id = agent_id
 
     log_file = agents_log_dir / f"{agent_id}.log"
-
-    # Configure Root Logger to capture all module logs (e.g. shared.git)
     logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=args.verbose)
-
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
 
-    # Append the current run ID to the history file
     try:
-        history_file = config.project_dir / ".agent_history"
-        with open(history_file, "a") as f:
+        with open(config.project_dir / ".agent_history", "a") as f:
             f.write(f"{agent_id}\n")
     except IOError as e:
-        logger.warning(f"Could not write to history file {history_file}: {e}")
+        logger.warning(f"Could not write to history file: {e}")
 
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
+    # Use existing client if passed, otherwise create a new one
+    local_client = client or AgentClient(agent_id=agent_id, dashboard_url=getattr(args, 'dashboard_url', "http://localhost:7654"), memory_handler=memory_handler)
 
-    # Check spec requirement for fresh projects (Updated for Jira)
+
     is_fresh = not config.feature_list_path.exists()
     if is_fresh and not args.spec and not jira_spec_content:
-        logger.error(
-            "Error: --spec argument or --jira-ticket is required for new projects!"
-        )
+        logger.error("Error: --spec argument or --jira-ticket is required for new projects!")
         sys.exit(1)
 
-    # Git Safety
-    # Ensure we are on a safe branch before starting any agent work
     jira_key = config.jira_ticket_key if config.jira else None
     ensure_git_safe(args.project_dir, ticket_key=jira_key)
 
-    # Git Authentication (Env Var Check)
     git_token = os.environ.get("GIT_TOKEN")
     if git_token:
         from shared.git import configure_git_auth
@@ -6692,40 +6680,125 @@ async def main():
         git_user = os.environ.get("GIT_USERNAME", "x-access-token")
         configure_git_auth(git_token, git_host, git_user)
 
-    # Dispatch
     try:
         if config.sprint_mode:
             logger.info("Running in SPRINT MODE")
-            await run_sprint(config, agent_client=client)
-            return
-
-        if args.agent == "gemini":
-            await run_gemini(config, agent_client=client)
+            await run_sprint(config, agent_client=local_client)
+        elif args.agent == "gemini":
+            await run_gemini(config, agent_client=local_client)
         elif args.agent == "cursor":
-            await run_cursor(config, agent_client=client)
+            await run_cursor(config, agent_client=local_client)
         elif args.agent == "local":
-            await run_local(config, agent_client=client)
+            await run_local(config, agent_client=local_client)
         elif args.agent == "openrouter":
-            await run_openrouter(config, agent_client=client)
+            await run_openrouter(config, agent_client=local_client)
+
     except KeyboardInterrupt:
         logger.info("\nExecution interrupted by user.")
         sys.exit(0)
     except Exception as e:
-        logger.exception(f"Fatal error: {e}")
-        sys.exit(1)
+        logger.exception(f"Fatal error in agent task: {e}")
+        # In develop mode, we don't want to exit the whole process
+        if not getattr(args, 'command', None) == 'develop':
+             sys.exit(1)
 
-    # Post-Execution Cleanup
-    # If project is signed off, run the completion flow and cleaner
+
     if (config.project_dir / "PROJECT_SIGNED_OFF").exists():
-        # Final safety check for Jira completion (in case iteration loop didn't hit it)
         if config.jira and config.jira_ticket_key:
             from shared.workflow import complete_jira_ticket
             await complete_jira_ticket(config)
-
         logger.info("Project signed off. Finalizing...")
-        # note: the autonomous loop itself now handles triggering the cleaner agent
-        # if cleanup_report.txt is missing.
 
+async def run_develop(args):
+    """Runs the agent in a live-reloading development mode."""
+    if Observer is None or FileSystemEventHandler is None:
+        print("Error: 'watchdog' is not installed. Please run 'pip install watchdog' to use the develop command.", file=sys.stderr)
+        sys.exit(1)
+
+    spec_path = Path(args.spec).resolve()
+    if not spec_path.exists():
+        print(f"❌ Error: Spec file not found at '{spec_path}'", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- 🚀 Starting Development Mode ---")
+    print(f"Watching for changes to: {spec_path.name}")
+    print("The agent will run automatically when you save the file.")
+    print("Press Ctrl+C to stop.")
+
+    # Use a lock to prevent concurrent runs
+    run_lock = asyncio.Lock()
+    last_run_time = 0
+    debounce_period = 2.0  # seconds
+
+    async def trigger_run():
+        nonlocal last_run_time
+        async with run_lock:
+            current_time = time.time()
+            if current_time - last_run_time < debounce_period:
+                return
+            last_run_time = current_time
+
+            print("\n" + "="*50)
+            print(f"🔥 Change detected! Running agent...")
+            print("="*50)
+
+            # --- Run the agent ---
+            try:
+                await run_agent_task(args)
+                print("\n" + "-"*50)
+                print("✅ Agent run finished. Now running tests...")
+                print("-" * 50)
+            except SystemExit as e:
+                # Catch SystemExit to prevent the watcher from stopping
+                if e.code != 0:
+                    print(f"Agent task exited with code {e.code}. Skipping tests.", file=sys.stderr)
+                    return # Don't run tests if agent failed
+                # If code is 0, proceed to tests
+            except Exception as e:
+                print(f"An unexpected error occurred during agent run: {e}", file=sys.stderr)
+                return # Don't run tests if agent failed
+
+
+            # --- Run tests ---
+            try:
+                test_args = argparse.Namespace(project_dir=args.project_dir, test_args=[])
+                run_test(test_args)
+            except SystemExit as e:
+                if e.code == 0:
+                    print("\n" + "="*50)
+                    print("✅ All tests passed!")
+                    print("="*50)
+                else:
+                    print("\n" + "="*50)
+                    print(f"❌ Tests failed with exit code {e.code}.")
+                    print("="*50)
+            except Exception as e:
+                print(f"An unexpected error occurred during test run: {e}", file=sys.stderr)
+
+            print(f"\n--- Watching for changes to: {spec_path.name} ---")
+
+
+    class SpecChangeHandler(FileSystemEventHandler):
+        def on_modified(self, event):
+            if Path(event.src_path).resolve() == spec_path:
+                # Run the async function in the main event loop
+                asyncio.run_coroutine_threadsafe(trigger_run(), asyncio.get_running_loop())
+
+    # Initial run
+    await trigger_run()
+
+    observer = Observer()
+    observer.schedule(SpecChangeHandler(), spec_path.parent, recursive=False)
+    observer.start()
+
+    try:
+        while observer.is_alive():
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        print("\n--- Stopping development mode. ---")
+    finally:
+        observer.stop()
+        observer.join()
 
 if __name__ == "__main__":
     if sys.platform == "win32":

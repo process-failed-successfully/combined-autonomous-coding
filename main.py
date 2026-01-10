@@ -2332,11 +2332,29 @@ def run_diff(args):
         if not ref:
             return None
 
+        # Check if the ref is a valid git object. We use rev-parse which is a
+        # plumbing command for this purpose.
+        is_git_ref = False
+        try:
+            check_ref_proc = subprocess.run(
+                [git_path, "-C", str(project_dir), "rev-parse", "--verify", "--quiet", ref],
+                capture_output=True
+            )
+            if check_ref_proc.returncode == 0:
+                is_git_ref = True
+        except Exception:
+            pass # We will try to resolve it as a Run ID anyway
+
+        if is_git_ref:
+            return ref
+
+        # If not a git ref, assume it might be a Run ID
         commit_hash = _find_commit_by_run_id(project_dir, git_path, ref)
         if commit_hash:
             print(f"Info: Resolved Run ID '{ref}' to commit {commit_hash[:7]}", file=sys.stderr)
             return commit_hash
 
+        # If it's neither, return the original ref and let `git diff` handle the error
         return ref
 
     # --- Logic ---

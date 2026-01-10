@@ -40,74 +40,64 @@ class TestDiffCommand(unittest.TestCase):
 
     def test_diff_no_args(self):
         """Test `diff` with no arguments (shows uncommitted changes)."""
-        args = argparse.Namespace(
-            project_dir=Path('.'),
-            ref1=None,
-            ref2=None
-        )
+        args = argparse.Namespace(project_dir=Path('.'), ref1=None, ref2=None)
         with self.assertRaises(SystemExit) as cm:
             run_diff(args)
         self.assertEqual(cm.exception.code, 0)
-        self.mock_subprocess_run.assert_called_once_with(
+        self.mock_subprocess_run.assert_called_with(
             ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'HEAD']
         )
 
     def test_diff_one_git_ref(self):
         """Test `diff <ref1>` with a git reference."""
-        args = argparse.Namespace(
-            project_dir=Path('.'),
-            ref1='main',
-            ref2=None
-        )
+        args = argparse.Namespace(project_dir=Path('.'), ref1='main', ref2=None)
+        self.mock_subprocess_run.side_effect = [MagicMock(returncode=0), MagicMock(returncode=0)]
         with self.assertRaises(SystemExit) as cm:
             run_diff(args)
         self.assertEqual(cm.exception.code, 0)
-        self.mock_subprocess_run.assert_called_once_with(
+        self.mock_find_commit.assert_not_called()
+        self.mock_subprocess_run.assert_called_with(
             ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'main']
         )
 
     def test_diff_one_run_id(self):
         """Test `diff <ref1>` with a Run ID."""
-        args = argparse.Namespace(
-            project_dir=Path('.'),
-            ref1='run-123',
-            ref2=None
-        )
+        args = argparse.Namespace(project_dir=Path('.'), ref1='run-123', ref2=None)
+        self.mock_subprocess_run.side_effect = [MagicMock(returncode=1), MagicMock(returncode=0)]
         with self.assertRaises(SystemExit) as cm:
             run_diff(args)
         self.assertEqual(cm.exception.code, 0)
         resolved_path = Path('.').resolve()
         self.mock_find_commit.assert_called_once_with(resolved_path, '/usr/bin/git', 'run-123')
-        self.mock_subprocess_run.assert_called_once_with(
+        self.mock_subprocess_run.assert_called_with(
             ['/usr/bin/git', '-C', str(resolved_path), 'diff', '--color=always', 'abc1234']
         )
 
     def test_diff_two_git_refs(self):
         """Test `diff <ref1> <ref2>` with two git references."""
-        args = argparse.Namespace(
-            project_dir=Path('.'),
-            ref1='main',
-            ref2='develop'
-        )
+        args = argparse.Namespace(project_dir=Path('.'), ref1='main', ref2='develop')
+        self.mock_subprocess_run.side_effect = [
+            MagicMock(returncode=0), MagicMock(returncode=0), MagicMock(returncode=0)
+        ]
         with self.assertRaises(SystemExit) as cm:
             run_diff(args)
         self.assertEqual(cm.exception.code, 0)
-        self.mock_subprocess_run.assert_called_once_with(
+        self.mock_find_commit.assert_not_called()
+        self.mock_subprocess_run.assert_called_with(
             ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'main', 'develop']
         )
 
     def test_diff_two_run_ids(self):
         """Test `diff <ref1> <ref2>` with two Run IDs."""
-        args = argparse.Namespace(
-            project_dir=Path('.'),
-            ref1='run-123',
-            ref2='run-456'
-        )
+        args = argparse.Namespace(project_dir=Path('.'), ref1='run-123', ref2='run-456')
+        self.mock_subprocess_run.side_effect = [
+            MagicMock(returncode=1), MagicMock(returncode=1), MagicMock(returncode=0)
+        ]
         with self.assertRaises(SystemExit) as cm:
             run_diff(args)
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(self.mock_find_commit.call_count, 2)
-        self.mock_subprocess_run.assert_called_once_with(
+        self.mock_subprocess_run.assert_called_with(
             ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'abc1234', 'def5678']
         )
 
@@ -118,13 +108,26 @@ class TestDiffCommand(unittest.TestCase):
             ref1='main',
             ref2='run-456'
         )
+        # Mock the git rev-parse check. 'main' is a valid ref, 'run-456' is not.
+        self.mock_subprocess_run.side_effect = [
+            MagicMock(returncode=0), # The check for 'main'
+            MagicMock(returncode=1), # The check for 'run-456'
+            MagicMock(returncode=0)  # The final 'git diff' call
+        ]
+
         with self.assertRaises(SystemExit) as cm:
             run_diff(args)
+
         self.assertEqual(cm.exception.code, 0)
-        self.assertEqual(self.mock_find_commit.call_count, 2)
-        self.mock_subprocess_run.assert_called_once_with(
-            ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'main', 'def5678']
-        )
+
+        # _find_commit_by_run_id should only be called once, for the ref that
+        # failed the rev-parse check.
+        self.mock_find_commit.assert_called_once_with(Path('.').resolve(), '/usr/bin/git', 'run-456')
+
+        # The final call to `git diff` should have the resolved commit hash
+        final_call = self.mock_subprocess_run.call_args_list[-1]
+        expected_cmd = ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'main', 'def5678']
+        self.assertEqual(final_call.args[0], expected_cmd)
 
     def test_diff_invalid_run_id(self):
         """Test `diff` with a Run ID that does not resolve."""
@@ -137,9 +140,10 @@ class TestDiffCommand(unittest.TestCase):
             run_diff(args)
         self.assertEqual(cm.exception.code, 0)
         # It should fall back to using the raw ref
-        self.mock_subprocess_run.assert_called_once_with(
+        self.mock_subprocess_run.assert_called_with(
             ['/usr/bin/git', '-C', str(Path('.').resolve()), 'diff', '--color=always', 'invalid-run-id']
         )
+        self.assertEqual(self.mock_subprocess_run.call_count, 2)
 
     def test_git_not_found(self):
         """Test that the command exits if git is not found."""

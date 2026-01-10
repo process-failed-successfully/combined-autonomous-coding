@@ -2022,6 +2022,122 @@ def run_blame(args):
         sys.exit(1)
     sys.exit(0)
 
+
+def run_review(args):
+    """Runs an interactive session to review and approve/reject the agent's work."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Starting Interactive Review for: {project_dir} ---")
+
+    completed_marker = project_dir / "COMPLETED"
+    qa_passed_marker = project_dir / "QA_PASSED"
+
+    if not completed_marker.exists():
+        print("Agent has not marked its work as complete. Nothing to review.")
+        print("Please run the agent first and wait for it to create the 'COMPLETED' marker file.")
+        sys.exit(0)
+
+    # 1. Run Tests
+    print("\n--- [1/4] Running Project Tests ---")
+    try:
+        # Use sys.executable to ensure we're using the same Python interpreter
+        test_command = [sys.executable, __file__, "test", "-p", str(project_dir)]
+        result = subprocess.run(test_command, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            print("❌ Tests failed. Review cannot proceed.")
+            print("\n--- Test Output ---")
+            print(result.stdout)
+            print(result.stderr)
+            print("-------------------")
+            print("Please fix the tests or reject the agent's work.")
+            sys.exit(1)
+        else:
+            print("✅ Tests passed successfully.")
+
+    except Exception as e:
+        print(f"An unexpected error occurred while running tests: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+    # 2. Show Summary
+    print("\n--- [2/4] Summary of Changes ---")
+    # Show git diff
+    print("\n--- Git Diff (HEAD) ---")
+    diff_args = argparse.Namespace(target=None, project_dir=project_dir)
+    try:
+        run_diff(diff_args)
+    except SystemExit:
+        pass # run_diff exits, which is expected.
+
+    # Show QA summary from agent
+    qa_summary_file = project_dir / "qa_summary.txt"
+    if qa_summary_file.exists():
+        print("\n--- Agent's QA Summary ---")
+        try:
+            print(qa_summary_file.read_text())
+        except IOError as e:
+            print(f"Could not read QA summary: {e}")
+
+    # Show last log entries
+    print("\n--- Last Agent Log ---")
+    try:
+        last_run_id_args = argparse.Namespace(project_dir=project_dir)
+        last_run_id_process = subprocess.run(
+            [sys.executable, __file__, "last-run-id", "-p", str(project_dir)],
+            capture_output=True, text=True, check=True
+        )
+        last_run_id = last_run_id_process.stdout.strip()
+
+        logs_args = argparse.Namespace(run_id=last_run_id, lines=15, follow=False, grep=None)
+        run_logs(logs_args)
+    except (SystemExit, subprocess.CalledProcessError) as e:
+        print(f"Could not retrieve last log summary: {getattr(e, 'stderr', e)}")
+
+
+    # 3. Interactive Prompt
+    print("\n--- [3/4] Your Action ---")
+    while True:
+        try:
+            choice = input(
+                "Choose an action: [A]pprove, [R]eject, open a [S]hell for manual inspection, or [Q]uit: "
+            ).strip().lower()
+
+            if choice == 'a':
+                print("Approving agent's work...")
+                qa_passed_marker.touch()
+                print("✅ QA_PASSED marker file created. The Manager agent can now perform the final sign-off.")
+                sys.exit(0)
+
+            elif choice == 'r':
+                print("Rejecting agent's work...")
+                feedback = input("Please provide feedback for the agent (press Enter to leave empty):\n> ")
+                if feedback:
+                     # This could be written to a file, but for now, we just print it.
+                     # In a future version, this feedback could be automatically used by the agent.
+                    print("Feedback recorded. You may want to copy this into a new spec or directive.")
+                if completed_marker.exists():
+                    completed_marker.unlink()
+                print("🗑️ 'COMPLETED' marker file deleted. The agent will re-run the task on its next iteration.")
+                sys.exit(0)
+
+            elif choice == 's':
+                print("Starting a shell in the project directory. Type 'exit' to return to the review.")
+                subprocess.run(os.environ.get('SHELL', 'bash'), cwd=project_dir)
+                print("Returning to review prompt...")
+                # Loop continues
+
+            elif choice == 'q':
+                print("Quitting review. No changes were made.")
+                sys.exit(0)
+
+            else:
+                print("Invalid choice. Please try again.")
+
+        except (KeyboardInterrupt, EOFError):
+            print("\nReview aborted.")
+            sys.exit(1)
+
+
 def run_report(args):
     """Generates a summary report for a specific agent run."""
     success = _run_report_logic(
@@ -2694,6 +2810,7 @@ def run_help(args):
     print_header("Utilities")
     print_command("why", "Explain what a command does and why you might use it.")
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
+    print_command("review", "Run an interactive session to review and approve/reject agent's work.")
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
     print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
@@ -4856,6 +4973,18 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run an interactive session to review and approve/reject the agent's work."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review (default: current directory).",
+    )
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
@@ -6488,6 +6617,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "help":

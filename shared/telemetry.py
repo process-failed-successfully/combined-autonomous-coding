@@ -319,19 +319,21 @@ class Telemetry:
     def record_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
+
         if name in self.metrics:
             metric = self.metrics[name]
-            # Handle metrics with no labels defined
             if not metric._labelnames:
                 metric.set(value)
             elif not labels:
                 # Fast path: Use cached defaults directly
+                # Note: This avoids dictionary copying and loops
                 metric.labels(**self._metric_defaults[name]).set(value)
             else:
                 # Slow path: Merge provided labels with defaults
                 final_labels = self._metric_defaults[name].copy()
                 final_labels.update(labels)
                 metric.labels(**final_labels).set(value)
+
             self._push_metrics()
 
     def increment_counter(
@@ -339,10 +341,10 @@ class Telemetry:
     ):
         if not ENABLE_METRICS:
             return
+
         if name in self.metrics:
             metric = self.metrics[name]
             if not metric._labelnames:
-                # For metrics without labels, inc is on the metric itself
                 metric.inc(value)
             elif not labels:
                 # Fast path: Use cached defaults directly
@@ -352,15 +354,16 @@ class Telemetry:
                 final_labels = self._metric_defaults[name].copy()
                 final_labels.update(labels)
                 metric.labels(**final_labels).inc(value)
+
             self._push_metrics()
 
     def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
+
         if name in self.metrics:
             metric = self.metrics[name]
             if not metric._labelnames:
-                # For metrics without labels, observe is on the metric itself
                 metric.observe(value)
             elif not labels:
                 # Fast path: Use cached defaults directly
@@ -370,6 +373,7 @@ class Telemetry:
                 final_labels = self._metric_defaults[name].copy()
                 final_labels.update(labels)
                 metric.labels(**final_labels).observe(value)
+
             self._push_metrics()
 
     def log_info(self, message: str):

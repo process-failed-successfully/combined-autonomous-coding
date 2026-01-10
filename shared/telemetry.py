@@ -322,18 +322,22 @@ class Telemetry:
 
         if name in self.metrics:
             metric = self.metrics[name]
+            # For metrics without labels, call the method directly.
             if not metric._labelnames:
                 metric.set(value)
-            elif not labels:
-                # Fast path: Use cached defaults directly
-                # Note: This avoids dictionary copying and loops
-                metric.labels(**self._metric_defaults[name]).set(value)
-            else:
-                # Slow path: Merge provided labels with defaults
-                final_labels = self._metric_defaults[name].copy()
-                final_labels.update(labels)
-                metric.labels(**final_labels).set(value)
+                self._push_metrics()
+                return
 
+            # For metrics with labels.
+            if not labels:
+                # Fast path: No labels provided, use cached defaults.
+                final_labels = self._metric_defaults.get(name, {})
+            else:
+                # Slow path: Merge provided labels with defaults.
+                final_labels = self._metric_defaults.get(name, {}).copy()
+                final_labels.update(labels)
+
+            metric.labels(**final_labels).set(value)
             self._push_metrics()
 
     def increment_counter(
@@ -344,17 +348,22 @@ class Telemetry:
 
         if name in self.metrics:
             metric = self.metrics[name]
+            # For metrics without labels, call the method directly.
             if not metric._labelnames:
                 metric.inc(value)
-            elif not labels:
-                # Fast path: Use cached defaults directly
-                metric.labels(**self._metric_defaults[name]).inc(value)
-            else:
-                # Slow path: Merge provided labels with defaults
-                final_labels = self._metric_defaults[name].copy()
-                final_labels.update(labels)
-                metric.labels(**final_labels).inc(value)
+                self._push_metrics()
+                return
 
+            # For metrics with labels.
+            if not labels:
+                # Fast path: No labels provided, use cached defaults.
+                final_labels = self._metric_defaults.get(name, {})
+            else:
+                # Slow path: Merge provided labels with defaults.
+                final_labels = self._metric_defaults.get(name, {}).copy()
+                final_labels.update(labels)
+
+            metric.labels(**final_labels).inc(value)
             self._push_metrics()
 
     def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
@@ -363,17 +372,22 @@ class Telemetry:
 
         if name in self.metrics:
             metric = self.metrics[name]
+            # For metrics without labels, call the method directly.
             if not metric._labelnames:
                 metric.observe(value)
-            elif not labels:
-                # Fast path: Use cached defaults directly
-                metric.labels(**self._metric_defaults[name]).observe(value)
-            else:
-                # Slow path: Merge provided labels with defaults
-                final_labels = self._metric_defaults[name].copy()
-                final_labels.update(labels)
-                metric.labels(**final_labels).observe(value)
+                self._push_metrics()
+                return
 
+            # For metrics with labels.
+            if not labels:
+                # Fast path: No labels provided, use cached defaults.
+                final_labels = self._metric_defaults.get(name, {})
+            else:
+                # Slow path: Merge provided labels with defaults.
+                final_labels = self._metric_defaults.get(name, {}).copy()
+                final_labels.update(labels)
+
+            metric.labels(**final_labels).observe(value)
             self._push_metrics()
 
     def log_info(self, message: str):

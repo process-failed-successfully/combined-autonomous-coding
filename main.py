@@ -24,7 +24,7 @@ try:
     from watchdog.events import FileSystemEventHandler
 except ImportError:
     Observer = None
-    FileSystemEventHandler = None
+    class FileSystemEventHandler: pass
 
 
 from shared.config import Config
@@ -47,10 +47,10 @@ from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouter
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 import json
+from datetime import datetime
 import yaml
 import platformdirs
 from dataclasses import asdict, is_dataclass
-from datetime import datetime
 
 # Agent Definitions
 AVAILABLE_AGENTS = {
@@ -4839,6 +4839,50 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'develop' command ---
+    parser_develop = subparsers.add_parser(
+        "develop",
+        help="Run an interactive development loop: watch spec -> run agent -> run tests."
+    )
+    parser_develop.add_argument(
+        "-s", "--spec",
+        type=Path,
+        required=True,
+        help="Path to the application specification file to watch.",
+    )
+    parser_develop.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the development session.",
+    )
+    parser_develop.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)",
+    )
+    parser_develop.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default).",
+    )
+    parser_develop.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging.",
+    )
+    parser_develop.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
+    )
+    parser_develop.add_argument(
+        "--dashboard-url",
+        default="http://localhost:7654",
+        help="URL of the dashboard server (default: http://localhost:7654)",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6232,6 +6276,148 @@ def run_worktrees(args):
         sys.exit(0)
 
 
+async def run_agent_task(config, client):
+    """A reusable function to run the agent task."""
+    try:
+        if config.sprint_mode:
+            await run_sprint(config, agent_client=client)
+            return
+
+        agent_runner_map = {
+            "gemini": run_gemini,
+            "cursor": run_cursor,
+            "local": run_local,
+            "openrouter": run_openrouter,
+        }
+
+        runner = agent_runner_map.get(config.agent_type)
+        if runner:
+            await runner(config, agent_client=client)
+        else:
+            # This should ideally be caught by argparse choices, but as a safeguard:
+            print(f"Unknown agent type: {config.agent_type}")
+            sys.exit(1)
+
+    except KeyboardInterrupt:
+        print("\nExecution interrupted by user.")
+        sys.exit(0)
+    except Exception as e:
+        # Assuming logger is configured outside if this is called stand-alone
+        print(f"Fatal error: {e}")
+        # Optionally re-raise or handle more gracefully
+        raise
+
+
+class SpecFileEventHandler(FileSystemEventHandler):
+    def __init__(self, loop, config, client):
+        self.loop = loop
+        self.config = config
+        self.client = client
+        self.last_run_time = 0
+        self.debounce_period = 2.0  # 2 seconds
+
+    def on_modified(self, event):
+        if event.is_directory or event.src_path != str(self.config.spec_file.resolve()):
+            return
+
+        current_time = time.time()
+        if current_time - self.last_run_time < self.debounce_period:
+            print("Change detected, but waiting for debounce period to pass...")
+            return
+
+        self.last_run_time = current_time
+        print(f"Spec file '{self.config.spec_file.name}' modified. Triggering agent run...")
+
+        # Schedule the asynchronous agent task to be run on the main event loop
+        asyncio.run_coroutine_threadsafe(self.run_dev_cycle(), self.loop)
+
+    async def run_dev_cycle(self):
+        try:
+            print("\n--- [Develop Mode] Running Agent ---")
+            await run_agent_task(self.config, self.client)
+
+            print("\n--- [Develop Mode] Running Tests ---")
+            # Mimic the 'run_test' command without arguments
+            test_args = argparse.Namespace(project_dir=self.config.project_dir, test_args=[])
+            try:
+                run_test(test_args)
+            except SystemExit as e:
+                if e.code == 0:
+                    print("--- Tests passed successfully ---")
+                else:
+                    print(f"--- Tests failed with exit code {e.code} ---")
+
+        except Exception as e:
+            print(f"An error occurred during the dev cycle: {e}")
+        finally:
+            print(f"\nWatching for changes to '{self.config.spec_file.name}'... (Press Ctrl+C to stop)")
+
+
+async def run_develop(args):
+    """Runs an interactive development loop: watch spec -> run agent -> run tests."""
+    if Observer is None:
+        print("Error: 'watchdog' library not found. Please run 'pip install watchdog' to use the 'develop' command.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Initial Setup ---
+    # Most of this is a simplified version of the main() setup logic
+    ensure_config_exists()
+    file_config = load_config_from_file(profile=args.profile)
+
+    def resolve(cli_arg, config_key, default_val):
+        return cli_arg if cli_arg is not None else file_config.get(config_key, default_val)
+
+    config = Config(
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=resolve(args.model, "model", None),
+        spec_file=args.spec,
+        verbose=args.verbose,
+        stream_output=True, # Always stream in develop mode
+    )
+
+    # Generate a consistent agent ID for the session
+    project_name = config.project_dir.resolve().name
+    from shared.utils import generate_agent_id
+    agent_id = generate_agent_id(project_name, "develop-session", args.agent)
+    config.agent_id = agent_id
+
+    # Setup logger
+    repo_root = Path(__file__).parent
+    log_file = repo_root / f"agents/logs/{agent_id}.log"
+    logger, memory_handler = setup_logger(name="develop_logger", log_file=log_file, verbose=args.verbose)
+
+    # Setup agent client for dashboard communication
+    from shared.agent_client import AgentClient
+    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
+
+    # --- Watchdog Setup ---
+    event_handler = SpecFileEventHandler(asyncio.get_running_loop(), config, client)
+    observer = Observer()
+
+    # Watch the directory containing the spec file, not the file itself
+    watch_path = str(config.spec_file.resolve().parent)
+    observer.schedule(event_handler, watch_path, recursive=False)
+    observer.start()
+
+    print("--- 🚀 Starting Develop Mode ---")
+    print(f"Watching for changes to '{config.spec_file.name}'...")
+    print("The agent will run automatically when the file is saved.")
+    print("Press Ctrl+C to stop.")
+
+    try:
+        # Keep the main thread alive to listen for file system events
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        print("\n--- Stopping Develop Mode ---")
+    finally:
+        observer.stop()
+        observer.join()
+
+    sys.exit(0)
+
+
 async def main():
     args = parse_args()
 
@@ -6486,6 +6672,10 @@ async def main():
         run_why(args)
         return
 
+    if args.command == "develop":
+        await run_develop(args)
+        return
+
     if args.command == "blame":
         run_blame(args)
         return
@@ -6694,24 +6884,9 @@ async def main():
 
     # Dispatch
     try:
-        if config.sprint_mode:
-            logger.info("Running in SPRINT MODE")
-            await run_sprint(config, agent_client=client)
-            return
-
-        if args.agent == "gemini":
-            await run_gemini(config, agent_client=client)
-        elif args.agent == "cursor":
-            await run_cursor(config, agent_client=client)
-        elif args.agent == "local":
-            await run_local(config, agent_client=client)
-        elif args.agent == "openrouter":
-            await run_openrouter(config, agent_client=client)
-    except KeyboardInterrupt:
-        logger.info("\nExecution interrupted by user.")
-        sys.exit(0)
+        await run_agent_task(config, client)
     except Exception as e:
-        logger.exception(f"Fatal error: {e}")
+        logger.exception(f"Fatal error during agent execution: {e}")
         sys.exit(1)
 
     # Post-Execution Cleanup

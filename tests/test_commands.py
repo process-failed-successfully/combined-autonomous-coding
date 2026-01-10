@@ -4,9 +4,6 @@ import io
 import sys
 from argparse import Namespace
 
-# Add the project root to the path to allow imports from shared
-sys.path.insert(0, sys.path[0] + "/..")
-
 from shared.commands import run_why
 
 class TestWhyCommand(unittest.TestCase):

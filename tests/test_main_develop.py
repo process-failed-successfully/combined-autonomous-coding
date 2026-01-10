@@ -110,7 +110,7 @@ class TestDevelopCommand(unittest.IsolatedAsyncioTestCase):
             agent="gemini",
             model=None,
             no_tests=False,
-            verbose=False
+            verbose=False,
         )
 
         # Mock the event loop and ChangeHandler to manually trigger the event
@@ -169,7 +169,7 @@ class TestDevelopCommand(unittest.IsolatedAsyncioTestCase):
             handler_instance.on_modified(mock_event)
 
             # Yield control to the event loop to allow the scheduled task to start
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
 
             # Wait for the second run to complete.
             await asyncio.wait_for(run_complete_event_ref.wait(), timeout=1.0)

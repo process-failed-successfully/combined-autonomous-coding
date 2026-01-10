@@ -38,8 +38,6 @@ class Telemetry:
         self.registry = CollectorRegistry()
         self.metrics: Dict[str, Any] = {}
 
-        # Optimization: Cache default labels per metric to avoid re-calculation
-        self._metric_defaults: Dict[str, Dict[str, str]] = {}
         self._system_labels = {
             "agent_id": service_name,
             "project": project_name,
@@ -262,27 +260,17 @@ class Telemetry:
         except Exception as e:
             self.log_error(f"Failed to initialize default metrics: {e}")
 
-    def _cache_defaults(self, name: str, labelnames: List[str]):
-        """Pre-calculate default labels for a metric to optimize lookups."""
-        defaults = {}
-        for lbl in labelnames:
-            if lbl in self._system_labels:
-                defaults[lbl] = self._system_labels[lbl]
-        self._metric_defaults[name] = defaults
-
     def register_gauge(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Gauge(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
-            self._cache_defaults(name, labelnames)
 
     def register_counter(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Counter(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
-            self._cache_defaults(name, labelnames)
 
     def register_histogram(
         self,
@@ -299,7 +287,6 @@ class Telemetry:
                 registry=self.registry,
                 buckets=buckets,
             )
-            self._cache_defaults(name, labelnames)
 
     def _get_labels(self, labels: Dict[str, str]) -> Dict[str, str]:
         # Merge default labels with provided labels
@@ -319,23 +306,19 @@ class Telemetry:
     def record_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
-
         if name in self.metrics:
             metric = self.metrics[name]
-            # For metrics without labels, call the method directly.
             if not metric._labelnames:
                 metric.set(value)
                 self._push_metrics()
                 return
 
-            # For metrics with labels.
-            if not labels:
-                # Fast path: No labels provided, use cached defaults.
-                final_labels = self._metric_defaults.get(name, {})
-            else:
-                # Slow path: Merge provided labels with defaults.
-                final_labels = self._metric_defaults.get(name, {}).copy()
-                final_labels.update(labels)
+            required_labels = metric._labelnames
+            final_labels = labels.copy() if labels else {}
+
+            for lbl in required_labels:
+                if lbl not in final_labels and lbl in self._system_labels:
+                    final_labels[lbl] = self._system_labels[lbl]
 
             metric.labels(**final_labels).set(value)
             self._push_metrics()
@@ -345,23 +328,19 @@ class Telemetry:
     ):
         if not ENABLE_METRICS:
             return
-
         if name in self.metrics:
             metric = self.metrics[name]
-            # For metrics without labels, call the method directly.
             if not metric._labelnames:
                 metric.inc(value)
                 self._push_metrics()
                 return
 
-            # For metrics with labels.
-            if not labels:
-                # Fast path: No labels provided, use cached defaults.
-                final_labels = self._metric_defaults.get(name, {})
-            else:
-                # Slow path: Merge provided labels with defaults.
-                final_labels = self._metric_defaults.get(name, {}).copy()
-                final_labels.update(labels)
+            required_labels = metric._labelnames
+            final_labels = labels.copy() if labels else {}
+
+            for lbl in required_labels:
+                if lbl not in final_labels and lbl in self._system_labels:
+                    final_labels[lbl] = self._system_labels[lbl]
 
             metric.labels(**final_labels).inc(value)
             self._push_metrics()
@@ -369,23 +348,19 @@ class Telemetry:
     def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
         if not ENABLE_METRICS:
             return
-
         if name in self.metrics:
             metric = self.metrics[name]
-            # For metrics without labels, call the method directly.
             if not metric._labelnames:
                 metric.observe(value)
                 self._push_metrics()
                 return
 
-            # For metrics with labels.
-            if not labels:
-                # Fast path: No labels provided, use cached defaults.
-                final_labels = self._metric_defaults.get(name, {})
-            else:
-                # Slow path: Merge provided labels with defaults.
-                final_labels = self._metric_defaults.get(name, {}).copy()
-                final_labels.update(labels)
+            required_labels = metric._labelnames
+            final_labels = labels.copy() if labels else {}
+
+            for lbl in required_labels:
+                if lbl not in final_labels and lbl in self._system_labels:
+                    final_labels[lbl] = self._system_labels[lbl]
 
             metric.labels(**final_labels).observe(value)
             self._push_metrics()

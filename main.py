@@ -2022,6 +2022,135 @@ def run_blame(args):
         sys.exit(1)
     sys.exit(0)
 
+
+async def run_agent_task(config, client):
+    """The core logic for dispatching and running an agent task."""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    if config.sprint_mode:
+        logger.info("Running in SPRINT MODE")
+        await run_sprint(config, agent_client=client)
+        return
+
+    if config.agent_type == "gemini":
+        await run_gemini(config, agent_client=client)
+    elif config.agent_type == "cursor":
+        await run_cursor(config, agent_client=client)
+    elif config.agent_type == "local":
+        await run_local(config, agent_client=client)
+    elif config.agent_type == "openrouter":
+        await run_openrouter(config, agent_client=client)
+
+
+async def run_develop(args):
+    """Runs the agent in an interactive development loop."""
+    from shared.agent_client import AgentClient
+    from shared.utils import generate_agent_id
+
+    spec_path = args.spec.resolve()
+    if not spec_path.exists():
+        print(f"❌ Error: Spec file not found at {spec_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Use a shared event to signal when a run is complete
+    run_complete_event = asyncio.Event()
+
+    class ChangeHandler(FileSystemEventHandler):
+        def __init__(self, loop):
+            self.loop = loop
+            self.last_triggered = 0
+            self.debounce_period = 1.0 # 1 second
+
+        def on_modified(self, event):
+            if event.src_path == str(spec_path):
+                current_time = time.time()
+                if current_time - self.last_triggered > self.debounce_period:
+                    print(f"\n--- Change detected in {spec_path.name}. Triggering agent run... ---")
+                    # Schedule the agent run in the main event loop
+                    asyncio.run_coroutine_threadsafe(trigger_agent_run(), self.loop)
+                    self.last_triggered = current_time
+
+    async def trigger_agent_run():
+        """Sets up and runs the agent, then runs tests."""
+        run_complete_event.clear()
+        try:
+            # --- Configuration Setup (similar to main()) ---
+            project_dir = args.project_dir
+            project_name = project_dir.resolve().name
+            spec_content = spec_path.read_text()
+
+            agent_id = generate_agent_id(project_name, spec_content, args.agent)
+            log_file = Path(__file__).parent / f"agents/logs/{agent_id}.log"
+            logger, memory_handler = setup_logger(name=f"dev_run_{agent_id}", log_file=log_file, verbose=args.verbose, console_output=True)
+
+            config = Config(
+                project_dir=project_dir,
+                agent_id=agent_id,
+                agent_type=args.agent,
+                model=args.model,
+                spec_file=spec_path,
+                verbose=args.verbose,
+                stream_output=True, # Always stream in dev mode
+            )
+
+            client = AgentClient(agent_id=agent_id, dashboard_url="http://localhost:7654", memory_handler=memory_handler)
+
+            # Write run ID to history
+            with (project_dir / ".agent_history").open("a") as f:
+                f.write(f"{agent_id}\n")
+
+            # --- Run Agent ---
+            await run_agent_task(config, client)
+
+            # --- Run Tests ---
+            if not args.no_tests:
+                print("\n--- Agent run complete. Running tests... ---")
+                test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+                try:
+                    # run_test exits, so we catch it
+                    run_test(test_args)
+                except SystemExit as e:
+                    if e.code == 0:
+                        print("✅ Tests passed.")
+                    else:
+                        print(f"❌ Tests failed with exit code {e.code}.", file=sys.stderr)
+            else:
+                print("\n--- Agent run complete. Skipping tests as per --no-tests. ---")
+
+        except Exception as e:
+            print(f"\n❌ An error occurred during the agent run: {e}", file=sys.stderr)
+        finally:
+            print(f"\n--- Waiting for next change in {spec_path.name}... ---")
+            run_complete_event.set()
+
+
+    # --- Initial Run ---
+    print("--- Agent Development Mode ---")
+    print(f"Performing initial agent run based on {spec_path.name}...")
+    await trigger_agent_run() # Run once immediately on start
+
+    # --- Start File Watcher ---
+    loop = asyncio.get_running_loop()
+    event_handler = ChangeHandler(loop)
+    observer = Observer()
+    observer.schedule(event_handler, path=str(spec_path.parent), recursive=False)
+    observer.start()
+
+    print(f"--- Watching for changes in {spec_path.name}. Press Ctrl+C to stop. ---")
+
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        print("\n--- Stopping development mode. ---")
+    finally:
+        observer.stop()
+        observer.join()
+
+    sys.exit(0)
+
+
 def run_report(args):
     """Generates a summary report for a specific agent run."""
     success = _run_report_logic(
@@ -4779,6 +4908,45 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'develop' command ---
+    parser_develop = subparsers.add_parser(
+        "develop",
+        help="Run the agent in an interactive development loop that watches for changes."
+    )
+    parser_develop.add_argument(
+        "-s", "--spec",
+        type=Path,
+        required=True,
+        help="Path to the application specification file to watch (e.g., app_spec.txt).",
+    )
+    parser_develop.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="Directory where the project will be modified (default: current directory).",
+    )
+    parser_develop.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for development (default: gemini).",
+    )
+    parser_develop.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use for development (overrides agent's default).",
+    )
+    parser_develop.add_argument(
+        "--no-tests",
+        action="store_true",
+        help="Skip running tests automatically after each agent run.",
+    )
+    parser_develop.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging for the agent runs.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -6410,6 +6578,11 @@ async def main():
         run_blame(args)
         return
 
+    # Handle `develop` command
+    if args.command == "develop":
+        await run_develop(args)
+        return
+
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id
@@ -6610,19 +6783,7 @@ async def main():
 
     # Dispatch
     try:
-        if config.sprint_mode:
-            logger.info("Running in SPRINT MODE")
-            await run_sprint(config, agent_client=client)
-            return
-
-        if args.agent == "gemini":
-            await run_gemini(config, agent_client=client)
-        elif args.agent == "cursor":
-            await run_cursor(config, agent_client=client)
-        elif args.agent == "local":
-            await run_local(config, agent_client=client)
-        elif args.agent == "openrouter":
-            await run_openrouter(config, agent_client=client)
+        await run_agent_task(config, client)
     except KeyboardInterrupt:
         logger.info("\nExecution interrupted by user.")
         sys.exit(0)

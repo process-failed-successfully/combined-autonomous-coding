@@ -16,4 +16,3 @@ google-generativeai
 prometheus-client
 argcomplete
 watchdog
-watchdog

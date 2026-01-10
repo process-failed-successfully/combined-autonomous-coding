@@ -2311,9 +2311,10 @@ def run_diff_summary(args):
 
 
 def run_diff(args):
-    """Shows a detailed, colorized diff of uncommitted changes or a specific commit."""
+    """Shows a detailed, colorized diff between commits or the working directory."""
     project_dir = args.project_dir.resolve()
-    target = args.target
+    ref1 = args.ref1
+    ref2 = args.ref2
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
@@ -2326,37 +2327,43 @@ def run_diff(args):
         print("❌ Error: Not a git repository. Cannot show diff.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Helper to resolve Run IDs ---
+    def _resolve_ref(ref):
+        if not ref:
+            return None
+
+        commit_hash = _find_commit_by_run_id(project_dir, git_path, ref)
+        if commit_hash:
+            print(f"Info: Resolved Run ID '{ref}' to commit {commit_hash[:7]}", file=sys.stderr)
+            return commit_hash
+
+        return ref
+
     # --- Logic ---
     try:
-        if not target:
-            # Case 1: Show uncommitted changes
-            print(f"--- Uncommitted Changes (HEAD): {project_dir} ---")
-            cmd = [git_path, "-C", str(project_dir), "diff", "--color=always", "HEAD"]
-            # Use subprocess.run without capturing output to stream directly
-            result = subprocess.run(cmd)
-            sys.exit(result.returncode)
+        resolved_ref1 = _resolve_ref(ref1)
+        resolved_ref2 = _resolve_ref(ref2)
 
-        # Case 2: Target is provided (Run ID or commit hash)
-        original_target = target
-        # Check if it's a known git reference first
-        is_git_ref = subprocess.run(
-            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
-            capture_output=True, text=True
-        ).returncode == 0
+        cmd = [git_path, "-C", str(project_dir), "diff", "--color=always"]
+        title = ""
 
-        if not is_git_ref:
-            # If not a direct git ref, assume it's a Run ID
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
-            if not commit_hash:
-                print(f"❌ Error: Target '{original_target}' is not a valid commit or Run ID.", file=sys.stderr)
-                sys.exit(1)
-            target = commit_hash
-            print(f"--- Showing diff for Run ID '{original_target}' (Commit: {target[:7]}) ---")
-        else:
-            print(f"--- Showing diff for Commit: {target} ---")
+        if not resolved_ref1 and not resolved_ref2:
+            # Case 1: `diff` (uncommitted changes)
+            cmd.append("HEAD")
+            title = f"--- Uncommitted Changes: {project_dir} ---"
+        elif resolved_ref1 and not resolved_ref2:
+            # Case 2: `diff <ref1>` (ref1 vs working directory)
+            cmd.append(resolved_ref1)
+            title = f"--- Diff: {ref1} vs Working Directory ---"
+        elif resolved_ref1 and resolved_ref2:
+            # Case 3: `diff <ref1> <ref2>`
+            cmd.extend([resolved_ref1, resolved_ref2])
+            title = f"--- Diff: {ref1} vs {ref2} ---"
+        else: # ref1 is None but ref2 is not
+             print("❌ Error: Invalid combination of arguments.", file=sys.stderr)
+             sys.exit(1)
 
-        # Use 'git show' which nicely formats the commit info and the diff
-        cmd = [git_path, "-C", str(project_dir), "show", "--color=always", target]
+        print(title)
         result = subprocess.run(cmd)
         sys.exit(result.returncode)
 
@@ -3935,11 +3942,16 @@ def parse_args(argv=None):
     )
 
     # Subparser for 'diff' (git diff)
-    parser_diff = subparsers.add_parser("diff", help="Show a detailed diff of uncommitted changes or a specific commit")
+    parser_diff = subparsers.add_parser("diff", help="Show a detailed diff between commits, run IDs, or the working directory.")
     parser_diff.add_argument(
-        "target",
+        "ref1",
         nargs="?",
-        help="Optional: A git commit hash or agent Run ID to diff against.",
+        help="The first reference (commit, branch, tag, or Run ID). If omitted, shows uncommitted changes.",
+    )
+    parser_diff.add_argument(
+        "ref2",
+        nargs="?",
+        help="The second reference. If omitted, diffs ref1 against the working directory.",
     )
     parser_diff.add_argument(
         "-p", "--project-dir",

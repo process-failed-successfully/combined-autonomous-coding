@@ -37,6 +37,16 @@ class Telemetry:
         self.project_name = project_name
         self.registry = CollectorRegistry()
         self.metrics: Dict[str, Any] = {}
+
+        # Optimization: Cache default labels per metric to avoid re-calculation
+        self._metric_defaults: Dict[str, Dict[str, str]] = {}
+        self._system_labels = {
+            "agent_id": service_name,
+            "project": project_name,
+            "agent_type": agent_type,
+            "role": "unknown",
+        }
+
         self._last_push_error_time = 0.0
         self._last_push_time = 0.0
         self._push_interval = 2.0  # Throttle pushes to every 2 seconds
@@ -252,17 +262,27 @@ class Telemetry:
         except Exception as e:
             self.log_error(f"Failed to initialize default metrics: {e}")
 
+    def _cache_defaults(self, name: str, labelnames: List[str]):
+        """Pre-calculate default labels for a metric to optimize lookups."""
+        defaults = {}
+        for lbl in labelnames:
+            if lbl in self._system_labels:
+                defaults[lbl] = self._system_labels[lbl]
+        self._metric_defaults[name] = defaults
+
     def register_gauge(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Gauge(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
+            self._cache_defaults(name, labelnames)
 
     def register_counter(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
             self.metrics[name] = Counter(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
+            self._cache_defaults(name, labelnames)
 
     def register_histogram(
         self,
@@ -279,6 +299,7 @@ class Telemetry:
                 registry=self.registry,
                 buckets=buckets,
             )
+            self._cache_defaults(name, labelnames)
 
     def _get_labels(self, labels: Dict[str, str]) -> Dict[str, str]:
         # Merge default labels with provided labels
@@ -300,31 +321,17 @@ class Telemetry:
             return
         if name in self.metrics:
             metric = self.metrics[name]
+            # Handle metrics with no labels defined
             if not metric._labelnames:
                 metric.set(value)
-                self._push_metrics()
-                return
-
-            labels = labels or {}
-            # Auto-fill common labels if missing and required
-            required_labels = metric._labelnames
-
-            # Create a copy to avoid mutating the passed dictionary if it's
-            # reused by caller
-            final_labels = labels.copy()
-
-            for lbl in required_labels:
-                if lbl not in final_labels:
-                    if lbl == "agent_id":
-                        final_labels[lbl] = self.service_name
-                    elif lbl == "project":
-                        final_labels[lbl] = self.project_name
-                    elif lbl == "agent_type":
-                        final_labels[lbl] = self.agent_type
-                    elif lbl == "role":
-                        final_labels[lbl] = "unknown"
-
-            metric.labels(**final_labels).set(value)
+            elif not labels:
+                # Fast path: Use cached defaults directly
+                metric.labels(**self._metric_defaults[name]).set(value)
+            else:
+                # Slow path: Merge provided labels with defaults
+                final_labels = self._metric_defaults[name].copy()
+                final_labels.update(labels)
+                metric.labels(**final_labels).set(value)
             self._push_metrics()
 
     def increment_counter(
@@ -337,27 +344,14 @@ class Telemetry:
             if not metric._labelnames:
                 # For metrics without labels, inc is on the metric itself
                 metric.inc(value)
-                self._push_metrics()
-                return
-
-            labels = labels or {}
-            required_labels = self.metrics[name]._labelnames
-
-            # Create a copy
-            final_labels = labels.copy()
-
-            for lbl in required_labels:
-                if lbl not in final_labels:
-                    if lbl == "agent_id":
-                        final_labels[lbl] = self.service_name
-                    elif lbl == "project":
-                        final_labels[lbl] = self.project_name
-                    elif lbl == "agent_type":
-                        final_labels[lbl] = self.agent_type
-                    elif lbl == "role":
-                        final_labels[lbl] = "unknown"
-
-            self.metrics[name].labels(**final_labels).inc(value)
+            elif not labels:
+                # Fast path: Use cached defaults directly
+                metric.labels(**self._metric_defaults[name]).inc(value)
+            else:
+                # Slow path: Merge provided labels with defaults
+                final_labels = self._metric_defaults[name].copy()
+                final_labels.update(labels)
+                metric.labels(**final_labels).inc(value)
             self._push_metrics()
 
     def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None):
@@ -368,27 +362,14 @@ class Telemetry:
             if not metric._labelnames:
                 # For metrics without labels, observe is on the metric itself
                 metric.observe(value)
-                self._push_metrics()
-                return
-
-            labels = labels or {}
-            required_labels = self.metrics[name]._labelnames
-
-            # Create a copy
-            final_labels = labels.copy()
-
-            for lbl in required_labels:
-                if lbl not in final_labels:
-                    if lbl == "agent_id":
-                        final_labels[lbl] = self.service_name
-                    elif lbl == "project":
-                        final_labels[lbl] = self.project_name
-                    elif lbl == "agent_type":
-                        final_labels[lbl] = self.agent_type
-                    elif lbl == "role":
-                        final_labels[lbl] = "unknown"
-
-            self.metrics[name].labels(**final_labels).observe(value)
+            elif not labels:
+                # Fast path: Use cached defaults directly
+                metric.labels(**self._metric_defaults[name]).observe(value)
+            else:
+                # Slow path: Merge provided labels with defaults
+                final_labels = self._metric_defaults[name].copy()
+                final_labels.update(labels)
+                metric.labels(**final_labels).observe(value)
             self._push_metrics()
 
     def log_info(self, message: str):

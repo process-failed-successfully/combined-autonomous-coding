@@ -2014,6 +2014,75 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
 
+def run_review(args):
+    """Runs a guided, interactive review of the agent's completed work."""
+    project_dir = args.project_dir.resolve()
+    completed_marker = project_dir / "COMPLETED"
+    qa_passed_marker = project_dir / "QA_PASSED"
+
+    print("--- 🧐 Guided Agent Review ---")
+
+    # 1. Check if the agent has marked the work as complete
+    if not completed_marker.exists():
+        print("Agent work is not marked as complete. The 'COMPLETED' marker file is missing.")
+        print("Please run the agent first or ensure it has finished its task.")
+        sys.exit(1)
+
+    print("✅ Agent has marked its work as complete.")
+
+    # 2. Run tests
+    print("\n--- [1/3] Running Tests ---")
+    test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+    try:
+        run_test(test_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Tests failed. Cannot proceed with the review.", file=sys.stderr)
+            sys.exit(1)
+    print("✅ Tests passed successfully.")
+
+    # 3. Show diff
+    print("\n--- [2/3] Showing Agent's Changes ---")
+    diff_args = argparse.Namespace(target=None, project_dir=project_dir)
+    try:
+        run_diff(diff_args)
+    except SystemExit as e:
+        # run_diff will print the diff and exit, which is fine.
+        # We only care if it exits with a non-zero code unexpectedly.
+        if e.code != 0:
+            print("\n❌ Could not display diff of changes.", file=sys.stderr)
+            sys.exit(1)
+
+    # 4. Prompt for approval
+    print("\n--- [3/3] Your Decision ---")
+    try:
+        while True:
+            decision = input("Do you approve these changes? [y/n]: ").strip().lower()
+            if decision in ['y', 'n']:
+                break
+            print("Invalid input. Please enter 'y' for yes or 'n' for no.")
+
+        if decision == 'y':
+            print("\nApproving changes...")
+            qa_passed_marker.touch()
+            completed_marker.unlink() # Atomically move from COMPLETED to QA_PASSED
+            print("✅ Work approved. Advanced to QA_PASSED stage.")
+        else:
+            print("\nRejecting changes...")
+            completed_marker.unlink()
+            print("✅ Work rejected. The 'COMPLETED' marker has been removed.")
+            print("   The agent will now re-attempt the work on its next run.")
+
+    except (KeyboardInterrupt, EOFError):
+        print("\nReview aborted by user.")
+        sys.exit(1)
+    except OSError as e:
+        print(f"\n❌ An error occurred while updating workflow files: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
     blame_output = _run_blame_logic(project_dir=args.project_dir, filepath=args.filepath)
@@ -2683,6 +2752,7 @@ def run_help(args):
     print_command("discard", "Safely discard uncommitted changes by stashing them first.")
     print_command("undo", "Restore changes that were previously discarded.")
     print_command("rewind", "Reset the project state to a previous git commit or Run ID.")
+    print_command("review", "Run a guided, interactive review of the agent's completed work.")
     print_command("workflow", "Manually manage the agent's workflow state (e.g., advance to QA).")
 
     print_header("Artifact & Sprint Management")
@@ -4839,6 +4909,18 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run a guided, interactive review of the agent's completed work."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review (default: current directory).",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6566,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "blame":

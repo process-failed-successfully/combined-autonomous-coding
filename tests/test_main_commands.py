@@ -6,7 +6,6 @@ from main import run_commands
 import argparse
 
 class TestMainCommands(unittest.TestCase):
-    @patch('sys.argv', ['main.py'])
     def test_run_commands_prints_expected_sections(self):
         """
         Tests that the run_commands command prints the expected section headers.
@@ -20,7 +19,7 @@ class TestMainCommands(unittest.TestCase):
             "Utilities",
         ]
 
-        # Redirect stdout to capture the output of the commands command
+        # Redirect stdout to capture the output of the help command
         captured_output = io.StringIO()
         sys.stdout = captured_output
 

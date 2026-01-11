@@ -280,44 +280,142 @@ def _has_uncommitted_changes(project_dir: Path) -> bool:
         return False
 
 
+def _get_current_branch(project_dir: Path) -> Optional[str]:
+    """Gets the current git branch name."""
+    try:
+        # Use the well-tested function from the git module
+        from shared.git import get_current_branch as git_get_current_branch
+        return git_get_current_branch(project_dir)
+    except Exception:
+        return None
+
+
+def _is_branch_pushed(project_dir: Path, branch_name: str) -> bool:
+    """Checks if the specified branch has been pushed to the remote 'origin'."""
+    git_path = shutil.which("git")
+    if not git_path:
+        return False
+    try:
+        # This command returns 0 if the remote ref exists, non-zero otherwise.
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "ls-remote", "--exit-code", "--heads", "origin", branch_name],
+            capture_output=True, text=True
+        )
+        return result.returncode == 0
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
     """
-    Analyzes the project state and returns a list of suggested next commands.
+    Analyzes the project state and returns a list of suggested next commands, ordered by priority.
     """
+    executable_name = "main.py"  # Placeholder, can be replaced by the caller
     suggestions = []
     stage = get_workflow_stage(project_dir)
     has_changes = _has_uncommitted_changes(project_dir)
+    current_branch = _get_current_branch(project_dir)
 
     def add_suggestion(command, reason):
         if limit is not None and len(suggestions) >= limit:
             return False
-        suggestions.append({"command": command, "reason": reason})
+        full_command = f"{executable_name} {command}"
+        suggestions.append({"command": full_command, "reason": reason})
         return True
 
-    # 1. Git-based suggestions
+    # 1. Highest Priority: Uncommitted Work. This is the only valid next action.
     if has_changes:
-        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
-        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
+        add_suggestion("commit", "You have uncommitted changes that should be saved.")
+        return suggestions
 
-    # 2. Workflow-based suggestions
+    # 2. Git/Workflow Actions (if repo is clean)
+    if stage == "SIGNED_OFF":
+        if not add_suggestion("clean --archive", "The project is complete. Archive the artifacts to clean up the directory."): return suggestions
+
+    if stage == "QA_PASSED":
+        if current_branch and current_branch not in ["main", "master"]:
+            if not add_suggestion("pr create", "The project has passed QA. Create a pull request for final review and merge."): return suggestions
+        if not add_suggestion("workflow advance", "If the project is ready for final sign-off, advance the workflow."): return suggestions
+
     if stage == "COMPLETED":
-        if not add_suggestion("main.py workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."): return suggestions
-    elif stage == "QA_PASSED":
-        if not add_suggestion("main.py workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."): return suggestions
-    elif stage == "SIGNED_OFF":
-        if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
+        if not add_suggestion("test", "The agent has completed its work. Run tests to verify the implementation before advancing."): return suggestions
+        if not add_suggestion("workflow advance", "If tests pass and you've reviewed the work, advance to the QA stage."): return suggestions
 
-    # 3. Artifact-based suggestions
-    trash_dir = project_dir / ".agent_trash"
-    if trash_dir.exists() and any(trash_dir.iterdir()):
-        if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
-        if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."): return suggestions
+    if current_branch and current_branch not in ["main", "master"]:
+        if not _is_branch_pushed(project_dir, current_branch):
+            if not add_suggestion("push", "Your feature branch has unpushed commits. Push them to the remote repository."): return suggestions
 
-    # 4. General "what happened" suggestions
-    if (project_dir / ".agent_run_id").exists():
-        if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
+    if stage == "IN_PROGRESS":
+        if not add_suggestion("test", "Code is committed. Run tests to ensure everything is working as expected."): return suggestions
+
+    # 3. Fallback / General Suggestions
+    if (project_dir / ".agent_trash").exists() and any((project_dir / ".agent_trash").iterdir()):
+        if not add_suggestion("artifacts trash list", "Review items in the trash to see if they can be permanently deleted."): return suggestions
+
+    if not add_suggestion("status", "Get a detailed overview of the project's current status."): return suggestions
+    if not add_suggestion("history", "Look at the history of agent runs for this project."): return suggestions
 
     return suggestions
+
+
+def run_next_logic(project_dir: Path, yes: bool, executable_name: str):
+    """
+    The core logic for the 'next' command. It gets the top suggestion and executes it.
+    """
+    import shlex
+    project_dir = project_dir.resolve()
+
+    # Get the single most important suggestion
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    # Replace placeholder executable with the actual one used to run the script
+    command_to_run = suggestion['command'].replace("main.py", executable_name)
+    reason = suggestion['reason']
+
+    print(f"👉 Suggested next command: `{command_to_run}`")
+    print(f"   Reason: {reason}")
+
+    # --- Confirmation ---
+    if not yes:
+        try:
+            confirm = input("\nExecute this command? [Y/n]: ").strip().lower()
+            if confirm not in ['y', '']:
+                print("Aborted.")
+                sys.exit(0)
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            sys.exit(0)
+
+    # --- Execution ---
+    command_args = shlex.split(command_to_run)
+    # The first argument is the executable itself, which needs to be found in the system's PATH
+    # or be a direct path. We assume it's the same script we're running.
+    # The arguments must be relative to the current script, not just `main.py`
+    final_command = [sys.executable, command_args[0]] + command_args[1:]
+
+    print(f"\n--- Executing: {' '.join(command_to_run.split())} ---")
+    try:
+        # We run the command from the specified project directory
+        result = subprocess.run(final_command, cwd=project_dir)
+
+        if result.returncode != 0:
+            print(f"--- Command finished with an error (exit code: {result.returncode}) ---", file=sys.stderr)
+            sys.exit(result.returncode)
+        else:
+            print(f"--- Command finished successfully ---")
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{final_command[0]}' not found.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred during execution: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def get_latest_log_file() -> Path | None:

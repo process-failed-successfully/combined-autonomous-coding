@@ -40,13 +40,14 @@ class TestMainStatus(unittest.TestCase):
         (self.project_path / file_path).write_text(content)
 
     @patch('shared.cli_utils.shutil.which', return_value=None)
-    def test_status_initial_state_no_git(self, mock_shutil_which):
+    @patch('shared.cli_utils._get_current_branch', return_value=None)
+    def test_status_initial_state_no_git(self, mock_get_branch, mock_shutil_which):
         """Test status in a clean, new project with no git."""
         output = self.run_status()
         self.assertIn("[ Workflow: In Progress ]", output)
         self.assertIn("No agent activity recorded.", output)
         self.assertIn("Not a git repository.", output)
-        self.assertIn("✅ Project is in a clean state.", output)
+        self.assertIn("`main.py test`", output) # Check for the new default suggestion
 
     @patch('shared.cli_utils.shutil.which', return_value='/usr/bin/git')
     @patch('shared.cli_utils.subprocess.run')
@@ -85,7 +86,7 @@ class TestMainStatus(unittest.TestCase):
         self.assertIn("M README.md", output_lines)
         self.assertIn("?? new_file.txt", output_lines)
         self.assertIn("[ Next Steps ]", output)
-        self.assertIn("You have uncommitted changes.", output)
+        self.assertIn("`main.py commit`", output)
 
     @patch('shared.cli_utils.shutil.which', return_value='/usr/bin/git')
     @patch('shared.cli_utils.subprocess.run')

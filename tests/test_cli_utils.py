@@ -21,49 +21,56 @@ class TestCliUtils(unittest.TestCase):
     @patch('shared.cli_utils._has_uncommitted_changes', return_value=True)
     def test_get_suggestions_with_uncommitted_changes(self, mock_has_changes, mock_get_stage):
         suggestions = get_suggestions(self.project_dir)
-        suggestion_commands = [s['command'] for s in suggestions]
-        self.assertIn("main.py diff-summary", suggestion_commands)
-        self.assertIn("main.py revert --interactive", suggestion_commands)
+        self.assertGreater(len(suggestions), 0)
+        self.assertIn("commit", suggestions[0]['command'])
 
     @patch('shared.cli_utils.get_workflow_stage', return_value="COMPLETED")
     @patch('shared.cli_utils._has_uncommitted_changes', return_value=False)
     def test_get_suggestions_for_completed_stage(self, mock_has_changes, mock_get_stage):
         suggestions = get_suggestions(self.project_dir)
-        suggestion_commands = [s['command'] for s in suggestions]
-        self.assertIn("main.py workflow advance", suggestion_commands)
+        self.assertGreater(len(suggestions), 0)
+        self.assertIn("test", suggestions[0]['command'])
 
     @patch('shared.cli_utils.get_workflow_stage', return_value="QA_PASSED")
     @patch('shared.cli_utils._has_uncommitted_changes', return_value=False)
-    def test_get_suggestions_for_qa_passed_stage(self, mock_has_changes, mock_get_stage):
+    @patch('shared.cli_utils._get_current_branch', return_value="feature/my-branch")
+    @patch('shared.cli_utils._is_branch_pushed', return_value=True)
+    def test_get_suggestions_for_qa_passed_stage(self, mock_pushed, mock_branch, mock_has_changes, mock_get_stage):
         suggestions = get_suggestions(self.project_dir)
-        suggestion_commands = [s['command'] for s in suggestions]
-        self.assertIn("main.py workflow advance", suggestion_commands)
+        self.assertGreater(len(suggestions), 0)
+        self.assertIn("pr create", suggestions[0]['command'])
 
     @patch('shared.cli_utils.get_workflow_stage', return_value="SIGNED_OFF")
     @patch('shared.cli_utils._has_uncommitted_changes', return_value=False)
     def test_get_suggestions_for_signed_off_stage(self, mock_has_changes, mock_get_stage):
         suggestions = get_suggestions(self.project_dir)
-        suggestion_commands = [s['command'] for s in suggestions]
-        self.assertIn("main.py clean --archive", suggestion_commands)
+        self.assertGreater(len(suggestions), 0)
+        self.assertIn("clean --archive", suggestions[0]['command'])
 
     @patch('shared.cli_utils.get_workflow_stage', return_value="IN_PROGRESS")
     @patch('shared.cli_utils._has_uncommitted_changes', return_value=False)
-    def test_get_suggestions_with_trash_items(self, mock_has_changes, mock_get_stage):
+    @patch('shared.cli_utils._get_current_branch', return_value="main")
+    def test_get_suggestions_with_trash_items(self, mock_branch, mock_has_changes, mock_get_stage):
         trash_dir = self.project_dir / ".agent_trash"
         trash_dir.mkdir()
         (trash_dir / "some_file.txt").touch()
+
+        # In a clean state, 'test' is the first suggestion. Trash is a fallback.
         suggestions = get_suggestions(self.project_dir)
         suggestion_commands = [s['command'] for s in suggestions]
         self.assertIn("main.py artifacts trash list", suggestion_commands)
-        self.assertIn("main.py artifacts trash restore", suggestion_commands)
 
     @patch('shared.cli_utils.get_workflow_stage', return_value="IN_PROGRESS")
     @patch('shared.cli_utils._has_uncommitted_changes', return_value=False)
-    def test_get_suggestions_with_run_id(self, mock_has_changes, mock_get_stage):
-        (self.project_dir / ".agent_run_id").touch()
+    @patch('shared.cli_utils._get_current_branch', return_value="main")
+    def test_get_suggestions_fallback(self, mock_branch, mock_has_changes, mock_get_stage):
+        # In a perfectly clean state, the fallback suggestions should appear
         suggestions = get_suggestions(self.project_dir)
         suggestion_commands = [s['command'] for s in suggestions]
-        self.assertIn("main.py logs", suggestion_commands)
+        # 'test' is now the primary suggestion in a clean state
+        self.assertIn("main.py test", suggestion_commands[0])
+        self.assertIn("main.py status", suggestion_commands)
+        self.assertIn("main.py history", suggestion_commands)
 
     def test_run_enhanced_status_logic_no_activity(self):
         """Test the enhanced status logic in a clean directory with no activity."""
@@ -76,7 +83,7 @@ class TestCliUtils(unittest.TestCase):
         self.assertIn("[ Recent File Changes ]", output)
         self.assertIn("Not a git repository.", output)
         self.assertIn("[ Next Steps ]", output)
-        self.assertIn("✅ Project is in a clean state.", output)
+        self.assertIn("`main.py test`", output)
 
     def test_run_enhanced_status_logic_with_history(self):
         """Test the enhanced status logic with a mock history file."""
@@ -101,12 +108,13 @@ class TestCliUtils(unittest.TestCase):
         output = _run_enhanced_status_logic(self.project_dir)
         self.assertIn("M test.txt", output)
 
-    def test_run_enhanced_status_logic_completed_workflow(self):
+    @patch('shared.cli_utils._get_current_branch', return_value="main")
+    def test_run_enhanced_status_logic_completed_workflow(self, mock_get_branch):
         """Test the enhanced status logic for a completed workflow stage."""
         (self.project_dir / "COMPLETED").touch()
         output = _run_enhanced_status_logic(self.project_dir)
         self.assertIn("[ Workflow: Completed ]", output)
-        self.assertIn("Advance the workflow to the 'QA Passed' stage", output)
+        self.assertIn("`main.py test`", output)
 
     def test_run_enhanced_status_logic_with_feature_summary(self):
         """Test the enhanced status logic with a feature_list.json file."""

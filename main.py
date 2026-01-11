@@ -3578,6 +3578,80 @@ async def run_plan(args):
     sys.exit(0)
 
 
+def run_review(args):
+    """Runs an interactive review of the agent's work."""
+    project_dir = args.project_dir.resolve()
+    print("--- Interactive Agent Review ---")
+
+    # --- Pre-flight Check: Ensure it's a git repo ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot run review.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Step 1: Run Tests ---
+    print("\n--- [1/3] Running Tests ---")
+    test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+    try:
+        run_test(test_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Tests failed. Please fix the tests before proceeding with a review.", file=sys.stderr)
+            sys.exit(1)
+    print("✅ Tests passed.")
+
+    # --- Step 2: Show Diff and Get User Feedback ---
+    while True:
+        print("\n--- [2/3] Reviewing Changes ---")
+        # Show the git diff. Use subprocess.run without capturing to stream to pager.
+        subprocess.run([git_path, "-C", str(project_dir), "diff", "HEAD"])
+
+        print("\n--- [3/3] Decision ---")
+        prompt = "Approve changes? [a]pprove, [r]eject, [d]iff, [q]uit: "
+        choice = input(prompt).strip().lower()
+
+        if choice in ['a', 'approve']:
+            print("\nApproving changes...")
+            qa_passed_file = project_dir / "QA_PASSED"
+            try:
+                qa_passed_file.touch()
+                print("✅ Changes approved. 'QA_PASSED' marker created.")
+                sys.exit(0)
+            except IOError as e:
+                print(f"❌ Error creating QA_PASSED file: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        elif choice in ['r', 'reject']:
+            print("\nRejecting changes...")
+            # Use the existing 'discard' logic for a safe revert
+            try:
+                _discard_all(project_dir, git_path, yes=True)
+            except SystemExit as e:
+                if e.code != 0:
+                    print("❌ Failed to discard changes.", file=sys.stderr)
+                    sys.exit(1)
+
+            # Also remove the COMPLETED marker file so the agent retries
+            completed_file = project_dir / "COMPLETED"
+            if completed_file.exists():
+                completed_file.unlink()
+                print("✅ 'COMPLETED' marker removed.")
+
+            print("✅ Changes have been rejected and discarded.")
+            sys.exit(0)
+
+        elif choice in ['d', 'diff']:
+            # Loop will continue and show the diff again
+            continue
+
+        elif choice in ['q', 'quit']:
+            print("Review aborted.")
+            sys.exit(0)
+
+        else:
+            print("Invalid choice. Please try again.")
+
+
 def run_config(args):
     """Manages agent configuration settings."""
     config_dir = Path(platformdirs.user_config_dir("combined-autonomous-coding"))
@@ -4854,6 +4928,18 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory (default: current directory).",
+    )
+
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run an interactive review of the agent's work (test, diff, approve/reject)."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review (default: current directory).",
     )
 
     # --- New 'help' command ---
@@ -6488,6 +6574,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "help":

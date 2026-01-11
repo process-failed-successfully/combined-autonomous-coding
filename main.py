@@ -3188,18 +3188,44 @@ def run_branch(args):
     sys.exit(0)
 
 
-def run_git(args):
+def run_git_command(args):
+    """Dispatches git commands."""
+    if args.git_command == "commit":
+        run_commit(args)
+    elif args.git_command == "push":
+        run_push(args)
+    elif args.git_command == "pull":
+        run_pull(args)
+    elif args.git_command == "log":
+        run_log(args)
+    elif args.git_command == "diff":
+        run_diff(args)
+    elif args.git_command == "discard":
+        run_discard(args)
+    elif args.git_command == "undo":
+        run_undo(args)
+    elif args.git_command == "rewind":
+        run_rewind(args)
+    elif args.git_command == "blame":
+        run_blame(args)
+    elif args.git_command == "branch":
+        run_branch(args)
+    else:
+        # Default to proxying for worktrees if no subcommand matches
+        run_git_proxy(args)
+
+def run_git_proxy(args):
     """Acts as a proxy to run git commands within a specified task's worktree."""
     project_dir = args.project_dir.resolve()
     task_id = args.task
-    git_command = args.git_args
+    git_command_args = args.git_args
 
     if not task_id:
-        print("❌ Error: The '--task' argument is required.", file=sys.stderr)
+        print("❌ Error: The '--task' argument is required for git proxy.", file=sys.stderr)
         sys.exit(1)
 
-    if not git_command:
-        print("❌ Error: No git command provided.", file=sys.stderr)
+    if not git_command_args:
+        print("❌ Error: No git command provided to proxy.", file=sys.stderr)
         sys.exit(1)
 
     worktree_name = f"sprint-task-{task_id}"
@@ -3214,22 +3240,14 @@ def run_git(args):
         print(f"❌ Error: Worktree for task '{task_id}' not found at '{worktree_path}'.", file=sys.stderr)
         sys.exit(1)
 
-    full_command = [git_path] + git_command
+    full_command = [git_path] + git_command_args
 
     try:
-        # Execute the command from within the worktree directory, capturing output.
-        result = subprocess.run(
-            full_command,
-            cwd=worktree_path,
-            capture_output=True,
-            text=True
-        )
-        # Print the captured output
+        result = subprocess.run(full_command, cwd=worktree_path, capture_output=True, text=True)
         if result.stdout:
             sys.stdout.write(result.stdout)
         if result.stderr:
             sys.stderr.write(result.stderr)
-        # Exit with the same code as the git command
         sys.exit(result.returncode)
     except FileNotFoundError:
         print(f"❌ Error: Command '{full_command[0]}' not found.", file=sys.stderr)
@@ -4661,50 +4679,61 @@ def parse_args(argv=None):
     )
 
     # --- New 'git' command ---
-    parser_git = subparsers.add_parser(
-        "git",
-        help="Run git commands within a specific task's worktree."
-    )
-    parser_git.add_argument(
-        "-t", "--task",
-        required=True,
-        help="The task ID corresponding to the worktree."
-    )
-    parser_git.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory where the worktrees are located.",
-    )
-    parser_git.add_argument(
-        "git_args",
-        nargs=argparse.REMAINDER,
-        help="The git command and its arguments to run.",
-    )
+    parser_git = subparsers.add_parser("git", help="Run git commands within a specific task's worktree.")
+    git_subparsers = parser_git.add_subparsers(dest="git_command", help="Git command to run")
 
-    # --- New 'push' command ---
-    parser_push = subparsers.add_parser(
-        "push",
-        help="Push the current feature branch to the remote repository with safety checks."
-    )
-    parser_push.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory to run the push command in (default: current directory).",
-    )
+    # Git Commit
+    parser_git_commit = git_subparsers.add_parser("commit", help="Stage all changes and create a git commit with safety checks.")
+    parser_git_commit.add_argument("-m", "--message", required=False, help="The commit message. If not provided, an interactive prompt will be shown.")
+    parser_git_commit.add_argument("--run-tests", action="store_true", help="Run project tests before committing. If tests fail, the commit is aborted.")
+    parser_git_commit.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to run the commit command in (default: current directory).")
 
-    # --- New 'pull' command ---
-    parser_pull = subparsers.add_parser(
-        "pull",
-        help="Pull the latest changes from the remote repository with safety checks."
-    )
-    parser_pull.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory to run the pull command in (default: current directory).",
-    )
+    # Git Push
+    parser_git_push = git_subparsers.add_parser("push", help="Push the current feature branch to the remote repository with safety checks.")
+    parser_git_push.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to run the push command in (default: current directory).")
+
+    # Git Pull
+    parser_git_pull = git_subparsers.add_parser("pull", help="Pull the latest changes from the remote repository with safety checks.")
+    parser_git_pull.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to run the pull command in (default: current directory).")
+
+    # Git Log
+    parser_git_log = git_subparsers.add_parser("log", help="Show the git commit history for the project")
+    parser_git_log.add_argument("-n", "--count", type=int, help="Number of recent commits to display.")
+    parser_git_log.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to show the log for (default: current directory)")
+
+    # Git Diff
+    parser_git_diff = git_subparsers.add_parser("diff", help="Show a detailed diff of uncommitted changes or a specific commit")
+    parser_git_diff.add_argument("target", nargs="?", help="Optional: A git commit hash or agent Run ID to diff against.")
+    parser_git_diff.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to show the diff for (default: current directory)")
+
+    # Git Discard
+    parser_git_discard = git_subparsers.add_parser("discard", help="Discard uncommitted changes to specified files or all files")
+    parser_git_discard.add_argument("files", nargs="*", help="Specific file(s) to discard. If not provided, all uncommitted changes will be discarded.")
+    parser_git_discard.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to discard changes in (default: current directory)")
+    parser_git_discard.add_argument("-i", "--interactive", action="store_true", help="Interactively select which files to discard.")
+    parser_git_discard.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
+
+    # Git Undo
+    parser_git_undo = git_subparsers.add_parser("undo", help="Undo a 'discard' operation by restoring the stashed changes.")
+    parser_git_undo.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to run undo in (default: current directory)")
+
+    # Git Rewind
+    parser_git_rewind = git_subparsers.add_parser("rewind", help="Reset the project to a previous state (git commit)")
+    parser_git_rewind.add_argument("target", nargs="?", help="The git commit hash, reference (e.g., HEAD~2), or Run ID to rewind to. Launches interactive mode if omitted.")
+    parser_git_rewind.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory to rewind (default: current directory)")
+    parser_git_rewind.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt")
+
+    # Git Blame
+    parser_git_blame = git_subparsers.add_parser("blame", help="Show the agent Run ID or author for each line of a file, similar to git blame.")
+    parser_git_blame.add_argument("filepath", type=Path, help="The path to the file to blame.")
+    parser_git_blame.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory (default: current directory).")
+
+    # Git Branch
+    parser_git_branch = git_subparsers.add_parser("branch", help="Manage a dedicated feature branch for the agent to work on.")
+    parser_git_branch.add_argument("action", choices=["create", "checkout", "status", "merge", "list"], help="Action to perform.")
+    parser_git_branch.add_argument("branch_name", nargs="?", help="The name of the branch to create or checkout.")
+    parser_git_branch.add_argument("--keep-branch", action="store_true", help="Do not delete the branch after a successful merge.")
+    parser_git_branch.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
 
     # --- New 'pr' command ---
     parser_pr = subparsers.add_parser(
@@ -6440,7 +6469,7 @@ async def main():
         return
 
     if args.command == "git":
-        run_git(args)
+        run_git_command(args)
         return
 
     if args.command == "tree":
@@ -6450,20 +6479,8 @@ async def main():
         run_report(args)
         return
 
-    if args.command == "push":
-        run_push(args)
-        return
-
-    if args.command == "pull":
-        run_pull(args)
-        return
-
     if args.command == "pr":
         run_pr(args)
-        return
-
-    if args.command == "commit":
-        run_commit(args)
         return
 
     if args.command == "feature":

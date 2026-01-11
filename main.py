@@ -2073,6 +2073,63 @@ def run_suggest(args):
     sys.exit(0)
 
 
+def run_next(args):
+    """Analyzes the project state and runs the next logical command."""
+    project_dir = args.project_dir.resolve()
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    # The command from get_suggestions is a string like '`./main.py commit --interactive`'
+    # We need to clean it up for execution.
+    command_str = suggestion['command'].strip('`')
+    reason = suggestion['reason']
+
+    print("--- Next Logical Step ---")
+    print(f"Suggested Command: {command_str}")
+    print(f"Reason: {reason}")
+
+    execute = False
+    if args.yes:
+        execute = True
+    else:
+        try:
+            confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+            if confirm in ['y', '']:
+                execute = True
+        except (EOFError, KeyboardInterrupt):
+            print("\nExecution cancelled.")
+            sys.exit(0)
+
+
+    if execute:
+        print(f"\n--- Executing: {command_str} ---")
+        try:
+            import shlex
+            # shlex.split will handle quotes correctly
+            cmd_to_execute = shlex.split(command_str)
+            # We assume the command is runnable from the project directory
+            result = subprocess.run(cmd_to_execute, cwd=project_dir)
+
+            if result.returncode == 0:
+                print(f"\n✅ Command executed successfully.")
+            else:
+                # The subprocess will have already printed its errors to stderr
+                print(f"\n❌ Command failed with exit code {result.returncode}.", file=sys.stderr)
+            sys.exit(result.returncode)
+
+        except Exception as e:
+            print(f"❌ An unexpected error occurred while executing command: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("Execution cancelled.")
+        sys.exit(0)
+
+
 def run_status(args):
     """Displays the current status of the agent project."""
     status_text = _run_enhanced_status_logic(project_dir=args.project_dir)
@@ -4859,6 +4916,23 @@ def parse_args(argv=None):
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Analyzes the project state and runs the next logical command."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without confirmation.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -6488,6 +6562,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "help":

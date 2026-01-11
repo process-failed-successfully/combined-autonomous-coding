@@ -2122,7 +2122,20 @@ def run_review(args):
 
             elif choice == 's':
                 print("Starting a shell in the project directory. Type 'exit' to return to the review.")
-                subprocess.run(os.environ.get('SHELL', 'bash'), cwd=project_dir)
+
+                # Find a trusted shell executable
+                shell_executable = None
+                for shell in ['bash', 'sh', 'zsh']:
+                    shell_path = shutil.which(shell)
+                    if shell_path:
+                        shell_executable = shell_path
+                        break
+
+                if shell_executable:
+                    subprocess.run([shell_executable], cwd=project_dir)
+                else:
+                    print("Could not find a trusted shell executable (bash, sh, or zsh).", file=sys.stderr)
+
                 print("Returning to review prompt...")
                 # Loop continues
 

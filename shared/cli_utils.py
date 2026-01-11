@@ -2,7 +2,9 @@ import sys
 from pathlib import Path
 import shutil
 import subprocess
+import os
 import json
+import shlex
 from datetime import datetime
 from typing import Optional
 
@@ -705,3 +707,70 @@ def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
         output.append(f"{commit_hash[:8]} ({blame_info_str}) {line_num}: {info['code']}")
 
     return "\n".join(output)
+
+
+def _run_next_logic(project_dir: Path, yes: bool = False) -> bool:
+    """
+    The core logic for the 'next' command. It suggests and optionally executes
+    the most logical next command based on the project's state.
+    """
+    project_dir = project_dir.resolve()
+    print(f"--- Determining next step for: {project_dir.name} ---")
+
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        return True
+
+    suggestion = suggestions[0]
+    command_str = suggestion['command']
+    reason = suggestion['reason']
+    # Resolve the path to main.py relative to this file's location for robustness
+    main_py_path = (Path(__file__).parent.parent / "main.py").resolve()
+    executable_name = str(main_py_path)
+
+    # Replace 'main.py' with the actual executable name for display
+    display_command = command_str.replace("main.py", os.path.basename(sys.argv[0]))
+
+
+    print("\n[ Recommended Next Step ]")
+    print(f"  {reason}")
+    print(f"  👉 `{display_command}`")
+
+    if not yes:
+        try:
+            confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            return False
+
+        if confirm not in ['y', '']:
+            print("Command not executed.")
+            return True
+
+    print("\n--- Executing Command ---")
+    try:
+        # Use shlex to correctly split the command string into arguments
+        # This handles spaces and quotes properly.
+        # We need to prepend sys.executable to ensure we're running the same Python
+        # context, especially if this is installed in a virtual environment.
+        command_parts = [sys.executable, executable_name] + shlex.split(command_str)[1:]
+
+        # Execute the command, streaming its output directly to the console.
+        result = subprocess.run(command_parts, cwd=project_dir)
+
+        if result.returncode == 0:
+            print("\n--- Command finished successfully ---")
+            return True
+        else:
+            print(f"\n--- Command finished with an error (exit code: {result.returncode}) ---", file=sys.stderr)
+            return False
+
+    except FileNotFoundError:
+        print(f"❌ Error: Could not execute python interpreter '{sys.executable}'. Please ensure it's in your PATH.", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while executing the command: {e}", file=sys.stderr)
+        return False

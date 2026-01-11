@@ -19,6 +19,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
+import getpass
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -523,13 +524,19 @@ def run_configure():
         print(f"Creating new configuration file at: {config_path}")
 
     # Helper for user input
-    def get_input(prompt, default_value=None):
+    def get_input(prompt, default_value=None, is_secret=False):
         if default_value:
-            prompt_text = f"{prompt} [{default_value}]: "
+            if is_secret:
+                prompt_text = f"{prompt} [*****]: "
+            else:
+                prompt_text = f"{prompt} [{default_value}]: "
         else:
             prompt_text = f"{prompt}: "
 
-        user_input = input(prompt_text).strip()
+        if is_secret:
+            user_input = getpass.getpass(prompt_text).strip()
+        else:
+            user_input = input(prompt_text).strip()
         return user_input or default_value
 
     # --- JIRA Configuration ---
@@ -539,7 +546,7 @@ def run_configure():
     jira_url = get_input("Jira URL (e.g., https://your-domain.atlassian.net)", jira_config.get('url'))
     if jira_url:
         jira_email = get_input("Jira Email", jira_config.get('email'))
-        jira_token = get_input("Jira API Token", jira_config.get('token'))
+        jira_token = get_input("Jira API Token", jira_config.get('token'), is_secret=True)
 
         updated_jira_config = {
             'url': jira_url,
@@ -555,7 +562,7 @@ def run_configure():
 
     # --- GitHub Configuration ---
     print("\n--- GitHub Integration (optional) ---")
-    github_token = get_input("GitHub Personal Access Token", existing_config.get('github_token'))
+    github_token = get_input("GitHub Personal Access Token", existing_config.get('github_token'), is_secret=True)
     github_host = get_input("GitHub Host (e.g., github.my-company.com for Enterprise)", existing_config.get('github_host'))
 
     if github_token:
@@ -4956,12 +4963,19 @@ def run_profile(args):
         print("Please provide the settings for this profile. Press Enter to skip a setting.")
 
         # Re-use the interactive input logic from run_configure
-        def get_input(prompt, default_value=None):
+        def get_input(prompt, default_value=None, is_secret=False):
             if default_value:
-                prompt_text = f"{prompt} [{default_value}]: "
+                if is_secret:
+                    prompt_text = f"{prompt} [*****]: "
+                else:
+                    prompt_text = f"{prompt} [{default_value}]: "
             else:
                 prompt_text = f"{prompt}: "
-            user_input = input(prompt_text).strip()
+
+            if is_secret:
+                user_input = getpass.getpass(prompt_text).strip()
+            else:
+                user_input = input(prompt_text).strip()
             return user_input or default_value
 
         new_profile_data = {}
@@ -4977,7 +4991,7 @@ def run_profile(args):
             new_profile_data['jira'] = {
                 'url': jira_url,
                 'email': get_input("Jira Email"),
-                'token': get_input("Jira API Token"),
+                'token': get_input("Jira API Token", is_secret=True),
             }
 
         # Clean up empty values

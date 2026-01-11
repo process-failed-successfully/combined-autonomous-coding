@@ -153,10 +153,11 @@ class TestProfileCommand(unittest.TestCase):
             config_data = yaml.safe_load(f)
         self.assertNotIn('work', config_data['profiles'])
 
-    @patch('builtins.input', side_effect=['gemini-1.5-pro', 'gemini', 'http://jira.test.com', 'test@test.com', 'token123'])
+    @patch('getpass.getpass', side_effect=['token123'])
+    @patch('builtins.input', side_effect=['gemini-1.5-pro', 'gemini', 'http://jira.test.com', 'test@test.com'])
     @patch('sys.stdout', new_callable=StringIO)
     @patch('platformdirs.user_config_dir')
-    def test_create_profile(self, mock_user_config_dir, mock_stdout, mock_input):
+    def test_create_profile(self, mock_user_config_dir, mock_stdout, mock_input, mock_getpass):
         mock_user_config_dir.return_value = self.temp_dir
         self._write_config({})
 

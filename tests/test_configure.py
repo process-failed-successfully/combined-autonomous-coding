@@ -12,6 +12,7 @@ from main import run_configure
 
 class TestConfigureCommand(unittest.TestCase):
 
+    @patch('getpass.getpass')
     @patch('builtins.input')
     @patch('pathlib.Path.exists')
     @patch('builtins.open', new_callable=mock_open)
@@ -21,7 +22,8 @@ class TestConfigureCommand(unittest.TestCase):
         mock_user_config_dir,
         mock_open_file,
         mock_path_exists,
-        mock_input
+        mock_input,
+        mock_getpass
     ):
         # --- Setup Mocks ---
         # Mock platformdirs to return a predictable path
@@ -37,11 +39,16 @@ class TestConfigureCommand(unittest.TestCase):
         mock_input.side_effect = [
             "https://test.atlassian.net",  # Jira URL
             "test@example.com",           # Jira Email
-            "jira_api_token",             # Jira Token
-            "github_token_123",           # GitHub Token
+            # Jira Token is secret, so it goes to getpass
+            # GitHub Token is secret, so it goes to getpass
             "github.enterprise.com",      # GitHub Host
             "https://hooks.slack.com/...",  # Slack Webhook
             "https://discord.com/..."      # Discord Webhook
+        ]
+
+        mock_getpass.side_effect = [
+             "jira_api_token",             # Jira Token
+             "github_token_123",           # GitHub Token
         ]
 
         # --- Run the function ---

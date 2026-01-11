@@ -2,13 +2,13 @@ import unittest
 from unittest.mock import patch
 import io
 import sys
-from main import run_help
+from main import run_commands
 import argparse
 
-class TestMainHelp(unittest.TestCase):
-    def test_run_help_prints_expected_sections(self):
+class TestMainCommands(unittest.TestCase):
+    def test_run_commands_prints_expected_sections(self):
         """
-        Tests that the run_help command prints the expected section headers.
+        Tests that the run_commands command prints the expected section headers.
         """
         expected_sections = [
             "Getting Started",
@@ -26,7 +26,7 @@ class TestMainHelp(unittest.TestCase):
         try:
             # The function now exits, so we need to catch the SystemExit exception
             with self.assertRaises(SystemExit) as cm:
-                run_help(argparse.Namespace())
+                run_commands(argparse.Namespace())
             self.assertEqual(cm.exception.code, 0)
         finally:
             # Restore stdout
@@ -44,6 +44,7 @@ class TestMainHelp(unittest.TestCase):
         self.assertIn("commit", output)
         self.assertIn("artifacts", output)
         self.assertIn("why", output)
+        self.assertIn("commands", output)
 
 if __name__ == '__main__':
     unittest.main()

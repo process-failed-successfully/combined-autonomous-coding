@@ -2251,6 +2251,108 @@ def run_last(args):
     sys.exit(0 if success else 1)
 
 
+def run_review(args):
+    """
+    Provides a concise, actionable review of the last agent run, focusing on
+    the code changes and performance metrics.
+    """
+    project_dir = args.project_dir.resolve()
+    print(f"--- Review of Last Run: {project_dir} ---")
+
+    # 1. Get the last run ID
+    history_file = project_dir / ".agent_history"
+    if not history_file.exists():
+        print("No agent run history found for this project.")
+        sys.exit(1)
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+        if not run_ids:
+            print("History is empty.")
+            sys.exit(1)
+        last_run_id = run_ids[-1]
+        print(f"Last Run ID: {last_run_id}")
+    except IOError as e:
+        print(f"Error reading history file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. Find associated git commit(s)
+    print("\n--- Code Changes ---")
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("Not a git repository. Cannot show code changes.")
+    else:
+        try:
+            # The `_find_commit_by_run_id` returns only one commit, let's find all of them
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {last_run_id}", "--format=%H"],
+                capture_output=True, text=True, check=True
+            )
+            commit_hashes = [h for h in result.stdout.strip().split('\n') if h]
+
+            if not commit_hashes:
+                print(f"No commits found for Run ID: {last_run_id}")
+            else:
+                print(f"Found {len(commit_hashes)} commit(s) for this run:")
+                for commit_hash in commit_hashes:
+                    print(f"\n--- Commit: {commit_hash[:7]} ---")
+                    # Use 'git show --stat' for a concise summary of changes
+                    show_result = subprocess.run(
+                        [git_path, "-C", str(project_dir), "show", "--stat", commit_hash],
+                        capture_output=True, text=True, check=True
+                    )
+                    # We only want to show the stat part, not the full diff
+                    stat_lines = []
+                    in_stat_section = False
+                    for line in show_result.stdout.splitlines():
+                        if '.../' in line or 'changed' in line:
+                            in_stat_section = True
+                        if in_stat_section:
+                            stat_lines.append(line)
+
+                    # Indent the stat output for clarity
+                    for line in stat_lines:
+                         print(f"  {line}")
+
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"Error searching for commits: {e}", file=sys.stderr)
+
+
+    # 3. Display Performance Metrics
+    print("\n--- Performance Metrics ---")
+    metrics_file = _find_metrics_file(last_run_id, project_dir)
+    if metrics_file:
+        metrics = _parse_metrics(metrics_file)
+        _display_metrics_table(metrics, "Metrics Summary")
+    else:
+        print("No performance metrics file found for the last run.")
+
+    # 4. Display QA & Reviewer Feedback
+    print("\n--- QA & Reviewer Feedback ---")
+    qa_summary_file = project_dir / "qa_summary.txt"
+    reviewer_report_file = project_dir / "reviewer_report.txt"
+    feedback_found = False
+    if qa_summary_file.exists():
+        try:
+            print("\n--- QA Summary ---")
+            print(qa_summary_file.read_text().strip())
+            feedback_found = True
+        except IOError as e:
+            print(f"Error reading qa_summary.txt: {e}")
+    if reviewer_report_file.exists():
+        try:
+            print("\n--- Reviewer Report ---")
+            print(reviewer_report_file.read_text().strip())
+            feedback_found = True
+        except IOError as e:
+            print(f"Error reading reviewer_report.txt: {e}")
+
+    if not feedback_found:
+        print("No QA or reviewer feedback found for this run.")
+
+    sys.exit(0)
+
+
 def run_last_run_id(args):
     """Prints the ID of the last agent run to stdout."""
     project_dir = args.project_dir.resolve()
@@ -4839,6 +4941,18 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Review the last agent run, including code changes, metrics, and QA feedback."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review (default: current directory).",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6598,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "blame":

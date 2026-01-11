@@ -243,6 +243,90 @@ dashboard_state.json
     sys.exit(0)
 
 
+def run_bootstrap(args):
+    """Initializes a new project from a predefined template."""
+    import shutil
+    import subprocess
+
+    repo_root = Path(__file__).parent
+    templates_dir = repo_root / "templates"
+
+    # --- Action 1: List templates ---
+    if args.list:
+        print("--- Available Templates ---")
+        if not templates_dir.is_dir():
+            print("No templates found.")
+            sys.exit(0)
+
+        templates = [d.name for d in templates_dir.iterdir() if d.is_dir()]
+        if not templates:
+            print("No templates found.")
+        else:
+            for template_name in sorted(templates):
+                print(f"  - {template_name}")
+        sys.exit(0)
+
+    # --- Action 2: Create project from template ---
+    template_name = args.template
+    project_dir = args.project_dir.resolve()
+
+    if not template_name:
+        print("❌ Error: You must specify a template name with `--template` or list available templates with `--list`.", file=sys.stderr)
+        sys.exit(1)
+
+    template_path = templates_dir / template_name
+    if not template_path.is_dir():
+        print(f"❌ Error: Template '{template_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if project_dir.exists() and any(project_dir.iterdir()):
+        print(f"❌ Error: Project directory '{project_dir}' already exists and is not empty.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Bootstrapping project from template: {template_name} ---")
+    print(f"  - Project Directory: {project_dir}")
+
+    # --- Step 1: Copy template files ---
+    try:
+        shutil.copytree(template_path, project_dir)
+        print("✅ Copied template files.")
+    except (shutil.Error, OSError) as e:
+        print(f"❌ Error copying template files: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Step 2: Initialize Git repository ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("⚠️ Warning: 'git' command not found. Skipping repository initialization.")
+    else:
+        try:
+            subprocess.run([git_path, "init", "-b", "main", str(project_dir)], check=True, capture_output=True)
+            print("✅ Initialized a new Git repository.")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            stderr = getattr(e, 'stderr', str(e))
+            if isinstance(stderr, bytes): stderr = stderr.decode()
+            print(f"❌ Error initializing Git repository: {stderr}")
+
+    # --- Step 3: Create app_spec.txt ---
+    spec_content = f"The project has been initialized from the '{template_name}' template. Your task is to continue building and improving upon this foundation."
+    try:
+        (project_dir / "app_spec.txt").write_text(spec_content)
+        print("✅ Created a default app_spec.txt.")
+    except IOError as e:
+        print(f"❌ Error creating app_spec.txt: {e}")
+
+    # --- Step 4: Next Steps ---
+    print("\n--- Next Steps ---")
+    print("✅ Project bootstrap complete!")
+    print("\nHere are some common next steps:")
+    executable_name = os.path.basename(sys.argv[0])
+    print(f"  - To start the agent and build your app:")
+    print(f"    {executable_name} --spec app_spec.txt")
+    print(f"  - To install dependencies (if any):")
+    print(f"    cd {project_dir.name} && npm install  # or pip install -r requirements.txt")
+    sys.exit(0)
+
+
 def run_validate():
     """Validates the agent_config.yaml file."""
     print("--- Validating Agent Configuration ---")
@@ -2694,6 +2778,7 @@ def run_help(args):
     print_header("Utilities")
     print_command("why", "Explain what a command does and why you might use it.")
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
+    print_command("bootstrap", "Initialize a new project from a predefined template.")
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
     print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
@@ -3850,6 +3935,25 @@ def parse_args(argv=None):
         "-y", "--yes",
         action="store_true",
         help="Skip all confirmation prompts",
+    )
+
+    # Subparser for 'bootstrap'
+    parser_bootstrap = subparsers.add_parser("bootstrap", help="Initialize a new project from a predefined template")
+    parser_bootstrap.add_argument(
+        "--list",
+        action="store_true",
+        help="List available project templates.",
+    )
+    parser_bootstrap.add_argument(
+        "--template",
+        type=str,
+        help="The name of the template to use.",
+    )
+    parser_bootstrap.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The directory where the new project will be created (default: current directory).",
     )
 
     # Subparser for 'status'
@@ -6248,6 +6352,11 @@ async def main():
     # Handle `init` command
     if args.command == "init":
         run_init(args)
+        return
+
+    # Handle `bootstrap` command
+    if args.command == "bootstrap":
+        run_bootstrap(args)
         return
 
     # Handle `completion` command

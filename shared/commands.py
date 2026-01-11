@@ -35,8 +35,109 @@ COMMAND_DESCRIPTIONS = {
     "profile": "Use this to manage different configuration profiles (e.g., for different projects or models) within your global `agent_config.yaml`.",
     "tui": "Use this to launch a terminal-based user interface that provides a real-time, interactive dashboard for monitoring and managing the agent.",
     "shell": "Use this to start an interactive shell where you can run all the agent's CLI commands without repeatedly typing the script name.",
-    "why": "Use this command to find out what another command does. For example, `why status`."
+    "why": "Use this command to find out what another command does. For example, `why status`.",
+    "next": "Use this to run a workflow copilot. It suggests the most logical next command and, if you approve, runs it for you."
 }
+
+import shlex
+import argparse
+from .cli_utils import get_suggestions
+
+
+def run_next(args, main_module):
+    """Analyzes the project and executes the most logical next command upon user confirmation."""
+    print("--- Suggesting Next Step ---")
+    # We get only the top suggestion
+    suggestions = get_suggestions(project_dir=args.project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    top_suggestion = suggestions[0]
+    # The command from get_suggestions is like "main.py commit", we need to clean it up
+    command_str_for_display = top_suggestion['command']
+    command_str_for_exec = command_str_for_display.replace("main.py ", "")
+    reason = top_suggestion['reason']
+
+    print(f"Suggested command: `{command_str_for_display}`")
+    print(f"Reason: {reason}")
+
+    try:
+        confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted.")
+        sys.exit(0)
+
+    print(f"\n--- Executing: `{command_str_for_display}` ---")
+
+    # Map command strings to their handler functions in the main module
+    # This avoids circular dependencies
+    COMMAND_MAP = {
+        "diff-summary": main_module.run_diff_summary,
+        "revert": main_module.run_revert,
+        "workflow": main_module.run_workflow,
+        "clean": main_module.run_clean,
+        "artifacts": main_module.run_artifacts,
+        "logs": main_module.run_logs,
+        "test": main_module.run_test,
+        "commit": main_module.run_commit,
+        "push": main_module.run_push,
+        "pull": main_module.run_pull,
+        "pr": main_module.run_pr,
+        "feature": main_module.run_feature,
+        "status": main_module.run_status,
+        "suggest": main_module.run_suggest,
+    }
+
+    try:
+        # Use shlex to handle potential arguments safely
+        command_parts = shlex.split(command_str_for_exec)
+        command_name = command_parts[0]
+        command_func = COMMAND_MAP.get(command_name)
+
+        if not command_func:
+            print(f"❌ Error: Command '{command_name}' is not configured to be run via 'next'.", file=sys.stderr)
+            sys.exit(1)
+
+        # Re-parse the arguments for the target command using the main parser
+        parser = main_module.get_parser()
+        target_args, remaining_args = parser.parse_known_args(command_parts)
+
+        # The main parser expects a 'command' attribute
+        target_args.command = command_name
+
+        # For commands that can take pass-through args (like 'test'), assign them
+        if hasattr(target_args, f"{command_name}_args"):
+             setattr(target_args, f"{command_name}_args", remaining_args)
+
+        # For artifacts, which has a nested structure
+        if command_name == 'artifacts':
+            target_args.type = command_parts[1]
+            target_args.action = command_parts[2]
+
+        # Add the project_dir from the original 'next' command args
+        target_args.project_dir = args.project_dir
+
+        # Call the mapped function with the newly parsed args
+        command_func(target_args)
+
+    except SystemExit as e:
+        # The called function will sys.exit(), so we catch it to print a nice message.
+        if e.code == 0:
+            print(f"--- Command `{command_str_for_display}` finished successfully ---")
+        else:
+            print(f"--- Command `{command_str_for_display}` finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+        # Re-exit with the original code to signal success/failure
+        sys.exit(e.code)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while running the command: {e}", file=sys.stderr)
+        sys.exit(1)
+
 
 def run_why(args):
     """Explains what a command does and why you might use it."""

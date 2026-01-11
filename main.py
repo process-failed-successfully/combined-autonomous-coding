@@ -45,7 +45,7 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
-from shared.commands import run_why
+from shared.commands import run_why, run_next
 import json
 import yaml
 import platformdirs
@@ -3664,10 +3664,11 @@ def run_config(args):
     return 0
 
 
-def parse_args(argv=None):
+def get_parser():
+    """Creates and returns the ArgumentParser object."""
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
-    # Core Configuration
+     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")
     core_group.add_argument(
         "--profile",
@@ -4859,9 +4860,27 @@ def parse_args(argv=None):
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Execute the next suggested command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
+    return parser
+
+
+def parse_args(argv=None):
+    """Parses command line arguments."""
+    parser = get_parser()
     return parser.parse_args(argv)
 
 
@@ -6484,6 +6503,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "next":
+        run_next(args, sys.modules[__name__])
         return
 
     if args.command == "blame":

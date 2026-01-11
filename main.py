@@ -44,6 +44,7 @@ from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
+import shlex
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 import json
@@ -2073,6 +2074,48 @@ def run_suggest(args):
     sys.exit(0)
 
 
+def run_next(args):
+    """Analyzes the project, suggests the most logical next action, and executes it upon confirmation."""
+    project_dir = args.project_dir.resolve()
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    command_str = suggestion['command']
+    reason = suggestion['reason']
+    executable_name = os.path.basename(sys.argv[0])
+
+    # Replace 'main.py' with the actual executable name for display
+    display_command = command_str.replace("main.py", executable_name)
+
+    print("--- Next Suggested Action ---")
+    print(f"Action: {display_command}")
+    print(f"Reason: {reason}")
+
+    try:
+        confirm = input("\nDo you want to run this command? [y/n]: ").strip().lower()
+        if confirm in ['y', '']:
+            # Replace 'main.py' with the actual executable path for execution
+            command_to_run = command_str.replace("main.py", sys.argv[0])
+            # Use shlex.split to handle arguments correctly
+            command_parts = shlex.split(command_to_run)
+
+            print(f"\nExecuting: {' '.join(command_parts)}\n")
+            # Use subprocess.run, ensuring the command is executed in the correct context
+            result = subprocess.run(command_parts, cwd=project_dir)
+            sys.exit(result.returncode)
+        else:
+            print("Aborted.")
+            sys.exit(0)
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted.")
+        sys.exit(1)
+
+
 def run_status(args):
     """Displays the current status of the agent project."""
     status_text = _run_enhanced_status_logic(project_dir=args.project_dir)
@@ -3892,6 +3935,15 @@ def parse_args(argv=None):
     # Subparser for 'suggest'
     parser_suggest = subparsers.add_parser("suggest", help="Suggest next logical commands based on project state")
     parser_suggest.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory)",
+    )
+
+    # Subparser for 'next'
+    parser_next = subparsers.add_parser("next", help="Guide you to the next logical action and execute it.")
+    parser_next.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -6377,6 +6429,11 @@ async def main():
     # Handle `suggest` command
     if args.command == "suggest":
         run_suggest(args)
+        return
+
+    # Handle `next` command
+    if args.command == "next":
+        run_next(args)
         return
 
     # Handle `history` command

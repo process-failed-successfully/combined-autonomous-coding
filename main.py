@@ -2660,6 +2660,7 @@ def run_help(args):
     print_command("test", "Automatically detect project type and run tests.")
     print_command("lint", "Automatically detect project type and run a linter.")
     print_command("format", "Automatically detect project type and format code.")
+    print_command("review", "Start a guided review of the agent's work.")
 
     print_header("Inspection & History")
     print_command("status", "Show a detailed overview of the project's current status.")
@@ -4856,6 +4857,18 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run a guided, interactive review of the agent's completed work."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review (default: current directory).",
+    )
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
@@ -4863,6 +4876,82 @@ def parse_args(argv=None):
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_review(args):
+    """Runs a guided, interactive review of the agent's work."""
+    project_dir = args.project_dir.resolve()
+    print("--- Guided Agent Review ---")
+
+    # 1. Check if the work is marked as 'COMPLETED'
+    completed_marker = project_dir / "COMPLETED"
+    if not completed_marker.exists():
+        print("Agent work is not marked as 'COMPLETED'. Nothing to review.")
+        print("Please run the agent first.")
+        sys.exit(0)
+
+    # 2. Run tests first
+    print("\n--- [1/3] Running tests ---")
+    test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+    try:
+        run_test(test_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Tests failed. It is recommended to reject the changes.", file=sys.stderr)
+        else:
+            print("\n✅ Tests passed.")
+    except Exception as e:
+        print(f"\n❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
+        print("Cannot proceed with review.")
+        sys.exit(1)
+
+
+    # 3. Show the diff
+    print("\n--- [2/3] Displaying changes ---")
+    try:
+        run_diff(argparse.Namespace(target=None, project_dir=project_dir))
+    except SystemExit as e:
+        if e.code != 0:
+            print("\nCould not display diff. Continuing review process...", file=sys.stderr)
+
+
+    # 4. Prompt for approval
+    print("\n--- [3/3] Decision ---")
+    while True:
+        try:
+            choice = input("Do you approve these changes? [approve/reject]: ").strip().lower()
+            if choice in ["approve", "reject"]:
+                break
+            else:
+                print("Invalid choice. Please enter 'approve' or 'reject'.")
+        except (KeyboardInterrupt, EOFError):
+            print("\nReview aborted.")
+            sys.exit(1)
+
+
+    # 5. Take action based on approval
+    if choice == "approve":
+        print("Approving changes...")
+        qa_passed_marker = project_dir / "QA_PASSED"
+        try:
+            qa_passed_marker.touch()
+            print("✅ Work approved. Created 'QA_PASSED' marker to advance workflow.")
+        except IOError as e:
+            print(f"❌ Error creating QA_PASSED file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else: # choice == "reject"
+        print("Rejecting changes...")
+        try:
+            if completed_marker.exists():
+                completed_marker.unlink()
+                print("✅ Work rejected. Removed 'COMPLETED' marker to signal rework to the agent.")
+            else:
+                print("Warning: 'COMPLETED' marker was already gone.", file=sys.stderr)
+        except IOError as e:
+            print(f"❌ Error removing COMPLETED file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_profile(args):
@@ -6488,6 +6577,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "help":

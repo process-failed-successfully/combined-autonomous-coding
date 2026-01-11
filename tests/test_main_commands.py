@@ -6,6 +6,7 @@ from main import run_commands
 import argparse
 
 class TestMainCommands(unittest.TestCase):
+    @patch('sys.argv', ['main.py'])
     def test_run_commands_prints_expected_sections(self):
         """
         Tests that the run_commands command prints the expected section headers.

@@ -4961,7 +4961,7 @@ def parse_args(argv=None):
     )
 
     # --- New 'commands' command ---
-    parser_commands = subparsers.add_parser("commands", help="Show a structured and user-friendly list of commands.")
+    parser_commands = subparsers.add_parser("commands", help="Show a structured and user-friendly help message.")
 
     if argcomplete:
         argcomplete.autocomplete(parser)

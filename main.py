@@ -2022,6 +2022,71 @@ def run_blame(args):
         sys.exit(1)
     sys.exit(0)
 
+
+async def run_next(args):
+    """Analyzes the project and executes the next logical command upon user confirmation."""
+    import shlex
+    import inspect
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Analyzing project: {project_dir} ---")
+
+    # Get the top suggestion
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    suggested_command_str = suggestion['command']
+    reason = suggestion['reason']
+
+    print(f"💡 Suggested Next Step: {reason}")
+    print(f"   Command: {suggested_command_str}")
+
+    if not args.yes:
+        confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+
+    print(f"\n--- Executing: {suggested_command_str} ---\n")
+
+    executable_name = os.path.basename(sys.argv[0])
+    command_parts = shlex.split(suggested_command_str)
+
+    if len(command_parts) < 2:
+        print(f"❌ Error: Cannot parse suggested command: {suggested_command_str}", file=sys.stderr)
+        sys.exit(1)
+
+    subcommand = command_parts[1]
+    argv_for_parser = command_parts[1:]
+
+    parser = get_parser()
+    try:
+        new_args = parser.parse_args(argv_for_parser)
+
+        # Determine the target function from the command map
+        target_func = COMMAND_MAP.get(subcommand)
+
+        if target_func:
+            if inspect.iscoroutinefunction(target_func):
+                await target_func(new_args)
+            else:
+                target_func(new_args)
+        else:
+            print(f"❌ Error: Command '{subcommand}' is not directly executable by 'next'.", file=sys.stderr)
+            sys.exit(1)
+
+    except SystemExit as e:
+        sys.exit(e.code)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while executing command: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_report(args):
     """Generates a summary report for a specific agent run."""
     success = _run_report_logic(
@@ -3664,7 +3729,7 @@ def run_config(args):
     return 0
 
 
-def parse_args(argv=None):
+def get_parser():
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
@@ -4839,6 +4904,23 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Execute the next logical command based on the project's state."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without confirmation.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -4859,9 +4941,13 @@ def parse_args(argv=None):
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
+    return parser
+
+
+def parse_args(argv=None):
+    parser = get_parser()
     if argcomplete:
         argcomplete.autocomplete(parser)
-
     return parser.parse_args(argv)
 
 
@@ -6486,6 +6572,10 @@ async def main():
         run_why(args)
         return
 
+    if args.command == "next":
+        await run_next(args)
+        return
+
     if args.command == "blame":
         run_blame(args)
         return
@@ -6725,6 +6815,57 @@ async def main():
         logger.info("Project signed off. Finalizing...")
         # note: the autonomous loop itself now handles triggering the cleaner agent
         # if cleanup_report.txt is missing.
+
+
+COMMAND_MAP = {
+    # Getting Started
+    "init": run_init,
+    "configure": run_configure,
+    "doctor": run_doctor,
+    "list-agents": run_list_agents,
+    "models": run_models,
+    "validate": run_validate,
+    # Core Commands
+    "plan": run_plan, # async
+    "test": run_test,
+    "lint": run_lint,
+    "format": run_format,
+    # Inspection & History
+    "status": run_status,
+    "dashboard": run_dashboard,
+    "history": run_history,
+    "last": run_last,
+    "log": run_log,
+    "logs": run_logs,
+    "tree": run_tree,
+    "report": run_report,
+    "blame": run_blame,
+    "benchmark": run_benchmark,
+    # Git & Workflow
+    "commit": run_commit,
+    "push": run_push,
+    "pull": run_pull,
+    "pr": run_pr,
+    "feature": run_feature,
+    "diff": run_diff,
+    "discard": run_discard,
+    "undo": run_undo,
+    "rewind": run_rewind,
+    "workflow": run_workflow,
+    # Artifact & Sprint Management
+    "artifacts": run_artifacts,
+    "snapshot": run_snapshot,
+    "sprint": run_sprint_command,
+    "worktrees": run_worktrees,
+    # Utilities
+    "why": run_why,
+    "suggest": run_suggest,
+    "next": run_next,
+    "shell": run_shell,
+    "tui": run_tui,
+    "show-config": run_show_config,
+    "help": run_help,
+}
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ class TestNotificationManager(unittest.TestCase):
         self.config.notification_settings = {}
         self.config.slack_webhook_url = None
         self.config.discord_webhook_url = None
+        self.config.agent_id = None
         self.manager = NotificationManager(self.config)
 
     def test_should_notify_default(self):

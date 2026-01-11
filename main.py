@@ -2711,7 +2711,7 @@ def run_shell(args):
 
 
 def run_commands(args):
-    """Displays a structured and user-friendly help message."""
+    """Displays a structured and user-friendly list of commands."""
     # ANSI escape codes for formatting
     BOLD = '\033[1m'
     CYAN = '\033[96m'

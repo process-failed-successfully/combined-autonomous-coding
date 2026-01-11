@@ -45,5 +45,14 @@ class TestMainCommands(unittest.TestCase):
         self.assertIn("artifacts", output)
         self.assertIn("why", output)
 
+    def test_run_commands_exits_with_zero(self):
+        """
+        Tests that the run_commands function exits with a status code of 0.
+        """
+        with self.assertRaises(SystemExit) as cm:
+            run_commands(argparse.Namespace())
+        self.assertEqual(cm.exception.code, 0)
+
+
 if __name__ == '__main__':
     unittest.main()

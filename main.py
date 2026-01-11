@@ -2691,7 +2691,7 @@ def run_shell(args):
     sys.exit(0)
 
 
-def run_help(args):
+def run_commands(args):
     """Displays a structured and user-friendly help message."""
     # ANSI escape codes for formatting
     BOLD = '\033[1m'
@@ -2762,7 +2762,7 @@ def run_help(args):
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
     print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
-    print_command("help", "Show this help message.")
+    print_command("commands", "Show this help message.")
 
     print(f"\nFor detailed options on a specific command, run: {executable_name} [command] --help")
     sys.exit(0)
@@ -4938,8 +4938,8 @@ def get_parser():
         help="The project directory (default: current directory).",
     )
 
-    # --- New 'help' command ---
-    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+    # --- New 'commands' command ---
+    parser_commands = subparsers.add_parser("commands", help="Show a structured and user-friendly help message.")
 
     return parser
 
@@ -6580,8 +6580,8 @@ async def main():
         run_blame(args)
         return
 
-    if args.command == "help":
-        run_help(args)
+    if args.command == "commands":
+        run_commands(args)
         return
 
     # Initialize Agent Client
@@ -6864,7 +6864,7 @@ COMMAND_MAP = {
     "shell": run_shell,
     "tui": run_tui,
     "show-config": run_show_config,
-    "help": run_help,
+    "commands": run_commands,
 }
 
 

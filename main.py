@@ -45,7 +45,7 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
-from shared.commands import run_why
+from shared.commands import run_why, run_next
 import json
 import yaml
 import platformdirs
@@ -4839,6 +4839,23 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggest and execute the next logical command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory)",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without confirmation.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6501,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "blame":

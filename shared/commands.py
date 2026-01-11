@@ -1,4 +1,8 @@
 import sys
+import subprocess
+import shlex
+from pathlib import Path
+from .cli_utils import get_suggestions
 
 COMMAND_DESCRIPTIONS = {
     "configure": "Use this command to run an interactive wizard that helps you create or update your `agent_config.yaml` file. It's the easiest way to set up API keys for services like Jira, GitHub, Slack, and Discord.",
@@ -10,6 +14,7 @@ COMMAND_DESCRIPTIONS = {
     "glance": "Use this for a quick, compact overview of the project's status, showing the current workflow stage, a one-line Git summary, and the next suggested command.",
     "dashboard": "Use this for a comprehensive overview of the project, including workflow status, git status, last run summary, and suggested next commands.",
     "suggest": "Use this command when you're not sure what to do next. It analyzes the project's state and recommends the most logical command to run.",
+    "next": "Analyzes the project's state, suggests the most logical next action, and executes it upon your confirmation. It acts as a CLI copilot to streamline your workflow.",
     "history": "Use this to see a list of all the agent runs for the current project, including their Run IDs and a summary of the final log entries.",
     "last": "Use this to quickly see a summary of the very last agent run, including its performance metrics, QA summary, and the last few log lines.",
     "last-run-id": "Use this when you need to programmatically get the ID of the last agent run, for use in scripts or other commands.",
@@ -37,6 +42,61 @@ COMMAND_DESCRIPTIONS = {
     "shell": "Use this to start an interactive shell where you can run all the agent's CLI commands without repeatedly typing the script name.",
     "why": "Use this command to find out what another command does. For example, `why status`."
 }
+
+
+def run_next(args):
+    """Analyzes the project and executes the next logical command."""
+    project_dir = args.project_dir.resolve()
+
+    print("--- Determining next step... ---")
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    # Take the top suggestion
+    suggestion = suggestions[0]
+    command_to_run_str = suggestion['command']
+    reason = suggestion['reason']
+
+    print(f"\nSuggested command: `{command_to_run_str}`")
+    print(f"Reason: {reason}")
+
+    if not args.yes:
+        confirm = input("\nExecute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+
+    command_parts = shlex.split(command_to_run_str)[1:]
+
+    # Get the repo root to find main.py
+    repo_root = Path(__file__).parent.parent
+    main_py_path = repo_root / "main.py"
+
+    if not main_py_path.exists():
+        print(f"❌ Error: Could not find main entry point at '{main_py_path}'", file=sys.stderr)
+        sys.exit(1)
+
+    full_command = [sys.executable, str(main_py_path)] + command_parts
+
+    print(f"\nExecuting: {' '.join(full_command)}\n")
+    try:
+        # Use subprocess.run without capturing output to stream directly
+        result = subprocess.run(full_command, cwd=project_dir)
+        sys.exit(result.returncode)
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{full_command[0]}' not found.", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nCommand execution interrupted by user.")
+        sys.exit(130)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while running command: {e}", file=sys.stderr)
+        sys.exit(1)
+
 
 def run_why(args):
     """Explains what a command does and why you might use it."""

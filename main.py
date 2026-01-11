@@ -236,7 +236,7 @@ dashboard_state.json
     print(f"  - To start the agent and build your app:")
     print(f"    {executable_name} --spec app_spec.txt")
     print(f"  - To see all available commands:")
-    print(f"    {executable_name} --help")
+    print(f"    {executable_name} commands")
     print(f"  - For a detailed health check of your environment:")
     print(f"    {executable_name} doctor")
 

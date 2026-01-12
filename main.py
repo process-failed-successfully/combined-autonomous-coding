@@ -2014,6 +2014,74 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
 
+def run_next(args):
+    """Suggests and executes the next logical command."""
+    import shlex
+    project_dir = args.project_dir.resolve()
+
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    command_to_run = suggestion['command']
+    reason = suggestion['reason']
+
+    print("--- Suggested Next Step ---")
+    print(f"👉 Command: {command_to_run}")
+    print(f"   Reason: {reason}")
+
+    execute = False
+    if args.yes:
+        execute = True
+    else:
+        try:
+            confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+            if confirm in ['y', '']:
+                execute = True
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            sys.exit(1)
+
+    if execute:
+        print(f"\nExecuting: {command_to_run}...")
+        try:
+            # Use shlex.split to handle commands with arguments correctly
+            command_parts = shlex.split(command_to_run)
+
+            # The command is `main.py ...`, so we need to call it with the python executable
+            executable = sys.executable
+            script_path = sys.argv[0]
+
+            # Replace the executable name in the suggested command with the full path
+            if command_parts[0] == os.path.basename(script_path):
+                final_command = [executable, script_path] + command_parts[1:]
+            else:
+                 # Fallback for commands that might not start with the script name
+                final_command = command_parts
+
+            result = subprocess.run(final_command, cwd=project_dir)
+
+            if result.returncode == 0:
+                print("\n✅ Command executed successfully.")
+            else:
+                print(f"\n❌ Command finished with an error (exit code: {result.returncode}).", file=sys.stderr)
+
+            sys.exit(result.returncode)
+
+        except FileNotFoundError:
+            print(f"❌ Error: Command '{command_parts[0]}' not found.", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ An unexpected error occurred during execution: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("Command not executed.")
+        sys.exit(0)
+
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
     blame_output = _run_blame_logic(project_dir=args.project_dir, filepath=args.filepath)
@@ -4839,6 +4907,23 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggests and executes the next logical command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the first suggested command without prompting.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6569,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "blame":

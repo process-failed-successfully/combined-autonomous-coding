@@ -2080,6 +2080,87 @@ def run_status(args):
     sys.exit(0)
 
 
+async def run_next(args):
+    """Suggests and optionally executes the next logical command."""
+    import shlex
+    project_dir = args.project_dir
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    command_to_run = suggestion['command']
+    reason = suggestion['reason']
+    executable_name = os.path.basename(sys.argv[0])
+    # The suggestion gives the full command, e.g. "./main.py status"
+    # We need to strip our own executable name to get the command for parsing
+    command_parts = shlex.split(command_to_run)
+    if command_parts and command_parts[0] in [executable_name, './main.py', 'main.py']:
+        command_args_list = command_parts[1:]
+    else:
+        command_args_list = command_parts # Should not happen, but robust
+
+    print("--- Suggested Next Step ---")
+    print(f"👉 Command: {command_to_run}")
+    print(f"   Reason:  {reason}")
+
+    if not args.yes:
+        confirm = input("\nExecute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+
+    print(f"\nExecuting: {command_to_run}\n")
+
+    try:
+        # We need to get the full parser to correctly parse the command
+        new_args = parse_args(command_args_list)
+
+        # Re-dispatch to the correct function based on the parsed command
+        # This is a bit of a hack, but it reuses all the existing command logic.
+        # A better long-term solution would be to refactor main() into a dispatcher class.
+        if new_args.command:
+            # This mapping should contain all commands that can be suggested.
+            COMMAND_MAP = {
+                "status": run_status,
+                "test": run_test,
+                "commit": run_commit,
+                "push": run_push,
+                "pull": run_pull,
+                "pr": run_pr,
+                "feature": run_feature,
+                "lint": run_lint,
+                "format": run_format,
+                "dashboard": run_dashboard,
+                "plan": run_plan,
+                "workflow": run_workflow,
+            }
+            handler = COMMAND_MAP.get(new_args.command)
+            if handler:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(new_args)
+                else:
+                    handler(new_args)
+            else:
+                # Fallback for simple commands without dedicated functions yet
+                # Or for commands not in the map
+                print(f"Error: Command '{new_args.command}' is not directly executable by 'next'.", file=sys.stderr)
+                sys.exit(1)
+        else:
+             print("Error: Could not parse suggested command.", file=sys.stderr)
+             sys.exit(1)
+
+    except SystemExit as e:
+        # If the command exits, we just propagate that.
+        sys.exit(e.code)
+    except Exception as e:
+        print(f"An unexpected error occurred while executing command: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_glance(args):
     """Displays a compact, high-level overview of the project's status."""
     project_dir = args.project_dir.resolve()
@@ -4839,6 +4920,23 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggest and optionally execute the next logical command."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without prompting.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6582,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "next":
+        await run_next(args)
         return
 
     if args.command == "blame":

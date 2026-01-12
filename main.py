@@ -17,6 +17,7 @@ import sys
 import os
 import shutil
 import subprocess
+import shlex
 from pathlib import Path
 import time
 try:
@@ -4790,6 +4791,18 @@ def parse_args(argv=None):
         help="The project directory for the interactive session.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Execute the top suggested command after confirmation."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze.",
+    )
+
     # --- New 'profile' command ---
     parser_profile = subparsers.add_parser(
         "profile",
@@ -5198,6 +5211,62 @@ def run_interact(args):
             print("\nExiting interactive session.")
             break
     sys.exit(0)
+
+
+def run_next(args):
+    """Suggests and executes the next logical command."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Determining next step for: {project_dir} ---")
+
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    command_to_run = suggestion['command']
+    reason = suggestion['reason']
+
+    print("\n--- Suggested Next Step ---")
+    print(f"  Command: {command_to_run}")
+    print(f"  Reason:  {reason}")
+
+    try:
+        confirm = input("\nDo you want to run this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+
+        print(f"\n--- Executing: {command_to_run} ---")
+        # Use shlex to handle commands with arguments properly
+        command_parts = shlex.split(command_to_run)
+
+        # The first part of the command is the script name itself.
+        # The second part is the actual command we need to execute.
+        # And we need to add the project_dir to all commands
+        executable_name = os.path.basename(sys.argv[0])
+        full_command = [sys.executable, executable_name] + command_parts[1:]
+
+        # We need to add the project_dir to the command if it's not there
+        if '--project-dir' not in full_command and '-p' not in full_command:
+             full_command.extend(['--project-dir', str(project_dir)])
+
+
+        result = subprocess.run(full_command, cwd=project_dir)
+
+        if result.returncode == 0:
+            print("\n--- Command finished successfully ---")
+        else:
+            print(f"\n--- Command finished with an error (exit code: {result.returncode}) ---", file=sys.stderr)
+        sys.exit(result.returncode)
+
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted by user.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def run_push(args):
@@ -6472,6 +6541,10 @@ async def main():
 
     if args.command == "interact":
         run_interact(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "profile":

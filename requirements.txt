@@ -2,7 +2,6 @@ typer
 SQLAlchemy
 rich
 docker
-requests
 PyYAML
 python-dotenv
 tenacity

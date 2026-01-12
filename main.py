@@ -2704,6 +2704,83 @@ def run_commands(args):
     sys.exit(0)
 
 
+def run_help(args):
+    """Displays a structured and user-friendly help message."""
+    # ANSI escape codes for formatting
+    BOLD = '\033[1m'
+    CYAN = '\033[96m'
+    YELLOW = '\033[93m'
+    ENDC = '\033[0m'
+
+    def print_header(title):
+        print(f"\n{BOLD}{CYAN}--- {title} ---{ENDC}")
+
+    def print_command(name, description):
+        print(f"  {YELLOW}{name:<20}{ENDC} {description}")
+
+    executable_name = os.path.basename(sys.argv[0])
+    print(f"{BOLD}Combined Autonomous Coding Agent{ENDC}")
+    print("A unified CLI for running and managing autonomous coding agents.")
+    print(f"\n{BOLD}Usage:{ENDC} {executable_name} [command] [options]")
+    print(f"       {executable_name} --spec <spec_file> [options]  (to run the agent)")
+
+    print_header("Getting Started")
+    print_command("init", "Run an interactive setup wizard for a new project.")
+    print_command("configure", "Create or update the global agent_config.yaml file.")
+    print_command("doctor", "Run a health check on your environment and configuration.")
+    print_command("list-agents", "List the available agent types (e.g., gemini, cursor).")
+    print_command("models", "List recommended models for each agent type.")
+    print_command("validate", "Validate the agent configuration file.")
+
+    print_header("Core Commands")
+    print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
+    print_command("plan", "Generate a feature plan from a spec file without executing code.")
+    print_command("test", "Automatically detect project type and run tests.")
+    print_command("lint", "Automatically detect project type and run a linter.")
+    print_command("format", "Automatically detect project type and format code.")
+
+    print_header("Inspection & History")
+    print_command("status", "Show a detailed overview of the project's current status.")
+    print_command("dashboard", "Display a comprehensive project dashboard.")
+    print_command("history", "Show the history of agent runs for the project.")
+    print_command("last", "Show a detailed summary of the very last agent run.")
+    print_command("log", "Show the git commit history in a formatted view.")
+    print_command("logs", "Show agent logs with filtering and real-time follow options.")
+    print_command("tree", "Display a tree view of the project directory.")
+    print_command("report", "Generate a Markdown summary report for a specific run.")
+    print_command("blame", "Show which agent Run ID was responsible for each line in a file.")
+    print_command("benchmark", "Analyze and compare performance metrics from different runs.")
+
+    print_header("Git & Workflow")
+    print_command("commit", "Stage all changes and create a commit, with interactive prompts.")
+    print_command("push", "Safely push the current feature branch to the remote.")
+    print_command("pull", "Safely pull the latest changes from the remote.")
+    print_command("pr", "Manage GitHub pull requests for the project.")
+    print_command("feature", "A guided workflow for branch -> commit -> push -> pr.")
+    print_command("diff", "Show a detailed diff of uncommitted changes or a specific commit.")
+    print_command("discard", "Safely discard uncommitted changes by stashing them first.")
+    print_command("undo", "Restore changes that were previously discarded.")
+    print_command("rewind", "Reset the project state to a previous git commit or Run ID.")
+    print_command("workflow", "Manually manage the agent's workflow state (e.g., advance to QA).")
+
+    print_header("Artifact & Sprint Management")
+    print_command("artifacts", "Manage trashed and archived agent-generated files.")
+    print_command("snapshot", "Create and diff non-destructive snapshots of agent artifacts.")
+    print_command("sprint", "Observe and manage the progress of a multi-agent sprint.")
+    print_command("worktrees", "Manage git worktrees for concurrent sprint tasks.")
+
+    print_header("Utilities")
+    print_command("why", "Explain what a command does and why you might use it.")
+    print_command("suggest", "Suggest the next logical command(s) based on project state.")
+    print_command("shell", "Start an interactive shell with all commands available.")
+    print_command("tui", "Start the interactive Textual User Interface (TUI).")
+    print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
+    print_command("help", "Show this help message.")
+
+    print(f"\nFor detailed options on a specific command, run: {executable_name} [command] --help")
+    sys.exit(0)
+
+
 def run_tui(args):
     """Starts the Textual TUI."""
     try:
@@ -4882,8 +4959,8 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
-    # --- New 'commands' command ---
-    parser_commands = subparsers.add_parser("commands", help="Show a structured and user-friendly help message.")
+    # --- New 'help' command ---
+    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.", add_help=False)
 
     if argcomplete:
         argcomplete.autocomplete(parser)
@@ -6602,6 +6679,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "help":
+        run_help(args)
         return
 
     if args.command == "commands":

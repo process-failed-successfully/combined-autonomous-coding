@@ -5135,55 +5135,88 @@ def run_feature(args):
 
 
 def run_interact(args):
-    """Starts an interactive session to guide the user through common commands."""
+    """Starts a context-aware interactive session to guide the user."""
     project_dir = args.project_dir.resolve()
-    print("--- Interactive Session ---")
-    print(f"Project Directory: {project_dir}")
-    print("Type a number to select a command, or 'q' to quit.")
 
-    # A map of menu items to the function and args they will call
-    menu_items = {
-        "1": {"text": "Show project status", "func": run_status, "args": {"project_dir": project_dir}},
-        "2": {"text": "Run tests", "func": run_test, "args": {"project_dir": project_dir, "test_args": []}},
-        "3": {"text": "Run linter", "func": run_lint, "args": {"project_dir": project_dir, "fix": False, "lint_args": []}},
-        "4": {"text": "Format code", "func": run_format, "args": {"project_dir": project_dir, "check": False, "format_args": []}},
-        "5": {"text": "Commit changes", "func": run_commit}, # Special handling
-        "6": {"text": "Suggest next step", "func": run_suggest, "args": {"project_dir": project_dir}},
+    # This mapping connects the 'key' from get_suggestions to the actual function to run.
+    COMMAND_MAP = {
+        "status": run_status,
+        "test": run_test,
+        "lint": run_lint,
+        "format": run_format,
+        "commit": run_commit,
+        "suggest": run_suggest,
+        "diff_summary": run_diff_summary,
+        "discard": run_discard,
+        "workflow": run_workflow,
+        "clean": run_clean,
+        "artifacts": run_artifacts,
+        "last": run_last,
     }
 
     while True:
-        print("\n--- Main Menu ---")
-        for key, value in menu_items.items():
-            print(f"  [{key}] {value['text']}")
+        print("\n--- Interactive Session ---")
+        print(f"Project Directory: {project_dir}")
+        print("Based on the current project state, here are the most relevant actions:")
+
+        suggestions = get_suggestions(project_dir)
+
+        if not suggestions:
+            print("\n✅ Project is in a clean state. No specific actions to suggest.")
+            print("   You can still run tests, lint, or format the code.")
+            # Add some default actions if no suggestions are found
+            suggestions.append({
+                "key": "test", "reason": "Run the test suite.",
+                "args": {"project_dir": project_dir, "test_args": []}
+            })
+            suggestions.append({
+                "key": "lint", "reason": "Check code for style issues.",
+                "args": {"project_dir": project_dir, "fix": False, "lint_args": []}
+            })
+
+        for i, suggestion in enumerate(suggestions):
+            print(f"  [{i+1}] {suggestion['reason']}")
+
         print("  [q] Quit")
 
         try:
             choice = input("> ").strip().lower()
+
             if choice == 'q':
                 print("Exiting interactive session.")
                 break
 
-            if choice in menu_items:
-                item = menu_items[choice]
-                print(f"\n--- Running: {item['text']} ---")
+            try:
+                choice_index = int(choice) - 1
+                if not (0 <= choice_index < len(suggestions)):
+                    print("Invalid choice, please try again.")
+                    continue
+
+                selected_suggestion = suggestions[choice_index]
+                command_key = selected_suggestion["key"]
+                command_args_dict = selected_suggestion["args"]
+
+                if command_key not in COMMAND_MAP:
+                    print(f"Error: Command '{command_key}' is not implemented in interactive mode.")
+                    continue
+
+                command_func = COMMAND_MAP[command_key]
+                print(f"\n--- Running: {command_key} ---")
+
+                # --- Special handling for commands that need extra input ---
+                if command_key == "commit":
+                    message = input("Enter commit message: ").strip()
+                    if not message:
+                        print("Commit message cannot be empty. Aborting.")
+                        continue
+                    command_args_dict["message"] = message
+
+
+                # Construct the argparse.Namespace object for the function call
+                command_args = argparse.Namespace(**command_args_dict)
+
                 try:
-                    # Special handling for commit as it requires a message
-                    if item["func"] == run_commit:
-                        message = input("Enter commit message: ").strip()
-                        if message:
-                            # Construct the args namespace for the command
-                            commit_args = argparse.Namespace(
-                                message=message,
-                                run_tests=False,
-                                project_dir=project_dir
-                            )
-                            run_commit(commit_args)
-                        else:
-                            print("Commit message cannot be empty. Aborting.")
-                    else:
-                        # Construct the args namespace for the command
-                        command_args = argparse.Namespace(**item["args"])
-                        item["func"](command_args)
+                    command_func(command_args)
                 except SystemExit as e:
                     if e.code != 0:
                         print(f"--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
@@ -5191,8 +5224,9 @@ def run_interact(args):
                         print(f"--- Command finished successfully ---")
                 except Exception as e:
                     print(f"An unexpected error occurred: {e}", file=sys.stderr)
-            else:
-                print("Invalid choice, please try again.")
+
+            except ValueError:
+                print("Invalid input. Please enter a number or 'q'.")
 
         except (KeyboardInterrupt, EOFError):
             print("\nExiting interactive session.")

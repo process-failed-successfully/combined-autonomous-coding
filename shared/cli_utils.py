@@ -282,40 +282,125 @@ def _has_uncommitted_changes(project_dir: Path) -> bool:
 
 def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
     """
-    Analyzes the project state and returns a list of suggested next commands.
+    Analyzes the project state and returns a list of suggested next commands
+    with actionable data for interactive mode.
     """
     suggestions = []
     stage = get_workflow_stage(project_dir)
     has_changes = _has_uncommitted_changes(project_dir)
+    executable_name = "main.py" # In a real script, you might use os.path.basename(sys.argv[0])
 
-    def add_suggestion(command, reason):
+    def add_suggestion(key, reason, command_str, args_dict):
+        """Helper to add a suggestion to the list."""
         if limit is not None and len(suggestions) >= limit:
-            return False
-        suggestions.append({"command": command, "reason": reason})
+            return False # Stop adding if limit is reached
+
+        # All commands need project_dir, so we ensure it's in the args.
+        final_args = {"project_dir": project_dir}
+        final_args.update(args_dict)
+
+        suggestions.append({
+            "key": key,
+            "reason": reason,
+            "command": command_str,
+            "args": final_args
+        })
         return True
 
     # 1. Git-based suggestions
     if has_changes:
-        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
-        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
+        add_suggestion(
+            key="diff_summary",
+            reason="You have uncommitted changes. View a summary of modifications.",
+            command_str=f"{executable_name} diff-summary",
+            args_dict={}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
+
+        add_suggestion(
+            key="commit",
+            reason="You have uncommitted changes. Commit them to save your progress.",
+            command_str=f"{executable_name} commit",
+            args_dict={'message': None, 'run_tests': False}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
+
+        add_suggestion(
+            key="discard",
+            reason="You have uncommitted changes. Discard them if they are not needed.",
+            command_str=f"{executable_name} discard --interactive",
+            args_dict={'files': [], 'interactive': True, 'yes': False}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
+
 
     # 2. Workflow-based suggestions
     if stage == "COMPLETED":
-        if not add_suggestion("main.py workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."): return suggestions
+        add_suggestion(
+            key="workflow",
+            reason="The agent's work is complete. Advance to the 'QA Passed' stage.",
+            command_str=f"{executable_name} workflow advance",
+            args_dict={"action": "advance", "yes": False}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
     elif stage == "QA_PASSED":
-        if not add_suggestion("main.py workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."): return suggestions
+        add_suggestion(
+            key="workflow",
+            reason="The project has passed QA. Advance to 'Signed Off' to finalize.",
+            command_str=f"{executable_name} workflow advance",
+            args_dict={"action": "advance", "yes": False}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
     elif stage == "SIGNED_OFF":
-        if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
+        add_suggestion(
+            key="clean",
+            reason="The project is complete. Archive artifacts to clean the directory.",
+            command_str=f"{executable_name} clean --archive",
+            args_dict={"archive": True, "force": False, "list": False, "yes": False}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
 
     # 3. Artifact-based suggestions
     trash_dir = project_dir / ".agent_trash"
     if trash_dir.exists() and any(trash_dir.iterdir()):
-        if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
-        if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."): return suggestions
+        add_suggestion(
+            key="artifacts",
+            reason="You have items in the trash. View the contents.",
+            command_str=f"{executable_name} artifacts trash list",
+            args_dict={"type": "trash", "action": "list"}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
+
+        add_suggestion(
+            key="artifacts",
+            reason="You have items in the trash. Restore them if they were deleted by mistake.",
+            command_str=f"{executable_name} artifacts trash restore",
+            args_dict={
+                "type": "trash", "action": "restore", "archive_name": None,
+                "file_name": None, "all": False, "yes": False, "dry_run": False
+            }
+        )
+        if limit and len(suggestions) >= limit: return suggestions
+
 
     # 4. General "what happened" suggestions
-    if (project_dir / ".agent_run_id").exists():
-        if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
+    if (project_dir / ".agent_history").exists():
+        add_suggestion(
+            key="last",
+            reason="View a summary of the last agent run.",
+            command_str=f"{executable_name} last",
+            args_dict={}
+        )
+        if limit and len(suggestions) >= limit: return suggestions
+
+    # 5. General "run tests" suggestion if no other actions are pressing
+    if not has_changes and stage == "IN_PROGRESS":
+        add_suggestion(
+            key="test",
+            reason="The working directory is clean. It's a good time to run tests.",
+            command_str=f"{executable_name} test",
+            args_dict={"test_args": []}
+        )
 
     return suggestions
 

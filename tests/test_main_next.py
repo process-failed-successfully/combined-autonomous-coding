@@ -49,7 +49,7 @@ class TestNextCommand(unittest.TestCase):
         mock_input.assert_called_once()
 
         # Verify that subprocess.run was called with the correct command
-        expected_command = [sys.executable, sys.argv[0], 'status']
+        expected_command = [sys.executable, main.__file__, 'status']
         mock_subprocess_run.assert_called_once_with(expected_command, cwd=self.test_dir)
 
     @patch('main.get_suggestions')
@@ -94,7 +94,7 @@ class TestNextCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         mock_get_suggestions.assert_called_once_with(project_dir=self.test_dir, limit=1)
 
-        expected_command = [sys.executable, sys.argv[0], 'test']
+        expected_command = [sys.executable, main.__file__, 'test']
         mock_subprocess_run.assert_called_once_with(expected_command, cwd=self.test_dir)
 
     @patch('main.get_suggestions', return_value=[])

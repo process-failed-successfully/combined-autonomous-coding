@@ -2054,14 +2054,12 @@ def run_next(args):
 
             # The command is `main.py ...`, so we need to call it with the python executable
             executable = sys.executable
-            script_path = sys.argv[0]
+            # Resolve the path to the current script (main.py) to avoid ambiguity with sys.argv[0]
+            script_path = str(Path(__file__).resolve())
 
-            # Replace the executable name in the suggested command with the full path
-            if command_parts[0] == os.path.basename(script_path):
-                final_command = [executable, script_path] + command_parts[1:]
-            else:
-                 # Fallback for commands that might not start with the script name
-                final_command = command_parts
+            # Construct the command assuming the suggested action is for the current script,
+            # ignoring the executable name from the suggestion.
+            final_command = [executable, script_path] + command_parts[1:]
 
             result = subprocess.run(final_command, cwd=project_dir)
 
@@ -4942,7 +4940,7 @@ def parse_args(argv=None):
     )
 
     # --- New 'help' command ---
-    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.", add_help=False)
 
     if argcomplete:
         argcomplete.autocomplete(parser)

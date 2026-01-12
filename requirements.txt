@@ -1,14 +1,2 @@
-typer
-SQLAlchemy
-rich
-docker
-PyYAML
-python-dotenv
-tenacity
-openai
-google-cloud-aiplatform
-gitpython
-prometheus-client
-psutil
-platformdirs
-watchdog
+# All project dependencies are now managed in pyproject.toml
+# This file is kept for compatibility with tools that expect it.

@@ -4,7 +4,7 @@ set -e # Exit on error
 echo "========================================"
 echo "  INSTALLING DEPENDENCIES"
 echo "========================================"
-pip install -r requirements.txt
+pip install .
 pip install -r requirements-dev.txt
 echo "========================================"
 

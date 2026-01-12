@@ -29,6 +29,7 @@ dependencies = [
     "platformdirs",
     "google-generativeai",
     "argcomplete",
+    "watchdog",
 ]
 requires-python = ">=3.11"
 

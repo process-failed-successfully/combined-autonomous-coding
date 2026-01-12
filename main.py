@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.cli_utils import _run_next_logic
 import json
 import yaml
 import platformdirs
@@ -2021,6 +2022,12 @@ def run_blame(args):
     if "❌ Error" in blame_output:
         sys.exit(1)
     sys.exit(0)
+
+
+def run_next(args):
+    """Determines and executes the next logical command based on the project's state."""
+    exit_code = _run_next_logic(project_dir=args.project_dir, yes=args.yes)
+    sys.exit(exit_code)
 
 def run_report(args):
     """Generates a summary report for a specific agent run."""
@@ -4839,6 +4846,23 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Analyzes the project state and executes the most logical next command."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without prompting for confirmation.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6508,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "blame":

@@ -1,4 +1,5 @@
 import sys
+import shlex
 from pathlib import Path
 import shutil
 import subprocess
@@ -294,10 +295,9 @@ def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
         suggestions.append({"command": command, "reason": reason})
         return True
 
-    # 1. Git-based suggestions
+    # 1. Highest priority: Commit uncommitted changes.
     if has_changes:
-        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
-        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
+        if not add_suggestion("main.py commit", "You have uncommitted changes that should be committed."): return suggestions
 
     # 2. Workflow-based suggestions
     if stage == "COMPLETED":
@@ -307,17 +307,96 @@ def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
     elif stage == "SIGNED_OFF":
         if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
 
-    # 3. Artifact-based suggestions
+    # 3. Git-based suggestions (if no higher priority actions are available)
+    if has_changes:
+        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
+        if not add_suggestion("main.py discard --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
+
+    # 4. Artifact-based suggestions
     trash_dir = project_dir / ".agent_trash"
     if trash_dir.exists() and any(trash_dir.iterdir()):
         if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
         if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."): return suggestions
 
-    # 4. General "what happened" suggestions
+    # 5. General "what happened" suggestions
     if (project_dir / ".agent_run_id").exists():
-        if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
+        if not add_suggestion("main.py last", "To see a summary of the last agent run."): return suggestions
+        if not add_suggestion("main.py logs", "To see the detailed logs from the last agent run."): return suggestions
 
     return suggestions
+
+
+def _run_next_logic(project_dir: Path, yes: bool):
+    """The core logic for the 'next' command."""
+    # Importing here to avoid circular dependencies at the module level
+    import main
+    import argparse
+
+    print("--- Determining next logical step... ---")
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        return 0
+
+    suggestion = suggestions[0]
+    command_str = suggestion['command']
+    reason = suggestion['reason']
+
+    print(f"\nSuggested action: {reason}")
+    print(f"Command: `{command_str}`")
+
+    if not yes:
+        confirm = input("Execute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            return 0
+
+    # Parse the command string to determine which function to call
+    # We ignore the initial 'main.py' part
+    try:
+        command_parts = shlex.split(command_str)[1:]
+        command_name = command_parts[0]
+
+        # Get the global parser from main.py to re-parse the arguments for the specific command
+        # This is a bit of a hack, but it ensures we use the same argument parsing logic
+        parser = main.parse_args(command_parts)
+
+        # Map command name to its execution function from main.py
+        # This requires the run_* functions to be accessible from main
+        command_map = {
+            "commit": main.run_commit,
+            "workflow": main.run_workflow,
+            "clean": main.run_clean,
+            "diff-summary": main.run_diff_summary,
+            "discard": main.run_discard,
+            "artifacts": lambda args: main.run_artifacts(args, mode=args.type), # Special case for nested commands
+            "last": main.run_last,
+            "logs": main.run_logs,
+        }
+
+        func_to_run = command_map.get(command_name)
+
+        if func_to_run:
+            print(f"\n--- Executing: {command_str} ---")
+            # We need to catch SystemExit because the run_* functions use it to terminate
+            try:
+                func_to_run(parser)
+                return 0
+            except SystemExit as e:
+                if e.code != 0:
+                    print(f"\n--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+                else:
+                    print("\n--- Command finished successfully ---")
+                return e.code
+        else:
+            print(f"❌ Error: Command '{command_name}' is suggested but not implemented in 'next' command handler.", file=sys.stderr)
+            return 1
+
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while trying to execute the command: {e}", file=sys.stderr)
+        return 1
 
 
 def get_latest_log_file() -> Path | None:

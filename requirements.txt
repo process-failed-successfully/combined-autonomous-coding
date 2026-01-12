@@ -1,16 +1,1 @@
-typer
-SQLAlchemy
-rich
-docker
-requests
-PyYAML
-python-dotenv
-tenacity
-openai
-google-cloud-aiplatform
-gitpython
-prometheus-client
-psutil
-platformdirs
-google-generativeai
-argcomplete
+.

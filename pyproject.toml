@@ -27,6 +27,8 @@ dependencies = [
     "prometheus-client",
     "psutil",
     "platformdirs",
+    "google-generativeai",
+    "argcomplete",
 ]
 requires-python = ">=3.11"
 

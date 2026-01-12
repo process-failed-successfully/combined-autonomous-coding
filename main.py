@@ -2073,6 +2073,63 @@ def run_suggest(args):
     sys.exit(0)
 
 
+def run_next(args):
+    """Analyzes the project and executes the most logical next command upon confirmation."""
+    import shlex
+
+    project_dir = args.project_dir.resolve()
+    # Get only the single most important suggestion
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        print("   To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    top_suggestion = suggestions[0]
+    command_to_run = top_suggestion['command']
+    reason = top_suggestion['reason']
+
+    print("--- Next Suggested Action ---")
+    print(f"💡 Reason: {reason}")
+    print(f"$> {command_to_run}")
+
+    if not args.yes:
+        try:
+            confirm = input("\nDo you want to run this command? [Y/n]: ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            sys.exit(1)
+
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+
+    print(f"\nExecuting: {command_to_run}\n")
+    try:
+        command_parts = shlex.split(command_to_run)
+
+        # The command in suggestions is `main.py ...`. We need to execute it
+        # using the same Python interpreter that is running this script.
+        if command_parts and command_parts[0] == 'main.py':
+            executable = sys.executable
+            script_path = Path(__file__).resolve()
+            final_command = [executable, str(script_path)] + command_parts[1:]
+
+            result = subprocess.run(final_command, cwd=project_dir)
+            sys.exit(result.returncode)
+        else:
+            print(f"❌ Error: The suggested command '{command_to_run}' is not in the expected format.", file=sys.stderr)
+            sys.exit(1)
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command not found. Is Python in your PATH?", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while executing the command: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_status(args):
     """Displays the current status of the agent project."""
     status_text = _run_enhanced_status_logic(project_dir=args.project_dir)
@@ -2694,6 +2751,7 @@ def run_help(args):
     print_header("Utilities")
     print_command("why", "Explain what a command does and why you might use it.")
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
+    print_command("next", "Suggest and execute the single most logical next command.")
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
     print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
@@ -3896,6 +3954,20 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to analyze (default: current directory)",
+    )
+
+    # Subparser for 'next'
+    parser_next = subparsers.add_parser("next", help="Suggest and execute the next logical command.")
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory)",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation and run the suggested command automatically.",
     )
 
     # Subparser for 'history'
@@ -6377,6 +6449,11 @@ async def main():
     # Handle `suggest` command
     if args.command == "suggest":
         run_suggest(args)
+        return
+
+    # Handle `next` command
+    if args.command == "next":
+        run_next(args)
         return
 
     # Handle `history` command

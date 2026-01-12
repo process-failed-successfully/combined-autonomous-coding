@@ -1661,53 +1661,94 @@ def run_undo(args):
         print("❌ Error: Not a git repository. Cannot run undo.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"--- Searching for stashed discards in: {project_dir} ---")
+    print(f"--- Interactive Undo in: {project_dir} ---")
 
-    try:
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "stash", "list"],
-            capture_output=True, text=True, check=True
-        )
-        stashes = result.stdout.strip().split('\n')
-        discard_stashes = [s for s in stashes if "agent-discard-stash" in s]
-
-        if not discard_stashes:
-            print("No stashed discards found to undo.")
-            sys.exit(0)
-
-        print("Please select a discard to undo (press Enter to cancel):")
-        for i, stash in enumerate(discard_stashes):
-            print(f"  [{i+1}] {stash}")
-
-        selection = input("> ").strip()
-        if not selection:
-            print("Aborted.")
-            sys.exit(0)
-
-        choice_index = int(selection) - 1
-        if 0 <= choice_index < len(discard_stashes):
-            stash_to_apply = discard_stashes[choice_index].split(':')[0]
-            print(f"\nRestoring selected stash: {stash_to_apply}...")
-            subprocess.run(
-                [git_path, "-C", str(project_dir), "stash", "pop", stash_to_apply],
-                check=True
+    while True:
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "stash", "list"],
+                capture_output=True, text=True, check=True
             )
-            print("✅ Undo complete. Your changes have been restored.")
-            sys.exit(0)
-        else:
-            print("❌ Invalid selection.", file=sys.stderr)
-            sys.exit(1)
+            stashes = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            discard_stashes = [s for s in stashes if "agent-discard-stash" in s]
 
-    except (ValueError, IndexError):
-        print("❌ Invalid input. Please enter a valid number.", file=sys.stderr)
-        sys.exit(1)
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        stderr = getattr(e, 'stderr', str(e))
-        print(f"❌ Error during undo process: {stderr}", file=sys.stderr)
-        sys.exit(1)
-    except (EOFError, KeyboardInterrupt):
-        print("\nAborted.")
-        sys.exit(0)
+            if not discard_stashes:
+                print("No stashed discards found to undo.")
+                sys.exit(0)
+
+            print("\nAvailable discards:")
+            for i, stash in enumerate(discard_stashes):
+                stash_ref = stash.split(':')[0]
+                # Show diff stat for each stash
+                stat_result = subprocess.run(
+                    [git_path, "-C", str(project_dir), "stash", "show", "--stat", stash_ref],
+                    capture_output=True, text=True, check=True
+                )
+                print(f"\n[{i+1}] {stash}")
+                for line in stat_result.stdout.strip().split('\n'):
+                    print(f"    {line.strip()}")
+
+
+            print("\nOptions:")
+            print("  - Enter a number to restore that discard.")
+            print("  - Type 'd <number>' to see the full diff.")
+            print("  - Type 'q' to quit.")
+
+            selection = input("> ").strip()
+            if not selection or selection.lower() == 'q':
+                print("Aborted.")
+                sys.exit(0)
+
+            # Diff command
+            if selection.lower().startswith('d '):
+                try:
+                    choice_index = int(selection.split(' ')[1]) - 1
+                    if 0 <= choice_index < len(discard_stashes):
+                        stash_to_diff = discard_stashes[choice_index].split(':')[0]
+                        print(f"\n--- Diff for {stash_to_diff} ---")
+                        # Capture the output so it can be caught by test mocks
+                        diff_result = subprocess.run(
+                            [git_path, "-C", str(project_dir), "stash", "show", "-p", "--color=always", stash_to_diff],
+                            capture_output=True, text=True, check=True
+                        )
+                        print(diff_result.stdout, end='')
+                        print("--------------------")
+                        input("Press Enter to continue...")
+                        continue # Go back to the main menu
+                    else:
+                        print("❌ Invalid selection for diff.", file=sys.stderr)
+                        continue
+                except (ValueError, IndexError):
+                    print("❌ Invalid format for diff. Use 'd <number>'.", file=sys.stderr)
+                    continue
+
+            # Restore command
+            try:
+                choice_index = int(selection) - 1
+                if 0 <= choice_index < len(discard_stashes):
+                    stash_to_apply = discard_stashes[choice_index].split(':')[0]
+                    print(f"\nRestoring selected stash: {stash_to_apply}...")
+                    subprocess.run(
+                        [git_path, "-C", str(project_dir), "stash", "pop", stash_to_apply],
+                        check=True
+                    )
+                    print("✅ Undo complete. Your changes have been restored.")
+                    sys.exit(0) # Exit after successful restore
+                else:
+                    print("❌ Invalid selection.", file=sys.stderr)
+            except ValueError:
+                 print("❌ Invalid input. Please enter a number, 'd <number>', or 'q'.", file=sys.stderr)
+
+        except (IndexError):
+            print("❌ Invalid input. Please enter a valid number.", file=sys.stderr)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            stderr = getattr(e, 'stderr', str(e))
+            if isinstance(stderr, bytes): stderr = stderr.decode()
+            print(f"❌ Error during undo process: {stderr}", file=sys.stderr)
+            sys.exit(1)
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            sys.exit(0)
 
 
 def run_discard(args):

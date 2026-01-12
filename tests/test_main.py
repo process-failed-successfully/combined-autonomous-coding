@@ -260,10 +260,11 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             verify_creation=False, manager_frequency=10, manager_model=None,
             manager_first=False, login=False, timeout=None, max_error_wait=None,
             sprint=False, max_agents=1, jira_ticket=None, jira_label=None,
-            dind=False, no_dashboard=True, dashboard_url=None, dry_run=False,
+            dind=False, no_dashboard=True, dashboard_url="http://localhost:7654", dry_run=False,
             profile=None
         )
         mock_parse_args.return_value = args
+        mock_logger.return_value = (MagicMock(), MagicMock())
 
         # feature_list_path.exists() -> False (fresh project)
         with patch("main.Config") as mock_config_cls:

@@ -5,23 +5,29 @@ import argparse
 from pathlib import Path
 import main
 import sys
+import tempfile
+import shutil
 
 class TestDevelopCommand(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir) / "project"
+        self.project_dir.mkdir()
+        self.spec_file = self.project_dir / "spec.txt"
+        self.spec_file.write_text("This is the spec.")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
     @patch('main.Observer')
     @patch('main.run_agent_task', new_callable=AsyncMock)
     @patch('main.run_test')
     async def test_develop_command_triggers_agent_and_tests(self, mock_run_test, mock_run_agent_task, mock_observer):
         """Verify that the develop command correctly triggers the agent and tests on file modification."""
-        # Setup mocks
-        mock_spec_file = MagicMock(spec=Path)
-        mock_spec_file.exists.return_value = True
-        mock_spec_file.resolve.return_value = mock_spec_file
-        mock_spec_file.parent = Path('/fake/dir')
-
         args = argparse.Namespace(
             command='develop',
-            spec=mock_spec_file,
-            project_dir=Path('/fake/project'),
+            spec=self.spec_file,
+            project_dir=self.project_dir,
             max_iterations=3,
             # --- Add all other necessary args for run_agent_task ---
             profile=None,
@@ -42,7 +48,7 @@ class TestDevelopCommand(unittest.IsolatedAsyncioTestCase):
             jira_label=None,
             dind=False,
             no_dashboard=True,
-            dashboard_url=None,
+            dashboard_url="http://localhost:7654",
             dry_run=False
         )
 
@@ -68,7 +74,7 @@ class TestDevelopCommand(unittest.IsolatedAsyncioTestCase):
         # Simulate a file modification event
         event = MagicMock()
         event.is_directory = False
-        event.src_path = str(mock_spec_file)
+        event.src_path = str(self.spec_file)
 
         # In the actual implementation, watchdog calls this from a separate thread.
         # We simulate this by calling the method directly.

@@ -4839,6 +4839,24 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run a guided, interactive review of the agent's completed work."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review (default: current directory).",
+    )
+    parser_review.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip interactive prompts and automatically approve.",
+    )
+
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6486,6 +6504,10 @@ async def main():
         run_why(args)
         return
 
+    if args.command == "review":
+        run_review(args)
+        return
+
     if args.command == "blame":
         run_blame(args)
         return
@@ -6725,6 +6747,97 @@ async def main():
         logger.info("Project signed off. Finalizing...")
         # note: the autonomous loop itself now handles triggering the cleaner agent
         # if cleanup_report.txt is missing.
+
+
+def run_review(args):
+    """Runs a guided, interactive review of the agent's completed work."""
+    project_dir = args.project_dir.resolve()
+    completed_marker = project_dir / "COMPLETED"
+
+    print("--- 🧐 Agent Work Review ---")
+
+    # 1. Check if there is work to review
+    if not completed_marker.exists():
+        print("✅ No work is currently marked as 'COMPLETED'. Nothing to review.")
+        sys.exit(0)
+
+    print(f"Found completed work in: {project_dir}")
+
+    try:
+        # --- Step 2: Run Tests ---
+        print("\n--- [1/4] Running Tests ---")
+        test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+        try:
+            run_test(test_args)
+        except SystemExit as e:
+            if e.code != 0:
+                print("\n❌ Tests failed. It is highly recommended to 'Reject' this change.", file=sys.stderr)
+                # Don't exit, let the user decide.
+            else:
+                print("\n✅ Tests passed successfully.")
+        except Exception as e:
+            print(f"\n❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
+
+
+        # --- Step 3: Show Diff Summary ---
+        print("\n--- [2/4] Change Summary ---")
+        try:
+            run_diff_summary(argparse.Namespace(project_dir=project_dir))
+        except SystemExit as e:
+            if e.code != 0:
+                 print("Could not display diff summary.", file=sys.stderr)
+
+
+        # --- Step 4: Show Full Diff ---
+        print("\n--- [3/4] Full Diff ---")
+        print("The following changes were made (press 'q' to exit the diff view):")
+        # Use a pager like `less` for a better viewing experience
+        try:
+            diff_process = subprocess.Popen(
+                ["git", "-C", str(project_dir), "diff", "--color=always", "HEAD"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            less_process = subprocess.Popen(["less", "-R"], stdin=diff_process.stdout)
+            diff_process.stdout.close()
+            less_process.communicate()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+             print("\n--- (Could not display paged diff, showing raw diff) ---")
+             run_diff(argparse.Namespace(project_dir=project_dir, target=None))
+        except Exception as e:
+            print(f"An error occurred showing the diff: {e}")
+
+
+        # --- Step 5: User Decision ---
+        print("\n--- [4/4] Decision ---")
+        if args.yes:
+            print("Auto-approving due to --yes flag.")
+            choice = 'a'
+        else:
+            choice = input("Do you [A]pprove or [R]eject the changes? ").strip().lower()
+
+        if choice in ['a', 'approve']:
+            print("✅ Approving changes...")
+            qa_passed_marker = project_dir / "QA_PASSED"
+            qa_passed_marker.touch()
+            print("Created 'QA_PASSED' marker file. The Manager agent can now perform final sign-off.")
+        elif choice in ['r', 'reject']:
+            print("❌ Rejecting changes...")
+            completed_marker.unlink()
+            print("Removed 'COMPLETED' marker file. The agent will re-attempt the task on its next run.")
+        else:
+            print("Invalid choice. Aborting review. No changes were made to workflow state.")
+            sys.exit(1)
+
+    except (KeyboardInterrupt, EOFError):
+        print("\n\nReview aborted by user.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nAn unexpected error occurred during the review process: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n--- Review Complete ---")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

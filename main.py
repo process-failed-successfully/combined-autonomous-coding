@@ -4839,6 +4839,18 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggests and runs the next logical command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -5198,6 +5210,52 @@ def run_interact(args):
             print("\nExiting interactive session.")
             break
     sys.exit(0)
+
+
+def run_next(args):
+    """Analyzes the project, suggests the next command, and executes it upon confirmation."""
+    import subprocess
+    import shlex
+    from shared.cli_utils import get_suggestions
+
+    project_dir = args.project_dir.resolve()
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    command_to_run = suggestion['command']
+    reason = suggestion['reason']
+
+    print("--- Suggested Next Step ---")
+    print(f"  Reason: {reason}")
+    print(f"  Command: {command_to_run}")
+
+    try:
+        confirm = input("\nDo you want to run this command? [Y/n]: ").strip().lower()
+        if confirm in ['y', '']:
+            print(f"Executing: {command_to_run}\n")
+            # Use shlex.split to handle arguments correctly
+            command_parts = shlex.split(command_to_run)
+            # The first part is the executable, which is our script
+            executable = [sys.executable, command_parts[0]]
+            args_for_command = command_parts[1:]
+
+            # Ensure the project directory is passed if not already in the command
+            if '--project-dir' not in args_for_command and '-p' not in args_for_command:
+                args_for_command.extend(['--project-dir', str(project_dir)])
+
+            result = subprocess.run(executable + args_for_command, cwd=project_dir)
+            sys.exit(result.returncode)
+        else:
+            print("Aborted.")
+            sys.exit(0)
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted by user.")
+        sys.exit(1)
 
 
 def run_push(args):
@@ -6488,6 +6546,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "help":

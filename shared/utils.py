@@ -138,7 +138,8 @@ def has_recent_activity(
 
 async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) -> str:
     """Execute a bash command block."""
-    logger.info(f"[Executing Bash] {command}")
+    safe_command = mask_secrets(command)
+    logger.info(f"[Executing Bash] {safe_command}")
     try:
         process = await asyncio.create_subprocess_shell(
             command,
@@ -517,3 +518,21 @@ def sanitize_url(url: str) -> str:
     import re
     # Mask https://token@github.com... or https://user:token@github.com...
     return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)
+
+
+def mask_secrets(text: str) -> str:
+    """Mask sensitive values in commands (e.g. export KEY=secret)."""
+    if not text:
+        return text
+
+    import re
+    # Pattern for export VAR="value" or export VAR='value'
+    # Captures: 1=export VAR=, 2=quote, 3=value
+    text = re.sub(r"(export\s+[A-Za-z_][A-Za-z0-9_]*=)(['\"])(.*?)\2", r"\1\2********\2", text)
+
+    # Pattern for export VAR=value (no quotes)
+    # Captures: 1=export VAR=, 2=value
+    # Stops at whitespace, semicolon, or end of string
+    text = re.sub(r"(export\s+[A-Za-z_][A-Za-z0-9_]*=)([^'\"\s;&]+)", r"\1********", text)
+
+    return text

@@ -2656,6 +2656,7 @@ def run_help(args):
 
     print_header("Core Commands")
     print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
+    print_command("develop", "Watch a spec file and run the agent + tests on changes.")
     print_command("plan", "Generate a feature plan from a spec file without executing code.")
     print_command("test", "Automatically detect project type and run tests.")
     print_command("lint", "Automatically detect project type and run a linter.")
@@ -4790,6 +4791,31 @@ def parse_args(argv=None):
         help="The project directory for the interactive session.",
     )
 
+    # --- New 'develop' command ---
+    parser_develop = subparsers.add_parser(
+        "develop",
+        help="Run the agent in a watch mode, re-running on spec file changes."
+    )
+    parser_develop.add_argument(
+        "-s", "--spec",
+        type=Path,
+        required=True,
+        help="Path to the application specification file to watch.",
+    )
+    parser_develop.add_argument(
+        "--max-iterations",
+        type=int,
+        default=5,
+        help="Maximum number of agent iterations to run on each change (default: 5).",
+    )
+    parser_develop.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the development session.",
+    )
+
+
     # --- New 'profile' command ---
     parser_profile = subparsers.add_parser(
         "profile",
@@ -5132,6 +5158,90 @@ def run_feature(args):
     except (KeyboardInterrupt, EOFError):
         print("\n\nWorkflow aborted by user.")
         sys.exit(1)
+
+
+async def run_develop(args):
+    """Watches for changes in a spec file and re-runs the agent and tests."""
+    if Observer is None:
+        print("Error: watchdog library not found. Please run 'pip install watchdog'", file=sys.stderr)
+        sys.exit(1)
+
+    spec_file = Path(args.spec).resolve()
+    if not spec_file.exists():
+        print(f"❌ Error: Spec file not found at '{spec_file}'", file=sys.stderr)
+        sys.exit(1)
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Starting development mode for: {project_dir.name} ---")
+    print(f"--- Watching for changes in: {spec_file.name} ---")
+    print("--- Press Ctrl+C to stop ---")
+
+    # This handler will be more complex, triggering async tasks.
+    class DevelopEventHandler(FileSystemEventHandler):
+        def __init__(self, args):
+            self.args = args
+            self.loop = asyncio.get_running_loop()
+            self._debounce_task = None
+            self.run_in_progress = False
+
+        def on_modified(self, event):
+            if event.is_directory or self.run_in_progress:
+                return
+
+            if event.src_path == str(spec_file):
+                print(f"\n📄 Detected change in {spec_file.name}. Triggering agent run...")
+                if self._debounce_task:
+                    self._debounce_task.cancel()
+                # Use run_coroutine_threadsafe because watchdog runs in a separate thread
+                self._debounce_task = asyncio.run_coroutine_threadsafe(self.trigger_run(), self.loop)
+
+        async def trigger_run(self):
+            await asyncio.sleep(1.0) # Debounce for 1 second
+            self.run_in_progress = True
+            try:
+                # 1. Run the agent
+                print("\n🤖 --- Running Agent ---")
+                # Create a copy of args and override max_iterations for the agent run
+                agent_args = argparse.Namespace(**vars(self.args))
+                agent_args.max_iterations = self.args.max_iterations
+                await run_agent_task(agent_args)
+                print("🤖 --- Agent finished ---")
+
+                # 2. Run the tests
+                print("\n🧪 --- Running Tests ---")
+                test_args = argparse.Namespace(project_dir=self.args.project_dir, test_args=[])
+                try:
+                    run_test(test_args)
+                except SystemExit as e:
+                    if e.code != 0:
+                        print(f"--- Tests finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+                    else:
+                        print(f"--- Tests finished successfully ---")
+
+            except SystemExit as e:
+                if e.code != 0:
+                    print(f"--- Agent task finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+                else:
+                    print(f"--- Agent task finished successfully ---")
+            except Exception as e:
+                print(f"An unexpected error occurred during the run: {e}", file=sys.stderr)
+            finally:
+                self.run_in_progress = False
+                print(f"\n--- Watching for changes in: {spec_file.name} ---")
+
+    event_handler = DevelopEventHandler(args)
+    observer = Observer()
+    observer.schedule(event_handler, spec_file.parent, recursive=False)
+    observer.start()
+
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+        print("\n--- Stopping development mode ---")
+    observer.join()
+    sys.exit(0)
 
 
 def run_interact(args):
@@ -6474,6 +6584,10 @@ async def main():
         run_interact(args)
         return
 
+    if args.command == "develop":
+        await run_develop(args)
+        return
+
     if args.command == "profile":
         run_profile(args)
         return
@@ -6494,6 +6608,14 @@ async def main():
         run_help(args)
         return
 
+    # If no subcommand was specified, run the main agent task.
+    # This is the default action.
+    if not args.command:
+        await run_agent_task(args)
+
+
+async def run_agent_task(args, client=None):
+    """The core logic for initializing and running the agent task."""
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id
@@ -6585,11 +6707,6 @@ async def main():
     agents_log_dir = repo_root / "agents/logs"
     agents_log_dir.mkdir(parents=True, exist_ok=True)
 
-    # We need a temp ID for logging before we know the real agent_id (which might come from Jira)
-    # But for now, we can use a generic one or wait.
-    # Let's setup a basic console logger first?
-    # existing setup_logger requires a file. We will update it later.
-
     # Handle `show-config` command and deprecated `--dry-run`
     if args.command == "show-config":
         run_show_config(config)
@@ -6669,7 +6786,8 @@ async def main():
     except IOError as e:
         logger.warning(f"Could not write to history file {history_file}: {e}")
 
-    client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
+    if client is None:
+        client = AgentClient(agent_id=agent_id, dashboard_url=args.dashboard_url, memory_handler=memory_handler)
 
     # Check spec requirement for fresh projects (Updated for Jira)
     is_fresh = not config.feature_list_path.exists()

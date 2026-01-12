@@ -19,7 +19,7 @@ class TestMainCommands(unittest.TestCase):
             "Utilities",
         ]
 
-        # Redirect stdout to capture the output of the help command
+        # Redirect stdout to capture the output of the commands command
         captured_output = io.StringIO()
         sys.stdout = captured_output
 

@@ -196,13 +196,17 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
 
     # 6. Actionable Suggestions
     lines.append("\n[ Next Steps ]")
-    suggestions = get_suggestions(project_dir)
-    if suggestions:
-        for suggestion in suggestions[:3]: # Show top 3
-            lines.append(f"  - {suggestion['reason']}")
-            lines.append(f"    👉 `{suggestion['command']}`")
-    else:
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
         lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
+    else:
+        suggestions = get_suggestions(project_dir)
+        if suggestions:
+            for suggestion in suggestions[:3]:  # Show top 3
+                lines.append(f"  - {suggestion['reason']}")
+                lines.append(f"    👉 `{suggestion['command']}`")
+        else:
+            lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
 
     # 4. Latest Run Metrics
     lines.append("\n[ Latest Run Metrics ]")

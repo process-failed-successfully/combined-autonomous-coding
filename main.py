@@ -2626,7 +2626,7 @@ def run_shell(args):
     sys.exit(0)
 
 
-def run_help(args):
+def run_commands(args):
     """Displays a structured and user-friendly help message."""
     # ANSI escape codes for formatting
     BOLD = '\033[1m'
@@ -4856,8 +4856,8 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
-    # --- New 'help' command ---
-    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+    # --- New 'commands' command ---
+    parser_commands = subparsers.add_parser("commands", help="Show a structured and user-friendly help message.")
 
     if argcomplete:
         argcomplete.autocomplete(parser)
@@ -6490,8 +6490,8 @@ async def main():
         run_blame(args)
         return
 
-    if args.command == "help":
-        run_help(args)
+    if args.command == "commands":
+        run_commands(args)
         return
 
     # Initialize Agent Client

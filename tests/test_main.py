@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from main import parse_args, main
 import io
+import argparse
 
 
 class TestMain(unittest.IsolatedAsyncioTestCase):
@@ -247,22 +248,31 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.parse_args")
     @patch("main.setup_logger")
     @patch("shared.utils.generate_agent_id")
-    async def test_main_missing_spec_exit(self, mock_gen, mock_logger, mock_parse_args):
-        args = MagicMock()
-        args.project_dir = self.project_dir
-        args.spec = None  # Missing spec
-        args.dashboard_only = False
+    @patch("shared.database.init_db")
+    async def test_main_missing_spec_exit(self, mock_init_db, mock_gen, mock_logger, mock_parse_args):
+        args = argparse.Namespace(
+            project_dir=self.project_dir,
+            spec=None,
+            command=None, # Explicitly no command for default agent run
+            # --- Defaults needed by Config ---
+            agent="gemini",
+            model=None, max_iterations=None, verbose=False, no_stream=False,
+            verify_creation=False, manager_frequency=10, manager_model=None,
+            manager_first=False, login=False, timeout=None, max_error_wait=None,
+            sprint=False, max_agents=1, jira_ticket=None, jira_label=None,
+            dind=False, no_dashboard=True, dashboard_url=None, dry_run=False,
+            profile=None
+        )
         mock_parse_args.return_value = args
 
-        # feature_list_path.exists() -> False (fresh)
+        # feature_list_path.exists() -> False (fresh project)
         with patch("main.Config") as mock_config_cls:
             mock_conf = MagicMock()
+            mock_conf.project_dir = self.project_dir
             mock_conf.feature_list_path.exists.return_value = False
             mock_config_cls.return_value = mock_conf
 
-            with patch.object(
-                Path, "exists", return_value=False
-            ):  # No default spec either
+            with patch.object(Path, "exists", return_value=False):  # No default spec either
                 with self.assertRaises(SystemExit) as cm:
                     await main()
                 self.assertEqual(cm.exception.code, 1)
@@ -339,32 +349,32 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.database.init_db")
     @patch("json.dumps", return_value="{}")
     async def test_main_show_config_command(self, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
-        args = MagicMock()
-        args.command = "show-config"
-        args.dry_run = False
-        args.profile = None
-        args.project_dir = self.project_dir
-        args.agent = 'gemini'
-        args.model = None
-        args.max_iterations = None
-        args.spec = self.spec_file
-        args.verbose = False
-        args.no_stream = True
-        args.verify_creation = False
-        args.manager_frequency = 10
-        args.manager_model = None
-        args.manager_first = False
-        args.login = False
-        args.timeout = None
-        args.max_error_wait = None
-        args.sprint = False
-        args.max_agents = 1
-        args.jira_ticket = None
-        args.jira_label = None
-        args.dind = False
-        args.no_dashboard = True
-        args.dashboard_url = None
-
+        args = argparse.Namespace(
+            command="show-config",
+            dry_run=False,
+            profile=None,
+            project_dir=self.project_dir,
+            agent='gemini',
+            model=None,
+            max_iterations=None,
+            spec=self.spec_file,
+            verbose=False,
+            no_stream=True,
+            verify_creation=False,
+            manager_frequency=10,
+            manager_model=None,
+            manager_first=False,
+            login=False,
+            timeout=None,
+            max_error_wait=None,
+            sprint=False,
+            max_agents=1,
+            jira_ticket=None,
+            jira_label=None,
+            dind=False,
+            no_dashboard=True,
+            dashboard_url=None
+        )
         mock_parse_args.return_value = args
         mock_load_config.return_value = {}
 

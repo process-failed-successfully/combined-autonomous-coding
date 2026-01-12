@@ -2626,7 +2626,7 @@ def run_shell(args):
     sys.exit(0)
 
 
-def run_help(args):
+def run_commands(args):
     """Displays a structured and user-friendly help message."""
     # ANSI escape codes for formatting
     BOLD = '\033[1m'
@@ -2655,7 +2655,7 @@ def run_help(args):
     print_command("validate", "Validate the agent configuration file.")
 
     print_header("Core Commands")
-    print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
+    print_command("(run agent)", f"The default action. Use `{executable_name} --spec <file>` to start.")
     print_command("develop", "Watch a spec file and run the agent + tests on changes.")
     print_command("plan", "Generate a feature plan from a spec file without executing code.")
     print_command("test", "Automatically detect project type and run tests.")
@@ -2698,7 +2698,7 @@ def run_help(args):
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
     print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
-    print_command("help", "Show this help message.")
+    print_command("commands", "Show this help message.")
 
     print(f"\nFor detailed options on a specific command, run: {executable_name} [command] --help")
     sys.exit(0)
@@ -4882,8 +4882,8 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
-    # --- New 'help' command ---
-    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+    # --- New 'commands' command ---
+    parser_commands = subparsers.add_parser("commands", help="Show a structured and user-friendly help message.")
 
     if argcomplete:
         argcomplete.autocomplete(parser)
@@ -6604,13 +6604,13 @@ async def main():
         run_blame(args)
         return
 
-    if args.command == "help":
-        run_help(args)
+    if args.command == "commands":
+        run_commands(args)
         return
 
-    # If no subcommand was specified, run the main agent task.
-    # This is the default action.
-    if not args.command:
+    # If no subcommand was specified, or if it's a command that needs the full config object,
+    # run the main agent task setup.
+    if not args.command or args.command == "show-config":
         await run_agent_task(args)
 
 

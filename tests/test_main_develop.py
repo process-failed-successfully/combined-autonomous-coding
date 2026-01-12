@@ -23,9 +23,27 @@ class TestDevelopCommand(unittest.IsolatedAsyncioTestCase):
             spec=mock_spec_file,
             project_dir=Path('/fake/project'),
             max_iterations=3,
-            # Add other necessary args for run_agent_task
-            profile=None, agent='gemini', model=None, verbose=False, no_stream=True,
-            sprint=False, jira_ticket=None, jira_label=None
+            # --- Add all other necessary args for run_agent_task ---
+            profile=None,
+            agent='gemini',
+            model=None,
+            verbose=False,
+            no_stream=True,
+            verify_creation=False,
+            manager_frequency=10,
+            manager_model=None,
+            manager_first=False,
+            login=False,
+            timeout=None,
+            max_error_wait=None,
+            sprint=False,
+            max_agents=1,
+            jira_ticket=None,
+            jira_label=None,
+            dind=False,
+            no_dashboard=True,
+            dashboard_url=None,
+            dry_run=False
         )
 
         # Mock the observer to control the event handler

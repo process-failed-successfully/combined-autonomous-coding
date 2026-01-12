@@ -1708,7 +1708,7 @@ def run_undo(args):
                         print(f"\n--- Diff for {stash_to_diff} ---")
                         # Capture the output so it can be caught by test mocks
                         diff_result = subprocess.run(
-                            [git_path, "-C", str(project_dir), "stash", "show", "-p", "--color=always", stash_to_diff],
+                            [git_path, "-C", str(project_dir), "stash", "show", "-p", stash_to_diff],
                             capture_output=True, text=True, check=True
                         )
                         print(diff_result.stdout, end='')

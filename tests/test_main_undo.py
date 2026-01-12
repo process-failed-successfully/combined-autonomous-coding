@@ -16,10 +16,6 @@ sys.path.insert(0, str(project_root))
 from main import run_undo
 
 class TestMainUndo(unittest.TestCase):
-    def strip_ansi_codes(self, text):
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        return ansi_escape.sub('', text)
-
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.test_dir)
@@ -89,7 +85,7 @@ class TestMainUndo(unittest.TestCase):
             run_undo(args)
 
         self.assertEqual(cm.exception.code, 0)
-        output = self.strip_ansi_codes(mock_stdout.getvalue())
+        output = mock_stdout.getvalue()
         self.assertIn("--- Diff for stash@{0} ---", output)
         # Check that the diff content is present
         self.assertIn("diff --git a/diff_file.txt b/diff_file.txt", output)

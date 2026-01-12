@@ -4898,7 +4898,7 @@ def parse_args(argv=None):
     )
 
     # --- New 'help' command ---
-    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.", add_help=False)
 
     if argcomplete:
         argcomplete.autocomplete(parser)

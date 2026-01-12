@@ -19,7 +19,7 @@ class TestMainCommands(unittest.TestCase):
             "Utilities",
         ]
 
-        # Redirect stdout to capture the output of the commands command
+        # Redirect stdout to capture the output of the help command
         captured_output = io.StringIO()
         sys.stdout = captured_output
 
@@ -44,7 +44,6 @@ class TestMainCommands(unittest.TestCase):
         self.assertIn("commit", output)
         self.assertIn("artifacts", output)
         self.assertIn("why", output)
-        self.assertIn("commands", output)
 
 if __name__ == '__main__':
     unittest.main()

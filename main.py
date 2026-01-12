@@ -2014,6 +2014,79 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
 
+def run_review(args):
+    """Runs an interactive review of the agent's work, including tests and diffs."""
+    project_dir = args.project_dir.resolve()
+    completed_marker = project_dir / "COMPLETED"
+    qa_passed_marker = project_dir / "QA_PASSED"
+
+    print("--- 🧐 Interactive Agent Review ---")
+    print(f"Project: {project_dir}\n")
+
+    # 1. Check if the 'COMPLETED' marker exists
+    if not completed_marker.exists():
+        print("❌ Error: The agent has not marked its work as complete yet (`COMPLETED` file not found).")
+        print("   There is nothing to review at this time.")
+        sys.exit(1)
+
+    print("✅ Agent has marked work as complete.")
+
+    # 2. Run tests
+    print("\n--- [1/3] Running Project Tests ---")
+    test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+    try:
+        run_test(test_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Tests failed. The agent's work is not ready for review.", file=sys.stderr)
+            print("   Please inspect the test output above.", file=sys.stderr)
+            sys.exit(1)
+    print("\n✅ All tests passed!")
+
+    # 3. Show git diff
+    print("\n--- [2/3] Displaying Code Changes (Git Diff) ---")
+    diff_args = argparse.Namespace(project_dir=project_dir, target=None)
+    try:
+        run_diff(diff_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n- Warning: Could not display git diff. Proceeding with review.", file=sys.stderr)
+    except Exception as e:
+        print(f"\n- An unexpected error occurred while showing diff: {e}", file=sys.stderr)
+
+    # 4. Prompt for approval
+    print("\n--- [3/3] Human Approval ---")
+    print("Please review the code changes above.")
+    try:
+        while True:
+            decision = input("Do you approve this work? [y/n]: ").strip().lower()
+            if decision in ['y', 'yes']:
+                # Create QA_PASSED file
+                try:
+                    qa_passed_marker.touch()
+                    print("\n🎉 Approved! The `QA_PASSED` marker has been created.")
+                    print("   The Manager Agent will now perform the final sign-off.")
+                    sys.exit(0)
+                except OSError as e:
+                    print(f"\n❌ Error creating `QA_PASSED` file: {e}", file=sys.stderr)
+                    sys.exit(1)
+            elif decision in ['n', 'no']:
+                # Remove COMPLETED file
+                try:
+                    completed_marker.unlink()
+                    print("\n👎 Rejected. The `COMPLETED` marker has been removed.")
+                    print("   The agent will be prompted to continue its work based on your feedback.")
+                    print("   (Note: You may need to provide feedback to the agent directly if it's waiting).")
+                    sys.exit(0)
+                except OSError as e:
+                    print(f"\n❌ Error removing `COMPLETED` file: {e}", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                print("Invalid input. Please enter 'y' for yes or 'n' for no.")
+    except (KeyboardInterrupt, EOFError):
+        print("\nReview aborted by user.")
+        sys.exit(1)
+
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
     blame_output = _run_blame_logic(project_dir=args.project_dir, filepath=args.filepath)
@@ -4839,6 +4912,18 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run an interactive review of the agent's work (test, diff, approve/reject)."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6484,6 +6569,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "blame":

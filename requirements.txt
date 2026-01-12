@@ -14,4 +14,3 @@ psutil
 platformdirs
 google-generativeai
 argcomplete
-watchdog

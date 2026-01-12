@@ -3457,6 +3457,57 @@ def run_format(args):
         sys.exit(1)
 
 
+def run_git(args):
+    """Acts as a proxy to run git commands within a specified task's worktree."""
+    project_dir = args.project_dir.resolve()
+    task_id = args.task
+    git_command = args.git_args
+
+    if not task_id:
+        print("❌ Error: The '--task' argument is required.", file=sys.stderr)
+        sys.exit(1)
+
+    if not git_command:
+        print("❌ Error: No git command provided.", file=sys.stderr)
+        sys.exit(1)
+
+    worktree_name = f"sprint-task-{task_id}"
+    worktree_path = project_dir / "worktrees" / worktree_name
+
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if not worktree_path.is_dir():
+        print(f"❌ Error: Worktree for task '{task_id}' not found at '{worktree_path}'.", file=sys.stderr)
+        sys.exit(1)
+
+    full_command = [git_path] + git_command
+
+    try:
+        # Execute the command from within the worktree directory, capturing output.
+        result = subprocess.run(
+            full_command,
+            cwd=worktree_path,
+            capture_output=True,
+            text=True
+        )
+        # Print the captured output
+        if result.stdout:
+            sys.stdout.write(result.stdout)
+        if result.stderr:
+            sys.stderr.write(result.stderr)
+        # Exit with the same code as the git command
+        sys.exit(result.returncode)
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{full_command[0]}' not found.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
@@ -4615,6 +4666,29 @@ def parse_args(argv=None):
         nargs=argparse.REMAINDER,
         help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
     )
+
+    # --- New 'git' command ---
+    parser_git = subparsers.add_parser(
+        "git",
+        help="Run git commands within a specific task's worktree."
+    )
+    parser_git.add_argument(
+        "-t", "--task",
+        required=True,
+        help="The task ID corresponding to the worktree."
+    )
+    parser_git.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the worktrees are located.",
+    )
+    parser_git.add_argument(
+        "git_args",
+        nargs=argparse.REMAINDER,
+        help="The git command and its arguments to run.",
+    )
+    parser_git.set_defaults(func=run_git)
 
     # --- New 'lint' command ---
     parser_lint = subparsers.add_parser(
@@ -6437,10 +6511,6 @@ async def main():
 
     if args.command == "format":
         run_format(args)
-        return
-
-    if args.command == "git":
-        run_git(args)
         return
 
     if args.command == "tree":

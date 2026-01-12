@@ -2703,6 +2703,85 @@ def run_help(args):
     sys.exit(0)
 
 
+def run_next(args):
+    """Suggests and executes the next logical command."""
+    from shared.cli_utils import get_suggestions
+    import shlex
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Determining next step for: {project_dir} ---")
+
+    # Get the top suggestion
+    suggestions = get_suggestions(project_dir=project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        print("   - To start a new task, run the agent with a --spec or --jira-ticket.")
+        sys.exit(0)
+
+    suggestion = suggestions[0]
+    command_str = suggestion['command']
+    reason = suggestion['reason']
+
+    print(f"\nSuggested command: `{command_str}`")
+    print(f"Reason: {reason}")
+
+    execute = args.yes
+    if not execute:
+        try:
+            confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+            if confirm in ['y', '']:
+                execute = True
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            sys.exit(1)
+
+
+    if not execute:
+        print("Aborted.")
+        sys.exit(0)
+
+    print(f"\n--- Executing: {command_str} ---")
+    try:
+        # shlex.split handles spaces and quotes correctly.
+        # We skip the first element ('main.py') as our parser doesn't expect it.
+        command_parts = shlex.split(command_str)[1:]
+
+        # We need to parse these arguments to pass to the correct run_* function.
+        parsed_args = parse_args(command_parts)
+        command_name = parsed_args.command
+
+        # Manual dispatcher for suggested commands
+        # This is a bit of duplication from main(), but it's for a limited set of simple commands.
+        if command_name == "diff-summary":
+            run_diff_summary(parsed_args)
+        elif command_name == "revert":
+            run_revert(parsed_args)
+        elif command_name == "workflow":
+            run_workflow(parsed_args)
+        elif command_name == "clean":
+            run_clean(parsed_args)
+        elif command_name == "artifacts":
+            run_artifacts(parsed_args, mode=parsed_args.type)
+        elif command_name == "logs":
+            run_logs(parsed_args)
+        else:
+            print(f"❌ Error: The suggested command '{command_name}' cannot be executed by 'next'.", file=sys.stderr)
+            sys.exit(1)
+
+    except SystemExit as e:
+        # The run_* functions call sys.exit(). We catch it to give a clean message.
+        if e.code == 0:
+            print(f"\n✅ Command '{command_str}' executed successfully.")
+        else:
+            print(f"\n❌ Command '{command_str}' failed with exit code {e.code}.", file=sys.stderr)
+        # Re-exit with the original code
+        sys.exit(e.code)
+    except Exception as e:
+        print(f"An unexpected error occurred while executing command: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_tui(args):
     """Starts the Textual TUI."""
     try:
@@ -4839,6 +4918,23 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggests and executes the next logical command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze.",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without prompting.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6488,6 +6584,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "help":

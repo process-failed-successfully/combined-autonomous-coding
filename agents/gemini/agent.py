@@ -244,3 +244,33 @@ async def run_autonomous_agent(config: Config, agent_client: Optional[AgentClien
     """
     agent = GeminiAgent(config, agent_client)
     await agent.run_autonomous_loop()
+
+
+def get_gemini_client():
+    """
+    Initializes and returns a GeminiClient instance for standalone use.
+    """
+    import os
+    from .client import GeminiClient
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        # Fallback to trying to load from the config file as a last resort
+        try:
+            from shared.config_loader import load_config_from_file
+            file_config = load_config_from_file() or {}
+            api_key = file_config.get("gemini_api_key")
+        except Exception:
+            pass # Ignore if config loading fails
+
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found. Please set it as an environment variable or add 'gemini_api_key' to your agent_config.yaml.")
+
+    # We create a minimal, non-functional Config object because the client expects one,
+    # but for a simple, stateless API call, it doesn't need project-specific details.
+    class MinimalConfig:
+        def __init__(self):
+            self.model = os.environ.get("GEMINI_MODEL") # Allow model override via env
+            self.project_dir = None # Not needed for a stateless call
+
+    return GeminiClient(config=MinimalConfig(), api_key=api_key)

@@ -3664,7 +3664,8 @@ def run_config(args):
     return 0
 
 
-def parse_args(argv=None):
+def get_parser():
+    """Creates and returns the ArgumentParser object for the CLI."""
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
@@ -4856,13 +4857,104 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'ask' command ---
+    parser_ask = subparsers.add_parser(
+        "ask",
+        help="Ask the agent a question in natural language about how to use this tool.",
+        description="Ask the agent a question in natural language about how to use this tool."
+    )
+    parser_ask.add_argument(
+        "question",
+        nargs=argparse.REMAINDER,
+        help="The question you want to ask the agent (e.g., 'how do I see logs?')."
+    )
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
     if argcomplete:
         argcomplete.autocomplete(parser)
 
+    return parser
+
+def parse_args(argv=None):
+    """Parses command-line arguments using the parser from get_parser."""
+    parser = get_parser()
     return parser.parse_args(argv)
+
+async def run_ask(args, parser):
+    """
+    Uses the Gemini agent to answer a natural language question about how to use the CLI.
+    """
+    from agents.gemini.agent import get_gemini_client
+
+    question = " ".join(args.question)
+    if not question:
+        print("Please ask a question, for example: `main.py ask how do I see logs?`")
+        sys.exit(1)
+
+    print(f"🤔 Thinking about your question: '{question}'...")
+
+    # --- Step 1: Extract Command Information from argparse ---
+    command_info = []
+    # The `choices` attribute of the subparsers object holds the command info
+    for command, subparser in parser._subparsers._group_actions[0].choices.items():
+        help_text = subparser.format_help().splitlines()
+        # Clean up the help text for better prompting
+        cleaned_help = [line for line in help_text if not line.startswith('usage:') and line.strip()]
+        command_info.append(f"Command: {command}\n{' '.join(cleaned_help)}\n---")
+
+    command_details = "\n".join(command_info)
+
+    # --- Step 2: Formulate the Prompt for the LLM ---
+    prompt = f"""
+You are an expert assistant for a command-line tool called `main.py`.
+Your goal is to help users by answering their questions about how to use the tool.
+You will be given a user's question and a list of all available commands along with their help text.
+
+Analyze the user's question and the command information, and provide a clear, concise, and helpful answer.
+Your answer should:
+1.  Directly answer the user's question.
+2.  Suggest the most relevant command(s) to use.
+3.  Provide a clear example of how to use the command.
+4.  Format the command examples in a code block.
+5.  Be friendly and encouraging.
+
+USER'S QUESTION:
+"{question}"
+
+AVAILABLE COMMANDS:
+---
+{command_details}
+---
+
+Based on the information above, please provide the best answer to the user's question.
+"""
+
+    # --- Step 3: Use the Gemini Client to Get the Answer ---
+    try:
+        # We don't need a full agent, just the client to make a call
+        client = get_gemini_client()
+        full_response = ""
+        # Use the streaming generate_content method to provide real-time feedback
+        stream = client.generate_content(prompt, stream=True)
+
+        print("\n💡 Here's what I found:\n")
+        for chunk in stream:
+            if chunk.text:
+                print(chunk.text, end="", flush=True)
+                full_response += chunk.text
+        print() # for a final newline
+
+    except ImportError as e:
+        print(f"\n❌ Error: Could not import Gemini client dependencies. {e}", file=sys.stderr)
+        print("   Please ensure you have the necessary packages installed.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ An error occurred while communicating with the agent: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_profile(args):
@@ -6233,6 +6325,7 @@ def run_worktrees(args):
 
 
 async def main():
+    parser = get_parser()
     args = parse_args()
 
     # Handle `shell` command
@@ -6488,6 +6581,12 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "ask":
+        # We need the parser object itself to extract command info
+        parser = get_parser()
+        await run_ask(args, parser)
         return
 
     if args.command == "help":

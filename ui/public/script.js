@@ -67,14 +67,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     function buildAgentCardHtml(agent) {
         // Build Controls based on state (simplified)
+        // Using data attributes prevents XSS in onclick handlers
         const controlsHtml = `
             <div class="agent-controls">
-                <button class="btn btn-pause" onclick="sendCommand('${agent.id}', 'pause')">Pause</button>
-                <button class="btn btn-resume" onclick="sendCommand('${agent.id}', 'resume')">Resume</button>
-                <button class="btn btn-skip" onclick="sendCommand('${agent.id}', 'skip')">Skip Step</button>
-                <button class="btn btn-stop" onclick="sendCommand('${agent.id}', 'stop')">Stop</button>
+                <button class="btn btn-pause" data-id="${escapeHtml(agent.id)}" onclick="sendCommand(this.dataset.id, 'pause')">Pause</button>
+                <button class="btn btn-resume" data-id="${escapeHtml(agent.id)}" onclick="sendCommand(this.dataset.id, 'resume')">Resume</button>
+                <button class="btn btn-skip" data-id="${escapeHtml(agent.id)}" onclick="sendCommand(this.dataset.id, 'skip')">Skip Step</button>
+                <button class="btn btn-stop" data-id="${escapeHtml(agent.id)}" onclick="sendCommand(this.dataset.id, 'stop')">Stop</button>
             </div>
         `;
 
@@ -87,8 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (agent.state[prop]) {
                         stateDetails += `
                         <div class="detail-row">
-                            <span class="detail-label">${prop}:</span>
-                            <span class="detail-value">${agent.state[prop]}</span>
+                            <span class="detail-label">${escapeHtml(prop)}:</span>
+                            <span class="detail-value">${escapeHtml(agent.state[prop])}</span>
                         </div>
                         `;
                     }
@@ -100,15 +111,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (agent.state && agent.state.logs && agent.state.logs.length > 0) {
             logsHtml = `
                 <div class="log-preview">
-                    ${agent.state.logs.map(line => `<div>${line}</div>`).join('')}
+                    ${agent.state.logs.map(line => `<div>${escapeHtml(line)}</div>`).join('')}
                 </div>
             `;
         }
 
         return `
             <div class="agent-header">
-                <span class="agent-id">${agent.id}</span>
-                <span class="agent-status">${agent.status}</span>
+                <span class="agent-id">${escapeHtml(agent.id)}</span>
+                <span class="agent-status">${escapeHtml(agent.status)}</span>
             </div>
             <div class="agent-details">
                 ${stateDetails || '<div class="detail-row">Waiting for heartbeat...</div>'}

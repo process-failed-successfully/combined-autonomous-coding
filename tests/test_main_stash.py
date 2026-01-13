@@ -82,7 +82,9 @@ class TestStashCommand(unittest.TestCase):
 
         args = MagicMock(action="drop", project_dir=self.project_dir, yes=False)
         with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-            run_stash(args)
+            with self.assertRaises(SystemExit) as cm:
+                run_stash(args)
+            self.assertEqual(cm.exception.code, 0)
             output = mock_stdout.getvalue()
             self.assertIn("Stash stash@{0} dropped successfully.", output)
 

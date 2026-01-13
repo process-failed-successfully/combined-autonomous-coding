@@ -3,6 +3,7 @@ from unittest.mock import patch, call, MagicMock
 from main import run_commit
 import argparse
 from pathlib import Path
+import io
 
 class TestCommitCommand(unittest.TestCase):
 
@@ -13,9 +14,12 @@ class TestCommitCommand(unittest.TestCase):
 
         def side_effect(*args, **kwargs):
             command = args[0]
-            if 'diff' in command:
+            if 'diff' in command and '--cached' in command and '--quiet' in command:
                 # Simulate that there are changes to commit
                 return MagicMock(returncode=1)
+            if 'diff' in command and '--cached' in command and '--name-only' in command:
+                # Simulate staged files for dry run
+                return MagicMock(returncode=0, stdout="file1.txt\nfile2.py")
             # For 'add' and 'commit', simulate success
             return MagicMock(returncode=0, stdout="Success")
 
@@ -33,7 +37,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             message=None,
             run_tests=False,
-            project_dir=Path('.')
+            project_dir=Path('.'),
+            dry_run=False
         )
 
         # Act
@@ -63,7 +68,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             message=commit_message,
             run_tests=False,
-            project_dir=Path('.')
+            project_dir=Path('.'),
+            dry_run=False
         )
 
         # Act
@@ -83,6 +89,42 @@ class TestCommitCommand(unittest.TestCase):
                 commit_call_found = True
                 break
         self.assertTrue(commit_call_found, "git commit command was not called")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    @patch('shutil.which', return_value='/usr/bin/git')
+    @patch('pathlib.Path.exists', return_value=True)
+    def test_commit_dry_run(self, mock_path_exists, mock_which, mock_stdout):
+        # Arrange
+        commit_message = "test: this is a dry run"
+        args = argparse.Namespace(
+            message=commit_message,
+            run_tests=False,
+            project_dir=Path('.'),
+            dry_run=True
+        )
+
+        # Act
+        with self.assertRaises(SystemExit) as cm:
+            run_commit(args)
+
+        # Assert
+        self.assertEqual(cm.exception.code, 0)
+        output = mock_stdout.getvalue()
+        self.assertIn("--- DRY RUN: Commit ---", output)
+        self.assertIn("Files to be committed:", output)
+        self.assertIn("file1.txt", output)
+        self.assertIn("file2.py", output)
+        self.assertIn("Commit message:", output)
+        self.assertIn(commit_message, output)
+
+        # Ensure that the actual git commit command was NOT called
+        commit_call_found = False
+        for call_args in self.mock_subprocess_run.call_args_list:
+            command_list = call_args.args[0]
+            if 'commit' in command_list:
+                commit_call_found = True
+                break
+        self.assertFalse(commit_call_found, "git commit command should not have been called in dry run")
 
 if __name__ == '__main__':
     unittest.main()

@@ -4942,6 +4942,11 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory to run the commit command in (default: current directory).",
     )
+    parser_commit.add_argument(
+        "-n", "--dry-run",
+        action="store_true",
+        help="Show what would be committed without actually committing."
+    )
 
     # --- New 'feature' command ---
     parser_feature = subparsers.add_parser(
@@ -5811,6 +5816,30 @@ def run_commit(args):
         except (KeyboardInterrupt, EOFError):
             print("\nCommit aborted by user.")
             sys.exit(1)
+
+    # --- Dry Run Logic ---
+    if args.dry_run:
+        print("\n--- DRY RUN: Commit ---")
+        print("The following actions would be taken:")
+
+        # Get staged files
+        staged_files_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "diff", "--cached", "--name-only"],
+            capture_output=True, text=True, check=True
+        )
+        staged_files = staged_files_result.stdout.strip().split('\n')
+
+        print("\nFiles to be committed:")
+        for f in staged_files:
+            if f: print(f"  - {f}")
+
+        print("\nCommit message:")
+        # Indent the commit message for readability
+        for line in commit_message.split('\n'):
+            print(f"  {line}")
+
+        print("\nNo changes were made.")
+        sys.exit(0)
 
     # --- Create the commit ---
     print(f"--- Creating commit ---")

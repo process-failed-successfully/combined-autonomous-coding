@@ -2027,6 +2027,167 @@ def run_blame(args):
         sys.exit(1)
     sys.exit(0)
 
+
+def run_stash(args):
+    """Manages git stashes for the project."""
+    project_dir = args.project_dir.resolve()
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot manage stashes.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Action Dispatcher ---
+    if args.action == "push":
+        _stash_push(args, git_path, project_dir)
+    elif args.action == "list":
+        _stash_list(args, git_path, project_dir)
+    elif args.action == "pop":
+        _stash_pop(args, git_path, project_dir)
+    elif args.action == "drop":
+        _stash_drop(args, git_path, project_dir)
+
+def _stash_push(args, git_path, project_dir):
+    """Stashes uncommitted changes."""
+    print(f"--- Stashing changes in: {project_dir} ---")
+    try:
+        # Check if there's anything to stash
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if not status_result.stdout.strip():
+            print("✅ No changes to stash.")
+            sys.exit(0)
+
+        cmd = [git_path, "-C", str(project_dir), "stash", "push", "-u"]
+        if args.message:
+            cmd.extend(["-m", args.message])
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"❌ Error stashing changes: {result.stderr}", file=sys.stderr)
+            sys.exit(1)
+
+        print("✅ Changes stashed successfully.")
+        _stash_list(args, git_path, project_dir, count=1) # Show the latest stash
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ An error occurred: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+def _stash_list(args, git_path, project_dir, count=None):
+    """Lists all available stashes."""
+    print(f"--- Stashes in: {project_dir} ---")
+    try:
+        cmd = [git_path, "-C", str(project_dir), "stash", "list"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        stashes = result.stdout.strip().split('\n')
+        if not stashes or not stashes[0]:
+            print("No stashes found.")
+            return []
+
+        if count:
+            stashes = stashes[:count]
+
+        for stash in stashes:
+            print(f"  {stash}")
+        return stashes
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error listing stashes: {e.stderr}", file=sys.stderr)
+        return []
+
+def _stash_pop(args, git_path, project_dir):
+    """Interactively applies and removes a stash."""
+    stashes = _stash_list(args, git_path, project_dir)
+    if not stashes:
+        sys.exit(0)
+
+    try:
+        selection_str = input(f"\nEnter the number of the stash to pop (0-{len(stashes)-1}), or press Enter to cancel: ").strip()
+        if not selection_str:
+            print("Aborted.")
+            sys.exit(0)
+
+        selection = int(selection_str)
+        if not (0 <= selection < len(stashes)):
+            print("❌ Invalid selection.", file=sys.stderr)
+            sys.exit(1)
+
+        stash_ref = f"stash@{{{selection}}}"
+        print(f"\nPopping {stash_ref}...")
+
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "stash", "pop", str(selection)],
+            capture_output=True, text=True
+        )
+
+        if result.returncode != 0:
+            print(f"❌ Error popping stash: {result.stderr}", file=sys.stderr)
+            if result.stdout:
+                print(f"Output:\n{result.stdout}")
+            sys.exit(1)
+
+        print(f"✅ Stash {stash_ref} popped successfully.")
+        if result.stdout:
+            print(result.stdout)
+
+    except (ValueError, IndexError):
+        print("❌ Invalid input. Please enter a valid number.", file=sys.stderr)
+        sys.exit(1)
+    except (EOFError, KeyboardInterrupt):
+        print("\nAborted.")
+        sys.exit(0)
+
+def _stash_drop(args, git_path, project_dir):
+    """Interactively deletes a stash."""
+    stashes = _stash_list(args, git_path, project_dir)
+    if not stashes:
+        sys.exit(0)
+
+    try:
+        selection_str = input(f"\nEnter the number of the stash to drop (0-{len(stashes)-1}), or press Enter to cancel: ").strip()
+        if not selection_str:
+            print("Aborted.")
+            sys.exit(0)
+
+        selection = int(selection_str)
+        if not (0 <= selection < len(stashes)):
+            print("❌ Invalid selection.", file=sys.stderr)
+            sys.exit(1)
+
+        stash_ref = f"stash@{{{selection}}}"
+
+        if not args.yes:
+            confirm = input(f"Are you sure you want to delete {stash_ref}? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+
+        print(f"\nDropping {stash_ref}...")
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "stash", "drop", str(selection)],
+            check=True, capture_output=True, text=True
+        )
+
+        print(f"✅ Stash {stash_ref} dropped successfully.")
+        print(result.stdout.strip())
+
+    except (ValueError, IndexError):
+        print("❌ Invalid input. Please enter a valid number.", file=sys.stderr)
+        sys.exit(1)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        stderr = getattr(e, 'stderr', str(e))
+        print(f"❌ Error dropping stash: {stderr}", file=sys.stderr)
+        sys.exit(1)
+    except (EOFError, KeyboardInterrupt):
+        print("\nAborted.")
+        sys.exit(0)
+
+
 def run_report(args):
     """Generates a summary report for a specific agent run."""
     success = _run_report_logic(
@@ -2685,6 +2846,7 @@ def run_help(args):
     print_command("pr", "Manage GitHub pull requests for the project.")
     print_command("feature", "A guided workflow for branch -> commit -> push -> pr.")
     print_command("diff", "Show a detailed diff of uncommitted changes or a specific commit.")
+    print_command("stash", "Stash uncommitted changes for later use.")
     print_command("discard", "Safely discard uncommitted changes by stashing them first.")
     print_command("undo", "Restore changes that were previously discarded.")
     print_command("rewind", "Reset the project state to a previous git commit or Run ID.")
@@ -4873,6 +5035,37 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'stash' command ---
+    parser_stash = subparsers.add_parser(
+        "stash",
+        help="Stash away uncommitted changes for later use."
+    )
+    parser_stash.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    stash_subparsers = parser_stash.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify stash action"
+    )
+    # Stash 'push' action
+    parser_stash_push = stash_subparsers.add_parser("push", help="Stash all uncommitted changes (including untracked).")
+    parser_stash_push.add_argument("-m", "--message", help="Optional descriptive message for the stash.")
+    # Stash 'list' action
+    parser_stash_list = stash_subparsers.add_parser("list", help="List all stashes in the repository.")
+    # Stash 'pop' action
+    parser_stash_pop = stash_subparsers.add_parser("pop", help="Interactively select a stash to apply and remove.")
+    # Stash 'drop' action
+    parser_stash_drop = stash_subparsers.add_parser("drop", help="Interactively select a stash to delete.")
+    parser_stash_drop.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt.",
+    )
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
@@ -6505,6 +6698,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "stash":
+        run_stash(args)
         return
 
     if args.command == "next":

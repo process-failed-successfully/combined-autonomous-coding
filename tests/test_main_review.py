@@ -7,9 +7,6 @@ import shutil
 import sys
 import io
 
-# Adjust the path to import main
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import main
 
 class TestReviewCommand(unittest.TestCase):

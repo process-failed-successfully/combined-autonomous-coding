@@ -613,6 +613,76 @@ def _run_dashboard_logic(project_dir: Path) -> str:
     return "\n".join(lines)
 
 
+import shlex
+
+def _run_next_logic(project_dir: Path) -> bool:
+    """
+    The core logic for the 'next' command.
+    Finds the most relevant suggestion and offers to execute it.
+    """
+    project_dir = project_dir.resolve()
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        print("   Try running the agent with a spec file (`main.py --spec app_spec.txt`) to start a new task.")
+        return True
+
+    suggestion = suggestions[0]
+    command_str = suggestion['command']
+    reason = suggestion['reason']
+
+    print("--- Suggested Next Step ---")
+    print(f"Reason: {reason}")
+    print(f"Command: `{command_str}`")
+
+    try:
+        confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            return True # Returning True because the operation was not a failure.
+
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted.")
+        return True
+
+    print(f"\n--- Executing: {command_str} ---")
+
+    try:
+        # We need to construct the command to run main.py from the current executable
+        executable_path = sys.executable
+        main_script_path = Path(__file__).parent.parent / "main.py"
+
+        # Use shlex.split to handle arguments correctly
+        command_parts = shlex.split(command_str)
+
+        # The suggested command is like "main.py commit", so we replace "main.py"
+        # with the full path to the script.
+        if command_parts and "main.py" in command_parts[0]:
+            actual_command = [str(executable_path), str(main_script_path)] + command_parts[1:]
+        else:
+             # This case is unlikely if suggestions are formatted correctly, but it's a safe fallback.
+             print(f"Warning: Could not determine how to execute '{command_str}'.", file=sys.stderr)
+             return False
+
+        # Execute the command, streaming its output
+        result = subprocess.run(actual_command, cwd=project_dir)
+
+        if result.returncode == 0:
+            print("\n--- Command finished successfully ---")
+            return True
+        else:
+            print(f"\n--- Command finished with an error (exit code: {result.returncode}) ---", file=sys.stderr)
+            return False
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command not found. Is '{executable_path}' in your PATH?", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while executing the command: {e}", file=sys.stderr)
+        return False
+
+
 def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
     """
     The core logic for the blame command. Shows the agent Run ID or author for each line.

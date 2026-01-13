@@ -2012,7 +2012,12 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic
+
+def run_next(args):
+    """Analyzes the project and executes the next logical command upon confirmation."""
+    success = _run_next_logic(project_dir=args.project_dir)
+    sys.exit(0 if success else 1)
 
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
@@ -4839,6 +4844,18 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggest and execute the next logical command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -6488,6 +6505,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "help":

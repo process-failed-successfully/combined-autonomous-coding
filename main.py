@@ -5096,6 +5096,18 @@ def parse_args(argv=None):
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
+    # --- New 'review' command ---
+    parser_review = subparsers.add_parser(
+        "review",
+        help="Run an interactive QA review of the agent's completed work."
+    )
+    parser_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to review.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -5368,6 +5380,77 @@ def run_feature(args):
 
     except (KeyboardInterrupt, EOFError):
         print("\n\nWorkflow aborted by user.")
+        sys.exit(1)
+
+
+def run_review(args):
+    """Runs an interactive QA review of the agent's work."""
+    project_dir = args.project_dir.resolve()
+    print("--- Interactive QA Review ---")
+    print(f"Project Directory: {project_dir}")
+
+    completed_file = project_dir / "COMPLETED"
+    qa_passed_file = project_dir / "QA_PASSED"
+
+    # 1. Check if there is work to review
+    if not completed_file.exists():
+        print("✅ No agent work is currently marked as 'COMPLETED'. Nothing to review.")
+        sys.exit(0)
+
+    if qa_passed_file.exists():
+        print("✅ Agent work has already been reviewed and passed QA. Ready for manager sign-off.")
+        sys.exit(0)
+
+    print("\n[1/3] Work is marked as COMPLETED. Proceeding with review...")
+
+    # 2. Run tests automatically
+    print("\n[2/3] Running project tests...")
+    test_args = argparse.Namespace(project_dir=project_dir, test_args=[])
+    try:
+        # We call the test function but catch SystemExit to check the result
+        run_test(test_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print("\n❌ Tests failed. The agent's work is not ready for review.", file=sys.stderr)
+            print("Aborting review. The agent will be notified of the test failure on its next run.", file=sys.stderr)
+            # The 'COMPLETED' file is left so the agent knows it failed this step.
+            sys.exit(1)
+
+    print("✅ Tests passed successfully.")
+
+    # 3. Show diff and ask for user approval
+    print("\n[3/3] Displaying changes for review...")
+
+    # Use existing diff logic
+    try:
+        diff_args = argparse.Namespace(target=None, project_dir=project_dir)
+        run_diff(diff_args)
+    except SystemExit:
+        # run_diff will exit, which is fine. If there are no changes, it prints a message.
+        pass
+    except Exception as e:
+        print(f"Warning: Could not display diff. {e}", file=sys.stderr)
+
+
+    print("\n--- Decision ---")
+    print("Do you approve these changes?")
+    try:
+        confirm = input("Approve and advance to manager review? [y/N]: ").strip().lower()
+        if confirm == 'y':
+            print("\n✅ Approved. Creating QA_PASSED file for manager review.")
+            qa_passed_file.touch()
+            # Optionally write a small summary
+            qa_summary = f"Human QA passed at {datetime.now().isoformat()}"
+            (project_dir / "qa_summary.txt").write_text(qa_summary)
+            print("Workflow advanced. The Manager agent can now perform final sign-off.")
+            sys.exit(0)
+        else:
+            print("\n❌ Rejected. Removing COMPLETED file to signal the agent to continue work.")
+            completed_file.unlink()
+            print("The agent will now re-evaluate the project on its next run.")
+            sys.exit(0)
+    except (KeyboardInterrupt, EOFError):
+        print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
 
 
@@ -6737,6 +6820,10 @@ async def main():
 
     if args.command == "context":
         run_context(args)
+        return
+
+    if args.command == "review":
+        run_review(args)
         return
 
     if args.command == "help":

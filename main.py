@@ -2657,6 +2657,7 @@ def run_help(args):
     print_header("Core Commands")
     print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
     print_command("plan", "Generate a feature plan from a spec file without executing code.")
+    print_command("setup", "Automatically detect project type and install dependencies.")
     print_command("test", "Automatically detect project type and run tests.")
     print_command("lint", "Automatically detect project type and run a linter.")
     print_command("format", "Automatically detect project type and format code.")
@@ -3186,6 +3187,63 @@ def run_branch(args):
             print(f"❌ Error listing branches: {e.stderr}", file=sys.stderr)
 
     sys.exit(0)
+
+
+def run_setup(args):
+    """Detects the project type and runs the appropriate setup/install command."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running setup in: {project_dir} ---")
+
+    # --- Project Detection ---
+    command_base = []
+
+    # 1. Python Project
+    if (project_dir / "requirements.txt").exists():
+        print("Detected Python project.")
+        command_base = [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"]
+        # Also check for dev requirements
+        if (project_dir / "requirements-dev.txt").exists():
+            print("Found requirements-dev.txt, installing...")
+            command_base.extend(["-r", "requirements-dev.txt"])
+
+    # 2. Node.js Project
+    elif (project_dir / "package.json").exists():
+        print("Detected Node.js project.")
+        # Prefer specific package managers if lock files exist
+        if (project_dir / "yarn.lock").exists():
+            command_base = ["yarn", "install"]
+        elif (project_dir / "pnpm-lock.yaml").exists():
+            command_base = ["pnpm", "install"]
+        else:
+            command_base = ["npm", "install"]
+
+    # 3. Go Project
+    elif (project_dir / "go.mod").exists():
+        print("Detected Go project.")
+        command_base = ["go", "mod", "tidy"]
+
+    # --- Command Construction & Execution ---
+    if not command_base:
+        print("❌ Error: Could not detect a recognizable project type (Python, Node.js, Go).", file=sys.stderr)
+        print("  Please ensure the project has a `requirements.txt`, `package.json`, or `go.mod` file.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Executing command: {' '.join(command_base)}")
+    try:
+        # Stream the output directly and run in the target project directory
+        result = subprocess.run(command_base, cwd=project_dir)
+        # Exit with the same code as the setup tool
+        sys.exit(result.returncode)
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{command_base[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nSetup process interrupted by user.")
+        sys.exit(130) # Standard exit code for Ctrl+C
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while running setup: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def run_git(args):
@@ -4680,6 +4738,18 @@ def parse_args(argv=None):
         "git_args",
         nargs=argparse.REMAINDER,
         help="The git command and its arguments to run.",
+    )
+
+    # --- New 'setup' command ---
+    parser_setup = subparsers.add_parser(
+        "setup",
+        help="Automatically detect and install dependencies for the project."
+    )
+    parser_setup.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to run setup in (default: current directory).",
     )
 
     # --- New 'push' command ---
@@ -6425,6 +6495,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "setup":
+        run_setup(args)
         return
 
     if args.command == "test":

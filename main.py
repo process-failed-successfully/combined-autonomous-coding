@@ -2012,7 +2012,7 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, run_next_logic
 
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
@@ -2020,6 +2020,12 @@ def run_blame(args):
     print(blame_output)
     if "❌ Error" in blame_output:
         sys.exit(1)
+    sys.exit(0)
+
+
+def run_next(args):
+    """Suggests and executes the next logical command in the workflow."""
+    run_next_logic(project_dir=args.project_dir)
     sys.exit(0)
 
 def run_report(args):
@@ -2692,6 +2698,7 @@ def run_help(args):
     print_command("worktrees", "Manage git worktrees for concurrent sprint tasks.")
 
     print_header("Utilities")
+    print_command("next", "Suggest and execute the most logical next command in the workflow.")
     print_command("why", "Explain what a command does and why you might use it.")
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
     print_command("shell", "Start an interactive shell with all commands available.")
@@ -4856,6 +4863,18 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggest and execute the most logical next command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
@@ -6488,6 +6507,10 @@ async def main():
 
     if args.command == "blame":
         run_blame(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "help":

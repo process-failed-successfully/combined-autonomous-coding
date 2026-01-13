@@ -280,42 +280,77 @@ def _has_uncommitted_changes(project_dir: Path) -> bool:
         return False
 
 
+def _is_branch_pushed(project_dir: Path) -> bool:
+    """Checks if the current branch has been pushed to a remote."""
+    try:
+        git_path = shutil.which("git")
+        if not git_path or not (project_dir / ".git").is_dir():
+            return False
+
+        # Get the current branch name
+        branch_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, check=True
+        )
+        branch_name = branch_result.stdout.strip()
+        if branch_name in ["main", "master"]:
+             return True # Assume main branches are always "pushed"
+
+        # Check if the branch has an upstream counterpart
+        upstream_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", "--abbrev-ref", f"{branch_name}@{{u}}"],
+            capture_output=True, text=True
+        )
+        return upstream_result.returncode == 0
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
     """
     Analyzes the project state and returns a list of suggested next commands.
+    This version is more opinionated for the 'next' command.
     """
+    executable_name = Path(sys.argv[0]).name
     suggestions = []
     stage = get_workflow_stage(project_dir)
     has_changes = _has_uncommitted_changes(project_dir)
+    is_pushed = _is_branch_pushed(project_dir)
 
     def add_suggestion(command, reason):
         if limit is not None and len(suggestions) >= limit:
             return False
-        suggestions.append({"command": command, "reason": reason})
+        # Prepend the executable name to the command
+        full_command = f"./{executable_name} {command}"
+        suggestions.append({"command": full_command, "reason": reason})
         return True
 
-    # 1. Git-based suggestions
+    # High priority: Project is done, clean up.
+    if stage == "SIGNED_OFF":
+        if not add_suggestion("clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
+
+    # Core developer workflow
     if has_changes:
-        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
-        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
+        if not add_suggestion("commit", "You have uncommitted changes. It's best to commit them before proceeding."): return suggestions
+    elif not is_pushed:
+        if not add_suggestion("push", "Your current branch has not been pushed to the remote. Pushing allows for collaboration and backup."): return suggestions
+    else: # Clean and pushed, ready for next stage
+        # Workflow suggestions
+        if stage == "COMPLETED":
+            if not add_suggestion("workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."): return suggestions
+        elif stage == "QA_PASSED":
+            if not add_suggestion("workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."): return suggestions
 
-    # 2. Workflow-based suggestions
-    if stage == "COMPLETED":
-        if not add_suggestion("main.py workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."): return suggestions
-    elif stage == "QA_PASSED":
-        if not add_suggestion("main.py workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."): return suggestions
-    elif stage == "SIGNED_OFF":
-        if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
 
-    # 3. Artifact-based suggestions
+    # Artifact-based suggestions (lower priority)
     trash_dir = project_dir / ".agent_trash"
     if trash_dir.exists() and any(trash_dir.iterdir()):
-        if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
-        if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."): return suggestions
+        if not add_suggestion("artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
 
-    # 4. General "what happened" suggestions
+    # General "what happened" suggestions (lowest priority)
     if (project_dir / ".agent_run_id").exists():
-        if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
+        if not add_suggestion("last", "To see a summary of the last agent run."): return suggestions
 
     return suggestions
 
@@ -705,3 +740,94 @@ def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
         output.append(f"{commit_hash[:8]} ({blame_info_str}) {line_num}: {info['code']}")
 
     return "\n".join(output)
+
+
+def run_next_logic(project_dir: Path):
+    """
+    Analyzes the project state, suggests the most logical next command,
+    and executes it upon user confirmation.
+    """
+    # Import command functions here to avoid circular dependencies with main
+    import argparse
+    import shlex
+    from main import run_commit, run_push, run_workflow, run_clean, run_last, run_artifacts
+
+    print("--- Analyzing project state to suggest next step ---")
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        print("✅ Project is in a clean state. No specific action to suggest.")
+        return
+
+    suggestion = suggestions[0]
+    command_str = suggestion['command']
+    reason = suggestion['reason']
+
+    print(f"\nSuggested next step: {reason}")
+    print(f"    👉 `{command_str}`")
+
+    try:
+        confirm = input("\nDo you want to run this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            return
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted.")
+        return
+
+    print(f"\n--- Executing: {command_str} ---")
+
+    try:
+        parts = shlex.split(command_str)
+        # Assuming the command is always like "./main.py <command> [args...]"
+        command_name = parts[1] if len(parts) > 1 else None
+
+        # A dispatch table to map command names to functions
+        COMMAND_MAP = {
+            "commit": run_commit,
+            "push": run_push,
+            "workflow": run_workflow,
+            "clean": run_clean,
+            "last": run_last,
+            "artifacts": run_artifacts,
+        }
+
+        func_to_call = COMMAND_MAP.get(command_name)
+        if not func_to_call:
+            print(f"Error: Command '{command_name}' is not directly executable by 'next'.", file=sys.stderr)
+            return
+
+        # Construct arguments and execute
+        if command_name == "commit":
+            commit_message = input("Enter commit message: ").strip()
+            if not commit_message:
+                print("Commit message cannot be empty. Aborting.")
+                return
+            args = argparse.Namespace(message=commit_message, run_tests=False, project_dir=project_dir)
+            func_to_call(args)
+        elif command_name == "push":
+            args = argparse.Namespace(project_dir=project_dir)
+            func_to_call(args)
+        elif command_name == "workflow":
+            # The suggestion for workflow is always 'advance'
+            args = argparse.Namespace(action="advance", project_dir=project_dir, yes=True)
+            func_to_call(args)
+        elif command_name == "clean":
+            # The suggestion for clean is always 'archive'
+            args = argparse.Namespace(project_dir=project_dir, archive=True, force=False, list=False, yes=True)
+            func_to_call(args)
+        elif command_name == "last":
+            args = argparse.Namespace(project_dir=project_dir)
+            func_to_call(args)
+        elif command_name == "artifacts":
+             # The suggestion is always 'trash list'
+             args = argparse.Namespace(type="trash", action="list", project_dir=project_dir, archive_name=None, file_name=None, all=False, yes=True, dry_run=False)
+             func_to_call(args, mode="trash")
+
+    except SystemExit as e:
+         if e.code == 0:
+             print(f"\n--- Command '{command_str}' finished successfully ---")
+         else:
+             print(f"\n--- Command '{command_str}' finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+    except Exception as e:
+        print(f"An unexpected error occurred while running command: {e}", file=sys.stderr)

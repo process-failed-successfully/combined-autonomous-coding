@@ -1507,7 +1507,7 @@ def _discard_interactive(project_dir, git_path):
         changes = [line for line in status_result.stdout.splitlines() if line]
         if not changes:
             print("✅ No uncommitted changes to discard.")
-            sys.exit(0)
+            return []
 
         print("Select files to discard (e.g., 1 3 4), or press Enter to cancel:")
         all_files = []
@@ -1519,14 +1519,14 @@ def _discard_interactive(project_dir, git_path):
         selection = input("> ").strip()
         if not selection:
             print("Aborted.")
-            sys.exit(0)
+            return None
 
         try:
             indices = [int(i) - 1 for i in selection.split()]
             files_to_discard = [all_files[i] for i in indices if 0 <= i < len(all_files)]
             if not files_to_discard:
                 print("No valid files selected. Aborting.")
-                sys.exit(0)
+                return None
             return files_to_discard
         except ValueError:
             print("❌ Invalid input. Please enter numbers separated by spaces.", file=sys.stderr)
@@ -1537,7 +1537,7 @@ def _discard_interactive(project_dir, git_path):
         sys.exit(1)
     except (EOFError, KeyboardInterrupt):
         print("\nAborted.")
-        sys.exit(0)
+    sys.exit(0)
     return []
 
 
@@ -1675,7 +1675,7 @@ def run_undo(args):
             print("No stashed discards found to undo.")
             sys.exit(0)
 
-        print("Please select a discard to undo (press Enter to cancel):")
+        print("Please select a discard to inspect or restore (press Enter to cancel):")
         for i, stash in enumerate(discard_stashes):
             print(f"  [{i+1}] {stash}")
 
@@ -1686,14 +1686,8 @@ def run_undo(args):
 
         choice_index = int(selection) - 1
         if 0 <= choice_index < len(discard_stashes):
-            stash_to_apply = discard_stashes[choice_index].split(':')[0]
-            print(f"\nRestoring selected stash: {stash_to_apply}...")
-            subprocess.run(
-                [git_path, "-C", str(project_dir), "stash", "pop", stash_to_apply],
-                check=True
-            )
-            print("✅ Undo complete. Your changes have been restored.")
-            sys.exit(0)
+            stash_ref = discard_stashes[choice_index].split(':')[0]
+            _interactive_stash_manager(project_dir, git_path, stash_ref)
         else:
             print("❌ Invalid selection.", file=sys.stderr)
             sys.exit(1)
@@ -1708,6 +1702,100 @@ def run_undo(args):
     except (EOFError, KeyboardInterrupt):
         print("\nAborted.")
         sys.exit(0)
+    sys.exit(0)
+
+
+def _interactive_stash_manager(project_dir, git_path, stash_ref):
+    """Provides an interactive menu to inspect and restore a stash."""
+    while True:
+        print(f"\n--- Managing Stash: {stash_ref} ---")
+        print("  [1] List files in stash")
+        print("  [2] Show summary of changes")
+        print("  [3] View diff for a specific file")
+        print("  [4] Restore specific files (leaves stash intact)")
+        print("  [5] Restore entire stash (applies and drops stash)")
+        print("  [q] Quit")
+
+        choice = input("> ").strip().lower()
+
+        if choice == '1':
+            # List files
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "stash", "show", "--name-only", stash_ref],
+                capture_output=True, text=True, check=True
+            )
+            print("\n--- Files in Stash ---")
+            print(result.stdout.strip())
+
+        elif choice == '2':
+            # Show summary
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "stash", "show", "--stat", stash_ref],
+                capture_output=True, text=True, check=True
+            )
+            print("\n--- Summary of Changes ---")
+            print(result.stdout.strip())
+
+        elif choice == '3':
+            # View diff for a specific file
+            file_to_diff = input("Enter the path of the file to diff: ").strip()
+            if file_to_diff:
+                subprocess.run(
+                    [git_path, "-C", str(project_dir), "stash", "show", "-p", stash_ref, "--", file_to_diff]
+                )
+            else:
+                print("No file specified.")
+
+        elif choice == '4':
+            # Restore specific files
+            print("Enter file paths to restore, separated by spaces:")
+            files_to_restore_str = input("> ").strip()
+            if not files_to_restore_str:
+                print("No files specified. Aborting restore.")
+                continue
+
+            files_to_restore = files_to_restore_str.split()
+            print("\nThe following files will be restored from the stash:")
+            for f in files_to_restore:
+                print(f"  - {f}")
+
+            confirm = input("Are you sure? [y/N]: ").strip().lower()
+            if confirm == 'y':
+                try:
+                    for file_path in files_to_restore:
+                        subprocess.run(
+                            [git_path, "-C", str(project_dir), "checkout", stash_ref, "--", file_path],
+                            check=True, capture_output=True
+                        )
+                        print(f"Restored: {file_path}")
+                    print("✅ Partial restore complete. The stash has not been removed.")
+                except subprocess.CalledProcessError as e:
+                    print(f"❌ Error restoring files: {e.stderr.decode()}", file=sys.stderr)
+            else:
+                print("Aborted.")
+
+        elif choice == '5':
+            # Restore entire stash
+            confirm = input("This will apply and drop the stash. Are you sure? [y/N]: ").strip().lower()
+            if confirm == 'y':
+                print(f"\nRestoring selected stash: {stash_ref}...")
+                try:
+                    subprocess.run(
+                        [git_path, "-C", str(project_dir), "stash", "pop", stash_ref],
+                        check=True
+                    )
+                    print("✅ Undo complete. Your changes have been restored.")
+                    return  # Exit the manager
+                except subprocess.CalledProcessError as e:
+                    print(f"❌ Error restoring stash. It may have conflicts. Stash was not dropped.", file=sys.stderr)
+            else:
+                print("Aborted.")
+
+        elif choice == 'q':
+            print("Exiting stash manager.")
+            break
+        else:
+            print("Invalid choice. Please try again.")
 
 
 def run_discard(args):
@@ -2186,6 +2274,7 @@ def _stash_drop(args, git_path, project_dir):
     except (EOFError, KeyboardInterrupt):
         print("\nAborted.")
         sys.exit(0)
+    sys.exit(0)
 
 
 def run_report(args):

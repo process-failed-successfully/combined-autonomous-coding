@@ -2886,6 +2886,8 @@ def run_help(args):
 def run_import(args):
     """Imports a project from a shared archive."""
     import tarfile
+    import os
+    import shutil
 
     archive_file = args.archive_file.resolve()
     output_dir = args.output_dir
@@ -2911,8 +2913,7 @@ def run_import(args):
                 if not os.path.abspath(member_path).startswith(os.path.abspath(str(output_dir))):
                     print(f"❌ Error: Archive contains invalid path '{member.name}' (directory traversal attempt).", file=sys.stderr)
                     sys.exit(1)
-
-            tar.extractall(path=output_dir)
+                tar.extract(member, path=output_dir)
 
         # Post-extraction: Move logs to the correct central location
         extracted_dirs = [d for d in output_dir.iterdir() if d.is_dir()]

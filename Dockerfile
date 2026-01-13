@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build dependencies
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
@@ -33,6 +34,7 @@ ARG GID=1000
 
 # Install runtime system dependencies in chunks
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     curl \
     git \

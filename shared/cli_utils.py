@@ -5,6 +5,7 @@ import subprocess
 import json
 from datetime import datetime
 from typing import Optional
+import shlex
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -318,6 +319,39 @@ def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
         if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
 
     return suggestions
+
+
+def get_next_action(project_dir: Path) -> Optional[dict]:
+    """
+    Analyzes the project state and determines the single most logical next action.
+    Returns a dictionary with the command, reason, and parsed arguments, or None.
+    """
+    # Get the top-priority suggestion
+    suggestions = get_suggestions(project_dir, limit=1)
+
+    if not suggestions:
+        return None
+
+    next_suggestion = suggestions[0]
+    command_str = next_suggestion["command"]
+
+    try:
+        # Use shlex to correctly parse the command string into a list of arguments
+        args_list = shlex.split(command_str)
+        # The command runner will be main.py itself, so we strip the script name
+        if args_list and ('main.py' in args_list[0]):
+            command_args = args_list[1:]
+        else:
+            command_args = args_list
+    except (ValueError, IndexError):
+        # Handle empty or malformed command strings gracefully
+        command_args = []
+
+    return {
+        "command": command_str,
+        "reason": next_suggestion["reason"],
+        "args": command_args,
+    }
 
 
 def get_latest_log_file() -> Path | None:

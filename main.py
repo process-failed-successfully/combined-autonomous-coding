@@ -2012,7 +2012,69 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
+from shared.cli_utils import get_project_summary, get_suggestions, get_next_action, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic
+
+def run_next(args):
+    """Analyzes the project and executes the next logical command upon confirmation."""
+    project_dir = args.project_dir.resolve()
+    next_action = get_next_action(project_dir)
+
+    if not next_action:
+        print("✅ Project is in a clean state. No specific next action to suggest.")
+        sys.exit(0)
+
+    print("--- Next Suggested Action ---")
+    print(f"Reason: {next_action['reason']}")
+    print(f"Command: `{next_action['command']}`")
+
+    if not args.yes:
+        confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
+        if confirm not in ['y', '']:
+            print("Aborted.")
+            sys.exit(0)
+
+    print(f"\n--- Executing: {next_action['command']} ---")
+
+    try:
+        # We need to re-parse the arguments for the target command
+        # This approach ensures that the correct command function is called
+        # with the correct arguments, just as if the user typed it themselves.
+        target_args = parse_args(next_action['args'])
+
+        # Propagate relevant global arguments from the parent 'next' command
+        if hasattr(args, 'project_dir') and args.project_dir is not None:
+            target_args.project_dir = args.project_dir
+
+        # Now, we find the correct function to call based on the parsed command.
+        # This is a bit of a hack, but it's the most reliable way to dispatch
+        # to the correct command handler without duplicating the main dispatch logic.
+        if hasattr(target_args, 'command') and target_args.command:
+            command_func_name = f"run_{target_args.command.replace('-', '_')}"
+            if command_func_name in globals():
+                # For async functions like run_plan, we need to handle them differently
+                if asyncio.iscoroutinefunction(globals()[command_func_name]):
+                    asyncio.run(globals()[command_func_name](target_args))
+                else:
+                    globals()[command_func_name](target_args)
+            else:
+                print(f"Error: Could not find the function to run command '{target_args.command}'.", file=sys.stderr)
+                sys.exit(1)
+        else:
+            # This would be for commands that are not subcommands, which is not the case for suggestions
+            print("Error: Cannot determine the command to run.", file=sys.stderr)
+            sys.exit(1)
+
+    except SystemExit as e:
+        # The called command will likely call sys.exit(). We catch it to give a clean message.
+        if e.code == 0:
+            print("\n--- Command completed successfully ---")
+        else:
+            print(f"\n--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
+        # Re-exit with the same code
+        sys.exit(e.code)
+    except Exception as e:
+        print(f"\nAn unexpected error occurred while running the command: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
@@ -4828,6 +4890,23 @@ def parse_args(argv=None):
         help="The project directory to watch.",
     )
 
+    # --- New 'next' command ---
+    parser_next = subparsers.add_parser(
+        "next",
+        help="Suggest and execute the next logical command in the workflow."
+    )
+    parser_next.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+    parser_next.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Automatically execute the suggested command without confirmation.",
+    )
+
     # --- New 'why' command ---
     parser_why = subparsers.add_parser(
         "why",
@@ -6484,6 +6563,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "next":
+        run_next(args)
         return
 
     if args.command == "blame":

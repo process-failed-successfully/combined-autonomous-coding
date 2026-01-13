@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 import shutil
@@ -775,3 +776,176 @@ def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
         output.append(f"{commit_hash[:8]} ({blame_info_str}) {line_num}: {info['code']}")
 
     return "\n".join(output)
+
+
+IGNORE_DIRS = {'.git', '.vscode', '__pycache__', 'node_modules'}
+
+
+def _run_context_show_logic(project_dir: Path) -> str:
+    """
+    The core logic for showing the agent's context with file sizes.
+    - project_dir: The root directory to analyze.
+    """
+    project_dir = project_dir.resolve()
+    if not project_dir.is_dir():
+        return f"Error: '{project_dir}' is not a valid directory."
+
+    output_lines = [f"--- Agent Context Analysis: {project_dir.name}/ ---\n"]
+    git_path = shutil.which("git")
+    is_git_repo = git_path and (project_dir / ".git").is_dir()
+
+    total_files = 0
+    total_size = 0
+    large_files = []
+    LARGE_FILE_THRESHOLD = 1024 * 1024  # 1 MB
+
+    def format_size(size_bytes: int) -> str:
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        if size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} KB"
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+    def is_git_ignored(path: Path) -> bool:
+        """Checks if a path is ignored by Git."""
+        if not is_git_repo:
+            return False
+        try:
+            relative_path = path.relative_to(project_dir)
+            # Use --quiet to suppress errors for untracked files, and check return code
+            return subprocess.run(
+                [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
+            ).returncode == 0
+        except Exception:
+            return False
+
+    def generate_tree_recursive(directory: Path, prefix: str):
+        nonlocal total_files, total_size
+        try:
+            # Filter out ignored directories before iterating
+            entries = sorted([p for p in directory.iterdir() if p.name not in IGNORE_DIRS and not is_git_ignored(p)],
+                             key=lambda p: (p.is_file(), p.name.lower()))
+        except OSError:
+            return
+
+        if not entries:
+            return
+
+        pointers = ["├── "] * (len(entries) - 1) + ["└── "]
+        for pointer, path in zip(pointers, entries):
+            if path.is_dir():
+                output_lines.append(f"{prefix}{pointer}{path.name}/")
+                extension = "│   " if pointer == "├── " else "    "
+                generate_tree_recursive(path, prefix + extension)
+            else:
+                try:
+                    size = path.stat().st_size
+                    total_files += 1
+                    total_size += size
+                    size_str = format_size(size).rjust(10)
+                    warning_marker = "⚠️ " if size > LARGE_FILE_THRESHOLD else ""
+                    if warning_marker:
+                        large_files.append((path.relative_to(project_dir), size))
+
+                    output_lines.append(f"{prefix}{pointer}{warning_marker}{path.name} ({size_str})")
+                except OSError:
+                    output_lines.append(f"{prefix}{pointer}{path.name} (Error reading size)")
+
+    generate_tree_recursive(project_dir, "")
+
+    # --- Summary Section ---
+    output_lines.append("\n--- Context Summary ---")
+    output_lines.append(f"  Total Files:      {total_files}")
+    output_lines.append(f"  Total Size:       {format_size(total_size)}")
+    if large_files:
+        output_lines.append(f"\n  Large Files (> {format_size(LARGE_FILE_THRESHOLD)}):")
+        for path, size in sorted(large_files, key=lambda x: x[1], reverse=True):
+            output_lines.append(f"    - {path} ({format_size(size)})")
+
+    return "\n".join(output_lines)
+
+
+def _run_context_analyze_logic(project_dir: Path) -> str:
+    """
+    The core logic for analyzing the agent's context by file type.
+    - project_dir: The root directory to analyze.
+    """
+    project_dir = project_dir.resolve()
+    if not project_dir.is_dir():
+        return f"Error: '{project_dir}' is not a valid directory."
+
+    output_lines = [f"--- Agent Context Analysis by File Type: {project_dir.name}/ ---\n"]
+    git_path = shutil.which("git")
+    is_git_repo = git_path and (project_dir / ".git").is_dir()
+
+    file_stats = {}
+    total_files = 0
+    total_size = 0
+
+    def format_size(size_bytes: int) -> str:
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        if size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} KB"
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+    def is_git_ignored(path: Path) -> bool:
+        if not is_git_repo:
+            return False
+        try:
+            relative_path = path.relative_to(project_dir)
+            return subprocess.run(
+                [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
+            ).returncode == 0
+        except Exception:
+            return False
+
+    for root, dirs, files in os.walk(project_dir, topdown=True):
+        root_path = Path(root)
+
+        # Prune directories
+        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not is_git_ignored(root_path / d)]
+
+        for name in files:
+            file_path = root_path / name
+            if not is_git_ignored(file_path):
+                try:
+                    size = file_path.stat().st_size
+                    ext = file_path.suffix if file_path.suffix else "(no extension)"
+
+                    if ext not in file_stats:
+                        file_stats[ext] = {"count": 0, "size": 0}
+
+                    file_stats[ext]["count"] += 1
+                    file_stats[ext]["size"] += size
+                    total_files += 1
+                    total_size += size
+                except OSError:
+                    continue
+
+    if not file_stats:
+        return "No files found in the project context."
+
+    sorted_stats = sorted(file_stats.items(), key=lambda item: item[1]['size'], reverse=True)
+
+    max_ext_len = max(len(ext) for ext in file_stats.keys()) if file_stats else 10
+    max_count_len = max(len(str(stats['count'])) for stats in file_stats.values()) if file_stats else 5
+    max_size_len = max(len(format_size(stats['size'])) for stats in file_stats.values()) if file_stats else 10
+
+    header = f"{'Extension':<{max_ext_len}} | {'Count':>{max_count_len}} | {'Total Size':>{max_size_len}} | Percentage"
+    output_lines.append(header)
+    output_lines.append("-" * len(header))
+
+    for ext, stats in sorted_stats:
+        size_str = format_size(stats['size'])
+        percentage = (stats['size'] / total_size * 100) if total_size > 0 else 0
+        output_lines.append(
+            f"{ext:<{max_ext_len}} | {stats['count']:>{max_count_len}} | {size_str:>{max_size_len}} | {percentage:6.2f}%"
+        )
+
+    output_lines.append("-" * len(header))
+    output_lines.append(
+        f"{'TOTAL':<{max_ext_len}} | {total_files:>{max_count_len}} | {format_size(total_size):>{max_size_len}} | 100.00%"
+    )
+
+    return "\n".join(output_lines)

@@ -2824,6 +2824,7 @@ def run_help(args):
 
     print_header("Getting Started")
     print_command("init", "Run an interactive setup wizard for a new project.")
+    print_command("setup", "Install project dependencies based on the detected project type.")
     print_command("configure", "Create or update the global agent_config.yaml file.")
     print_command("doctor", "Run a health check on your environment and configuration.")
     print_command("list-agents", "List the available agent types (e.g., gemini, cursor).")
@@ -5108,6 +5109,18 @@ def parse_args(argv=None):
         help="The project directory to review.",
     )
 
+    # --- New 'setup' command ---
+    parser_setup = subparsers.add_parser(
+        "setup",
+        help="Detect the project type and install its dependencies."
+    )
+    parser_setup.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to set up (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -5451,6 +5464,84 @@ def run_review(args):
             sys.exit(0)
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
+        sys.exit(1)
+
+
+def run_setup(args):
+    """Detects the project type and installs dependencies."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Setting up project in: {project_dir} ---")
+
+    command_base = []
+
+    # 1. Node.js Project (check for lockfiles first)
+    if (project_dir / "pnpm-lock.yaml").exists() and shutil.which("pnpm"):
+        print("Detected pnpm project.")
+        command_base = ["pnpm", "install"]
+    elif (project_dir / "yarn.lock").exists() and shutil.which("yarn"):
+        print("Detected yarn project.")
+        command_base = ["yarn", "install"]
+    elif (project_dir / "package-lock.json").exists() and shutil.which("npm"):
+        print("Detected npm project.")
+        command_base = ["npm", "install"]
+    elif (project_dir / "package.json").exists():
+        if shutil.which("pnpm"):
+            print("Detected Node.js project. Using pnpm.")
+            command_base = ["pnpm", "install"]
+        elif shutil.which("yarn"):
+            print("Detected Node.js project. Using yarn.")
+            command_base = ["yarn", "install"]
+        elif shutil.which("npm"):
+            print("Detected Node.js project. Using npm.")
+            command_base = ["npm", "install"]
+
+    # 2. Python Project
+    elif (project_dir / "requirements.txt").exists():
+        print("Detected Python project.")
+        command_base = [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"]
+        # Also install dev requirements if they exist
+        if (project_dir / "requirements-dev.txt").exists():
+            print("Found requirements-dev.txt, installing dev dependencies...")
+            dev_command = [sys.executable, "-m", "pip", "install", "-r", "requirements-dev.txt"]
+            try:
+                # Run this command first
+                result = subprocess.run(dev_command, cwd=project_dir)
+                if result.returncode != 0:
+                     print(f"❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
+                     sys.exit(result.returncode)
+            except Exception as e:
+                print(f"❌ An unexpected error occurred while installing dev dependencies: {e}", file=sys.stderr)
+                sys.exit(1)
+
+
+    # 3. Go Project
+    elif (project_dir / "go.mod").exists():
+        print("Detected Go project.")
+        command_base = ["go", "mod", "tidy"]
+
+    # --- Command Execution ---
+    if not command_base:
+        print("❌ Error: Could not detect a recognizable project type for setup.", file=sys.stderr)
+        print("  Please ensure the project has a `package.json`, `requirements.txt`, or `go.mod` file.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Executing command: {' '.join(command_base)}")
+    try:
+        result = subprocess.run(command_base, cwd=project_dir)
+        if result.returncode == 0:
+            print("✅ Setup complete.")
+        else:
+            print(f"❌ Setup command failed with exit code {result.returncode}.", file=sys.stderr)
+        sys.exit(result.returncode)
+
+    except FileNotFoundError:
+        print(f"❌ Error: Command '{command_base[0]}' not found. Is it installed and in your PATH?", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nSetup process interrupted by user.")
+        sys.exit(130)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred during setup: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -6824,6 +6915,10 @@ async def main():
 
     if args.command == "review":
         run_review(args)
+        return
+
+    if args.command == "setup":
+        run_setup(args)
         return
 
     if args.command == "help":

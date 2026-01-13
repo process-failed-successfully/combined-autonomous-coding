@@ -2012,7 +2012,17 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic
+from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
+
+def run_context(args):
+    """Displays an analysis of the agent's context."""
+    if args.action == "show":
+        context_output = _run_context_show_logic(project_dir=args.project_dir)
+        print(context_output)
+    elif args.action == "analyze":
+        context_output = _run_context_analyze_logic(project_dir=args.project_dir)
+        print(context_output)
+    sys.exit(0)
 
 def run_next(args):
     """Analyzes the project and executes the next logical command upon confirmation."""
@@ -5035,6 +5045,23 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'context' command ---
+    parser_context = subparsers.add_parser(
+        "context",
+        help="Analyze the file context that the agent will use."
+    )
+    parser_context.add_argument(
+        "action",
+        choices=["show", "analyze"],
+        help="Action to perform: 'show' a detailed tree view with sizes, or 'analyze' by file type.",
+    )
+    parser_context.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory).",
+    )
+
     # --- New 'stash' command ---
     parser_stash = subparsers.add_parser(
         "stash",
@@ -6706,6 +6733,10 @@ async def main():
 
     if args.command == "next":
         run_next(args)
+        return
+
+    if args.command == "context":
+        run_context(args)
         return
 
     if args.command == "help":

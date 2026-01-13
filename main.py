@@ -2870,6 +2870,8 @@ def run_help(args):
     print_command("worktrees", "Manage git worktrees for concurrent sprint tasks.")
 
     print_header("Utilities")
+    print_command("share", "Package the project state into a shareable archive.")
+    print_command("import", "Import a project from a shared archive.")
     print_command("why", "Explain what a command does and why you might use it.")
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
     print_command("shell", "Start an interactive shell with all commands available.")
@@ -2878,6 +2880,183 @@ def run_help(args):
     print_command("help", "Show this help message.")
 
     print(f"\nFor detailed options on a specific command, run: {executable_name} [command] --help")
+    sys.exit(0)
+
+
+def run_import(args):
+    """Imports a project from a shared archive."""
+    import tarfile
+
+    archive_file = args.archive_file.resolve()
+    output_dir = args.output_dir
+
+    if not archive_file.exists():
+        print(f"❌ Error: Archive file not found at '{archive_file}'", file=sys.stderr)
+        sys.exit(1)
+
+    if not output_dir:
+        output_dir = Path.cwd()
+    else:
+        output_dir = output_dir.resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"--- Importing Project from: {archive_file} ---")
+    print(f"Extracting to: {output_dir}")
+
+    try:
+        with tarfile.open(archive_file, "r:gz") as tar:
+            # Check for directory traversal vulnerability
+            for member in tar.getmembers():
+                member_path = os.path.join(output_dir, member.name)
+                if not os.path.abspath(member_path).startswith(os.path.abspath(str(output_dir))):
+                    print(f"❌ Error: Archive contains invalid path '{member.name}' (directory traversal attempt).", file=sys.stderr)
+                    sys.exit(1)
+
+            tar.extractall(path=output_dir)
+
+        # Post-extraction: Move logs to the correct central location
+        extracted_dirs = [d for d in output_dir.iterdir() if d.is_dir()]
+        if not extracted_dirs:
+            print("❌ Error: Archive is empty or has an unexpected structure.", file=sys.stderr)
+            sys.exit(1)
+
+        project_name = extracted_dirs[0].name
+        project_dir = output_dir / project_name
+        staged_logs_dir = project_dir / ".agent_logs"
+
+        if staged_logs_dir.is_dir():
+            repo_root = Path(__file__).parent
+            logs_dir = repo_root / "agents/logs"
+            logs_dir.mkdir(exist_ok=True)
+
+            log_count = 0
+            for log_file in staged_logs_dir.iterdir():
+                shutil.move(str(log_file), logs_dir / log_file.name)
+                log_count += 1
+
+            if log_count > 0:
+                print(f"  - Restored {log_count} agent log file(s).")
+            # Clean up the now-empty .agent_logs directory
+            shutil.rmtree(staged_logs_dir)
+
+        print("\n✅ Import complete.")
+        print(f"Project '{project_name}' is ready at: {project_dir}")
+
+    except tarfile.ReadError:
+        print(f"❌ Error: The file '{archive_file}' is not a valid .tar.gz archive.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An error occurred during import: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+def run_share(args):
+    """Packages the project state into a single shareable archive."""
+    import tarfile
+    import tempfile
+
+    project_dir = args.project_dir.resolve()
+    project_name = project_dir.name
+    output_file = args.output_file
+
+    if not output_file:
+        output_file = Path.cwd() / f"{project_name}.tar.gz"
+    else:
+        output_file = output_file.resolve()
+
+    print(f"--- Sharing Project: {project_dir} ---")
+    print(f"Output archive: {output_file}")
+
+    # Create a temporary directory to stage files
+    with tempfile.TemporaryDirectory() as tmpdir:
+        stage_dir = Path(tmpdir) / project_name
+        stage_dir.mkdir()
+
+        print(f"Staging files in temporary directory: {stage_dir}")
+
+        # --- 1. Copy project files respecting .gitignore ---
+        git_path = shutil.which("git")
+        if git_path and (project_dir / ".git").is_dir():
+            try:
+                # Use git archive to get a clean export of the project files
+                archive_process = subprocess.run(
+                    [git_path, "archive", "HEAD"],
+                    cwd=project_dir,
+                    capture_output=True,
+                    check=True
+                )
+                # Unpack the archive into the staging directory
+                unpack_process = subprocess.run(
+                    ["tar", "-x"],
+                    input=archive_process.stdout,
+                    cwd=stage_dir,
+                    capture_output=True,
+                    check=True
+                )
+                print("  - Copied project files (respecting .gitignore)")
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                print(f"❌ Error using git archive, falling back to simple copy: {e}", file=sys.stderr)
+                shutil.copytree(project_dir, stage_dir, dirs_exist_ok=True)
+        else:
+            print("  - Not a git repository, performing a simple copy.")
+            shutil.copytree(project_dir, stage_dir, dirs_exist_ok=True)
+
+        # --- 2. Copy agent artifacts ---
+        artifacts_to_copy = [
+            ".agent_history",
+            ".agent_branch",
+            ".agent_db.sqlite",
+            "feature_list.json",
+            "qa_summary.txt",
+            "final_metrics.txt",
+            ".agent_archives",
+            ".agent_trash"
+        ]
+        for artifact in artifacts_to_copy:
+            src_path = project_dir / artifact
+            if src_path.exists():
+                dest_path = stage_dir / artifact
+                if src_path.is_dir():
+                    shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(src_path, dest_path)
+                print(f"  - Copied artifact: {artifact}")
+
+        # --- 3. Copy agent logs ---
+        history_file = project_dir / ".agent_history"
+        if history_file.exists():
+            try:
+                with open(history_file, "r") as f:
+                    run_ids = [line.strip() for line in f if line.strip()]
+
+                repo_root = Path(__file__).parent
+                logs_dir = repo_root / "agents/logs"
+                staged_logs_dir = stage_dir / ".agent_logs"
+                staged_logs_dir.mkdir(exist_ok=True)
+
+                log_count = 0
+                for run_id in run_ids:
+                    log_file = logs_dir / f"{run_id}.log"
+                    if log_file.exists():
+                        shutil.copy2(log_file, staged_logs_dir / log_file.name)
+                        log_count += 1
+                if log_count > 0:
+                    print(f"  - Copied {log_count} agent log file(s)")
+            except IOError as e:
+                print(f"❌ Warning: Could not read .agent_history file: {e}", file=sys.stderr)
+
+        # --- 4. Create the final archive ---
+        print("\nCreating compressed archive...")
+        try:
+            with tarfile.open(output_file, "w:gz") as tar:
+                tar.add(stage_dir, arcname=project_name)
+            print(f"✅ Successfully created shareable archive: {output_file}")
+        except Exception as e:
+            print(f"❌ Error creating archive: {e}", file=sys.stderr)
+            sys.exit(1)
+
     sys.exit(0)
 
 
@@ -5119,6 +5298,33 @@ def parse_args(argv=None):
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
+    # --- New 'share' command ---
+    parser_share = subparsers.add_parser("share", help="Package the project state into a shareable archive.")
+    parser_share.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to share (default: current directory)",
+    )
+    parser_share.add_argument(
+        "-o", "--output-file",
+        type=Path,
+        help="Path to save the output archive file. Defaults to <project-name>.tar.gz.",
+    )
+
+    # --- New 'import' command ---
+    parser_import = subparsers.add_parser("import", help="Import a project from a shared archive.")
+    parser_import.add_argument(
+        "archive_file",
+        type=Path,
+        help="Path to the .tar.gz archive file to import.",
+    )
+    parser_import.add_argument(
+        "-o", "--output-dir",
+        type=Path,
+        help="Directory to extract the project into. Defaults to the current directory.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7016,6 +7222,14 @@ async def main():
 
     if args.command == "help":
         run_help(args)
+        return
+
+    if args.command == "share":
+        run_share(args)
+        return
+
+    if args.command == "import":
+        run_import(args)
         return
 
     # Initialize Agent Client

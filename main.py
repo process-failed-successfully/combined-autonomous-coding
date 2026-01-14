@@ -5988,7 +5988,6 @@ def run_pr(args):
         print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)
 
-
 def run_commit(args):
     """Handles the git commit command with safety checks."""
     import shutil
@@ -6008,6 +6007,14 @@ def run_commit(args):
         print("❌ Error: Not a git repository. Cannot commit.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Stage all changes ---
+    print("--- Staging all changes ---")
+    try:
+        subprocess.run([git_path, "-C", str(project_dir), "add", "-A"], check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
     # --- Run tests if requested ---
     if args.run_tests:
         print("--- Running tests before commit ---")
@@ -6019,14 +6026,6 @@ def run_commit(args):
                 print("\n❌ Tests failed. Commit aborted.", file=sys.stderr)
                 sys.exit(1)
         print("✅ Tests passed. Proceeding with commit.")
-
-    # --- Stage all changes ---
-    print("--- Staging all changes ---")
-    try:
-        subprocess.run([git_path, "-C", str(project_dir), "add", "-A"], check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
-        sys.exit(1)
 
     # --- Check if there's anything to commit ---
     check_staged_result = subprocess.run([git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"], capture_output=True)

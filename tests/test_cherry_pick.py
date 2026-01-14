@@ -120,5 +120,20 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_command_injection(self, mock_stderr, mock_stdout):
+        """Test against command injection vulnerabilities."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        # This is a malicious argument that could cause harm if not handled properly
+        args.target = ";touch malicious_file.txt"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        self.assertFalse((self.test_dir / "malicious_file.txt").exists())
+
 if __name__ == '__main__':
     unittest.main()

@@ -75,7 +75,7 @@ if FileSystemEventHandler:
 
         def _run_command(self):
             if self.clear_screen:
-                os.system('cls' if os.name == 'nt' else 'clear')
+                subprocess.run(["cmd", "/c", "cls"] if os.name == "nt" else ["clear"])
             print(f"Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 

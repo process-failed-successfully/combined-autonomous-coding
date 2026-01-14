@@ -24,16 +24,18 @@ class TestWatchFunctionality(unittest.TestCase):
             shutil.rmtree(self.project_dir)
 
     @patch('main.subprocess.run')
-    @patch('main.os.system')
-    def test_command_execution_with_clear(self, mock_os_system, mock_subprocess_run):
+    def test_command_execution_with_clear(self, mock_subprocess_run):
         handler = CommandEventHandler(
             command=['pytest'],
             project_dir=self.project_dir,
             clear_screen=True
         )
         handler._run_command()
-        mock_os_system.assert_called_once_with('cls' if os.name == 'nt' else 'clear')
-        mock_subprocess_run.assert_called_once_with(['pytest'], cwd=self.project_dir)
+        clear_command = ["cmd", "/c", "cls"] if os.name == "nt" else ["clear"]
+        mock_subprocess_run.assert_has_calls([
+            call(clear_command),
+            call(['pytest'], cwd=self.project_dir)
+        ])
 
     @patch('main.Timer')
     def test_debouncing_logic(self, mock_timer_class):

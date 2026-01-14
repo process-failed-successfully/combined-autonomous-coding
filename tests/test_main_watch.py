@@ -26,7 +26,11 @@ class TestWatchCommand(unittest.TestCase):
         # Arrange
         args = argparse.Namespace(
             project_dir=self.test_dir,
-            watch_command=['ls']
+            watch_command=['ls'],
+            patterns=['*'],
+            ignore_patterns=[],
+            delay=0.5,
+            clear=False,
         )
         mock_observer_instance = MagicMock()
         mock_observer.return_value = mock_observer_instance
@@ -41,8 +45,9 @@ class TestWatchCommand(unittest.TestCase):
         mock_observer_instance.stop.assert_called_once()
         mock_observer_instance.join.assert_called_once()
 
+    @patch('main.Timer')
     @patch('main.subprocess.run')
-    def test_command_event_handler_runs_command_on_modification(self, mock_subprocess_run):
+    def test_command_event_handler_runs_command_on_modification(self, mock_subprocess_run, mock_timer):
         # Arrange
         command_to_run = ['pytest', 'tests/']
         event_handler = CommandEventHandler(command_to_run, self.test_dir)
@@ -54,6 +59,8 @@ class TestWatchCommand(unittest.TestCase):
         event_handler.on_modified(mock_event)
 
         # Assert
+        # The timer is created with the function to run. Call it.
+        mock_timer.call_args.args[1]()
         mock_subprocess_run.assert_called_once_with(command_to_run, cwd=self.test_dir)
 
     @patch('main.subprocess.run')

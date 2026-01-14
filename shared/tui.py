@@ -43,13 +43,15 @@ class Dashboard(Screen):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self._current_log_path: Path | None = None
+        self._log_file_pos: int = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="left-pane"):
             yield Welcome()
             yield ProjectInfo(self.project_dir, id="project-info")
-        yield RichLog(id="log-viewer", wrap=True, highlight=True)
+        yield RichLog(id="log-viewer", wrap=True, highlight=True, max_lines=1000)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -62,17 +64,37 @@ class Dashboard(Screen):
         log_file = get_latest_log_file()
         log_viewer = self.query_one("#log-viewer", RichLog)
 
-        if log_file and log_file.exists():
+        if not log_file:
+            if self._current_log_path is not None:
+                log_viewer.write("\nNo log file found.")
+                self._current_log_path = None
+                self._log_file_pos = 0
+            return
+
+        # Check if file rotated or changed
+        if log_file != self._current_log_path:
+            self._current_log_path = log_file
+            self._log_file_pos = 0
+            log_viewer.clear()
+            log_viewer.write(f"Watching log: {log_file.name}")
+
+        if log_file.exists():
             try:
-                with open(log_file, "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-                    log_viewer.clear()
-                    log_viewer.write("".join(lines[-100:]))
+                current_size = log_file.stat().st_size
+                if current_size < self._log_file_pos:
+                    # File was truncated or rotated
+                    self._log_file_pos = 0
+                    log_viewer.write("\nLog file was truncated/rotated.")
+
+                if current_size > self._log_file_pos:
+                    with open(log_file, "r", encoding="utf-8") as f:
+                        f.seek(self._log_file_pos)
+                        new_content = f.read()
+                        self._log_file_pos = f.tell()
+                        if new_content:
+                            log_viewer.write(new_content)
             except Exception as e:
                 log_viewer.write(f"\nError reading log file: {e}")
-        else:
-            log_viewer.clear()
-            log_viewer.write("No log file found.")
 
 
 class AgentTUI(App):

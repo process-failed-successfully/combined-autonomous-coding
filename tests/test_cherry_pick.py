@@ -6,7 +6,6 @@ import shutil
 import os
 import sys
 
-
 from main import run_cherry_pick
 
 class TestCherryPickCommand(unittest.TestCase):

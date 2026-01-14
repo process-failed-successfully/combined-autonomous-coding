@@ -1801,7 +1801,7 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
@@ -5084,18 +5084,6 @@ def parse_args(argv=None):
         help="Skip confirmation prompts for 'delete' action.",
     )
 
-    # --- New 'interact' command ---
-    parser_interact = subparsers.add_parser(
-        "interact",
-        help="Start an interactive session to run common commands."
-    )
-    parser_interact.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory for the interactive session.",
-    )
-
     # --- New 'watch' command ---
     parser_watch = subparsers.add_parser(
         "watch",
@@ -7121,10 +7109,6 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
-        return
-
-    if args.command == "interact":
-        run_interact(args)
         return
 
     # Initialize Agent Client

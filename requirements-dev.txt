@@ -1,9 +1,9 @@
+bandit
 flake8
 mypy
-bandit
-types-requests
 pytest
 pytest-cov
-types-PyYAML
 textual==0.64.0
+types-PyYAML
+types-requests
 watchdog

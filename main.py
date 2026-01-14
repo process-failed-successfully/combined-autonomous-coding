@@ -1774,17 +1774,21 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
-    # First, check if the target is a valid git object (commit, tag, etc.)
+    # Use rev-parse for a more robust check if the target is a commit-ish object.
+    # The '^{commit}' suffix ensures it resolves to a commit, not just a tag or tree.
     is_git_ref = False
     try:
-        check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
-            capture_output=True, text=True
+        # Use 'cat-file -e' which simply exits with 0 if the object is a valid commit.
+        # It's a more direct way to check for existence than parsing output.
+        # The '^{commit}' suffix ensures we're dealing with a commit object.
+        subprocess.run(
+            [git_path, "-C", str(project_dir), "cat-file", "-e", f"{target}^{{commit}}"],
+            check=True, capture_output=True
         )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
-            is_git_ref = True
-    except Exception:
-        pass  # Ignore errors, we'll handle the 'not found' case below
+        is_git_ref = True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # If the command fails, it's not a valid commit reference.
+        pass
 
     if not is_git_ref:
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
@@ -1801,7 +1805,8 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        # Use '--' to disambiguate the target from potential options (e.g., if it starts with a dash)
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
@@ -2617,6 +2622,8 @@ def run_diff(args):
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)
+
+
 
 
 def _run_log_logic(project_dir, count=None):
@@ -4933,51 +4940,6 @@ def parse_args(argv=None):
         help="The git command and its arguments to run.",
     )
 
-    # --- New 'push' command ---
-    parser_push = subparsers.add_parser(
-        "push",
-        help="Push the current feature branch to the remote repository with safety checks."
-    )
-    parser_push.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory to run the push command in (default: current directory).",
-    )
-
-    # --- New 'patch' command ---
-    parser_patch = subparsers.add_parser(
-        "patch",
-        help="Apply a patch from a file or stdin."
-    )
-    parser_patch.add_argument(
-        "patch_file",
-        nargs="?",
-        help="The path to the .patch file. If omitted, reads from stdin."
-    )
-    parser_patch.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory (default: current directory).",
-    )
-    parser_patch.add_argument(
-        "-R", "--reverse",
-        action="store_true",
-        help="Apply the patch in reverse (unpatch)."
-    )
-
-    # --- New 'pull' command ---
-    parser_pull = subparsers.add_parser(
-        "pull",
-        help="Pull the latest changes from the remote repository with safety checks."
-    )
-    parser_pull.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory to run the pull command in (default: current directory).",
-    )
 
     # --- New 'push' command ---
     parser_push = subparsers.add_parser(
@@ -5886,6 +5848,51 @@ def run_pull(args):
         stderr = e.stderr.strip() if e.stderr else str(e)
         print(f"❌ An error occurred: {stderr}", file=sys.stderr)
         sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def run_patch(args):
+    """Applies a patch from a file or stdin."""
+    project_dir = args.project_dir.resolve()
+    patch_file = args.patch_file
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository.", file=sys.stderr)
+        sys.exit(1)
+
+    cmd = [git_path, "-C", str(project_dir), "apply"]
+    if args.reverse:
+        cmd.append("--reverse")
+
+    try:
+        if patch_file:
+            patch_path = Path(patch_file)
+            if not patch_path.is_file():
+                print(f"❌ Error: Patch file not found at '{patch_file}'", file=sys.stderr)
+                sys.exit(1)
+            with open(patch_path, 'rb') as f:
+                result = subprocess.run(cmd, stdin=f, capture_output=True, text=True)
+        else:
+            print("--- Waiting for patch from stdin (press Ctrl+D to finish) ---")
+            stdin_text = sys.stdin.read()
+            result = subprocess.run(cmd, input=stdin_text, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            print("❌ Error applying patch:", file=sys.stderr)
+            print(result.stderr, file=sys.stderr)
+            sys.exit(1)
+
+        print("✅ Patch applied successfully.")
+        sys.exit(0)
+
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)

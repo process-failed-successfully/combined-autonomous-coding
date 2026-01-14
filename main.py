@@ -1777,11 +1777,12 @@ def run_cherry_pick(args):
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
+        # Use rev-parse for a more robust check if the target is a valid commit-like object
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
             capture_output=True, text=True
         )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+        if check_commit_result.returncode == 0:
             is_git_ref = True
     except Exception:
         pass  # Ignore errors, we'll handle the 'not found' case below

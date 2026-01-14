@@ -89,7 +89,10 @@ if PatternMatchingEventHandler:
         def run_command(self, event):
             self.last_run_time = time.time()
             if self.clear:
-                os.system('cls' if os.name == 'nt' else 'clear')
+                if os.name == 'nt':
+                    subprocess.run('cls', shell=True, check=True)
+                else:
+                    subprocess.run('clear', shell=True, check=True)
 
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)

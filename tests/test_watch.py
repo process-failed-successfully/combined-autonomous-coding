@@ -69,9 +69,8 @@ class TestWatchCommand(unittest.TestCase):
         mock_subprocess_run.assert_called_with(['npm', 'test'], cwd='.')
 
     @patch('main.subprocess.run')
-    @patch('main.os.system')
     @patch('main.time.sleep', return_value=None)
-    def test_clear_screen_option(self, mock_sleep, mock_os_system, mock_subprocess_run):
+    def test_clear_screen_option(self, mock_sleep, mock_subprocess_run):
         """Test the --clear functionality."""
         if not main.PatternMatchingEventHandler:
             self.skipTest("watchdog is not installed")
@@ -85,9 +84,10 @@ class TestWatchCommand(unittest.TestCase):
         handler.on_modified(mock_event)
         time.sleep(0.1)
 
-        # Assert that os.system was called to clear the screen
-        mock_os_system.assert_called_once_with('cls' if os.name == 'nt' else 'clear')
-        mock_subprocess_run.assert_called_once()
+        # Assert that subprocess.run was called to clear the screen
+        clear_command = 'cls' if os.name == 'nt' else 'clear'
+        mock_subprocess_run.assert_any_call(clear_command, shell=True)
+        mock_subprocess_run.assert_any_call(['pytest'], cwd='.')
 
     @patch('main.threading.Timer')
     @patch('main.subprocess.run')

@@ -19,6 +19,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
+import fnmatch
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -62,15 +63,35 @@ AVAILABLE_AGENTS = {
 
 if FileSystemEventHandler:
     class CommandEventHandler(FileSystemEventHandler):
-        def __init__(self, command, project_dir):
+        def __init__(self, command, project_dir, patterns, ignore_patterns, clear, delay):
             self.command = command
             self.project_dir = project_dir
+            self.patterns = patterns
+            self.ignore_patterns = ignore_patterns
+            self.clear = clear
+            self.delay = delay
+            self.last_run = 0
 
         def on_modified(self, event):
             if event.is_directory:
                 return
-            print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
+
+            now = time.time()
+            if (now - self.last_run) < self.delay:
+                return
+
+            filepath = event.src_path
+            if not any(fnmatch.fnmatch(filepath, p) for p in self.patterns):
+                return
+            if any(fnmatch.fnmatch(filepath, p) for p in self.ignore_patterns):
+                return
+
+            if self.clear:
+                os.system('cls' if os.name == 'nt' else 'clear')
+
+            print(f"File modified: {filepath}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+            self.last_run = now
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -5100,6 +5121,29 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory to watch.",
     )
+    parser_watch.add_argument(
+        "--patterns",
+        nargs='*',
+        default=["*"],
+        help="Glob patterns for files to watch (default: ['*']).",
+    )
+    parser_watch.add_argument(
+        "--ignore-patterns",
+        nargs='*',
+        default=[],
+        help="Glob patterns for files to ignore.",
+    )
+    parser_watch.add_argument(
+        "-c", "--clear",
+        action="store_true",
+        help="Clear the terminal before executing the command.",
+    )
+    parser_watch.add_argument(
+        "--delay",
+        type=float,
+        default=0.5,
+        help="Debounce delay in seconds (default: 0.5).",
+    )
 
     # --- New 'why' command ---
     parser_why = subparsers.add_parser(
@@ -5381,7 +5425,14 @@ def run_watch(args):
     print(f"--- Watching for file changes in: {project_dir} ---")
     print(f"--- Press Ctrl+C to stop ---")
 
-    event_handler = CommandEventHandler(command_to_run, project_dir)
+    event_handler = CommandEventHandler(
+        command_to_run,
+        project_dir,
+        args.patterns,
+        args.ignore_patterns,
+        args.clear,
+        args.delay
+    )
     observer = Observer()
     observer.schedule(event_handler, project_dir, recursive=True)
     observer.start()

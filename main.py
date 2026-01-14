@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.utils import mask_secrets
 import json
 import yaml
 import platformdirs
@@ -1805,15 +1806,15 @@ def run_cherry_pick(args):
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
-            print(result.stdout)
+            print(mask_secrets(result.stdout))
             print(f"\n✅ Successfully cherry-picked commit {target[:7]}.")
             sys.exit(0)
         else:
             print("❌ Error: Cherry-pick failed.", file=sys.stderr)
             print("This is likely due to a merge conflict.", file=sys.stderr)
             print("\n--- Git Output ---", file=sys.stderr)
-            print(result.stdout, file=sys.stderr)
-            print(result.stderr, file=sys.stderr)
+            print(mask_secrets(result.stdout), file=sys.stderr)
+            print(mask_secrets(result.stderr), file=sys.stderr)
             print("------------------", file=sys.stderr)
             print("\nPlease resolve the conflicts in your editor and then run:", file=sys.stderr)
             print(f"  git cherry-pick --continue", file=sys.stderr)

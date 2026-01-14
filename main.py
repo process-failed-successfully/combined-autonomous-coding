@@ -2927,7 +2927,9 @@ def run_help(args):
     print_command("commit", "Stage all changes and create a commit, with interactive prompts.")
     print_command("push", "Safely push the current feature branch to the remote.")
     print_command("pull", "Safely pull the latest changes from the remote.")
-    print_command("pr", "Manage GitHub pull requests for the project.")
+    print_command("pr list", "List open pull requests.")
+    print_command("pr checkout <id>", "Check out a pull request locally.")
+    print_command("pr create", "Create a new pull request.")
     print_command("feature", "A guided workflow for branch -> commit -> push -> pr.")
     print_command("diff", "Show a detailed diff of uncommitted changes or a specific commit.")
     print_command("stash", "Stash uncommitted changes for later use.")
@@ -5017,6 +5019,35 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # PR 'list' action
+    parser_pr_list = pr_subparsers.add_parser(
+        "list",
+        help="List open pull requests for the repository."
+    )
+    parser_pr_list.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
+    # PR 'checkout' action
+    parser_pr_checkout = pr_subparsers.add_parser(
+        "checkout",
+        help="Check out the branch for a specific pull request."
+    )
+    parser_pr_checkout.add_argument(
+        "pr_number",
+        type=int,
+        help="The pull request number to check out."
+    )
+    parser_pr_checkout.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'commit' command ---
     parser_commit = subparsers.add_parser(
         "commit",
@@ -5912,6 +5943,112 @@ def run_patch(args):
         sys.exit(1)
 
 
+def _pr_list(args, config):
+    """Helper function to list open pull requests."""
+    import sys
+    import requests
+    from shared.github_client import GitHubClient
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Listing open Pull Requests in: {project_dir} ---")
+
+    if not config.github_token:
+        print("❌ Error: GitHub token not found. Please set GITHUB_TOKEN environment variable or run 'configure' to set 'github_token'.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+        prs = client.list_pull_requests(project_dir=project_dir)
+
+        if not prs:
+            print("✅ No open pull requests found.")
+            sys.exit(0)
+
+        print(f"{'ID':<6} {'Title':<60} {'Author':<20} {'Branch'}")
+        print("-" * 100)
+        for pr in prs:
+            title = pr['title']
+            if len(title) > 57:
+                title = title[:57] + "..."
+            author = pr['user']['login']
+            branch = pr['head']['ref']
+            print(f"#{pr['number']:<5} {title:<60} {author:<20} {branch}")
+
+    except (ValueError, requests.exceptions.RequestException) as e:
+        print(f"❌ An error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    sys.exit(0)
+
+
+def _pr_checkout(args, config):
+    """Helper function to check out a pull request."""
+    import sys
+    import shutil
+    import subprocess
+    import requests
+    from shared.github_client import GitHubClient
+
+    project_dir = args.project_dir.resolve()
+    pr_number = args.pr_number
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository.", file=sys.stderr)
+        sys.exit(1)
+    if not config.github_token:
+        print("❌ Error: GitHub token not found.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Checking out Pull Request #{pr_number} in: {project_dir} ---")
+
+    try:
+        client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+        pr = client.get_pull_request(project_dir=project_dir, pr_number=pr_number)
+
+        branch_name = pr['head']['ref']
+        remote_name = "origin" # Assuming origin, which is standard
+
+        print(f"  - Found branch: {branch_name}")
+
+        # Fetch the branch from the remote
+        print(f"  - Fetching branch from remote '{remote_name}'...")
+        fetch_cmd = [git_path, "-C", str(project_dir), "fetch", remote_name, branch_name]
+        fetch_result = subprocess.run(fetch_cmd, capture_output=True, text=True)
+        if fetch_result.returncode != 0:
+            print(f"❌ Error fetching branch '{branch_name}':", file=sys.stderr)
+            print(fetch_result.stderr, file=sys.stderr)
+            sys.exit(1)
+
+        # Check out the branch
+        print(f"  - Checking out branch '{branch_name}'...")
+        checkout_cmd = [git_path, "-C", str(project_dir), "checkout", branch_name]
+        checkout_result = subprocess.run(checkout_cmd, capture_output=True, text=True)
+        if checkout_result.returncode != 0:
+            print(f"❌ Error checking out branch '{branch_name}':", file=sys.stderr)
+            print(checkout_result.stderr, file=sys.stderr)
+            sys.exit(1)
+
+        print(f"\n✅ Successfully checked out branch '{branch_name}'.")
+
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            print(f"❌ Error: Pull Request #{pr_number} not found.", file=sys.stderr)
+        else:
+            print(f"❌ An HTTP error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    except (ValueError, requests.exceptions.RequestException, subprocess.CalledProcessError) as e:
+        print(f"❌ An error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+    sys.exit(0)
+
+
 def _pr_create(args, config):
     """Helper function to create a pull request."""
     import shutil
@@ -5984,6 +6121,10 @@ def run_pr(args):
 
     if args.action == "create":
         _pr_create(args, config)
+    elif args.action == "list":
+        _pr_list(args, config)
+    elif args.action == "checkout":
+        _pr_checkout(args, config)
     else:
         print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)

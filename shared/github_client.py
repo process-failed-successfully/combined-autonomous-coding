@@ -67,3 +67,30 @@ class GitHubClient:
             return response.json()
         else:
             response.raise_for_status()
+
+    def list_pull_requests(self, project_dir):
+        """Lists open pull requests for the repository."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls"
+        headers = self._get_headers()
+        params = {"state": "open"}
+
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+
+    def get_pull_request(self, project_dir, pr_number: int):
+        """Gets details for a single pull request."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls/{pr_number}"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        return response.json()

@@ -20,6 +20,38 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def mask_secrets(text: str) -> str:
+    """
+    Mask potential secrets in the text.
+    Scans os.environ for variables containing sensitive keywords and masks their values.
+    """
+    if not text:
+        return text
+
+    # Keywords that suggest a secret
+    sensitive_keywords = {'KEY', 'TOKEN', 'SECRET', 'PASSWORD', 'CREDENTIAL', 'AUTH'}
+
+    # Collect values to mask
+    secrets = []
+    for key, value in os.environ.items():
+        if not value or len(value) < 6:  # Ignore short values to avoid masking common words
+            continue
+
+        # If the key contains any of the sensitive keywords
+        if any(keyword in key.upper() for keyword in sensitive_keywords):
+            secrets.append(value)
+
+    # Sort by length descending to mask longer secrets first (avoids partial masking issues)
+    secrets.sort(key=len, reverse=True)
+
+    masked_text = text
+    for secret in secrets:
+        if secret in masked_text:
+            masked_text = masked_text.replace(secret, '*' * 8)
+
+    return masked_text
+
+
 def log_startup_config(config: "Config", logger: logging.Logger):
     """Logs the startup configuration in a clean format."""
     logger.info("\n" + "=" * 50)
@@ -138,7 +170,8 @@ def has_recent_activity(
 
 async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) -> str:
     """Execute a bash command block."""
-    logger.info(f"[Executing Bash] {command}")
+    masked_command = mask_secrets(command)
+    logger.info(f"[Executing Bash] {masked_command}")
     try:
         process = await asyncio.create_subprocess_shell(
             command,
@@ -169,8 +202,11 @@ async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) ->
         if stderr:
             output += f"\nSTDERR:\n{stderr.decode()}"
 
+        # Mask secrets in the output for logging ONLY
+        masked_output = mask_secrets(output)
+
         # Log truncated output to avoid spamming console
-        display_output = output[:500] + ("..." if len(output) > 500 else "")
+        display_output = masked_output[:500] + ("..." if len(masked_output) > 500 else "")
         logger.info(f"[Output]\n{display_output}")
 
         return output

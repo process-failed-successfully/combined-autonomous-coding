@@ -1774,20 +1774,21 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
-    # First, check if the target is a valid git object (commit, tag, etc.)
-    is_git_ref = False
+    # First, check if the target is a valid git commit object.
+    # We use 'rev-parse --verify' and check for a zero exit code.
+    # The '^{commit}' suffix ensures we're dealing with a commit object.
+    is_commit_ref = False
     try:
-        # Use rev-parse for a more robust check that it's a valid commit-like object
         check_commit_result = subprocess.run(
             [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
-            capture_output=True, text=True
+            capture_output=True, text=True, check=False
         )
         if check_commit_result.returncode == 0:
-            is_git_ref = True
+            is_commit_ref = True
     except Exception:
         pass  # Ignore errors, we'll handle the 'not found' case below
 
-    if not is_git_ref:
+    if not is_commit_ref:
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
         commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
         if commit_hash:

@@ -6,9 +6,6 @@ import shutil
 import os
 import sys
 
-# Add the root of the project to the Python path
-# This is necessary for the tests to be able to import the 'main' module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from main import run_cherry_pick
 

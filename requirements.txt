@@ -13,7 +13,5 @@ prometheus-client
 psutil
 platformdirs
 google-generativeai
-prometheus-client
 argcomplete
-watchdog
 watchdog

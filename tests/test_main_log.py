@@ -85,5 +85,22 @@ class TestMainLog(unittest.TestCase):
 
         shutil.rmtree(non_git_dir)
 
+    @patch('main.subprocess.run')
+    def test_log_with_path(self, mock_subprocess_run):
+        """Test that the log command correctly handles a file path argument."""
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+        mock_subprocess_run.return_value = mock_process
+
+        result = _run_log_logic(project_dir=self.project_dir, paths=["file2.txt"])
+
+        self.assertTrue(result)
+        mock_subprocess_run.assert_called_once()
+        called_command = mock_subprocess_run.call_args[0][0]
+
+        self.assertIn("log", called_command)
+        self.assertIn("--", called_command)
+        self.assertIn("file2.txt", called_command)
+
 if __name__ == '__main__':
     unittest.main()

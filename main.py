@@ -2619,7 +2619,7 @@ def run_diff(args):
         sys.exit(1)
 
 
-def _run_log_logic(project_dir, count=None):
+def _run_log_logic(project_dir, count=None, paths=None):
     """The core logic for displaying the git commit history."""
     git_path = shutil.which("git")
     if not git_path:
@@ -2645,6 +2645,10 @@ def _run_log_logic(project_dir, count=None):
         if count is not None:
             cmd.extend(["-n", str(count)])
 
+        if paths:
+            cmd.append("--")
+            cmd.extend(paths)
+
         result = subprocess.run(cmd)
 
         if result.returncode != 0:
@@ -2658,7 +2662,7 @@ def _run_log_logic(project_dir, count=None):
 
 def run_log(args):
     """Displays the git commit history for the project."""
-    success = _run_log_logic(project_dir=args.project_dir, count=args.count)
+    success = _run_log_logic(project_dir=args.project_dir, count=args.count, paths=args.paths)
     sys.exit(0 if success else 1)
 
 
@@ -4201,6 +4205,11 @@ def parse_args(argv=None):
 
     # Subparser for 'log' (git log)
     parser_log = subparsers.add_parser("log", help="Show the git commit history for the project")
+    parser_log.add_argument(
+        "paths",
+        nargs="*",
+        help="Optional: Specific file or directory paths to show the log for.",
+    )
     parser_log.add_argument(
         "-n", "--count",
         type=int,

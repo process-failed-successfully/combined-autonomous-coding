@@ -2619,6 +2619,73 @@ def run_diff(args):
         sys.exit(1)
 
 
+def run_patch(args):
+    """Applies a patch from a file or stdin."""
+    import subprocess
+    import sys
+    import shutil
+
+    project_dir = args.project_dir.resolve()
+
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot apply patch.", file=sys.stderr)
+        sys.exit(1)
+
+    cmd = [git_path, "-C", str(project_dir), "apply"]
+    if args.reverse:
+        cmd.append("--reverse")
+
+    patch_content = None
+    if args.patch_file:
+        print(f"--- Applying patch from file: {args.patch_file} ---")
+        patch_path = Path(args.patch_file)
+        if not patch_path.is_file():
+            print(f"❌ Error: Patch file not found at '{patch_path}'", file=sys.stderr)
+            sys.exit(1)
+        try:
+            patch_content = patch_path.read_text()
+        except IOError as e:
+            print(f"❌ Error reading patch file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("--- Applying patch from stdin ---")
+        try:
+            patch_content = sys.stdin.read()
+        except Exception as e:
+            print(f"❌ Error reading from stdin: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    if not patch_content:
+        print("❌ Error: No patch content provided.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = subprocess.run(
+            cmd,
+            input=patch_content,
+            text=True,
+            capture_output=True
+        )
+        if result.returncode != 0:
+            print("❌ Error applying patch:", file=sys.stderr)
+            print(result.stderr, file=sys.stderr)
+            sys.exit(1)
+
+        print("✅ Patch applied successfully.")
+        sys.exit(0)
+
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        stderr = getattr(e, 'stderr', str(e))
+        print(f"❌ An error occurred during patch process: {stderr}", file=sys.stderr)
+        sys.exit(1)
+
+
 def _run_log_logic(project_dir, count=None):
     """The core logic for displaying the git commit history."""
     git_path = shutil.which("git")
@@ -5842,73 +5909,6 @@ def run_pull(args):
         sys.exit(1)
     except Exception as e:
         print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-def run_patch(args):
-    """Applies a patch from a file or stdin."""
-    import subprocess
-    import sys
-    import shutil
-
-    project_dir = args.project_dir.resolve()
-
-    git_path = shutil.which("git")
-    if not git_path:
-        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
-
-    git_dir = project_dir / ".git"
-    if not git_dir.exists() or not git_dir.is_dir():
-        print("❌ Error: Not a git repository. Cannot apply patch.", file=sys.stderr)
-        sys.exit(1)
-
-    cmd = [git_path, "-C", str(project_dir), "apply"]
-    if args.reverse:
-        cmd.append("--reverse")
-
-    patch_content = None
-    if args.patch_file:
-        print(f"--- Applying patch from file: {args.patch_file} ---")
-        patch_path = Path(args.patch_file)
-        if not patch_path.is_file():
-            print(f"❌ Error: Patch file not found at '{patch_path}'", file=sys.stderr)
-            sys.exit(1)
-        try:
-            patch_content = patch_path.read_text()
-        except IOError as e:
-            print(f"❌ Error reading patch file: {e}", file=sys.stderr)
-            sys.exit(1)
-    else:
-        print("--- Applying patch from stdin ---")
-        try:
-            patch_content = sys.stdin.read()
-        except Exception as e:
-            print(f"❌ Error reading from stdin: {e}", file=sys.stderr)
-            sys.exit(1)
-
-    if not patch_content:
-        print("❌ Error: No patch content provided.", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        result = subprocess.run(
-            cmd,
-            input=patch_content,
-            text=True,
-            capture_output=True
-        )
-        if result.returncode != 0:
-            print("❌ Error applying patch:", file=sys.stderr)
-            print(result.stderr, file=sys.stderr)
-            sys.exit(1)
-
-        print("✅ Patch applied successfully.")
-        sys.exit(0)
-
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        stderr = getattr(e, 'stderr', str(e))
-        print(f"❌ An error occurred during patch process: {stderr}", file=sys.stderr)
         sys.exit(1)
 
 

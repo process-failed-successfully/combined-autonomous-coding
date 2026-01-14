@@ -9,7 +9,7 @@ import sys
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import parse_args, run_diff
+from main import get_parser, parse_args, run_diff
 
 class TestDiffCommand(unittest.TestCase):
     def setUp(self):
@@ -32,7 +32,8 @@ class TestDiffCommand(unittest.TestCase):
     def test_diff_uncommitted_changes(self, mock_subprocess_run):
         # Arrange
         mock_subprocess_run.return_value = MagicMock(returncode=0)
-        args = parse_args(['diff', '--project-dir', str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ['diff', '--project-dir', str(self.project_dir)])
 
         # Act
         with self.assertRaises(SystemExit) as cm:
@@ -61,7 +62,8 @@ class TestDiffCommand(unittest.TestCase):
         mock_show.returncode = 0
         mock_subprocess_run.side_effect = [mock_rev_parse, mock_show]
 
-        args = parse_args(['diff', run_id, '--project-dir', str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ['diff', run_id, '--project-dir', str(self.project_dir)])
 
         # Act
         with self.assertRaises(SystemExit) as cm:
@@ -89,7 +91,8 @@ class TestDiffCommand(unittest.TestCase):
         mock_show.returncode = 0
         mock_subprocess_run.side_effect = [mock_rev_parse, mock_show]
 
-        args = parse_args(['diff', commit_hash, '--project-dir', str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ['diff', commit_hash, '--project-dir', str(self.project_dir)])
 
         # Act
         with self.assertRaises(SystemExit) as cm:
@@ -114,7 +117,8 @@ class TestDiffCommand(unittest.TestCase):
         mock_rev_parse.returncode = 1
         mock_subprocess_run.return_value = mock_rev_parse
 
-        args = parse_args(['diff', invalid_target, '--project-dir', str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ['diff', invalid_target, '--project-dir', str(self.project_dir)])
 
         # Act
         with self.assertRaises(SystemExit) as cm:

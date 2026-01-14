@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import io
-from main import parse_args, run_rewind
+from main import get_parser, parse_args, run_rewind
 
 class TestRewindCommand(unittest.TestCase):
     def setUp(self):
@@ -53,7 +53,8 @@ class TestRewindCommand(unittest.TestCase):
 
     def test_rewind_to_specific_commit(self):
         with self.assertRaises(SystemExit) as cm:
-            args = parse_args(["rewind", self.second_commit_hash, "--project-dir", str(self.project_dir), "--yes"])
+            parser = get_parser()
+            args = parse_args(parser, ["rewind", self.second_commit_hash, "--project-dir", str(self.project_dir), "--yes"])
             run_rewind(args)
 
         self.assertEqual(cm.exception.code, 0)
@@ -67,7 +68,8 @@ class TestRewindCommand(unittest.TestCase):
 
     def test_rewind_relative_commit(self):
         with self.assertRaises(SystemExit) as cm:
-            args = parse_args(["rewind", "HEAD~1", "--project-dir", str(self.project_dir), "--yes"])
+            parser = get_parser()
+            args = parse_args(parser, ["rewind", "HEAD~1", "--project-dir", str(self.project_dir), "--yes"])
             run_rewind(args)
 
         self.assertEqual(cm.exception.code, 0)
@@ -88,7 +90,8 @@ class TestRewindCommand(unittest.TestCase):
         stderr_capture = io.StringIO()
         with self.assertRaises(SystemExit) as cm, \
              unittest.mock.patch('sys.stderr', stderr_capture):
-            args = parse_args(["rewind", self.initial_commit_hash, "--project-dir", str(self.project_dir), "--yes"])
+            parser = get_parser()
+            args = parse_args(parser, ["rewind", self.initial_commit_hash, "--project-dir", str(self.project_dir), "--yes"])
             run_rewind(args)
 
         self.assertEqual(cm.exception.code, 1)
@@ -107,7 +110,8 @@ class TestRewindCommand(unittest.TestCase):
     @patch('builtins.input', side_effect=['2', 'y'])
     def test_rewind_interactive_mode(self, mock_input):
         with self.assertRaises(SystemExit) as cm:
-            args = parse_args(["rewind", "--project-dir", str(self.project_dir)])
+            parser = get_parser()
+            args = parse_args(parser, ["rewind", "--project-dir", str(self.project_dir)])
             run_rewind(args)
 
         self.assertEqual(cm.exception.code, 0)
@@ -140,7 +144,8 @@ class TestRewindCommand(unittest.TestCase):
 
         # Now, rewind to the Run ID
         with self.assertRaises(SystemExit) as cm:
-            args = parse_args(["rewind", run_id, "--project-dir", str(self.project_dir), "--yes"])
+            parser = get_parser()
+            args = parse_args(parser, ["rewind", run_id, "--project-dir", str(self.project_dir), "--yes"])
             run_rewind(args)
 
         self.assertEqual(cm.exception.code, 0)

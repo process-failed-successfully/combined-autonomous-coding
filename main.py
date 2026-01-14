@@ -13,6 +13,7 @@ try:
     import argcomplete
 except ImportError:
     argcomplete = None
+import difflib
 import sys
 import os
 import shutil
@@ -3915,7 +3916,8 @@ def run_config(args):
     return 0
 
 
-def parse_args(argv=None):
+def get_parser():
+    """Creates and returns the ArgumentParser object for the CLI."""
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
@@ -5235,7 +5237,32 @@ def parse_args(argv=None):
     if argcomplete:
         argcomplete.autocomplete(parser)
 
-    return parser.parse_args(argv)
+    return parser
+
+def parse_args(parser, argv=None):
+    """Parses arguments and handles command suggestions for typos."""
+    try:
+        return parser.parse_args(argv)
+    except SystemExit as e:
+        # Argparse exits with code 2 on invalid choice. We want to suggest a command.
+        if e.code == 2 and argv and len(argv) > 0:
+            invalid_command = argv[0]
+            # Get all possible subcommand choices
+            choices = []
+            for action in parser._actions:
+                if isinstance(action, argparse._SubParsersAction):
+                    choices.extend(action.choices.keys())
+
+            # Find the best match
+            suggestion = difflib.get_close_matches(invalid_command, choices, n=1, cutoff=0.6)
+
+            if suggestion:
+                # The default argparse error message is already printed to stderr
+                print(f"\nDid you mean this?", file=sys.stderr)
+                print(f"  {suggestion[0]}", file=sys.stderr)
+
+        # Re-raise the original exception to exit as argparse intended
+        raise
 
 
 def run_profile(args):
@@ -6822,7 +6849,8 @@ def run_worktrees(args):
 
 
 async def main():
-    args = parse_args()
+    parser = get_parser()
+    args = parse_args(parser, sys.argv[1:])
 
     # Handle `shell` command
     if args.command == "shell":

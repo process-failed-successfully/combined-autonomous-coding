@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
-from main import parse_args, main
+from main import get_parser, parse_args, main
 import io
 
 
@@ -20,9 +20,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             shutil.rmtree(self.tmp_dir)
 
     def test_parse_args(self):
-        with patch("argparse.ArgumentParser.parse_args") as mock_parse:
-            parse_args()
-            mock_parse.assert_called()
+        parser = get_parser()
+        with patch.object(parser, "parse_args") as mock_parse:
+            parse_args(parser)
+            mock_parse.assert_called_with(None)
 
     @patch("main.parse_args")
     @patch("main.setup_logger")

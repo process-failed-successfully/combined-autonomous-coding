@@ -7,7 +7,7 @@ from pathlib import Path
 import io
 from contextlib import redirect_stdout, redirect_stderr
 
-from main import parse_args
+from main import get_parser, parse_args
 
 class TestWorktreesCommand(unittest.TestCase):
     def setUp(self):
@@ -24,7 +24,8 @@ class TestWorktreesCommand(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
 
     def test_worktree_create(self):
-        args = parse_args(["worktrees", "create", "test-worktree", "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "create", "test-worktree", "-p", str(self.project_dir)])
         with patch("sys.exit") as mock_exit:
             from main import run_worktrees
             run_worktrees(args)
@@ -40,7 +41,8 @@ class TestWorktreesCommand(unittest.TestCase):
         subprocess.run(["git", "worktree", "add", "worktrees/test-worktree-1"], cwd=self.project_dir, capture_output=True)
         subprocess.run(["git", "worktree", "add", "worktrees/test-worktree-2"], cwd=self.project_dir, capture_output=True)
 
-        args = parse_args(["worktrees", "list", "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "list", "-p", str(self.project_dir)])
         with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
             from main import run_worktrees
             run_worktrees(args)
@@ -66,7 +68,8 @@ class TestWorktreesCommand(unittest.TestCase):
         }
         (self.project_dir / "sprint_plan.json").write_text(str(sprint_plan).replace("'", '"'))
 
-        args = parse_args(["worktrees", "show", worktree_name, "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "show", worktree_name, "-p", str(self.project_dir)])
 
         f = io.StringIO()
         with redirect_stdout(f):
@@ -89,7 +92,8 @@ class TestWorktreesCommand(unittest.TestCase):
         worktree_path = self.project_dir / "worktrees" / worktree_name
         subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
 
-        args = parse_args(["worktrees", "show", worktree_name, "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "show", worktree_name, "-p", str(self.project_dir)])
 
         f = io.StringIO()
         with redirect_stdout(f):
@@ -105,7 +109,8 @@ class TestWorktreesCommand(unittest.TestCase):
         self.assertIn("No differences with HEAD", output)
 
     def test_worktree_show_non_existent_worktree(self):
-        args = parse_args(["worktrees", "show", "non-existent-worktree", "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "show", "non-existent-worktree", "-p", str(self.project_dir)])
 
         f = io.StringIO()
         with redirect_stderr(f):
@@ -122,7 +127,8 @@ class TestWorktreesCommand(unittest.TestCase):
         subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
         self.assertTrue(worktree_path.exists())
 
-        args = parse_args(["worktrees", "clean", "test-worktree", "-p", str(self.project_dir), "-y"])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "clean", "test-worktree", "-p", str(self.project_dir), "-y"])
         with patch("sys.exit") as mock_exit:
             from main import run_worktrees
             run_worktrees(args)
@@ -135,7 +141,8 @@ class TestWorktreesCommand(unittest.TestCase):
         subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
         (worktree_path / "new_file.txt").write_text("uncommitted change")
 
-        args = parse_args(["worktrees", "revert", "test-worktree", "-p", str(self.project_dir), "-y"])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "revert", "test-worktree", "-p", str(self.project_dir), "-y"])
         with patch("sys.exit") as mock_exit:
             from main import run_worktrees
             run_worktrees(args)
@@ -151,7 +158,8 @@ class TestWorktreesCommand(unittest.TestCase):
         subprocess.run(["git", "add", "."], cwd=worktree_path, capture_output=True)
         subprocess.run(["git", "commit", "-m", "Add feature"], cwd=worktree_path, capture_output=True)
 
-        args = parse_args(["worktrees", "merge", "test-worktree", "-p", str(self.project_dir), "--clean", "-y"])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "merge", "test-worktree", "-p", str(self.project_dir), "--clean", "-y"])
         with patch("sys.exit") as mock_exit:
             from main import run_worktrees
             run_worktrees(args)
@@ -167,7 +175,8 @@ class TestWorktreesCommand(unittest.TestCase):
         (worktree_path / "new_file.txt").write_text("diff content")
         subprocess.run(["git", "add", "new_file.txt"], cwd=worktree_path, capture_output=True)
 
-        args = parse_args(["worktrees", "diff", "test-worktree", "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "diff", "test-worktree", "-p", str(self.project_dir)])
         with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
             from main import run_worktrees
             run_worktrees(args)
@@ -184,7 +193,8 @@ class TestWorktreesCommand(unittest.TestCase):
         subprocess.run(["git", "worktree", "add", str(worktree_path)], cwd=self.project_dir, capture_output=True)
         (worktree_path / "new_file.txt").write_text("uncommitted change")
 
-        args = parse_args(["worktrees", "manage", "-p", str(self.project_dir)])
+        parser = get_parser()
+        args = parse_args(parser, ["worktrees", "manage", "-p", str(self.project_dir)])
         with patch("sys.exit") as mock_exit, patch("builtins.print") as mock_print:
             from main import run_worktrees
             run_worktrees(args)

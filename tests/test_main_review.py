@@ -29,7 +29,8 @@ class TestReviewCommand(unittest.TestCase):
     def test_review_approve_success(self, mock_run_diff, mock_run_test, mock_input):
         """Test the review command with successful approval."""
         self.completed_file.touch()
-        args = main.parse_args(['review', '--project-dir', str(self.project_dir)])
+        parser = main.get_parser()
+        args = main.parse_args(parser, ['review', '--project-dir', str(self.project_dir)])
 
         with self.assertRaises(SystemExit) as cm:
             main.run_review(args)
@@ -46,7 +47,8 @@ class TestReviewCommand(unittest.TestCase):
         """Test the review command with rejection."""
         self.completed_file.touch()
         self.assertTrue(self.completed_file.exists())
-        args = main.parse_args(['review', '--project-dir', str(self.project_dir)])
+        parser = main.get_parser()
+        args = main.parse_args(parser, ['review', '--project-dir', str(self.project_dir)])
 
         with self.assertRaises(SystemExit) as cm:
             main.run_review(args)
@@ -61,7 +63,8 @@ class TestReviewCommand(unittest.TestCase):
     def test_review_tests_fail(self, mock_run_test):
         """Test the review command when tests fail."""
         self.completed_file.touch()
-        args = main.parse_args(['review', '--project-dir', str(self.project_dir)])
+        parser = main.get_parser()
+        args = main.parse_args(parser, ['review', '--project-dir', str(self.project_dir)])
 
         with self.assertRaises(SystemExit) as cm:
             main.run_review(args)
@@ -76,7 +79,8 @@ class TestReviewCommand(unittest.TestCase):
         if self.completed_file.exists():
             self.completed_file.unlink()
 
-        args = main.parse_args(['review', '--project-dir', str(self.project_dir)])
+        parser = main.get_parser()
+        args = main.parse_args(parser, ['review', '--project-dir', str(self.project_dir)])
 
         # Capture stdout to check the message
         captured_output = io.StringIO()
@@ -94,7 +98,8 @@ class TestReviewCommand(unittest.TestCase):
         self.completed_file.touch()
         self.qa_passed_file.touch()
 
-        args = main.parse_args(['review', '--project-dir', str(self.project_dir)])
+        parser = main.get_parser()
+        args = main.parse_args(parser, ['review', '--project-dir', str(self.project_dir)])
         captured_output = io.StringIO()
         sys.stdout = captured_output
 

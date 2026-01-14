@@ -63,5 +63,16 @@ class TestPatchCommand(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
 
+    def test_run_patch_new_file(self):
+        patch_content = "diff --git a/new_file.txt b/new_file.txt\nnew file mode 100644\nindex 0000000..e69de29\n--- /dev/null\n+++ b/new_file.txt\n"
+        with patch("sys.stdin.read", return_value=patch_content):
+            args = MagicMock(patch_file=None, reverse=False, project_dir=self.project_path)
+
+            with self.assertRaises(SystemExit) as cm:
+                run_patch(args)
+            self.assertEqual(cm.exception.code, 0)
+
+        self.assertTrue((self.project_path / "new_file.txt").exists())
+
 if __name__ == "__main__":
     unittest.main()

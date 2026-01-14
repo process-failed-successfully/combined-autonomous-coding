@@ -1777,11 +1777,12 @@ def run_cherry_pick(args):
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
+        # Use rev-parse for a more robust check that it's a valid commit-like object
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
             capture_output=True, text=True
         )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+        if check_commit_result.returncode == 0:
             is_git_ref = True
     except Exception:
         pass  # Ignore errors, we'll handle the 'not found' case below
@@ -1801,8 +1802,9 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Use '--' to ensure the target is not misinterpreted as an option
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False) # check=False to handle conflicts
 
         if result.returncode == 0:
             print(result.stdout)

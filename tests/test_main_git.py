@@ -12,7 +12,7 @@ import contextlib
 # Add the parent directory to the sys.path to allow imports from the 'shared' module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_git, parse_args
+from main import run_git, get_parser
 
 class TestGitProxyCommand(unittest.TestCase):
 
@@ -109,7 +109,8 @@ class TestGitProxyCommand(unittest.TestCase):
             "git", "--task", self.task_id, "--project-dir", str(self.project_dir),
             "log", "-n", "1", "--oneline"
         ]
-        args = parse_args(argv)
+        parser = get_parser()
+        args = parser.parse_args(argv)
 
         self.assertEqual(args.command, "git")
         self.assertEqual(args.task, self.task_id)
@@ -121,7 +122,8 @@ class TestGitProxyCommand(unittest.TestCase):
         (self.worktree_path / "new_file.txt").write_text("Hello from the worktree")
 
         argv = ["git", "--task", self.task_id, "--project-dir", str(self.project_dir), "status", "--porcelain"]
-        args = parse_args(argv)
+        parser = get_parser()
+        args = parser.parse_args(argv)
 
         stdout_catcher = io.StringIO()
         with contextlib.redirect_stdout(stdout_catcher):

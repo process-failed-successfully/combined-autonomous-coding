@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
-from main import parse_args, main
+from main import parse_args, main, get_parser
 import io
 
 
@@ -20,9 +20,12 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             shutil.rmtree(self.tmp_dir)
 
     def test_parse_args(self):
-        with patch("argparse.ArgumentParser.parse_args") as mock_parse:
-            parse_args()
-            mock_parse.assert_called()
+        # Now that parse_args is more complex, we test its behavior
+        # in TestParseArgsSuggestions. This test can be simplified.
+        parser = get_parser()
+        with patch.object(parser, 'parse_args') as mock_parse:
+            parse_args(parser, ['status'])
+            mock_parse.assert_called_with(['status'])
 
     @patch("main.parse_args")
     @patch("main.setup_logger")
@@ -77,7 +80,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.dashboard_url = "http://localhost:7654"
         args.no_stream = False
 
-        mock_parse_args.return_value = args
+        # The mock needs to accept the parser argument
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
         mock_gen_id.return_value = "gemini_agent_test_123"
 
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
@@ -142,7 +148,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.manager_first = False
         args.max_agents = 2
 
-        mock_parse_args.return_value = args
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         with patch.object(Path, "exists", return_value=True):
@@ -192,7 +200,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.manager_first = False
         args.max_agents = 2
 
-        mock_parse_args.return_value = args
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         # We need to ensure config.sprint_mode is True.
@@ -252,7 +262,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
-        mock_parse_args.return_value = args
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
 
         # feature_list_path.exists() -> False (fresh)
         with patch("main.Config") as mock_config_cls:
@@ -308,7 +320,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.manager_first = False
         args.max_agents = 2
 
-        mock_parse_args.return_value = args
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
         with patch("main.Config") as mock_config_cls:
@@ -365,7 +379,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.no_dashboard = True
         args.dashboard_url = None
 
-        mock_parse_args.return_value = args
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
         mock_load_config.return_value = {}
 
         with self.assertRaises(SystemExit) as cm:
@@ -407,7 +423,9 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.no_dashboard = True
         args.dashboard_url = None
 
-        mock_parse_args.return_value = args
+        def parse_args_side_effect(parser, argv=None):
+            return args
+        mock_parse_args.side_effect = parse_args_side_effect
         mock_load_config.return_value = {}
 
         with self.assertRaises(SystemExit) as cm:
@@ -479,6 +497,38 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(cm.exception.code, 0)
         output = f.getvalue()
         self.assertIn("completion_script", output)
+
+
+class TestParseArgsSuggestions(unittest.TestCase):
+    def setUp(self):
+        # Create the parser once for all tests in this class
+        self.parser = get_parser()
+
+    @patch('sys.stderr', new_callable=io.StringIO)
+    def test_suggest_on_mistyped_command(self, mock_stderr):
+        with self.assertRaises(SystemExit) as cm:
+            parse_args(self.parser, ['staus'])
+
+        self.assertEqual(cm.exception.code, 2)
+        output = mock_stderr.getvalue()
+        self.assertIn("Error: Invalid command 'staus'", output)
+        self.assertIn("Did you mean 'status'?", output)
+
+    def test_correct_command_passes(self):
+        args = parse_args(self.parser, ['status'])
+        self.assertEqual(args.command, 'status')
+
+    @patch('sys.stderr', new_callable=io.StringIO)
+    def test_no_suggestion_for_wildly_incorrect_command(self, mock_stderr):
+        with self.assertRaises(SystemExit) as cm:
+            parse_args(self.parser, ['nonexistentcommand'])
+
+        self.assertEqual(cm.exception.code, 2)
+        output = mock_stderr.getvalue()
+        self.assertIn("Error: Invalid command 'nonexistentcommand'", output)
+        self.assertNotIn("Did you mean", output)
+        # Check that it printed the help usage message
+        self.assertIn("usage:", output)
 
 
 if __name__ == "__main__":

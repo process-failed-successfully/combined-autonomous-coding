@@ -13,6 +13,7 @@ try:
     import argcomplete
 except ImportError:
     argcomplete = None
+import difflib
 import sys
 import os
 import shutil
@@ -3915,7 +3916,8 @@ def run_config(args):
     return 0
 
 
-def parse_args(argv=None):
+def get_parser():
+    """Creates and returns the ArgumentParser object."""
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
@@ -5232,10 +5234,7 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
-    if argcomplete:
-        argcomplete.autocomplete(parser)
-
-    return parser.parse_args(argv)
+    return parser
 
 
 def run_profile(args):
@@ -5367,6 +5366,35 @@ def run_profile(args):
             print(f"\n❌ Error writing configuration file: {e}", file=sys.stderr)
             sys.exit(1)
         sys.exit(0)
+
+
+def parse_args(parser, argv=None):
+    """Parses arguments, handling suggestions for typos."""
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # If no command is given, or if the first arg is an option, parse normally.
+    if not argv or argv[0].startswith('-'):
+        return parser.parse_args(argv)
+
+    # Check if the command is valid before full parsing
+    command = argv[0]
+    all_commands = list(parser._subparsers._group_actions[0].choices.keys())
+
+    if command in all_commands:
+        return parser.parse_args(argv)
+
+    # If the command is not valid, find suggestions
+    suggestions = difflib.get_close_matches(command, all_commands, n=1, cutoff=0.7)
+
+    sys.stderr.write(f"Error: Invalid command '{command}'.\n")
+    if suggestions:
+        sys.stderr.write(f"\nDid you mean '{suggestions[0]}'?\n")
+    else:
+        # If no suggestion, print the standard help message
+        parser.print_help(sys.stderr)
+
+    sys.exit(2)
 
 
 def run_watch(args):
@@ -6822,7 +6850,13 @@ def run_worktrees(args):
 
 
 async def main():
-    args = parse_args()
+    parser = get_parser()
+    if argcomplete:
+        argcomplete.autocomplete(parser)
+
+    # We need to check for invalid commands before letting the agent logic proceed.
+    # The custom parse_args function handles this and will exit if a typo is found.
+    args = parse_args(parser)
 
     # Handle `shell` command
     if args.command == "shell":

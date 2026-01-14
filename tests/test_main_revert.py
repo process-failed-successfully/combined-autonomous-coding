@@ -51,7 +51,8 @@ class TestMainRevert(unittest.TestCase):
         """Helper function to run the revert command with patched stdin, stdout, and stderr."""
         # Use a copy of argv to avoid conflicts between tests
         argv = ['revert'] + args_list + ['--project-dir', str(self.project_dir)]
-        args = main.parse_args(argv)
+        parser = main.get_parser()
+        args = parser.parse_args(argv)
         with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout, \
              patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
             with self.assertRaises(SystemExit) as cm:

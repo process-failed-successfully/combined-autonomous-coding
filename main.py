@@ -19,12 +19,14 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
+import threading
 try:
     from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
+    from watchdog.events import FileSystemEventHandler, PatternMatchingEventHandler
 except ImportError:
     Observer = None
     FileSystemEventHandler = None
+    PatternMatchingEventHandler = None
 
 
 from shared.config import Config
@@ -60,17 +62,43 @@ AVAILABLE_AGENTS = {
     "openrouter": "Uses a model from the OpenRouter API.",
 }
 
-if FileSystemEventHandler:
-    class CommandEventHandler(FileSystemEventHandler):
-        def __init__(self, command, project_dir):
+if PatternMatchingEventHandler:
+    class CommandEventHandler(PatternMatchingEventHandler):
+        def __init__(self, command, project_dir, patterns=None, ignore_patterns=None, delay=0.5, clear=False):
+            super().__init__(patterns=patterns, ignore_patterns=ignore_patterns, ignore_directories=True)
             self.command = command
             self.project_dir = project_dir
+            self.delay = delay
+            self.clear = clear
+            self.last_run_time = 0
+            self.scheduled_run = None
 
-        def on_modified(self, event):
-            if event.is_directory:
+        def handle_event(self, event):
+            current_time = time.time()
+            if current_time - self.last_run_time < self.delay:
+                # Debounce: if a run is already scheduled, do nothing
+                if self.scheduled_run and self.scheduled_run.is_alive():
+                    return
+                # Schedule a run after the delay
+                self.scheduled_run = threading.Timer(self.delay, self.run_command, args=[event])
+                self.scheduled_run.start()
                 return
+
+            self.run_command(event)
+
+        def run_command(self, event):
+            self.last_run_time = time.time()
+            if self.clear:
+                os.system('cls' if os.name == 'nt' else 'clear')
+
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+        def on_modified(self, event):
+            self.handle_event(event)
+
+        def on_created(self, event):
+            self.handle_event(event)
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -5100,6 +5128,29 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory to watch.",
     )
+    parser_watch.add_argument(
+        "--patterns",
+        nargs='*',
+        default=["*"],
+        help="Glob patterns for files to watch (e.g., '*.py', '*.js').",
+    )
+    parser_watch.add_argument(
+        "--ignore-patterns",
+        nargs='*',
+        default=[],
+        help="Glob patterns for files/directories to ignore.",
+    )
+    parser_watch.add_argument(
+        "--delay",
+        type=float,
+        default=0.5,
+        help="Delay in seconds before executing command after a file change (debounce).",
+    )
+    parser_watch.add_argument(
+        "--clear",
+        action="store_true",
+        help="Clear the terminal screen before each command execution.",
+    )
 
     # --- New 'why' command ---
     parser_why = subparsers.add_parser(
@@ -5374,14 +5425,28 @@ def run_watch(args):
     project_dir = args.project_dir.resolve()
     command_to_run = args.watch_command
 
-    if Observer is None:
+    if Observer is None or PatternMatchingEventHandler is None:
         print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
+        sys.exit(1)
+
+    if not command_to_run:
+        print("Error: No command provided to run on file change.", file=sys.stderr)
         sys.exit(1)
 
     print(f"--- Watching for file changes in: {project_dir} ---")
     print(f"--- Press Ctrl+C to stop ---")
 
-    event_handler = CommandEventHandler(command_to_run, project_dir)
+    # The patterns are passed directly to the handler now
+    event_handler = CommandEventHandler(
+        command=command_to_run,
+        project_dir=project_dir,
+    # Prepend "./" to patterns to ensure they are matched relative to the project directory.
+        patterns=[f"./{p}" for p in args.patterns],
+        ignore_patterns=[f"./{p}" for p in args.ignore_patterns],
+        delay=args.delay,
+        clear=args.clear
+    )
+
     observer = Observer()
     observer.schedule(event_handler, project_dir, recursive=True)
     observer.start()
@@ -5391,6 +5456,7 @@ def run_watch(args):
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
+        print("\n--- Watch stopped ---")
     observer.join()
     sys.exit(0)
 

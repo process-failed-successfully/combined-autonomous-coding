@@ -1778,12 +1778,12 @@ def run_cherry_pick(args):
     # The '^{commit}' suffix ensures it resolves to a commit, not just a tag or tree.
     is_git_ref = False
     try:
-        # Use 'cat-file -e' which simply exits with 0 if the object is a valid commit.
-        # It's a more direct way to check for existence than parsing output.
+        # Use 'rev-parse --verify' which simply exits with 0 if the object is a valid commit.
+        # It's a more direct and safer way to check for existence than parsing output.
         # The '^{commit}' suffix ensures we're dealing with a commit object.
         subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-e", f"{target}^{{commit}}"],
-            check=True, capture_output=True
+            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
+            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         is_git_ref = True
     except (subprocess.CalledProcessError, FileNotFoundError):

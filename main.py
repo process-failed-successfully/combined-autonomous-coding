@@ -49,6 +49,7 @@ from shared.commands import run_why
 import json
 import yaml
 import platformdirs
+import tarfile
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 
@@ -938,6 +939,145 @@ def run_snapshot(args):
     elif args.action == "diff":
         _snapshot_diff(args)
 
+
+def run_share(args):
+    """Packages the entire project state into a distributable tarball."""
+    from datetime import datetime
+
+    project_dir = args.project_dir.resolve()
+    output_path = args.output
+
+    # Determine output path
+    if not output_path:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Ensure the filename is based on the project directory name
+        project_name = project_dir.name
+        output_path = project_dir / f"{project_name}_agent_project_{timestamp}.tar.gz"
+    else:
+        output_path = Path(output_path).resolve()
+
+    print(f"--- Sharing Project State from: {project_dir} ---")
+    print(f"Output archive will be created at: {output_path}")
+
+    # Use git to get the list of files to include, respecting .gitignore
+    git_path = shutil.which("git")
+    files_to_include = []
+    if git_path and (project_dir / ".git").is_dir():
+        try:
+            # This command lists all tracked files and untracked files (excluding ignored ones)
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "ls-files", "-c", "-o", "--exclude-standard"],
+                capture_output=True, text=True, check=True
+            )
+            files_to_include = [f for f in result.stdout.strip().split('\n') if f]
+            print("  - Using 'git ls-files' to determine file list (respects .gitignore).")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"⚠️ Warning: Could not use git to list files: {e}. Falling back to including all files.", file=sys.stderr)
+            files_to_include = [] # Reset to trigger fallback
+    else:
+        print("  - No git repository found. Including all files in the project directory.", file=sys.stderr)
+
+    if not files_to_include: # Fallback if git fails or is not present
+        files_to_include = [str(p.relative_to(project_dir)) for p in project_dir.rglob('*') if p.is_file()]
+
+
+    # --- Create the archive ---
+    print("\nCreating archive...")
+    included_count = 0
+    try:
+        with tarfile.open(output_path, "w:gz") as tar:
+            # 1. Add project files
+            for filepath_str in files_to_include:
+                full_path = project_dir / filepath_str
+                if full_path.exists() and full_path.is_file():
+                    arcname = filepath_str # Keep relative path
+                    print(f"  - Adding project file: {arcname}")
+                    tar.add(full_path, arcname=arcname)
+                    included_count += 1
+                else:
+                    print(f"  - Skipping (not a file or does not exist): {filepath_str}")
+
+            # 2. Add latest agent log
+            last_run_id = None
+            history_file = project_dir / ".agent_history"
+            if history_file.exists():
+                with open(history_file, "r") as f:
+                    run_ids = [line.strip() for line in f if line.strip()]
+                    if run_ids:
+                        last_run_id = run_ids[-1]
+
+            if last_run_id:
+                repo_root = Path(__file__).parent
+                log_file_path = repo_root / f"agents/logs/{last_run_id}.log"
+                if log_file_path.exists():
+                    arcname = f".agent_logs/{log_file_path.name}"
+                    print(f"  - Adding agent log: {arcname}")
+                    tar.add(log_file_path, arcname=arcname)
+                    included_count += 1
+
+        print(f"\n✅ Project state successfully packaged with {included_count} file(s) into {output_path}")
+        sys.exit(0)
+    except (tarfile.TarError, IOError) as e:
+        print(f"\n❌ Error creating archive: {e}", file=sys.stderr)
+        if output_path.exists():
+            output_path.unlink() # Clean up partial archive
+        sys.exit(1)
+
+def run_import(args):
+    """Extracts a shared project state tarball into the project directory."""
+    project_dir = args.project_dir.resolve()
+    archive_path = args.archive_path.resolve()
+    force_overwrite = args.force
+
+    if not archive_path.is_file():
+        print(f"❌ Error: Archive file not found at '{archive_path}'", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Importing Project State to: {project_dir} ---")
+    print(f"Source archive: {archive_path}")
+
+    # --- Pre-extraction safety checks ---
+    try:
+        with tarfile.open(archive_path, "r:gz") as tar:
+            members = tar.getmembers()
+            conflicting_files = []
+            for member in members:
+                # Security: Prevent directory traversal attacks
+                if ".." in member.name or member.name.startswith("/"):
+                    print(f"❌ Security Error: Archive contains invalid path '{member.name}'. Aborting.", file=sys.stderr)
+                    sys.exit(1)
+                    return
+
+                target_path = project_dir / member.name
+                if target_path.exists() and not target_path.is_dir():
+                    conflicting_files.append(member.name)
+
+            if conflicting_files and not force_overwrite:
+                print("\n❌ Error: The following files already exist in the project directory:", file=sys.stderr)
+                for f in conflicting_files[:10]: # Show up to 10 conflicts
+                    print(f"  - {f}", file=sys.stderr)
+                if len(conflicting_files) > 10:
+                    print(f"  ... and {len(conflicting_files) - 10} more.", file=sys.stderr)
+                print("\nTo overwrite these files, run the command again with the --force flag.", file=sys.stderr)
+                sys.exit(1)
+                return
+
+    except tarfile.TarError as e:
+        print(f"❌ Error reading archive file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # --- Extraction ---
+    print("\nExtracting archive...")
+    try:
+        with tarfile.open(archive_path, "r:gz") as tar:
+            tar.extractall(path=project_dir)
+            print("✅ Extraction complete.")
+
+        print("\nProject state has been successfully imported.")
+        sys.exit(0)
+    except (tarfile.TarError, IOError) as e:
+        print(f"\n❌ Error during extraction: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def _artifacts_list(base_dir, mode):
     """Generic helper function to list archives or trash."""
@@ -5197,6 +5337,46 @@ def parse_args(argv=None):
         "cherry-pick",
         help="Apply the changes from a specific commit or Run ID onto the current branch."
     )
+
+    # --- New 'share' command ---
+    parser_share = subparsers.add_parser(
+        "share",
+        help="Package the project state (code, agent history, logs) into a distributable tarball."
+    )
+    parser_share.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the output tar.gz file. If omitted, a timestamped file is created in the project directory.",
+    )
+    parser_share.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to package.",
+    )
+
+    # --- New 'import' command ---
+    parser_import = subparsers.add_parser(
+        "import",
+        help="Extract a shared project state tarball into the current directory."
+    )
+    parser_import.add_argument(
+        "archive_path",
+        type=Path,
+        help="Path to the .tar.gz archive to import.",
+    )
+    parser_import.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing files in the project directory. Use with caution.",
+    )
+    parser_import.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to extract into.",
+    )
+
     parser_cherry_pick.add_argument(
         "target",
         help="The git commit hash or agent Run ID to apply.",
@@ -7109,6 +7289,14 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "share":
+        run_share(args)
+        return
+
+    if args.command == "import":
+        run_import(args)
         return
 
     # Initialize Agent Client

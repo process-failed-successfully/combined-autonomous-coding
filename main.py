@@ -5051,6 +5051,18 @@ def parse_args(argv=None):
         help="The project directory for the feature.",
     )
 
+    # --- New 'walkthrough' command ---
+    parser_walkthrough = subparsers.add_parser(
+        "walkthrough",
+        help="Run a guided walkthrough of the agent development workflow."
+    )
+    parser_walkthrough.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the walkthrough.",
+    )
+
     # --- New 'interact' command ---
     parser_interact = subparsers.add_parser(
         "interact",
@@ -5654,6 +5666,89 @@ def run_setup(args):
     except Exception as e:
         print(f"❌ An unexpected error occurred during setup: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def run_walkthrough(args):
+    """Runs a guided walkthrough of the agent development workflow."""
+    project_dir = args.project_dir.resolve()
+    print("--- Project Walkthrough ---")
+
+    while True:
+        print(f"\nAnalyzing project state in: {project_dir}...")
+        # Analyze state
+        is_git_repo = (project_dir / ".git").is_dir()
+        has_spec = (project_dir / "app_spec.txt").exists()
+        is_complete = (project_dir / "COMPLETED").exists()
+        is_qa_passed = (project_dir / "QA_PASSED").exists()
+        is_signed_off = (project_dir / "PROJECT_SIGNED_OFF").exists()
+
+        # Determine available actions
+        actions = {}
+        if is_signed_off:
+            print("✅ Project is signed off and complete!")
+            print("You can clean up artifacts or start a new project.")
+            actions['1'] = {"text": "Clean up project artifacts", "func": run_clean, "args": {"archive": False, "force": False, "list": False, "yes": False}}
+        elif is_qa_passed:
+            print("✅ Project has passed QA and is awaiting manager sign-off.")
+            print("The manager agent will run on the next execution to give final approval.")
+            actions['1'] = {"text": "Run agent for manager sign-off", "func": None, "main_args": ["--spec", "app_spec.txt"]}
+        elif is_complete:
+            print("✅ Agent has marked work as complete. It's time for a QA review.")
+            actions['1'] = {"text": "Start interactive QA review", "func": run_review, "args": {}}
+        elif has_spec:
+            print("✅ Project has a specification. It's ready to be worked on by the agent.")
+            actions['1'] = {"text": "Run agent to work on the project", "func": None, "main_args": ["--spec", "app_spec.txt"]}
+            actions['2'] = {"text": "Generate a plan without running the agent", "func": run_plan, "args": {"spec": project_dir / "app_spec.txt", "project_dir": project_dir, "agent": "gemini", "model": None, "verbose": False, "profile": None}}
+        elif not is_git_repo:
+            print("\nLooks like this is a new project.")
+            actions['1'] = {"text": "Initialize the project (git, .gitignore, app_spec.txt)", "func": run_init, "args": {"yes": False}}
+        else:
+             print("\nProject is initialized, but no 'app_spec.txt' found.")
+             actions['1'] = {"text": "Initialize to create a spec file", "func": run_init, "args": {"yes": False}}
+
+        # Always available actions
+        actions['s'] = {"text": "Show project status", "func": run_status, "args": {}}
+        actions['q'] = {"text": "Quit walkthrough", "func": sys.exit}
+
+        print("\n--- Suggested Next Steps ---")
+        for key, value in sorted(actions.items()):
+            print(f"  [{key}] {value['text']}")
+
+        try:
+            choice = input("> ").strip().lower()
+
+            if choice in actions:
+                action = actions[choice]
+                func = action.get("func")
+
+                if func:
+                    print(f"\n--- Running: {action['text']} ---")
+                    # Construct args namespace
+                    action_args = argparse.Namespace(project_dir=project_dir, **action.get("args", {}))
+
+                    # Special case for asyncio functions
+                    if asyncio.iscoroutinefunction(func):
+                        asyncio.run(func(action_args))
+                    elif func == sys.exit:
+                        print("Exiting walkthrough.")
+                        func(0)
+                    else:
+                        func(action_args)
+                    print("--- Action finished. Re-analyzing project state... ---")
+                elif "main_args" in action:
+                    print("This action will re-run the main agent. To do this, please run the following command from your terminal:")
+                    executable_name = os.path.basename(sys.argv[0])
+                    print(f"  {executable_name} {' '.join(action['main_args'])}")
+                    print("Exiting walkthrough.")
+                    sys.exit(0)
+
+            else:
+                print("Invalid choice. Please try again.")
+
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting walkthrough.")
+            break
+    sys.exit(0)
 
 
 def run_interact(args):
@@ -7065,6 +7160,10 @@ async def main():
 
     if args.command == "interact":
         run_interact(args)
+        return
+
+    if args.command == "walkthrough":
+        run_walkthrough(args)
         return
 
     if args.command == "profile":

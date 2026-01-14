@@ -116,5 +116,23 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_invalid_target_as_option(self, mock_stderr, mock_stdout):
+        """Test that a target starting with a dash is not interpreted as an option."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        # This is not a real commit, but it starts with a dash.
+        # The command should fail safely, not by misinterpreting the target.
+        args.target = "-invalid-option"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+        self.assertIn("Error: Could not find a git commit for target '-invalid-option'", stderr_output)
+
+
 if __name__ == '__main__':
     unittest.main()

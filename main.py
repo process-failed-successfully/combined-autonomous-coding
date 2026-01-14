@@ -1802,19 +1802,14 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
-    # First, check if the target is a valid git object (commit, tag, etc.)
-    is_git_ref = False
-    try:
-        check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
-            capture_output=True, text=True
-        )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
-            is_git_ref = True
-    except Exception:
-        pass  # Ignore errors, we'll handle the 'not found' case below
+    # To prevent command injection, we use `rev-parse --verify` which is safer.
+    # The `<ref>^{commit}` syntax ensures we're verifying a commit object.
+    is_valid_commit = subprocess.run(
+        [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
+        capture_output=True, text=True
+    ).returncode == 0
 
-    if not is_git_ref:
+    if not is_valid_commit:
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
         commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
         if commit_hash:
@@ -1829,8 +1824,9 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Use "--" to clearly separate options from positional arguments, preventing command injection.
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
         if result.returncode == 0:
             print(result.stdout)

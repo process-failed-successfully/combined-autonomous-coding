@@ -61,16 +61,31 @@ AVAILABLE_AGENTS = {
 }
 
 if FileSystemEventHandler:
-    class CommandEventHandler(FileSystemEventHandler):
-        def __init__(self, command, project_dir):
+    from watchdog.events import PatternMatchingEventHandler
+    from threading import Timer
+
+    class CommandEventHandler(PatternMatchingEventHandler):
+        def __init__(self, command, project_dir, delay=0.5, clear_screen=False, patterns=None, ignore_patterns=None):
+            super().__init__(patterns=patterns, ignore_patterns=ignore_patterns, ignore_directories=True, case_sensitive=False)
             self.command = command
             self.project_dir = project_dir
+            self.delay = delay
+            self.clear_screen = clear_screen
+            self.timer = None
+
+        def _run_command(self):
+            if self.clear_screen:
+                os.system('cls' if os.name == 'nt' else 'clear')
+            print(f"Running command: {' '.join(self.command)}")
+            subprocess.run(self.command, cwd=self.project_dir)
 
         def on_modified(self, event):
-            if event.is_directory:
-                return
-            print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
-            subprocess.run(self.command, cwd=self.project_dir)
+            if self.timer and self.timer.is_alive():
+                self.timer.cancel()
+
+            print(f"File modified: {event.src_path}. Debouncing for {self.delay}s...")
+            self.timer = Timer(self.delay, self._run_command)
+            self.timer.start()
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -5087,18 +5102,41 @@ def parse_args(argv=None):
     # --- New 'watch' command ---
     parser_watch = subparsers.add_parser(
         "watch",
-        help="Watch for file changes and run a command."
+        help="Watch for file changes and run a command, with advanced filtering and debouncing."
     )
     parser_watch.add_argument(
         "watch_command",
         nargs=argparse.REMAINDER,
-        help="The command to run when a file changes.",
+        help="The command to run when a file changes. Use '--' to separate watch options from your command.",
     )
     parser_watch.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
-        help="The project directory to watch.",
+        help="The project directory to watch (default: current directory).",
+    )
+    parser_watch.add_argument(
+        "--patterns",
+        nargs='*',
+        default=['*'],
+        help="Glob patterns for files to watch (e.g., '*.py', '*.js').",
+    )
+    parser_watch.add_argument(
+        "--ignore-patterns",
+        nargs='*',
+        default=[],
+        help="Glob patterns for files/directories to ignore (e.g., '*/__pycache__/*').",
+    )
+    parser_watch.add_argument(
+        "--delay",
+        type=float,
+        default=0.5,
+        help="Delay in seconds before running command after a change (debounce).",
+    )
+    parser_watch.add_argument(
+        "--clear",
+        action="store_true",
+        help="Clear the terminal screen before running the command.",
     )
 
     # --- New 'why' command ---
@@ -5372,16 +5410,36 @@ def run_profile(args):
 def run_watch(args):
     """Watches for file changes and runs a command."""
     project_dir = args.project_dir.resolve()
+
+    # Separate watch_command from other args
     command_to_run = args.watch_command
+    if '--' in command_to_run:
+        separator_index = command_to_run.index('--')
+        command_to_run = command_to_run[separator_index + 1:]
+
+    if not command_to_run:
+        print("Error: No command provided to run on file change.", file=sys.stderr)
+        sys.exit(1)
 
     if Observer is None:
         print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
         sys.exit(1)
 
     print(f"--- Watching for file changes in: {project_dir} ---")
+    print(f"  - Patterns: {args.patterns}")
+    print(f"  - Ignore Patterns: {args.ignore_patterns}")
+    print(f"  - Debounce Delay: {args.delay}s")
+    print(f"  - Clear Screen: {args.clear}")
     print(f"--- Press Ctrl+C to stop ---")
 
-    event_handler = CommandEventHandler(command_to_run, project_dir)
+    event_handler = CommandEventHandler(
+        command=command_to_run,
+        project_dir=project_dir,
+        delay=args.delay,
+        clear_screen=args.clear,
+        patterns=args.patterns,
+        ignore_patterns=args.ignore_patterns,
+    )
     observer = Observer()
     observer.schedule(event_handler, project_dir, recursive=True)
     observer.start()
@@ -5391,6 +5449,9 @@ def run_watch(args):
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
+        # Also cancel any pending timer
+        if event_handler.timer and event_handler.timer.is_alive():
+            event_handler.timer.cancel()
     observer.join()
     sys.exit(0)
 

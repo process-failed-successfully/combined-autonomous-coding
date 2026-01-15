@@ -1756,6 +1756,58 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     return None
 
 
+def run_tag(args):
+    """Manages git tags for the project."""
+    project_dir = args.project_dir.resolve()
+    git_path = shutil.which("git")
+
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot manage tags.", file=sys.stderr)
+        return
+
+    action = args.action
+    tag_name = getattr(args, 'tag_name', None)
+
+    try:
+        if action == "create":
+            cmd = [git_path, "-C", str(project_dir), "tag"]
+            if args.message:
+                cmd.extend(["-a", tag_name, "-m", args.message])
+            else:
+                cmd.append(tag_name)
+
+            if args.commit:
+                cmd.append(args.commit)
+
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            print(f"✅ Tag '{tag_name}' created successfully.")
+
+        elif action == "list":
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "tag"],
+                check=True, capture_output=True, text=True
+            )
+            tags = result.stdout.strip()
+            if not tags:
+                print("No tags found.")
+            else:
+                print("--- Tags ---")
+                print(tags)
+
+        elif action == "delete":
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "tag", "-d", tag_name],
+                check=True, capture_output=True, text=True
+            )
+            print(f"✅ Tag '{tag_name}' deleted successfully.")
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip()
+        print(f"❌ Git command failed: {stderr}", file=sys.stderr)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+
+
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -2929,6 +2981,7 @@ def run_help(args):
     print_command("pull", "Safely pull the latest changes from the remote.")
     print_command("pr", "Manage GitHub pull requests for the project.")
     print_command("feature", "A guided workflow for branch -> commit -> push -> pr.")
+    print_command("tag", "Manage git tags to mark release points or important milestones.")
     print_command("diff", "Show a detailed diff of uncommitted changes or a specific commit.")
     print_command("stash", "Stash uncommitted changes for later use.")
     print_command("discard", "Safely discard uncommitted changes by stashing them first.")
@@ -5208,6 +5261,45 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'tag' command ---
+    parser_tag = subparsers.add_parser(
+        "tag",
+        help="Manage git tags for the project."
+    )
+    tag_subparsers = parser_tag.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify tag action"
+    )
+    # Tag 'create' action
+    parser_tag_create = tag_subparsers.add_parser("create", help="Create a new git tag.")
+    parser_tag_create.add_argument("tag_name", help="The name of the tag to create (e.g., v1.0.0).")
+    parser_tag_create.add_argument("commit", nargs="?", help="Optional commit hash to tag. Defaults to HEAD.")
+    parser_tag_create.add_argument("-m", "--message", help="An optional message to create an annotated tag.")
+    parser_tag_create.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    # Tag 'list' action
+    parser_tag_list = tag_subparsers.add_parser("list", help="List all tags in the repository.")
+    parser_tag_list.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    # Tag 'delete' action
+    parser_tag_delete = tag_subparsers.add_parser("delete", help="Delete a tag.")
+    parser_tag_delete.add_argument("tag_name", help="The name of the tag to delete.")
+    parser_tag_delete.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7109,6 +7201,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "tag":
+        run_tag(args)
         return
 
     # Initialize Agent Client

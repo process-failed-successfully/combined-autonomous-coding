@@ -1,0 +1,1018 @@
+﻿2026-01-15T10:41:19.7589428Z Current runner version: '2.331.0'
+2026-01-15T10:41:19.7616942Z ##[group]Runner Image Provisioner
+2026-01-15T10:41:19.7618174Z Hosted Compute Agent
+2026-01-15T10:41:19.7618971Z Version: 20251211.462
+2026-01-15T10:41:19.7619795Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2026-01-15T10:41:19.7620898Z Build Date: 2025-12-11T16:28:49Z
+2026-01-15T10:41:19.7621855Z Worker ID: {97b7c349-b125-4ebd-9e25-99996ac3f1ff}
+2026-01-15T10:41:19.7623066Z ##[endgroup]
+2026-01-15T10:41:19.7623893Z ##[group]Operating System
+2026-01-15T10:41:19.7624651Z Ubuntu
+2026-01-15T10:41:19.7625342Z 24.04.3
+2026-01-15T10:41:19.7625995Z LTS
+2026-01-15T10:41:19.7626669Z ##[endgroup]
+2026-01-15T10:41:19.7627366Z ##[group]Runner Image
+2026-01-15T10:41:19.7628332Z Image: ubuntu-24.04
+2026-01-15T10:41:19.7629155Z Version: 20260111.209.1
+2026-01-15T10:41:19.7630689Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260111.209/images/ubuntu/Ubuntu2404-Readme.md
+2026-01-15T10:41:19.7633327Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260111.209
+2026-01-15T10:41:19.7634764Z ##[endgroup]
+2026-01-15T10:41:19.7635925Z ##[group]GITHUB_TOKEN Permissions
+2026-01-15T10:41:19.7638439Z Contents: read
+2026-01-15T10:41:19.7639123Z Metadata: read
+2026-01-15T10:41:19.7639988Z ##[endgroup]
+2026-01-15T10:41:19.7642628Z Secret source: Actions
+2026-01-15T10:41:19.7643877Z Prepare workflow directory
+2026-01-15T10:41:19.7962001Z Prepare all required actions
+2026-01-15T10:41:19.8000280Z Getting action download info
+2026-01-15T10:41:20.0764288Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-15T10:41:20.1865705Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-01-15T10:41:20.3819672Z Complete job name: 🧪 Unit & Integration Tests (3.13.7)
+2026-01-15T10:41:20.4429972Z ##[group]Run actions/checkout@v4
+2026-01-15T10:41:20.4430731Z with:
+2026-01-15T10:41:20.4431298Z   repository: process-failed-successfully/combined-autonomous-coding
+2026-01-15T10:41:20.4432175Z   token: ***
+2026-01-15T10:41:20.4432568Z   ssh-strict: true
+2026-01-15T10:41:20.4433208Z   ssh-user: git
+2026-01-15T10:41:20.4433614Z   persist-credentials: true
+2026-01-15T10:41:20.4434054Z   clean: true
+2026-01-15T10:41:20.4434443Z   sparse-checkout-cone-mode: true
+2026-01-15T10:41:20.4434912Z   fetch-depth: 1
+2026-01-15T10:41:20.4435281Z   fetch-tags: false
+2026-01-15T10:41:20.4435673Z   show-progress: true
+2026-01-15T10:41:20.4436055Z   lfs: false
+2026-01-15T10:41:20.4436421Z   submodules: false
+2026-01-15T10:41:20.4436805Z   set-safe-directory: true
+2026-01-15T10:41:20.4437442Z ##[endgroup]
+2026-01-15T10:41:20.5536327Z Syncing repository: process-failed-successfully/combined-autonomous-coding
+2026-01-15T10:41:20.5538934Z ##[group]Getting Git version info
+2026-01-15T10:41:20.5540450Z Working directory is '/home/runner/work/combined-autonomous-coding/combined-autonomous-coding'
+2026-01-15T10:41:20.5542378Z [command]/usr/bin/git version
+2026-01-15T10:41:20.5613128Z git version 2.52.0
+2026-01-15T10:41:20.5638071Z ##[endgroup]
+2026-01-15T10:41:20.5650880Z Temporarily overriding HOME='/home/runner/work/_temp/6e683b97-77d7-4bb6-9a48-ec8a6f09be48' before making global git config changes
+2026-01-15T10:41:20.5655894Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-15T10:41:20.5657181Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/combined-autonomous-coding/combined-autonomous-coding
+2026-01-15T10:41:20.5695174Z Deleting the contents of '/home/runner/work/combined-autonomous-coding/combined-autonomous-coding'
+2026-01-15T10:41:20.5698366Z ##[group]Initializing the repository
+2026-01-15T10:41:20.5702544Z [command]/usr/bin/git init /home/runner/work/combined-autonomous-coding/combined-autonomous-coding
+2026-01-15T10:41:20.5798233Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-01-15T10:41:20.5799655Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-01-15T10:41:20.5801242Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-01-15T10:41:20.5802308Z hint: call:
+2026-01-15T10:41:20.5803392Z hint:
+2026-01-15T10:41:20.5804090Z hint: 	git config --global init.defaultBranch <name>
+2026-01-15T10:41:20.5804775Z hint:
+2026-01-15T10:41:20.5805312Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-01-15T10:41:20.5806167Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-01-15T10:41:20.5806841Z hint:
+2026-01-15T10:41:20.5807219Z hint: 	git branch -m <name>
+2026-01-15T10:41:20.5807645Z hint:
+2026-01-15T10:41:20.5808432Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-01-15T10:41:20.5809896Z Initialized empty Git repository in /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/.git/
+2026-01-15T10:41:20.5814349Z [command]/usr/bin/git remote add origin https://github.com/process-failed-successfully/combined-autonomous-coding
+2026-01-15T10:41:20.5848043Z ##[endgroup]
+2026-01-15T10:41:20.5848740Z ##[group]Disabling automatic garbage collection
+2026-01-15T10:41:20.5851869Z [command]/usr/bin/git config --local gc.auto 0
+2026-01-15T10:41:20.5880465Z ##[endgroup]
+2026-01-15T10:41:20.5881130Z ##[group]Setting up auth
+2026-01-15T10:41:20.5886970Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-01-15T10:41:20.5916614Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-01-15T10:41:20.6251224Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-15T10:41:20.6281430Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-01-15T10:41:20.6521471Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-15T10:41:20.6551810Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-01-15T10:41:20.6787159Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-01-15T10:41:20.6821511Z ##[endgroup]
+2026-01-15T10:41:20.6822544Z ##[group]Fetching the repository
+2026-01-15T10:41:20.6831740Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +9c771e10d7b3fe7d6661fbb7e1706f3dc1f9fcc6:refs/remotes/pull/378/merge
+2026-01-15T10:41:21.0254010Z From https://github.com/process-failed-successfully/combined-autonomous-coding
+2026-01-15T10:41:21.0255263Z  * [new ref]         9c771e10d7b3fe7d6661fbb7e1706f3dc1f9fcc6 -> pull/378/merge
+2026-01-15T10:41:21.0310851Z ##[endgroup]
+2026-01-15T10:41:21.0311914Z ##[group]Determining the checkout info
+2026-01-15T10:41:21.0313315Z ##[endgroup]
+2026-01-15T10:41:21.0313967Z [command]/usr/bin/git sparse-checkout disable
+2026-01-15T10:41:21.0338989Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-01-15T10:41:21.0369090Z ##[group]Checking out the ref
+2026-01-15T10:41:21.0371681Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/378/merge
+2026-01-15T10:41:21.0736527Z Note: switching to 'refs/remotes/pull/378/merge'.
+2026-01-15T10:41:21.0737720Z
+2026-01-15T10:41:21.0738316Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-01-15T10:41:21.0740195Z changes and commit them, and you can discard any commits you make in this
+2026-01-15T10:41:21.0741732Z state without impacting any branches by switching back to a branch.
+2026-01-15T10:41:21.0742442Z
+2026-01-15T10:41:21.0743259Z If you want to create a new branch to retain commits you create, you may
+2026-01-15T10:41:21.0744409Z do so (now or later) by using -c with the switch command. Example:
+2026-01-15T10:41:21.0745411Z
+2026-01-15T10:41:21.0745743Z   git switch -c <new-branch-name>
+2026-01-15T10:41:21.0746487Z
+2026-01-15T10:41:21.0746914Z Or undo this operation with:
+2026-01-15T10:41:21.0747579Z
+2026-01-15T10:41:21.0747932Z   git switch -
+2026-01-15T10:41:21.0748309Z
+2026-01-15T10:41:21.0748920Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-01-15T10:41:21.0749854Z
+2026-01-15T10:41:21.0750924Z HEAD is now at 9c771e1 Merge c9bb2db9682e00ed592e311e76a88955256271cc into 0c45421f081fbc7ef6393a46b02ec5b38831a700
+2026-01-15T10:41:21.0754320Z ##[endgroup]
+2026-01-15T10:41:21.0787472Z [command]/usr/bin/git log -1 --format=%H
+2026-01-15T10:41:21.0810659Z 9c771e10d7b3fe7d6661fbb7e1706f3dc1f9fcc6
+2026-01-15T10:41:21.1138208Z ##[group]Run actions/setup-python@v5
+2026-01-15T10:41:21.1139363Z with:
+2026-01-15T10:41:21.1140185Z   python-version: 3.13.7
+2026-01-15T10:41:21.1141141Z   cache: pip
+2026-01-15T10:41:21.1141985Z   check-latest: false
+2026-01-15T10:41:21.1143422Z   token: ***
+2026-01-15T10:41:21.1144269Z   update-environment: true
+2026-01-15T10:41:21.1145327Z   allow-prereleases: false
+2026-01-15T10:41:21.1146348Z   freethreaded: false
+2026-01-15T10:41:21.1147257Z ##[endgroup]
+2026-01-15T10:41:21.2795967Z ##[group]Installed versions
+2026-01-15T10:41:21.2816715Z Version 3.13.7 was not found in the local cache
+2026-01-15T10:41:21.6434465Z Version 3.13.7 is available for downloading
+2026-01-15T10:41:21.6438054Z Download from "https://github.com/actions/python-versions/releases/download/3.13.7-16980743123/python-3.13.7-linux-24.04-x64.tar.gz"
+2026-01-15T10:41:22.3361990Z Extract downloaded archive
+2026-01-15T10:41:22.3466810Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/4db1a1f3-9a98-4650-89ac-0e90c73388b1 -f /home/runner/work/_temp/fa1782ea-dd4c-4c23-a1a4-57a1423402f1
+2026-01-15T10:41:24.6929875Z Execute installation script
+2026-01-15T10:41:24.7027651Z Check if Python hostedtoolcache folder exist...
+2026-01-15T10:41:24.7028408Z Create Python 3.13.7 folder
+2026-01-15T10:41:24.7050950Z Copy Python binaries to hostedtoolcache folder
+2026-01-15T10:41:25.2712603Z Create additional symlinks (Required for the UsePythonVersion Azure Pipelines task and the setup-python GitHub Action)
+2026-01-15T10:41:25.2756632Z Upgrading pip...
+2026-01-15T10:41:27.8302018Z Looking in links: /tmp/tmpz46attc1
+2026-01-15T10:41:27.8305447Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (25.2)
+2026-01-15T10:41:28.9751077Z Collecting pip
+2026-01-15T10:41:29.0196430Z Downloading pip-25.3-py3-none-any.whl.metadata (4.7 kB)
+2026-01-15T10:41:29.0313533Z Downloading pip-25.3-py3-none-any.whl (1.8 MB)
+2026-01-15T10:41:29.1353309Z ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 20.0 MB/s  0:00:00
+2026-01-15T10:41:29.1353845Z
+2026-01-15T10:41:29.1536805Z Installing collected packages: pip
+2026-01-15T10:41:29.1537719Z Attempting uninstall: pip
+2026-01-15T10:41:29.1566314Z Found existing installation: pip 25.2
+2026-01-15T10:41:29.1877329Z Uninstalling pip-25.2:
+2026-01-15T10:41:29.1932538Z Successfully uninstalled pip-25.2
+2026-01-15T10:41:30.1536295Z Successfully installed pip-25.3
+2026-01-15T10:41:30.2044072Z Create complete file
+2026-01-15T10:41:30.2080276Z Successfully set up CPython (3.13.7)
+2026-01-15T10:41:30.2082379Z ##[endgroup]
+2026-01-15T10:41:30.2644657Z [command]/opt/hostedtoolcache/Python/3.13.7/x64/bin/pip cache dir
+2026-01-15T10:41:30.4307846Z /home/runner/.cache/pip
+2026-01-15T10:41:30.5114867Z Cache hit for: setup-python-Linux-x64-24.04-Ubuntu-python-3.13.7-pip-2fd8fe7362e3830fed9494313a73567e09d89e895941f1d72b250d324bcac365
+2026-01-15T10:41:30.9983503Z Received 75866986 of 75866986 (100.0%), 168.3 MBs/sec
+2026-01-15T10:41:30.9984733Z Cache Size: ~72 MB (75866986 B)
+2026-01-15T10:41:31.0020530Z [command]/usr/bin/tar -xf /home/runner/work/_temp/8dda6de6-df9b-42d8-ae17-f00839bc86c5/cache.tzst -P -C /home/runner/work/combined-autonomous-coding/combined-autonomous-coding --use-compress-program unzstd
+2026-01-15T10:41:31.1569770Z Cache restored successfully
+2026-01-15T10:41:31.1740385Z Cache restored from key: setup-python-Linux-x64-24.04-Ubuntu-python-3.13.7-pip-64884b49c5d5dc589bb2162de31baa5fda263108ce45beb766101aaa38038d07
+2026-01-15T10:41:31.1999055Z ##[group]Run python -m pip install --upgrade pip
+2026-01-15T10:41:31.1999467Z [36;1mpython -m pip install --upgrade pip[0m
+2026-01-15T10:41:31.1999936Z [36;1mif [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi[0m
+2026-01-15T10:41:31.2000352Z [36;1mpip install .[0m
+2026-01-15T10:41:31.2040707Z shell: /usr/bin/bash -e {0}
+2026-01-15T10:41:31.2040968Z env:
+2026-01-15T10:41:31.2041236Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:31.2041663Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T10:41:31.2042056Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:31.2042411Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:31.2043006Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:31.2043349Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T10:41:31.2043653Z ##[endgroup]
+2026-01-15T10:41:31.5622172Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (25.3)
+2026-01-15T10:41:32.2789010Z Collecting flake8 (from -r requirements-dev.txt (line 1))
+2026-01-15T10:41:32.2802243Z   Using cached flake8-7.3.0-py2.py3-none-any.whl.metadata (3.8 kB)
+2026-01-15T10:41:32.3672626Z Collecting mypy (from -r requirements-dev.txt (line 2))
+2026-01-15T10:41:32.3686267Z   Using cached mypy-1.19.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.2 kB)
+2026-01-15T10:41:32.3883470Z Collecting bandit (from -r requirements-dev.txt (line 3))
+2026-01-15T10:41:32.3894862Z   Using cached bandit-1.9.2-py3-none-any.whl.metadata (7.1 kB)
+2026-01-15T10:41:32.4296614Z Collecting types-requests (from -r requirements-dev.txt (line 4))
+2026-01-15T10:41:32.4943625Z   Downloading types_requests-2.32.4.20260107-py3-none-any.whl.metadata (2.0 kB)
+2026-01-15T10:41:32.5400909Z Collecting pytest (from -r requirements-dev.txt (line 5))
+2026-01-15T10:41:32.5412577Z   Using cached pytest-9.0.2-py3-none-any.whl.metadata (7.6 kB)
+2026-01-15T10:41:32.5781240Z Collecting pytest-cov (from -r requirements-dev.txt (line 6))
+2026-01-15T10:41:32.5792902Z   Using cached pytest_cov-7.0.0-py3-none-any.whl.metadata (31 kB)
+2026-01-15T10:41:32.6255699Z Collecting types-PyYAML (from -r requirements-dev.txt (line 7))
+2026-01-15T10:41:32.6267122Z   Using cached types_pyyaml-6.0.12.20250915-py3-none-any.whl.metadata (1.7 kB)
+2026-01-15T10:41:32.7905984Z Collecting textual==0.64.0 (from -r requirements-dev.txt (line 8))
+2026-01-15T10:41:32.8005881Z   Downloading textual-0.64.0-py3-none-any.whl.metadata (5.6 kB)
+2026-01-15T10:41:33.0041865Z Collecting watchdog (from -r requirements-dev.txt (line 9))
+2026-01-15T10:41:33.0116625Z   Downloading watchdog-6.0.0-py3-none-manylinux2014_x86_64.whl.metadata (44 kB)
+2026-01-15T10:41:33.1824145Z Collecting markdown-it-py>=2.1.0 (from markdown-it-py[linkify,plugins]>=2.1.0->textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:33.1835691Z   Using cached markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+2026-01-15T10:41:33.2513741Z Collecting rich>=13.3.3 (from textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:33.2525642Z   Using cached rich-14.2.0-py3-none-any.whl.metadata (18 kB)
+2026-01-15T10:41:33.2830084Z Collecting typing-extensions<5.0.0,>=4.4.0 (from textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:33.2845221Z   Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-15T10:41:33.3199983Z Collecting mccabe<0.8.0,>=0.7.0 (from flake8->-r requirements-dev.txt (line 1))
+2026-01-15T10:41:33.3214590Z   Using cached mccabe-0.7.0-py2.py3-none-any.whl.metadata (5.0 kB)
+2026-01-15T10:41:33.3681130Z Collecting pycodestyle<2.15.0,>=2.14.0 (from flake8->-r requirements-dev.txt (line 1))
+2026-01-15T10:41:33.3696052Z   Using cached pycodestyle-2.14.0-py2.py3-none-any.whl.metadata (4.5 kB)
+2026-01-15T10:41:33.6185000Z Collecting pyflakes<3.5.0,>=3.4.0 (from flake8->-r requirements-dev.txt (line 1))
+2026-01-15T10:41:33.6196781Z   Using cached pyflakes-3.4.0-py2.py3-none-any.whl.metadata (3.5 kB)
+2026-01-15T10:41:33.6373565Z Collecting mypy_extensions>=1.0.0 (from mypy->-r requirements-dev.txt (line 2))
+2026-01-15T10:41:33.6385052Z   Using cached mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+2026-01-15T10:41:33.6538782Z Collecting pathspec>=0.9.0 (from mypy->-r requirements-dev.txt (line 2))
+2026-01-15T10:41:33.6608882Z   Downloading pathspec-1.0.3-py3-none-any.whl.metadata (13 kB)
+2026-01-15T10:41:33.7642574Z Collecting librt>=0.6.2 (from mypy->-r requirements-dev.txt (line 2))
+2026-01-15T10:41:33.7714874Z   Downloading librt-0.7.8-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (1.3 kB)
+2026-01-15T10:41:33.8066118Z Collecting PyYAML>=5.3.1 (from bandit->-r requirements-dev.txt (line 3))
+2026-01-15T10:41:33.8078417Z   Using cached pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+2026-01-15T10:41:33.8312162Z Collecting stevedore>=1.20.0 (from bandit->-r requirements-dev.txt (line 3))
+2026-01-15T10:41:33.8322558Z   Using cached stevedore-5.6.0-py3-none-any.whl.metadata (2.3 kB)
+2026-01-15T10:41:33.8591486Z Collecting urllib3>=2 (from types-requests->-r requirements-dev.txt (line 4))
+2026-01-15T10:41:33.8665128Z   Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+2026-01-15T10:41:33.8817970Z Collecting iniconfig>=1.0.1 (from pytest->-r requirements-dev.txt (line 5))
+2026-01-15T10:41:33.8829312Z   Using cached iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+2026-01-15T10:41:33.8996451Z Collecting packaging>=22 (from pytest->-r requirements-dev.txt (line 5))
+2026-01-15T10:41:33.9007198Z   Using cached packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-15T10:41:33.9141153Z Collecting pluggy<2,>=1.5 (from pytest->-r requirements-dev.txt (line 5))
+2026-01-15T10:41:33.9151781Z   Using cached pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+2026-01-15T10:41:33.9346391Z Collecting pygments>=2.7.2 (from pytest->-r requirements-dev.txt (line 5))
+2026-01-15T10:41:33.9357445Z   Using cached pygments-2.19.2-py3-none-any.whl.metadata (2.5 kB)
+2026-01-15T10:41:34.2338399Z Collecting coverage>=7.10.6 (from coverage[toml]>=7.10.6->pytest-cov->-r requirements-dev.txt (line 6))
+2026-01-15T10:41:34.2351398Z   Using cached coverage-7.13.1-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.5 kB)
+2026-01-15T10:41:34.2639704Z Collecting mdurl~=0.1 (from markdown-it-py>=2.1.0->markdown-it-py[linkify,plugins]>=2.1.0->textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:34.2655364Z   Using cached mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+2026-01-15T10:41:34.2814386Z Collecting linkify-it-py<3,>=1 (from markdown-it-py[linkify,plugins]>=2.1.0->textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:34.2886271Z   Downloading linkify_it_py-2.0.3-py3-none-any.whl.metadata (8.5 kB)
+2026-01-15T10:41:34.3052935Z Collecting mdit-py-plugins>=0.5.0 (from markdown-it-py[linkify,plugins]>=2.1.0->textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:34.3131283Z   Downloading mdit_py_plugins-0.5.0-py3-none-any.whl.metadata (2.8 kB)
+2026-01-15T10:41:34.3276963Z Collecting uc-micro-py (from linkify-it-py<3,>=1->markdown-it-py[linkify,plugins]>=2.1.0->textual==0.64.0->-r requirements-dev.txt (line 8))
+2026-01-15T10:41:34.3347173Z   Downloading uc_micro_py-1.0.3-py3-none-any.whl.metadata (2.0 kB)
+2026-01-15T10:41:34.3613950Z Downloading textual-0.64.0-py3-none-any.whl (555 kB)
+2026-01-15T10:41:34.4053970Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 555.7/555.7 kB 13.7 MB/s  0:00:00
+2026-01-15T10:41:34.4066382Z Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+2026-01-15T10:41:34.4077613Z Using cached flake8-7.3.0-py2.py3-none-any.whl (57 kB)
+2026-01-15T10:41:34.4088692Z Using cached mccabe-0.7.0-py2.py3-none-any.whl (7.3 kB)
+2026-01-15T10:41:34.4099614Z Using cached pycodestyle-2.14.0-py2.py3-none-any.whl (31 kB)
+2026-01-15T10:41:34.4110185Z Using cached pyflakes-3.4.0-py2.py3-none-any.whl (63 kB)
+2026-01-15T10:41:34.4121617Z Using cached mypy-1.19.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (13.6 MB)
+2026-01-15T10:41:34.4229008Z Using cached bandit-1.9.2-py3-none-any.whl (134 kB)
+2026-01-15T10:41:34.4303976Z Downloading types_requests-2.32.4.20260107-py3-none-any.whl (20 kB)
+2026-01-15T10:41:34.4334485Z Using cached pytest-9.0.2-py3-none-any.whl (374 kB)
+2026-01-15T10:41:34.4347693Z Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+2026-01-15T10:41:34.4358240Z Using cached pytest_cov-7.0.0-py3-none-any.whl (22 kB)
+2026-01-15T10:41:34.4368997Z Using cached types_pyyaml-6.0.12.20250915-py3-none-any.whl (20 kB)
+2026-01-15T10:41:34.4442146Z Downloading watchdog-6.0.0-py3-none-manylinux2014_x86_64.whl (79 kB)
+2026-01-15T10:41:34.4493703Z Using cached coverage-7.13.1-cp313-cp313-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (252 kB)
+2026-01-15T10:41:34.4505907Z Using cached iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+2026-01-15T10:41:34.4619211Z Downloading librt-0.7.8-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (193 kB)
+2026-01-15T10:41:34.4747982Z Using cached markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+2026-01-15T10:41:34.4758959Z Using cached mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+2026-01-15T10:41:34.4829352Z Downloading linkify_it_py-2.0.3-py3-none-any.whl (19 kB)
+2026-01-15T10:41:34.4914296Z Downloading mdit_py_plugins-0.5.0-py3-none-any.whl (57 kB)
+2026-01-15T10:41:34.4956259Z Using cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+2026-01-15T10:41:34.4966695Z Using cached packaging-25.0-py3-none-any.whl (66 kB)
+2026-01-15T10:41:34.5037502Z Downloading pathspec-1.0.3-py3-none-any.whl (55 kB)
+2026-01-15T10:41:34.5079269Z Using cached pygments-2.19.2-py3-none-any.whl (1.2 MB)
+2026-01-15T10:41:34.5100020Z Using cached pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (801 kB)
+2026-01-15T10:41:34.5116811Z Using cached rich-14.2.0-py3-none-any.whl (243 kB)
+2026-01-15T10:41:34.5129311Z Using cached stevedore-5.6.0-py3-none-any.whl (54 kB)
+2026-01-15T10:41:34.5198791Z Downloading urllib3-2.6.3-py3-none-any.whl (131 kB)
+2026-01-15T10:41:34.5342933Z Downloading uc_micro_py-1.0.3-py3-none-any.whl (6.2 kB)
+2026-01-15T10:41:34.6291295Z Installing collected packages: watchdog, urllib3, uc-micro-py, typing-extensions, types-PyYAML, stevedore, PyYAML, pygments, pyflakes, pycodestyle, pluggy, pathspec, packaging, mypy_extensions, mdurl, mccabe, librt, iniconfig, coverage, types-requests, pytest, mypy, markdown-it-py, linkify-it-py, flake8, rich, pytest-cov, mdit-py-plugins, bandit, textual
+2026-01-15T10:41:38.5109659Z
+2026-01-15T10:41:38.5146368Z Successfully installed PyYAML-6.0.3 bandit-1.9.2 coverage-7.13.1 flake8-7.3.0 iniconfig-2.3.0 librt-0.7.8 linkify-it-py-2.0.3 markdown-it-py-4.0.0 mccabe-0.7.0 mdit-py-plugins-0.5.0 mdurl-0.1.2 mypy-1.19.1 mypy_extensions-1.1.0 packaging-25.0 pathspec-1.0.3 pluggy-1.6.0 pycodestyle-2.14.0 pyflakes-3.4.0 pygments-2.19.2 pytest-9.0.2 pytest-cov-7.0.0 rich-14.2.0 stevedore-5.6.0 textual-0.64.0 types-PyYAML-6.0.12.20250915 types-requests-2.32.4.20260107 typing-extensions-4.15.0 uc-micro-py-1.0.3 urllib3-2.6.3 watchdog-6.0.0
+2026-01-15T10:41:38.9957628Z Processing /home/runner/work/combined-autonomous-coding/combined-autonomous-coding
+2026-01-15T10:41:38.9981420Z   Installing build dependencies: started
+2026-01-15T10:41:39.7119429Z   Installing build dependencies: finished with status 'done'
+2026-01-15T10:41:39.7125507Z   Getting requirements to build wheel: started
+2026-01-15T10:41:40.2156779Z   Getting requirements to build wheel: finished with status 'done'
+2026-01-15T10:41:40.2165440Z   Preparing metadata (pyproject.toml): started
+2026-01-15T10:41:40.4135482Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-01-15T10:41:40.5036052Z Collecting typer (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:40.5733982Z   Downloading typer-0.21.1-py3-none-any.whl.metadata (16 kB)
+2026-01-15T10:41:40.8029955Z Collecting SQLAlchemy (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:40.8043660Z   Using cached sqlalchemy-2.0.45-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.5 kB)
+2026-01-15T10:41:40.8128644Z Requirement already satisfied: rich in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from combined-autonomous-coding==0.11.0) (14.2.0)
+2026-01-15T10:41:40.8312256Z Collecting docker (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:40.8323800Z   Using cached docker-7.1.0-py3-none-any.whl.metadata (3.8 kB)
+2026-01-15T10:41:40.8900777Z Collecting requests (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:40.8912474Z   Using cached requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+2026-01-15T10:41:40.8939554Z Requirement already satisfied: PyYAML in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from combined-autonomous-coding==0.11.0) (6.0.3)
+2026-01-15T10:41:40.9097579Z Collecting python-dotenv (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:40.9108378Z   Using cached python_dotenv-1.2.1-py3-none-any.whl.metadata (25 kB)
+2026-01-15T10:41:40.9286973Z Collecting tenacity (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:40.9298139Z   Using cached tenacity-9.1.2-py3-none-any.whl.metadata (1.2 kB)
+2026-01-15T10:41:40.9949585Z Collecting openai (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.0021303Z   Downloading openai-2.15.0-py3-none-any.whl.metadata (29 kB)
+2026-01-15T10:41:41.0531034Z Collecting google-cloud-aiplatform (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.0601379Z   Downloading google_cloud_aiplatform-1.133.0-py2.py3-none-any.whl.metadata (46 kB)
+2026-01-15T10:41:41.1616543Z Collecting gitpython (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.1627804Z   Using cached gitpython-3.1.46-py3-none-any.whl.metadata (13 kB)
+2026-01-15T10:41:41.1812285Z Collecting prometheus-client (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.1883734Z   Downloading prometheus_client-0.24.1-py3-none-any.whl.metadata (2.1 kB)
+2026-01-15T10:41:41.2479003Z Collecting psutil (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.2491342Z   Using cached psutil-7.2.1-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl.metadata (22 kB)
+2026-01-15T10:41:41.2699973Z Collecting platformdirs (from combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.2710910Z   Using cached platformdirs-4.5.1-py3-none-any.whl.metadata (12 kB)
+2026-01-15T10:41:41.2809687Z Requirement already satisfied: urllib3>=1.26.0 in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from docker->combined-autonomous-coding==0.11.0) (2.6.3)
+2026-01-15T10:41:41.3508487Z Collecting charset_normalizer<4,>=2 (from requests->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.3521469Z   Using cached charset_normalizer-3.4.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (37 kB)
+2026-01-15T10:41:41.3693268Z Collecting idna<4,>=2.5 (from requests->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.3703932Z   Using cached idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+2026-01-15T10:41:41.3912984Z Collecting certifi>=2017.4.17 (from requests->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.3924001Z   Using cached certifi-2026.1.4-py3-none-any.whl.metadata (2.5 kB)
+2026-01-15T10:41:41.4083375Z Collecting gitdb<5,>=4.0.1 (from gitpython->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.4093792Z   Using cached gitdb-4.0.12-py3-none-any.whl.metadata (1.2 kB)
+2026-01-15T10:41:41.4225622Z Collecting smmap<6,>=3.0.1 (from gitdb<5,>=4.0.1->gitpython->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.4236080Z   Using cached smmap-5.0.2-py3-none-any.whl.metadata (4.3 kB)
+2026-01-15T10:41:41.4991149Z Collecting google-api-core!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1 (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.5061670Z   Downloading google_api_core-2.29.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-15T10:41:41.5446370Z Collecting google-auth<3.0.0,>=2.47.0 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.5521021Z   Downloading google_auth-2.47.0-py3-none-any.whl.metadata (6.4 kB)
+2026-01-15T10:41:41.5773915Z Collecting proto-plus<2.0.0,>=1.22.3 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.5785207Z   Using cached proto_plus-1.27.0-py3-none-any.whl.metadata (2.2 kB)
+2026-01-15T10:41:41.7517744Z Collecting protobuf!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<7.0.0,>=3.20.2 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.7590707Z   Downloading protobuf-6.33.4-cp39-abi3-manylinux2014_x86_64.whl.metadata (593 bytes)
+2026-01-15T10:41:41.7625552Z Requirement already satisfied: packaging>=14.3 in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0) (25.0)
+2026-01-15T10:41:41.7903528Z Collecting google-cloud-storage<4.0.0,>=2.10.0 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.7971277Z   Downloading google_cloud_storage-3.8.0-py3-none-any.whl.metadata (14 kB)
+2026-01-15T10:41:41.8482407Z Collecting google-cloud-bigquery!=3.20.0,<4.0.0,>=1.15.0 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.8558120Z   Downloading google_cloud_bigquery-3.40.0-py3-none-any.whl.metadata (8.2 kB)
+2026-01-15T10:41:41.8840411Z Collecting google-cloud-resource-manager<3.0.0,>=1.3.3 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.8851754Z   Using cached google_cloud_resource_manager-1.15.0-py3-none-any.whl.metadata (9.9 kB)
+2026-01-15T10:41:41.9105778Z Collecting google-genai<2.0.0,>=1.37.0 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:41.9180825Z   Downloading google_genai-1.58.0-py3-none-any.whl.metadata (53 kB)
+2026-01-15T10:41:42.0270492Z Collecting pydantic<3 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.0283368Z   Using cached pydantic-2.12.5-py3-none-any.whl.metadata (90 kB)
+2026-01-15T10:41:42.0334083Z Requirement already satisfied: typing_extensions in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0) (4.15.0)
+2026-01-15T10:41:42.0447513Z Collecting docstring_parser<1 (from google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.0458704Z   Using cached docstring_parser-0.17.0-py3-none-any.whl.metadata (3.5 kB)
+2026-01-15T10:41:42.0698502Z Collecting googleapis-common-protos<2.0.0,>=1.56.2 (from google-api-core!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1->google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.0709233Z   Using cached googleapis_common_protos-1.72.0-py3-none-any.whl.metadata (9.4 kB)
+2026-01-15T10:41:42.5926897Z Collecting grpcio<2.0.0,>=1.33.2 (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.5939842Z   Using cached grpcio-1.76.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.7 kB)
+2026-01-15T10:41:42.6396407Z Collecting grpcio-status<2.0.0,>=1.33.2 (from google-api-core[grpc]!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.6407483Z   Using cached grpcio_status-1.76.0-py3-none-any.whl.metadata (1.1 kB)
+2026-01-15T10:41:42.6746948Z Collecting pyasn1-modules>=0.2.1 (from google-auth<3.0.0,>=2.47.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.6758464Z   Using cached pyasn1_modules-0.4.2-py3-none-any.whl.metadata (3.5 kB)
+2026-01-15T10:41:42.6934376Z Collecting rsa<5,>=3.1.4 (from google-auth<3.0.0,>=2.47.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.6946420Z   Using cached rsa-4.9.1-py3-none-any.whl.metadata (5.6 kB)
+2026-01-15T10:41:42.7165781Z Collecting google-cloud-core<3.0.0,>=2.4.1 (from google-cloud-bigquery!=3.20.0,<4.0.0,>=1.15.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.7176538Z   Using cached google_cloud_core-2.5.0-py3-none-any.whl.metadata (3.1 kB)
+2026-01-15T10:41:42.7367405Z Collecting google-resumable-media<3.0.0,>=2.0.0 (from google-cloud-bigquery!=3.20.0,<4.0.0,>=1.15.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.7378161Z   Using cached google_resumable_media-2.8.0-py3-none-any.whl.metadata (2.6 kB)
+2026-01-15T10:41:42.7524544Z Collecting python-dateutil<3.0.0,>=2.8.2 (from google-cloud-bigquery!=3.20.0,<4.0.0,>=1.15.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.7535025Z   Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+2026-01-15T10:41:42.8191629Z Collecting grpc-google-iam-v1<1.0.0,>=0.14.0 (from google-cloud-resource-manager<3.0.0,>=1.3.3->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.8201870Z   Using cached grpc_google_iam_v1-0.14.3-py3-none-any.whl.metadata (9.2 kB)
+2026-01-15T10:41:42.9040251Z Collecting google-crc32c<2.0.0,>=1.1.3 (from google-cloud-storage<4.0.0,>=2.10.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.9052177Z   Using cached google_crc32c-1.8.0-cp313-cp313-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl.metadata (1.7 kB)
+2026-01-15T10:41:42.9269543Z Collecting anyio<5.0.0,>=4.8.0 (from google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.9338592Z   Downloading anyio-4.12.1-py3-none-any.whl.metadata (4.3 kB)
+2026-01-15T10:41:42.9579082Z Collecting httpx<1.0.0,>=0.28.1 (from google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:42.9589934Z   Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2026-01-15T10:41:43.0605926Z Collecting websockets<15.1.0,>=13.0.0 (from google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.0618864Z   Using cached websockets-15.0.1-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+2026-01-15T10:41:43.0746993Z Collecting distro<2,>=1.7.0 (from google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.0757572Z   Using cached distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+2026-01-15T10:41:43.0866572Z Collecting sniffio (from google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.0877146Z   Using cached sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+2026-01-15T10:41:43.1887106Z Collecting httpcore==1.* (from httpx<1.0.0,>=0.28.1->google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.1897879Z   Using cached httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2026-01-15T10:41:43.2047096Z Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0.0,>=0.28.1->google-genai<2.0.0,>=1.37.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.2057201Z   Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-01-15T10:41:43.2437233Z Collecting annotated-types>=0.6.0 (from pydantic<3->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.2447902Z   Using cached annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+2026-01-15T10:41:43.7753963Z Collecting pydantic-core==2.41.5 (from pydantic<3->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.7767567Z   Using cached pydantic_core-2.41.5-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+2026-01-15T10:41:43.7890151Z Collecting typing-inspection>=0.4.2 (from pydantic<3->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.7900865Z   Using cached typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+2026-01-15T10:41:43.8082905Z Collecting six>=1.5 (from python-dateutil<3.0.0,>=2.8.2->google-cloud-bigquery!=3.20.0,<4.0.0,>=1.15.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.8093476Z   Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2026-01-15T10:41:43.8312173Z Collecting pyasn1>=0.1.3 (from rsa<5,>=3.1.4->google-auth<3.0.0,>=2.47.0->google-cloud-aiplatform->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.8322946Z   Using cached pyasn1-0.6.1-py3-none-any.whl.metadata (8.4 kB)
+2026-01-15T10:41:43.9166835Z Collecting jiter<1,>=0.10.0 (from openai->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.9179282Z   Using cached jiter-0.12.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.2 kB)
+2026-01-15T10:41:43.9641090Z Collecting tqdm>4 (from openai->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:43.9653198Z   Using cached tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+2026-01-15T10:41:43.9833927Z Requirement already satisfied: markdown-it-py>=2.2.0 in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from rich->combined-autonomous-coding==0.11.0) (4.0.0)
+2026-01-15T10:41:43.9840047Z Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from rich->combined-autonomous-coding==0.11.0) (2.19.2)
+2026-01-15T10:41:43.9863573Z Requirement already satisfied: mdurl~=0.1 in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (from markdown-it-py>=2.2.0->rich->combined-autonomous-coding==0.11.0) (0.1.2)
+2026-01-15T10:41:44.0907024Z Collecting greenlet>=1 (from SQLAlchemy->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:44.0920075Z   Using cached greenlet-3.3.0-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (4.1 kB)
+2026-01-15T10:41:44.1150428Z Collecting click>=8.0.0 (from typer->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:44.1161889Z   Using cached click-8.3.1-py3-none-any.whl.metadata (2.6 kB)
+2026-01-15T10:41:44.1302489Z Collecting shellingham>=1.3.0 (from typer->combined-autonomous-coding==0.11.0)
+2026-01-15T10:41:44.1314077Z   Using cached shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+2026-01-15T10:41:44.1389765Z Using cached docker-7.1.0-py3-none-any.whl (147 kB)
+2026-01-15T10:41:44.1401549Z Using cached requests-2.32.5-py3-none-any.whl (64 kB)
+2026-01-15T10:41:44.1413352Z Using cached charset_normalizer-3.4.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (153 kB)
+2026-01-15T10:41:44.1424863Z Using cached idna-3.11-py3-none-any.whl (71 kB)
+2026-01-15T10:41:44.1435908Z Using cached certifi-2026.1.4-py3-none-any.whl (152 kB)
+2026-01-15T10:41:44.1447494Z Using cached gitpython-3.1.46-py3-none-any.whl (208 kB)
+2026-01-15T10:41:44.1459299Z Using cached gitdb-4.0.12-py3-none-any.whl (62 kB)
+2026-01-15T10:41:44.1470142Z Using cached smmap-5.0.2-py3-none-any.whl (24 kB)
+2026-01-15T10:41:44.1538753Z Downloading google_cloud_aiplatform-1.133.0-py2.py3-none-any.whl (8.2 MB)
+2026-01-15T10:41:44.2043391Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.2/8.2 MB 191.1 MB/s  0:00:00
+2026-01-15T10:41:44.2055060Z Using cached docstring_parser-0.17.0-py3-none-any.whl (36 kB)
+2026-01-15T10:41:44.2126750Z Downloading google_api_core-2.29.0-py3-none-any.whl (173 kB)
+2026-01-15T10:41:44.2221123Z Downloading google_auth-2.47.0-py3-none-any.whl (234 kB)
+2026-01-15T10:41:44.2317609Z Downloading google_cloud_bigquery-3.40.0-py3-none-any.whl (261 kB)
+2026-01-15T10:41:44.2356726Z Using cached google_cloud_core-2.5.0-py3-none-any.whl (29 kB)
+2026-01-15T10:41:44.2367571Z Using cached google_cloud_resource_manager-1.15.0-py3-none-any.whl (397 kB)
+2026-01-15T10:41:44.2441912Z Downloading google_cloud_storage-3.8.0-py3-none-any.whl (312 kB)
+2026-01-15T10:41:44.2488082Z Using cached google_crc32c-1.8.0-cp313-cp313-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl (33 kB)
+2026-01-15T10:41:44.2561698Z Downloading google_genai-1.58.0-py3-none-any.whl (718 kB)
+2026-01-15T10:41:44.2620415Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 718.4/718.4 kB 125.9 MB/s  0:00:00
+2026-01-15T10:41:44.2693451Z Downloading anyio-4.12.1-py3-none-any.whl (113 kB)
+2026-01-15T10:41:44.2726675Z Using cached distro-1.9.0-py3-none-any.whl (20 kB)
+2026-01-15T10:41:44.2737641Z Using cached google_resumable_media-2.8.0-py3-none-any.whl (81 kB)
+2026-01-15T10:41:44.2749040Z Using cached googleapis_common_protos-1.72.0-py3-none-any.whl (297 kB)
+2026-01-15T10:41:44.2762066Z Using cached grpc_google_iam_v1-0.14.3-py3-none-any.whl (32 kB)
+2026-01-15T10:41:44.2773346Z Using cached grpcio-1.76.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (6.6 MB)
+2026-01-15T10:41:44.2831646Z Using cached grpcio_status-1.76.0-py3-none-any.whl (14 kB)
+2026-01-15T10:41:44.2842029Z Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+2026-01-15T10:41:44.2852572Z Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+2026-01-15T10:41:44.2863579Z Using cached proto_plus-1.27.0-py3-none-any.whl (50 kB)
+2026-01-15T10:41:44.2936866Z Downloading protobuf-6.33.4-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+2026-01-15T10:41:44.2977890Z Using cached pydantic-2.12.5-py3-none-any.whl (463 kB)
+2026-01-15T10:41:44.2991980Z Using cached pydantic_core-2.41.5-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+2026-01-15T10:41:44.3017136Z Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+2026-01-15T10:41:44.3028937Z Using cached rsa-4.9.1-py3-none-any.whl (34 kB)
+2026-01-15T10:41:44.3039916Z Using cached tenacity-9.1.2-py3-none-any.whl (28 kB)
+2026-01-15T10:41:44.3051221Z Using cached websockets-15.0.1-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (182 kB)
+2026-01-15T10:41:44.3063192Z Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+2026-01-15T10:41:44.3074097Z Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+2026-01-15T10:41:44.3084940Z Using cached pyasn1-0.6.1-py3-none-any.whl (83 kB)
+2026-01-15T10:41:44.3096137Z Using cached pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+2026-01-15T10:41:44.3107917Z Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-01-15T10:41:44.3118803Z Using cached typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+2026-01-15T10:41:44.3195256Z Downloading openai-2.15.0-py3-none-any.whl (1.1 MB)
+2026-01-15T10:41:44.3266012Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 166.4 MB/s  0:00:00
+2026-01-15T10:41:44.3277124Z Using cached jiter-0.12.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (361 kB)
+2026-01-15T10:41:44.3290335Z Using cached tqdm-4.67.1-py3-none-any.whl (78 kB)
+2026-01-15T10:41:44.3301681Z Using cached platformdirs-4.5.1-py3-none-any.whl (18 kB)
+2026-01-15T10:41:44.3371457Z Downloading prometheus_client-0.24.1-py3-none-any.whl (64 kB)
+2026-01-15T10:41:44.3401913Z Using cached psutil-7.2.1-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl (154 kB)
+2026-01-15T10:41:44.3413483Z Using cached python_dotenv-1.2.1-py3-none-any.whl (21 kB)
+2026-01-15T10:41:44.3424596Z Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+2026-01-15T10:41:44.3436009Z Using cached sqlalchemy-2.0.45-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.3 MB)
+2026-01-15T10:41:44.3470144Z Using cached greenlet-3.3.0-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (612 kB)
+2026-01-15T10:41:44.3547419Z Downloading typer-0.21.1-py3-none-any.whl (47 kB)
+2026-01-15T10:41:44.3577164Z Using cached click-8.3.1-py3-none-any.whl (108 kB)
+2026-01-15T10:41:44.3588468Z Using cached shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+2026-01-15T10:41:44.4344263Z Building wheels for collected packages: combined-autonomous-coding
+2026-01-15T10:41:44.4351615Z   Building wheel for combined-autonomous-coding (pyproject.toml): started
+2026-01-15T10:41:44.6785697Z   Building wheel for combined-autonomous-coding (pyproject.toml): finished with status 'done'
+2026-01-15T10:41:44.6791987Z   Created wheel for combined-autonomous-coding: filename=combined_autonomous_coding-0.11.0-py3-none-any.whl size=92323 sha256=3c92cab01343a5b8fdc215262ab2344af667f5c51ce1a7045c9ba75ba894cf10
+2026-01-15T10:41:44.6793930Z   Stored in directory: /home/runner/.cache/pip/wheels/ec/65/04/3017c4a6cffaf9690b2d4c489e0f7ee54f284fdebb2184552b
+2026-01-15T10:41:44.6813611Z Successfully built combined-autonomous-coding
+2026-01-15T10:41:44.8061165Z Installing collected packages: websockets, typing-inspection, tqdm, tenacity, sniffio, smmap, six, shellingham, python-dotenv, pydantic-core, pyasn1, psutil, protobuf, prometheus-client, platformdirs, jiter, idna, h11, grpcio, greenlet, google-crc32c, docstring_parser, distro, click, charset_normalizer, certifi, annotated-types, SQLAlchemy, rsa, requests, python-dateutil, pydantic, pyasn1-modules, proto-plus, httpcore, googleapis-common-protos, google-resumable-media, gitdb, anyio, typer, httpx, grpcio-status, google-auth, gitpython, docker, openai, grpc-google-iam-v1, google-api-core, google-genai, google-cloud-core, google-cloud-storage, google-cloud-resource-manager, google-cloud-bigquery, google-cloud-aiplatform, combined-autonomous-coding
+2026-01-15T10:41:57.6718737Z
+2026-01-15T10:41:57.6798553Z Successfully installed SQLAlchemy-2.0.45 annotated-types-0.7.0 anyio-4.12.1 certifi-2026.1.4 charset_normalizer-3.4.4 click-8.3.1 combined-autonomous-coding-0.11.0 distro-1.9.0 docker-7.1.0 docstring_parser-0.17.0 gitdb-4.0.12 gitpython-3.1.46 google-api-core-2.29.0 google-auth-2.47.0 google-cloud-aiplatform-1.133.0 google-cloud-bigquery-3.40.0 google-cloud-core-2.5.0 google-cloud-resource-manager-1.15.0 google-cloud-storage-3.8.0 google-crc32c-1.8.0 google-genai-1.58.0 google-resumable-media-2.8.0 googleapis-common-protos-1.72.0 greenlet-3.3.0 grpc-google-iam-v1-0.14.3 grpcio-1.76.0 grpcio-status-1.76.0 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.11 jiter-0.12.0 openai-2.15.0 platformdirs-4.5.1 prometheus-client-0.24.1 proto-plus-1.27.0 protobuf-6.33.4 psutil-7.2.1 pyasn1-0.6.1 pyasn1-modules-0.4.2 pydantic-2.12.5 pydantic-core-2.41.5 python-dateutil-2.9.0.post0 python-dotenv-1.2.1 requests-2.32.5 rsa-4.9.1 shellingham-1.5.4 six-1.17.0 smmap-5.0.2 sniffio-1.3.1 tenacity-9.1.2 tqdm-4.67.1 typer-0.21.1 typing-inspection-0.4.2 websockets-15.0.1
+2026-01-15T10:41:58.1349128Z ##[group]Run git config --global user.email "agent@example.com"
+2026-01-15T10:41:58.1349602Z [36;1mgit config --global user.email "agent@example.com"[0m
+2026-01-15T10:41:58.1349966Z [36;1mgit config --global user.name "Combined Agent CI"[0m
+2026-01-15T10:41:58.1386742Z shell: /usr/bin/bash -e {0}
+2026-01-15T10:41:58.1386981Z env:
+2026-01-15T10:41:58.1387246Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1387672Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T10:41:58.1388064Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1388424Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1388775Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1389146Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T10:41:58.1389459Z ##[endgroup]
+2026-01-15T10:41:58.1504864Z ##[group]Run export PYTHONPATH=$PYTHONPATH:$(pwd)
+2026-01-15T10:41:58.1505230Z [36;1mexport PYTHONPATH=$PYTHONPATH:$(pwd)[0m
+2026-01-15T10:41:58.1505769Z [36;1mpytest --cov=. --cov-report=term-missing tests/[0m
+2026-01-15T10:41:58.1538421Z shell: /usr/bin/bash -e {0}
+2026-01-15T10:41:58.1538649Z env:
+2026-01-15T10:41:58.1538897Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1539313Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T10:41:58.1539707Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1540065Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1540407Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T10:41:58.1540759Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T10:41:58.1541052Z ##[endgroup]
+2026-01-15T10:42:01.1547010Z ============================= test session starts ==============================
+2026-01-15T10:42:01.1547765Z platform linux -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0
+2026-01-15T10:42:01.1548533Z rootdir: /home/runner/work/combined-autonomous-coding/combined-autonomous-coding
+2026-01-15T10:42:01.1549199Z configfile: pyproject.toml
+2026-01-15T10:42:01.1549559Z plugins: cov-7.0.0, anyio-4.12.1
+2026-01-15T10:42:01.1549906Z collected 586 items
+2026-01-15T10:42:01.1550104Z
+2026-01-15T10:42:01.1674966Z tests/test_agent_jira_flow.py ....                                       [  0%]
+2026-01-15T10:42:01.1711777Z tests/test_agent_parity.py ...                                           [  1%]
+2026-01-15T10:42:01.1989211Z tests/test_base_agent.py .........                                       [  2%]
+2026-01-15T10:42:01.2122949Z tests/test_base_agent_persistence.py ...                                 [  3%]
+2026-01-15T10:42:01.4240787Z tests/test_cherry_pick.py ....                                           [  3%]
+2026-01-15T10:42:01.5748590Z tests/test_cli_agent_launcher.py ........                                [  5%]
+2026-01-15T10:42:01.5868635Z tests/test_cli_env.py ..                                                 [  5%]
+2026-01-15T10:42:01.6345177Z tests/test_cli_launcher.py ......                                        [  6%]
+2026-01-15T10:42:01.6704770Z tests/test_cli_mgmt.py ..                                                [  6%]
+2026-01-15T10:42:01.7239857Z tests/test_cli_utils.py .............                                    [  9%]
+2026-01-15T10:42:01.7367746Z tests/test_cli_utils_dashboard.py .....                                  [ 10%]
+2026-01-15T10:42:01.7411781Z tests/test_commands.py ...                                               [ 10%]
+2026-01-15T10:42:01.7997481Z tests/test_config_loader.py ..........                                   [ 12%]
+2026-01-15T10:42:01.8296839Z tests/test_config_manager.py ......                                      [ 13%]
+2026-01-15T10:42:01.8529341Z tests/test_config_validation.py .......                                  [ 14%]
+2026-01-15T10:42:01.8623306Z tests/test_configure.py .                                                [ 14%]
+2026-01-15T10:42:02.5188894Z tests/test_cursor_agent.py .....                                         [ 15%]
+2026-01-15T10:42:07.5819941Z tests/test_cursor_client.py ....                                         [ 16%]
+2026-01-15T10:42:07.6244986Z tests/test_database.py ...                                               [ 16%]
+2026-01-15T10:42:08.1977876Z tests/test_gemini_agent.py ....                                          [ 17%]
+2026-01-15T10:42:13.2837381Z tests/test_gemini_client.py ....                                         [ 18%]
+2026-01-15T10:42:13.2914091Z tests/test_git_auth.py ..                                                [ 18%]
+2026-01-15T10:42:13.3091598Z tests/test_git_wrapper.py .........                                      [ 19%]
+2026-01-15T10:42:13.3186534Z tests/test_github_client.py .....                                        [ 20%]
+2026-01-15T10:42:13.3231195Z tests/test_iteration_metrics.py .                                        [ 20%]
+2026-01-15T10:42:13.3549348Z tests/test_jira_integration.py ...           WARNING  Failed to push metrics to gateway: <urlopen telemetry.py:398
+2026-01-15T10:42:13.3550233Z                     error [Errno 111] Connection refused>
+2026-01-15T10:42:13.3783501Z ....                                   [ 22%]
+2026-01-15T10:42:13.3970250Z tests/test_jira_integration_cli.py ...                                   [ 22%]
+2026-01-15T10:42:13.4900508Z tests/test_jira_mode_integration.py ..                                   [ 23%]
+2026-01-15T10:42:13.4937573Z tests/test_log_handler.py ..                                             [ 23%]
+2026-01-15T10:42:13.7124810Z tests/test_main.py ...........                                           [ 25%]
+2026-01-15T10:42:13.7188120Z tests/test_main_archive.py ..                                            [ 25%]
+2026-01-15T10:42:13.7514794Z tests/test_main_artifacts.py ..........                                  [ 27%]
+2026-01-15T10:42:13.7754641Z tests/test_main_benchmark.py ...........                                 [ 29%]
+2026-01-15T10:42:13.9077230Z tests/test_main_blame.py .....                                           [ 30%]
+2026-01-15T10:42:14.0432634Z tests/test_main_branch.py .....                                          [ 30%]
+2026-01-15T10:42:14.1415036Z tests/test_main_clean.py .......                                         [ 32%]
+2026-01-15T10:42:14.1481055Z tests/test_main_commit.py ..                                             [ 32%]
+2026-01-15T10:42:14.2370445Z tests/test_main_commit_command.py .....                                  [ 33%]
+2026-01-15T10:42:14.2411224Z tests/test_main_completion.py ..                                         [ 33%]
+2026-01-15T10:42:14.2686315Z tests/test_main_config_command.py ........                               [ 34%]
+2026-01-15T10:42:14.3056962Z tests/test_main_context.py ..                                            [ 35%]
+2026-01-15T10:42:14.3079964Z tests/test_main_dashboard.py .                                           [ 35%]
+2026-01-15T10:42:14.5139736Z tests/test_main_diff.py .F..                                             [ 36%]
+2026-01-15T10:42:14.5552817Z tests/test_main_diff_summary.py ...                                      [ 36%]
+2026-01-15T10:42:15.0255966Z tests/test_main_discard.py .........                                     [ 38%]
+2026-01-15T10:42:15.2536589Z tests/test_main_doctor.py ..........                                     [ 39%]
+2026-01-15T10:42:15.2641961Z tests/test_main_empty_trash.py .....                                     [ 40%]
+2026-01-15T10:42:15.4210893Z tests/test_main_feature.py .........                                     [ 42%]
+2026-01-15T10:42:15.4337398Z tests/test_main_format.py .....                                          [ 43%]
+2026-01-15T10:42:15.6462453Z tests/test_main_git.py ......                                            [ 44%]
+2026-01-15T10:42:15.6573115Z tests/test_main_glance.py ....                                           [ 44%]
+2026-01-15T10:42:15.6591847Z tests/test_main_help.py .                                                [ 45%]
+2026-01-15T10:42:15.6665427Z tests/test_main_history.py ...                                           [ 45%]
+2026-01-15T10:42:15.6837948Z tests/test_main_init.py ......                                           [ 46%]
+2026-01-15T10:42:15.6951331Z tests/test_main_interact.py .....                                        [ 47%]
+2026-01-15T10:42:15.7019632Z tests/test_main_last.py ...                                              [ 47%]
+2026-01-15T10:42:15.7071472Z tests/test_main_last_run_id.py ...                                       [ 48%]
+2026-01-15T10:42:15.7310045Z tests/test_main_lint.py .........                                        [ 50%]
+2026-01-15T10:42:15.8242080Z tests/test_main_log.py ...                                               [ 50%]
+2026-01-15T10:42:15.9269972Z tests/test_main_logs.py ........                                         [ 51%]
+2026-01-15T10:42:15.9317944Z tests/test_main_models.py ...                                            [ 52%]
+2026-01-15T10:42:15.9425531Z tests/test_main_next.py .....                                            [ 53%]
+2026-01-15T10:42:16.0037051Z tests/test_main_patch.py ....                                            [ 53%]
+2026-01-15T10:42:16.0146229Z tests/test_main_plan.py ..                                               [ 54%]
+2026-01-15T10:42:16.0294219Z tests/test_main_pr.py ....                                               [ 54%]
+2026-01-15T10:42:16.0655214Z tests/test_main_profile_command.py ..........                            [ 56%]
+2026-01-15T10:42:16.1480405Z tests/test_main_pull.py .....                                            [ 57%]
+2026-01-15T10:42:16.2627743Z tests/test_main_push.py ......                                           [ 58%]
+2026-01-15T10:42:16.2805139Z tests/test_main_restore.py ...                                           [ 59%]
+2026-01-15T10:42:16.7341046Z tests/test_main_revert.py .........                                      [ 60%]
+2026-01-15T10:42:16.8514423Z tests/test_main_review.py .....                                          [ 61%]
+2026-01-15T10:42:17.2029802Z tests/test_main_rewind.py .....                                          [ 62%]
+2026-01-15T10:42:17.2211749Z tests/test_main_setup.py .......                                         [ 63%]
+2026-01-15T10:42:17.2495181Z tests/test_main_snapshot.py .......                                      [ 64%]
+2026-01-15T10:42:17.2578731Z tests/test_main_sprint.py ....                                           [ 65%]
+2026-01-15T10:42:17.4126596Z tests/test_main_stash.py ....                                            [ 66%]
+2026-01-15T10:42:17.5671991Z tests/test_main_stash_pop.py ....                                        [ 66%]
+2026-01-15T10:42:17.5798255Z tests/test_main_status.py ....                                           [ 67%]
+2026-01-15T10:42:17.5989841Z tests/test_main_summary.py .......                                       [ 68%]
+2026-01-15T10:42:17.6957889Z tests/test_main_tag.py .....                                             [ 69%]
+2026-01-15T10:42:17.7132939Z tests/test_main_test.py .......                                          [ 70%]
+2026-01-15T10:42:17.7478228Z tests/test_main_trash.py ...............                                 [ 73%]
+2026-01-15T10:42:17.7641777Z tests/test_main_tree.py ......                                           [ 74%]
+2026-01-15T10:42:17.8171381Z tests/test_main_undo.py .                                                [ 74%]
+2026-01-15T10:42:17.8256570Z tests/test_main_watch.py ...                                             [ 74%]
+2026-01-15T10:42:17.8494835Z tests/test_main_workflow.py .............                                [ 77%]
+2026-01-15T10:42:18.3503917Z tests/test_main_worktrees.py ..........                                  [ 78%]
+2026-01-15T10:42:18.3648202Z tests/test_main_worktrees_create.py .....                                [ 79%]
+2026-01-15T10:42:18.4755034Z tests/test_main_worktrees_diff.py ....                                   [ 80%]
+2026-01-15T10:42:18.6477759Z tests/test_main_worktrees_manage.py .....                                [ 81%]
+2026-01-15T10:42:18.7520676Z tests/test_main_worktrees_merge.py ..                                    [ 81%]
+2026-01-15T10:42:18.7773603Z tests/test_metrics.py ....                                               [ 82%]
+2026-01-15T10:42:18.8196443Z tests/test_notifications.py ......                                       [ 83%]
+2026-01-15T10:42:18.8409885Z tests/test_pre_flight.py ....                                            [ 83%]
+2026-01-15T10:42:18.8431105Z tests/test_prompt_loading.py .                                           [ 84%]
+2026-01-15T10:42:18.8593302Z tests/test_session_manager.py ....                                       [ 84%]
+2026-01-15T10:42:18.9858099Z tests/test_shared_modules.py ............                                [ 86%]
+2026-01-15T10:42:19.0054950Z tests/test_shell.py ...........                                          [ 88%]
+2026-01-15T10:42:19.0263780Z tests/test_sprint_extended.py ...                                        [ 89%]
+2026-01-15T10:42:19.1267315Z tests/test_sprint_guardrail.py ....                                      [ 89%]
+2026-01-15T10:42:19.1495453Z tests/test_sprint_init.py ..                                             [ 90%]
+2026-01-15T10:42:20.1635237Z tests/test_sprint_parallel.py .                                          [ 90%]
+2026-01-15T10:42:20.1784557Z tests/test_telemetry.py ...                                              [ 90%]
+2026-01-15T10:42:20.3384185Z tests/test_telemetry_extended.py .........                               [ 92%]
+2026-01-15T10:42:20.5097007Z tests/test_tui.py ..                                                     [ 92%]
+2026-01-15T10:42:20.5358244Z tests/test_utils.py ....                                                 [ 93%]
+2026-01-15T10:42:20.5409938Z tests/test_utils_agent_id.py ....                                        [ 94%]
+2026-01-15T10:42:20.7865655Z tests/test_utils_extended.py .................                           [ 97%]
+2026-01-15T10:42:20.7956359Z tests/test_utils_security.py ....                                        [ 97%]
+2026-01-15T10:42:20.8469398Z tests/test_workflow.py ........                                          [ 99%]
+2026-01-15T10:42:22.4016379Z tests/test_worktree_manager.py .....                                     [100%]
+2026-01-15T10:42:22.4016901Z
+2026-01-15T10:42:22.4017109Z =================================== FAILURES ===================================
+2026-01-15T10:42:22.4017802Z ________________ TestDiffCommand.test_diff_uncommitted_changes _________________
+2026-01-15T10:42:22.4018288Z
+2026-01-15T10:42:22.4018659Z self = <test_main_diff.TestDiffCommand testMethod=test_diff_uncommitted_changes>
+2026-01-15T10:42:22.4019412Z mock_subprocess_run = <MagicMock name='run' id='140232914280736'>
+2026-01-15T10:42:22.4019810Z
+2026-01-15T10:42:22.4019913Z     @patch('main.subprocess.run')
+2026-01-15T10:42:22.4020291Z     def test_diff_uncommitted_changes(self, mock_subprocess_run):
+2026-01-15T10:42:22.4020619Z         # Arrange
+2026-01-15T10:42:22.4020914Z         mock_subprocess_run.return_value = MagicMock(returncode=0)
+2026-01-15T10:42:22.4021345Z         args = parse_args(['diff', '--project-dir', str(self.project_dir)])
+2026-01-15T10:42:22.4021679Z
+2026-01-15T10:42:22.4021845Z         # Act
+2026-01-15T10:42:22.4022081Z         with self.assertRaises(SystemExit) as cm:
+2026-01-15T10:42:22.4022371Z             run_diff(args)
+2026-01-15T10:42:22.4022586Z
+2026-01-15T10:42:22.4022881Z         # Assert
+2026-01-15T10:42:22.4023113Z >       self.assertEqual(cm.exception.code, 0)
+2026-01-15T10:42:22.4023396Z E       AssertionError: 1 != 0
+2026-01-15T10:42:22.4023548Z
+2026-01-15T10:42:22.4023914Z /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_main_diff.py:42: AssertionError
+2026-01-15T10:42:22.4024551Z ----------------------------- Captured stderr call -----------------------------
+2026-01-15T10:42:22.4025362Z ❌ Error: Invalid target 'None'. Contains unsafe characters or starts with '-'.
+2026-01-15T10:42:22.4025827Z =============================== warnings summary ===============================
+2026-01-15T10:42:22.4026291Z tests/test_cursor_client.py::TestCursorClient::test_run_command_timeout
+2026-01-15T10:42:22.4027170Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:182: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T10:42:22.4027951Z   Coroutine created at (most recent call last)
+2026-01-15T10:42:22.4034045Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T10:42:22.4034669Z       self.run_forever()
+2026-01-15T10:42:22.4035283Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T10:42:22.4036059Z       self._run_once()
+2026-01-15T10:42:22.4036543Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T10:42:22.4037167Z       handle._run()
+2026-01-15T10:42:22.4037623Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T10:42:22.4038129Z       self._context.run(self._callback, *self._args)
+2026-01-15T10:42:22.4038664Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T10:42:22.4039166Z       return await func(*newargs, **newkeywargs)
+2026-01-15T10:42:22.4039857Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_cursor_client.py", line 79, in test_run_command_timeout
+2026-01-15T10:42:22.4040520Z       await client.run_command("prompt", MagicMock())
+2026-01-15T10:42:22.4041151Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/cursor/client.py", line 115, in run_command
+2026-01-15T10:42:22.4041787Z       stdout, stderr, returncode = await self._run_subprocess(
+2026-01-15T10:42:22.4042472Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 182, in _run_subprocess
+2026-01-15T10:42:22.4043319Z       process.kill()
+2026-01-15T10:42:22.4043789Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T10:42:22.4044279Z       return self._mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4044779Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T10:42:22.4045276Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4045568Z     process.kill()
+2026-01-15T10:42:22.4045889Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4046467Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4046849Z
+2026-01-15T10:42:22.4046981Z tests/test_database.py::test_signal_creation
+2026-01-15T10:42:22.4047300Z tests/test_database.py::test_agent_question
+2026-01-15T10:42:22.4047603Z tests/test_database.py::test_agent_knowledge
+2026-01-15T10:42:22.4048732Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/sql/schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+2026-01-15T10:42:22.4049902Z     return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+2026-01-15T10:42:22.4050161Z
+2026-01-15T10:42:22.4050362Z tests/test_gemini_agent.py::TestGeminiAgent::test_run_agent_session_basic
+2026-01-15T10:42:22.4051113Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2247: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a84bab4c0>
+2026-01-15T10:42:22.4051763Z     def __init__(self, name, parent):
+2026-01-15T10:42:22.4052109Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4052766Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4053145Z
+2026-01-15T10:42:22.4053348Z tests/test_gemini_agent.py::TestGeminiAgent::test_run_agent_session_basic
+2026-01-15T10:42:22.4054082Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2247: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a84a5d300>
+2026-01-15T10:42:22.4054707Z     def __init__(self, name, parent):
+2026-01-15T10:42:22.4055042Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4055566Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4055920Z
+2026-01-15T10:42:22.4056259Z tests/test_gemini_agent.py::TestGeminiAgent::test_run_agent_session_error
+2026-01-15T10:42:22.4057041Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/rich/text.py:1142: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a84b713f0>
+2026-01-15T10:42:22.4057942Z     _line_appends = [line._spans.append for line in new_lines._lines]
+2026-01-15T10:42:22.4058448Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4058977Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4059341Z
+2026-01-15T10:42:22.4059541Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_failure
+2026-01-15T10:42:22.4060390Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:92: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T10:42:22.4061183Z   Coroutine created at (most recent call last)
+2026-01-15T10:42:22.4061789Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T10:42:22.4062318Z       self.run_forever()
+2026-01-15T10:42:22.4062894Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T10:42:22.4063373Z       self._run_once()
+2026-01-15T10:42:22.4063819Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T10:42:22.4064286Z       handle._run()
+2026-01-15T10:42:22.4064704Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T10:42:22.4065185Z       self._context.run(self._callback, *self._args)
+2026-01-15T10:42:22.4065691Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T10:42:22.4066185Z       return await func(*newargs, **newkeywargs)
+2026-01-15T10:42:22.4066887Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 119, in test_run_command_failure
+2026-01-15T10:42:22.4067577Z       res = await client.run_command("prompt", MagicMock())
+2026-01-15T10:42:22.4068213Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T10:42:22.4068852Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T10:42:22.4069531Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 92, in _run_subprocess
+2026-01-15T10:42:22.4070147Z       process.stdin.write(input_str.encode())
+2026-01-15T10:42:22.4070640Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T10:42:22.4071105Z       return self._mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4071590Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T10:42:22.4072090Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4072419Z     process.stdin.write(input_str.encode())
+2026-01-15T10:42:22.4073046Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4073598Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4073966Z
+2026-01-15T10:42:22.4074169Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_failure
+2026-01-15T10:42:22.4075010Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:94: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T10:42:22.4075766Z   Coroutine created at (most recent call last)
+2026-01-15T10:42:22.4076316Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T10:42:22.4076958Z       self.run_forever()
+2026-01-15T10:42:22.4077425Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T10:42:22.4078016Z       self._run_once()
+2026-01-15T10:42:22.4078467Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T10:42:22.4078934Z       handle._run()
+2026-01-15T10:42:22.4079333Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T10:42:22.4079802Z       self._context.run(self._callback, *self._args)
+2026-01-15T10:42:22.4080302Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T10:42:22.4080972Z       return await func(*newargs, **newkeywargs)
+2026-01-15T10:42:22.4081645Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 119, in test_run_command_failure
+2026-01-15T10:42:22.4082322Z       res = await client.run_command("prompt", MagicMock())
+2026-01-15T10:42:22.4083184Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T10:42:22.4083828Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T10:42:22.4084510Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 94, in _run_subprocess
+2026-01-15T10:42:22.4085110Z       process.stdin.close()
+2026-01-15T10:42:22.4085558Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T10:42:22.4086022Z       return self._mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4086499Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T10:42:22.4086989Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4087289Z     process.stdin.close()
+2026-01-15T10:42:22.4087614Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4088160Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4088528Z
+2026-01-15T10:42:22.4088731Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_timeout
+2026-01-15T10:42:22.4089576Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:92: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T10:42:22.4090340Z   Coroutine created at (most recent call last)
+2026-01-15T10:42:22.4090893Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T10:42:22.4091400Z       self.run_forever()
+2026-01-15T10:42:22.4091857Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T10:42:22.4092322Z       self._run_once()
+2026-01-15T10:42:22.4092871Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T10:42:22.4093343Z       handle._run()
+2026-01-15T10:42:22.4093740Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T10:42:22.4094206Z       self._context.run(self._callback, *self._args)
+2026-01-15T10:42:22.4094695Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T10:42:22.4095166Z       return await func(*newargs, **newkeywargs)
+2026-01-15T10:42:22.4095825Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 72, in test_run_command_timeout
+2026-01-15T10:42:22.4096487Z       await client.run_command("prompt", MagicMock())
+2026-01-15T10:42:22.4097263Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T10:42:22.4097900Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T10:42:22.4098701Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 92, in _run_subprocess
+2026-01-15T10:42:22.4099321Z       process.stdin.write(input_str.encode())
+2026-01-15T10:42:22.4099812Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T10:42:22.4100276Z       return self._mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4100752Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T10:42:22.4101246Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4101563Z     process.stdin.write(input_str.encode())
+2026-01-15T10:42:22.4101929Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4102483Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4102958Z
+2026-01-15T10:42:22.4103161Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_timeout
+2026-01-15T10:42:22.4104008Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:94: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T10:42:22.4104770Z   Coroutine created at (most recent call last)
+2026-01-15T10:42:22.4105322Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T10:42:22.4105831Z       self.run_forever()
+2026-01-15T10:42:22.4106294Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T10:42:22.4106763Z       self._run_once()
+2026-01-15T10:42:22.4107215Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T10:42:22.4107679Z       handle._run()
+2026-01-15T10:42:22.4108084Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T10:42:22.4108555Z       self._context.run(self._callback, *self._args)
+2026-01-15T10:42:22.4109047Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T10:42:22.4109522Z       return await func(*newargs, **newkeywargs)
+2026-01-15T10:42:22.4110193Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 72, in test_run_command_timeout
+2026-01-15T10:42:22.4110857Z       await client.run_command("prompt", MagicMock())
+2026-01-15T10:42:22.4111462Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T10:42:22.4112103Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T10:42:22.4112971Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 94, in _run_subprocess
+2026-01-15T10:42:22.4113596Z       process.stdin.close()
+2026-01-15T10:42:22.4114038Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T10:42:22.4114487Z       return self._mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4114945Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T10:42:22.4115435Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T10:42:22.4115736Z     process.stdin.close()
+2026-01-15T10:42:22.4116055Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4116582Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4116944Z
+2026-01-15T10:42:22.4117240Z tests/test_main.py::TestMain::test_main_clean_list_command
+2026-01-15T10:42:22.4117749Z   <frozen os>:717: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a84a5e5c0>
+2026-01-15T10:42:22.4118424Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4118947Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4119331Z
+2026-01-15T10:42:22.4119506Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T10:42:22.4120236Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a84a5c6d0>
+2026-01-15T10:42:22.4120921Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T10:42:22.4121309Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4121870Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4122242Z
+2026-01-15T10:42:22.4122406Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T10:42:22.4123319Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a83a00a90>
+2026-01-15T10:42:22.4123968Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T10:42:22.4124343Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4124856Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4125212Z
+2026-01-15T10:42:22.4125377Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T10:42:22.4126055Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a83a018a0>
+2026-01-15T10:42:22.4126697Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T10:42:22.4127091Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4127635Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4128001Z
+2026-01-15T10:42:22.4128173Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T10:42:22.4128887Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a83a016c0>
+2026-01-15T10:42:22.4129571Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T10:42:22.4129961Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4130487Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4130848Z
+2026-01-15T10:42:22.4131037Z tests/test_main_clean.py::TestMainClean::test_interactive_confirm_yes
+2026-01-15T10:42:22.4131757Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7f8a84a5fc40>
+2026-01-15T10:42:22.4132423Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T10:42:22.4132917Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4133447Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4133806Z
+2026-01-15T10:42:22.4133977Z tests/test_main_plan.py::TestMainPlan::test_run_plan_success
+2026-01-15T10:42:22.4134576Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/traceback.py:269: RuntimeWarning: coroutine 'sleep' was never awaited
+2026-01-15T10:42:22.4135101Z     tb.tb_frame.clear()
+2026-01-15T10:42:22.4135411Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T10:42:22.4136066Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T10:42:22.4136446Z
+2026-01-15T10:42:22.4136641Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2026-01-15T10:42:22.4137183Z ================================ tests coverage ================================
+2026-01-15T10:42:22.4137606Z _______________ coverage: platform linux, python 3.13.7-final-0 ________________
+2026-01-15T10:42:22.4137897Z
+2026-01-15T10:42:22.4138033Z Name                                   Stmts   Miss  Cover   Missing
+2026-01-15T10:42:22.4138387Z --------------------------------------------------------------------
+2026-01-15T10:42:22.4138752Z agents/__init__.py                         0      0   100%
+2026-01-15T10:42:22.4139319Z agents/cli.py                            172     31    82%   56, 68-70, 131, 133, 153-155, 163-165, 168-171, 233-234, 242-245, 255-256, 259-260, 267, 270-271, 279, 297, 301
+2026-01-15T10:42:22.4139927Z agents/config_manager.py                  96      9    91%   49-50, 83, 114-119, 123
+2026-01-15T10:42:22.4140349Z agents/cursor/__init__.py                  2      0   100%
+2026-01-15T10:42:22.4140859Z agents/cursor/agent.py                   125     58    54%   44-62, 79, 88-99, 106-122, 146-149, 152-156, 164-165, 169-178, 190, 228, 242-250
+2026-01-15T10:42:22.4141414Z agents/cursor/client.py                   58      6    90%   111-112, 131, 135-136, 150
+2026-01-15T10:42:22.4141816Z agents/gemini/__init__.py                  2      0   100%
+2026-01-15T10:42:22.4142302Z agents/gemini/agent.py                   119     46    61%   42-60, 77, 86-97, 109-125, 138, 140, 159-163, 169-170, 174-183, 195
+2026-01-15T10:42:22.4142913Z agents/gemini/client.py                   32      0   100%
+2026-01-15T10:42:22.4143267Z agents/local/__init__.py                   3      0   100%
+2026-01-15T10:42:22.4143660Z agents/local/agent.py                    102     86    16%   31-184, 193, 203-207, 214-215
+2026-01-15T10:42:22.4144105Z agents/local/client.py                    48     36    25%   18-24, 35-96
+2026-01-15T10:42:22.4144506Z agents/openrouter/__init__.py              2      0   100%
+2026-01-15T10:42:22.4144921Z agents/openrouter/agent.py               103     87    16%   27-187, 195, 205-208, 214-215
+2026-01-15T10:42:22.4145381Z agents/openrouter/client.py               61     49    20%   17-26, 44-115
+2026-01-15T10:42:22.4145822Z agents/pre_flight.py                      66      9    86%   21-22, 24-25, 55, 76-78, 106
+2026-01-15T10:42:22.4146236Z agents/runner.py                          89     89     0%   1-149
+2026-01-15T10:42:22.4146703Z agents/session_manager.py                100     23    77%   39-40, 51-52, 63, 99-118, 123, 137-139, 141-143, 153
+2026-01-15T10:42:22.4147158Z agents/shared/__init__.py                  0      0   100%
+2026-01-15T10:42:22.4148095Z agents/shared/base_agent.py              382    155    59%   32-53, 102-110, 139-141, 153-154, 156-158, 166-176, 212, 245-246, 269-286, 292-307, 322, 327-328, 345, 365-380, 401, 407-408, 414-428, 437-438, 442-446, 455, 458, 461-468, 478, 489-514, 528, 550-553, 562, 577, 584, 587-589, 596, 612-615, 619-622, 626-627, 636
+2026-01-15T10:42:22.4149136Z agents/shared/base_client.py              85     17    80%   85-87, 115-116, 122-123, 156-159, 165, 172-176, 183-184
+2026-01-15T10:42:22.4149666Z agents/shared/prompts.py                  37      9    76%   31, 41, 76-83
+2026-01-15T10:42:22.4150622Z agents/shared/sprint.py                  463    168    64%   34-36, 68, 78-88, 107-109, 111, 113, 123, 138, 148, 187-205, 234-241, 249, 277-281, 291-292, 323, 337, 351, 378-381, 389-401, 423, 460, 498-516, 521-542, 545, 559-599, 607, 620-622, 643-646, 653, 657-659, 677, 726, 738, 742-751, 763-767, 779, 792, 797-823, 828-855
+2026-01-15T10:42:22.4151697Z agents/shared/worktree_manager.py         89     34    62%   18-20, 39, 45-46, 54-56, 61, 80-90, 95, 99, 110-112, 115-117, 122, 132-139, 145-146
+2026-01-15T10:42:22.4162573Z main.py                                 4385   1090    75%   25-27, 88, 193-194, 220-222, 228-229, 271, 344, 357-360, 382, 399, 404-407, 415-416, 424-427, 448-455, 519-521, 528, 550, 553-554, 585, 668-673, 691-697, 725-726, 784-785, 870-871, 874-878, 892-893, 896-897, 901-902, 919, 924-929, 948-950, 962, 980-983, 996-997, 1002-1003, 1014-1015, 1021-1030, 1036-1040, 1069-1070, 1080, 1087-1089, 1110-1114, 1118-1120, 1124-1125, 1133-1137, 1141-1146, 1153-1154, 1158-1159, 1165-1166, 1168-1169, 1175-1177, 1185-1186, 1191-1192, 1211-1216, 1229-1230, 1234-1235, 1239-1240, 1247-1249, 1257-1259, 1291-1292, 1310-1322, 1333-1334, 1338-1339, 1381-1382, 1385-1386, 1388-1389, 1418-1419, 1428-1429, 1442-1445, 1456-1457, 1462-1464, 1467-1470, 1483-1488, 1528-1529, 1536-1537, 1539-1541, 1565-1566, 1575-1576, 1587-1590, 1602-1603, 1608-1610, 1613-1616, 1629-1634, 1647-1652, 1661-1662, 1675-1676, 1684-1685, 1698-1699, 1702-1703, 1705-1707, 1709-1710, 1719-1720, 1724-1725, 1771-1773, 1782-1783, 1809, 1821-1825, 1840-1841, 1845-1846, 1859-1860, 1869-1871, 1898-1902, 1911-1912, 1919-1920, 1924-1925, 1937-1938, 1951-1952, 1960-1961, 1968-1979, 1990, 1999-2000, 2009-2011, 2020-2021, 2037-2042, 2069-2070, 2086-2088, 2104-2105, 2110-2112, 2118-2121, 2158-2160, 2170-2176, 2185-2189, 2199-2200, 2222-2223, 2231-2232, 2237-2239, 2250-2251, 2260-2262, 2268, 2273-2274, 2278-2279, 2290-2293, 2299-2304, 2310, 2315-2316, 2320-2321, 2328-2329, 2340-2349, 2354-2359, 2389-2400, 2440-2441, 2477-2479, 2482-2483, 2502-2504, 2528-2529, 2532-2534, 2553-2554, 2568-2569, 2577-2578, 2601-2602, 2609-2610, 2625-2631, 2652-2653, 2657-2658, 2664-2668, 2695-2698, 2700-2701, 2708-2709, 2733-2738, 2743-2744, 2754-2755, 2770-2773, 2776-2777, 2791-2793, 2828-2829, 2832-2833, 2838, 2842-2848, 2900-2902, 2934-2939, 2955-2957, 3042-3053, 3077-3078, 3093-3094, 3116-3118, 3133-3134, 3160-3163, 3175-3177, 3180-3181, 3203-3204, 3206-3207, 3258-3259, 3264-3266, 3273, 3279-3280, 3325-3330, 3350-3352, 3359-3360, 3366-3377, 3385-3386, 3395-3397, 3412, 3414, 3428-3429, 3438-3439, 3445-3448, 3452-3453, 3459-3462, 3468, 3472-3473, 3478-3490, 3501-3505, 3519-3520, 3544-3545, 3565, 3569-3570, 3572-3573, 3591, 3593, 3634-3635, 3637-3638, 3640-3641, 3672-3674, 3690-3696, 3713-3714, 3716-3717, 3719-3720, 3752, 3755-3756, 3766, 3784-3785, 3787-3788, 3790-3791, 3798, 3801-3802, 3818-3819, 3845, 3847, 3869-3871, 3886-3887, 3904-3910, 3927-3929, 3944-3945, 3961-3962, 3994-3996, 5358, 5374-5377, 5400-5401, 5415-5416, 5419-5420, 5435-5437, 5443-5444, 5456, 5488-5490, 5500-5501, 5529-5530, 5628-5629, 5674-5678, 5699-5700, 5721-5729, 5743-5747, 5767, 5771-5772, 5774-5775, 5777-5778, 5826, 5831-5837, 5841-5843, 5858-5859, 5904-5906, 5913-5914, 5962-5964, 5966-5967, 5980-5981, 5985-5986, 5997-5998, 6001-6003, 6008-6010, 6013-6014, 6032-6034, 6051-6052, 6055-6056, 6062-6063, 6091-6092, 6094-6095, 6110-6111, 6125-6126, 6130-6131, 6149-6151, 6167-6168, 6173-6174, 6180, 6190, 6192, 6199-6204, 6215-6218, 6226-6227, 6232-6233, 6250-6252, 6264-6265, 6268-6270, 6294-6297, 6317-6324, 6338-6344, 6364-6366, 6377-6380, 6415-6416, 6424-6427, 6438-6439, 6462-6465, 6477-6478, 6498-6499, 6509-6512, 6515-6516, 6526, 6531-6534, 6562, 6573-6578, 6593-6594, 6601-6606, 6620-6621, 6627-6632, 6658-6659, 6678, 6697-6700, 6711, 6716-6720, 6733-6734, 6738-6739, 6805-6806, 6813-6815, 6825-6826, 6829-6830, 6839-6840, 6847-6850, 6862-6865, 6887-6888, 6892-6893, 6896-6897, 6904-6907, 6914, 6923-6942, 6951-6952, 6956-6957, 6961-6962, 6967, 6971-6972, 6976, 6980-6981, 6985-6986, 6990-6991, 7000-7001, 7005-7006, 7010-7011, 7015-7016, 7020-7021, 7025-7026, 7030-7031, 7035-7036, 7040-7041, 7045-7046, 7050-7051, 7055-7056, 7060-7061, 7065-7066, 7070-7071, 7075-7076, 7080-7081, 7085-7086, 7090-7091, 7095-7096, 7099-7100, 7103-7104, 7107-7108, 7111-7112, 7115-7116, 7119-7120, 7124-7125, 7129-7130, 7134-7135, 7138-7139, 7142-7143, 7146-7147, 7150-7151, 7154-7155, 7158-7159, 7161-7162, 7165-7166, 7169-7170, 7173-7174, 7177-7178, 7181-7182, 7185-7186, 7189-7190, 7193-7194, 7197-7198, 7201-7202, 7205-7206, 7209-7210, 7213-7214, 7217-7218, 7221-7222, 7225-7226, 7229-7230, 7233-7234, 7237-7238, 7258, 7309, 7311, 7313, 7324, 7378-7383, 7392-7393, 7412-7413, 7420-7423, 7433-7436, 7449-7458, 7474-7477
+2026-01-15T10:42:22.4173583Z mock_agent.py                             26     26     0%   1-32
+2026-01-15T10:42:22.4173995Z shared/agent_client.py                    60      2    97%   42-43
+2026-01-15T10:42:22.4175144Z shared/cli_utils.py                      631    182    71%   91-92, 123-125, 146-156, 177-178, 194, 222, 255-258, 280-281, 294, 327-339, 345-370, 375-460, 488-490, 499-501, 542, 571-572, 595-599, 608-610, 646-648, 666-667, 679-684, 704-705, 715-718, 764-765, 791, 805-807, 812, 819-820, 828-829, 832, 848, 851-852, 861-863, 875, 888-890, 894, 900-901, 923-924, 927
+2026-01-15T10:42:22.4176156Z shared/commands.py                        26      0   100%
+2026-01-15T10:42:22.4176540Z shared/config.py                          70      9    87%   84-87, 102-107
+2026-01-15T10:42:22.4176957Z shared/config_loader.py                   66      4    94%   38-39, 84-85
+2026-01-15T10:42:22.4177360Z shared/database.py                        19      4    79%   19-23
+2026-01-15T10:42:22.4177843Z shared/git.py                            104     33    68%   24-25, 57-59, 76-78, 93-103, 110, 133, 159-161, 175-180, 196-201
+2026-01-15T10:42:22.4178320Z shared/git_wrapper.py                     45      1    98%   86
+2026-01-15T10:42:22.4178724Z shared/github_client.py                   39      4    90%   44, 46-47, 53
+2026-01-15T10:42:22.4179204Z shared/jira_client.py                     75     19    75%   39-41, 46, 54-55, 60, 64-66, 78, 86, 106-108, 113, 118-120
+2026-01-15T10:42:22.4179660Z shared/log_handler.py                     10      0   100%
+2026-01-15T10:42:22.4180002Z shared/logger.py                          29      0   100%
+2026-01-15T10:42:22.4180350Z shared/models.py                          38      0   100%
+2026-01-15T10:42:22.4180683Z shared/notifications.py                   45      0   100%
+2026-01-15T10:42:22.4181013Z shared/shell.py                           47      0   100%
+2026-01-15T10:42:22.4181334Z shared/state.py                           55      0   100%
+2026-01-15T10:42:22.4181783Z shared/telemetry.py                      208     19    91%   97-98, 236-238, 262-263, 306-317, 340, 356, 421-424, 443-444
+2026-01-15T10:42:22.4182269Z shared/tui.py                             63     15    76%   62-75, 97-99
+2026-01-15T10:42:22.4183089Z shared/utils.py                          305     62    80%   87-88, 132-135, 162-163, 170, 177-179, 208-210, 216, 248-250, 275, 317, 325-331, 337, 343-349, 355, 361-367, 371-373, 379-387, 417-419, 427, 451-452, 461-466, 496-509, 515
+2026-01-15T10:42:22.4183914Z shared/workflow.py                       101     26    74%   62-66, 76-78, 108-109, 123, 129-135, 144, 147-149, 152, 155-158
+2026-01-15T10:42:22.4184404Z tests/test_agent_jira_flow.py             74      1    99%   111
+2026-01-15T10:42:22.4184817Z tests/test_agent_parity.py                33      8    76%   69-76
+2026-01-15T10:42:22.4185204Z tests/test_base_agent.py                 130      1    99%   182
+2026-01-15T10:42:22.4185604Z tests/test_base_agent_persistence.py      81      2    98%   23, 113
+2026-01-15T10:42:22.4186010Z tests/test_cherry_pick.py                 87      1    99%   153
+2026-01-15T10:42:22.4186382Z tests/test_cli_agent_launcher.py          83      0   100%
+2026-01-15T10:42:22.4186738Z tests/test_cli_env.py                     18      0   100%
+2026-01-15T10:42:22.4187065Z tests/test_cli_launcher.py                44      0   100%
+2026-01-15T10:42:22.4187422Z tests/test_cli_mgmt.py                    28      1    96%   13
+2026-01-15T10:42:22.4187791Z tests/test_cli_utils.py                  112      1    99%   149
+2026-01-15T10:42:22.4188164Z tests/test_cli_utils_dashboard.py         80      1    99%   135
+2026-01-15T10:42:22.4188535Z tests/test_commands.py                    39      1    97%   47
+2026-01-15T10:42:22.4188937Z tests/test_config_loader.py               88      2    98%   138, 178
+2026-01-15T10:42:22.4189324Z tests/test_config_manager.py              44      0   100%
+2026-01-15T10:42:22.4189696Z tests/test_config_validation.py           95      1    99%   151
+2026-01-15T10:42:22.4190252Z tests/test_configure.py                   28      1    96%   80
+2026-01-15T10:42:22.4190629Z tests/test_cursor_agent.py               120      1    99%   195
+2026-01-15T10:42:22.4191137Z tests/test_cursor_client.py               78      2    97%   68, 116
+2026-01-15T10:42:22.4191589Z tests/test_dashboard_integrity.py        102     87    15%   19-64, 69-89, 94-137, 141-156
+2026-01-15T10:42:22.4192028Z tests/test_database.py                    36      0   100%
+2026-01-15T10:42:22.4192385Z tests/test_gemini_agent.py                79      1    99%   117
+2026-01-15T10:42:22.4192868Z tests/test_gemini_client.py               79      2    97%   60, 124
+2026-01-15T10:42:22.4193248Z tests/test_git_auth.py                    30      1    97%   54
+2026-01-15T10:42:22.4193611Z tests/test_git_wrapper.py                 73      1    99%   94
+2026-01-15T10:42:22.4193976Z tests/test_github_client.py               52      1    98%   85
+2026-01-15T10:42:22.4194361Z tests/test_iteration_metrics.py           20      6    70%   39-47
+2026-01-15T10:42:22.4194762Z tests/test_jira_integration.py           102      1    99%   169
+2026-01-15T10:42:22.4195160Z tests/test_jira_integration_cli.py        62      2    97%   62-63
+2026-01-15T10:42:22.4195542Z tests/test_jira_mode_integration.py      125      1    99%   197
+2026-01-15T10:42:22.4195910Z tests/test_log_handler.py                 33      1    97%   43
+2026-01-15T10:42:22.4196287Z tests/test_main.py                       343      3    99%   427-428, 485
+2026-01-15T10:42:22.4196677Z tests/test_main_archive.py                57      1    98%   111
+2026-01-15T10:42:22.4197047Z tests/test_main_artifacts.py             119      1    99%   171
+2026-01-15T10:42:22.4197414Z tests/test_main_benchmark.py             147      1    99%   235
+2026-01-15T10:42:22.4197787Z tests/test_main_blame.py                  69      2    97%   24, 122
+2026-01-15T10:42:22.4198158Z tests/test_main_branch.py                 89      1    99%   117
+2026-01-15T10:42:22.4198532Z tests/test_main_clean.py                 119      1    99%   175
+2026-01-15T10:42:22.4198902Z tests/test_main_commit.py                 55      1    98%   88
+2026-01-15T10:42:22.4199295Z tests/test_main_commit_command.py         94      2    98%   123, 187
+2026-01-15T10:42:22.4199688Z tests/test_main_completion.py             24      1    96%   36
+2026-01-15T10:42:22.4200056Z tests/test_main_config_command.py        110      1    99%   142
+2026-01-15T10:42:22.4200428Z tests/test_main_context.py                65      1    98%   96
+2026-01-15T10:42:22.4200789Z tests/test_main_dashboard.py              20      1    95%   34
+2026-01-15T10:42:22.4201183Z tests/test_main_diff.py                   83      6    93%   20, 43-46, 128
+2026-01-15T10:42:22.4201583Z tests/test_main_diff_summary.py           62      1    98%   89
+2026-01-15T10:42:22.4201953Z tests/test_main_discard.py               107      1    99%   153
+2026-01-15T10:42:22.4202329Z tests/test_main_doctor.py                140      2    99%   29, 216
+2026-01-15T10:42:22.4202931Z tests/test_main_empty_trash.py            82      2    98%   107, 123
+2026-01-15T10:42:22.4203330Z tests/test_main_feature.py               142      1    99%   203
+2026-01-15T10:42:22.4203703Z tests/test_main_format.py                 83      1    99%   143
+2026-01-15T10:42:22.4204089Z tests/test_main_git.py                    88      3    97%   48-49, 136
+2026-01-15T10:42:22.4204477Z tests/test_main_glance.py                 89      1    99%   125
+2026-01-15T10:42:22.4204845Z tests/test_main_help.py                   26      1    96%   49
+2026-01-15T10:42:22.4205203Z tests/test_main_history.py                65      1    98%   84
+2026-01-15T10:42:22.4205568Z tests/test_main_init.py                  111      1    99%   173
+2026-01-15T10:42:22.4205936Z tests/test_main_interact.py               71      1    99%   92
+2026-01-15T10:42:22.4206302Z tests/test_main_last.py                   71      2    97%   27, 109
+2026-01-15T10:42:22.4206674Z tests/test_main_last_run_id.py            46      1    98%   66
+2026-01-15T10:42:22.4207174Z tests/test_main_lint.py                  108      1    99%   229
+2026-01-15T10:42:22.4207558Z tests/test_main_log.py                    62      1    98%   89
+2026-01-15T10:42:22.4208051Z tests/test_main_logs.py                  119      1    99%   186
+2026-01-15T10:42:22.4208430Z tests/test_main_models.py                 51      1    98%   79
+2026-01-15T10:42:22.4208791Z tests/test_main_next.py                   58      1    98%   85
+2026-01-15T10:42:22.4209158Z tests/test_main_patch.py                  51      1    98%   67
+2026-01-15T10:42:22.4209545Z tests/test_main_plan.py                   64      2    97%   22, 106
+2026-01-15T10:42:22.4209932Z tests/test_main_pr.py                     64      1    98%   118
+2026-01-15T10:42:22.4210314Z tests/test_main_profile_command.py       144      1    99%   193
+2026-01-15T10:42:22.4210690Z tests/test_main_pull.py                   80      2    98%   26, 130
+2026-01-15T10:42:22.4211059Z tests/test_main_push.py                   80      1    99%   139
+2026-01-15T10:42:22.4211431Z tests/test_main_restore.py                63      1    98%   103
+2026-01-15T10:42:22.4211797Z tests/test_main_revert.py                108      1    99%   168
+2026-01-15T10:42:22.4212175Z tests/test_main_review.py                 76      2    97%   77, 110
+2026-01-15T10:42:22.4212542Z tests/test_main_rewind.py                 94      1    99%   159
+2026-01-15T10:42:22.4213005Z tests/test_main_setup.py                  96      1    99%   130
+2026-01-15T10:42:22.4213366Z tests/test_main_snapshot.py              108      1    99%   202
+2026-01-15T10:42:22.4213728Z tests/test_main_sprint.py                 57      0   100%
+2026-01-15T10:42:22.4214099Z tests/test_main_stash.py                  70      1    99%   93
+2026-01-15T10:42:22.4214463Z tests/test_main_stash_pop.py              70      1    99%   93
+2026-01-15T10:42:22.4214835Z tests/test_main_status.py                 76      1    99%   103
+2026-01-15T10:42:22.4215199Z tests/test_main_summary.py                86      1    99%   137
+2026-01-15T10:42:22.4215572Z tests/test_main_tag.py                    78      1    99%   115
+2026-01-15T10:42:22.4215934Z tests/test_main_test.py                   87      1    99%   118
+2026-01-15T10:42:22.4216298Z tests/test_main_trash.py                 138      1    99%   224
+2026-01-15T10:42:22.4216689Z tests/test_main_tree.py                   89      7    92%   101-106, 113
+2026-01-15T10:42:22.4217084Z tests/test_main_undo.py                   49      2    96%   21, 77
+2026-01-15T10:42:22.4217457Z tests/test_main_watch.py                  49      1    98%   75
+2026-01-15T10:42:22.4217842Z tests/test_main_workflow.py              100      1    99%   132
+2026-01-15T10:42:22.4218215Z tests/test_main_worktrees.py             146      1    99%   195
+2026-01-15T10:42:22.4218576Z tests/test_main_worktrees_create.py       69      0   100%
+2026-01-15T10:42:22.4218968Z tests/test_main_worktrees_diff.py         83      3    96%   51-52, 123
+2026-01-15T10:42:22.4219379Z tests/test_main_worktrees_manage.py       91      1    99%   129
+2026-01-15T10:42:22.4219753Z tests/test_main_worktrees_merge.py        53      1    98%   128
+2026-01-15T10:42:22.4220133Z tests/test_metrics.py                     40      1    98%   70
+2026-01-15T10:42:22.4220563Z tests/test_metrics_integration.py         74     64    14%   13-62, 66-109, 113-120
+2026-01-15T10:42:22.4221005Z tests/test_notifications.py               49      1    98%   69
+2026-01-15T10:42:22.4221432Z tests/test_openrouter_integration.py      58     44    24%   17-44, 48-78, 81-89
+2026-01-15T10:42:22.4221854Z tests/test_pre_flight.py                  26      0   100%
+2026-01-15T10:42:22.4222215Z tests/test_prompt_loading.py              15      1    93%   40
+2026-01-15T10:42:22.4222570Z tests/test_session_manager.py             46      0   100%
+2026-01-15T10:42:22.4223024Z tests/test_shared_modules.py             120      1    99%   195
+2026-01-15T10:42:22.4223389Z tests/test_shell.py                       55      1    98%   91
+2026-01-15T10:42:22.4223890Z tests/test_sprint_extended.py             55      1    98%   113
+2026-01-15T10:42:22.4224280Z tests/test_sprint_guardrail.py            87      1    99%   150
+2026-01-15T10:42:22.4224769Z tests/test_sprint_init.py                 49      1    98%   74
+2026-01-15T10:42:22.4225138Z tests/test_sprint_parallel.py             48      1    98%   130
+2026-01-15T10:42:22.4225494Z tests/test_telemetry.py                   38      1    97%   76
+2026-01-15T10:42:22.4225861Z tests/test_telemetry_extended.py          72      1    99%   125
+2026-01-15T10:42:22.4226243Z tests/test_tui.py                         26      6    77%   17-18, 36-42, 45
+2026-01-15T10:42:22.4226619Z tests/test_utils.py                       41      1    98%   109
+2026-01-15T10:42:22.4226971Z tests/test_utils_agent_id.py              27      1    96%   41
+2026-01-15T10:42:22.4227341Z tests/test_utils_extended.py             144      1    99%   254
+2026-01-15T10:42:22.4227709Z tests/test_utils_security.py              46      1    98%   78
+2026-01-15T10:42:22.4228062Z tests/test_workflow.py                    86      0   100%
+2026-01-15T10:42:22.4228416Z tests/test_worktree_manager.py            62      1    98%   99
+2026-01-15T10:42:22.4228787Z --------------------------------------------------------------------
+2026-01-15T10:42:22.4229140Z TOTAL                                  17396   2752    84%
+2026-01-15T10:42:22.7571535Z =========================== short test summary info ============================
+2026-01-15T10:42:22.7573416Z FAILED tests/test_main_diff.py::TestDiffCommand::test_diff_uncommitted_changes - AssertionError: 1 != 0
+2026-01-15T10:42:22.7574190Z ================= 1 failed, 585 passed, 18 warnings in 23.57s ==================
+2026-01-15T10:42:23.5401364Z ##[error]Process completed with exit code 1.
+2026-01-15T10:42:23.5514663Z Post job cleanup.
+2026-01-15T10:42:23.6458619Z [command]/usr/bin/git version
+2026-01-15T10:42:23.6495446Z git version 2.52.0
+2026-01-15T10:42:23.6537693Z Copying '/home/runner/.gitconfig' to '/home/runner/work/_temp/d7f1b7e3-ad6a-43fc-9da4-b5acd2c4b96d/.gitconfig'
+2026-01-15T10:42:23.6547836Z Temporarily overriding HOME='/home/runner/work/_temp/d7f1b7e3-ad6a-43fc-9da4-b5acd2c4b96d' before making global git config changes
+2026-01-15T10:42:23.6549095Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-15T10:42:23.6554427Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/combined-autonomous-coding/combined-autonomous-coding
+2026-01-15T10:42:23.6589995Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-01-15T10:42:23.6623546Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-01-15T10:42:23.6866250Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-15T10:42:23.6888852Z http.https://github.com/.extraheader
+2026-01-15T10:42:23.6902506Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-01-15T10:42:23.6935793Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-01-15T10:42:23.7175499Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-15T10:42:23.7208202Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-01-15T10:42:23.7562008Z Cleaning up orphan processes

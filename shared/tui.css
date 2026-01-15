@@ -1,17 +1,43 @@
-Dashboard {
+#main-container {
     layout: grid;
     grid-size: 2;
-    grid-gutter: 1 2;
+    grid-columns: 1fr 2fr; /* Left pane is 1/3, right is 2/3 */
+    grid-gutter: 1;
 }
 
 #left-pane {
-    width: 1fr;
     height: 100%;
+    overflow: auto;
+    layout: vertical;
+}
+
+#welcome {
+    height: 8;
+    border: round white;
+    overflow: auto;
+    margin-bottom: 1;
+}
+
+#project-info {
+    height: 1fr;
+    border: round white;
     overflow: auto;
 }
 
+#command-runner {
+    height: 1fr;
+    layout: vertical;
+}
+
+#command-output {
+    height: 1fr; /* Takes up remaining space */
+    border: round white;
+    overflow: auto;
+    margin-top: 1;
+}
+
 #log-viewer {
-    width: 4fr;
     height: 100%;
     border: round white;
+    overflow: auto;
 }

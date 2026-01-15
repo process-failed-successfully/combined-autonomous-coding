@@ -2933,6 +2933,7 @@ def run_help(args):
     print_command("discard", "Safely discard uncommitted changes by stashing them first.")
     print_command("undo", "Restore changes that were previously discarded.")
     print_command("rewind", "Reset the project state to a previous git commit or Run ID.")
+    print_command("cherry-pick", "Apply the changes from a specific commit or Run ID.")
     print_command("workflow", "Manually manage the agent's workflow state (e.g., advance to QA).")
 
     print_header("Artifact & Sprint Management")

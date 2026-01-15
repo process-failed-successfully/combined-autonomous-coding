@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.git_utils import validate_git_ref
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -1750,6 +1751,8 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
+    validate_git_ref(target, "target")
+
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
@@ -1823,6 +1826,9 @@ def run_rewind(args):
     project_dir = args.project_dir.resolve()
     target = args.target
     original_target = target  # Keep a copy for error messages
+
+    if target:
+        validate_git_ref(target, "target")
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")

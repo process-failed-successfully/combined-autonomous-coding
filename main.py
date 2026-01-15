@@ -1907,7 +1907,7 @@ def run_rewind(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
-    if target and not is_plausible_git_ref(target):
+    if target and not is_safe_git_ref(target):
         print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
         sys.exit(1)
 
@@ -2641,6 +2641,10 @@ def run_diff(args):
     """Shows a detailed, colorized diff of uncommitted changes or a specific commit."""
     project_dir = args.project_dir.resolve()
     target = args.target
+
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")

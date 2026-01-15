@@ -30,6 +30,7 @@ except ImportError:
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
+from shared.git_utils import is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1772,6 +1773,11 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Input Validation ---
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target format '{target}'. Contains potentially unsafe characters.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
@@ -1859,6 +1865,10 @@ def run_rewind(args):
         print(f"❌ Error checking git status: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # --- Input Validation ---
+    if target and not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target format '{target}'. Contains potentially unsafe characters.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Interactive Mode ---
     if not target:
@@ -2577,6 +2587,10 @@ def run_diff(args):
 
     # --- Logic ---
     try:
+        if target and not is_safe_git_ref(target):
+            print(f"❌ Error: Invalid target format '{target}'. Contains potentially unsafe characters.", file=sys.stderr)
+            sys.exit(1)
+
         if not target:
             # Case 1: Show uncommitted changes
             print(f"--- Uncommitted Changes (HEAD): {project_dir} ---")

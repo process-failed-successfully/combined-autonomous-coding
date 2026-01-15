@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.deps_manager import add_dependency, remove_dependency, list_dependencies, sync_dependencies
 import json
 import yaml
 import platformdirs
@@ -1754,6 +1755,22 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     return None
+
+
+def run_deps(args):
+    """Manages project dependencies."""
+    success = False
+    if args.action == "add":
+        success = add_dependency(args.project_dir, args.package_name)
+    elif args.action == "remove":
+        success = remove_dependency(args.project_dir, args.package_name)
+    elif args.action == "list":
+        success = list_dependencies(args.project_dir)
+    elif args.action == "sync":
+        success = sync_dependencies(args.project_dir)
+
+    if not success:
+        sys.exit(1)
 
 
 def run_cherry_pick(args):
@@ -5232,6 +5249,59 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'deps' command ---
+    parser_deps = subparsers.add_parser(
+        "deps",
+        help="Manage project dependencies."
+    )
+    deps_subparsers = parser_deps.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify deps action"
+    )
+    parser_deps_add = deps_subparsers.add_parser(
+        "add",
+        help="Add a new dependency to the project."
+    )
+    parser_deps_add.add_argument("package_name", help="The name of the package to add.")
+    parser_deps_add.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_deps_remove = deps_subparsers.add_parser(
+        "remove",
+        help="Remove a dependency from the project."
+    )
+    parser_deps_remove.add_argument("package_name", help="The name of the package to remove.")
+    parser_deps_remove.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_deps_list = deps_subparsers.add_parser(
+        "list",
+        help="List project dependencies."
+    )
+    parser_deps_list.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_deps_sync = deps_subparsers.add_parser(
+        "sync",
+        help="Install all dependencies for the project."
+    )
+    parser_deps_sync.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -7109,6 +7179,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "deps":
+        run_deps(args)
         return
 
     # Initialize Agent Client

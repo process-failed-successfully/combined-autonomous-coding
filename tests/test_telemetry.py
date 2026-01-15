@@ -10,7 +10,7 @@ class TestTelemetry(unittest.TestCase):
         self.telemetry = Telemetry("test_agent", "test_job")
         self.telemetry.synchronous_mode = True
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_record_gauge(self, mock_push):
         # Enable metrics for test
         with patch("shared.telemetry.ENABLE_METRICS", True):
@@ -46,7 +46,7 @@ class TestTelemetry(unittest.TestCase):
             val = self.telemetry.metrics["test_metric"].collect()[0].samples[0].value
             self.assertEqual(val, 42.0)
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_record_gauge_with_labels(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):
             self.telemetry.register_gauge("test_lbl", "doc", ["foo"])

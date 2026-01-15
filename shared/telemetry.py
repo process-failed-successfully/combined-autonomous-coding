@@ -5,15 +5,7 @@ import socket
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
-import psutil
 from typing import Dict, Any, Optional, List, Tuple
-from prometheus_client import (
-    CollectorRegistry,
-    Gauge,
-    Counter,
-    Histogram,
-    push_to_gateway,
-)
 
 # Configuration
 PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9081")
@@ -35,6 +27,9 @@ class Telemetry:
         self.job_name = job_name
         self.agent_type = agent_type
         self.project_name = project_name
+
+        # Lazy import prometheus_client
+        from prometheus_client import CollectorRegistry
         self.registry = CollectorRegistry()
         self.metrics: Dict[str, Any] = {}
 
@@ -272,6 +267,7 @@ class Telemetry:
 
     def register_gauge(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
+            from prometheus_client import Gauge
             self.metrics[name] = Gauge(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
@@ -279,6 +275,7 @@ class Telemetry:
 
     def register_counter(self, name: str, documentation: str, labelnames: List[str] = []):
         if name not in self.metrics:
+            from prometheus_client import Counter
             self.metrics[name] = Counter(
                 name, documentation, labelnames=labelnames, registry=self.registry
             )
@@ -289,8 +286,12 @@ class Telemetry:
         name: str,
         documentation: str,
         labelnames: List[str] = [],
-        buckets: Tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
+        buckets: Tuple[float, ...] = (0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, INF) if 'INF' in locals() else None, # We can't easily access default buckets if not imported, so we import inside.
     ):
+        from prometheus_client import Histogram
+        if buckets is None:
+             buckets = Histogram.DEFAULT_BUCKETS
+
         if name not in self.metrics:
             self.metrics[name] = Histogram(
                 name,
@@ -377,6 +378,7 @@ class Telemetry:
     def _push_metrics_sync(self):
         """Synchronous version of push metrics for background thread or final flush."""
         try:
+            from prometheus_client import push_to_gateway
             grouping_key = {
                 "instance": socket.gethostname(),
                 "service": self.service_name,
@@ -426,6 +428,7 @@ class Telemetry:
     def _system_monitoring_loop(self):
         while self.monitoring_active:
             try:
+                import psutil
                 process = psutil.Process(os.getpid())
                 mem_info = process.memory_info()
                 cpu_percent = process.cpu_percent(interval=None)  # Non-blocking

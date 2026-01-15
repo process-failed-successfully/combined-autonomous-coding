@@ -17,7 +17,7 @@ class TestTelemetry(unittest.TestCase):
         )
         self.telemetry.synchronous_mode = True
         # Mock push_to_gateway to prevent actual network calls
-        self.patcher = patch("shared.telemetry.push_to_gateway")
+        self.patcher = patch("prometheus_client.push_to_gateway")
         self.mock_push = self.patcher.start()
 
     def tearDown(self):

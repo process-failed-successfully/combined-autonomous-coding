@@ -10,7 +10,7 @@ class TestTelemetryExtended(unittest.TestCase):
         self.telemetry = Telemetry("test_agent", "test_job")
         self.telemetry.synchronous_mode = True
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_record_histogram(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):
             self.telemetry.register_histogram("test_hist", "doc", ["agent_id"])
@@ -24,7 +24,7 @@ class TestTelemetryExtended(unittest.TestCase):
             metric = self.telemetry.metrics["test_hist"]
             self.assertIsNotNone(metric)
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_increment_counter(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):
             self.telemetry.register_counter("test_counter", "doc", ["agent_id"])
@@ -37,14 +37,14 @@ class TestTelemetryExtended(unittest.TestCase):
             val = self.telemetry.metrics["test_counter"].collect()[0].samples[0].value
             self.assertEqual(val, 1.0)
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_disabled_metrics(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", False):
             self.telemetry.register_gauge("test_gauge", "doc", ["agent_id"])
             self.telemetry.record_gauge("test_gauge", 100.0)
             mock_push.assert_not_called()
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_log_error(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):
             # This should increment agent_errors_total
@@ -78,7 +78,7 @@ class TestTelemetryExtended(unittest.TestCase):
         t = get_telemetry()
         self.assertEqual(t.service_name, "default_agent")
 
-    @patch("shared.telemetry.push_to_gateway")
+    @patch("prometheus_client.push_to_gateway")
     def test_push_metrics_exception(self, mock_push):
         mock_push.side_effect = Exception("Push failed")
         # Should not raise exception
@@ -94,7 +94,7 @@ class TestTelemetryExtended(unittest.TestCase):
 
         with (
             patch("shared.telemetry.ENABLE_METRICS", True),
-            patch("shared.telemetry.push_to_gateway"),
+            patch("prometheus_client.push_to_gateway"),
         ):
 
             self.telemetry.monitoring_active = True

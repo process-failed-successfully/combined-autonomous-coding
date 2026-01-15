@@ -1740,9 +1740,9 @@ def run_discard(args):
     sys.exit(0)
 
 
-def is_plausible_git_ref(ref: str) -> bool:
+def is_safe_git_ref(ref: str) -> bool:
     """
-    Checks if a string is a plausible git ref.
+    Checks if a string is a safe git ref to be used in subprocess commands.
     It's not a foolproof validator, but it prevents command injection.
     Allows for branch names, tags, HEAD~1, etc. but disallows shell metacharacters.
     """
@@ -1751,8 +1751,8 @@ def is_plausible_git_ref(ref: str) -> bool:
     # Disallow starting with '-' to prevent option injection.
     if ref.startswith('-'):
         return False
-    # Disallow characters that have special meaning in shells.
-    if any(c in ref for c in ' ;|&`$()<>\\!'):
+    # Disallow characters that have special meaning in shells or could be used for injection.
+    if any(c in ref for c in ' ;|&`$()<>\\!\n\t'):
         return False
     return True
 
@@ -1830,7 +1830,7 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
-    if not is_plausible_git_ref(target):
+    if not is_safe_git_ref(target):
         print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
         sys.exit(1)
 

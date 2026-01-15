@@ -52,6 +52,7 @@ import platformdirs
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 
+from shared.watch_handler import run_watch
 # Agent Definitions
 AVAILABLE_AGENTS = {
     "gemini": "Uses Google's Gemini model via the official API.",
@@ -59,18 +60,6 @@ AVAILABLE_AGENTS = {
     "local": "Runs a local model (e.g., Ollama).",
     "openrouter": "Uses a model from the OpenRouter API.",
 }
-
-if FileSystemEventHandler:
-    class CommandEventHandler(FileSystemEventHandler):
-        def __init__(self, command, project_dir):
-            self.command = command
-            self.project_dir = project_dir
-
-        def on_modified(self, event):
-            if event.is_directory:
-                return
-            print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
-            subprocess.run(self.command, cwd=self.project_dir)
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -5087,12 +5076,12 @@ def parse_args(argv=None):
     # --- New 'watch' command ---
     parser_watch = subparsers.add_parser(
         "watch",
-        help="Watch for file changes and run a command."
+        help="Watch for file changes and run a command. If no command is provided, it runs the default test suite."
     )
     parser_watch.add_argument(
         "watch_command",
         nargs=argparse.REMAINDER,
-        help="The command to run when a file changes.",
+        help="The command to run when a file changes. If omitted, runs the default test command for the project type.",
     )
     parser_watch.add_argument(
         "-p", "--project-dir",
@@ -5366,35 +5355,6 @@ def run_profile(args):
         except (IOError, yaml.YAMLError) as e:
             print(f"\n❌ Error writing configuration file: {e}", file=sys.stderr)
             sys.exit(1)
-        sys.exit(0)
-
-
-def run_watch(args):
-    """Watches for file changes and runs a command."""
-    project_dir = args.project_dir.resolve()
-    command_to_run = args.watch_command
-
-    if Observer is None:
-        print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
-        sys.exit(1)
-
-    print(f"--- Watching for file changes in: {project_dir} ---")
-    print(f"--- Press Ctrl+C to stop ---")
-
-    event_handler = CommandEventHandler(command_to_run, project_dir)
-    observer = Observer()
-    observer.schedule(event_handler, project_dir, recursive=True)
-    observer.start()
-
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
-    sys.exit(0)
-
-
 def run_feature(args):
     """Runs a guided workflow for creating a feature branch, committing, pushing, and creating a PR."""
     project_dir = args.project_dir.resolve()

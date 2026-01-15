@@ -1765,10 +1765,10 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
+    # --- Input Sanitization ---
     if not is_safe_git_ref(target):
         print(f"❌ Error: Invalid target '{target}'. May be a command-line option.", file=sys.stderr)
         sys.exit(1)
-
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")

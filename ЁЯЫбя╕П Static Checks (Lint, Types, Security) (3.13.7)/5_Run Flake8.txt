@@ -1,0 +1,1091 @@
+﻿2026-01-15T09:47:37.5938273Z ##[group]Run # Stop the build if there are Python syntax errors or undefined names
+2026-01-15T09:47:37.5938853Z [36;1m# Stop the build if there are Python syntax errors or undefined names[0m
+2026-01-15T09:47:37.5939388Z [36;1mflake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv,venv[0m
+2026-01-15T09:47:37.5940067Z [36;1m# exit-zero treats all errors as warnings[0m
+2026-01-15T09:47:37.5940660Z [36;1mflake8 . --count --exit-zero --max-complexity=35 --max-line-length=160 --statistics --exclude=.venv,venv[0m
+2026-01-15T09:47:37.5974123Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:37.5974368Z env:
+2026-01-15T09:47:37.5974627Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:37.5975051Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:37.5975482Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:37.5976024Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:37.5976416Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:37.5976780Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:37.5977086Z ##[endgroup]
+2026-01-15T09:47:39.7350440Z 0
+2026-01-15T09:47:41.7863620Z ./agents/local/client.py:52:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.7864200Z ./agents/local/client.py:52:14: E117 over-indented (comment)
+2026-01-15T09:47:41.7864670Z ./agents/local/client.py:53:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7866443Z ./agents/local/client.py:53:14: E117 over-indented
+2026-01-15T09:47:41.7867157Z ./agents/local/client.py:54:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7869315Z ./agents/local/client.py:87:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.7870958Z ./agents/local/client.py:95:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7871763Z ./agents/local/client.py:95:18: E117 over-indented
+2026-01-15T09:47:41.7872492Z ./agents/openrouter/agent.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7873340Z ./agents/openrouter/agent.py:189:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7874178Z ./agents/openrouter/agent.py:210:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7875014Z ./agents/openrouter/client.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7875859Z ./agents/openrouter/client.py:22:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7876709Z ./agents/openrouter/client.py:25:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7877583Z ./agents/openrouter/client.py:44:22: F541 f-string is missing placeholders
+2026-01-15T09:47:41.7878481Z ./agents/openrouter/client.py:61:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7879263Z ./agents/openrouter/client.py:61:14: E117 over-indented
+2026-01-15T09:47:41.7880515Z ./agents/openrouter/client.py:62:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7881455Z ./agents/openrouter/client.py:83:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7882257Z ./agents/openrouter/client.py:83:26: E117 over-indented
+2026-01-15T09:47:41.7882991Z ./agents/openrouter/client.py:85:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7883841Z ./agents/openrouter/client.py:94:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7884746Z ./agents/openrouter/client.py:101:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.7885680Z ./agents/openrouter/client.py:102:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7886530Z ./agents/openrouter/client.py:110:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7887366Z ./agents/shared/base_agent.py:31:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7888188Z ./agents/shared/base_agent.py:35:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7889058Z ./agents/shared/base_agent.py:39:27: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.7890131Z ./agents/shared/base_agent.py:40:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7891445Z ./agents/shared/base_agent.py:40:10: E117 over-indented
+2026-01-15T09:47:41.7892181Z ./agents/shared/base_agent.py:41:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7893023Z ./agents/shared/base_agent.py:45:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7893772Z ./agents/shared/base_agent.py:45:10: E117 over-indented
+2026-01-15T09:47:41.7894539Z ./agents/shared/base_agent.py:46:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7895421Z ./agents/shared/base_agent.py:47:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7896295Z ./agents/shared/base_agent.py:48:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7897159Z ./agents/shared/base_agent.py:49:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7898026Z ./agents/shared/base_agent.py:50:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7899178Z ./agents/shared/base_agent.py:51:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7900299Z ./agents/shared/base_agent.py:52:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7901137Z ./agents/shared/base_agent.py:55:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7901950Z ./agents/shared/base_agent.py:431:9: E303 too many blank lines (2)
+2026-01-15T09:47:41.7902765Z ./agents/shared/base_agent.py:452:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7903675Z ./agents/shared/base_agent.py:457:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.7904563Z ./agents/shared/base_agent.py:457:14: E117 over-indented (comment)
+2026-01-15T09:47:41.7905398Z ./agents/shared/base_agent.py:458:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7906172Z ./agents/shared/base_agent.py:458:14: E117 over-indented
+2026-01-15T09:47:41.7906894Z ./agents/shared/base_agent.py:459:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7907704Z ./agents/shared/base_agent.py:481:9: E303 too many blank lines (2)
+2026-01-15T09:47:41.7908621Z ./agents/shared/sprint.py:14:1: F401 'agents.gemini.agent.GeminiAgent' imported but unused
+2026-01-15T09:47:41.7909677Z ./agents/shared/sprint.py:15:1: F401 'agents.shared.base_agent.BaseAgent' imported but unused
+2026-01-15T09:47:41.7910748Z ./agents/shared/sprint.py:61:1: E303 too many blank lines (3)
+2026-01-15T09:47:41.7911489Z ./agents/shared/sprint.py:65:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7912265Z ./agents/shared/sprint.py:69:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7913076Z ./agents/shared/sprint.py:73:27: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.7913938Z ./agents/shared/sprint.py:74:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7914648Z ./agents/shared/sprint.py:74:10: E117 over-indented
+2026-01-15T09:47:41.7915320Z ./agents/shared/sprint.py:75:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7916113Z ./agents/shared/sprint.py:80:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7916832Z ./agents/shared/sprint.py:80:10: E117 over-indented
+2026-01-15T09:47:41.7917522Z ./agents/shared/sprint.py:81:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7918333Z ./agents/shared/sprint.py:82:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7919147Z ./agents/shared/sprint.py:83:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7920118Z ./agents/shared/sprint.py:84:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7920937Z ./agents/shared/sprint.py:85:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7921834Z ./agents/shared/sprint.py:86:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7922675Z ./agents/shared/sprint.py:87:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7923469Z ./agents/shared/sprint.py:90:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7924321Z ./agents/shared/sprint.py:102:45: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.7925522Z ./agents/shared/sprint.py:243:5: C901 'SprintManager.run_worker' is too complex (38)
+2026-01-15T09:47:41.7926426Z ./agents/shared/sprint.py:273:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7927259Z ./agents/shared/sprint.py:277:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7927997Z ./agents/shared/sprint.py:277:14: E117 over-indented
+2026-01-15T09:47:41.7928706Z ./agents/shared/sprint.py:278:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7929548Z ./agents/shared/sprint.py:279:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7930593Z ./agents/shared/sprint.py:280:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7931417Z ./agents/shared/sprint.py:281:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7932248Z ./agents/shared/sprint.py:286:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7933256Z ./agents/shared/sprint.py:286:14: E117 over-indented
+2026-01-15T09:47:41.7933983Z ./agents/shared/sprint.py:287:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7934942Z ./agents/shared/sprint.py:288:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7935788Z ./agents/shared/sprint.py:289:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7936647Z ./agents/shared/sprint.py:290:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7937485Z ./agents/shared/sprint.py:291:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7938334Z ./agents/shared/sprint.py:292:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7939163Z ./agents/shared/sprint.py:307:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7940179Z ./agents/shared/sprint.py:313:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7940983Z ./agents/shared/sprint.py:324:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7941777Z ./agents/shared/sprint.py:326:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7942573Z ./agents/shared/sprint.py:412:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7943361Z ./agents/shared/sprint.py:415:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7944168Z ./agents/shared/sprint.py:428:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7944980Z ./agents/shared/sprint.py:435:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7945772Z ./agents/shared/sprint.py:453:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7946543Z ./agents/shared/sprint.py:491:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7947363Z ./agents/shared/sprint.py:495:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7948176Z ./agents/shared/sprint.py:495:26: E117 over-indented
+2026-01-15T09:47:41.7948898Z ./agents/shared/sprint.py:496:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7949728Z ./agents/shared/sprint.py:498:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7950641Z ./agents/shared/sprint.py:498:26: E117 over-indented
+2026-01-15T09:47:41.7951373Z ./agents/shared/sprint.py:500:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7952211Z ./agents/shared/sprint.py:501:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7953060Z ./agents/shared/sprint.py:502:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7953902Z ./agents/shared/sprint.py:503:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7954665Z ./agents/shared/sprint.py:503:62: W291 trailing whitespace
+2026-01-15T09:47:41.7955481Z ./agents/shared/sprint.py:505:26: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.7956387Z ./agents/shared/sprint.py:506:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7957282Z ./agents/shared/sprint.py:508:26: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.7958190Z ./agents/shared/sprint.py:509:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7959065Z ./agents/shared/sprint.py:514:26: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.7960389Z ./agents/shared/sprint.py:515:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7961240Z ./agents/shared/sprint.py:516:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7962044Z ./agents/shared/sprint.py:534:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7962841Z ./agents/shared/sprint.py:572:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7963656Z ./agents/shared/sprint.py:579:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7964391Z ./agents/shared/sprint.py:579:18: E117 over-indented
+2026-01-15T09:47:41.7965075Z ./agents/shared/sprint.py:592:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7965896Z ./agents/shared/sprint.py:599:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7966619Z ./agents/shared/sprint.py:599:18: E117 over-indented
+2026-01-15T09:47:41.7967292Z ./agents/shared/sprint.py:705:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7968337Z ./agents/shared/sprint.py:708:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7969316Z ./agents/shared/sprint.py:711:9: F841 local variable 'manager_config' is assigned to but never used
+2026-01-15T09:47:41.7970474Z ./agents/shared/sprint.py:712:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7971278Z ./agents/shared/sprint.py:717:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7972062Z ./agents/shared/sprint.py:719:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7972843Z ./agents/shared/sprint.py:722:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7973688Z ./agents/shared/sprint.py:725:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.7974540Z ./agents/shared/sprint.py:725:14: E117 over-indented (comment)
+2026-01-15T09:47:41.7975327Z ./agents/shared/sprint.py:726:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7976056Z ./agents/shared/sprint.py:726:14: E117 over-indented
+2026-01-15T09:47:41.7976753Z ./agents/shared/sprint.py:733:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7977558Z ./agents/shared/sprint.py:736:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7978371Z ./agents/shared/sprint.py:738:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7979096Z ./agents/shared/sprint.py:738:14: E117 over-indented
+2026-01-15T09:47:41.7979779Z ./agents/shared/sprint.py:739:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7980765Z ./agents/shared/sprint.py:743:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7981488Z ./agents/shared/sprint.py:743:18: E117 over-indented
+2026-01-15T09:47:41.7982186Z ./agents/shared/sprint.py:744:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7983018Z ./agents/shared/sprint.py:745:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7983848Z ./agents/shared/sprint.py:746:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7984683Z ./agents/shared/sprint.py:747:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7985529Z ./agents/shared/sprint.py:748:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7986368Z ./agents/shared/sprint.py:749:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7987188Z ./agents/shared/sprint.py:751:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.7987901Z ./agents/shared/sprint.py:751:18: E117 over-indented
+2026-01-15T09:47:41.7988565Z ./agents/shared/sprint.py:752:5: E301 expected 1 blank line, found 0
+2026-01-15T09:47:41.7989307Z ./agents/shared/sprint.py:771:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7990285Z ./agents/shared/sprint.py:774:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7991221Z ./agents/shared/sprint.py:779:17: F841 local variable 'goal_text' is assigned to but never used
+2026-01-15T09:47:41.7992151Z ./agents/shared/sprint.py:780:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7992928Z ./agents/shared/sprint.py:786:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7993945Z ./agents/shared/sprint.py:788:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7994699Z ./agents/shared/sprint.py:796:1: E303 too many blank lines (3)
+2026-01-15T09:47:41.7995485Z ./agents/shared/worktree_manager.py:9:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.7996378Z ./agents/shared/worktree_manager.py:25:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7997297Z ./agents/shared/worktree_manager.py:61:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.7998252Z ./agents/shared/worktree_manager.py:64:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.7999153Z ./agents/shared/worktree_manager.py:69:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8000178Z ./agents/shared/worktree_manager.py:71:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8001063Z ./agents/shared/worktree_manager.py:73:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8002138Z ./agents/shared/worktree_manager.py:77:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8003040Z ./agents/shared/worktree_manager.py:105:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8003925Z ./agents/shared/worktree_manager.py:113:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8004853Z ./agents/shared/worktree_manager.py:129:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8005695Z ./agents/shared/worktree_manager.py:129:14: E117 over-indented
+2026-01-15T09:47:41.8006550Z ./agents/shared/worktree_manager.py:130:18: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8007454Z ./agents/shared/worktree_manager.py:131:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8008281Z ./agents/shared/worktree_manager.py:132:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8009195Z ./agents/shared/worktree_manager.py:133:18: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8010320Z ./agents/shared/worktree_manager.py:134:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8011265Z ./agents/shared/worktree_manager.py:135:18: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8012245Z ./agents/shared/worktree_manager.py:136:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8013113Z ./agents/shared/worktree_manager.py:138:18: E722 do not use bare 'except'
+2026-01-15T09:47:41.8013924Z ./agents/shared/worktree_manager.py:138:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8014725Z ./agents/shared/worktree_manager.py:138:25: W291 trailing whitespace
+2026-01-15T09:47:41.8015532Z ./build/lib/agents/local/client.py:52:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8016384Z ./build/lib/agents/local/client.py:52:14: E117 over-indented (comment)
+2026-01-15T09:47:41.8017152Z ./build/lib/agents/local/client.py:53:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8017891Z ./build/lib/agents/local/client.py:53:14: E117 over-indented
+2026-01-15T09:47:41.8018627Z ./build/lib/agents/local/client.py:54:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8019479Z ./build/lib/agents/local/client.py:87:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8020521Z ./build/lib/agents/local/client.py:95:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8021261Z ./build/lib/agents/local/client.py:95:18: E117 over-indented
+2026-01-15T09:47:41.8022000Z ./build/lib/agents/openrouter/agent.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8022865Z ./build/lib/agents/openrouter/agent.py:189:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8023723Z ./build/lib/agents/openrouter/agent.py:210:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8024581Z ./build/lib/agents/openrouter/client.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8025405Z ./build/lib/agents/openrouter/client.py:22:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8026242Z ./build/lib/agents/openrouter/client.py:25:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8027357Z ./build/lib/agents/openrouter/client.py:44:22: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8028256Z ./build/lib/agents/openrouter/client.py:61:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8029053Z ./build/lib/agents/openrouter/client.py:61:14: E117 over-indented
+2026-01-15T09:47:41.8029806Z ./build/lib/agents/openrouter/client.py:62:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8030855Z ./build/lib/agents/openrouter/client.py:83:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8031666Z ./build/lib/agents/openrouter/client.py:83:26: E117 over-indented
+2026-01-15T09:47:41.8032415Z ./build/lib/agents/openrouter/client.py:85:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8033264Z ./build/lib/agents/openrouter/client.py:94:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8034168Z ./build/lib/agents/openrouter/client.py:101:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8035270Z ./build/lib/agents/openrouter/client.py:102:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8036129Z ./build/lib/agents/openrouter/client.py:110:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8036967Z ./build/lib/agents/shared/base_agent.py:31:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8037770Z ./build/lib/agents/shared/base_agent.py:35:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8038605Z ./build/lib/agents/shared/base_agent.py:39:27: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8039474Z ./build/lib/agents/shared/base_agent.py:40:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8040342Z ./build/lib/agents/shared/base_agent.py:40:10: E117 over-indented
+2026-01-15T09:47:41.8041025Z ./build/lib/agents/shared/base_agent.py:41:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8041826Z ./build/lib/agents/shared/base_agent.py:45:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8042548Z ./build/lib/agents/shared/base_agent.py:45:10: E117 over-indented
+2026-01-15T09:47:41.8043222Z ./build/lib/agents/shared/base_agent.py:46:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8044014Z ./build/lib/agents/shared/base_agent.py:47:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8044831Z ./build/lib/agents/shared/base_agent.py:48:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8045611Z ./build/lib/agents/shared/base_agent.py:49:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8046402Z ./build/lib/agents/shared/base_agent.py:50:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8047220Z ./build/lib/agents/shared/base_agent.py:51:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8048067Z ./build/lib/agents/shared/base_agent.py:52:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8048821Z ./build/lib/agents/shared/base_agent.py:55:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8049584Z ./build/lib/agents/shared/base_agent.py:431:9: E303 too many blank lines (2)
+2026-01-15T09:47:41.8050515Z ./build/lib/agents/shared/base_agent.py:452:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8051339Z ./build/lib/agents/shared/base_agent.py:457:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8052165Z ./build/lib/agents/shared/base_agent.py:457:14: E117 over-indented (comment)
+2026-01-15T09:47:41.8052952Z ./build/lib/agents/shared/base_agent.py:458:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8080813Z ./build/lib/agents/shared/base_agent.py:458:14: E117 over-indented
+2026-01-15T09:47:41.8081638Z ./build/lib/agents/shared/base_agent.py:459:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8082184Z ./build/lib/agents/shared/base_agent.py:481:9: E303 too many blank lines (2)
+2026-01-15T09:47:41.8082746Z ./build/lib/agents/shared/sprint.py:14:1: F401 'agents.gemini.agent.GeminiAgent' imported but unused
+2026-01-15T09:47:41.8083419Z ./build/lib/agents/shared/sprint.py:15:1: F401 'agents.shared.base_agent.BaseAgent' imported but unused
+2026-01-15T09:47:41.8084241Z ./build/lib/agents/shared/sprint.py:61:1: E303 too many blank lines (3)
+2026-01-15T09:47:41.8084710Z ./build/lib/agents/shared/sprint.py:65:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8085197Z ./build/lib/agents/shared/sprint.py:69:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8085699Z ./build/lib/agents/shared/sprint.py:73:27: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8086248Z ./build/lib/agents/shared/sprint.py:74:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8086711Z ./build/lib/agents/shared/sprint.py:74:10: E117 over-indented
+2026-01-15T09:47:41.8087142Z ./build/lib/agents/shared/sprint.py:75:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8087631Z ./build/lib/agents/shared/sprint.py:80:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8088705Z ./build/lib/agents/shared/sprint.py:80:10: E117 over-indented
+2026-01-15T09:47:41.8089451Z ./build/lib/agents/shared/sprint.py:81:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8090592Z ./build/lib/agents/shared/sprint.py:82:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8091473Z ./build/lib/agents/shared/sprint.py:83:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8092354Z ./build/lib/agents/shared/sprint.py:84:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8093234Z ./build/lib/agents/shared/sprint.py:85:10: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8093823Z ./build/lib/agents/shared/sprint.py:86:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8094314Z ./build/lib/agents/shared/sprint.py:87:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8094796Z ./build/lib/agents/shared/sprint.py:90:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8095315Z ./build/lib/agents/shared/sprint.py:102:45: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8095896Z ./build/lib/agents/shared/sprint.py:243:5: C901 'SprintManager.run_worker' is too complex (38)
+2026-01-15T09:47:41.8096429Z ./build/lib/agents/shared/sprint.py:273:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8096926Z ./build/lib/agents/shared/sprint.py:277:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8097377Z ./build/lib/agents/shared/sprint.py:277:14: E117 over-indented
+2026-01-15T09:47:41.8097805Z ./build/lib/agents/shared/sprint.py:278:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8098302Z ./build/lib/agents/shared/sprint.py:279:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8098797Z ./build/lib/agents/shared/sprint.py:280:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8099280Z ./build/lib/agents/shared/sprint.py:281:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8099775Z ./build/lib/agents/shared/sprint.py:286:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8100520Z ./build/lib/agents/shared/sprint.py:286:14: E117 over-indented
+2026-01-15T09:47:41.8100959Z ./build/lib/agents/shared/sprint.py:287:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8101445Z ./build/lib/agents/shared/sprint.py:288:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8101938Z ./build/lib/agents/shared/sprint.py:289:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8102431Z ./build/lib/agents/shared/sprint.py:290:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8102921Z ./build/lib/agents/shared/sprint.py:291:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8103408Z ./build/lib/agents/shared/sprint.py:292:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8103900Z ./build/lib/agents/shared/sprint.py:307:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8104374Z ./build/lib/agents/shared/sprint.py:313:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8104848Z ./build/lib/agents/shared/sprint.py:324:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8105535Z ./build/lib/agents/shared/sprint.py:326:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8106004Z ./build/lib/agents/shared/sprint.py:412:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8106470Z ./build/lib/agents/shared/sprint.py:415:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8106930Z ./build/lib/agents/shared/sprint.py:428:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8107399Z ./build/lib/agents/shared/sprint.py:435:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8107865Z ./build/lib/agents/shared/sprint.py:453:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8108329Z ./build/lib/agents/shared/sprint.py:491:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8108805Z ./build/lib/agents/shared/sprint.py:495:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8109367Z ./build/lib/agents/shared/sprint.py:495:26: E117 over-indented
+2026-01-15T09:47:41.8109809Z ./build/lib/agents/shared/sprint.py:496:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8110568Z ./build/lib/agents/shared/sprint.py:498:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8111015Z ./build/lib/agents/shared/sprint.py:498:26: E117 over-indented
+2026-01-15T09:47:41.8111443Z ./build/lib/agents/shared/sprint.py:500:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8111935Z ./build/lib/agents/shared/sprint.py:501:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8112421Z ./build/lib/agents/shared/sprint.py:502:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8112913Z ./build/lib/agents/shared/sprint.py:503:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8113382Z ./build/lib/agents/shared/sprint.py:503:62: W291 trailing whitespace
+2026-01-15T09:47:41.8113885Z ./build/lib/agents/shared/sprint.py:505:26: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8114429Z ./build/lib/agents/shared/sprint.py:506:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8114965Z ./build/lib/agents/shared/sprint.py:508:26: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8115508Z ./build/lib/agents/shared/sprint.py:509:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8116024Z ./build/lib/agents/shared/sprint.py:514:26: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8116549Z ./build/lib/agents/shared/sprint.py:515:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8117041Z ./build/lib/agents/shared/sprint.py:516:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8117528Z ./build/lib/agents/shared/sprint.py:534:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8117993Z ./build/lib/agents/shared/sprint.py:572:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8118473Z ./build/lib/agents/shared/sprint.py:579:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8118919Z ./build/lib/agents/shared/sprint.py:579:18: E117 over-indented
+2026-01-15T09:47:41.8119338Z ./build/lib/agents/shared/sprint.py:592:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8119817Z ./build/lib/agents/shared/sprint.py:599:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8120443Z ./build/lib/agents/shared/sprint.py:599:18: E117 over-indented
+2026-01-15T09:47:41.8120871Z ./build/lib/agents/shared/sprint.py:705:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8121338Z ./build/lib/agents/shared/sprint.py:708:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8121903Z ./build/lib/agents/shared/sprint.py:711:9: F841 local variable 'manager_config' is assigned to but never used
+2026-01-15T09:47:41.8122473Z ./build/lib/agents/shared/sprint.py:712:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8122945Z ./build/lib/agents/shared/sprint.py:717:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8123417Z ./build/lib/agents/shared/sprint.py:719:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8124026Z ./build/lib/agents/shared/sprint.py:722:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8124540Z ./build/lib/agents/shared/sprint.py:725:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8125035Z ./build/lib/agents/shared/sprint.py:725:14: E117 over-indented (comment)
+2026-01-15T09:47:41.8125508Z ./build/lib/agents/shared/sprint.py:726:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8125951Z ./build/lib/agents/shared/sprint.py:726:14: E117 over-indented
+2026-01-15T09:47:41.8126369Z ./build/lib/agents/shared/sprint.py:733:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8126832Z ./build/lib/agents/shared/sprint.py:736:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8127316Z ./build/lib/agents/shared/sprint.py:738:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8127753Z ./build/lib/agents/shared/sprint.py:738:14: E117 over-indented
+2026-01-15T09:47:41.8128283Z ./build/lib/agents/shared/sprint.py:739:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8128763Z ./build/lib/agents/shared/sprint.py:743:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8129198Z ./build/lib/agents/shared/sprint.py:743:18: E117 over-indented
+2026-01-15T09:47:41.8129627Z ./build/lib/agents/shared/sprint.py:744:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8130316Z ./build/lib/agents/shared/sprint.py:745:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8130817Z ./build/lib/agents/shared/sprint.py:746:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8131313Z ./build/lib/agents/shared/sprint.py:747:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8131805Z ./build/lib/agents/shared/sprint.py:748:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8132292Z ./build/lib/agents/shared/sprint.py:749:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8132795Z ./build/lib/agents/shared/sprint.py:751:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8133239Z ./build/lib/agents/shared/sprint.py:751:18: E117 over-indented
+2026-01-15T09:47:41.8133657Z ./build/lib/agents/shared/sprint.py:752:5: E301 expected 1 blank line, found 0
+2026-01-15T09:47:41.8134124Z ./build/lib/agents/shared/sprint.py:771:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8134598Z ./build/lib/agents/shared/sprint.py:774:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8135146Z ./build/lib/agents/shared/sprint.py:779:17: F841 local variable 'goal_text' is assigned to but never used
+2026-01-15T09:47:41.8135692Z ./build/lib/agents/shared/sprint.py:780:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8136171Z ./build/lib/agents/shared/sprint.py:786:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8136637Z ./build/lib/agents/shared/sprint.py:788:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8137095Z ./build/lib/agents/shared/sprint.py:796:1: E303 too many blank lines (3)
+2026-01-15T09:47:41.8137595Z ./build/lib/agents/shared/worktree_manager.py:9:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8138151Z ./build/lib/agents/shared/worktree_manager.py:25:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8138727Z ./build/lib/agents/shared/worktree_manager.py:61:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8139301Z ./build/lib/agents/shared/worktree_manager.py:64:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8139824Z ./build/lib/agents/shared/worktree_manager.py:69:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8140556Z ./build/lib/agents/shared/worktree_manager.py:71:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8141086Z ./build/lib/agents/shared/worktree_manager.py:73:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8141606Z ./build/lib/agents/shared/worktree_manager.py:77:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8142153Z ./build/lib/agents/shared/worktree_manager.py:105:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8142841Z ./build/lib/agents/shared/worktree_manager.py:113:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8143405Z ./build/lib/agents/shared/worktree_manager.py:129:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8143915Z ./build/lib/agents/shared/worktree_manager.py:129:14: E117 over-indented
+2026-01-15T09:47:41.8144450Z ./build/lib/agents/shared/worktree_manager.py:130:18: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8145063Z ./build/lib/agents/shared/worktree_manager.py:131:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8145634Z ./build/lib/agents/shared/worktree_manager.py:132:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8146223Z ./build/lib/agents/shared/worktree_manager.py:133:18: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8146822Z ./build/lib/agents/shared/worktree_manager.py:134:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8147564Z ./build/lib/agents/shared/worktree_manager.py:135:18: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8148161Z ./build/lib/agents/shared/worktree_manager.py:136:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8148705Z ./build/lib/agents/shared/worktree_manager.py:138:18: E722 do not use bare 'except'
+2026-01-15T09:47:41.8149241Z ./build/lib/agents/shared/worktree_manager.py:138:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8149775Z ./build/lib/agents/shared/worktree_manager.py:138:25: W291 trailing whitespace
+2026-01-15T09:47:41.8150477Z ./build/lib/shared/agent_client.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8150969Z ./build/lib/shared/cli_utils.py:118:59: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8151474Z ./build/lib/shared/cli_utils.py:143:47: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8151976Z ./build/lib/shared/cli_utils.py:146:48: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8152459Z ./build/lib/shared/cli_utils.py:147:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8152875Z ./build/lib/shared/cli_utils.py:147:30: E117 over-indented
+2026-01-15T09:47:41.8153277Z ./build/lib/shared/cli_utils.py:148:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8153732Z ./build/lib/shared/cli_utils.py:150:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8154136Z ./build/lib/shared/cli_utils.py:150:30: E117 over-indented
+2026-01-15T09:47:41.8154547Z ./build/lib/shared/cli_utils.py:202:43: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8155041Z ./build/lib/shared/cli_utils.py:230:43: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8155532Z ./build/lib/shared/cli_utils.py:300:147: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8156039Z ./build/lib/shared/cli_utils.py:301:162: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8156548Z ./build/lib/shared/cli_utils.py:305:175: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8157034Z ./build/lib/shared/cli_utils.py:307:137: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8157651Z ./build/lib/shared/cli_utils.py:309:152: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8158137Z ./build/lib/shared/cli_utils.py:314:132: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8158617Z ./build/lib/shared/cli_utils.py:315:147: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8159110Z ./build/lib/shared/cli_utils.py:319:90: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8159573Z ./build/lib/shared/cli_utils.py:462:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8160208Z ./build/lib/shared/cli_utils.py:524:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8160646Z ./build/lib/shared/cli_utils.py:545:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8161055Z ./build/lib/shared/cli_utils.py:575:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8161631Z ./build/lib/shared/cli_utils.py:617:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8162094Z ./build/lib/shared/cli_utils.py:619:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8162563Z ./build/lib/shared/cli_utils.py:644:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8163066Z ./build/lib/shared/cli_utils.py:665:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8163534Z ./build/lib/shared/cli_utils.py:665:14: E117 over-indented (comment)
+2026-01-15T09:47:41.8163972Z ./build/lib/shared/cli_utils.py:666:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8164375Z ./build/lib/shared/cli_utils.py:666:14: E117 over-indented
+2026-01-15T09:47:41.8164778Z ./build/lib/shared/cli_utils.py:667:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8165255Z ./build/lib/shared/cli_utils.py:722:27: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8165858Z ./build/lib/shared/cli_utils.py:736:33: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8166334Z ./build/lib/shared/commands.py:41:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8166773Z ./build/lib/shared/database.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8167205Z ./build/lib/shared/database.py:25:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8167638Z ./build/lib/shared/database.py:31:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8168074Z ./build/lib/shared/github_client.py:1:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8168547Z ./build/lib/shared/github_client.py:5:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8169019Z ./build/lib/shared/log_handler.py:4:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8169476Z ./build/lib/shared/models.py:2:1: F401 'sqlalchemy.Enum' imported but unused
+2026-01-15T09:47:41.8170112Z ./build/lib/shared/models.py:4:1: F401 'enum' imported but unused
+2026-01-15T09:47:41.8170555Z ./build/lib/shared/models.py:6:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8171006Z ./build/lib/shared/models.py:13:28: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8171458Z ./build/lib/shared/models.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8171902Z ./build/lib/shared/models.py:19:42: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8172363Z ./build/lib/shared/models.py:25:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8172805Z ./build/lib/shared/models.py:29:51: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8173256Z ./build/lib/shared/models.py:34:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8173697Z ./build/lib/shared/models.py:41:47: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8174143Z ./build/lib/shared/models.py:44:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8174563Z ./build/lib/shared/shell.py:2:1: F401 'readline' imported but unused
+2026-01-15T09:47:41.8174964Z ./build/lib/shared/shell.py:3:1: F401 'sys' imported but unused
+2026-01-15T09:47:41.8175370Z ./build/lib/shared/shell.py:4:1: F401 'typing.List' imported but unused
+2026-01-15T09:47:41.8175786Z ./build/lib/shared/shell.py:6:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8176202Z ./build/lib/shared/tui.py:3:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8176635Z ./build/lib/shared/tui.py:6:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8177063Z ./build/lib/shared/tui.py:7:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8177480Z ./build/lib/shared/tui.py:8:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8177905Z ./build/lib/shared/tui.py:9:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8178334Z ./build/lib/shared/tui.py:10:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8178810Z ./build/lib/shared/tui.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8179377Z ./build/lib/shared/tui.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8179782Z ./build/lib/shared/tui.py:21:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8180451Z ./build/lib/shared/tui.py:40:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8180877Z ./build/lib/shared/utils.py:228:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8181270Z ./build/lib/shared/utils.py:228:14: E117 over-indented
+2026-01-15T09:47:41.8181664Z ./build/lib/shared/utils.py:491:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8182137Z ./build/lib/shared/utils.py:492:1: F401 'dataclasses.asdict' imported but unused
+2026-01-15T09:47:41.8182599Z ./build/lib/shared/utils.py:492:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8183045Z ./build/lib/shared/utils.py:494:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8183588Z ./main.py:52:1: F401 'dataclasses.asdict' imported but unused
+2026-01-15T09:47:41.8183969Z ./main.py:52:1: F401 'dataclasses.is_dataclass' imported but unused
+2026-01-15T09:47:41.8184324Z ./main.py:75:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8184663Z ./main.py:102:45: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8185013Z ./main.py:202:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8185305Z ./main.py:202:14: E117 over-indented
+2026-01-15T09:47:41.8185591Z ./main.py:203:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8185924Z ./main.py:204:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8186264Z ./main.py:204:34: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8186630Z ./main.py:217:37: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8186981Z ./main.py:236:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8187305Z ./main.py:238:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8187630Z ./main.py:240:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8187950Z ./main.py:481:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8188272Z ./main.py:1153:15: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8188590Z ./main.py:1284:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8188972Z ./main.py:1295:5: F841 local variable 'args_dict' is assigned to but never used
+2026-01-15T09:47:41.8189363Z ./main.py:1308:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8189679Z ./main.py:1324:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8190244Z ./main.py:1628:15: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8190579Z ./main.py:1871:19: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8190900Z ./main.py:1873:19: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8191296Z ./main.py:1888:5: F841 local variable 'original_target' is assigned to but never used
+2026-01-15T09:47:41.8191701Z ./main.py:1915:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8192059Z ./main.py:1929:36: F402 import 'time' from line 2717 shadowed by loop variable
+2026-01-15T09:47:41.8192437Z ./main.py:1988:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8192755Z ./main.py:2093:33: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8193118Z ./main.py:2140:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8193503Z ./main.py:2142:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8193809Z ./main.py:2152:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8194114Z ./main.py:2157:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8194415Z ./main.py:2186:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8194747Z ./main.py:2209:58: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8195081Z ./main.py:2215:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8195388Z ./main.py:2238:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8195696Z ./main.py:2280:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8196203Z ./main.py:2335:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8196507Z ./main.py:2341:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8196841Z ./main.py:2410:26: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8197200Z ./main.py:2411:28: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8197559Z ./main.py:2412:29: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8197949Z ./main.py:2424:5: F841 local variable 'GREEN' is assigned to but never used
+2026-01-15T09:47:41.8198382Z ./main.py:2425:5: F841 local variable 'YELLOW' is assigned to but never used
+2026-01-15T09:47:41.8198752Z ./main.py:2482:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8199074Z ./main.py:2515:41: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8199397Z ./main.py:2549:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8199697Z ./main.py:2608:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8200285Z ./main.py:2666:37: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8200649Z ./main.py:2711:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8201000Z ./main.py:2717:1: F811 redefinition of unused 'time' from line 21
+2026-01-15T09:47:41.8201361Z ./main.py:2717:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8201695Z ./main.py:2718:1: E302 expected 2 blank lines, found 0
+2026-01-15T09:47:41.8202005Z ./main.py:2810:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8202328Z ./main.py:2822:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8202656Z ./main.py:2824:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8202978Z ./main.py:2856:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8203303Z ./main.py:2890:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8203620Z ./main.py:2960:34: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8203959Z ./main.py:3150:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8204267Z ./main.py:3150:14: E117 over-indented
+2026-01-15T09:47:41.8204550Z ./main.py:3151:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8204882Z ./main.py:3204:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8205174Z ./main.py:3204:18: E117 over-indented
+2026-01-15T09:47:41.8205454Z ./main.py:3205:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8205778Z ./main.py:3206:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8206106Z ./main.py:3208:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8206391Z ./main.py:3208:18: E117 over-indented
+2026-01-15T09:47:41.8206662Z ./main.py:3209:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8207011Z ./main.py:3450:39: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8207347Z ./main.py:3596:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8207668Z ./main.py:3608:22: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8208029Z ./main.py:3638:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8208328Z ./main.py:3638:26: E117 over-indented
+2026-01-15T09:47:41.8208608Z ./main.py:3640:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8208893Z ./main.py:3640:26: E117 over-indented
+2026-01-15T09:47:41.8209170Z ./main.py:3641:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8209500Z ./main.py:3643:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8209782Z ./main.py:3643:18: E117 over-indented
+2026-01-15T09:47:41.8210170Z ./main.py:3644:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8210499Z ./main.py:3666:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8210787Z ./main.py:3666:14: E117 over-indented
+2026-01-15T09:47:41.8211036Z ./main.py:3729:9: E303 too many blank lines (2)
+2026-01-15T09:47:41.8211358Z ./main.py:3734:42: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8211688Z ./main.py:3739:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8212138Z ./main.py:3955:41: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8212568Z ./main.py:4116:5: F841 local variable 'parser_configure' is assigned to but never used
+2026-01-15T09:47:41.8213067Z ./main.py:4124:5: F841 local variable 'parser_validate' is assigned to but never used
+2026-01-15T09:47:41.8213578Z ./main.py:4125:5: F841 local variable 'parser_list_agents' is assigned to but never used
+2026-01-15T09:47:41.8214074Z ./main.py:4126:5: F841 local variable 'parser_show_config' is assigned to but never used
+2026-01-15T09:47:41.8214471Z ./main.py:4455:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8214758Z ./main.py:4475:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8215034Z ./main.py:4664:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8215396Z ./main.py:4704:5: F841 local variable 'parser_shell' is assigned to but never used
+2026-01-15T09:47:41.8215886Z ./main.py:4735:5: F841 local variable 'parser_completion' is assigned to but never used
+2026-01-15T09:47:41.8216520Z ./main.py:5234:5: F841 local variable 'parser_stash_list' is assigned to but never used
+2026-01-15T09:47:41.8217016Z ./main.py:5236:5: F841 local variable 'parser_stash_pop' is assigned to but never used
+2026-01-15T09:47:41.8217487Z ./main.py:5246:5: F841 local variable 'parser_help' is assigned to but never used
+2026-01-15T09:47:41.8217898Z ./main.py:5474:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8218257Z ./main.py:5514:30: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8218624Z ./main.py:5533:29: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8218950Z ./main.py:5651:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8219260Z ./main.py:5713:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8219555Z ./main.py:5713:22: E117 over-indented
+2026-01-15T09:47:41.8219828Z ./main.py:5713:28: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8220450Z ./main.py:5714:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8220770Z ./main.py:5720:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8221093Z ./main.py:5764:61: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8221450Z ./main.py:5805:31: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8221775Z ./main.py:5917:15: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8222100Z ./main.py:6069:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8222414Z ./main.py:6177:11: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8222742Z ./main.py:6185:15: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8223086Z ./main.py:6227:49: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8223432Z ./main.py:6228:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8223728Z ./main.py:6228:14: E117 over-indented
+2026-01-15T09:47:41.8224014Z ./main.py:6229:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8224344Z ./main.py:6230:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8224679Z ./main.py:6231:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8225006Z ./main.py:6280:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8225297Z ./main.py:6280:14: E117 over-indented
+2026-01-15T09:47:41.8225589Z ./main.py:6280:36: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8225937Z ./main.py:6281:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8226268Z ./main.py:6282:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8226591Z ./main.py:6283:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8226918Z ./main.py:6287:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8227243Z ./main.py:6288:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8227571Z ./main.py:6289:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8227896Z ./main.py:6290:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8228234Z ./main.py:6292:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8228665Z ./main.py:6292:14: E117 over-indented
+2026-01-15T09:47:41.8228948Z ./main.py:6293:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8229275Z ./main.py:6294:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8229585Z ./main.py:6297:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8230013Z ./main.py:6333:19: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8230335Z ./main.py:6346:19: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8230659Z ./main.py:6434:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8230947Z ./main.py:6434:30: E117 over-indented
+2026-01-15T09:47:41.8231238Z ./main.py:6440:54: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8231597Z ./main.py:6441:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8231889Z ./main.py:6441:14: E117 over-indented
+2026-01-15T09:47:41.8232164Z ./main.py:6442:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8232617Z ./main.py:6443:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8232950Z ./main.py:6444:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8233276Z ./main.py:6445:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8233610Z ./main.py:6515:1: C901 '_worktree_manage' is too complex (42)
+2026-01-15T09:47:41.8233952Z ./main.py:6656:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8234243Z ./main.py:6656:22: E117 over-indented
+2026-01-15T09:47:41.8234514Z ./main.py:6657:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8234842Z ./main.py:6661:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8235176Z ./main.py:6665:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8235505Z ./main.py:6687:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8235786Z ./main.py:6687:18: E117 over-indented
+2026-01-15T09:47:41.8236064Z ./main.py:6688:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8236404Z ./main.py:6695:1: C901 'run_worktrees' is too complex (50)
+2026-01-15T09:47:41.8236753Z ./main.py:6885:33: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8237103Z ./main.py:6893:22: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8237407Z ./main.py:6893:22: E117 over-indented
+2026-01-15T09:47:41.8237715Z ./main.py:6899:22: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8238053Z ./main.py:6899:22: E117 over-indented (comment)
+2026-01-15T09:47:41.8238389Z ./main.py:6900:22: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8238732Z ./main.py:6900:22: E117 over-indented (comment)
+2026-01-15T09:47:41.8239034Z ./main.py:6904:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8239331Z ./main.py:6904:26: E117 over-indented
+2026-01-15T09:47:41.8239618Z ./main.py:6907:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8240266Z ./main.py:6910:26: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8240763Z ./main.py:6910:26: E117 over-indented
+2026-01-15T09:47:41.8241224Z ./main.py:6916:1: C901 'main' is too complex (102)
+2026-01-15T09:47:41.8241820Z ./shared/agent_client.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8242554Z ./shared/cli_utils.py:118:59: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8243333Z ./shared/cli_utils.py:143:47: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8244110Z ./shared/cli_utils.py:146:48: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8244868Z ./shared/cli_utils.py:147:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8245460Z ./shared/cli_utils.py:147:30: E117 over-indented
+2026-01-15T09:47:41.8246077Z ./shared/cli_utils.py:148:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8246766Z ./shared/cli_utils.py:150:30: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8247361Z ./shared/cli_utils.py:150:30: E117 over-indented
+2026-01-15T09:47:41.8248007Z ./shared/cli_utils.py:202:43: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8249021Z ./shared/cli_utils.py:230:43: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8249773Z ./shared/cli_utils.py:300:147: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8250766Z ./shared/cli_utils.py:301:162: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8251219Z ./shared/cli_utils.py:305:175: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8251649Z ./shared/cli_utils.py:307:137: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8252068Z ./shared/cli_utils.py:309:152: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8252494Z ./shared/cli_utils.py:314:132: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8252922Z ./shared/cli_utils.py:315:147: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8253353Z ./shared/cli_utils.py:319:90: E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8253972Z ./shared/cli_utils.py:462:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8254384Z ./shared/cli_utils.py:524:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8254758Z ./shared/cli_utils.py:545:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8255098Z ./shared/cli_utils.py:575:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8255485Z ./shared/cli_utils.py:617:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8255896Z ./shared/cli_utils.py:619:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8256308Z ./shared/cli_utils.py:644:24: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8256756Z ./shared/cli_utils.py:665:14: E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8257163Z ./shared/cli_utils.py:665:14: E117 over-indented (comment)
+2026-01-15T09:47:41.8257542Z ./shared/cli_utils.py:666:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8257901Z ./shared/cli_utils.py:666:14: E117 over-indented
+2026-01-15T09:47:41.8258254Z ./shared/cli_utils.py:667:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8258675Z ./shared/cli_utils.py:722:27: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8259110Z ./shared/cli_utils.py:736:33: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8259516Z ./shared/commands.py:41:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8260165Z ./shared/database.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8260580Z ./shared/database.py:25:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8260962Z ./shared/database.py:31:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8261340Z ./shared/github_client.py:1:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8261728Z ./shared/github_client.py:5:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8262129Z ./shared/log_handler.py:4:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8262526Z ./shared/models.py:2:1: F401 'sqlalchemy.Enum' imported but unused
+2026-01-15T09:47:41.8262902Z ./shared/models.py:4:1: F401 'enum' imported but unused
+2026-01-15T09:47:41.8263245Z ./shared/models.py:6:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8263636Z ./shared/models.py:13:28: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8264033Z ./shared/models.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8264422Z ./shared/models.py:19:42: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8264813Z ./shared/models.py:25:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8265193Z ./shared/models.py:29:51: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8265578Z ./shared/models.py:34:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8265960Z ./shared/models.py:41:47: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8266339Z ./shared/models.py:44:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8266697Z ./shared/shell.py:2:1: F401 'readline' imported but unused
+2026-01-15T09:47:41.8267166Z ./shared/shell.py:3:1: F401 'sys' imported but unused
+2026-01-15T09:47:41.8267506Z ./shared/shell.py:4:1: F401 'typing.List' imported but unused
+2026-01-15T09:47:41.8267856Z ./shared/shell.py:6:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8268216Z ./shared/tui.py:3:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8268587Z ./shared/tui.py:6:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8268949Z ./shared/tui.py:7:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8269312Z ./shared/tui.py:8:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8269676Z ./shared/tui.py:9:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8270269Z ./shared/tui.py:10:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8270641Z ./shared/tui.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8271127Z ./shared/tui.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8271474Z ./shared/tui.py:21:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8271804Z ./shared/tui.py:40:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8272169Z ./shared/utils.py:228:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8272509Z ./shared/utils.py:228:14: E117 over-indented
+2026-01-15T09:47:41.8272845Z ./shared/utils.py:491:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8273251Z ./shared/utils.py:492:1: F401 'dataclasses.asdict' imported but unused
+2026-01-15T09:47:41.8273659Z ./shared/utils.py:492:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8274037Z ./shared/utils.py:494:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8274402Z ./tests/test_base_agent.py:62:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8274819Z ./tests/test_cherry_pick.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8275267Z ./tests/test_cherry_pick.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8275728Z ./tests/test_cherry_pick.py:86:34: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8276278Z ./tests/test_cherry_pick.py:123:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8276839Z ./tests/test_cli_utils.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8277280Z ./tests/test_cli_utils.py:11:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8277773Z ./tests/test_cli_utils.py:148:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8278316Z ./tests/test_cli_utils_dashboard.py:6:1: F401 'subprocess' imported but unused
+2026-01-15T09:47:41.8278823Z ./tests/test_cli_utils_dashboard.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8279392Z ./tests/test_cli_utils_dashboard.py:134:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8280140Z ./tests/test_commands.py:10:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8280582Z ./tests/test_commands.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8281081Z ./tests/test_commands.py:46:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8281659Z ./tests/test_config_validation.py:3:1: F401 'unittest.mock.mock_open' imported but unused
+2026-01-15T09:47:41.8282187Z ./tests/test_config_validation.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8282679Z ./tests/test_config_validation.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8283169Z ./tests/test_config_validation.py:74:44: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8283684Z ./tests/test_config_validation.py:140:51: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8284276Z ./tests/test_config_validation.py:150:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8284973Z ./tests/test_configure.py:5:1: F401 'platformdirs' imported but unused
+2026-01-15T09:47:41.8285411Z ./tests/test_configure.py:11:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8285842Z ./tests/test_configure.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8286341Z ./tests/test_configure.py:79:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8286889Z ./tests/test_database.py:2:1: F401 'shared.database.init_db' imported but unused
+2026-01-15T09:47:41.8287365Z ./tests/test_database.py:2:1: F401 'shared.database.get_db' imported but unused
+2026-01-15T09:47:41.8287800Z ./tests/test_database.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8288194Z ./tests/test_database.py:20:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8288583Z ./tests/test_database.py:30:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8289079Z ./tests/test_database.py:39:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8289508Z ./tests/test_github_client.py:9:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8290225Z ./tests/test_github_client.py:11:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8290863Z ./tests/test_github_client.py:84:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8291410Z ./tests/test_log_handler.py:10:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8291844Z ./tests/test_log_handler.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8292355Z ./tests/test_log_handler.py:42:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8292898Z ./tests/test_main_archive.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8293334Z ./tests/test_main_archive.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8293783Z ./tests/test_main_archive.py:34:45: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8294346Z ./tests/test_main_archive.py:110:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8294916Z ./tests/test_main_artifacts.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8295417Z ./tests/test_main_artifacts.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8295875Z ./tests/test_main_artifacts.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8296337Z ./tests/test_main_artifacts.py:86:51: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8296822Z ./tests/test_main_artifacts.py:97:51: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8297390Z ./tests/test_main_artifacts.py:170:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8297933Z ./tests/test_main_benchmark.py:5:1: F401 'shutil' imported but unused
+2026-01-15T09:47:41.8298380Z ./tests/test_main_benchmark.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8298832Z ./tests/test_main_benchmark.py:65:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8299293Z ./tests/test_main_benchmark.py:167:42: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8299794Z ./tests/test_main_benchmark.py:168:43: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8300513Z ./tests/test_main_benchmark.py:169:45: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8301005Z ./tests/test_main_benchmark.py:176:71: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8301492Z ./tests/test_main_benchmark.py:180:83: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8301977Z ./tests/test_main_benchmark.py:196:81: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8302458Z ./tests/test_main_benchmark.py:231:43: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8302952Z ./tests/test_main_benchmark.py:232:36: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8303685Z ./tests/test_main_benchmark.py:234:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8304217Z ./tests/test_main_benchmark.py:235:20: W292 no newline at end of file
+2026-01-15T09:47:41.8304647Z ./tests/test_main_blame.py:3:1: F401 'unittest.mock.patch' imported but unused
+2026-01-15T09:47:41.8305104Z ./tests/test_main_blame.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8305529Z ./tests/test_main_blame.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8305950Z ./tests/test_main_blame.py:59:57: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8306414Z ./tests/test_main_branch.py:10:1: F811 redefinition of unused 'sys' from line 8
+2026-01-15T09:47:41.8306869Z ./tests/test_main_branch.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8307302Z ./tests/test_main_branch.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8307853Z ./tests/test_main_clean.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8308297Z ./tests/test_main_clean.py:3:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8308702Z ./tests/test_main_clean.py:15:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8309131Z ./tests/test_main_clean.py:17:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8309517Z ./tests/test_main_clean.py:121:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8310200Z ./tests/test_main_clean.py:174:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8310754Z ./tests/test_main_commit.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8311192Z ./tests/test_main_commit.py:7:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8311698Z ./tests/test_main_commit.py:87:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8312269Z ./tests/test_main_commit_command.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8312784Z ./tests/test_main_commit_command.py:11:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8313262Z ./tests/test_main_commit_command.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8313748Z ./tests/test_main_commit_command.py:52:36: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8314270Z ./tests/test_main_commit_command.py:53:84: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8314747Z ./tests/test_main_commit_command.py:70:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8315210Z ./tests/test_main_commit_command.py:80:42: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8315719Z ./tests/test_main_commit_command.py:86:36: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8316230Z ./tests/test_main_commit_command.py:87:95: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8316703Z ./tests/test_main_commit_command.py:100:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8317178Z ./tests/test_main_commit_command.py:137:59: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8317702Z ./tests/test_main_commit_command.py:138:37: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8318179Z ./tests/test_main_commit_command.py:142:9: E303 too many blank lines (2)
+2026-01-15T09:47:41.8318599Z ./tests/test_main_commit_command.py:151:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8319069Z ./tests/test_main_commit_command.py:165:36: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8319586Z ./tests/test_main_commit_command.py:166:84: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8320227Z ./tests/test_main_completion.py:4:1: F401 'sys' imported but unused
+2026-01-15T09:47:41.8320651Z ./tests/test_main_completion.py:8:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8321194Z ./tests/test_main_completion.py:35:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8321911Z ./tests/test_main_config_command.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8322374Z ./tests/test_main_context.py:13:1: F401 'main.parse_args' imported but unused
+2026-01-15T09:47:41.8322831Z ./tests/test_main_context.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8323285Z ./tests/test_main_context.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8323725Z ./tests/test_main_context.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8324167Z ./tests/test_main_context.py:25:76: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8324645Z ./tests/test_main_context.py:26:81: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8325119Z ./tests/test_main_context.py:28:71: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8325589Z ./tests/test_main_context.py:29:71: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8326172Z ./tests/test_main_context.py:64:53: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8326619Z ./tests/test_main_context.py:70:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8327046Z ./tests/test_main_context.py:84:48: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8327496Z ./tests/test_main_context.py:87:23: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8327945Z ./tests/test_main_context.py:87:38: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8328403Z ./tests/test_main_context.py:88:23: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8328856Z ./tests/test_main_context.py:88:40: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8329304Z ./tests/test_main_context.py:92:23: F541 f-string is missing placeholders
+2026-01-15T09:47:41.8329751Z ./tests/test_main_context.py:92:38: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8330421Z ./tests/test_main_dashboard.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8330966Z ./tests/test_main_dashboard.py:33:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8331501Z ./tests/test_main_diff.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8331926Z ./tests/test_main_diff.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8332314Z ./tests/test_main_diff.py:28:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8332790Z ./tests/test_main_diff.py:127:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8333340Z ./tests/test_main_diff_summary.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8333808Z ./tests/test_main_diff_summary.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8334350Z ./tests/test_main_diff_summary.py:88:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8334908Z ./tests/test_main_discard.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8335355Z ./tests/test_main_discard.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8335882Z ./tests/test_main_discard.py:152:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8336428Z ./tests/test_main_doctor.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8336857Z ./tests/test_main_doctor.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8337295Z ./tests/test_main_doctor.py:197:46: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8337771Z ./tests/test_main_doctor.py:198:44: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8338188Z ./tests/test_main_doctor.py:207:22: E201 whitespace after '{'
+2026-01-15T09:47:41.8338559Z ./tests/test_main_doctor.py:207:58: E202 whitespace before '}'
+2026-01-15T09:47:41.8339050Z ./tests/test_main_doctor.py:215:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8339816Z ./tests/test_main_empty_trash.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8340515Z ./tests/test_main_empty_trash.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8340985Z ./tests/test_main_empty_trash.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8341519Z ./tests/test_main_empty_trash.py:65:67: F841 local variable 'mock_input_call' is assigned to but never used
+2026-01-15T09:47:41.8342088Z ./tests/test_main_empty_trash.py:84:49: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8342583Z ./tests/test_main_empty_trash.py:91:38: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8343080Z ./tests/test_main_feature.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8343569Z ./tests/test_main_feature.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8344141Z ./tests/test_main_feature.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8344600Z ./tests/test_main_feature.py:40:38: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8345075Z ./tests/test_main_feature.py:57:47: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8345630Z ./tests/test_main_feature.py:202:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8346154Z ./tests/test_main_format.py:3:1: F401 'subprocess' imported but unused
+2026-01-15T09:47:41.8346590Z ./tests/test_main_format.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8347027Z ./tests/test_main_format.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8347538Z ./tests/test_main_format.py:142:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8348060Z ./tests/test_main_git.py:15:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8348472Z ./tests/test_main_git.py:17:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8348973Z ./tests/test_main_git.py:135:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8349501Z ./tests/test_main_glance.py:3:1: F401 'unittest.mock.ANY' imported but unused
+2026-01-15T09:47:41.8350148Z ./tests/test_main_glance.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8350603Z ./tests/test_main_glance.py:102:46: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8351080Z ./tests/test_main_glance.py:122:37: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8351621Z ./tests/test_main_glance.py:124:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8352163Z ./tests/test_main_help.py:2:1: F401 'unittest.mock.patch' imported but unused
+2026-01-15T09:47:41.8352589Z ./tests/test_main_help.py:8:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8353085Z ./tests/test_main_help.py:48:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8353612Z ./tests/test_main_history.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8354136Z ./tests/test_main_history.py:83:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8354677Z ./tests/test_main_init.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8355119Z ./tests/test_main_init.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8355543Z ./tests/test_main_init.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8355933Z ./tests/test_main_init.py:28:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8356347Z ./tests/test_main_init.py:161:65: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8356801Z ./tests/test_main_init.py:164:60: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8357330Z ./tests/test_main_init.py:172:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8357833Z ./tests/test_main_init.py:173:20: W292 no newline at end of file
+2026-01-15T09:47:41.8358393Z ./tests/test_main_interact.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8358841Z ./tests/test_main_interact.py:9:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8359299Z ./tests/test_main_interact.py:74:53: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8360052Z ./tests/test_main_interact.py:91:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8360619Z ./tests/test_main_interact.py:92:20: W292 no newline at end of file
+2026-01-15T09:47:41.8361063Z ./tests/test_main_last.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8361539Z ./tests/test_main_last.py:12:1: F401 'main._find_metrics_file' imported but unused
+2026-01-15T09:47:41.8361997Z ./tests/test_main_last.py:12:1: F401 'main._parse_metrics' imported but unused
+2026-01-15T09:47:41.8362602Z ./tests/test_main_last.py:12:1: F401 'main._display_metrics_table' imported but unused
+2026-01-15T09:47:41.8363077Z ./tests/test_main_last.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8363496Z ./tests/test_main_last.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8363901Z ./tests/test_main_last.py:59:18: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8364274Z ./tests/test_main_last.py:59:18: E117 over-indented
+2026-01-15T09:47:41.8364649Z ./tests/test_main_last.py:70:69: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8365179Z ./tests/test_main_last.py:108:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8365726Z ./tests/test_main_last_run_id.py:2:1: F401 'unittest.mock.patch' imported but unused
+2026-01-15T09:47:41.8366223Z ./tests/test_main_last_run_id.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8366681Z ./tests/test_main_last_run_id.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8367219Z ./tests/test_main_last_run_id.py:65:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8367766Z ./tests/test_main_lint.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8368189Z ./tests/test_main_lint.py:8:1: F401 'shutil' imported but unused
+2026-01-15T09:47:41.8368595Z ./tests/test_main_lint.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8369008Z ./tests/test_main_lint.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8369504Z ./tests/test_main_lint.py:228:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8370144Z ./tests/test_main_log.py:15:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8370571Z ./tests/test_main_log.py:17:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8371055Z ./tests/test_main_log.py:88:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8371603Z ./tests/test_main_logs.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8372067Z ./tests/test_main_logs.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8372485Z ./tests/test_main_logs.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8372902Z ./tests/test_main_logs.py:35:25: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8373353Z ./tests/test_main_logs.py:43:56: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8373795Z ./tests/test_main_logs.py:128:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8374168Z ./tests/test_main_logs.py:128:14: E117 over-indented
+2026-01-15T09:47:41.8374625Z ./tests/test_main_logs.py:185:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8375163Z ./tests/test_main_models.py:2:1: F401 'unittest.mock.patch' imported but unused
+2026-01-15T09:47:41.8375597Z ./tests/test_main_models.py:4:1: F401 'sys' imported but unused
+2026-01-15T09:47:41.8376121Z ./tests/test_main_models.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8376638Z ./tests/test_main_models.py:78:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8377168Z ./tests/test_main_next.py:11:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8377599Z ./tests/test_main_next.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8378007Z ./tests/test_main_next.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8378499Z ./tests/test_main_next.py:84:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8379022Z ./tests/test_main_patch.py:1:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8379403Z ./tests/test_main_patch.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8379996Z ./tests/test_main_patch.py:66:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8380662Z ./tests/test_main_plan.py:10:1: F401 'shared.config.Config' imported but unused
+2026-01-15T09:47:41.8381101Z ./tests/test_main_plan.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8381589Z ./tests/test_main_plan.py:105:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8382110Z ./tests/test_main_pr.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8382532Z ./tests/test_main_pr.py:3:1: F401 'subprocess' imported but unused
+2026-01-15T09:47:41.8382905Z ./tests/test_main_pr.py:5:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8383268Z ./tests/test_main_pr.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8383756Z ./tests/test_main_pr.py:117:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8384317Z ./tests/test_main_profile_command.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8384799Z ./tests/test_main_profile_command.py:3:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8385235Z ./tests/test_main_profile_command.py:4:1: F401 'sys' imported but unused
+2026-01-15T09:47:41.8385683Z ./tests/test_main_profile_command.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8386257Z ./tests/test_main_profile_command.py:192:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8386819Z ./tests/test_main_pull.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8387238Z ./tests/test_main_pull.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8387623Z ./tests/test_main_pull.py:67:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8388096Z ./tests/test_main_pull.py:129:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8388617Z ./tests/test_main_push.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8389034Z ./tests/test_main_push.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8389537Z ./tests/test_main_push.py:138:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8390145Z ./tests/test_main_restore.py:9:1: F401 'io' imported but unused
+2026-01-15T09:47:41.8390611Z ./tests/test_main_restore.py:10:1: F401 'contextlib.redirect_stdout' imported but unused
+2026-01-15T09:47:41.8391129Z ./tests/test_main_restore.py:15:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8391578Z ./tests/test_main_restore.py:17:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8391976Z ./tests/test_main_restore.py:75:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8392386Z ./tests/test_main_restore.py:84:14: E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8392776Z ./tests/test_main_restore.py:84:14: E117 over-indented
+2026-01-15T09:47:41.8393244Z ./tests/test_main_restore.py:102:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8393822Z ./tests/test_main_revert.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8394440Z ./tests/test_main_revert.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8394882Z ./tests/test_main_revert.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8395274Z ./tests/test_main_revert.py:91:5: E303 too many blank lines (2)
+2026-01-15T09:47:41.8395669Z ./tests/test_main_revert.py:92:5: E301 expected 1 blank line, found 0
+2026-01-15T09:47:41.8396180Z ./tests/test_main_revert.py:167:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8396735Z ./tests/test_main_review.py:3:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8397218Z ./tests/test_main_review.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8397657Z ./tests/test_main_review.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8398101Z ./tests/test_main_review.py:56:55: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8398703Z ./tests/test_main_review.py:71:54: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8399186Z ./tests/test_main_rewind.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8399651Z ./tests/test_main_rewind.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8400202Z ./tests/test_main_rewind.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8400631Z ./tests/test_main_rewind.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8401148Z ./tests/test_main_rewind.py:158:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8401683Z ./tests/test_main_setup.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8402103Z ./tests/test_main_setup.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8402612Z ./tests/test_main_setup.py:129:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8403159Z ./tests/test_main_snapshot.py:16:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8403616Z ./tests/test_main_snapshot.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8404029Z ./tests/test_main_sprint.py:8:1: F401 'subprocess' imported but unused
+2026-01-15T09:47:41.8404438Z ./tests/test_main_sprint.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8404827Z ./tests/test_main_stash.py:7:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8405229Z ./tests/test_main_stash.py:16:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8405645Z ./tests/test_main_stash.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8406142Z ./tests/test_main_stash.py:92:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8406644Z ./tests/test_main_stash_pop.py:7:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8407069Z ./tests/test_main_stash_pop.py:16:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8407528Z ./tests/test_main_stash_pop.py:18:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8408049Z ./tests/test_main_stash_pop.py:92:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8408587Z ./tests/test_main_status.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8409011Z ./tests/test_main_status.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8409516Z ./tests/test_main_status.py:102:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8410166Z ./tests/test_main_summary.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8410622Z ./tests/test_main_summary.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8411066Z ./tests/test_main_summary.py:106:51: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8411626Z ./tests/test_main_summary.py:136:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8412249Z ./tests/test_main_tag.py:7:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8412632Z ./tests/test_main_tag.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8413043Z ./tests/test_main_tag.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8413535Z ./tests/test_main_tag.py:114:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8414055Z ./tests/test_main_test.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8414467Z ./tests/test_main_test.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8414963Z ./tests/test_main_test.py:117:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8415471Z ./tests/test_main_trash.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8415900Z ./tests/test_main_trash.py:51:22: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8416449Z ./tests/test_main_tree.py:8:1: F401 'subprocess' imported but unused
+2026-01-15T09:47:41.8416873Z ./tests/test_main_tree.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8417295Z ./tests/test_main_tree.py:14:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8417785Z ./tests/test_main_tree.py:112:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8418435Z ./tests/test_main_undo.py:13:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8419076Z ./tests/test_main_undo.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8419722Z ./tests/test_main_undo.py:76:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8420472Z ./tests/test_main_watch.py:5:1: F401 'time' imported but unused
+2026-01-15T09:47:41.8421059Z ./tests/test_main_watch.py:10:1: F811 redefinition of unused 'run_watch' from line 8
+2026-01-15T09:47:41.8421591Z ./tests/test_main_watch.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8422200Z ./tests/test_main_watch.py:74:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8422941Z ./tests/test_main_workflow.py:2:1: F401 'unittest.mock.MagicMock' imported but unused
+2026-01-15T09:47:41.8423531Z ./tests/test_main_workflow.py:12:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8424201Z ./tests/test_main_workflow.py:132:20: W292 no newline at end of file
+2026-01-15T09:47:41.8424721Z ./tests/test_main_worktrees.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8425353Z ./tests/test_main_worktrees.py:194:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8426069Z ./tests/test_main_worktrees_create.py:7:1: F401 'os' imported but unused
+2026-01-15T09:47:41.8426582Z ./tests/test_main_worktrees_create.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8427170Z ./tests/test_main_worktrees_diff.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8437610Z ./tests/test_main_worktrees_diff.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8438260Z ./tests/test_main_worktrees_diff.py:52:17: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8438907Z ./tests/test_main_worktrees_diff.py:122:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8439529Z ./tests/test_main_worktrees_manage.py:2:1: F401 'unittest.mock.call' imported but unused
+2026-01-15T09:47:41.8440206Z ./tests/test_main_worktrees_manage.py:14:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8440734Z ./tests/test_main_worktrees_manage.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8441335Z ./tests/test_main_worktrees_manage.py:128:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8441913Z ./tests/test_main_worktrees_merge.py:7:1: F401 'sys' imported but unused
+2026-01-15T09:47:41.8442381Z ./tests/test_main_worktrees_merge.py:11:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8443136Z ./tests/test_main_worktrees_merge.py:127:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8443735Z ./tests/test_openrouter_integration.py:15:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8444236Z ./tests/test_openrouter_integration.py:23:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8444737Z ./tests/test_openrouter_integration.py:31:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8445220Z ./tests/test_openrouter_integration.py:46:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8445824Z ./tests/test_openrouter_integration.py:80:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8446406Z ./tests/test_shell.py:2:1: F401 'unittest.mock.patch' imported but unused
+2026-01-15T09:47:41.8446823Z ./tests/test_shell.py:5:1: F401 'pathlib.Path' imported but unused
+2026-01-15T09:47:41.8447350Z ./tests/test_shell.py:19:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8447758Z ./tests/test_shell.py:21:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8448229Z ./tests/test_shell.py:90:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8448732Z ./tests/test_sprint_extended.py:1:1: F401 'asyncio' imported but unused
+2026-01-15T09:47:41.8449254Z ./tests/test_sprint_extended.py:10:1: F401 'agents.shared.sprint.run_single_sprint' imported but unused
+2026-01-15T09:47:41.8449792Z ./tests/test_sprint_extended.py:28:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8450352Z ./tests/test_sprint_extended.py:49:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8450780Z ./tests/test_sprint_extended.py:59:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8451188Z ./tests/test_sprint_extended.py:75:62: W291 trailing whitespace
+2026-01-15T09:47:41.8451660Z ./tests/test_sprint_extended.py:77:13: E122 continuation line missing indentation or outdented
+2026-01-15T09:47:41.8452160Z ./tests/test_sprint_extended.py:79:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8452569Z ./tests/test_sprint_extended.py:87:67: W291 trailing whitespace
+2026-01-15T09:47:41.8452971Z ./tests/test_sprint_extended.py:91:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8453413Z ./tests/test_sprint_extended.py:101:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8453857Z ./tests/test_sprint_extended.py:105:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8454414Z ./tests/test_sprint_extended.py:112:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8454978Z ./tests/test_sprint_guardrail.py:12:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8455454Z ./tests/test_sprint_guardrail.py:23:90: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8455941Z ./tests/test_sprint_guardrail.py:70:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8456395Z ./tests/test_sprint_guardrail.py:108:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8456846Z ./tests/test_sprint_guardrail.py:112:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8457294Z ./tests/test_sprint_guardrail.py:115:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8457744Z ./tests/test_sprint_guardrail.py:117:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8458190Z ./tests/test_sprint_guardrail.py:131:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8458642Z ./tests/test_sprint_guardrail.py:135:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8459079Z ./tests/test_sprint_guardrail.py:138:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8459521Z ./tests/test_sprint_guardrail.py:140:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8460157Z ./tests/test_sprint_guardrail.py:143:52: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8460648Z ./tests/test_sprint_guardrail.py:148:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8461348Z ./tests/test_sprint_guardrail.py:149:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8461898Z ./tests/test_sprint_init.py:1:1: F401 'asyncio' imported but unused
+2026-01-15T09:47:41.8462297Z ./tests/test_sprint_init.py:2:1: F401 'json' imported but unused
+2026-01-15T09:47:41.8462695Z ./tests/test_sprint_init.py:16:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8463111Z ./tests/test_sprint_init.py:37:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8463523Z ./tests/test_sprint_init.py:42:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8463933Z ./tests/test_sprint_init.py:47:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8464365Z ./tests/test_sprint_init.py:55:53: E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8464808Z ./tests/test_sprint_init.py:56:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8465335Z ./tests/test_sprint_init.py:60:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8465745Z ./tests/test_sprint_init.py:64:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8466168Z ./tests/test_sprint_init.py:69:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8466436Z ./tests/test_sprint_init.py:73:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8466599Z ./tests/test_tui.py:8:1: E402 module level import not at top of file
+2026-01-15T09:47:41.8466746Z ./tests/test_tui.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8466923Z ./tests/test_tui.py:22:9: F401 'textual.pilot.Pilot' imported but unused
+2026-01-15T09:47:41.8467158Z ./tests/test_tui.py:44:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8467332Z ./tests/test_utils_security.py:13:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8467607Z ./tests/test_utils_security.py:77:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8467794Z ./tests/test_worktree_manager.py:10:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8467976Z ./tests/test_worktree_manager.py:21:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8468150Z ./tests/test_worktree_manager.py:28:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8468324Z ./tests/test_worktree_manager.py:41:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8468501Z ./tests/test_worktree_manager.py:48:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8468674Z ./tests/test_worktree_manager.py:53:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8468843Z ./tests/test_worktree_manager.py:57:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8469019Z ./tests/test_worktree_manager.py:64:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8469192Z ./tests/test_worktree_manager.py:68:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8469373Z ./tests/test_worktree_manager.py:79:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8469550Z ./tests/test_worktree_manager.py:83:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8469724Z ./tests/test_worktree_manager.py:90:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8470001Z ./tests/test_worktree_manager.py:93:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8470285Z ./tests/test_worktree_manager.py:98:1: E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8470471Z ./tests/verify_sprint_dispatch.py:9:1: E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8470647Z ./tests/verify_sprint_dispatch.py:12:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8470822Z ./tests/verify_sprint_dispatch.py:19:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8471001Z ./tests/verify_sprint_dispatch.py:26:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8471175Z ./tests/verify_sprint_dispatch.py:33:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8471354Z ./tests/verify_sprint_dispatch.py:35:1: W293 blank line contains whitespace
+2026-01-15T09:47:41.8471639Z 5     C901 'SprintManager.run_worker' is too complex (38)
+2026-01-15T09:47:41.8471750Z 192   E111 indentation is not a multiple of 4
+2026-01-15T09:47:41.8471878Z 22    E114 indentation is not a multiple of 4 (comment)
+2026-01-15T09:47:41.8471970Z 80    E117 over-indented (comment)
+2026-01-15T09:47:41.8472111Z 1     E122 continuation line missing indentation or outdented
+2026-01-15T09:47:41.8472202Z 1     E201 whitespace after '{'
+2026-01-15T09:47:41.8472288Z 1     E202 whitespace before '}'
+2026-01-15T09:47:41.8472405Z 106   E261 at least two spaces before inline comment
+2026-01-15T09:47:41.8472503Z 3     E301 expected 1 blank line, found 0
+2026-01-15T09:47:41.8472596Z 155   E302 expected 2 blank lines, found 1
+2026-01-15T09:47:41.8472686Z 35    E303 too many blank lines (2)
+2026-01-15T09:47:41.8472865Z 65    E305 expected 2 blank lines after class or function definition, found 1
+2026-01-15T09:47:41.8473083Z 74    E402 module level import not at top of file
+2026-01-15T09:47:41.8473203Z 21    E701 multiple statements on one line (colon)
+2026-01-15T09:47:41.8473287Z 2     E722 do not use bare 'except'
+2026-01-15T09:47:41.8473446Z 84    F401 'agents.gemini.agent.GeminiAgent' imported but unused
+2026-01-15T09:47:41.8473596Z 1     F402 import 'time' from line 2717 shadowed by loop variable
+2026-01-15T09:47:41.8473692Z 24    F541 f-string is missing placeholders
+2026-01-15T09:47:41.8473810Z 3     F811 redefinition of unused 'time' from line 21
+2026-01-15T09:47:41.8473979Z 18    F841 local variable 'manager_config' is assigned to but never used
+2026-01-15T09:47:41.8474064Z 6     W291 trailing whitespace
+2026-01-15T09:47:41.8474155Z 4     W292 no newline at end of file
+2026-01-15T09:47:41.8474248Z 149   W293 blank line contains whitespace
+2026-01-15T09:47:41.8474313Z 1052

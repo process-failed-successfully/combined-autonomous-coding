@@ -1,0 +1,6 @@
+﻿2026-01-15T09:50:33.7311300Z Post job cleanup.
+2026-01-15T09:50:33.9488213Z ##[group]Removing temp folder /home/runner/work/_temp/docker-actions-toolkit-UZnCPS
+2026-01-15T09:50:33.9501986Z ##[endgroup]
+2026-01-15T09:50:33.9502485Z ##[group]Post cache
+2026-01-15T09:50:33.9504366Z State not set
+2026-01-15T09:50:33.9505245Z ##[endgroup]

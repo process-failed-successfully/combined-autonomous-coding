@@ -1,0 +1,46 @@
+﻿2026-01-15T09:46:53.2703342Z ##[group]Run actions/setup-python@v5
+2026-01-15T09:46:53.2704596Z with:
+2026-01-15T09:46:53.2705498Z   python-version: 3.13.7
+2026-01-15T09:46:53.2706727Z   cache: pip
+2026-01-15T09:46:53.2707624Z   check-latest: false
+2026-01-15T09:46:53.2708905Z   token: ***
+2026-01-15T09:46:53.2709815Z   update-environment: true
+2026-01-15T09:46:53.2710938Z   allow-prereleases: false
+2026-01-15T09:46:53.2712009Z   freethreaded: false
+2026-01-15T09:46:53.2712956Z ##[endgroup]
+2026-01-15T09:46:53.4368035Z ##[group]Installed versions
+2026-01-15T09:46:53.4390186Z Version 3.13.7 was not found in the local cache
+2026-01-15T09:46:53.9207045Z Version 3.13.7 is available for downloading
+2026-01-15T09:46:53.9209170Z Download from "https://github.com/actions/python-versions/releases/download/3.13.7-16980743123/python-3.13.7-linux-24.04-x64.tar.gz"
+2026-01-15T09:46:54.7076501Z Extract downloaded archive
+2026-01-15T09:46:54.7179828Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/e435b608-84aa-4888-a384-ed16fbdaaa8a -f /home/runner/work/_temp/b5a988eb-2702-434e-b526-c0a7768f4b1a
+2026-01-15T09:46:56.8331346Z Execute installation script
+2026-01-15T09:46:56.8422435Z Check if Python hostedtoolcache folder exist...
+2026-01-15T09:46:56.8423226Z Create Python 3.13.7 folder
+2026-01-15T09:46:56.8440269Z Copy Python binaries to hostedtoolcache folder
+2026-01-15T09:46:57.4107369Z Create additional symlinks (Required for the UsePythonVersion Azure Pipelines task and the setup-python GitHub Action)
+2026-01-15T09:46:57.4150803Z Upgrading pip...
+2026-01-15T09:46:59.8080110Z Looking in links: /tmp/tmp4p3ktd2p
+2026-01-15T09:46:59.8083868Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages (25.2)
+2026-01-15T09:47:01.2236158Z Collecting pip
+2026-01-15T09:47:01.2884745Z Downloading pip-25.3-py3-none-any.whl.metadata (4.7 kB)
+2026-01-15T09:47:01.3086215Z Downloading pip-25.3-py3-none-any.whl (1.8 MB)
+2026-01-15T09:47:01.3817445Z ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 40.2 MB/s  0:00:00
+2026-01-15T09:47:01.3818113Z
+2026-01-15T09:47:01.3986570Z Installing collected packages: pip
+2026-01-15T09:47:01.3987300Z Attempting uninstall: pip
+2026-01-15T09:47:01.4015810Z Found existing installation: pip 25.2
+2026-01-15T09:47:01.4356222Z Uninstalling pip-25.2:
+2026-01-15T09:47:01.4411246Z Successfully uninstalled pip-25.2
+2026-01-15T09:47:02.3238657Z Successfully installed pip-25.3
+2026-01-15T09:47:02.3756150Z Create complete file
+2026-01-15T09:47:02.3791549Z Successfully set up CPython (3.13.7)
+2026-01-15T09:47:02.3792430Z ##[endgroup]
+2026-01-15T09:47:02.4351724Z [command]/opt/hostedtoolcache/Python/3.13.7/x64/bin/pip cache dir
+2026-01-15T09:47:02.5969994Z /home/runner/.cache/pip
+2026-01-15T09:47:02.7625836Z Cache hit for: setup-python-Linux-x64-24.04-Ubuntu-python-3.13.7-pip-2fd8fe7362e3830fed9494313a73567e09d89e895941f1d72b250d324bcac365
+2026-01-15T09:47:03.5068760Z Received 75866986 of 75866986 (100.0%), 111.8 MBs/sec
+2026-01-15T09:47:03.5070290Z Cache Size: ~72 MB (75866986 B)
+2026-01-15T09:47:03.5149827Z [command]/usr/bin/tar -xf /home/runner/work/_temp/4cc36aae-cc99-4f34-8eab-e7f078519d73/cache.tzst -P -C /home/runner/work/combined-autonomous-coding/combined-autonomous-coding --use-compress-program unzstd
+2026-01-15T09:47:03.6652486Z Cache restored successfully
+2026-01-15T09:47:03.6810925Z Cache restored from key: setup-python-Linux-x64-24.04-Ubuntu-python-3.13.7-pip-64884b49c5d5dc589bb2162de31baa5fda263108ce45beb766101aaa38038d07

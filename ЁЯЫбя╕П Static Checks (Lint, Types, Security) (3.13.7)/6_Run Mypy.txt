@@ -1,0 +1,18 @@
+﻿2026-01-15T09:47:41.8501845Z ##[group]Run export PYTHONPATH=$PYTHONPATH:$(pwd)
+2026-01-15T09:47:41.8502043Z [36;1mexport PYTHONPATH=$PYTHONPATH:$(pwd)[0m
+2026-01-15T09:47:41.8502332Z [36;1m# We use || echo to allow the build to pass even if Mypy finds issues, matching run_tests.sh behavior[0m
+2026-01-15T09:47:41.8502648Z [36;1mmypy . --ignore-missing-imports --no-strict-optional || echo "Mypy found issues (continuing for now)"[0m
+2026-01-15T09:47:41.8534782Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:41.8534860Z env:
+2026-01-15T09:47:41.8535022Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:41.8535217Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:41.8535361Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:41.8535499Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:41.8535639Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:41.8535783Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:41.8535899Z ##[endgroup]
+2026-01-15T09:47:42.0443272Z build/lib/agents/__init__.py: error: Duplicate module named "agents" (also at "./agents/__init__.py")
+2026-01-15T09:47:42.0444497Z build/lib/agents/__init__.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info
+2026-01-15T09:47:42.0445964Z build/lib/agents/__init__.py: note: Common resolutions include: a) using `--exclude` to avoid checking one of them, b) adding `__init__.py` somewhere, c) using `--explicit-package-bases` or adjusting MYPYPATH
+2026-01-15T09:47:42.0447051Z Found 1 error in 1 file (errors prevented further checking)
+2026-01-15T09:47:42.0485112Z Mypy found issues (continuing for now)

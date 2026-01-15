@@ -1,0 +1,35 @@
+﻿2026-01-15T09:46:51.0898186Z Current runner version: '2.330.0'
+2026-01-15T09:46:51.0922351Z ##[group]Runner Image Provisioner
+2026-01-15T09:46:51.0923287Z Hosted Compute Agent
+2026-01-15T09:46:51.0923863Z Version: 20251211.462
+2026-01-15T09:46:51.0924472Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2026-01-15T09:46:51.0925125Z Build Date: 2025-12-11T16:28:49Z
+2026-01-15T09:46:51.0926128Z Worker ID: {5a30c53e-3531-4569-9d97-cf4e730e2c4b}
+2026-01-15T09:46:51.0926871Z ##[endgroup]
+2026-01-15T09:46:51.0927353Z ##[group]Operating System
+2026-01-15T09:46:51.0927979Z Ubuntu
+2026-01-15T09:46:51.0928419Z 24.04.3
+2026-01-15T09:46:51.0928858Z LTS
+2026-01-15T09:46:51.0929259Z ##[endgroup]
+2026-01-15T09:46:51.0929831Z ##[group]Runner Image
+2026-01-15T09:46:51.0930324Z Image: ubuntu-24.04
+2026-01-15T09:46:51.0930801Z Version: 20260105.202.1
+2026-01-15T09:46:51.0931843Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260105.202/images/ubuntu/Ubuntu2404-Readme.md
+2026-01-15T09:46:51.0933173Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260105.202
+2026-01-15T09:46:51.0934373Z ##[endgroup]
+2026-01-15T09:46:51.0935397Z ##[group]GITHUB_TOKEN Permissions
+2026-01-15T09:46:51.0937771Z Contents: read
+2026-01-15T09:46:51.0938323Z Metadata: read
+2026-01-15T09:46:51.0938780Z ##[endgroup]
+2026-01-15T09:46:51.0940825Z Secret source: Actions
+2026-01-15T09:46:51.0941483Z Prepare workflow directory
+2026-01-15T09:46:51.1262241Z Prepare all required actions
+2026-01-15T09:46:51.1300186Z Getting action download info
+2026-01-15T09:46:51.4812554Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-15T09:46:51.9271185Z Download action repository 'aquasecurity/trivy-action@master' (SHA:22438a435773de8c97dc0958cc0b823c45b064ac)
+2026-01-15T09:46:52.2511328Z Getting action download info
+2026-01-15T09:46:52.4084464Z Download action repository 'aquasecurity/setup-trivy@e6c2c5e321ed9123bda567646e2f96565e34abe1' (SHA:e6c2c5e321ed9123bda567646e2f96565e34abe1)
+2026-01-15T09:46:52.6055150Z Download action repository 'actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809' (SHA:0400d5f644dc74513175e3cd8d07132dd4860809)
+2026-01-15T09:46:52.7614909Z Getting action download info
+2026-01-15T09:46:52.8837540Z Download action repository 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8' (SHA:08c6903cd8c0fde910a37f88322edcfb5dd907a8)
+2026-01-15T09:46:53.0331010Z Complete job name: 🛡️ Container Security Scan

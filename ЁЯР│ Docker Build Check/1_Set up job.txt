@@ -1,0 +1,31 @@
+﻿2026-01-15T09:46:51.3948530Z Current runner version: '2.330.0'
+2026-01-15T09:46:51.3972593Z ##[group]Runner Image Provisioner
+2026-01-15T09:46:51.3973472Z Hosted Compute Agent
+2026-01-15T09:46:51.3974090Z Version: 20251211.462
+2026-01-15T09:46:51.3974681Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2026-01-15T09:46:51.3975317Z Build Date: 2025-12-11T16:28:49Z
+2026-01-15T09:46:51.3976017Z Worker ID: {93f88ab4-52c4-48fc-b23f-23ce9243e115}
+2026-01-15T09:46:51.3976714Z ##[endgroup]
+2026-01-15T09:46:51.3977196Z ##[group]Operating System
+2026-01-15T09:46:51.3977801Z Ubuntu
+2026-01-15T09:46:51.3978232Z 24.04.3
+2026-01-15T09:46:51.3978669Z LTS
+2026-01-15T09:46:51.3979107Z ##[endgroup]
+2026-01-15T09:46:51.3979631Z ##[group]Runner Image
+2026-01-15T09:46:51.3980291Z Image: ubuntu-24.04
+2026-01-15T09:46:51.3980846Z Version: 20260105.202.1
+2026-01-15T09:46:51.3981866Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260105.202/images/ubuntu/Ubuntu2404-Readme.md
+2026-01-15T09:46:51.3983190Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260105.202
+2026-01-15T09:46:51.3984393Z ##[endgroup]
+2026-01-15T09:46:51.3985317Z ##[group]GITHUB_TOKEN Permissions
+2026-01-15T09:46:51.3987108Z Contents: read
+2026-01-15T09:46:51.3987667Z Metadata: read
+2026-01-15T09:46:51.3988111Z ##[endgroup]
+2026-01-15T09:46:51.3990344Z Secret source: Actions
+2026-01-15T09:46:51.3991018Z Prepare workflow directory
+2026-01-15T09:46:51.4366874Z Prepare all required actions
+2026-01-15T09:46:51.4406459Z Getting action download info
+2026-01-15T09:46:51.8923650Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-15T09:46:52.6019412Z Download action repository 'docker/setup-buildx-action@v3' (SHA:8d2750c68a42422c14e847fe6c8ac0403b4cbd6f)
+2026-01-15T09:46:53.7334470Z Download action repository 'docker/build-push-action@v5' (SHA:ca052bb54ab0790a636c9b5f226502c73d547a25)
+2026-01-15T09:46:55.1029496Z Complete job name: 🐳 Docker Build Check

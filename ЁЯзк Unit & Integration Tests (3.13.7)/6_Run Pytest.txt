@@ -1,0 +1,503 @@
+﻿2026-01-15T09:47:30.8655134Z ##[group]Run export PYTHONPATH=$PYTHONPATH:$(pwd)
+2026-01-15T09:47:30.8655518Z [36;1mexport PYTHONPATH=$PYTHONPATH:$(pwd)[0m
+2026-01-15T09:47:30.8656037Z [36;1mpytest --cov=. --cov-report=term-missing tests/[0m
+2026-01-15T09:47:30.8687009Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:30.8687239Z env:
+2026-01-15T09:47:30.8687489Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8687904Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:30.8688314Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8688687Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8689042Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8689401Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:30.8689694Z ##[endgroup]
+2026-01-15T09:47:33.8180829Z ============================= test session starts ==============================
+2026-01-15T09:47:33.8181808Z platform linux -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0
+2026-01-15T09:47:33.8182485Z rootdir: /home/runner/work/combined-autonomous-coding/combined-autonomous-coding
+2026-01-15T09:47:33.8183090Z configfile: pyproject.toml
+2026-01-15T09:47:33.8183428Z plugins: cov-7.0.0, anyio-4.12.1
+2026-01-15T09:47:33.8183756Z collected 585 items
+2026-01-15T09:47:33.8183932Z
+2026-01-15T09:47:33.8311464Z tests/test_agent_jira_flow.py ....                                       [  0%]
+2026-01-15T09:47:33.8352362Z tests/test_agent_parity.py ...                                           [  1%]
+2026-01-15T09:47:33.8640231Z tests/test_base_agent.py .........                                       [  2%]
+2026-01-15T09:47:33.8783215Z tests/test_base_agent_persistence.py ...                                 [  3%]
+2026-01-15T09:47:34.0310152Z tests/test_cherry_pick.py ...                                            [  3%]
+2026-01-15T09:47:34.1891128Z tests/test_cli_agent_launcher.py ........                                [  5%]
+2026-01-15T09:47:34.2016643Z tests/test_cli_env.py ..                                                 [  5%]
+2026-01-15T09:47:34.2544761Z tests/test_cli_launcher.py ......                                        [  6%]
+2026-01-15T09:47:34.2930966Z tests/test_cli_mgmt.py ..                                                [  6%]
+2026-01-15T09:47:34.3477179Z tests/test_cli_utils.py .............                                    [  9%]
+2026-01-15T09:47:34.3614114Z tests/test_cli_utils_dashboard.py .....                                  [  9%]
+2026-01-15T09:47:34.3662508Z tests/test_commands.py ...                                               [ 10%]
+2026-01-15T09:47:34.4273709Z tests/test_config_loader.py ..........                                   [ 12%]
+2026-01-15T09:47:34.4600353Z tests/test_config_manager.py ......                                      [ 13%]
+2026-01-15T09:47:34.4817795Z tests/test_config_validation.py .......                                  [ 14%]
+2026-01-15T09:47:34.4915109Z tests/test_configure.py .                                                [ 14%]
+2026-01-15T09:47:35.1660517Z tests/test_cursor_agent.py .....                                         [ 15%]
+2026-01-15T09:47:40.2310440Z tests/test_cursor_client.py ....                                         [ 16%]
+2026-01-15T09:47:40.2748528Z tests/test_database.py ...                                               [ 16%]
+2026-01-15T09:47:40.8548641Z tests/test_gemini_agent.py ....                                          [ 17%]
+2026-01-15T09:47:45.9441854Z tests/test_gemini_client.py ....                                         [ 17%]
+2026-01-15T09:47:45.9523704Z tests/test_git_auth.py ..                                                [ 18%]
+2026-01-15T09:47:45.9711829Z tests/test_git_wrapper.py .........                                      [ 19%]
+2026-01-15T09:47:45.9813602Z tests/test_github_client.py .....                                        [ 20%]
+2026-01-15T09:47:45.9859724Z tests/test_iteration_metrics.py .                                        [ 20%]
+2026-01-15T09:47:46.0150187Z tests/test_jira_integration.py ...           WARNING  Failed to push metrics to gateway: <urlopen telemetry.py:398
+2026-01-15T09:47:46.0151171Z                     error [Errno 111] Connection refused>
+2026-01-15T09:47:46.0433330Z ....                                   [ 22%]
+2026-01-15T09:47:46.0634605Z tests/test_jira_integration_cli.py ...                                   [ 22%]
+2026-01-15T09:47:46.1564750Z tests/test_jira_mode_integration.py ..                                   [ 22%]
+2026-01-15T09:47:46.1604142Z tests/test_log_handler.py ..                                             [ 23%]
+2026-01-15T09:47:46.4041906Z tests/test_main.py ...........                                           [ 25%]
+2026-01-15T09:47:46.4111107Z tests/test_main_archive.py ..                                            [ 25%]
+2026-01-15T09:47:46.4463974Z tests/test_main_artifacts.py ..........                                  [ 27%]
+2026-01-15T09:47:46.4723691Z tests/test_main_benchmark.py ...........                                 [ 29%]
+2026-01-15T09:47:46.5973696Z tests/test_main_blame.py .....                                           [ 29%]
+2026-01-15T09:47:46.7254267Z tests/test_main_branch.py .....                                          [ 30%]
+2026-01-15T09:47:46.8246773Z tests/test_main_clean.py .......                                         [ 31%]
+2026-01-15T09:47:46.8316897Z tests/test_main_commit.py ..                                             [ 32%]
+2026-01-15T09:47:46.9171665Z tests/test_main_commit_command.py .....                                  [ 33%]
+2026-01-15T09:47:46.9214056Z tests/test_main_completion.py ..                                         [ 33%]
+2026-01-15T09:47:46.9514770Z tests/test_main_config_command.py ........                               [ 34%]
+2026-01-15T09:47:46.9869661Z tests/test_main_context.py ..                                            [ 35%]
+2026-01-15T09:47:46.9893534Z tests/test_main_dashboard.py .                                           [ 35%]
+2026-01-15T09:47:47.1280082Z tests/test_main_diff.py ....                                             [ 36%]
+2026-01-15T09:47:47.1672172Z tests/test_main_diff_summary.py ...                                      [ 36%]
+2026-01-15T09:47:47.6694789Z tests/test_main_discard.py .........                                     [ 38%]
+2026-01-15T09:47:47.8937724Z tests/test_main_doctor.py ..........                                     [ 39%]
+2026-01-15T09:47:47.9052487Z tests/test_main_empty_trash.py .....                                     [ 40%]
+2026-01-15T09:47:48.0559891Z tests/test_main_feature.py .........                                     [ 42%]
+2026-01-15T09:47:48.0693496Z tests/test_main_format.py .....                                          [ 43%]
+2026-01-15T09:47:48.2814601Z tests/test_main_git.py ......                                            [ 44%]
+2026-01-15T09:47:48.2930629Z tests/test_main_glance.py ....                                           [ 44%]
+2026-01-15T09:47:48.2951269Z tests/test_main_help.py .                                                [ 44%]
+2026-01-15T09:47:48.3029980Z tests/test_main_history.py ...                                           [ 45%]
+2026-01-15T09:47:48.3213892Z tests/test_main_init.py ......                                           [ 46%]
+2026-01-15T09:47:48.3332722Z tests/test_main_interact.py .....                                        [ 47%]
+2026-01-15T09:47:48.3405673Z tests/test_main_last.py ...                                              [ 47%]
+2026-01-15T09:47:48.3462411Z tests/test_main_last_run_id.py ...                                       [ 48%]
+2026-01-15T09:47:48.3715043Z tests/test_main_lint.py .........                                        [ 49%]
+2026-01-15T09:47:48.4602397Z tests/test_main_log.py ...                                               [ 50%]
+2026-01-15T09:47:48.5636572Z tests/test_main_logs.py ........                                         [ 51%]
+2026-01-15T09:47:48.5687743Z tests/test_main_models.py ...                                            [ 52%]
+2026-01-15T09:47:48.5800565Z tests/test_main_next.py .....                                            [ 53%]
+2026-01-15T09:47:48.6388919Z tests/test_main_patch.py ....                                            [ 53%]
+2026-01-15T09:47:48.6499665Z tests/test_main_plan.py ..                                               [ 54%]
+2026-01-15T09:47:48.6648596Z tests/test_main_pr.py ....                                               [ 54%]
+2026-01-15T09:47:48.7019344Z tests/test_main_profile_command.py ..........                            [ 56%]
+2026-01-15T09:47:48.7806050Z tests/test_main_pull.py .....                                            [ 57%]
+2026-01-15T09:47:48.8902863Z tests/test_main_push.py ......                                           [ 58%]
+2026-01-15T09:47:48.9090594Z tests/test_main_restore.py ...                                           [ 58%]
+2026-01-15T09:47:49.3947122Z tests/test_main_revert.py .........                                      [ 60%]
+2026-01-15T09:47:49.5398290Z tests/test_main_review.py .....                                          [ 61%]
+2026-01-15T09:47:49.9029680Z tests/test_main_rewind.py .....                                          [ 62%]
+2026-01-15T09:47:49.9218580Z tests/test_main_setup.py .......                                         [ 63%]
+2026-01-15T09:47:49.9520265Z tests/test_main_snapshot.py .......                                      [ 64%]
+2026-01-15T09:47:49.9608929Z tests/test_main_sprint.py ....                                           [ 65%]
+2026-01-15T09:47:50.1081133Z tests/test_main_stash.py ....                                            [ 65%]
+2026-01-15T09:47:50.2547685Z tests/test_main_stash_pop.py ....                                        [ 66%]
+2026-01-15T09:47:50.2682574Z tests/test_main_status.py ....                                           [ 67%]
+2026-01-15T09:47:50.2890173Z tests/test_main_summary.py .......                                       [ 68%]
+2026-01-15T09:47:50.3813129Z tests/test_main_tag.py .....                                             [ 69%]
+2026-01-15T09:47:50.3999661Z tests/test_main_test.py .......                                          [ 70%]
+2026-01-15T09:47:50.4375560Z tests/test_main_trash.py ...............                                 [ 73%]
+2026-01-15T09:47:50.4553458Z tests/test_main_tree.py ......                                           [ 74%]
+2026-01-15T09:47:50.5047139Z tests/test_main_undo.py .                                                [ 74%]
+2026-01-15T09:47:50.5134863Z tests/test_main_watch.py ...                                             [ 74%]
+2026-01-15T09:47:50.5393787Z tests/test_main_workflow.py .............                                [ 77%]
+2026-01-15T09:47:51.0796787Z tests/test_main_worktrees.py ..........                                  [ 78%]
+2026-01-15T09:47:51.0948522Z tests/test_main_worktrees_create.py .....                                [ 79%]
+2026-01-15T09:47:51.1984025Z tests/test_main_worktrees_diff.py ....                                   [ 80%]
+2026-01-15T09:47:51.3618860Z tests/test_main_worktrees_manage.py .....                                [ 81%]
+2026-01-15T09:47:51.4627097Z tests/test_main_worktrees_merge.py ..                                    [ 81%]
+2026-01-15T09:47:51.4858350Z tests/test_metrics.py ....                                               [ 82%]
+2026-01-15T09:47:51.5302361Z tests/test_notifications.py ......                                       [ 83%]
+2026-01-15T09:47:51.5619553Z tests/test_pre_flight.py ....                                            [ 83%]
+2026-01-15T09:47:51.5649313Z tests/test_prompt_loading.py .                                           [ 84%]
+2026-01-15T09:47:51.5817108Z tests/test_session_manager.py ....                                       [ 84%]
+2026-01-15T09:47:51.7082939Z tests/test_shared_modules.py ............                                [ 86%]
+2026-01-15T09:47:51.7288049Z tests/test_shell.py ...........                                          [ 88%]
+2026-01-15T09:47:51.7496771Z tests/test_sprint_extended.py ...                                        [ 89%]
+2026-01-15T09:47:51.8484504Z tests/test_sprint_guardrail.py ....                                      [ 89%]
+2026-01-15T09:47:51.8735306Z tests/test_sprint_init.py ..                                             [ 90%]
+2026-01-15T09:47:52.8873153Z tests/test_sprint_parallel.py .                                          [ 90%]
+2026-01-15T09:47:52.9057173Z tests/test_telemetry.py ...                                              [ 90%]
+2026-01-15T09:47:53.0608027Z tests/test_telemetry_extended.py .........                               [ 92%]
+2026-01-15T09:47:53.2385317Z tests/test_tui.py ..                                                     [ 92%]
+2026-01-15T09:47:53.2653805Z tests/test_utils.py ....                                                 [ 93%]
+2026-01-15T09:47:53.2710636Z tests/test_utils_agent_id.py ....                                        [ 94%]
+2026-01-15T09:47:53.5210206Z tests/test_utils_extended.py .................                           [ 97%]
+2026-01-15T09:47:53.5306015Z tests/test_utils_security.py ....                                        [ 97%]
+2026-01-15T09:47:53.5829199Z tests/test_workflow.py ........                                          [ 99%]
+2026-01-15T09:47:55.1009997Z tests/test_worktree_manager.py .....                                     [100%]
+2026-01-15T09:47:55.1010706Z
+2026-01-15T09:47:55.1010976Z =============================== warnings summary ===============================
+2026-01-15T09:47:55.1032978Z tests/test_cursor_client.py::TestCursorClient::test_run_command_timeout
+2026-01-15T09:47:55.1034534Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:182: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T09:47:55.1035842Z   Coroutine created at (most recent call last)
+2026-01-15T09:47:55.1041238Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T09:47:55.1041868Z       self.run_forever()
+2026-01-15T09:47:55.1042403Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T09:47:55.1042897Z       self._run_once()
+2026-01-15T09:47:55.1043358Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T09:47:55.1043831Z       handle._run()
+2026-01-15T09:47:55.1044232Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T09:47:55.1044703Z       self._context.run(self._callback, *self._args)
+2026-01-15T09:47:55.1045196Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T09:47:55.1045681Z       return await func(*newargs, **newkeywargs)
+2026-01-15T09:47:55.1046696Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_cursor_client.py", line 79, in test_run_command_timeout
+2026-01-15T09:47:55.1047396Z       await client.run_command("prompt", MagicMock())
+2026-01-15T09:47:55.1048023Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/cursor/client.py", line 115, in run_command
+2026-01-15T09:47:55.1048669Z       stdout, stderr, returncode = await self._run_subprocess(
+2026-01-15T09:47:55.1049359Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 182, in _run_subprocess
+2026-01-15T09:47:55.1049968Z       process.kill()
+2026-01-15T09:47:55.1050423Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T09:47:55.1050916Z       return self._mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1051419Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T09:47:55.1051916Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1052485Z     process.kill()
+2026-01-15T09:47:55.1052913Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1053493Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1053882Z
+2026-01-15T09:47:55.1054001Z tests/test_database.py::test_signal_creation
+2026-01-15T09:47:55.1054289Z tests/test_database.py::test_agent_question
+2026-01-15T09:47:55.1054568Z tests/test_database.py::test_agent_knowledge
+2026-01-15T09:47:55.1055732Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/sqlalchemy/sql/schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+2026-01-15T09:47:55.1057201Z     return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+2026-01-15T09:47:55.1057463Z
+2026-01-15T09:47:55.1057661Z tests/test_gemini_agent.py::TestGeminiAgent::test_run_agent_session_basic
+2026-01-15T09:47:55.1058430Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2247: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f85ae7a0>
+2026-01-15T09:47:55.1059099Z     def __init__(self, name, parent):
+2026-01-15T09:47:55.1059433Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1059976Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1060359Z
+2026-01-15T09:47:55.1060545Z tests/test_gemini_agent.py::TestGeminiAgent::test_run_agent_session_basic
+2026-01-15T09:47:55.1061298Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2247: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f84605e0>
+2026-01-15T09:47:55.1061947Z     def __init__(self, name, parent):
+2026-01-15T09:47:55.1062267Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1062803Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1063182Z
+2026-01-15T09:47:55.1063363Z tests/test_gemini_agent.py::TestGeminiAgent::test_run_agent_session_error
+2026-01-15T09:47:55.1064144Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/site-packages/rich/text.py:1142: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f85686d0>
+2026-01-15T09:47:55.1064909Z     _line_appends = [line._spans.append for line in new_lines._lines]
+2026-01-15T09:47:55.1065314Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1065839Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1066213Z
+2026-01-15T09:47:55.1066580Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_failure
+2026-01-15T09:47:55.1067450Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:92: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T09:47:55.1068252Z   Coroutine created at (most recent call last)
+2026-01-15T09:47:55.1068811Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T09:47:55.1069317Z       self.run_forever()
+2026-01-15T09:47:55.1069777Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T09:47:55.1070247Z       self._run_once()
+2026-01-15T09:47:55.1070689Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T09:47:55.1071154Z       handle._run()
+2026-01-15T09:47:55.1071558Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T09:47:55.1072036Z       self._context.run(self._callback, *self._args)
+2026-01-15T09:47:55.1072692Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T09:47:55.1073287Z       return await func(*newargs, **newkeywargs)
+2026-01-15T09:47:55.1073976Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 119, in test_run_command_failure
+2026-01-15T09:47:55.1074680Z       res = await client.run_command("prompt", MagicMock())
+2026-01-15T09:47:55.1075339Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T09:47:55.1075997Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T09:47:55.1076944Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 92, in _run_subprocess
+2026-01-15T09:47:55.1077643Z       process.stdin.write(input_str.encode())
+2026-01-15T09:47:55.1078146Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T09:47:55.1078623Z       return self._mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1079091Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T09:47:55.1079582Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1079882Z     process.stdin.write(input_str.encode())
+2026-01-15T09:47:55.1080238Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1080784Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1081173Z
+2026-01-15T09:47:55.1081359Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_failure
+2026-01-15T09:47:55.1082232Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:94: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T09:47:55.1083032Z   Coroutine created at (most recent call last)
+2026-01-15T09:47:55.1083575Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T09:47:55.1084077Z       self.run_forever()
+2026-01-15T09:47:55.1084528Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T09:47:55.1085013Z       self._run_once()
+2026-01-15T09:47:55.1085439Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T09:47:55.1085901Z       handle._run()
+2026-01-15T09:47:55.1086440Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T09:47:55.1086996Z       self._context.run(self._callback, *self._args)
+2026-01-15T09:47:55.1087492Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T09:47:55.1087963Z       return await func(*newargs, **newkeywargs)
+2026-01-15T09:47:55.1088645Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 119, in test_run_command_failure
+2026-01-15T09:47:55.1089333Z       res = await client.run_command("prompt", MagicMock())
+2026-01-15T09:47:55.1089970Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T09:47:55.1090610Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T09:47:55.1091291Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 94, in _run_subprocess
+2026-01-15T09:47:55.1091901Z       process.stdin.close()
+2026-01-15T09:47:55.1092333Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T09:47:55.1092957Z       return self._mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1093542Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T09:47:55.1094032Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1094318Z     process.stdin.close()
+2026-01-15T09:47:55.1094627Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1095171Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1095559Z
+2026-01-15T09:47:55.1095746Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_timeout
+2026-01-15T09:47:55.1096857Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:92: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T09:47:55.1097661Z   Coroutine created at (most recent call last)
+2026-01-15T09:47:55.1098206Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T09:47:55.1098718Z       self.run_forever()
+2026-01-15T09:47:55.1099167Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T09:47:55.1099639Z       self._run_once()
+2026-01-15T09:47:55.1100070Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T09:47:55.1100522Z       handle._run()
+2026-01-15T09:47:55.1100901Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T09:47:55.1101372Z       self._context.run(self._callback, *self._args)
+2026-01-15T09:47:55.1101862Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T09:47:55.1102324Z       return await func(*newargs, **newkeywargs)
+2026-01-15T09:47:55.1102994Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 72, in test_run_command_timeout
+2026-01-15T09:47:55.1103680Z       await client.run_command("prompt", MagicMock())
+2026-01-15T09:47:55.1104295Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T09:47:55.1104933Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T09:47:55.1105608Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 92, in _run_subprocess
+2026-01-15T09:47:55.1106233Z       process.stdin.write(input_str.encode())
+2026-01-15T09:47:55.1106948Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T09:47:55.1107422Z       return self._mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1107892Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T09:47:55.1108378Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1108682Z     process.stdin.write(input_str.encode())
+2026-01-15T09:47:55.1109040Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1109590Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1109995Z
+2026-01-15T09:47:55.1110186Z tests/test_gemini_client.py::TestGeminiClient::test_run_command_timeout
+2026-01-15T09:47:55.1111066Z   /home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py:94: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+2026-01-15T09:47:55.1111874Z   Coroutine created at (most recent call last)
+2026-01-15T09:47:55.1112422Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+2026-01-15T09:47:55.1112936Z       self.run_forever()
+2026-01-15T09:47:55.1113563Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+2026-01-15T09:47:55.1114153Z       self._run_once()
+2026-01-15T09:47:55.1114588Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/base_events.py", line 2042, in _run_once
+2026-01-15T09:47:55.1115048Z       handle._run()
+2026-01-15T09:47:55.1115434Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/asyncio/events.py", line 89, in _run
+2026-01-15T09:47:55.1115907Z       self._context.run(self._callback, *self._args)
+2026-01-15T09:47:55.1116515Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1443, in patched
+2026-01-15T09:47:55.1116989Z       return await func(*newargs, **newkeywargs)
+2026-01-15T09:47:55.1117661Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/tests/test_gemini_client.py", line 72, in test_run_command_timeout
+2026-01-15T09:47:55.1118338Z       await client.run_command("prompt", MagicMock())
+2026-01-15T09:47:55.1118962Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/gemini/client.py", line 64, in run_command
+2026-01-15T09:47:55.1119603Z       stdout, stderr, _returncode = await self._run_subprocess(
+2026-01-15T09:47:55.1120282Z     File "/home/runner/work/combined-autonomous-coding/combined-autonomous-coding/agents/shared/base_client.py", line 94, in _run_subprocess
+2026-01-15T09:47:55.1120893Z       process.stdin.close()
+2026-01-15T09:47:55.1121336Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1169, in __call__
+2026-01-15T09:47:55.1121806Z       return self._mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1122286Z     File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 1173, in _mock_call
+2026-01-15T09:47:55.1122769Z       return self._execute_mock_call(*args, **kwargs)
+2026-01-15T09:47:55.1123052Z     process.stdin.close()
+2026-01-15T09:47:55.1123367Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1123918Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1124308Z
+2026-01-15T09:47:55.1124452Z tests/test_main.py::TestMain::test_main_clean_list_command
+2026-01-15T09:47:55.1124953Z   <frozen os>:717: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f84618a0>
+2026-01-15T09:47:55.1125494Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1126022Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1126636Z
+2026-01-15T09:47:55.1126805Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T09:47:55.1127539Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f8461030>
+2026-01-15T09:47:55.1128239Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T09:47:55.1128616Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1129189Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1129573Z
+2026-01-15T09:47:55.1129732Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T09:47:55.1130462Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f84635b0>
+2026-01-15T09:47:55.1131141Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T09:47:55.1131504Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1132040Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1132418Z
+2026-01-15T09:47:55.1132577Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T09:47:55.1133425Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f7404b80>
+2026-01-15T09:47:55.1134206Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T09:47:55.1134567Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1135121Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1135503Z
+2026-01-15T09:47:55.1135662Z tests/test_main_branch.py::TestMainBranch::test_branch_checkout
+2026-01-15T09:47:55.1136594Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f74049a0>
+2026-01-15T09:47:55.1137280Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T09:47:55.1137640Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1138179Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1138560Z
+2026-01-15T09:47:55.1138733Z tests/test_main_clean.py::TestMainClean::test_interactive_confirm_yes
+2026-01-15T09:47:55.1139466Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py:2193: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fc3f8462f20>
+2026-01-15T09:47:55.1140138Z     setattr(_type, entry, MagicProxy(entry, self))
+2026-01-15T09:47:55.1140494Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1141018Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1141400Z
+2026-01-15T09:47:55.1141552Z tests/test_main_plan.py::TestMainPlan::test_run_plan_success
+2026-01-15T09:47:55.1142148Z   /opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/traceback.py:269: RuntimeWarning: coroutine 'sleep' was never awaited
+2026-01-15T09:47:55.1142683Z     tb.tb_frame.clear()
+2026-01-15T09:47:55.1142981Z   Enable tracemalloc to get traceback where the object was allocated.
+2026-01-15T09:47:55.1143519Z   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+2026-01-15T09:47:55.1143898Z
+2026-01-15T09:47:55.1144087Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2026-01-15T09:47:55.1144497Z ================================ tests coverage ================================
+2026-01-15T09:47:55.1144902Z _______________ coverage: platform linux, python 3.13.7-final-0 ________________
+2026-01-15T09:47:55.1145178Z
+2026-01-15T09:47:55.1145298Z Name                                   Stmts   Miss  Cover   Missing
+2026-01-15T09:47:55.1145634Z --------------------------------------------------------------------
+2026-01-15T09:47:55.1145971Z agents/__init__.py                         0      0   100%
+2026-01-15T09:47:55.1146629Z agents/cli.py                            172     31    82%   56, 68-70, 131, 133, 153-155, 163-165, 168-171, 233-234, 242-245, 255-256, 259-260, 267, 270-271, 279, 297, 301
+2026-01-15T09:47:55.1147263Z agents/config_manager.py                  96      9    91%   49-50, 83, 114-119, 123
+2026-01-15T09:47:55.1147666Z agents/cursor/__init__.py                  2      0   100%
+2026-01-15T09:47:55.1148169Z agents/cursor/agent.py                   125     58    54%   44-62, 79, 88-99, 106-122, 146-149, 152-156, 164-165, 169-178, 190, 228, 242-250
+2026-01-15T09:47:55.1148725Z agents/cursor/client.py                   58      6    90%   111-112, 131, 135-136, 150
+2026-01-15T09:47:55.1149116Z agents/gemini/__init__.py                  2      0   100%
+2026-01-15T09:47:55.1149578Z agents/gemini/agent.py                   119     46    61%   42-60, 77, 86-97, 109-125, 138, 140, 159-163, 169-170, 174-183, 195
+2026-01-15T09:47:55.1150048Z agents/gemini/client.py                   32      0   100%
+2026-01-15T09:47:55.1150379Z agents/local/__init__.py                   3      0   100%
+2026-01-15T09:47:55.1150887Z agents/local/agent.py                    102     86    16%   31-184, 193, 203-207, 214-215
+2026-01-15T09:47:55.1151420Z agents/local/client.py                    48     36    25%   18-24, 35-96
+2026-01-15T09:47:55.1151798Z agents/openrouter/__init__.py              2      0   100%
+2026-01-15T09:47:55.1152187Z agents/openrouter/agent.py               103     87    16%   27-187, 195, 205-208, 214-215
+2026-01-15T09:47:55.1152640Z agents/openrouter/client.py               61     49    20%   17-26, 44-115
+2026-01-15T09:47:55.1153069Z agents/pre_flight.py                      66      9    86%   21-22, 24-25, 55, 76-78, 106
+2026-01-15T09:47:55.1153477Z agents/runner.py                          89     89     0%   1-149
+2026-01-15T09:47:55.1153926Z agents/session_manager.py                100     23    77%   39-40, 51-52, 63, 99-118, 123, 137-139, 141-143, 153
+2026-01-15T09:47:55.1154376Z agents/shared/__init__.py                  0      0   100%
+2026-01-15T09:47:55.1155328Z agents/shared/base_agent.py              382    155    59%   32-53, 102-110, 139-141, 153-154, 156-158, 166-176, 212, 245-246, 269-286, 292-307, 322, 327-328, 345, 365-380, 401, 407-408, 414-428, 437-438, 442-446, 455, 458, 461-468, 478, 489-514, 528, 550-553, 562, 577, 584, 587-589, 596, 612-615, 619-622, 626-627, 636
+2026-01-15T09:47:55.1156511Z agents/shared/base_client.py              85     17    80%   85-87, 115-116, 122-123, 156-159, 165, 172-176, 183-184
+2026-01-15T09:47:55.1157010Z agents/shared/prompts.py                  37      9    76%   31, 41, 76-83
+2026-01-15T09:47:55.1157990Z agents/shared/sprint.py                  463    168    64%   34-36, 68, 78-88, 107-109, 111, 113, 123, 138, 148, 187-205, 234-241, 249, 277-281, 291-292, 323, 337, 351, 378-381, 389-401, 423, 460, 498-516, 521-542, 545, 559-599, 607, 620-622, 643-646, 653, 657-659, 677, 726, 738, 742-751, 763-767, 779, 792, 797-823, 828-855
+2026-01-15T09:47:55.1159107Z agents/shared/worktree_manager.py         89     34    62%   18-20, 39, 45-46, 54-56, 61, 80-90, 95, 99, 110-112, 115-117, 122, 132-139, 145-146
+2026-01-15T09:47:55.1170702Z main.py                                 4368   1084    75%   25-27, 88, 193-194, 220-222, 228-229, 271, 344, 357-360, 382, 399, 404-407, 415-416, 424-427, 448-455, 519-521, 528, 550, 553-554, 585, 668-673, 691-697, 725-726, 784-785, 870-871, 874-878, 892-893, 896-897, 901-902, 919, 924-929, 948-950, 962, 980-983, 996-997, 1002-1003, 1014-1015, 1021-1030, 1036-1040, 1069-1070, 1080, 1087-1089, 1110-1114, 1118-1120, 1124-1125, 1133-1137, 1141-1146, 1153-1154, 1158-1159, 1165-1166, 1168-1169, 1175-1177, 1185-1186, 1191-1192, 1211-1216, 1229-1230, 1234-1235, 1239-1240, 1247-1249, 1257-1259, 1291-1292, 1310-1322, 1333-1334, 1338-1339, 1381-1382, 1385-1386, 1388-1389, 1418-1419, 1428-1429, 1442-1445, 1456-1457, 1462-1464, 1467-1470, 1483-1488, 1528-1529, 1536-1537, 1539-1541, 1565-1566, 1575-1576, 1587-1590, 1602-1603, 1608-1610, 1613-1616, 1629-1634, 1647-1652, 1661-1662, 1675-1676, 1684-1685, 1698-1699, 1702-1703, 1705-1707, 1709-1710, 1719-1720, 1724-1725, 1754-1756, 1765-1766, 1792, 1804-1808, 1819-1820, 1824-1825, 1838-1839, 1848-1850, 1877-1881, 1893-1894, 1898-1899, 1911-1912, 1925-1926, 1934-1935, 1942-1953, 1964, 1973-1974, 1983-1985, 1994-1995, 2011-2016, 2043-2044, 2060-2062, 2078-2079, 2084-2086, 2092-2095, 2132-2134, 2144-2150, 2159-2163, 2173-2174, 2196-2197, 2205-2206, 2211-2213, 2224-2225, 2234-2236, 2242, 2247-2248, 2252-2253, 2264-2267, 2273-2278, 2284, 2289-2290, 2294-2295, 2302-2303, 2314-2323, 2328-2333, 2363-2374, 2414-2415, 2451-2453, 2456-2457, 2476-2478, 2502-2503, 2506-2508, 2527-2528, 2542-2543, 2551-2552, 2575-2576, 2583-2584, 2599-2605, 2622-2623, 2627-2628, 2665-2668, 2670-2671, 2678-2679, 2703-2708, 2713-2714, 2724-2725, 2740-2743, 2746-2747, 2761-2763, 2798-2799, 2802-2803, 2808, 2812-2818, 2870-2872, 2904-2909, 2925-2927, 3012-3023, 3047-3048, 3063-3064, 3086-3088, 3103-3104, 3130-3133, 3145-3147, 3150-3151, 3173-3174, 3176-3177, 3228-3229, 3234-3236, 3243, 3249-3250, 3295-3300, 3320-3322, 3329-3330, 3336-3347, 3355-3356, 3365-3367, 3382, 3384, 3398-3399, 3408-3409, 3415-3418, 3422-3423, 3429-3432, 3438, 3442-3443, 3448-3460, 3471-3475, 3489-3490, 3514-3515, 3535, 3539-3540, 3542-3543, 3561, 3563, 3604-3605, 3607-3608, 3610-3611, 3642-3644, 3660-3666, 3683-3684, 3686-3687, 3689-3690, 3722, 3725-3726, 3736, 3754-3755, 3757-3758, 3760-3761, 3768, 3771-3772, 3788-3789, 3815, 3817, 3839-3841, 3856-3857, 3874-3880, 3897-3899, 3914-3915, 3931-3932, 3964-3966, 5328, 5344-5347, 5370-5371, 5385-5386, 5389-5390, 5405-5407, 5413-5414, 5426, 5458-5460, 5470-5471, 5499-5500, 5598-5599, 5644-5648, 5669-5670, 5691-5699, 5713-5717, 5737, 5741-5742, 5744-5745, 5747-5748, 5796, 5801-5807, 5811-5813, 5828-5829, 5874-5876, 5883-5884, 5932-5934, 5936-5937, 5950-5951, 5955-5956, 5967-5968, 5971-5973, 5978-5980, 5983-5984, 6002-6004, 6021-6022, 6025-6026, 6032-6033, 6061-6062, 6064-6065, 6080-6081, 6095-6096, 6100-6101, 6119-6121, 6137-6138, 6143-6144, 6150, 6160, 6162, 6169-6174, 6185-6188, 6196-6197, 6202-6203, 6220-6222, 6234-6235, 6238-6240, 6264-6267, 6287-6294, 6308-6314, 6334-6336, 6347-6350, 6385-6386, 6394-6397, 6408-6409, 6432-6435, 6447-6448, 6468-6469, 6479-6482, 6485-6486, 6496, 6501-6504, 6532, 6543-6548, 6563-6564, 6571-6576, 6590-6591, 6597-6602, 6628-6629, 6648, 6667-6670, 6681, 6686-6690, 6703-6704, 6708-6709, 6775-6776, 6783-6785, 6795-6796, 6799-6800, 6809-6810, 6817-6820, 6832-6835, 6857-6858, 6862-6863, 6866-6867, 6874-6877, 6884, 6893-6912, 6921-6922, 6926-6927, 6931-6932, 6937, 6941-6942, 6946, 6950-6951, 6955-6956, 6960-6961, 6970-6971, 6975-6976, 6980-6981, 6985-6986, 6990-6991, 6995-6996, 7000-7001, 7005-7006, 7010-7011, 7015-7016, 7020-7021, 7025-7026, 7030-7031, 7035-7036, 7040-7041, 7045-7046, 7050-7051, 7055-7056, 7060-7061, 7065-7066, 7069-7070, 7073-7074, 7077-7078, 7081-7082, 7085-7086, 7089-7090, 7094-7095, 7099-7100, 7104-7105, 7108-7109, 7112-7113, 7116-7117, 7120-7121, 7124-7125, 7128-7129, 7131-7132, 7135-7136, 7139-7140, 7143-7144, 7147-7148, 7151-7152, 7155-7156, 7159-7160, 7163-7164, 7167-7168, 7171-7172, 7175-7176, 7179-7180, 7183-7184, 7187-7188, 7191-7192, 7195-7196, 7199-7200, 7203-7204, 7207-7208, 7228, 7279, 7281, 7283, 7294, 7348-7353, 7362-7363, 7382-7383, 7390-7393, 7403-7406, 7419-7428, 7444-7447
+2026-01-15T09:47:55.1182517Z mock_agent.py                             26     26     0%   1-32
+2026-01-15T09:47:55.1182897Z shared/agent_client.py                    60      2    97%   42-43
+2026-01-15T09:47:55.1183957Z shared/cli_utils.py                      631    182    71%   91-92, 123-125, 146-156, 177-178, 194, 222, 255-258, 280-281, 294, 327-339, 345-370, 375-460, 488-490, 499-501, 542, 571-572, 595-599, 608-610, 646-648, 666-667, 679-684, 704-705, 715-718, 764-765, 791, 805-807, 812, 819-820, 828-829, 832, 848, 851-852, 861-863, 875, 888-890, 894, 900-901, 923-924, 927
+2026-01-15T09:47:55.1185014Z shared/commands.py                        26      0   100%
+2026-01-15T09:47:55.1185376Z shared/config.py                          70      9    87%   84-87, 102-107
+2026-01-15T09:47:55.1185783Z shared/config_loader.py                   66      4    94%   38-39, 84-85
+2026-01-15T09:47:55.1186172Z shared/database.py                        19      4    79%   19-23
+2026-01-15T09:47:55.1186729Z shared/git.py                            104     33    68%   24-25, 57-59, 76-78, 93-103, 110, 133, 159-161, 175-180, 196-201
+2026-01-15T09:47:55.1187201Z shared/git_wrapper.py                     45      1    98%   86
+2026-01-15T09:47:55.1187585Z shared/github_client.py                   39      4    90%   44, 46-47, 53
+2026-01-15T09:47:55.1188053Z shared/jira_client.py                     75     19    75%   39-41, 46, 54-55, 60, 64-66, 78, 86, 106-108, 113, 118-120
+2026-01-15T09:47:55.1188505Z shared/log_handler.py                     10      0   100%
+2026-01-15T09:47:55.1188836Z shared/logger.py                          29      0   100%
+2026-01-15T09:47:55.1189156Z shared/models.py                          38      0   100%
+2026-01-15T09:47:55.1189480Z shared/notifications.py                   45      0   100%
+2026-01-15T09:47:55.1190021Z shared/shell.py                           47      0   100%
+2026-01-15T09:47:55.1190440Z shared/state.py                           55      0   100%
+2026-01-15T09:47:55.1190873Z shared/telemetry.py                      208     19    91%   97-98, 236-238, 262-263, 306-317, 340, 356, 421-424, 443-444
+2026-01-15T09:47:55.1191342Z shared/tui.py                             63     15    76%   62-75, 97-99
+2026-01-15T09:47:55.1192066Z shared/utils.py                          305     62    80%   87-88, 132-135, 162-163, 170, 177-179, 208-210, 216, 248-250, 275, 317, 325-331, 337, 343-349, 355, 361-367, 371-373, 379-387, 417-419, 427, 451-452, 461-466, 496-509, 515
+2026-01-15T09:47:55.1192900Z shared/workflow.py                       101     26    74%   62-66, 76-78, 108-109, 123, 129-135, 144, 147-149, 152, 155-158
+2026-01-15T09:47:55.1193377Z tests/test_agent_jira_flow.py             74      1    99%   111
+2026-01-15T09:47:55.1193761Z tests/test_agent_parity.py                33      8    76%   69-76
+2026-01-15T09:47:55.1194149Z tests/test_base_agent.py                 130      1    99%   182
+2026-01-15T09:47:55.1194535Z tests/test_base_agent_persistence.py      81      2    98%   23, 113
+2026-01-15T09:47:55.1194914Z tests/test_cherry_pick.py                 73      1    99%   124
+2026-01-15T09:47:55.1195267Z tests/test_cli_agent_launcher.py          83      0   100%
+2026-01-15T09:47:55.1195605Z tests/test_cli_env.py                     18      0   100%
+2026-01-15T09:47:55.1195933Z tests/test_cli_launcher.py                44      0   100%
+2026-01-15T09:47:55.1196274Z tests/test_cli_mgmt.py                    28      1    96%   13
+2026-01-15T09:47:55.1196748Z tests/test_cli_utils.py                  112      1    99%   149
+2026-01-15T09:47:55.1197125Z tests/test_cli_utils_dashboard.py         80      1    99%   135
+2026-01-15T09:47:55.1197494Z tests/test_commands.py                    39      1    97%   47
+2026-01-15T09:47:55.1197880Z tests/test_config_loader.py               88      2    98%   138, 178
+2026-01-15T09:47:55.1198271Z tests/test_config_manager.py              44      0   100%
+2026-01-15T09:47:55.1198629Z tests/test_config_validation.py           95      1    99%   151
+2026-01-15T09:47:55.1198998Z tests/test_configure.py                   28      1    96%   80
+2026-01-15T09:47:55.1199366Z tests/test_cursor_agent.py               120      1    99%   195
+2026-01-15T09:47:55.1199747Z tests/test_cursor_client.py               78      2    97%   68, 116
+2026-01-15T09:47:55.1200190Z tests/test_dashboard_integrity.py        102     87    15%   19-64, 69-89, 94-137, 141-156
+2026-01-15T09:47:55.1200624Z tests/test_database.py                    36      0   100%
+2026-01-15T09:47:55.1200976Z tests/test_gemini_agent.py                79      1    99%   117
+2026-01-15T09:47:55.1201350Z tests/test_gemini_client.py               79      2    97%   60, 124
+2026-01-15T09:47:55.1201720Z tests/test_git_auth.py                    30      1    97%   54
+2026-01-15T09:47:55.1202081Z tests/test_git_wrapper.py                 73      1    99%   94
+2026-01-15T09:47:55.1202445Z tests/test_github_client.py               52      1    98%   85
+2026-01-15T09:47:55.1202818Z tests/test_iteration_metrics.py           20      6    70%   39-47
+2026-01-15T09:47:55.1203205Z tests/test_jira_integration.py           102      1    99%   169
+2026-01-15T09:47:55.1203585Z tests/test_jira_integration_cli.py        62      2    97%   62-63
+2026-01-15T09:47:55.1203961Z tests/test_jira_mode_integration.py      125      1    99%   197
+2026-01-15T09:47:55.1204329Z tests/test_log_handler.py                 33      1    97%   43
+2026-01-15T09:47:55.1204701Z tests/test_main.py                       343      3    99%   427-428, 485
+2026-01-15T09:47:55.1205082Z tests/test_main_archive.py                57      1    98%   111
+2026-01-15T09:47:55.1205446Z tests/test_main_artifacts.py             119      1    99%   171
+2026-01-15T09:47:55.1205813Z tests/test_main_benchmark.py             147      1    99%   235
+2026-01-15T09:47:55.1206481Z tests/test_main_blame.py                  69      2    97%   24, 122
+2026-01-15T09:47:55.1207037Z tests/test_main_branch.py                 89      1    99%   117
+2026-01-15T09:47:55.1207410Z tests/test_main_clean.py                 119      1    99%   175
+2026-01-15T09:47:55.1207772Z tests/test_main_commit.py                 55      1    98%   88
+2026-01-15T09:47:55.1208151Z tests/test_main_commit_command.py         94      2    98%   123, 187
+2026-01-15T09:47:55.1208533Z tests/test_main_completion.py             24      1    96%   36
+2026-01-15T09:47:55.1208900Z tests/test_main_config_command.py        110      1    99%   142
+2026-01-15T09:47:55.1209263Z tests/test_main_context.py                65      1    98%   96
+2026-01-15T09:47:55.1209618Z tests/test_main_dashboard.py              20      1    95%   34
+2026-01-15T09:47:55.1209986Z tests/test_main_diff.py                   83      2    98%   20, 128
+2026-01-15T09:47:55.1210353Z tests/test_main_diff_summary.py           62      1    98%   89
+2026-01-15T09:47:55.1210720Z tests/test_main_discard.py               107      1    99%   153
+2026-01-15T09:47:55.1211090Z tests/test_main_doctor.py                140      2    99%   29, 216
+2026-01-15T09:47:55.1211480Z tests/test_main_empty_trash.py            82      2    98%   107, 123
+2026-01-15T09:47:55.1211860Z tests/test_main_feature.py               142      1    99%   203
+2026-01-15T09:47:55.1212218Z tests/test_main_format.py                 83      1    99%   143
+2026-01-15T09:47:55.1212596Z tests/test_main_git.py                    88      3    97%   48-49, 136
+2026-01-15T09:47:55.1212973Z tests/test_main_glance.py                 89      1    99%   125
+2026-01-15T09:47:55.1213328Z tests/test_main_help.py                   26      1    96%   49
+2026-01-15T09:47:55.1213677Z tests/test_main_history.py                65      1    98%   84
+2026-01-15T09:47:55.1214035Z tests/test_main_init.py                  111      1    99%   173
+2026-01-15T09:47:55.1214392Z tests/test_main_interact.py               71      1    99%   92
+2026-01-15T09:47:55.1214766Z tests/test_main_last.py                   71      2    97%   27, 109
+2026-01-15T09:47:55.1215132Z tests/test_main_last_run_id.py            46      1    98%   66
+2026-01-15T09:47:55.1215486Z tests/test_main_lint.py                  108      1    99%   229
+2026-01-15T09:47:55.1215837Z tests/test_main_log.py                    62      1    98%   89
+2026-01-15T09:47:55.1216181Z tests/test_main_logs.py                  119      1    99%   186
+2026-01-15T09:47:55.1216743Z tests/test_main_models.py                 51      1    98%   79
+2026-01-15T09:47:55.1217104Z tests/test_main_next.py                   58      1    98%   85
+2026-01-15T09:47:55.1217449Z tests/test_main_patch.py                  51      1    98%   67
+2026-01-15T09:47:55.1217807Z tests/test_main_plan.py                   64      2    97%   22, 106
+2026-01-15T09:47:55.1218166Z tests/test_main_pr.py                     64      1    98%   118
+2026-01-15T09:47:55.1218529Z tests/test_main_profile_command.py       144      1    99%   193
+2026-01-15T09:47:55.1218898Z tests/test_main_pull.py                   80      2    98%   26, 130
+2026-01-15T09:47:55.1219264Z tests/test_main_push.py                   80      1    99%   139
+2026-01-15T09:47:55.1219622Z tests/test_main_restore.py                63      1    98%   103
+2026-01-15T09:47:55.1219977Z tests/test_main_revert.py                108      1    99%   168
+2026-01-15T09:47:55.1220343Z tests/test_main_review.py                 76      2    97%   77, 110
+2026-01-15T09:47:55.1220711Z tests/test_main_rewind.py                 94      1    99%   159
+2026-01-15T09:47:55.1221070Z tests/test_main_setup.py                  96      1    99%   130
+2026-01-15T09:47:55.1221427Z tests/test_main_snapshot.py              108      1    99%   202
+2026-01-15T09:47:55.1221781Z tests/test_main_sprint.py                 57      0   100%
+2026-01-15T09:47:55.1222125Z tests/test_main_stash.py                  70      1    99%   93
+2026-01-15T09:47:55.1222608Z tests/test_main_stash_pop.py              70      1    99%   93
+2026-01-15T09:47:55.1223072Z tests/test_main_status.py                 76      1    99%   103
+2026-01-15T09:47:55.1223433Z tests/test_main_summary.py                86      1    99%   137
+2026-01-15T09:47:55.1223788Z tests/test_main_tag.py                    78      1    99%   115
+2026-01-15T09:47:55.1224133Z tests/test_main_test.py                   87      1    99%   118
+2026-01-15T09:47:55.1224486Z tests/test_main_trash.py                 138      1    99%   224
+2026-01-15T09:47:55.1224862Z tests/test_main_tree.py                   89      7    92%   101-106, 113
+2026-01-15T09:47:55.1225242Z tests/test_main_undo.py                   49      2    96%   21, 77
+2026-01-15T09:47:55.1225606Z tests/test_main_watch.py                  49      1    98%   75
+2026-01-15T09:47:55.1225968Z tests/test_main_workflow.py              100      1    99%   132
+2026-01-15T09:47:55.1226442Z tests/test_main_worktrees.py             146      1    99%   195
+2026-01-15T09:47:55.1226803Z tests/test_main_worktrees_create.py       69      0   100%
+2026-01-15T09:47:55.1227190Z tests/test_main_worktrees_diff.py         83      3    96%   51-52, 123
+2026-01-15T09:47:55.1227585Z tests/test_main_worktrees_manage.py       91      1    99%   129
+2026-01-15T09:47:55.1227950Z tests/test_main_worktrees_merge.py        53      1    98%   128
+2026-01-15T09:47:55.1228307Z tests/test_metrics.py                     40      1    98%   70
+2026-01-15T09:47:55.1228720Z tests/test_metrics_integration.py         74     64    14%   13-62, 66-109, 113-120
+2026-01-15T09:47:55.1229182Z tests/test_notifications.py               49      1    98%   69
+2026-01-15T09:47:55.1229599Z tests/test_openrouter_integration.py      58     44    24%   17-44, 48-78, 81-89
+2026-01-15T09:47:55.1230012Z tests/test_pre_flight.py                  26      0   100%
+2026-01-15T09:47:55.1230361Z tests/test_prompt_loading.py              15      1    93%   40
+2026-01-15T09:47:55.1230706Z tests/test_session_manager.py             46      0   100%
+2026-01-15T09:47:55.1231057Z tests/test_shared_modules.py             120      1    99%   195
+2026-01-15T09:47:55.1231416Z tests/test_shell.py                       55      1    98%   91
+2026-01-15T09:47:55.1231771Z tests/test_sprint_extended.py             55      1    98%   113
+2026-01-15T09:47:55.1232131Z tests/test_sprint_guardrail.py            87      1    99%   150
+2026-01-15T09:47:55.1232492Z tests/test_sprint_init.py                 49      1    98%   74
+2026-01-15T09:47:55.1232851Z tests/test_sprint_parallel.py             48      1    98%   130
+2026-01-15T09:47:55.1233208Z tests/test_telemetry.py                   38      1    97%   76
+2026-01-15T09:47:55.1233572Z tests/test_telemetry_extended.py          72      1    99%   125
+2026-01-15T09:47:55.1233948Z tests/test_tui.py                         26      6    77%   17-18, 36-42, 45
+2026-01-15T09:47:55.1234317Z tests/test_utils.py                       41      1    98%   109
+2026-01-15T09:47:55.1234667Z tests/test_utils_agent_id.py              27      1    96%   41
+2026-01-15T09:47:55.1235040Z tests/test_utils_extended.py             144      1    99%   254
+2026-01-15T09:47:55.1235401Z tests/test_utils_security.py              46      1    98%   78
+2026-01-15T09:47:55.1235742Z tests/test_workflow.py                    86      0   100%
+2026-01-15T09:47:55.1236086Z tests/test_worktree_manager.py            62      1    98%   99
+2026-01-15T09:47:55.1236603Z --------------------------------------------------------------------
+2026-01-15T09:47:55.1237122Z TOTAL                                  17365   2742    84%
+2026-01-15T09:47:55.4199096Z ====================== 585 passed, 18 warnings in 23.56s =======================

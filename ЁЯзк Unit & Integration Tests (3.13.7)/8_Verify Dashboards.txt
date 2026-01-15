@@ -1,0 +1,26 @@
+﻿2026-01-15T09:47:56.3860479Z ##[group]Run export PYTHONPATH=$PYTHONPATH:$(pwd)
+2026-01-15T09:47:56.3860902Z [36;1mexport PYTHONPATH=$PYTHONPATH:$(pwd)[0m
+2026-01-15T09:47:56.3861207Z [36;1mpython3 tests/verify_dashboards.py[0m
+2026-01-15T09:47:56.3894163Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:56.3894399Z env:
+2026-01-15T09:47:56.3894653Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.3895095Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:56.3895517Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.3895883Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.3896239Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.3896893Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:56.3897197Z ##[endgroup]
+2026-01-15T09:47:56.4281620Z Found 30 metrics in telemetry.py: ['agent_crashes_total', 'agent_errors_total', 'agent_heartbeat_timestamp', 'agent_iteration', 'agent_iterations_total', 'agent_online', 'agent_restart_total', 'agent_uptime_seconds', 'bash_commands_total', 'container_cpu_usage_pct', 'container_memory_usage_bytes', 'feature_completion_pct', 'features_passing', 'features_total', 'files_read_total', 'files_written_total', 'iteration_duration_seconds', 'llm_errors_total', 'llm_latency_seconds', 'llm_tokens_total', 'process_count', 'sprint_active_workers', 'sprint_planning_duration_seconds', 'sprint_task_duration_seconds', 'sprint_tasks_completed_total', 'sprint_tasks_failed_total', 'sprint_tasks_total', 'tool_errors_total', 'tool_execution_duration_seconds', 'tool_execution_total']
+2026-01-15T09:47:56.4286177Z
+2026-01-15T09:47:56.4286732Z Validating monitoring/grafana/dashboards/project_deep_dive.json...
+2026-01-15T09:47:56.4287252Z
+2026-01-15T09:47:56.4287534Z Validating monitoring/grafana/dashboards/overview.json...
+2026-01-15T09:47:56.4287965Z
+2026-01-15T09:47:56.4288300Z Validating monitoring/grafana/dashboards/operations_center.json...
+2026-01-15T09:47:56.4288809Z
+2026-01-15T09:47:56.4289174Z Checking metrics in monitoring/grafana/dashboards/project_deep_dive.json...
+2026-01-15T09:47:56.4289717Z
+2026-01-15T09:47:56.4290025Z Checking metrics in monitoring/grafana/dashboards/overview.json...
+2026-01-15T09:47:56.4290510Z
+2026-01-15T09:47:56.4290852Z Checking metrics in monitoring/grafana/dashboards/operations_center.json...
+2026-01-15T09:47:56.4291458Z Dashboard validation passed!

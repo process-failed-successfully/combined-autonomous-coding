@@ -1,0 +1,12 @@
+﻿2026-01-15T09:47:30.8508462Z ##[group]Run git config --global user.email "agent@example.com"
+2026-01-15T09:47:30.8508961Z [36;1mgit config --global user.email "agent@example.com"[0m
+2026-01-15T09:47:30.8509340Z [36;1mgit config --global user.name "Combined Agent CI"[0m
+2026-01-15T09:47:30.8543944Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:30.8544176Z env:
+2026-01-15T09:47:30.8544428Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8544846Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:30.8545262Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8545628Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8545982Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:30.8546514Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:30.8546819Z ##[endgroup]

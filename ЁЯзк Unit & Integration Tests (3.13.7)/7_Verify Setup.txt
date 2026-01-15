@@ -1,0 +1,19 @@
+﻿2026-01-15T09:47:56.2024839Z ##[group]Run export PYTHONPATH=$PYTHONPATH:$(pwd)
+2026-01-15T09:47:56.2025249Z [36;1mexport PYTHONPATH=$PYTHONPATH:$(pwd)[0m
+2026-01-15T09:47:56.2025543Z [36;1mpython3 tests/verify_setup.py[0m
+2026-01-15T09:47:56.2058638Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:56.2058871Z env:
+2026-01-15T09:47:56.2059115Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.2059690Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:56.2060098Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.2060471Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.2060835Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:56.2061191Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:56.2061491Z ##[endgroup]
+2026-01-15T09:47:56.3625250Z Test directory created at tests_output/creation_test
+2026-01-15T09:47:56.3626058Z Testing Gemini Client Instantiation...
+2026-01-15T09:47:56.3626865Z PASS: Gemini Client instantiated correctly.
+2026-01-15T09:47:56.3627305Z Testing Cursor Client Instantiation...
+2026-01-15T09:47:56.3627729Z PASS: Cursor Client instantiated correctly.
+2026-01-15T09:47:56.3628009Z
+2026-01-15T09:47:56.3628160Z All basic instantiation tests passed.

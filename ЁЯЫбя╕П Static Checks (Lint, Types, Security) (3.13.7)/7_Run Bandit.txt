@@ -1,0 +1,19 @@
+﻿2026-01-15T09:47:42.0527983Z ##[group]Run export PYTHONPATH=$PYTHONPATH:$(pwd)
+2026-01-15T09:47:42.0528681Z [36;1mexport PYTHONPATH=$PYTHONPATH:$(pwd)[0m
+2026-01-15T09:47:42.0529420Z [36;1mbandit -r . -c "pyproject.toml" -ll -b bandit_baseline.json -f custom[0m
+2026-01-15T09:47:42.0576507Z shell: /usr/bin/bash -e {0}
+2026-01-15T09:47:42.0576945Z env:
+2026-01-15T09:47:42.0577372Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:42.0578100Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib/pkgconfig
+2026-01-15T09:47:42.0578834Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:42.0579464Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:42.0580324Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.7/x64
+2026-01-15T09:47:42.0580992Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.7/x64/lib
+2026-01-15T09:47:42.0581536Z ##[endgroup]
+2026-01-15T09:47:42.2356227Z [main]	INFO	profile include tests: None
+2026-01-15T09:47:42.2356861Z [main]	INFO	profile exclude tests: None
+2026-01-15T09:47:42.2357469Z [main]	INFO	cli include tests: None
+2026-01-15T09:47:42.2359610Z [main]	INFO	cli exclude tests: None
+2026-01-15T09:47:42.2741721Z [main]	INFO	using config: pyproject.toml
+2026-01-15T09:47:42.2742402Z [main]	INFO	running on Python 3.13.7
+2026-01-15T09:47:44.1754648Z Working... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:01

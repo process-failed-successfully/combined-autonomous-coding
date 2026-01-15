@@ -1,0 +1,8 @@
+2026-01-15T09:46:48.8230000Z Job is about to start running on the hosted runner: GitHub Actions 1000008523
+2026-01-15T09:46:48.8160000Z Evaluating docker-build.if
+2026-01-15T09:46:48.8160000Z Evaluating: success()
+2026-01-15T09:46:48.8160000Z Result: true
+2026-01-15T09:46:48.8220000Z Job is waiting for a hosted runner to come online.
+2026-01-15T09:46:48.8170000Z Requested labels: ubuntu-latest
+2026-01-15T09:46:48.8170000Z Job defined at: process-failed-successfully/combined-autonomous-coding/.github/workflows/ci.yml@refs/pull/374/merge
+2026-01-15T09:46:48.8170000Z Waiting for a runner to pick up this job...

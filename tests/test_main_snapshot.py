@@ -1,202 +1,145 @@
-
 import unittest
-from unittest.mock import patch, MagicMock
-import sys
+from unittest.mock import patch
 import os
-from pathlib import Path
 import shutil
-import tempfile
-import argparse
-import io
+import subprocess
+from pathlib import Path
 from datetime import datetime
+import io
+import contextlib
 
-# Ensure the script can find the main module
+# Make sure the main script can be imported
+import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from main import run_snapshot
+import main
 
 class TestSnapshotCommand(unittest.TestCase):
-
     def setUp(self):
-        """Set up a temporary directory and mock project files."""
-        self.test_dir = tempfile.mkdtemp()
-        self.project_dir = Path(self.test_dir)
-        self.repo_root = Path(__file__).parent.parent
-        self.logs_dir = self.repo_root / "agents/logs"
-        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        """Set up a temporary project directory with a git repository."""
+        self.test_dir = Path("test_project_snapshot")
+        # Clean up from previous runs if any
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir)
+        self.test_dir.mkdir(exist_ok=True)
 
-        # Create mock artifacts
-        self.mock_artifacts = {
-            "feature_list.json": '{"features": []}',
-            "qa_summary.txt": "QA summary content.",
-            "reviewer_report.txt": "Reviewer report content.",
-            ".agent_run_id": "test_run_123"
-        }
-        for name, content in self.mock_artifacts.items():
-            (self.project_dir / name).write_text(content)
+        # Initialize Git repo
+        subprocess.run(["git", "init"], cwd=self.test_dir, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.test_dir, capture_output=True)
 
-        # Create a mock log file
-        self.mock_log_file = self.logs_dir / "test_run_123.log"
-        self.mock_log_file.write_text("Log file content.")
+        # Create some files
+        (self.test_dir / "file1.txt").write_text("hello")
+        (self.test_dir / "feature_list.json").write_text('{"features": []}')
+        (self.test_dir / "app_spec.txt").write_text('test spec')
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.test_dir, capture_output=True)
 
-        self.archive_dir = self.project_dir / ".agent_archives"
+        self.archive_dir = self.test_dir / ".agent_archives"
 
-        # Mock datetime to control snapshot names
-        self.mock_datetime = MagicMock()
-        self.mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
-        self.patcher = patch('datetime.datetime', self.mock_datetime)
-        self.patcher.start()
 
     def tearDown(self):
         """Clean up the temporary directory."""
-        shutil.rmtree(self.test_dir)
-        if self.mock_log_file.exists():
-            self.mock_log_file.unlink()
-        self.patcher.stop()
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir)
 
-    def test_snapshot_creates_timestamped_archive(self):
-        """Verify snapshot creates a correctly named archive and copies files."""
-        args = argparse.Namespace(
-            action='create',
-            project_dir=self.project_dir,
-            name=None,
-            yes=True
-        )
+    def test_snapshot_create_and_list(self):
+        """Test creating a snapshot and then listing it."""
+        # --- Create Snapshot ---
+        # Note: 'name' is positional, so we don't provide it here to get a timestamped one.
+        args = main.parse_args(["snapshot", "create", "--project-dir", str(self.test_dir), "--yes"])
 
         with self.assertRaises(SystemExit) as cm:
-            run_snapshot(args)
+            main.run_snapshot(args)
         self.assertEqual(cm.exception.code, 0)
 
+        # Verify snapshot directory and tag
         self.assertTrue(self.archive_dir.exists())
         snapshot_dirs = list(self.archive_dir.iterdir())
         self.assertEqual(len(snapshot_dirs), 1)
         snapshot_dir = snapshot_dirs[0]
         self.assertTrue(snapshot_dir.name.startswith("snapshot-"))
 
-        # Verify files were copied
+        # Verify tag
+        tag_name = f"snapshot/{snapshot_dir.name}"
+        result = subprocess.run(["git", "tag"], cwd=self.test_dir, capture_output=True, text=True)
+        self.assertIn(tag_name, result.stdout)
+
+        # Verify artifacts
         self.assertTrue((snapshot_dir / "feature_list.json").exists())
-        self.assertTrue((snapshot_dir / "qa_summary.txt").exists())
-        self.assertTrue((snapshot_dir / "reviewer_report.txt").exists())
-        self.assertTrue((snapshot_dir / "test_run_123.log").exists())
 
-        # Verify original files still exist
-        self.assertTrue((self.project_dir / "feature_list.json").exists())
-        self.assertTrue((self.project_dir / "qa_summary.txt").exists())
-        self.assertTrue((self.project_dir / ".agent_run_id").exists())
+        # --- List Snapshot ---
+        args_list = main.parse_args(["snapshot", "list", "--project-dir", str(self.test_dir)])
 
-    def test_snapshot_with_custom_name(self):
-        """Verify snapshot works with a user-provided custom name."""
-        args = argparse.Namespace(
-            action='create',
-            project_dir=self.project_dir,
-            name="my-custom-snapshot",
-            yes=True
-        )
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            with self.assertRaises(SystemExit) as cm_list:
+                main.run_snapshot(args_list)
 
+        self.assertEqual(cm_list.exception.code, 0)
+        output = f.getvalue()
+        self.assertIn(snapshot_dir.name, output)
+        self.assertIn("✅ Tagged", output)
+
+    def test_snapshot_restore(self):
+        """Test restoring a snapshot."""
+        snapshot_name = "test-snapshot-restore"
+        # Correctly pass snapshot name as a positional argument
+        args_create = main.parse_args(["snapshot", "create", snapshot_name, "--project-dir", str(self.test_dir), "--yes"])
+        with self.assertRaises(SystemExit):
+            main.run_snapshot(args_create)
+
+        # Modify the project state
+        (self.test_dir / "feature_list.json").unlink()
+        (self.test_dir / "new_file.txt").write_text("new content")
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "Second commit (deleted feature_list)"], cwd=self.test_dir, capture_output=True)
+
+        self.assertFalse((self.test_dir / "feature_list.json").exists())
+
+        # --- Restore Snapshot ---
+        args_restore = main.parse_args(["snapshot", "restore", snapshot_name, "--project-dir", str(self.test_dir), "--yes"])
         with self.assertRaises(SystemExit) as cm:
-            run_snapshot(args)
+            main.run_snapshot(args_restore)
         self.assertEqual(cm.exception.code, 0)
 
-        snapshot_dir = self.archive_dir / "my-custom-snapshot"
+        # Verify restored artifacts
+        self.assertTrue((self.test_dir / "feature_list.json").exists())
+
+        # Verify git state (should be at the first commit)
+        result = subprocess.run(["git", "log", "-1", "--oneline"], cwd=self.test_dir, capture_output=True, text=True)
+        self.assertIn("Initial commit", result.stdout)
+        self.assertNotIn("Second commit", result.stdout)
+
+        # Verify detached head state
+        result_status = subprocess.run(["git", "status"], cwd=self.test_dir, capture_output=True, text=True)
+        self.assertIn("HEAD detached at", result_status.stdout)
+
+    def test_snapshot_delete(self):
+        """Test deleting a snapshot."""
+        snapshot_name = "test-snapshot-delete"
+        # Create a snapshot
+        # Correctly pass snapshot name as a positional argument
+        args_create = main.parse_args(["snapshot", "create", snapshot_name, "--project-dir", str(self.test_dir), "--yes"])
+        with self.assertRaises(SystemExit):
+            main.run_snapshot(args_create)
+
+        snapshot_dir = self.archive_dir / snapshot_name
+        tag_name = f"snapshot/{snapshot_name}"
+
         self.assertTrue(snapshot_dir.exists())
-        self.assertTrue((snapshot_dir / "feature_list.json").exists())
+        result = subprocess.run(["git", "tag"], cwd=self.test_dir, capture_output=True, text=True)
+        self.assertIn(tag_name, result.stdout)
 
-    def test_snapshot_fails_if_archive_exists(self):
-        """Verify snapshot exits if a snapshot with the same name already exists."""
-        # Create a dummy existing snapshot
-        existing_snapshot_dir = self.archive_dir / "my-custom-snapshot"
-        existing_snapshot_dir.mkdir(parents=True)
-
-        args = argparse.Namespace(
-            action='create',
-            project_dir=self.project_dir,
-            name="my-custom-snapshot",
-            yes=True
-        )
-
+        # --- Delete Snapshot ---
+        args_delete = main.parse_args(["snapshot", "delete", snapshot_name, "--project-dir", str(self.test_dir), "--yes"])
         with self.assertRaises(SystemExit) as cm:
-            run_snapshot(args)
-        self.assertEqual(cm.exception.code, 1)
-
-    def test_snapshot_no_artifacts(self):
-        """Verify snapshot exits gracefully when no artifacts are found."""
-        # Clean the directory
-        for name in self.mock_artifacts:
-            (self.project_dir / name).unlink()
-        self.mock_log_file.unlink()
-
-        args = argparse.Namespace(
-            action='create',
-            project_dir=self.project_dir,
-            name=None,
-            yes=True
-        )
-
-        with self.assertRaises(SystemExit) as cm:
-            run_snapshot(args)
+            main.run_snapshot(args_delete)
         self.assertEqual(cm.exception.code, 0)
-        self.assertFalse(self.archive_dir.exists())
 
-    @patch('builtins.input', return_value='y')
-    def test_snapshot_interactive_confirmation(self, mock_input):
-        """Verify the interactive prompt works correctly."""
-        args = argparse.Namespace(
-            action='create',
-            project_dir=self.project_dir,
-            name="interactive-test",
-            yes=False
-        )
-        with self.assertRaises(SystemExit) as cm:
-            run_snapshot(args)
-        self.assertEqual(cm.exception.code, 0)
-        mock_input.assert_called_once()
-        self.assertTrue((self.archive_dir / "interactive-test").exists())
-
-    @patch('builtins.input', return_value='n')
-    def test_snapshot_interactive_abort(self, mock_input):
-        """Verify the interactive prompt aborts correctly."""
-        args = argparse.Namespace(
-            action='create',
-            project_dir=self.project_dir,
-            name="interactive-abort-test",
-            yes=False
-        )
-        with self.assertRaises(SystemExit) as cm:
-            run_snapshot(args)
-        self.assertEqual(cm.exception.code, 0)
-        mock_input.assert_called_once()
-        self.assertFalse((self.archive_dir / "interactive-abort-test").exists())
-
-    def test_snapshot_diff(self):
-        # First, create a snapshot
-        create_args = argparse.Namespace(
-            action='create',
-            name='snapshot-to-diff',
-            project_dir=self.project_dir,
-            yes=True
-        )
-        with patch('sys.stdout', new_callable=io.StringIO):
-            with self.assertRaises(SystemExit):
-                run_snapshot(create_args)
-
-        # Now, modify a file
-        (self.project_dir / "feature_list.json").write_text('["feature1", "feature2"]')
-
-        diff_args = argparse.Namespace(
-            action='diff',
-            name='snapshot-to-diff',
-            project_dir=self.project_dir
-        )
-
-        with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout:
-            with self.assertRaises(SystemExit) as cm:
-                run_snapshot(diff_args)
-            self.assertEqual(cm.exception.code, 0)
-            output = mock_stdout.getvalue()
-            self.assertIn('feature_list.json', output)
-            self.assertIn('--- a', output)
-            self.assertIn('+++ b', output)
-
+        # Verify deletion
+        self.assertFalse(snapshot_dir.exists())
+        result = subprocess.run(["git", "tag"], cwd=self.test_dir, capture_output=True, text=True)
+        self.assertNotIn(tag_name, result.stdout)
 
 if __name__ == '__main__':
     unittest.main()

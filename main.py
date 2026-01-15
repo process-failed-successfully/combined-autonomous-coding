@@ -805,8 +805,38 @@ def _snapshot_create(args):
         snapshot_dir_name = f"snapshot-{timestamp}"
 
     snapshot_dir = archive_base_dir / snapshot_dir_name
+    tag_name = f"snapshot/{snapshot_dir_name}"
 
-    print(f"--- Creating snapshot of artifacts in: {project_dir} ---")
+    print(f"--- Creating snapshot: {snapshot_dir_name} ---")
+
+    # --- Git Pre-flight Checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("- Warning: Not a git repository. Snapshot will only include artifacts, not code state.", file=sys.stderr)
+        git_path = None # Disable git operations
+    else:
+        try:
+            # Check for uncommitted changes
+            status_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "status", "--porcelain"],
+                capture_output=True, text=True, check=True
+            )
+            if status_result.stdout.strip():
+                print("❌ Error: Your repository has uncommitted changes.", file=sys.stderr)
+                print("Please commit or stash them before creating a snapshot.", file=sys.stderr)
+                sys.exit(1)
+            # Check if tag already exists
+            tag_check_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "rev-parse", tag_name],
+                capture_output=True, text=True
+            )
+            if tag_check_result.returncode == 0:
+                print(f"❌ Error: A git tag named '{tag_name}' already exists.", file=sys.stderr)
+                sys.exit(1)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"❌ Error during git check: {e}", file=sys.stderr)
+            sys.exit(1)
+
 
     # List of key agent-generated files to be snapshotted
     artifacts_to_snapshot = [
@@ -833,24 +863,28 @@ def _snapshot_create(args):
         if log_file_path.exists():
             existing_artifacts.append(log_file_path)
 
-    if not existing_artifacts:
-        print("No key agent-generated artifacts found to snapshot.")
+    if not existing_artifacts and not git_path:
+        print("No key agent-generated artifacts found and not a git repo. Nothing to snapshot.")
         sys.exit(0)
 
     if snapshot_dir.exists():
-        print(f"❌ Error: A snapshot named '{snapshot_dir_name}' already exists in .agent_archives.")
+        print(f"❌ Error: A snapshot directory named '{snapshot_dir_name}' already exists in .agent_archives.")
         print("Please choose a different name or remove the existing one.")
         sys.exit(1)
 
-    print(f"Snapshot will be saved to: .agent_archives/{snapshot_dir_name}")
-    print("The following artifacts will be copied:")
-    for path in existing_artifacts:
-        try:
-            display_path = path.relative_to(project_dir)
-        except ValueError:
-            repo_root = Path(__file__).parent
-            display_path = f"(from repo root) {path.relative_to(repo_root)}"
-        print(f"  - {display_path}")
+    print(f"\nSnapshot will be saved to: .agent_archives/{snapshot_dir_name}")
+    if existing_artifacts:
+        print("The following artifacts will be copied:")
+        for path in existing_artifacts:
+            try:
+                display_path = path.relative_to(project_dir)
+            except ValueError:
+                repo_root = Path(__file__).parent
+                display_path = f"(from repo root) {path.relative_to(repo_root)}"
+            print(f"  - {display_path}")
+    if git_path:
+        print(f"A git tag '{tag_name}' will be created to save the current code state.")
+
 
     if not args.yes:
         confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
@@ -859,23 +893,44 @@ def _snapshot_create(args):
             sys.exit(0)
 
     print("\nCreating snapshot...")
-    try:
-        archive_base_dir.mkdir(exist_ok=True)
-        snapshot_dir.mkdir()
+    # --- Step 1: Create artifact archive ---
+    if existing_artifacts:
+        try:
+            archive_base_dir.mkdir(exist_ok=True)
+            snapshot_dir.mkdir()
 
-        for path in existing_artifacts:
-            dest = snapshot_dir / path.name
-            if path.is_file():
-                shutil.copy2(path, dest)
-            elif path.is_dir():
-                shutil.copytree(path, dest)
-        print(f"Copied {len(existing_artifacts)} artifact(s).")
+            for path in existing_artifacts:
+                dest = snapshot_dir / path.name
+                if path.is_file():
+                    shutil.copy2(path, dest)
+                elif path.is_dir():
+                    shutil.copytree(path, dest)
+            print(f"Copied {len(existing_artifacts)} artifact(s).")
 
-    except OSError as e:
-        print(f"❌ Error creating snapshot: {e}", file=sys.stderr)
-        if snapshot_dir.exists():
-            shutil.rmtree(snapshot_dir)
-        sys.exit(1)
+        except OSError as e:
+            print(f"❌ Error creating artifact archive: {e}", file=sys.stderr)
+            if snapshot_dir.exists():
+                shutil.rmtree(snapshot_dir)
+            sys.exit(1)
+
+    # --- Step 2: Create Git tag ---
+    if git_path:
+        try:
+            tag_message = f"Agent Snapshot: {snapshot_dir_name}"
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "tag", "-a", tag_name, "-m", tag_message],
+                check=True, capture_output=True
+            )
+            print(f"✅ Created git tag '{tag_name}'.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error creating git tag: {e.stderr.decode().strip()}", file=sys.stderr)
+            # Rollback artifact archive if it was created in this run
+            if existing_artifacts:
+                print("Rolling back artifact archive...")
+                if snapshot_dir.exists():
+                    shutil.rmtree(snapshot_dir)
+            sys.exit(1)
+
 
     print(f"\n✅ Snapshot '{snapshot_dir_name}' created successfully.")
     sys.exit(0)
@@ -931,12 +986,236 @@ def _snapshot_diff(args):
     sys.exit(0)
 
 
+def _snapshot_list(args):
+    """Helper function to list all available snapshots."""
+    project_dir = args.project_dir.resolve()
+    archive_base_dir = project_dir / ".agent_archives"
+
+    print("--- Available Snapshots ---")
+
+    if not archive_base_dir.is_dir():
+        print("No snapshots found.")
+        sys.exit(0)
+
+    snapshots = sorted(
+        [d for d in archive_base_dir.iterdir() if d.is_dir() and d.name.startswith('snapshot-')],
+        key=lambda d: d.stat().st_mtime,
+        reverse=True
+    )
+
+    if not snapshots:
+        print("No snapshots found.")
+        sys.exit(0)
+
+    git_path = shutil.which("git")
+    existing_tags = set()
+    if git_path and (project_dir / ".git").is_dir():
+        try:
+            result = subprocess.run(
+                [git_path, "-C", str(project_dir), "tag", "--list", "snapshot/*"],
+                capture_output=True, text=True, check=True
+            )
+            existing_tags = set(result.stdout.strip().split('\n'))
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass # Git might not be installed or other error, proceed without tag info
+
+    header = f"{'Snapshot Name':<30} | {'Created At':<25} | {'Code State'}"
+    print(header)
+    print("-" * len(header))
+
+    for snapshot_dir in snapshots:
+        snapshot_name = snapshot_dir.name
+        created_at = datetime.fromtimestamp(snapshot_dir.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+        tag_name = f"snapshot/{snapshot_name}"
+        code_state = "✅ Tagged" if tag_name in existing_tags else "⚠️ No Tag"
+
+        print(f"{snapshot_name:<30} | {created_at:<25} | {code_state}")
+
+    sys.exit(0)
+
+
+def _snapshot_restore(args):
+    """Helper function to restore a snapshot."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    snapshot_name = args.name
+    archive_base_dir = project_dir / ".agent_archives"
+
+    if not snapshot_name:
+        print("❌ Error: 'snapshot restore' requires a snapshot name.", file=sys.stderr)
+        sys.exit(1)
+
+    snapshot_dir = archive_base_dir / snapshot_name
+    tag_name = f"snapshot/{snapshot_name}"
+
+    print(f"--- Restoring snapshot: {snapshot_name} ---")
+
+    # --- Pre-flight Checks ---
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Cannot restore code state because this is not a git repository.", file=sys.stderr)
+        git_path = None
+    else:
+        # Check for uncommitted changes
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True
+        )
+        if status_result.stdout.strip():
+            print("❌ Error: Your repository has uncommitted changes.", file=sys.stderr)
+            print("Please commit or stash them before restoring a snapshot.", file=sys.stderr)
+            sys.exit(1)
+        # Check if the tag exists
+        tag_check_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", tag_name],
+            capture_output=True, text=True
+        )
+        if tag_check_result.returncode != 0:
+            print(f"- Warning: Git tag '{tag_name}' not found. Only artifacts will be restored.", file=sys.stderr)
+            git_path = None # Disable git checkout
+
+    # Check if artifact directory exists
+    if not snapshot_dir.is_dir():
+        print(f"- Warning: Snapshot artifact directory not found at '{snapshot_dir}'.", file=sys.stderr)
+        if not git_path:
+            print("❌ Error: No artifacts and no git tag to restore. Aborting.", file=sys.stderr)
+            sys.exit(1)
+
+    print("\nThe following actions will be taken:")
+    if snapshot_dir.is_dir():
+        print(f"  - Artifacts from '{snapshot_name}' will be copied to the project directory.")
+    if git_path:
+        print(f"  - Your project will be checked out to the git tag '{tag_name}' (detached HEAD state).")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    # --- Step 1: Restore Git State (do this first) ---
+    if git_path:
+        print(f"\nChecking out git tag '{tag_name}'...")
+        try:
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "checkout", tag_name],
+                check=True, capture_output=True
+            )
+            print("✅ Git state restored. You are now in a 'detached HEAD' state.")
+            print("   To create a new branch from here, use 'git checkout -b <new-branch-name>'.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error checking out git tag: {e.stderr.decode().strip()}", file=sys.stderr)
+            sys.exit(1)
+
+    # --- Step 2: Restore Artifacts (do this second) ---
+    if snapshot_dir.is_dir():
+        print("\nRestoring artifacts...")
+        try:
+            for item in snapshot_dir.iterdir():
+                dest_path = project_dir / item.name
+                # The file might already exist from the git checkout, which is fine.
+                if dest_path.exists():
+                    if dest_path.is_dir():
+                        shutil.rmtree(dest_path)
+                    else:
+                        dest_path.unlink()
+
+                if item.is_dir():
+                    shutil.copytree(item, dest_path)
+                else:
+                    shutil.copy2(item, dest_path)
+                print(f"  - Restored {item.name}")
+        except OSError as e:
+            print(f"❌ Error restoring artifacts: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    print(f"\n✅ Snapshot '{snapshot_name}' restored successfully.")
+    sys.exit(0)
+
+
+def _snapshot_delete(args):
+    """Helper function to delete a snapshot."""
+    import shutil
+    project_dir = args.project_dir.resolve()
+    snapshot_name = args.name
+    archive_base_dir = project_dir / ".agent_archives"
+
+    if not snapshot_name:
+        print("❌ Error: 'snapshot delete' requires a snapshot name.", file=sys.stderr)
+        sys.exit(1)
+
+    snapshot_dir = archive_base_dir / snapshot_name
+    tag_name = f"snapshot/{snapshot_name}"
+
+    print(f"--- Deleting snapshot: {snapshot_name} ---")
+
+    # --- Pre-flight Checks ---
+    snapshot_exists = snapshot_dir.is_dir()
+    tag_exists = False
+    git_path = shutil.which("git")
+    if git_path and (project_dir / ".git").is_dir():
+        tag_check_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "rev-parse", tag_name],
+            capture_output=True, text=True
+        )
+        if tag_check_result.returncode == 0:
+            tag_exists = True
+
+    if not snapshot_exists and not tag_exists:
+        print(f"❌ Error: Snapshot '{snapshot_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    print("\nThe following will be permanently deleted:")
+    if snapshot_exists:
+        print(f"  - Snapshot artifact directory: .agent_archives/{snapshot_name}")
+    if tag_exists:
+        print(f"  - Git tag: {tag_name}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    # --- Step 1: Delete Artifact Directory ---
+    if snapshot_exists:
+        print("\nDeleting artifact directory...")
+        try:
+            shutil.rmtree(snapshot_dir)
+            print("  - Directory removed.")
+        except OSError as e:
+            print(f"❌ Error deleting snapshot directory: {e}", file=sys.stderr)
+            # Do not exit, still attempt to delete the tag
+
+    # --- Step 2: Delete Git Tag ---
+    if tag_exists:
+        print("\nDeleting git tag...")
+        try:
+            subprocess.run(
+                [git_path, "-C", str(project_dir), "tag", "-d", tag_name],
+                check=True, capture_output=True
+            )
+            print("  - Git tag removed.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error deleting git tag: {e.stderr.decode().strip()}", file=sys.stderr)
+            sys.exit(1)
+
+    print(f"\n✅ Snapshot '{snapshot_name}' deleted successfully.")
+    sys.exit(0)
+
+
 def run_snapshot(args):
     """Dispatches snapshot actions."""
     if args.action == "create":
         _snapshot_create(args)
     elif args.action == "diff":
         _snapshot_diff(args)
+    elif args.action == "list":
+        _snapshot_list(args)
+    elif args.action == "restore":
+        _snapshot_restore(args)
+    elif args.action == "delete":
+        _snapshot_delete(args)
 
 
 def _artifacts_list(base_dir, mode):
@@ -4462,8 +4741,8 @@ def parse_args(argv=None):
     parser_snapshot = subparsers.add_parser("snapshot", help="Manage snapshots of key agent artifacts")
     parser_snapshot.add_argument(
         "action",
-        choices=["create", "diff"],
-        help="Action to perform: 'create' a new snapshot or 'diff' against an existing one.",
+        choices=["create", "diff", "list", "restore", "delete"],
+        help="Action to perform on snapshots.",
     )
     parser_snapshot.add_argument(
         "name",

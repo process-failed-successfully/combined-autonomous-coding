@@ -1740,6 +1740,23 @@ def run_discard(args):
     sys.exit(0)
 
 
+def is_plausible_git_ref(ref: str) -> bool:
+    """
+    Checks if a string is a plausible git ref.
+    It's not a foolproof validator, but it prevents command injection.
+    Allows for branch names, tags, HEAD~1, etc. but disallows shell metacharacters.
+    """
+    if not ref:
+        return False
+    # Disallow starting with '-' to prevent option injection.
+    if ref.startswith('-'):
+        return False
+    # Disallow characters that have special meaning in shells.
+    if any(c in ref for c in ' ;|&`$()<>\\!'):
+        return False
+    return True
+
+
 def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str | None:
     """Searches the git log for a commit associated with a Run ID."""
     try:
@@ -1813,6 +1830,10 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
+    if not is_plausible_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
@@ -1885,6 +1906,11 @@ def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
     project_dir = args.project_dir.resolve()
     target = args.target
+
+    if target and not is_plausible_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
+        sys.exit(1)
+
     original_target = target  # Keep a copy for error messages
 
     # --- Pre-flight checks ---

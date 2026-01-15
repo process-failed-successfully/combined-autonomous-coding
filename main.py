@@ -1772,6 +1772,12 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Input Sanitization ---
+    from shared.git_utils import is_safe_git_ref
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
@@ -2934,6 +2940,7 @@ def run_help(args):
     print_command("discard", "Safely discard uncommitted changes by stashing them first.")
     print_command("undo", "Restore changes that were previously discarded.")
     print_command("rewind", "Reset the project state to a previous git commit or Run ID.")
+    print_command("cherry-pick", "Apply the changes from a specific commit or Run ID.")
     print_command("workflow", "Manually manage the agent's workflow state (e.g., advance to QA).")
 
     print_header("Artifact & Sprint Management")

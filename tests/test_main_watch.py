@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import time
 import os
+import io
 
 from main import run_watch, CommandEventHandler
 

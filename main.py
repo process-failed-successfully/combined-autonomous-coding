@@ -1757,10 +1757,17 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     return None
 
 
+from shared.git_utils import is_safe_git_ref
+
+
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
     target = args.target
+
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. May be a command-line option.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")

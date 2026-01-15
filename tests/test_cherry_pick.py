@@ -5,9 +5,13 @@ from pathlib import Path
 import shutil
 import os
 import sys
+import importlib
 
+# Add the root of the project to the Python path
+# This is necessary for the tests to be able to import the 'main' module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_cherry_pick
+import main
 
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):
@@ -59,6 +63,7 @@ class TestCherryPickCommand(unittest.TestCase):
     def tearDown(self):
         """Remove the temporary directory."""
         shutil.rmtree(self.test_dir)
+        importlib.reload(main)
 
     @patch('sys.stdout')
     def test_cherry_pick_successful(self, mock_stdout):
@@ -68,7 +73,7 @@ class TestCherryPickCommand(unittest.TestCase):
         args.target = self.cherry_pick_commit
 
         with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+            main.run_cherry_pick(args)
 
         self.assertEqual(cm.exception.code, 0)
         self.assertTrue((self.test_dir / "file2.txt").exists())
@@ -83,7 +88,7 @@ class TestCherryPickCommand(unittest.TestCase):
         args.target = "run-12345" # This ID is in the commit message
 
         with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+            main.run_cherry_pick(args)
 
         self.assertEqual(cm.exception.code, 0)
         self.assertTrue((self.test_dir / "file2.txt").exists())
@@ -97,7 +102,7 @@ class TestCherryPickCommand(unittest.TestCase):
         args.target = self.conflict_commit
 
         with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+            main.run_cherry_pick(args)
 
         self.assertEqual(cm.exception.code, 1)
 
@@ -126,7 +131,7 @@ class TestCherryPickCommand(unittest.TestCase):
         args.target = "--some-git-option"
 
         with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+            main.run_cherry_pick(args)
 
         self.assertEqual(cm.exception.code, 1)
         stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)

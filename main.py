@@ -30,6 +30,7 @@ except ImportError:
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
+from shared.git_utils import is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1773,7 +1774,6 @@ def run_cherry_pick(args):
         sys.exit(1)
 
     # --- Input Sanitization ---
-    from shared.git_utils import is_safe_git_ref
     if not is_safe_git_ref(target):
         print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters.", file=sys.stderr)
         sys.exit(1)

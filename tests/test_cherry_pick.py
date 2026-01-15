@@ -18,46 +18,48 @@ class TestCherryPickCommand(unittest.TestCase):
         self.test_dir = Path("test_repo_cherry_pick")
         self.test_dir.mkdir(exist_ok=True)
 
-        subprocess.run(["git", "init", "-b", "main"], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir, check=True)
-        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.test_dir, check=True)
+        assert subprocess.run(["git", "init", "-b", "main"], cwd=self.test_dir, capture_output=True).returncode == 0
+        assert subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir).returncode == 0
+        assert subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.test_dir).returncode == 0
 
         # Create the first commit on 'main'
         (self.test_dir / "file1.txt").write_text("Initial content")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)
-        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.test_dir, check=True)
+        assert subprocess.run(["git", "add", "."], cwd=self.test_dir).returncode == 0
+        assert subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.test_dir).returncode == 0
 
         # Create a feature branch and a commit to be cherry-picked
-        subprocess.run(["git", "checkout", "-b", "feature"], cwd=self.test_dir, check=True)
+        assert subprocess.run(["git", "checkout", "-b", "feature"], cwd=self.test_dir).returncode == 0
         (self.test_dir / "file2.txt").write_text("Feature content")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)
+        assert subprocess.run(["git", "add", "."], cwd=self.test_dir).returncode == 0
         run_id = "run-12345"
-        subprocess.run(["git", "commit", "-m", f"feat: Add file2\n\nRun ID: {run_id}"], cwd=self.test_dir, check=True)
-        self.cherry_pick_commit = subprocess.run(
+        assert subprocess.run(["git", "commit", "-m", f"feat: Add file2\n\nRun ID: {run_id}"], cwd=self.test_dir).returncode == 0
+        result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=self.test_dir,
-            check=True,
             capture_output=True,
             text=True
-        ).stdout.strip()
+        )
+        assert result.returncode == 0
+        self.cherry_pick_commit = result.stdout.strip()
 
         # Create a commit that will cause a conflict
         (self.test_dir / "file1.txt").write_text("Feature branch modification")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)
-        subprocess.run(["git", "commit", "-m", "feat: Modify file1 on feature"], cwd=self.test_dir, check=True)
-        self.conflict_commit = subprocess.run(
+        assert subprocess.run(["git", "add", "."], cwd=self.test_dir).returncode == 0
+        assert subprocess.run(["git", "commit", "-m", "feat: Modify file1 on feature"], cwd=self.test_dir).returncode == 0
+        result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=self.test_dir,
-            check=True,
             capture_output=True,
             text=True
-        ).stdout.strip()
+        )
+        assert result.returncode == 0
+        self.conflict_commit = result.stdout.strip()
 
         # Switch back to main and make a conflicting change
-        subprocess.run(["git", "checkout", "main"], cwd=self.test_dir, check=True)
+        assert subprocess.run(["git", "checkout", "main"], cwd=self.test_dir).returncode == 0
         (self.test_dir / "file1.txt").write_text("Main branch modification")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)
-        subprocess.run(["git", "commit", "-m", "Modify file1 on main"], cwd=self.test_dir, check=True)
+        assert subprocess.run(["git", "add", "."], cwd=self.test_dir).returncode == 0
+        assert subprocess.run(["git", "commit", "-m", "Modify file1 on main"], cwd=self.test_dir).returncode == 0
 
     def tearDown(self):
         """Remove the temporary directory."""

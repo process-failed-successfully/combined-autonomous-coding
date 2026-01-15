@@ -1830,7 +1830,7 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
-    if target and not is_safe_git_ref(target):
+    if not is_safe_git_ref(target):
         print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
         sys.exit(1)
 

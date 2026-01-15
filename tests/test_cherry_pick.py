@@ -5,11 +5,13 @@ from pathlib import Path
 import shutil
 import os
 import sys
+import importlib
 
 # Add the root of the project to the Python path
 # This is necessary for the tests to be able to import the 'main' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+import main
 from main import run_cherry_pick
 
 class TestCherryPickCommand(unittest.TestCase):
@@ -62,6 +64,8 @@ class TestCherryPickCommand(unittest.TestCase):
     def tearDown(self):
         """Remove the temporary directory."""
         shutil.rmtree(self.test_dir)
+        # Reset any possible modifications to the argument parser
+        importlib.reload(main)
 
     @patch('sys.stdout')
     def test_cherry_pick_successful(self, mock_stdout):

@@ -286,9 +286,9 @@ class Telemetry:
         name: str,
         documentation: str,
         labelnames: List[str] = [],
-        buckets: Tuple[float, ...] = (0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, INF) if 'INF' in locals() else None, # We can't easily access default buckets if not imported, so we import inside.
+        buckets: Optional[Tuple[float, ...]] = None,
     ):
-        from prometheus_client import Histogram
+        from prometheus_client import Histogram, INF
         if buckets is None:
              buckets = Histogram.DEFAULT_BUCKETS
 

@@ -5378,7 +5378,12 @@ def run_watch(args):
         print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
         sys.exit(1)
 
+    if not command_to_run:
+        print("Error: No command provided to the watch command. Usage: main.py watch <command>", file=sys.stderr)
+        sys.exit(1)
+
     print(f"--- Watching for file changes in: {project_dir} ---")
+    print(f"--- Running command on change: {' '.join(command_to_run)} ---")
     print(f"--- Press Ctrl+C to stop ---")
 
     event_handler = CommandEventHandler(command_to_run, project_dir)

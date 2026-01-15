@@ -2381,55 +2381,152 @@ def run_glance(args):
     print(f"  {CYAN_BOLD}Next Step{ENDC}:  `{next_action}`")
 
 
-def _run_history_logic(project_dir):
+def _run_history_logic(project_dir, run_id=None, agent_filter=None):
     """The core logic for displaying agent run history."""
-    history_file = project_dir / ".agent_history"
-    repo_root = Path(__file__).parent
-    logs_dir = repo_root / "agents/logs"
+    if run_id:
+        # Detailed view for a single run
+        details = _get_run_details(project_dir, run_id)
+        if not details:
+            print(f"❌ Error: Could not find details for Run ID: {run_id}", file=sys.stderr)
+            sys.exit(1)
 
-    print(f"--- Agent Run History: {project_dir} ---")
+        print(f"--- Details for Run ID: {run_id} ---")
+        _display_metrics_table(details["metrics"], "Performance Metrics")
 
-    if not history_file.exists():
-        print("No agent run history found for this project.")
-        return
-
-    try:
-        with open(history_file, "r") as f:
-            run_ids = [line.strip() for line in f if line.strip()]
-    except IOError as e:
-        print(f"Error reading history file: {e}", file=sys.stderr)
-        return
-
-    if not run_ids:
-        print("History is empty.")
-        return
-
-    for i, run_id in enumerate(reversed(run_ids)):
-        latest_marker = " (latest)" if i == 0 else ""
-        print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
-        log_file = logs_dir / f"{run_id}.log"
-        if log_file.exists():
-            try:
-                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = f.readlines()
-                first_line = lines[0].strip() if lines else ""
-                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
-                print(f"  Timestamp: {timestamp}")
-                if lines:
-                    print("  Log Summary (last 5 lines):")
-                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
-                    for line in last_lines:
-                        print(f"    {line}")
-                else:
-                    print("  Log file is empty.")
-            except Exception as e:
-                print(f"  Error reading log file: {e}")
+        print("\n--- Git Commit ---")
+        if details["commit_hash"]:
+            print(f"  Commit Hash: {details['commit_hash']}")
+            # Provide an actionable command
+            print(f"  To view changes, run: main.py diff {details['commit_hash']}")
         else:
-            print("  Log file not found.")
+            print("  No Git commit associated with this run.")
+
+        print("\n--- QA Summary ---")
+        if details["qa_summary"]:
+            print(details["qa_summary"])
+        else:
+            print("  No QA summary found for this run.")
+
+        print("\n--- Log Summary (Last 10 lines) ---")
+        if details["log_summary"]:
+            for line in details["log_summary"]:
+                print(f"  {line}")
+        else:
+            print("  Log file not found or is empty.")
+
+    else:
+        # Summary view for multiple runs
+        history_file = project_dir / ".agent_history"
+        if not history_file.exists():
+            print("No agent run history found for this project.")
+            return
+
+        try:
+            with open(history_file, "r") as f:
+                all_run_ids = [line.strip() for line in f if line.strip()]
+        except IOError as e:
+            print(f"Error reading history file: {e}", file=sys.stderr)
+            return
+
+        if not all_run_ids:
+            print("History is empty.")
+            return
+
+        runs_info = []
+        for i, current_run_id in enumerate(all_run_ids):
+            details = _get_run_details(project_dir, current_run_id, summary_mode=True)
+            if details:
+                # Add the original run number
+                details['num'] = i + 1
+                runs_info.append(details)
+
+        # Filter by agent if requested
+        if agent_filter:
+            runs_info = [r for r in runs_info if r["metrics"].get("Agent Type", "").lower() == agent_filter.lower()]
+
+        if not runs_info:
+            print(f"No history found for agent type: {agent_filter}")
+            return
+
+        print(f"--- Agent Run History (Last {len(runs_info)} runs) ---")
+        # Display summary table
+        header = f"{'Num':<5} | {'Run ID':<20} | {'Agent':<10} | {'Timestamp':<20} | {'Commit':<10}"
+        print(header)
+        print("-" * len(header))
+
+        # Sort by run number descending to show the latest first
+        for run in sorted(runs_info, key=lambda x: x['num'], reverse=True):
+            metrics = run.get("metrics", {})
+            num = run.get('num', 'N/A')
+            run_id_display = run.get("run_id", "N/A")[:20]
+            agent = metrics.get("Agent Type", "N/A")
+            timestamp = metrics.get("Timestamp", "N/A")
+            commit = run.get("commit_hash", "N/A")
+            if commit and commit != "N/A":
+                commit = commit[:7]
+
+            print(f"{str(num):<5} | {run_id_display:<20} | {agent:<10} | {timestamp:<20} | {commit:<10}")
+
+
+def _get_run_details(project_dir, run_id, summary_mode=False):
+    """Gathers detailed information for a specific agent run."""
+    details = {
+        "run_id": run_id,
+        "metrics": {},
+        "commit_hash": None,
+        "qa_summary": None,
+        "log_summary": None,
+    }
+
+    # 1. Get metrics
+    metrics_file = _find_metrics_file(run_id, project_dir)
+    if metrics_file:
+        details["metrics"] = _parse_metrics(metrics_file)
+
+    # In summary mode, we only need metrics, so we can return early
+    if summary_mode:
+        # Also try to get commit hash cheaply if possible
+        git_path = shutil.which("git")
+        if git_path and (project_dir / ".git").is_dir():
+            details["commit_hash"] = _find_commit_by_run_id(project_dir, git_path, run_id)
+        return details
+
+    # 2. Get associated Git commit
+    git_path = shutil.which("git")
+    if git_path and (project_dir / ".git").is_dir():
+        details["commit_hash"] = _find_commit_by_run_id(project_dir, git_path, run_id)
+
+    # 3. Get QA Summary from the correct location (archive or project dir)
+    qa_summary_file = project_dir / "qa_summary.txt"
+    # This is a simplification; a more robust solution would check inside the
+    # specific archive directory for this run, if it exists.
+    if qa_summary_file.exists():
+        try:
+            details["qa_summary"] = qa_summary_file.read_text().strip()
+        except IOError:
+            pass # Ignore errors
+
+    # 4. Get log summary
+    repo_root = Path(__file__).parent
+    log_file = repo_root / f"agents/logs/{run_id}.log"
+    if log_file.exists():
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = [line.strip() for line in f if line.strip()]
+                details["log_summary"] = lines[-10:]
+        except IOError:
+            pass # Ignore errors
+
+    return details
+
 
 def run_history(args):
     """Displays a history of agent runs for the project."""
-    _run_history_logic(project_dir=args.project_dir)
+    _run_history_logic(
+        project_dir=args.project_dir,
+        run_id=getattr(args, 'run_id', None),
+        agent_filter=getattr(args, 'agent', None)
+    )
     sys.exit(0)
 
 
@@ -4152,10 +4249,19 @@ def parse_args(argv=None):
     # Subparser for 'history'
     parser_history = subparsers.add_parser("history", help="Show the history of agent runs for the project")
     parser_history.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID to show detailed information for. If omitted, a summary table is shown.",
+    )
+    parser_history.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
         help="The project directory to check history for (default: current directory)",
+    )
+    parser_history.add_argument(
+        "-a", "--agent",
+        help="Filter history by agent type (e.g., gemini, cursor).",
     )
 
     # Subparser for 'last'

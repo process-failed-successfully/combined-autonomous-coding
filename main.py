@@ -1775,7 +1775,7 @@ def run_cherry_pick(args):
 
     # --- Input Sanitization ---
     if not is_safe_git_ref(target):
-        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters.", file=sys.stderr)
+        print(f"❌ Error: Invalid target '{target}'. May be a command-line option or contain unsafe characters.", file=sys.stderr)
         sys.exit(1)
 
     # --- Target Resolution: Commit Hash vs. Run ID ---

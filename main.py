@@ -1769,6 +1769,7 @@ def run_cherry_pick(args):
         print(f"❌ Error: Invalid target '{target}'. May be a command-line option.", file=sys.stderr)
         sys.exit(1)
 
+
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
@@ -1781,10 +1782,6 @@ def run_cherry_pick(args):
         sys.exit(1)
 
     # --- Input Sanitization ---
-    if not is_safe_git_ref(target):
-        print(f"❌ Error: Invalid target '{target}'. May be a command-line option or contain unsafe characters.", file=sys.stderr)
-        sys.exit(1)
-
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
@@ -1809,6 +1806,11 @@ def run_cherry_pick(args):
             print(f"❌ Error: Could not find a git commit for target '{original_target}'.", file=sys.stderr)
             print("Please provide a valid commit hash or a Run ID from the agent's history.", file=sys.stderr)
             sys.exit(1)
+
+    # --- Final Sanitization ---
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe commit reference '{target}'.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Execute Cherry-Pick ---
     print(f"--- Applying commit {target[:7]} onto the current branch ---")

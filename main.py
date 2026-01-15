@@ -2958,12 +2958,13 @@ def run_tui(args):
     """Starts the Textual TUI."""
     try:
         from shared.tui import AgentTUI
-        app = AgentTUI(project_dir=args.project_dir)
+        app = AgentTUI(project_dir=args.project_dir.resolve())
         app.run()
-        sys.exit(0)
     except ImportError as e:
-        print("Error: Could not import TUI dependencies. Please run 'pip install -r requirements-dev.txt'", file=sys.stderr)
-        print(f"Details: {e}", file=sys.stderr)
+        print("Error: Could not import TUI dependencies.", file=sys.stderr)
+        print("Please run the following command to install them:", file=sys.stderr)
+        print("pip install textual beautifulsoup4", file=sys.stderr)
+        print(f"\nDetails: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"An unexpected error occurred while running the TUI: {e}", file=sys.stderr)

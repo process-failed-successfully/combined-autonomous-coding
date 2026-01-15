@@ -2927,6 +2927,7 @@ def run_help(args):
     print_command("commit", "Stage all changes and create a commit, with interactive prompts.")
     print_command("push", "Safely push the current feature branch to the remote.")
     print_command("pull", "Safely pull the latest changes from the remote.")
+    print_command("patch", "Apply a patch from a file or stdin.")
     print_command("pr", "Manage GitHub pull requests for the project.")
     print_command("feature", "A guided workflow for branch -> commit -> push -> pr.")
     print_command("diff", "Show a detailed diff of uncommitted changes or a specific commit.")

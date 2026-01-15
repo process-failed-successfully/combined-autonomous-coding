@@ -11,7 +11,7 @@ import time
 from typing import Optional, Any, List, Tuple, Dict
 
 from shared.config import Config
-from shared.utils import get_file_tree, process_response_blocks
+from shared.utils import get_file_tree, process_response_blocks, get_executable_path
 from shared.agent_client import AgentClient
 from shared.telemetry import get_telemetry
 from agents.shared.base_agent import BaseAgent
@@ -242,7 +242,8 @@ async def run_autonomous_agent(
         logger.info("Starting Cursor Login Flow...")
         import subprocess
         try:
-            subprocess.run(["cursor-agent", "login"], check=False)
+            cursor_path = get_executable_path("cursor-agent")
+            subprocess.run([cursor_path, "login"], check=False)
         except FileNotFoundError:
             logger.error("Cursor Agent CLI not found.")
         except Exception as e:

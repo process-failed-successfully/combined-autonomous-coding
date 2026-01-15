@@ -160,7 +160,7 @@ class TestJiraIntegration(unittest.TestCase):
         self.assertTrue(success)
         mock_subprocess.assert_called()
         args = mock_subprocess.call_args[0][0]
-        self.assertIn("git", args)
+        self.assertTrue(args[0].endswith("git"))
         self.assertIn("clone", args)
         self.assertIn("https://github.com/test/repo.git", args)
 

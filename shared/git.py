@@ -10,7 +10,7 @@ import subprocess
 import time
 from pathlib import Path
 from typing import Optional
-from shared.utils import sanitize_url
+from shared.utils import sanitize_url, get_executable_path
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,8 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
             base_url
         ]
 
-        subprocess.run(["git"] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        git_path = get_executable_path("git")
+        subprocess.run([git_path] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     except Exception as e:
         logger.error(f"Failed to configure git auth: {e}")
@@ -62,8 +63,9 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
 def run_git(cmd: list[str], cwd: Path) -> bool:
     """Run a git command and return success status."""
     try:
+        git_path = get_executable_path("git")
         subprocess.run(
-            ["git"] + cmd,
+            [git_path] + cmd,
             cwd=cwd,
             check=True,
             stdout=subprocess.PIPE,
@@ -136,10 +138,11 @@ def ensure_git_safe(project_dir: Path, ticket_key: Optional[str] = None) -> None
 def push_branch(project_dir: Path, branch_name: Optional[str] = None) -> bool:
     """Push the current branch to origin."""
     try:
+        git_path = get_executable_path("git")
         if not branch_name:
             # Get current branch
             res = subprocess.run(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                [git_path, "rev-parse", "--abbrev-ref", "HEAD"],
                 cwd=project_dir,
                 check=True,
                 stdout=subprocess.PIPE,
@@ -165,8 +168,9 @@ def clone_repo(url: str, dest_path: Path) -> bool:
     """Clone a repository to the destination path."""
     try:
         logger.info(f"Cloning {sanitize_url(url)} to {dest_path}...")
+        git_path = get_executable_path("git")
         subprocess.run(
-            ["git", "clone", url, str(dest_path)],
+            [git_path, "clone", url, str(dest_path)],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -183,8 +187,9 @@ def clone_repo(url: str, dest_path: Path) -> bool:
 def get_current_branch(project_dir: Path) -> Optional[str]:
     """Gets the current active git branch name."""
     try:
+        git_path = get_executable_path("git")
         res = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            [git_path, "rev-parse", "--abbrev-ref", "HEAD"],
             cwd=project_dir,
             check=True,
             stdout=subprocess.PIPE,

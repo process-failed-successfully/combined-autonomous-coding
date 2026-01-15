@@ -8,6 +8,7 @@ Common functions for autonomous coding agents.
 import asyncio
 import logging
 import os
+import shutil
 import subprocess
 from itertools import chain
 from pathlib import Path
@@ -18,6 +19,17 @@ if TYPE_CHECKING:
     from shared.config import Config
 
 logger = logging.getLogger(__name__)
+
+
+def get_executable_path(name: str) -> str:
+    """
+    Get the full path of an executable.
+    Raises FileNotFoundError if not found.
+    """
+    path = shutil.which(name)
+    if not path:
+        raise FileNotFoundError(f"Executable '{name}' not found in PATH.")
+    return path
 
 
 def log_startup_config(config: "Config", logger: logging.Logger):
@@ -47,8 +59,9 @@ def get_file_tree(root_dir: Path) -> str:
     try:
         # Use git ls-files if available for cleaner output (respects
         # .gitignore)
+        git_path = get_executable_path("git")
         result = subprocess.run(
-            ["git", "ls-files"], cwd=root_dir, capture_output=True, text=True
+            [git_path, "ls-files"], cwd=root_dir, capture_output=True, text=True
         )
         if result.returncode == 0 and result.stdout:
             lines = result.stdout.splitlines()

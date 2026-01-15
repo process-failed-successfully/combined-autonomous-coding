@@ -21,7 +21,7 @@ class TestGitAuth(unittest.TestCase):
         args = mock_run.call_args[0][0]
 
         # Verify git config structure
-        self.assertIn("git", args)
+        self.assertTrue(args[0].endswith("git"))
         self.assertIn("config", args)
         self.assertIn("--global", args)
 

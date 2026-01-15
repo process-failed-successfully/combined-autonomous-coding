@@ -64,13 +64,41 @@ if FileSystemEventHandler:
     class CommandEventHandler(FileSystemEventHandler):
         def __init__(self, command, project_dir):
             self.command = command
-            self.project_dir = project_dir
+            self.project_dir = project_dir.resolve()
 
-        def on_modified(self, event):
+        def on_any_event(self, event):
+            # This event handler is called for created, modified, and deleted events
             if event.is_directory:
                 return
-            print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
-            subprocess.run(self.command, cwd=self.project_dir)
+
+            try:
+                src_path = Path(event.src_path).resolve()
+            except FileNotFoundError:
+                # This can happen when a file is deleted, so we just use the path as is
+                src_path = Path(event.src_path)
+
+            # Define paths to ignore to prevent feedback loops
+            ignore_dirs = [".git", ".agent_trash", ".agent_archives", "worktrees", "__pycache__"]
+            ignore_paths = [self.project_dir / d for d in ignore_dirs]
+
+            # Check if the path is within any of the ignored directories
+            if any(p.exists() and src_path.is_relative_to(p) for p in ignore_paths):
+                return
+
+            # Also ignore dotfiles at the root, like .agent_history
+            if src_path.parent == self.project_dir and src_path.name.startswith('.'):
+                return
+
+            try:
+                relative_path = src_path.relative_to(self.project_dir)
+                print(f"\n--- File Change Detected: {relative_path} ---")
+                print(f"Running command: {' '.join(self.command)}")
+                print("-------------------------------------------")
+                subprocess.run(self.command, cwd=self.project_dir)
+            except ValueError:
+                # This can happen for temp files created by some editors
+                # outside the project directory, which is safe to ignore.
+                pass
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -5374,22 +5402,36 @@ def run_watch(args):
     project_dir = args.project_dir.resolve()
     command_to_run = args.watch_command
 
+    if not command_to_run:
+        print("❌ Error: No command provided to the watch command.", file=sys.stderr)
+        print("   Usage: main.py watch <command_to_run...>", file=sys.stderr)
+        sys.exit(1)
+
     if Observer is None:
-        print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
+        print("❌ Error: 'watchdog' library not found.", file=sys.stderr)
+        print("   Please install it by running: pip install watchdog", file=sys.stderr)
         sys.exit(1)
 
     print(f"--- Watching for file changes in: {project_dir} ---")
-    print(f"--- Press Ctrl+C to stop ---")
+    print(f"--- Command to run: {' '.join(command_to_run)}")
+    print("--- Press Ctrl+C to stop ---")
+
+    # Initial run of the command
+    print("\n--- Running initial command ---")
+    subprocess.run(command_to_run, cwd=project_dir)
+    print("-----------------------------")
+
 
     event_handler = CommandEventHandler(command_to_run, project_dir)
     observer = Observer()
-    observer.schedule(event_handler, project_dir, recursive=True)
+    observer.schedule(event_handler, str(project_dir), recursive=True)
     observer.start()
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        print("\n--- Watcher stopped by user ---")
         observer.stop()
     observer.join()
     sys.exit(0)

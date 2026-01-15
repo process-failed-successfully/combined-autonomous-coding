@@ -51,6 +51,8 @@ import yaml
 import platformdirs
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
+import re
+import shlex
 
 # Agent Definitions
 AVAILABLE_AGENTS = {
@@ -1829,6 +1831,127 @@ def run_cherry_pick(args):
         sys.exit(1)
 
 
+def run_replay(args):
+    """Re-runs a previous agent session with optional overrides."""
+    run_id = args.run_id
+    repo_root = Path(__file__).parent
+    log_file = repo_root / f"agents/logs/{run_id}.log"
+
+    print(f"--- Replaying agent run: {run_id} ---")
+
+    if not log_file.exists():
+        print(f"❌ Error: Log file not found for Run ID: {run_id}", file=sys.stderr)
+        sys.exit(1)
+
+    config_line = None
+    try:
+        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                if "Effective Config:" in line:
+                    config_line = line
+                    break
+    except IOError as e:
+        print(f"❌ Error reading log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not config_line:
+        print("❌ Error: Could not find effective configuration in the log file.", file=sys.stderr)
+        sys.exit(1)
+
+    original_args = []
+    try:
+        # Extract the JSON part of the log line
+        json_str = config_line.split("Effective Config: ")[1]
+        config_dict = json.loads(json_str)
+
+        for key, value in config_dict.items():
+            if value is None:
+                continue
+
+            # Map the config keys to their corresponding command-line flags
+            key_map = {
+                "agent_type": "agent",
+                "project_dir": "project-dir",
+                "spec_file": "spec"
+            }
+            flag_name = key_map.get(key, key.replace("_", "-"))
+
+            # These flags are internal or derived, and should not be part of the replayed command
+            if flag_name in ["agent-id", "jira-spec-content", "notification-settings", "login-mode", "jira-ticket-key", "jira"]:
+                continue
+
+            original_args.append(f"--{flag_name}")
+            original_args.append(str(value))
+
+    except (json.JSONDecodeError, IndexError) as e:
+        print(f"❌ Error parsing configuration from log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # This logic correctly merges arguments from the log file with overrides from the command line,
+    # ensuring that the --project-dir argument is handled with the correct precedence.
+    final_args_map = {}
+    i = 0
+    while i < len(original_args):
+        arg = original_args[i]
+        if arg.startswith("--"):
+            if i + 1 < len(original_args) and not original_args[i+1].startswith("--"):
+                final_args_map[arg] = original_args[i+1]
+                i += 2
+            else:
+                final_args_map[arg] = None
+                i += 1
+        else:
+            i += 1
+
+    # Check if project-dir was provided in the freeform replay arguments.
+    # This is a workaround for an argparse issue where REMAINDER can consume optional args.
+    project_dir_in_replay_args = any(arg in ['-p', '--project-dir'] or arg.startswith('--project-dir=') for arg in args.replay_args)
+
+    i = 0
+    while i < len(args.replay_args):
+        arg = args.replay_args[i]
+        key = arg
+        if arg == '-p':
+            key = '--project-dir'
+
+        if arg.startswith("-"):
+            if i + 1 < len(args.replay_args) and not args.replay_args[i+1].startswith("-"):
+                final_args_map[key] = args.replay_args[i+1]
+                i += 2
+            else:
+                final_args_map[key] = None
+                i += 1
+        else:
+             i += 1
+
+    executable = sys.executable
+    script_path = os.path.abspath(__file__)
+
+    # If --project-dir was not in the freeform args, the one from the replay command itself takes precedence.
+    if not project_dir_in_replay_args:
+        final_args_map["--project-dir"] = str(args.project_dir)
+
+    final_command = [executable, script_path]
+    for key, value in final_args_map.items():
+        final_command.append(key)
+        if value is not None:
+            final_command.append(value)
+
+    print("\n--- Executing Replay Command ---")
+    print(f"  {shlex.join(final_command)}")
+    print("--------------------------------\n")
+
+    try:
+        result = subprocess.run(final_command, text=True)
+        sys.exit(result.returncode)
+    except FileNotFoundError:
+        print(f"❌ Error: Could not find Python executable at '{executable}'", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while launching the replay: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
     project_dir = args.project_dir.resolve()
@@ -2916,6 +3039,7 @@ def run_help(args):
     print_command("dashboard", "Display a comprehensive project dashboard.")
     print_command("history", "Show the history of agent runs for the project.")
     print_command("last", "Show a detailed summary of the very last agent run.")
+    print_command("replay", "Re-run a previous agent session with optional overrides.")
     print_command("log", "Show the git commit history in a formatted view.")
     print_command("logs", "Show agent logs with filtering and real-time follow options.")
     print_command("tree", "Display a tree view of the project directory.")
@@ -5208,6 +5332,27 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Re-run a previous agent session with optional overrides."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the session to replay.",
+    )
+    parser_replay.add_argument(
+        "replay_args",
+        nargs=argparse.REMAINDER,
+        help="Override arguments to pass to the new run (e.g., --model claude-3-opus).",
+    )
+    parser_replay.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory for the replay.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7111,6 +7256,10 @@ async def main():
         run_cherry_pick(args)
         return
 
+    if args.command == "replay":
+        run_replay(args)
+        return
+
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id
@@ -7274,6 +7423,9 @@ async def main():
 
     # Configure Root Logger to capture all module logs (e.g. shared.git)
     logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=args.verbose)
+
+    from shared.utils import EnhancedJSONEncoder
+    logger.info(f"Effective Config: {json.dumps(config, cls=EnhancedJSONEncoder)}")
 
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")

@@ -43,7 +43,7 @@ class TestMainHelp(unittest.TestCase):
         self.assertIn("status", output)
         self.assertIn("commit", output)
         self.assertIn("artifacts", output)
-        self.assertIn("why", output)
+        self.assertIn("watch", output)
 
 if __name__ == '__main__':
     unittest.main()

@@ -45,7 +45,6 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
-from shared.commands import run_why
 import json
 import yaml
 import platformdirs
@@ -2943,7 +2942,7 @@ def run_help(args):
     print_command("worktrees", "Manage git worktrees for concurrent sprint tasks.")
 
     print_header("Utilities")
-    print_command("why", "Explain what a command does and why you might use it.")
+    print_command("watch", "Watch for file changes and run a command.")
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
@@ -5084,6 +5083,7 @@ def parse_args(argv=None):
         help="Skip confirmation prompts for 'delete' action.",
     )
 
+
     # --- New 'watch' command ---
     parser_watch = subparsers.add_parser(
         "watch",
@@ -5099,17 +5099,6 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to watch.",
-    )
-
-    # --- New 'why' command ---
-    parser_why = subparsers.add_parser(
-        "why",
-        help="Explain what a command does and why you might use it."
-    )
-    parser_why.add_argument(
-        "command_name",
-        nargs="?",
-        help="The command you want an explanation for.",
     )
 
     # --- New 'next' command ---
@@ -5236,6 +5225,32 @@ def parse_args(argv=None):
         argcomplete.autocomplete(parser)
 
     return parser.parse_args(argv)
+
+
+def run_watch(args):
+    """Watches for file changes and runs a command."""
+    project_dir = args.project_dir.resolve()
+    command_to_run = args.watch_command
+
+    if Observer is None:
+        print("Error: watchdog library not found. Please install it with 'pip install watchdog'", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Watching for file changes in: {project_dir} ---")
+    print(f"--- Press Ctrl+C to stop ---")
+
+    event_handler = CommandEventHandler(command_to_run, project_dir)
+    observer = Observer()
+    observer.schedule(event_handler, project_dir, recursive=True)
+    observer.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+    sys.exit(0)
 
 
 def run_profile(args):
@@ -7073,10 +7088,6 @@ async def main():
 
     if args.command == "watch":
         run_watch(args)
-        return
-
-    if args.command == "why":
-        run_why(args)
         return
 
     if args.command == "blame":

@@ -1,74 +1,80 @@
+
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 import argparse
 from pathlib import Path
-import time
+import sys
 import os
 
-from main import run_watch
+# To ensure 'main' can be imported from the test directory
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_watch, CommandEventHandler
+import main
 
 class TestWatchCommand(unittest.TestCase):
-    def setUp(self):
-        self.test_dir = Path("test_watch_dir")
-        self.test_dir.mkdir(exist_ok=True)
-        self.test_file = self.test_dir / "test_file.txt"
-        self.test_file.write_text("initial content")
-
-    def tearDown(self):
-        os.remove(self.test_file)
-        os.rmdir(self.test_dir)
-
     @patch('main.Observer')
+    @patch('main.CommandEventHandler')
     @patch('main.time.sleep', side_effect=KeyboardInterrupt)
-    def test_run_watch_starts_and_stops_observer(self, mock_sleep, mock_observer):
-        # Arrange
-        args = argparse.Namespace(
-            project_dir=self.test_dir,
-            watch_command=['ls']
-        )
+    def test_run_watch_starts_and_stops_observer(self, mock_sleep, mock_handler, mock_observer_cls):
+        """
+        Tests that the watch command initializes and starts the Observer,
+        and then gracefully stops it on KeyboardInterrupt.
+        """
         mock_observer_instance = MagicMock()
-        mock_observer.return_value = mock_observer_instance
+        mock_observer_cls.return_value = mock_observer_instance
 
-        # Act
+        mock_handler_instance = MagicMock()
+        mock_handler.return_value = mock_handler_instance
+
+        args = main.parse_args(['watch', 'echo', 'hello'])
+
         with self.assertRaises(SystemExit) as cm:
-            run_watch(args)
+            main.run_watch(args)
 
-        # Assert
         self.assertEqual(cm.exception.code, 0)
+
+        mock_handler.assert_called_once_with(['echo', 'hello'], Path('.').resolve())
+        mock_observer_instance.schedule.assert_called_once_with(mock_handler_instance, Path('.').resolve(), recursive=True)
         mock_observer_instance.start.assert_called_once()
         mock_observer_instance.stop.assert_called_once()
         mock_observer_instance.join.assert_called_once()
 
     @patch('main.subprocess.run')
-    def test_command_event_handler_runs_command_on_modification(self, mock_subprocess_run):
-        # Arrange
-        command_to_run = ['pytest', 'tests/']
-        event_handler = CommandEventHandler(command_to_run, self.test_dir)
+    def test_command_event_handler_on_modified(self, mock_subprocess_run):
+        """
+        Tests that the CommandEventHandler executes the specified command
+        when a file modification event occurs.
+        """
+        project_dir = Path('/fake/project')
+        command = ['pytest', '-k', 'test_something']
+
+        handler = main.CommandEventHandler(command, project_dir)
+
         mock_event = MagicMock()
         mock_event.is_directory = False
-        mock_event.src_path = str(self.test_file)
+        mock_event.src_path = '/fake/project/test_file.py'
 
-        # Act
-        event_handler.on_modified(mock_event)
+        handler.on_modified(mock_event)
 
-        # Assert
-        mock_subprocess_run.assert_called_once_with(command_to_run, cwd=self.test_dir)
+        mock_subprocess_run.assert_called_once_with(command, cwd=project_dir)
 
     @patch('main.subprocess.run')
     def test_command_event_handler_ignores_directories(self, mock_subprocess_run):
-        # Arrange
-        command_to_run = ['pytest']
-        event_handler = CommandEventHandler(command_to_run, self.test_dir)
+        """
+        Tests that the CommandEventHandler ignores modification events
+        that are for directories.
+        """
+        project_dir = Path('/fake/project')
+        command = ['ls', '-l']
+
+        handler = main.CommandEventHandler(command, project_dir)
+
         mock_event = MagicMock()
         mock_event.is_directory = True
-        mock_event.src_path = str(self.test_dir)
+        mock_event.src_path = '/fake/project/a_directory/'
 
-        # Act
-        event_handler.on_modified(mock_event)
+        handler.on_modified(mock_event)
 
-        # Assert
         mock_subprocess_run.assert_not_called()
 
 if __name__ == '__main__':

@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.log_parser import parse_log_file, LogStep
 import json
 import yaml
 import platformdirs
@@ -1754,6 +1755,63 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     return None
+
+
+def run_replay(args):
+    """Interactively replays an agent's execution log."""
+    project_dir = args.project_dir.resolve()
+    run_id = args.run_id
+
+    try:
+        log_steps = parse_log_file(run_id, project_dir)
+    except (FileNotFoundError, IOError) as e:
+        print(f"❌ Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not log_steps:
+        print(f"No replayable steps found in the log for Run ID: {run_id}")
+        sys.exit(0)
+
+    print("--- Agent Log Replay ---")
+    print(f"  Run ID: {run_id}")
+    print(f"  Found {len(log_steps)} steps.")
+    print("  Press Enter to advance to the next step, or 'q' to quit.")
+    print("-" * 20)
+
+    for i, step in enumerate(log_steps):
+        print(f"--- Step {i+1}/{len(log_steps)} | Timestamp: {step.timestamp} ---")
+
+        if step.thoughts:
+            print("\n🤔 THOUGHTS:")
+            print(step.thoughts)
+
+        if step.command:
+            print("\n💻 COMMAND:")
+            print(step.command)
+
+        if step.files:
+            print("\n📄 FILES:")
+            for f in step.files:
+                print(f"  - {f}")
+
+        if step.stdout:
+            print("\n🖥️ STDOUT:")
+            print(step.stdout)
+
+        if step.diff:
+            print("\n🔄 DIFF:")
+            print(step.diff)
+
+        try:
+            user_input = input("\n> Press Enter to continue, 'q' to quit: ").strip().lower()
+            if user_input == 'q':
+                print("Exiting replay.")
+                break
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting replay.")
+            break
+
+    sys.exit(0)
 
 
 def run_cherry_pick(args):
@@ -5208,6 +5266,22 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Interactively replay an agent's execution log, showing thoughts, commands, and diffs."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the log to replay.",
+    )
+    parser_replay.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the run occurred.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7109,6 +7183,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     # Initialize Agent Client

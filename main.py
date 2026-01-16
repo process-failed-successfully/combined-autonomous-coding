@@ -1829,6 +1829,123 @@ def run_cherry_pick(args):
         sys.exit(1)
 
 
+async def run_replay(args):
+    """Re-runs a previous agent session from its log file."""
+    import json
+    import re
+    from shared.config import Config
+    from shared.agent_client import AgentClient
+    from shared.utils import generate_agent_id
+    import inspect
+
+    run_id = args.run_id
+    # A temporary logger for the setup part of replay
+    temp_logger, _ = setup_logger(name=f"replay_setup_{run_id}", log_file=None, verbose=args.verbose, console_output=True)
+    temp_logger.info(f"--- Replaying Agent Run: {run_id} ---")
+
+    repo_root = Path(__file__).parent
+    log_file_path = repo_root / f"agents/logs/{run_id}.log"
+
+    if not log_file_path.exists():
+        temp_logger.error(f"❌ Error: Log file not found for Run ID: {run_id}")
+        sys.exit(1)
+
+    # Parse the configuration from the log file
+    config_dict = None
+    try:
+        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                if 'INFO - config:' in line:
+                    match = re.search(r"config:\s*(\{.*\})", line)
+                    if match:
+                        config_str = match.group(1)
+                        # The logged config is a repr of a dataclass, not clean JSON.
+                        # We need to make it valid JSON.
+                        # 1. Replace Python constants with JSON equivalents
+                        config_str = config_str.replace("True", "true").replace("False", "false").replace("None", "null")
+                        # 2. Replace single quotes with double quotes
+                        config_str = config_str.replace("'", '"')
+                        # 3. Handle Path objects, e.g., PosixPath("/path/to/project")
+                        config_str = re.sub(r'PosixPath\("(.*?)"\)', r'"\1"', config_str)
+                        config_str = re.sub(r'WindowsPath\("(.*?)"\)', r'"\1"', config_str)
+                        try:
+                            config_dict = json.loads(config_str)
+                            break
+                        except json.JSONDecodeError as e:
+                            temp_logger.error(f"❌ Error parsing configuration from log file: {e}")
+                            temp_logger.error(f"   Problematic string: {config_str}")
+                            sys.exit(1)
+    except IOError as e:
+        temp_logger.error(f"❌ Error reading log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not config_dict:
+        temp_logger.error("❌ Error: Could not find or parse configuration in the log file.")
+        sys.exit(1)
+
+    # Convert path strings back to Path objects
+    for key, value in config_dict.items():
+        if isinstance(value, str) and ('_path' in key or '_dir' in key or '_file' in key):
+            if value:
+                config_dict[key] = Path(value)
+            else:
+                config_dict[key] = None
+
+    # Create a new Config object from the parsed dictionary
+    try:
+        # Some fields might not be in the Config dataclass anymore, so we filter.
+        config_fields = {f.name for f in inspect.signature(Config).parameters.values()}
+        filtered_config_dict = {k: v for k, v in config_dict.items() if k in config_fields}
+        replayed_config = Config(**filtered_config_dict)
+    except TypeError as e:
+        temp_logger.error(f"❌ Error creating Config object from parsed data: {e}")
+        temp_logger.error("   This can happen if the Config class has changed since the original run.")
+        sys.exit(1)
+
+    # Generate a new agent_id for the replay run to avoid overwriting the original log
+    project_name = os.environ.get("PROJECT_NAME", replayed_config.project_dir.resolve().name)
+    replay_agent_id = generate_agent_id(project_name, f"replay_of_{run_id}", replayed_config.agent_type)
+    replayed_config.agent_id = replay_agent_id
+
+    # Override some settings for replay
+    replayed_config.verbose = args.verbose
+
+    # Setup logger for the actual replay run
+    agents_log_dir = repo_root / "agents/logs"
+    log_file = agents_log_dir / f"{replay_agent_id}.log"
+    logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=replayed_config.verbose)
+
+    client = AgentClient(agent_id=replay_agent_id, dashboard_url=None, memory_handler=memory_handler)
+
+    logger.info(f"Successfully parsed configuration from run {run_id}.")
+    logger.info(f"Starting replay. New Run ID: {replay_agent_id}")
+    logger.info(f"  - Agent: {replayed_config.agent_type}")
+    logger.info(f"  - Model: {replayed_config.model}")
+    logger.info(f"  - Spec File: {replayed_config.spec_file}")
+
+    # Dispatch to the correct agent runner
+    try:
+        if replayed_config.agent_type == "gemini":
+            await run_gemini(replayed_config, agent_client=client)
+        elif replayed_config.agent_type == "cursor":
+            await run_cursor(replayed_config, agent_client=client)
+        elif replayed_config.agent_type == "local":
+            await run_local(replayed_config, agent_client=client)
+        elif replayed_config.agent_type == "openrouter":
+            await run_openrouter(replayed_config, agent_client=client)
+        else:
+            logger.error(f"Unknown agent type in replayed config: {replayed_config.agent_type}")
+            sys.exit(1)
+    except KeyboardInterrupt:
+        logger.info("\nReplay interrupted by user.")
+        sys.exit(0)
+    except Exception as e:
+        logger.exception(f"Fatal error during replay: {e}")
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
     project_dir = args.project_dir.resolve()
@@ -4399,6 +4516,18 @@ def parse_args(argv=None):
     )
 
 
+    # Subparser for 'replay'
+    parser_replay = subparsers.add_parser("replay", help="Re-run a previous agent session from its log file")
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the session to replay.",
+    )
+    parser_replay.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging for the replay.",
+    )
+
     # Subparser for 'rewind'
     parser_rewind = subparsers.add_parser("rewind", help="Reset the project to a previous state (git commit)")
     parser_rewind.add_argument(
@@ -6896,6 +7025,11 @@ async def main():
     # Handle `revert` command
     if args.command == "revert":
         run_revert(args)
+        return
+
+    # Handle `replay' command
+    if args.command == "replay":
+        await run_replay(args)
         return
 
     # Handle `rewind` command

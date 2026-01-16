@@ -120,5 +120,37 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_security_invalid_chars(self, mock_stderr, mock_stdout):
+        """Test that cherry-pick rejects targets with invalid characters (command injection attempt)."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        # Attempt to inject a command using a semicolon
+        args.target = "HEAD; rm -rf /"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+        self.assertIn("Invalid target", stderr_output)
+
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_security_starts_with_dash(self, mock_stderr, mock_stdout):
+        """Test that cherry-pick rejects targets starting with a dash (argument injection attempt)."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        # Attempt to pass a flag instead of a commit
+        args.target = "--help"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+        self.assertIn("Invalid target", stderr_output)
+
 if __name__ == '__main__':
     unittest.main()

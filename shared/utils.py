@@ -13,6 +13,7 @@ from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
+import re
 
 if TYPE_CHECKING:
     from shared.config import Config
@@ -517,3 +518,17 @@ def sanitize_url(url: str) -> str:
     import re
     # Mask https://token@github.com... or https://user:token@github.com...
     return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates that a string is a safe git reference to prevent command injection.
+    Allows alphanumeric characters, underscores, hyphens, forward slashes, and dots.
+    It must not start with a hyphen.
+    """
+    if not ref:
+        return False
+    if ref.startswith("-"):
+        return False
+    # Use a regex that allows common git ref characters
+    # This prevents shell metacharacters like ; | & $ > < ` etc.
+    return re.match(r"^[a-zA-Z0-9_/\.-]+$", ref) is not None

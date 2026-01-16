@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.utils import is_safe_git_ref
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -1743,9 +1744,14 @@ def run_discard(args):
 def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str | None:
     """Searches the git log for a commit associated with a Run ID."""
     try:
+        # Validate Run ID to prevent command injection
+        if not is_safe_git_ref(run_id):
+            return None
+
         # Search the entire commit history for the Run ID in the message body
+        # Use -- to separate options from arguments
         result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H", "--"],
             capture_output=True, text=True, check=True
         )
         if result.stdout.strip():
@@ -1772,13 +1778,19 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Validate Input ---
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Target must be a safe git reference.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
+        # Use -- to separate options from arguments
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
             capture_output=True, text=True
         )
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
@@ -1801,7 +1813,8 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        # Use -- to separate options from arguments
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:

@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.git_utils import is_safe_git_ref
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -1761,6 +1762,10 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe git reference '{target}'.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
@@ -1778,7 +1783,7 @@ def run_cherry_pick(args):
     is_git_ref = False
     try:
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
             capture_output=True, text=True
         )
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
@@ -1797,11 +1802,15 @@ def run_cherry_pick(args):
             print("Please provide a valid commit hash or a Run ID from the agent's history.", file=sys.stderr)
             sys.exit(1)
 
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe git reference after resolving Run ID: '{target}'.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Execute Cherry-Pick ---
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
@@ -1839,6 +1848,10 @@ def run_rewind(args):
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    if target and not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe git reference '{target}'.", file=sys.stderr)
         sys.exit(1)
 
     git_dir = project_dir / ".git"
@@ -1904,6 +1917,8 @@ def run_rewind(args):
         # First, check if the target is a valid git object (commit, tag, etc.)
         is_git_ref = False
         try:
+            # Note: `show-ref` does not support the `--` separator before the ref.
+            # The `is_safe_git_ref` check at the start is the primary protection here.
             check_ref_result = subprocess.run(
                 [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{target}"],
                 capture_output=True, text=True
@@ -1913,7 +1928,7 @@ def run_rewind(args):
             else:
                 # Also check if it's a commit hash
                 check_commit_result = subprocess.run(
-                    [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                    [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
                     capture_output=True, text=True
                 )
                 if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
@@ -1928,9 +1943,13 @@ def run_rewind(args):
                 print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
                 target = commit_hash
             else:
-                print(f"❌ Error: Could not find a git commit for Run ID '{target}'.", file=sys.stderr)
+                print(f"❌ Error: Could not find a git commit for Run ID '{original_target}'.", file=sys.stderr)
                 print("Please provide a valid commit hash, reference, or a Run ID from the agent's history.", file=sys.stderr)
                 sys.exit(1)
+
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe git reference after resolving Run ID: '{target}'.", file=sys.stderr)
+        sys.exit(1)
 
 
     # --- Confirmation and Execution ---

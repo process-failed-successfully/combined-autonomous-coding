@@ -8,7 +8,7 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
-from shared.utils import execute_read_block, execute_write_block
+from shared.utils import execute_read_block, execute_write_block, is_safe_git_ref
 
 class TestUtilsSecurity(unittest.TestCase):
 
@@ -73,6 +73,31 @@ class TestUtilsSecurity(unittest.TestCase):
 
         with open(self.project_dir / filename, "r") as f:
             self.assertEqual(f.read(), content)
+
+    def test_is_safe_git_ref(self):
+        """Test the is_safe_git_ref validation function."""
+        # Safe examples
+        self.assertTrue(is_safe_git_ref("main"))
+        self.assertTrue(is_safe_git_ref("feature/branch-name"))
+        self.assertTrue(is_safe_git_ref("v1.0.0"))
+        self.assertTrue(is_safe_git_ref("HEAD"))
+        self.assertTrue(is_safe_git_ref("a1b2c3d4"))
+        self.assertTrue(is_safe_git_ref("run-12345"))
+        self.assertTrue(is_safe_git_ref("123"))
+        self.assertTrue(is_safe_git_ref("HEAD^"))
+        self.assertTrue(is_safe_git_ref("HEAD~1"))
+        self.assertTrue(is_safe_git_ref("master@{yesterday}"))
+
+        # Unsafe examples
+        self.assertFalse(is_safe_git_ref("-flag"))
+        self.assertFalse(is_safe_git_ref("--option"))
+        self.assertFalse(is_safe_git_ref("; rm -rf /"))
+        self.assertFalse(is_safe_git_ref("Branch Name")) # Spaces not allowed
+        self.assertFalse(is_safe_git_ref("branch$name"))
+        self.assertFalse(is_safe_git_ref("branch`name"))
+        self.assertFalse(is_safe_git_ref("branch|name"))
+        self.assertFalse(is_safe_git_ref(""))
+        self.assertFalse(is_safe_git_ref(None))
 
 if __name__ == "__main__":
     unittest.main()

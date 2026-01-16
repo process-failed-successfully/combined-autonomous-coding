@@ -13,11 +13,28 @@ from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
+import re
 
 if TYPE_CHECKING:
     from shared.config import Config
 
 logger = logging.getLogger(__name__)
+
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates a git reference to prevent command injection and ensure it's a safe identifier.
+    Allowed characters: alphanumeric, underscore, hyphen, forward slash, dot, tilde, caret, at, braces.
+    Must not start with a hyphen to prevent flag injection.
+    """
+    if not ref:
+        return False
+    # Prevent flag injection
+    if ref.startswith("-"):
+        return False
+    # Allow alphanumeric, underscore, hyphen, slash, dot, tilde, caret, at, braces
+    pattern = r"^[a-zA-Z0-9_/\.\-\~\^@\{\}]+$"
+    return bool(re.match(pattern, ref))
 
 
 def log_startup_config(config: "Config", logger: logging.Logger):

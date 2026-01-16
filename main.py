@@ -1762,6 +1762,12 @@ def run_cherry_pick(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
+    # Validation
+    from shared.utils import is_safe_git_ref
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
@@ -1834,6 +1840,13 @@ def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
     project_dir = args.project_dir.resolve()
     target = args.target
+
+    # Validation
+    from shared.utils import is_safe_git_ref
+    if target and not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
+        sys.exit(1)
+
     original_target = target  # Keep a copy for error messages
 
     # --- Pre-flight checks ---
@@ -2115,6 +2128,11 @@ def run_blame(args):
 def run_replay(args):
     """Replays an agent run step-by-step from the logs."""
     run_id = args.run_id
+    from shared.utils import is_safe_git_ref
+    if run_id and not is_safe_git_ref(run_id):
+        print(f"❌ Error: Invalid Run ID '{run_id}'. Contains unsafe characters.", file=sys.stderr)
+        sys.exit(1)
+
     project_dir = args.project_dir.resolve()
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
@@ -2355,6 +2373,11 @@ def _stash_drop(args, git_path, project_dir):
 
 def run_report(args):
     """Generates a summary report for a specific agent run."""
+    from shared.utils import is_safe_git_ref
+    if not is_safe_git_ref(args.run_id):
+        print(f"❌ Error: Invalid Run ID '{args.run_id}'. Contains unsafe characters.", file=sys.stderr)
+        sys.exit(1)
+
     success = _run_report_logic(
         run_id=args.run_id,
         output_path=args.output,
@@ -2646,6 +2669,12 @@ def run_diff(args):
     project_dir = args.project_dir.resolve()
     target = args.target
 
+    # Validation
+    from shared.utils import is_safe_git_ref
+    if target and not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with '-'.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
     if not git_path:
@@ -2747,6 +2776,11 @@ def run_log(args):
 import time
 def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
     """The core logic for displaying agent logs."""
+    from shared.utils import is_safe_git_ref
+    if run_id and not is_safe_git_ref(run_id):
+        print(f"❌ Error: Invalid Run ID '{run_id}'. Contains unsafe characters.", file=sys.stderr)
+        return False
+
     repo_root = Path(__file__).parent
     logs_dir = repo_root / "agents/logs"
 
@@ -3180,6 +3214,11 @@ def _benchmark_show(args):
              sys.exit(1)
         run_id = metrics["Run ID"]
     else:
+        from shared.utils import is_safe_git_ref
+        if not is_safe_git_ref(run_id):
+             print(f"❌ Error: Invalid Run ID '{run_id}'. Contains unsafe characters.", file=sys.stderr)
+             sys.exit(1)
+
         metrics_file = _find_metrics_file(run_id, project_dir)
         if not metrics_file:
             print(f"❌ Error: Could not find metrics for Run ID: {run_id}", file=sys.stderr)
@@ -3194,6 +3233,11 @@ def _benchmark_compare(args):
     """Handles the 'benchmark compare' action."""
     project_dir = args.project_dir.resolve()
     run_id_1, run_id_2 = args.run_id_1, args.run_id_2
+
+    from shared.utils import is_safe_git_ref
+    if not is_safe_git_ref(run_id_1) or not is_safe_git_ref(run_id_2):
+        print(f"❌ Error: Invalid Run ID(s). Contains unsafe characters.", file=sys.stderr)
+        sys.exit(1)
 
     file1 = _find_metrics_file(run_id_1, project_dir)
     file2 = _find_metrics_file(run_id_2, project_dir)

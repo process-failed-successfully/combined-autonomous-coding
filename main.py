@@ -30,6 +30,7 @@ except ImportError:
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
+from shared.git_utils import is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1816,17 +1817,26 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
+    # --- Security Check ---
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe target reference provided: '{target}'", file=sys.stderr)
+        sys.exit(1)
+
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
+    commit_to_pick = None
+
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
+        # Use '--' to prevent argument injection
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
-            capture_output=True, text=True
+            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
+            capture_output=True, text=True, check=False
         )
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
             is_git_ref = True
+            commit_to_pick = target
     except Exception:
         pass  # Ignore errors, we'll handle the 'not found' case below
 
@@ -1834,23 +1844,28 @@ def run_cherry_pick(args):
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
         commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
         if commit_hash:
+            # Security: Validate the resolved hash as well
+            if not is_safe_git_ref(commit_hash):
+                print(f"❌ Error: Resolved commit hash '{commit_hash}' is unsafe.", file=sys.stderr)
+                sys.exit(1)
             print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
-            target = commit_hash
+            commit_to_pick = commit_hash
         else:
             print(f"❌ Error: Could not find a git commit for target '{original_target}'.", file=sys.stderr)
             print("Please provide a valid commit hash or a Run ID from the agent's history.", file=sys.stderr)
             sys.exit(1)
 
     # --- Execute Cherry-Pick ---
-    print(f"--- Applying commit {target[:7]} onto the current branch ---")
+    print(f"--- Applying commit {commit_to_pick[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Use '--' to prevent argument injection
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", commit_to_pick]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
         if result.returncode == 0:
             print(result.stdout)
-            print(f"\n✅ Successfully cherry-picked commit {target[:7]}.")
+            print(f"\n✅ Successfully cherry-picked commit {commit_to_pick[:7]}.")
             sys.exit(0)
         else:
             print("❌ Error: Cherry-pick failed.", file=sys.stderr)

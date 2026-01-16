@@ -2818,9 +2818,9 @@ def run_security(args):
     if has_high_severity or secret_findings:
         print("\n❌ Security issues detected.")
         sys.exit(1)
-
-    print("\n✅ Security audit passed.")
-    sys.exit(0)
+    else:
+        print("\n✅ Security audit passed.")
+        sys.exit(0)
 
 
 def _workflow_status(args):

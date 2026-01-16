@@ -1826,6 +1826,9 @@ def run_replay(args):
     sys.exit(0)
 
 
+from shared.git_utils import validate_git_ref_or_exit
+
+
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -1842,13 +1845,15 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
+    validate_git_ref_or_exit(target, ref_name="target")
+
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
             capture_output=True, text=True
         )
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
@@ -1871,7 +1876,7 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:

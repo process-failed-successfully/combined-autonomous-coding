@@ -155,5 +155,17 @@ class TestRewindCommand(unittest.TestCase):
         self.assertTrue((self.project_dir / "file3.txt").exists())
         self.assertFalse((self.project_dir / "file4.txt").exists())
 
+    def test_rewind_security_invalid_target(self):
+        stderr_capture = io.StringIO()
+        with self.assertRaises(SystemExit) as cm, \
+             unittest.mock.patch('sys.stderr', stderr_capture):
+            # Use -- to force -invalid to be treated as the positional target argument
+            args = parse_args(["rewind", "--project-dir", str(self.project_dir), "--yes", "--", "-invalid"])
+            run_rewind(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        output = stderr_capture.getvalue()
+        self.assertIn("Invalid target", output)
+
 if __name__ == '__main__':
     unittest.main()

@@ -152,5 +152,23 @@ class TestCherryPickCommand(unittest.TestCase):
         stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
         self.assertIn("Invalid target", stderr_output)
 
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_security_resolved_hash(self, mock_stderr, mock_stdout):
+        """Test that cherry-pick validates resolved commit hash (mocked)."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        args.target = "run-safe-id"
+
+        # Mock _find_commit_by_run_id to return a malicious hash
+        with patch('main._find_commit_by_run_id', return_value="-malicious-hash"):
+             with self.assertRaises(SystemExit) as cm:
+                run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+        self.assertIn("Resolved commit hash", stderr_output)
+        self.assertIn("is invalid", stderr_output)
+
 if __name__ == '__main__':
     unittest.main()

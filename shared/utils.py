@@ -531,4 +531,5 @@ def is_safe_git_ref(ref: str) -> bool:
         return False
     # Use a regex that allows common git ref characters
     # This prevents shell metacharacters like ; | & $ > < ` etc.
-    return re.match(r"^[a-zA-Z0-9_/\.-]+$", ref) is not None
+    # Allowed: alphanumeric, _, /, ., -, ~, ^, @, {, }
+    return re.match(r"^[a-zA-Z0-9_/\.\-~^@{}]+$", ref) is not None

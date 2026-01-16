@@ -1802,6 +1802,10 @@ def run_cherry_pick(args):
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
         commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
         if commit_hash:
+            # Validate the resolved commit hash just to be safe
+            if not is_safe_git_ref(commit_hash):
+                print(f"❌ Error: Resolved commit hash '{commit_hash}' is invalid.", file=sys.stderr)
+                sys.exit(1)
             print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
             target = commit_hash
         else:
@@ -1914,6 +1918,11 @@ def run_rewind(args):
             sys.exit(0)
     else:
         # --- Target Resolution: Commit Hash vs. Run ID ---
+        # Validate Input
+        if not is_safe_git_ref(target):
+            print(f"❌ Error: Invalid target '{target}'. Target must be a safe git reference.", file=sys.stderr)
+            sys.exit(1)
+
         # First, check if the target is a valid git object (commit, tag, etc.)
         is_git_ref = False
         try:
@@ -1925,8 +1934,9 @@ def run_rewind(args):
                 is_git_ref = True
             else:
                 # Also check if it's a commit hash
+                # Use -- to separate options from arguments
                 check_commit_result = subprocess.run(
-                    [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                    [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
                     capture_output=True, text=True
                 )
                 if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
@@ -1938,6 +1948,10 @@ def run_rewind(args):
             print(f"'{target}' is not a known git reference. Assuming it is a Run ID and searching history...")
             commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
             if commit_hash:
+                # Validate the resolved commit hash just to be safe
+                if not is_safe_git_ref(commit_hash):
+                    print(f"❌ Error: Resolved commit hash '{commit_hash}' is invalid.", file=sys.stderr)
+                    sys.exit(1)
                 print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
                 target = commit_hash
             else:
@@ -2599,6 +2613,11 @@ def run_diff(args):
             sys.exit(result.returncode)
 
         # Case 2: Target is provided (Run ID or commit hash)
+        # Validate Input
+        if not is_safe_git_ref(target):
+            print(f"❌ Error: Invalid target '{target}'. Target must be a safe git reference.", file=sys.stderr)
+            sys.exit(1)
+
         original_target = target
         # Check if it's a known git reference first
         is_git_ref = subprocess.run(
@@ -2612,13 +2631,17 @@ def run_diff(args):
             if not commit_hash:
                 print(f"❌ Error: Target '{original_target}' is not a valid commit or Run ID.", file=sys.stderr)
                 sys.exit(1)
+            # Validate the resolved commit hash just to be safe
+            if not is_safe_git_ref(commit_hash):
+                print(f"❌ Error: Resolved commit hash '{commit_hash}' is invalid.", file=sys.stderr)
+                sys.exit(1)
             target = commit_hash
             print(f"--- Showing diff for Run ID '{original_target}' (Commit: {target[:7]}) ---")
         else:
             print(f"--- Showing diff for Commit: {target} ---")
 
         # Use 'git show' which nicely formats the commit info and the diff
-        cmd = [git_path, "-C", str(project_dir), "show", "--color=always", target]
+        cmd = [git_path, "-C", str(project_dir), "show", "--color=always", "--", target]
         result = subprocess.run(cmd)
         sys.exit(result.returncode)
 

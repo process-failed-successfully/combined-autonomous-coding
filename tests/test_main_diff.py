@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import sys
+import io
 
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -124,5 +125,20 @@ class TestDiffCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
         mock_find_commit.assert_called_once_with(self.project_dir, self.git_path, invalid_target)
 
+    @patch('sys.stderr', new_callable=io.StringIO)
+    def test_diff_security_invalid_target(self, mock_stderr):
+        # Arrange
+        # Use -- to force -invalid to be treated as the positional target argument
+        args = parse_args(['diff', '--project-dir', str(self.project_dir), '--', '-invalid'])
+
+        # Act
+        with self.assertRaises(SystemExit) as cm:
+            run_diff(args)
+
+        # Assert
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn("Invalid target", mock_stderr.getvalue())
+
+import io
 if __name__ == '__main__':
     unittest.main()

@@ -1,43 +1,49 @@
 import unittest
-import shutil
-import subprocess
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 
+from main import run_replay
+from shared.log_parser import LogStep
+
 class TestReplayCommand(unittest.TestCase):
-    def setUp(self):
-        self.log_dir = Path("agents/logs")
-        self.log_dir.mkdir(exist_ok=True)
-        self.addCleanup(shutil.rmtree, self.log_dir, ignore_errors=True)
+    @patch('builtins.input', side_effect=['', 'q'])
+    @patch('sys.stdout')
+    @patch('main.parse_log_file')
+    def test_replay_command(self, mock_parse_log_file, mock_stdout, mock_input):
+        # 1. Create mock log steps
+        mock_steps = [
+            LogStep(
+                timestamp="2023-10-27 10:00:00",
+                thoughts="This is a test thought.",
+                command='echo "This is a test command."',
+                files=None,
+                stdout=None,
+                diff=None
+            )
+        ]
 
-    def test_replay_command(self):
-        # Create a mock log file
-        log_content = """2023-10-27 10:00:00 - INFO -
-THOUGHTS:
-This is a test thought.
+        # 2. Configure the mock to return the steps
+        mock_parse_log_file.return_value = mock_steps
 
-COMMAND:
-echo "This is a test command."
-"""
-        log_dir = Path("agents/logs")
-        log_dir.mkdir(exist_ok=True)
-        log_file = log_dir / "test_replay.log"
-        log_file.write_text(log_content)
+        # 3. Set up arguments for run_replay
+        args = MagicMock()
+        args.project_dir = Path(".")
+        args.run_id = "test_replay"
 
-        # Run the replay command
-        result = subprocess.run(
-            ["./main.py", "replay", "test_replay"],
-            capture_output=True,
-            text=True,
-            # Simulate pressing Enter once to advance to the next step, then 'q' to quit.
-            input="\\nq\\n",
-        )
+        # 4. Run the replay command function
+        with self.assertRaises(SystemExit) as cm:
+            run_replay(args)
 
-        # Check the output
-        self.assertIn("--- Agent Log Replay ---", result.stdout)
-        self.assertIn("Run ID: test_replay", result.stdout)
-        self.assertIn("Found 1 steps.", result.stdout)
-        self.assertIn("This is a test thought.", result.stdout)
-        self.assertIn("echo \"This is a test command.\"", result.stdout)
+        self.assertEqual(cm.exception.code, 0)
+
+        # 5. Check the output
+        output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+
+        self.assertIn("--- Agent Log Replay ---", output)
+        self.assertIn("Run ID: test_replay", output)
+        self.assertIn("Found 1 steps.", output)
+        self.assertIn("This is a test thought.", output)
+        self.assertIn('echo "This is a test command."', output)
 
 if __name__ == '__main__':
     unittest.main()

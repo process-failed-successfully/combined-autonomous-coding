@@ -1,16 +1,12 @@
 import unittest
-import shutil
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 from shared.log_parser import parse_log_file
 
 class TestLogParser(unittest.TestCase):
-    def setUp(self):
-        self.log_dir = Path("agents/logs")
-        self.log_dir.mkdir(exist_ok=True)
-        self.addCleanup(shutil.rmtree, self.log_dir, ignore_errors=True)
-
-    def test_parse_log_file(self):
-        # Create a mock log file
+    @patch('shared.log_parser.Path')
+    def test_parse_log_file(self, MockPath):
+        # 1. Define the mock log content
         log_content = """2023-10-27 10:00:00 - INFO -
 THOUGHTS:
 I need to create a simple Flask application.
@@ -51,15 +47,19 @@ The application should be running now. I will mark the task as complete.
 COMMAND:
 finish()
 """
-        log_dir = Path("agents/logs")
-        log_dir.mkdir(exist_ok=True)
-        log_file = log_dir / "test_log.log"
-        log_file.write_text(log_content)
+        # 2. Configure the mock to simulate the file existing and having content
+        mock_log_path = MagicMock()
+        mock_log_path.exists.return_value = True
+        mock_log_path.read_text.return_value = log_content
 
-        # Parse the log file
+        # This complex line mocks the expression `Path(__file__).parent.parent / f"agents/logs/{run_id}.log"`
+        # It ensures that when the code builds this path, the final object is our mock_log_path
+        MockPath.return_value.parent.parent.__truediv__.return_value = mock_log_path
+
+        # 3. Parse the log file using the mocked Path object
         steps = parse_log_file("test_log", Path("."))
 
-        # Check the results
+        # 4. Check the results
         self.assertEqual(len(steps), 5)
         self.assertEqual(steps[0].timestamp, "2023-10-27 10:00:00")
         self.assertIn("I need to create a simple Flask application.", steps[0].thoughts)

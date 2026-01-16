@@ -45,6 +45,7 @@ from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
 from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
+from shared.log_parser import parse_log_file
 from shared.commands import run_why
 import json
 import yaml
@@ -1754,6 +1755,49 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     return None
+
+
+def run_replay(args):
+    """Replays an agent run from a log file."""
+    run_id = args.run_id
+    repo_root = Path(__file__).parent
+    log_file = repo_root / f"agents/logs/{run_id}.log"
+
+    if not log_file.exists():
+        print(f"Log file not found for Run ID: {run_id}")
+        sys.exit(1)
+
+    try:
+        log_content = log_file.read_text()
+        steps = parse_log_file(log_content)
+
+        if not steps:
+            print("No steps found in the log file.")
+            sys.exit(0)
+
+        print(f"--- Replaying run: {run_id} ---")
+        print(f"Found {len(steps)} steps. Press Enter to advance, or 'q' to quit.")
+
+        for i, step in enumerate(steps):
+            print(f"\n--- Step {i+1}/{len(steps)} ---")
+            print("\n>>> THOUGHT:")
+            print(step.thought)
+            print("\n>>> ACTION:")
+            print(step.action)
+
+            try:
+                user_input = input("\nPress Enter to continue, or 'q' to quit: ")
+                if user_input.lower() == 'q':
+                    print("Exiting replay.")
+                    break
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting replay.")
+                break
+    except Exception as e:
+        print(f"An error occurred during replay: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_cherry_pick(args):
@@ -5208,6 +5252,16 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Replay an agent run from a log file."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the log to replay.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7109,6 +7163,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     # Initialize Agent Client

@@ -50,6 +50,7 @@ Thumbs.db
 # Agent
 .agent_history
 .agent_state.json
+.agent_db.sqlite
 blockers.txt
 gemini_progress.txt
 manager_directives.txt

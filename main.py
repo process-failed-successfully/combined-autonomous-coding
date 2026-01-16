@@ -1827,6 +1827,7 @@ def run_replay(args):
 
 
 from shared.git_utils import validate_git_ref_or_exit
+from shared.git_utils import is_safe_git_ref
 
 
 def run_cherry_pick(args):
@@ -1845,7 +1846,9 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
-    validate_git_ref_or_exit(target, ref_name="target")
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target

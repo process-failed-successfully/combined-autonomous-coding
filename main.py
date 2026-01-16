@@ -5208,6 +5208,23 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Interactively replay a previous agent run from its log file."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID to replay. If omitted, the latest run will be used.",
+    )
+    parser_replay.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory where the run occurred.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7109,6 +7126,12 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "replay":
+        # This is a bit of a special case as it doesn't need the full agent setup
+        from shared.replay import run_replay
+        run_replay(args)
         return
 
     # Initialize Agent Client

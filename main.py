@@ -3708,6 +3708,180 @@ def run_format(args):
         sys.exit(1)
 
 
+def run_experiment(args):
+    """Manages sandboxed experiments using git worktrees."""
+    project_dir = args.project_dir.resolve()
+    experiments_dir = project_dir / ".experiments"
+    git_path = shutil.which("git")
+
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot manage experiments.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.action == "start":
+        _experiment_start(args, git_path, project_dir, experiments_dir)
+    elif args.action == "list":
+        _experiment_list(git_path, project_dir, experiments_dir)
+    elif args.action == "status":
+        _experiment_status(args, git_path, experiments_dir)
+    elif args.action == "diff":
+        _experiment_diff(args, git_path, experiments_dir)
+    elif args.action == "merge":
+        _experiment_merge(args, git_path, project_dir, experiments_dir)
+    elif args.action == "delete":
+        _experiment_delete(args.experiment_name, git_path, project_dir, experiments_dir, force=args.force, yes=args.yes)
+
+    sys.exit(0)
+
+def _experiment_start(args, git_path, project_dir, experiments_dir):
+    """Handles the 'experiment start' action."""
+    experiment_name = args.experiment_name
+    experiment_path = experiments_dir / experiment_name
+    branch_name = f"experiment/{experiment_name}"
+
+    if experiment_path.exists():
+        print(f"❌ Error: An experiment named '{experiment_name}' already exists.", file=sys.stderr)
+        sys.exit(1)
+
+    experiments_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"--- Starting new experiment: {experiment_name} ---")
+    try:
+        cmd = [git_path, "-C", str(project_dir), "worktree", "add", "-b", branch_name, str(experiment_path), "HEAD"]
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print(f"✅ Successfully created experiment '{experiment_name}' at '{experiment_path.relative_to(project_dir)}'")
+        print(f"   To work in this experiment, run: cd {experiment_path.relative_to(project_dir)}")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error creating experiment: {e.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+
+def _experiment_list(git_path, project_dir, experiments_dir):
+    """Handles the 'experiment list' action."""
+    print("--- Active Experiments ---")
+    if not experiments_dir.is_dir() or not any(experiments_dir.iterdir()):
+        print("No active experiments found.")
+        sys.exit(0)
+
+    for exp_dir in experiments_dir.iterdir():
+        if exp_dir.is_dir():
+            print(f"  - {exp_dir.name}")
+
+def _experiment_status(args, git_path, experiments_dir):
+    """Handles the 'experiment status' action."""
+    experiment_name = args.experiment_name
+    experiment_path = experiments_dir / experiment_name
+
+    if not experiment_path.is_dir():
+        print(f"❌ Error: Experiment '{experiment_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Status for experiment: {experiment_name} ---")
+    try:
+        cmd = [git_path, "-C", str(experiment_path), "status"]
+        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error getting status: {e.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+
+def _experiment_diff(args, git_path, experiments_dir):
+    """Handles the 'experiment diff' action."""
+    experiment_name = args.experiment_name
+    experiment_path = experiments_dir / experiment_name
+
+    if not experiment_path.is_dir():
+        print(f"❌ Error: Experiment '{experiment_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    default_branch = _get_default_branch(git_path, experiment_path.parent.parent)
+    print(f"--- Diff for experiment: {experiment_name} (vs {default_branch} branch) ---")
+    try:
+        cmd = [git_path, "-C", str(experiment_path), "diff", default_branch]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.stdout:
+            print(result.stdout)
+        else:
+            print(f"✅ No differences found with the {default_branch} branch.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error generating diff: {e.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+
+def _experiment_merge(args, git_path, project_dir, experiments_dir):
+    """Handles the 'experiment merge' action."""
+    experiment_name = args.experiment_name
+    branch_name = f"experiment/{experiment_name}"
+
+    print(f"--- Merging experiment: {experiment_name} ---")
+    default_branch = _get_default_branch(git_path, project_dir)
+    try:
+        subprocess.run([git_path, "-C", str(project_dir), "checkout", default_branch], check=True, capture_output=True)
+
+        merge_cmd = [git_path, "-C", str(project_dir), "merge", "--no-ff", branch_name]
+        result = subprocess.run(merge_cmd, check=True, capture_output=True, text=True)
+        print("✅ Merge successful.")
+        print(result.stdout)
+
+        if args.delete:
+            print(f"\n--- Deleting experiment: {experiment_name} ---")
+            _experiment_delete(experiment_name, git_path, project_dir, experiments_dir, force=False, yes=True)
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error during merge: {e.stderr.strip()}", file=sys.stderr)
+        print("Please resolve merge conflicts manually.", file=sys.stderr)
+        sys.exit(1)
+
+def _experiment_delete(experiment_name, git_path, project_dir, experiments_dir, force=False, yes=False):
+    """Handles the 'experiment delete' action."""
+    experiment_path = experiments_dir / experiment_name
+    branch_name = f"experiment/{experiment_name}"
+
+    if not experiment_path.is_dir():
+        print(f"❌ Error: Experiment '{experiment_name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if not yes:
+        confirm = input(f"Are you sure you want to delete experiment '{experiment_name}'? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    try:
+        # Remove worktree
+        worktree_cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
+        if force:
+            worktree_cmd.append("--force")
+        worktree_cmd.append(str(experiment_path))
+        subprocess.run(worktree_cmd, check=True, capture_output=True)
+        print(f"✅ Worktree for '{experiment_name}' removed.")
+
+        # Delete branch
+        branch_cmd = [git_path, "-C", str(project_dir), "branch", "-d" if not force else "-D", branch_name]
+        subprocess.run(branch_cmd, check=True, capture_output=True)
+        print(f"✅ Branch '{branch_name}' deleted.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error deleting experiment: {e.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+
+def _get_default_branch(git_path, project_dir):
+    """Determines the default branch of a git repository."""
+    try:
+        # First, try to get the symbolic-ref for HEAD, which is the most reliable method
+        cmd = [git_path, "-C", str(project_dir), "symbolic-ref", "refs/remotes/origin/HEAD"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        # Output is like 'refs/remotes/origin/main', so we split and get the last part
+        return result.stdout.strip().split('/')[-1]
+    except subprocess.CalledProcessError:
+        # If the above fails (e.g., no remote 'origin' yet), fall back to checking common names
+        for branch in ["main", "master"]:
+            try:
+                cmd = [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{branch}"]
+                subprocess.run(cmd, check=True, capture_output=True)
+                return branch
+            except subprocess.CalledProcessError:
+                continue
+    # If all else fails, return a sensible default
+    return "main"
+
 def run_sprint_command(args):
     """Dispatches sprint actions."""
     if args.action == "status":
@@ -4754,6 +4928,49 @@ def parse_args(argv=None):
         required=True,
         help="Specify sprint action"
     )
+
+    # --- New 'experiment' command ---
+    parser_experiment = subparsers.add_parser(
+        "experiment",
+        help="Manage sandboxed experiments using git worktrees for isolated development."
+    )
+    experiment_subparsers = parser_experiment.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify experiment action"
+    )
+
+    # experiment start
+    parser_exp_start = experiment_subparsers.add_parser("start", help="Start a new experiment in a clean worktree.")
+    parser_exp_start.add_argument("experiment_name", help="A unique name for the experiment.")
+    parser_exp_start.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # experiment list
+    parser_exp_list = experiment_subparsers.add_parser("list", help="List all active experiments.")
+    parser_exp_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # experiment status
+    parser_exp_status = experiment_subparsers.add_parser("status", help="Show the git status of an experiment.")
+    parser_exp_status.add_argument("experiment_name", help="The name of the experiment.")
+    parser_exp_status.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # experiment diff
+    parser_exp_diff = experiment_subparsers.add_parser("diff", help="Show a diff of the experiment against the main branch.")
+    parser_exp_diff.add_argument("experiment_name", help="The name of the experiment.")
+    parser_exp_diff.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # experiment merge
+    parser_exp_merge = experiment_subparsers.add_parser("merge", help="Merge a completed experiment into the main branch.")
+    parser_exp_merge.add_argument("experiment_name", help="The name of the experiment to merge.")
+    parser_exp_merge.add_argument("--delete", action="store_true", help="Delete the experiment worktree and branch after a successful merge.")
+    parser_exp_merge.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # experiment delete
+    parser_exp_delete = experiment_subparsers.add_parser("delete", help="Delete an experiment worktree and branch.")
+    parser_exp_delete.add_argument("experiment_name", help="The name of the experiment to delete.")
+    parser_exp_delete.add_argument("--force", action="store_true", help="Force deletion even if the branch is not fully merged.")
+    parser_exp_delete.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt.")
+    parser_exp_delete.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
 
     # Sprint 'status' action
     parser_sprint_status = sprint_subparsers.add_parser(
@@ -7010,6 +7227,10 @@ async def main():
     # Handle `sprint` command
     if args.command == "sprint":
         run_sprint_command(args)
+        return
+
+    if args.command == "experiment":
+        run_experiment(args)
         return
 
     if args.command == "branch":

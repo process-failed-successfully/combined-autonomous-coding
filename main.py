@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.log_parser import LogParser
 import json
 import yaml
 import platformdirs
@@ -2108,6 +2109,87 @@ def run_blame(args):
     print(blame_output)
     if "❌ Error" in blame_output:
         sys.exit(1)
+    sys.exit(0)
+
+
+def run_replay(args):
+    """Replays an agent run step-by-step from the logs."""
+    run_id = args.run_id
+    project_dir = args.project_dir.resolve()
+    repo_root = Path(__file__).parent
+    logs_dir = repo_root / "agents/logs"
+
+    # Locate log file
+    log_file = None
+    if run_id:
+        log_file = logs_dir / f"{run_id}.log"
+        if not log_file.exists():
+            print(f"❌ Error: Log file for Run ID '{run_id}' not found.", file=sys.stderr)
+            sys.exit(1)
+    else:
+        # Find latest log
+        try:
+            all_logs = sorted(logs_dir.glob('*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
+            if not all_logs:
+                print("❌ Error: No agent logs found.", file=sys.stderr)
+                sys.exit(1)
+            log_file = all_logs[0]
+            print(f"Using latest log file: {log_file.name}")
+        except OSError as e:
+            print(f"❌ Error accessing logs directory: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Parse Logs
+    print(f"--- Replaying Run: {log_file.stem} ---")
+    parser = LogParser(log_file)
+    steps = parser.parse()
+    turns = parser.extract_agent_turns(steps)
+
+    if not turns:
+        print("No agent turns found in this log.")
+        sys.exit(0)
+
+    print(f"Found {len(turns)} turns.")
+    print("Controls: [n] Next, [p] Previous, [q] Quit, [enter] Next")
+
+    idx = 0
+    while 0 <= idx < len(turns):
+        turn = turns[idx]
+
+        # Clear screen for better UX (optional, maybe just print separator)
+        print("\n" + "="*60)
+        if "header" in turn:
+            print(f"{turn['header']}")
+        else:
+            print(f"  TURN {idx + 1}")
+        print("="*60)
+
+        # Display key info
+        if "thought" in turn:
+            print("\n🧠 THOUGHT:")
+            print(turn["thought"].replace("THOUGHT:", "").strip())
+
+        if "plan" in turn:
+            print("\n📋 PLAN:")
+            print(turn["plan"].replace("PLAN:", "").strip())
+
+        if "command" in turn:
+            print("\n💻 COMMAND:")
+            print(turn["command"].replace("COMMAND:", "").strip())
+
+        # Optional: Show full logs for this turn if requested?
+        # For now, just show summary.
+
+        choice = input("\n[n/p/q] > ").strip().lower()
+
+        if choice == 'q':
+            break
+        elif choice == 'p':
+            idx = max(0, idx - 1)
+        else:
+            idx += 1
+
+    print("Replay finished.")
     sys.exit(0)
 
 
@@ -5232,6 +5314,23 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Replay an agent run step-by-step from the logs."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID to replay. If omitted, uses the latest log.",
+    )
+    parser_replay.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -7101,6 +7200,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     if args.command == "help":

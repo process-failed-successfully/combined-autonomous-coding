@@ -1756,6 +1756,76 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     return None
 
 
+def run_replay(args):
+    """Interactively replays an agent's execution log."""
+    from shared.log_parser import parse_log_file
+    run_id = args.run_id
+    repo_root = Path(__file__).parent
+    log_file_path = repo_root / f"agents/logs/{run_id}.log"
+
+    if not log_file_path.exists():
+        print(f"❌ Error: Log file for Run ID '{run_id}' not found at '{log_file_path}'.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        log_content = log_file_path.read_text()
+        steps = parse_log_file(log_content)
+    except Exception as e:
+        print(f"❌ Error parsing log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not steps:
+        print("No replayable steps found in the log file.")
+        sys.exit(0)
+
+    current_step = 0
+    while True:
+        step_data = steps[current_step]
+        # Clear screen for a cleaner view
+        print("\033[H\033[J", end="")
+
+        print(f"--- Replaying Log: {run_id} ---")
+        print(f"Step {step_data['step']}/{len(steps)} | Timestamp: {step_data['timestamp']} | Type: {step_data['type']}")
+        print("-" * 80)
+        print(step_data['content'])
+        print("-" * 80)
+
+        # Command prompt
+        prompt = "[N]ext, [P]revious, [J]ump to step, [Q]uit: "
+        try:
+            action = input(prompt).lower().strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting replay.")
+            break
+
+        if action == 'n' or action == '':
+            if current_step < len(steps) - 1:
+                current_step += 1
+            else:
+                print("Already at the last step.")
+        elif action == 'p':
+            if current_step > 0:
+                current_step -= 1
+            else:
+                print("Already at the first step.")
+        elif action.startswith('j'):
+            try:
+                target_step = int(action.split()[-1])
+                if 1 <= target_step <= len(steps):
+                    current_step = target_step - 1
+                else:
+                    print(f"Invalid step. Please enter a number between 1 and {len(steps)}.")
+            except (ValueError, IndexError):
+                print("Invalid jump command. Use 'j <step_number>'.")
+        elif action == 'q':
+            print("Exiting replay.")
+            break
+        else:
+            print("Unknown command.")
+
+    sys.exit(0)
+
+
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -5208,6 +5278,16 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Interactively replay an agent's execution log to see its thought process."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the log to replay.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7109,6 +7189,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     # Initialize Agent Client

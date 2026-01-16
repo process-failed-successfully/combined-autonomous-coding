@@ -1752,7 +1752,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
         # Use -- to separate options from arguments
         result = subprocess.run(
             [git_path, "-C", str(project_dir), "log", "--all", "--grep", f"Run ID: {run_id}", "--format=%H", "--"],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, shell=False
         )
         if result.stdout.strip():
             # Return the first commit hash found
@@ -1789,11 +1789,14 @@ def run_cherry_pick(args):
     is_git_ref = False
     try:
         # Use -- to separate options from arguments
+        # We use rev-parse --verify to check if the target resolves to a commit
+        # Note: rev-parse --verify does not support the -- separator for the revision argument
+        # We rely on is_safe_git_ref to prevent flag injection (starts with -)
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
-            capture_output=True, text=True
+            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
+            capture_output=True, text=True, shell=False
         )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+        if check_commit_result.returncode == 0:
             is_git_ref = True
     except Exception:
         pass  # Ignore errors, we'll handle the 'not found' case below
@@ -1819,7 +1822,7 @@ def run_cherry_pick(args):
         # Use --no-commit to allow the user to inspect the changes before committing
         # Use -- to separate options from arguments
         cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, shell=False)
 
         if result.returncode == 0:
             print(result.stdout)

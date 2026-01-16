@@ -123,6 +123,7 @@ class TestCherryPickCommand(unittest.TestCase):
     @patch('sys.stdout')
     @patch('sys.stderr')
     def test_cherry_pick_security_invalid_chars(self, mock_stderr, mock_stdout):
+        # Security test: ensure command injection is prevented
         """Test that cherry-pick rejects targets with invalid characters (command injection attempt)."""
         args = MagicMock()
         args.project_dir = self.test_dir

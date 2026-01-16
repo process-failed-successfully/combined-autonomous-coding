@@ -1745,14 +1745,25 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     """Searches the git log for a commit associated with a Run ID."""
     try:
         # Search the entire commit history for the Run ID in the message body
-        # Use --fixed-strings to treat the search pattern as a literal string, preventing regex injection
+        # Use python-side filtering to avoid potential regex/argument injection in git grep
+        # -z: NUL-terminated records
+        # --format=%H%B: Commit hash (40 chars) followed by raw body
         result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", "--grep", f"Run ID: {run_id}", "--format=%H"],
+            [git_path, "-C", str(project_dir), "log", "--all", "-z", "--format=%H%B"],
             capture_output=True, text=True, check=True
         )
-        if result.stdout.strip():
-            # Return the first commit hash found
-            return result.stdout.strip().split('\n')[0]
+
+        target_string = f"Run ID: {run_id}"
+
+        # Split by NUL byte
+        entries = result.stdout.split('\0')
+        for entry in entries:
+            if len(entry) >= 40:
+                commit_hash = entry[:40]
+                message = entry[40:]
+                if target_string in message:
+                    return commit_hash
+
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
     return None

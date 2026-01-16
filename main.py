@@ -1757,6 +1757,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     return None
 
 
+
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -1969,6 +1970,7 @@ def run_rewind(args):
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         # Step 2: Reset to the target commit
+        # Note: `git reset --hard` does not support the `--` separator
         subprocess.run(
             [git_path, "-C", str(project_dir), "reset", "--hard", target],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -1983,7 +1985,6 @@ def run_rewind(args):
         sys.exit(1)
 
     sys.exit(0)
-
 
 def run_empty_trash(args):
     """Permanently deletes the .agent_trash directory."""

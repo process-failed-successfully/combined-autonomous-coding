@@ -33,7 +33,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             message=None,
             run_tests=False,
-            project_dir=Path('.')
+            project_dir=Path('.'),
+            generate=False
         )
 
         # Act
@@ -63,7 +64,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             message=commit_message,
             run_tests=False,
-            project_dir=Path('.')
+            project_dir=Path('.'),
+            generate=False
         )
 
         # Act

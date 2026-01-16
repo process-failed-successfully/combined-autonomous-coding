@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, call, AsyncMock
 import argparse
 from pathlib import Path
 import sys
@@ -42,7 +42,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Test commit",
-            run_tests=False
+            run_tests=False,
+            generate=False
         )
 
         # Mock the git commands. `git diff --cached --quiet` returns 1 if there are changes.
@@ -75,7 +76,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Test commit with tests",
-            run_tests=True
+            run_tests=True,
+            generate=False
         )
         mock_run_test.return_value = None # Simulate successful test run
 
@@ -105,7 +107,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             project_dir=Path("."),
             message="This should not be committed",
-            run_tests=True
+            run_tests=True,
+            generate=False
         )
         # Simulate a test failure by raising SystemExit with a non-zero code
         mock_run_test.side_effect = SystemExit(1)
@@ -129,7 +132,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             project_dir=Path("."),
             message="No changes",
-            run_tests=False
+            run_tests=False,
+            generate=False
         )
 
         # Mock git diff to return 0 (no changes)
@@ -155,7 +159,8 @@ class TestCommitCommand(unittest.TestCase):
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Delete file",
-            run_tests=False
+            run_tests=False,
+            generate=False
         )
 
         # Mock the git commands
@@ -181,6 +186,177 @@ class TestCommitCommand(unittest.TestCase):
         # Check that `git commit` was called
         commit_call = mock_run.call_args_list[2].args[0]
         self.assertIn('commit', commit_call)
+
+
+    @patch('main.shutil.which', return_value='git')
+    @patch('main.subprocess.run')
+    @patch('main.GeminiAgent')
+    @patch('builtins.input', side_effect=['y'])
+    def test_commit_with_generate_happy_path(self, mock_input, mock_gemini_agent, mock_run, mock_which):
+        """Test AI commit message generation happy path."""
+        args = argparse.Namespace(
+            project_dir=Path("."),
+            message=None,
+            run_tests=False,
+            generate=True
+        )
+
+        mock_agent_instance = mock_gemini_agent.return_value
+        mock_agent_instance.chat_with_model = AsyncMock(return_value="feat(cli): add AI-powered commit message generation")
+
+        mock_diff_result = MagicMock()
+        mock_diff_result.stdout = "diff --git a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old\n+new"
+        mock_diff_result.returncode = 0
+
+        mock_staged_check_result = MagicMock()
+        mock_staged_check_result.returncode = 1
+
+        mock_run.side_effect = [
+            MagicMock(returncode=0),  # git add -A
+            mock_staged_check_result, # git diff --cached --quiet
+            mock_diff_result,         # git diff --cached
+            MagicMock(returncode=0)   # git commit
+        ]
+
+        with self.assertRaises(SystemExit) as cm:
+            run_commit(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        mock_gemini_agent.assert_called_once()
+        mock_agent_instance.chat_with_model.assert_awaited_once()
+
+        commit_call = mock_run.call_args_list[3].args[0]
+        self.assertIn('commit', commit_call)
+        self.assertIn("feat(cli): add AI-powered commit message generation", commit_call)
+
+
+    @patch('main.shutil.which', return_value='git')
+    @patch('main.subprocess.run')
+    @patch('main.GeminiAgent')
+    @patch('builtins.input', side_effect=['n', 'fix', 'test', 'Fix a bug', '', 'n', 'y'])
+    def test_commit_with_generate_reject_and_manual_input(self, mock_input, mock_gemini_agent, mock_run, mock_which):
+        """Test AI commit message generation is rejected and user provides manual input."""
+        args = argparse.Namespace(
+            project_dir=Path("."),
+            message=None,
+            run_tests=False,
+            generate=True
+        )
+
+        mock_agent_instance = mock_gemini_agent.return_value
+        mock_agent_instance.chat_with_model = AsyncMock(return_value="feat(cli): add AI-powered commit message generation")
+
+        mock_diff_result = MagicMock()
+        mock_diff_result.stdout = "diff --git a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old\n+new"
+        mock_diff_result.returncode = 0
+
+        mock_staged_check_result = MagicMock()
+        mock_staged_check_result.returncode = 1
+
+        mock_run.side_effect = [
+            MagicMock(returncode=0),  # git add -A
+            mock_staged_check_result, # git diff --cached --quiet
+            mock_diff_result,         # git diff --cached
+            MagicMock(returncode=0)   # git commit
+        ]
+
+        with self.assertRaises(SystemExit) as cm:
+            run_commit(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        commit_call = mock_run.call_args_list[3].args[0]
+        self.assertIn('commit', commit_call)
+        self.assertIn("fix(test): Fix a bug", commit_call)
+
+
+    @patch('main.shutil.which', return_value='git')
+    @patch('main.subprocess.run')
+    @patch('main.GeminiAgent')
+    @patch('builtins.input', side_effect=['e'])
+    @patch('tempfile.NamedTemporaryFile')
+    @patch('os.unlink')
+    def test_commit_with_generate_edit(self, mock_unlink, mock_tempfile, mock_input, mock_gemini_agent, mock_run, mock_which):
+        """Test AI commit message generation is edited by the user."""
+        args = argparse.Namespace(
+            project_dir=Path("."),
+            message=None,
+            run_tests=False,
+            generate=True
+        )
+
+        mock_agent_instance = mock_gemini_agent.return_value
+        mock_agent_instance.chat_with_model = AsyncMock(return_value="feat(cli): add AI-powered commit message generation")
+
+        # Mock the temporary file to simulate user editing
+        mock_tf = MagicMock()
+        mock_tf.read.return_value = "feat(cli): This is an edited commit message"
+        mock_tf.name = "fake_temp_file"
+        mock_tempfile.return_value.__enter__.return_value = mock_tf
+
+        mock_diff_result = MagicMock()
+        mock_diff_result.stdout = "diff"
+        mock_diff_result.returncode = 0
+
+        mock_staged_check_result = MagicMock()
+        mock_staged_check_result.returncode = 1
+
+        mock_run.side_effect = [
+            MagicMock(returncode=0),  # git add -A
+            mock_staged_check_result, # git diff --cached --quiet
+            mock_diff_result,         # git diff --cached
+            MagicMock(returncode=0),  # editor
+            MagicMock(returncode=0)   # git commit
+        ]
+
+        with self.assertRaises(SystemExit) as cm:
+            run_commit(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        commit_call = mock_run.call_args_list[4].args[0]
+        self.assertIn('commit', commit_call)
+        self.assertIn("feat(cli): This is an edited commit message", commit_call)
+
+
+    @patch('main.shutil.which', return_value='git')
+    @patch('main.subprocess.run')
+    @patch('main.GeminiAgent')
+    @patch('builtins.input', side_effect=['feat', 'test', 'A manual commit', '', 'n', 'y'])
+    def test_commit_with_generate_failure_fallback(self, mock_input, mock_gemini_agent, mock_run, mock_which):
+        """Test fallback to manual input when AI generation fails."""
+        args = argparse.Namespace(
+            project_dir=Path("."),
+            message=None,
+            run_tests=False,
+            generate=True
+        )
+
+        mock_agent_instance = mock_gemini_agent.return_value
+        mock_agent_instance.chat_with_model = AsyncMock(side_effect=Exception("AI API is down"))
+
+        mock_diff_result = MagicMock()
+        mock_diff_result.stdout = "diff"
+        mock_diff_result.returncode = 0
+
+        mock_staged_check_result = MagicMock()
+        mock_staged_check_result.returncode = 1
+
+        mock_run.side_effect = [
+            MagicMock(returncode=0),  # git add -A
+            mock_staged_check_result, # git diff --cached --quiet
+            mock_diff_result,         # git diff --cached
+            MagicMock(returncode=0)   # git commit
+        ]
+
+        with self.assertRaises(SystemExit) as cm:
+            run_commit(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        commit_call = mock_run.call_args_list[3].args[0]
+        self.assertIn('commit', commit_call)
+        self.assertIn("feat(test): A manual commit", commit_call)
 
 
 if __name__ == "__main__":

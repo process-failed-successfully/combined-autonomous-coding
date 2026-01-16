@@ -51,6 +51,7 @@ import yaml
 import platformdirs
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
+import tempfile
 
 # Agent Definitions
 AVAILABLE_AGENTS = {
@@ -5033,6 +5034,11 @@ def parse_args(argv=None):
         help="Run project tests before committing. If tests fail, the commit is aborted."
     )
     parser_commit.add_argument(
+        "--generate",
+        action="store_true",
+        help="Use an AI agent to generate the commit message from the staged changes."
+    )
+    parser_commit.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -6033,6 +6039,71 @@ def run_commit(args):
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
         sys.exit(0)
+
+    # --- AI Generated Commit Message ---
+    if args.generate and not commit_message:
+        print("--- Generating AI Commit Message ---")
+        try:
+            # 1. Get staged diff
+            diff_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "diff", "--cached"],
+                capture_output=True, text=True, check=True
+            )
+            staged_diff = diff_result.stdout
+            if not staged_diff.strip():
+                print("No staged changes to generate a message from.")
+
+            else:
+                # 2. Use Gemini agent to generate message
+                async def generate_message_async(diff):
+                    # Create a minimal config, ensuring we don't stream raw output here
+                    config = Config(project_dir=project_dir, stream_output=False)
+                    agent = GeminiAgent(config)
+                    prompt = f"""
+                    Based on the following git diff, please generate a concise and informative commit message that follows the Conventional Commits specification.
+
+                    The commit message must have a short subject line (max 50 chars) and may have an optional body.
+                    The subject line must be in the format: `<type>(<scope>): <description>`
+                    Example: `feat(cli): add AI-powered commit message generation`
+
+                    Do not include the diff or any other explanatory text in your response, only the commit message itself.
+
+                    Diff:
+                    ```diff
+                    {diff}
+                    ```
+                    """
+                    # We use chat_with_model which is a simple, direct way to get a response
+                    return await agent.chat_with_model(prompt)
+
+                generated_message = asyncio.run(generate_message_async(staged_diff))
+
+                print("\n--- Generated Commit Message ---")
+                print(generated_message)
+                print("------------------------------")
+                confirm = input("Use this message? (y/n/e to edit): ").strip().lower()
+
+                if confirm == 'y':
+                    commit_message = generated_message
+                elif confirm == 'e':
+                    # Allow user to edit the message
+                    editor = os.environ.get('EDITOR', 'vim')
+                    with tempfile.NamedTemporaryFile(mode='w+', suffix=".tmp", delete=False) as tf:
+                        tf.write(generated_message)
+                        tf.flush()
+                        subprocess.run([editor, tf.name], check=True)
+                        tf.seek(0)
+                        commit_message = tf.read().strip()
+                    os.unlink(tf.name)
+                elif confirm == 'n':
+                    commit_message = None  # This will trigger the interactive prompt below
+                else:
+                    print("Invalid option. Proceeding with interactive prompt.")
+                    commit_message = None
+
+        except Exception as e:
+            print(f"❌ Error generating commit message: {e}", file=sys.stderr)
+            commit_message = None  # Fallback to manual input
 
     # --- Interactive Commit Message Generation ---
     if not commit_message:

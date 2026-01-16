@@ -1795,6 +1795,9 @@ def run_cherry_pick(args):
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
         commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
         if commit_hash:
+            if not is_safe_git_ref(commit_hash):
+                print(f"❌ Error: Resolved commit hash '{commit_hash}' is not a safe git reference.", file=sys.stderr)
+                sys.exit(1)
             print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
             target = commit_hash
         else:
@@ -1935,6 +1938,9 @@ def run_rewind(args):
             print(f"'{target}' is not a known git reference. Assuming it is a Run ID and searching history...")
             commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
             if commit_hash:
+                if not is_safe_git_ref(commit_hash):
+                    print(f"❌ Error: Resolved commit hash '{commit_hash}' is not a safe git reference.", file=sys.stderr)
+                    sys.exit(1)
                 print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
                 target = commit_hash
             else:

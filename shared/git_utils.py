@@ -30,3 +30,19 @@ def is_safe_git_ref(ref: str) -> bool:
     except Exception:
         # Catch any other unexpected errors
         return False
+
+
+def find_commit_by_run_id(project_dir, git_path, run_id):
+    """Searches the git log for a commit associated with a Run ID."""
+    try:
+        # Search the entire commit history for the Run ID in the message body
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+            capture_output=True, text=True, check=True
+        )
+        if result.stdout.strip():
+            # Return the first commit hash found
+            return result.stdout.strip().split('\n')[0]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return None

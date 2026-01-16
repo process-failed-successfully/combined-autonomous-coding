@@ -6,7 +6,7 @@ import shutil
 import os
 import sys
 
-from main import run_cherry_pick
+from shared.cherry_pick import run_cherry_pick
 
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):

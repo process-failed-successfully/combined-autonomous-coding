@@ -45,7 +45,7 @@ class TestDiffCommand(unittest.TestCase):
         self.assertIn("diff", called_args)
         self.assertIn("HEAD", called_args)
 
-    @patch('main._find_commit_by_run_id')
+    @patch('main.find_commit_by_run_id')
     @patch('main.subprocess.run')
     def test_diff_with_run_id(self, mock_subprocess_run, mock_find_commit):
         # Arrange
@@ -102,7 +102,7 @@ class TestDiffCommand(unittest.TestCase):
         self.assertIn("show", show_call_args)
         self.assertIn(commit_hash, show_call_args)
 
-    @patch('main._find_commit_by_run_id')
+    @patch('main.find_commit_by_run_id')
     @patch('main.subprocess.run')
     def test_diff_invalid_target(self, mock_subprocess_run, mock_find_commit):
         # Arrange

@@ -30,6 +30,7 @@ except ImportError:
 from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
+from shared.git_utils import is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1762,6 +1763,10 @@ def run_cherry_pick(args):
     target = args.target
 
     # --- Pre-flight checks ---
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe git reference provided for cherry-pick: '{target}'", file=sys.stderr)
+        sys.exit(1)
+
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
@@ -1801,7 +1806,8 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        # The '--' separator ensures that the target is treated as a positional argument
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
@@ -1836,6 +1842,10 @@ def run_rewind(args):
     original_target = target  # Keep a copy for error messages
 
     # --- Pre-flight checks ---
+    if target and not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe git reference provided for rewind: '{target}'", file=sys.stderr)
+        sys.exit(1)
+
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)

@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.log_parser import parse_log_file
 import json
 import yaml
 import platformdirs
@@ -2087,6 +2088,68 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
 
+def run_replay(args):
+    """Interactively replays an agent's execution from a log file."""
+    run_id = args.run_id
+    repo_root = Path(__file__).parent
+    log_file_path = repo_root / f"agents/logs/{run_id}.log"
+
+    if not log_file_path.exists():
+        print(f"❌ Error: Log file not found for Run ID '{run_id}'.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        log_content = log_file_path.read_text()
+        steps = parse_log_file(log_content)
+    except Exception as e:
+        print(f"❌ Error parsing log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not steps:
+        print("No replayable steps found in the log file.")
+        sys.exit(0)
+
+    current_step = 0
+    while True:
+        step = steps[current_step]
+        print(f"\n--- Step {current_step + 1}/{len(steps)} ---")
+        print("\n🤖 Agent's Thought:")
+        print(step.thought)
+
+        if step.actions:
+            print("\n🛠️ Actions:")
+            for i, action in enumerate(step.actions):
+                print(f"  [{i+1}] {action.type}")
+                # Indent content for readability
+                indented_content = "\n".join([f"      {line}" for line in action.content.split('\n')])
+                print(f"      ```\n{indented_content}\n      ```")
+
+
+        print("\n--- Options ---")
+        print("  [n] Next step, [p] Previous step, [q] Quit")
+
+        try:
+            choice = input("> ").strip().lower()
+            if choice == 'n':
+                if current_step < len(steps) - 1:
+                    current_step += 1
+                else:
+                    print("Already at the last step.")
+            elif choice == 'p':
+                if current_step > 0:
+                    current_step -= 1
+                else:
+                    print("Already at the first step.")
+            elif choice == 'q':
+                break
+            else:
+                print("Invalid choice.")
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting replay.")
+            break
+    sys.exit(0)
+
+
 def run_context(args):
     """Displays an analysis of the agent's context."""
     if args.action == "show":
@@ -2919,6 +2982,7 @@ def run_help(args):
     print_command("log", "Show the git commit history in a formatted view.")
     print_command("logs", "Show agent logs with filtering and real-time follow options.")
     print_command("tree", "Display a tree view of the project directory.")
+    print_command("replay", "Interactively replay an agent's run from a log file.")
     print_command("report", "Generate a Markdown summary report for a specific run.")
     print_command("blame", "Show which agent Run ID was responsible for each line in a file.")
     print_command("benchmark", "Analyze and compare performance metrics from different runs.")
@@ -5208,6 +5272,16 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Interactively replay an agent's execution from a log file."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the log to replay.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7077,6 +7151,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     if args.command == "blame":

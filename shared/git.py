@@ -166,7 +166,7 @@ def clone_repo(url: str, dest_path: Path) -> bool:
     try:
         logger.info(f"Cloning {sanitize_url(url)} to {dest_path}...")
         subprocess.run(
-            ["git", "clone", url, str(dest_path)],
+            ["git", "clone", "--", url, str(dest_path)],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

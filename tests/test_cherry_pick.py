@@ -116,5 +116,19 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('sys.stderr')
+    def test_cherry_pick_invalid_ref(self, mock_stderr):
+        """Test cherry-picking with an invalid and potentially unsafe git reference."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        args.target = "; rm -rf /"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+        self.assertIn("Invalid or unsafe git reference", stderr_output)
+
 if __name__ == '__main__':
     unittest.main()

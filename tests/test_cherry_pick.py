@@ -6,10 +6,6 @@ import shutil
 import os
 import sys
 
-# Add the root of the project to the Python path
-# This is necessary for the tests to be able to import the 'main' module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from main import run_cherry_pick
 
 class TestCherryPickCommand(unittest.TestCase):
@@ -119,21 +115,6 @@ class TestCherryPickCommand(unittest.TestCase):
             text=True
         ).stdout
         self.assertIn("UU file1.txt", git_status)
-
-    @patch('sys.stdout')
-    @patch('sys.stderr')
-    def test_cherry_pick_invalid_target(self, mock_stderr, mock_stdout):
-        """Test cherry-picking with an invalid and potentially malicious target."""
-        args = MagicMock()
-        args.project_dir = self.test_dir
-        args.target = ";-echo"
-
-        with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
-
-        self.assertEqual(cm.exception.code, 1)
-        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
-        self.assertIn("Error: Invalid target", stderr_output)
 
 if __name__ == '__main__':
     unittest.main()

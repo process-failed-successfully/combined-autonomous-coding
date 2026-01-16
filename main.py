@@ -1766,12 +1766,12 @@ def run_cherry_pick(args):
     git_path = shutil.which("git")
     if not git_path:
         print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     git_dir = project_dir / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
@@ -1796,7 +1796,7 @@ def run_cherry_pick(args):
         else:
             print(f"❌ Error: Could not find a git commit for target '{original_target}'.", file=sys.stderr)
             print("Please provide a valid commit hash or a Run ID from the agent's history.", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     # --- Execute Cherry-Pick ---
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
@@ -1808,7 +1808,7 @@ def run_cherry_pick(args):
         if result.returncode == 0:
             print(result.stdout)
             print(f"\n✅ Successfully cherry-picked commit {target[:7]}.")
-            sys.exit(0)
+            return 0
         else:
             print("❌ Error: Cherry-pick failed.", file=sys.stderr)
             print("This is likely due to a merge conflict.", file=sys.stderr)
@@ -1820,14 +1820,14 @@ def run_cherry_pick(args):
             print(f"  git cherry-pick --continue", file=sys.stderr)
             print("\nTo abort the cherry-pick and return to the previous state, run:", file=sys.stderr)
             print(f"  git cherry-pick --abort", file=sys.stderr)
-            sys.exit(1)
+            return 1
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         stderr = getattr(e, 'stderr', str(e))
         if isinstance(stderr, bytes):
             stderr = stderr.decode().strip()
         print(f"❌ An unexpected error occurred: {stderr}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def run_rewind(args):
@@ -7179,8 +7179,7 @@ async def main():
         return
 
     if args.command == "cherry-pick":
-        run_cherry_pick(args)
-        return
+        sys.exit(run_cherry_pick(args))
 
     # Initialize Agent Client
     from shared.agent_client import AgentClient

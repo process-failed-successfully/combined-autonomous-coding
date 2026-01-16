@@ -66,10 +66,9 @@ class TestCherryPickCommand(unittest.TestCase):
         args.project_dir = self.test_dir
         args.target = self.cherry_pick_commit
 
-        with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+        result = run_cherry_pick(args)
 
-        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(result, 0)
         self.assertTrue((self.test_dir / "file2.txt").exists())
         self.assertEqual((self.test_dir / "file2.txt").read_text(), "Feature content")
 
@@ -81,10 +80,9 @@ class TestCherryPickCommand(unittest.TestCase):
         args.project_dir = self.test_dir
         args.target = "run-12345" # This ID is in the commit message
 
-        with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+        result = run_cherry_pick(args)
 
-        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(result, 0)
         self.assertTrue((self.test_dir / "file2.txt").exists())
 
     @patch('sys.stdout')
@@ -95,10 +93,9 @@ class TestCherryPickCommand(unittest.TestCase):
         args.project_dir = self.test_dir
         args.target = self.conflict_commit
 
-        with self.assertRaises(SystemExit) as cm:
-            run_cherry_pick(args)
+        result = run_cherry_pick(args)
 
-        self.assertEqual(cm.exception.code, 1)
+        self.assertEqual(result, 1)
 
         # Check that the error message contains instructions for the user
         stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)

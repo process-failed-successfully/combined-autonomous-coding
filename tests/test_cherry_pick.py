@@ -135,5 +135,52 @@ class TestCherryPickCommand(unittest.TestCase):
         stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
         self.assertIn("Error: Invalid target", stderr_output)
 
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_run_id_regex_safety(self, mock_stderr, mock_stdout):
+        """Test that run_id is treated as a fixed string, not a regex."""
+        # Create a commit with a Run ID containing regex special characters
+        regex_run_id = "run.1"
+        subprocess.run(
+            ["git", "commit", "--allow-empty", "-m", f"feat: Regex ID\n\nRun ID: {regex_run_id}"],
+            cwd=self.test_dir, check=True
+        )
+
+        # Create another commit that would match if regex was enabled (e.g., run-1 matches run.1 as regex)
+        # Note: 'run.1' regex matches 'run-1'
+        subprocess.run(
+            ["git", "commit", "--allow-empty", "-m", f"feat: Confusion\n\nRun ID: run-1"],
+            cwd=self.test_dir, check=True
+        )
+
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        args.target = regex_run_id
+
+        # We expect it to find the commit with "Run ID: run.1", NOT "Run ID: run-1"
+        # Since run-1 is the most recent commit, if regex was on, it might find that one first depending on log order.
+        # But actually, _find_commit_by_run_id returns the first match.
+        # So we should be careful about the order.
+        # If we search for 'run.1', and it's treated as regex, it matches 'run-1'.
+        # If 'run-1' commit is newer, it appears earlier in 'git log'.
+        # So if regex is ON, it will return the 'run-1' commit.
+        # If regex is OFF (fixed string), it will find the 'run.1' commit.
+
+        # Get the hash of the 'run.1' commit
+        run_dot_1_hash = subprocess.run(
+            ["git", "log", "--grep", f"Run ID: {regex_run_id}", "--fixed-strings", "--format=%H", "-n", "1"],
+            cwd=self.test_dir, capture_output=True, text=True
+        ).stdout.strip()
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        # Verify the output says it found the correct commit
+        stdout_output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+        self.assertIn(f"Found commit '{run_dot_1_hash[:7]}'", stdout_output)
+
+
 if __name__ == '__main__':
     unittest.main()

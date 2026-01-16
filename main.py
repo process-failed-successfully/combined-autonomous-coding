@@ -2769,6 +2769,60 @@ def run_logs(args):
 # --- Workflow Subcommand Helpers ---
 from shared.cli_utils import get_workflow_stage, WORKFLOW_STAGES, WORKFLOW_ORDER
 
+def run_security(args):
+    """Runs a security audit on the project."""
+    from shared.security import SecurityAuditor
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit on: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+
+    # 1. Run Static Analysis (Bandit)
+    print("Running static analysis (Bandit)...")
+    bandit_results = auditor.run_bandit(
+        severity=args.severity,
+        confidence=args.confidence
+    )
+
+    # 2. Run Secret Scanning
+    secret_findings = []
+    if not args.no_secrets:
+        print("Scanning for secrets...")
+        secret_findings = auditor.check_secrets()
+    else:
+        print("Secret scanning skipped.")
+
+    # 3. Generate Report
+    report = auditor.generate_report(bandit_results, secret_findings)
+    print("\n" + report)
+
+    # 4. Save Report if requested
+    if args.output:
+        try:
+            output_path = args.output.resolve()
+            output_path.write_text(report)
+            print(f"\n✅ Report saved to: {output_path}")
+        except Exception as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    # 5. Exit Code
+    # Fail if high severity issues found or secrets detected
+    has_high_severity = False
+    if "results" in bandit_results:
+        for issue in bandit_results["results"]:
+            if issue["issue_severity"] == "HIGH":
+                has_high_severity = True
+                break
+
+    if has_high_severity or secret_findings:
+        print("\n❌ Security issues detected.")
+        sys.exit(1)
+
+    print("\n✅ Security audit passed.")
+    sys.exit(0)
+
+
 def _workflow_status(args):
     """Displays the current workflow status."""
     project_dir = args.project_dir.resolve()
@@ -5232,6 +5286,40 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run a security audit (static analysis and secret scanning) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="MEDIUM",
+        help="Minimum severity level to report (default: MEDIUM).",
+    )
+    parser_security.add_argument(
+        "--confidence",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="MEDIUM",
+        help="Minimum confidence level to report (default: MEDIUM).",
+    )
+    parser_security.add_argument(
+        "--no-secrets",
+        action="store_true",
+        help="Disable secret scanning.",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the report file.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -7109,6 +7197,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     # Initialize Agent Client

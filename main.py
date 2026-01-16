@@ -49,7 +49,7 @@ from shared.commands import run_why
 import json
 import yaml
 import platformdirs
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, is_dataclass, fields
 from datetime import datetime
 
 # Agent Definitions
@@ -3741,6 +3741,149 @@ def run_sprint_command(args):
         _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
 
 
+async def run_replay(args):
+    """Re-runs a previous agent session from its log file."""
+    import re
+
+    run_id_to_replay = args.run_id
+    project_dir = args.project_dir.resolve()
+    print(f"--- Replaying Agent Run: {run_id_to_replay} ---")
+
+    # 1. Find the log file
+    repo_root = Path(__file__).parent
+    log_file = repo_root / "agents/logs" / f"{run_id_to_replay}.log"
+    if not log_file.exists():
+        print(f"❌ Error: Log file not found for Run ID: {run_id_to_replay}", file=sys.stderr)
+        sys.exit(1)
+    print(f"Found log file: {log_file}")
+
+    # 2. Parse the log file for commit hash and configuration
+    commit_hash = None
+    config_json_str = None
+    config_capture = False
+    config_lines = []
+
+    try:
+        with open(log_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if "Initial commit hash:" in line:
+                    commit_hash = line.split("Initial commit hash:")[1].strip()
+                elif "Initial configuration:" in line:
+                    config_capture = True
+                    # The line after this will be the start of the JSON block
+                elif config_capture:
+                    config_lines.append(line)
+                    # A simple way to detect the end of the JSON block
+                    if line.strip() == "}":
+                        break
+
+        if config_lines:
+            # Join the lines and remove the logger's prefix (e.g., '2023-11-20... - INFO - ')
+            full_config_str = "".join(config_lines)
+            # Find the first '{' to start the JSON object
+            json_start_index = full_config_str.find('{')
+            if json_start_index != -1:
+                config_json_str = full_config_str[json_start_index:]
+            else:
+                raise ValueError("Could not find start of JSON configuration in log.")
+        else:
+            raise ValueError("Configuration block not found in log file.")
+
+    except Exception as e:
+        print(f"❌ Error parsing log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not commit_hash:
+        print("❌ Error: Could not find 'Initial commit hash' in the log file.", file=sys.stderr)
+        sys.exit(1)
+    if not config_json_str:
+        print("❌ Error: Could not find 'Initial configuration' in the log file.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Found initial commit hash: {commit_hash}")
+
+    # 3. Reset the repository
+    git_path = shutil.which("git")
+    if not git_path or not (project_dir / ".git").is_dir():
+        print("❌ Error: Not a git repository. Cannot perform git reset.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\nThis will perform a 'git reset --hard' to commit '{commit_hash[:7]}'.")
+    print("WARNING: This is a destructive action and will discard all uncommitted changes.")
+    if not args.yes:
+        confirm = input("Are you sure you want to proceed? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    try:
+        print(f"Resetting repository to {commit_hash}...")
+        subprocess.run([git_path, "-C", str(project_dir), "reset", "--hard", commit_hash], check=True, capture_output=True)
+        subprocess.run([git_path, "-C", str(project_dir), "clean", "-fdx"], check=True, capture_output=True)
+        print("✅ Repository reset successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error resetting repository: {e.stderr.decode()}", file=sys.stderr)
+        sys.exit(1)
+
+    # 4. Load config and re-run the agent
+    try:
+        from shared.utils import EnhancedJSONEncoder
+        replay_config_data = json.loads(config_json_str)
+
+        # Convert back to Config object, handling Path objects correctly
+        replay_config_data['project_dir'] = Path(replay_config_data['project_dir'])
+        if replay_config_data.get('spec_file'):
+            replay_config_data['spec_file'] = Path(replay_config_data['spec_file'])
+
+        # Remove keys that are not part of the Config dataclass definition
+        valid_keys = {f.name for f in fields(Config)}
+        replay_config_dict = {k: v for k, v in replay_config_data.items() if k in valid_keys}
+
+        replay_config = Config(**replay_config_dict)
+
+        # Generate a new agent_id for the replay
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        replay_agent_id = f"replay-{run_id_to_replay}-{timestamp}"
+        replay_config.agent_id = replay_agent_id
+
+        print(f"Starting replay with new Run ID: {replay_agent_id}")
+
+        # We need to re-initialize the main execution logic from main()
+        # This is a simplified version of that logic
+        agents_log_dir = repo_root / "agents/logs"
+        log_file = agents_log_dir / f"{replay_agent_id}.log"
+        logger, memory_handler = setup_logger(name="", log_file=log_file, verbose=replay_config.verbose)
+
+        logger.info(f"--- This is a replay of run: {run_id_to_replay} ---")
+        logger.info(f"Reset repository to commit: {commit_hash}")
+
+        from shared.agent_client import AgentClient
+        # dashboard_url can be None for replay
+        client = AgentClient(agent_id=replay_agent_id, dashboard_url=None, memory_handler=memory_handler)
+
+        # Dispatch to the correct agent runner
+        if replay_config.agent_type == "gemini":
+            await run_gemini(replay_config, agent_client=client)
+        elif replay_config.agent_type == "cursor":
+            await run_cursor(replay_config, agent_client=client)
+        elif replay_config.agent_type == "local":
+            await run_local(replay_config, agent_client=client)
+        elif replay_config.agent_type == "openrouter":
+            await run_openrouter(replay_config, agent_client=client)
+        else:
+            print(f"❌ Unknown agent type '{replay_config.agent_type}' found in log.", file=sys.stderr)
+            sys.exit(1)
+
+        print("\n✅ Replay finished.")
+        sys.exit(0)
+
+    except Exception as e:
+        print(f"❌ An error occurred while launching the replay agent: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
 async def run_plan(args):
     """Generates a feature plan from a spec file without executing it."""
     # This is a stripped down version of the main() function's setup
@@ -5206,6 +5349,27 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory (default: current directory).",
+    )
+
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Re-run a previous agent session from its log file."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the session to replay.",
+    )
+    parser_replay.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    parser_replay.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts for destructive actions (like git reset).",
     )
 
     # --- New 'review' command ---
@@ -7111,6 +7275,10 @@ async def main():
         run_cherry_pick(args)
         return
 
+    if args.command == "replay":
+        await run_replay(args)
+        return
+
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id
@@ -7277,6 +7445,28 @@ async def main():
 
     logger.info(f"Starting {args.agent.capitalize()} Agent on {args.project_dir}")
     logger.info(f"Generated Agent ID: {agent_id}")
+
+    # Log the starting commit hash for replayability
+    try:
+        git_path = shutil.which("git")
+        if git_path and (config.project_dir / ".git").is_dir():
+            result = subprocess.run(
+                [git_path, "-C", str(config.project_dir), "rev-parse", "HEAD"],
+                capture_output=True, text=True, check=True
+            )
+            commit_hash = result.stdout.strip()
+            logger.info(f"Initial commit hash: {commit_hash}")
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        logger.warning(f"Could not get initial commit hash: {e}")
+
+    # Log the configuration for replayability
+    from shared.utils import EnhancedJSONEncoder
+    try:
+        config_json = json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True)
+        logger.info(f"Initial configuration:\n{config_json}")
+    except Exception as e:
+        logger.warning(f"Could not log initial configuration: {e}")
+
 
     # Append the current run ID to the history file
     try:

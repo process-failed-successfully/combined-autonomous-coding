@@ -17,7 +17,7 @@ class AgentClient:
 
     def __init__(self, agent_id: str, dashboard_url: str = "http://localhost:8000", memory_handler: Optional[MemoryLogHandler] = None):
         self.agent_id = agent_id
-        self.dashboard_url = dashboard_url.rstrip("/")
+        self.dashboard_url = dashboard_url.rstrip("/") if dashboard_url else None
         self.memory_handler = memory_handler
         # We maintain a local control state
         self.local_control = AgentControl()

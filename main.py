@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.security import SecurityAuditor
 import json
 import yaml
 import platformdirs
@@ -5112,6 +5113,30 @@ def parse_args(argv=None):
         help="The command you want an explanation for.",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run a security audit on the project code."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to audit (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Filter issues by severity (default: LOW).",
+    )
+    parser_security.add_argument(
+        "--format",
+        choices=["txt", "json"],
+        default="txt",
+        help="Output format (default: txt).",
+    )
+
     # --- New 'next' command ---
     parser_next = subparsers.add_parser(
         "next",
@@ -7078,6 +7103,27 @@ async def main():
     if args.command == "why":
         run_why(args)
         return
+
+    if args.command == "security":
+        project_dir = args.project_dir.resolve()
+        print(f"--- Running Security Audit on: {project_dir} ---")
+        print(f"Severity Level: {args.severity}")
+
+        auditor = SecurityAuditor(project_dir)
+        print("Running audit (this may take a moment)...")
+
+        results = auditor.run_audit(severity_level=args.severity)
+        report = auditor.generate_report(results, format_type=args.format)
+
+        print(report)
+
+        # Exit with error if issues were found
+        if "results" in results and results["results"]:
+            sys.exit(1)
+        if "error" in results:
+            sys.exit(1)
+
+        sys.exit(0)
 
     if args.command == "blame":
         run_blame(args)

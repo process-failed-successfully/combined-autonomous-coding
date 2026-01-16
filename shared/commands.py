@@ -35,6 +35,7 @@ COMMAND_DESCRIPTIONS = {
     "profile": "Use this to manage different configuration profiles (e.g., for different projects or models) within your global `agent_config.yaml`.",
     "tui": "Use this to launch a terminal-based user interface that provides a real-time, interactive dashboard for monitoring and managing the agent.",
     "shell": "Use this to start an interactive shell where you can run all the agent's CLI commands without repeatedly typing the script name.",
+    "security": "Use this to run a security audit on your codebase. It scans for common vulnerabilities using Bandit and provides actionable suggestions for fixes.",
     "why": "Use this command to find out what another command does. For example, `why status`."
 }
 

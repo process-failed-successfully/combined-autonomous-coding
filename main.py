@@ -2868,6 +2868,67 @@ def run_workflow(args):
     sys.exit(0)
 
 
+def run_replay(args):
+    """Interactively replays an agent run from its log file."""
+    from shared.log_parser import parse_log_file, ReplayStep
+
+    run_id = args.run_id
+    repo_root = Path(__file__).parent
+    log_file_path = repo_root / f"agents/logs/{run_id}.log"
+
+    if not log_file_path.exists():
+        print(f"❌ Error: Log file not found for Run ID: {run_id}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        log_content = log_file_path.read_text(encoding='utf-8', errors='ignore')
+        steps = parse_log_file(log_content)
+    except Exception as e:
+        print(f"❌ Error parsing log file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not steps:
+        print("No replayable steps found in the log file.")
+        sys.exit(0)
+
+    print(f"--- Replaying Run ID: {run_id} ({len(steps)} steps) ---")
+    print("Commands: [n]ext, [p]revious, [q]uit")
+
+    current_step = 0
+    while True:
+        step = steps[current_step]
+        print("\n" + "="*80)
+        print(f"STEP {current_step + 1}/{len(steps)}")
+        print("="*80)
+
+        if step.thought:
+            print("\n--- 🤔 THOUGHT ---")
+            print(step.thought)
+        if step.command:
+            print("\n--- 💻 COMMAND ---")
+            print(f"$ {step.command}")
+        if step.output:
+            print("\n--- 📄 OUTPUT ---")
+            print(step.output)
+        if step.diff:
+            print("\n---  Git Diff ---")
+            print(step.diff)
+        if step.commit_hash:
+            print(f"\n--- ✅ Git Commit ---")
+            print(f"Commit hash: {step.commit_hash}")
+
+        user_input = input("\n> ").strip().lower()
+
+        if user_input == 'n':
+            current_step = min(current_step + 1, len(steps) - 1)
+        elif user_input == 'p':
+            current_step = max(current_step - 1, 0)
+        elif user_input == 'q':
+            break
+
+    sys.exit(0)
+
+
 def run_shell(args):
     """Starts the interactive shell."""
     shell = InteractiveShell(sys.modules[__name__])
@@ -2922,6 +2983,7 @@ def run_help(args):
     print_command("report", "Generate a Markdown summary report for a specific run.")
     print_command("blame", "Show which agent Run ID was responsible for each line in a file.")
     print_command("benchmark", "Analyze and compare performance metrics from different runs.")
+    print_command("replay", "Interactively replay an agent's run log.")
 
     print_header("Git & Workflow")
     print_command("commit", "Stage all changes and create a commit, with interactive prompts.")
@@ -5197,6 +5259,15 @@ def parse_args(argv=None):
         "cherry-pick",
         help="Apply the changes from a specific commit or Run ID onto the current branch."
     )
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Interactively replay an agent run from its log file."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        help="The Run ID of the log to replay.",
+    )
     parser_cherry_pick.add_argument(
         "target",
         help="The git commit hash or agent Run ID to apply.",
@@ -7109,6 +7180,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     # Initialize Agent Client

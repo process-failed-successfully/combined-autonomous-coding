@@ -53,14 +53,16 @@ def get_file_tree(root_dir: Path) -> str:
         if result.returncode == 0 and result.stdout:
             lines = result.stdout.splitlines()
             if len(lines) > 400:
-                tree_str = f"Project Files (Truncated first 400 of {len(lines)}): \n"
-                for line in lines[:400]:
-                    tree_str += f"- {line}\n"
-                tree_str += f"\n... and {len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
+                parts = [f"Project Files (Truncated first 400 of {len(lines)}): \n"]
+                parts.extend(f"- {line}\n" for line in lines[:400])
+                parts.append(
+                    f"\n... and {len(lines) - 400} more files. Use 'find . -maxdepth 2' or 'ls -R' to explore."
+                )
+                tree_str = "".join(parts)
             else:
-                tree_str = "Project Files:\n"
-                for line in lines:
-                    tree_str += f"- {line}\n"
+                parts = ["Project Files:\n"]
+                parts.extend(f"- {line}\n" for line in lines)
+                tree_str = "".join(parts)
         else:
             # Fallback to simple walk
             tree_str = "Project Files (System):\n"
@@ -75,15 +77,16 @@ def get_file_tree(root_dir: Path) -> str:
                     files.append(str(rel_path))
 
             if len(files) > 400:
-                tree_str = (
+                parts = [
                     f"Project Files (System - Truncated first 400 of {len(files)}):\n"
-                )
-                for f in files[:400]:
-                    tree_str += f"- {f}\n"
-                tree_str += f"\n... and {len(files) - 400} more files."
+                ]
+                parts.extend(f"- {f}\n" for f in files[:400])
+                parts.append(f"\n... and {len(files) - 400} more files.")
+                tree_str = "".join(parts)
             else:
-                for f in files:
-                    tree_str += f"- {f}\n"
+                parts = [tree_str]
+                parts.extend(f"- {f}\n" for f in files)
+                tree_str = "".join(parts)
     except Exception as e:
         tree_str = f"Error generating file tree: {e}"
 

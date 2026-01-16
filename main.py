@@ -47,6 +47,7 @@ from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouter
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 from shared.log_parser import parse_log_file
+from shared.utils import is_safe_git_ref
 import json
 import yaml
 import platformdirs
@@ -1775,11 +1776,18 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
+    # --- Target Resolution & Validation ---
+    original_target = target
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid or unsafe target provided: '{target}'.", file=sys.stderr)
+        sys.exit(1)
+
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
+        # Use '--' to prevent argument injection
         check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
             capture_output=True, text=True
         )
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
@@ -1802,7 +1810,8 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        # Use '--' to prevent argument injection
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:

@@ -517,3 +517,25 @@ def sanitize_url(url: str) -> str:
     import re
     # Mask https://token@github.com... or https://user:token@github.com...
     return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)
+
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates that a git reference name is safe.
+    A safe ref name should not start with a '-' to prevent it from being
+    interpreted as a command-line option. It should also be a valid git ref.
+    """
+    import re
+    if not ref or not isinstance(ref, str):
+        return False
+    # Rule 1: Must not start with a dash
+    if ref.startswith('-'):
+        return False
+    # Rule 2: Git reference validation (simplified)
+    # This regex is a simplified version of the rules found in git-check-ref-format
+    # It disallows characters that are problematic on shells or filesystems.
+    # It allows for common ref patterns like 'main', 'feature/branch-name', 'v1.0.0', 'HEAD~2', commit hashes etc.
+    if re.match(r'^[a-zA-Z0-9_./~^-]+$', ref):
+        return True
+
+    return False

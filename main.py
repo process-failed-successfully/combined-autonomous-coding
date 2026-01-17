@@ -3558,6 +3558,48 @@ def run_test(args):
         sys.exit(1)
 
 
+def run_security(args):
+    """Runs security checks on the project."""
+    from shared.security import SecurityAuditor
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit in: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+
+    scan_type = args.scan_type
+
+    if scan_type in ["all", "static"]:
+        print("\n[1/2] Running Static Analysis (Bandit)...")
+        auditor.run_bandit(severity=args.severity, confidence=args.confidence)
+
+    if scan_type in ["all", "secrets"]:
+        print("\n[2/2] Scanning for Secrets...")
+        auditor.scan_secrets()
+
+    report = auditor.generate_report()
+
+    print("\n" + "="*40)
+    print(report)
+    print("="*40)
+
+    if args.output:
+        try:
+            output_path = args.output.resolve()
+            output_path.write_text(report)
+            print(f"\n✅ Report saved to: {output_path}")
+        except Exception as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    # Exit with error if high severity issues found
+    high_sev_issues = [f for f in auditor.findings if f['severity'] == 'HIGH']
+    if high_sev_issues and not args.no_fail:
+        print(f"\n❌ FAILED: Found {len(high_sev_issues)} HIGH severity issues.")
+        sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_lint(args):
     """Detects the project type and runs the appropriate linter."""
     project_dir = args.project_dir.resolve()
@@ -4828,6 +4870,46 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (static analysis, secret scanning) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to audit (default: current directory).",
+    )
+    parser_security.add_argument(
+        "-t", "--scan-type",
+        choices=["all", "static", "secrets"],
+        default="all",
+        help="Type of scan to perform.",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity for static analysis (default: medium).",
+    )
+    parser_security.add_argument(
+        "--confidence",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum confidence for static analysis (default: medium).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the report file.",
+    )
+    parser_security.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Do not exit with error code even if issues are found.",
     )
 
     # --- New 'test' command ---
@@ -7014,6 +7096,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "test":

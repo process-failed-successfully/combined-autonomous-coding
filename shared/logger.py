@@ -55,3 +55,7 @@ def setup_logger(
     logger.addHandler(memory_handler)
 
     return logger, memory_handler
+
+def get_logger(name: str = "agent") -> logging.Logger:
+    """Returns an existing logger or creates a basic one if not setup."""
+    return logging.getLogger(name)

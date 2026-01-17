@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.security import SecurityAuditor
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -5232,6 +5233,35 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security scans (static analysis and secrets) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "static", "secrets"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity level for static analysis (default: medium).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the JSON report file.",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -5576,6 +5606,66 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+def run_security(args):
+    """Runs security scans on the project."""
+    project_dir = args.project_dir.resolve()
+    scan_type = args.scan_type
+    severity = args.severity
+    output_file = args.output
+
+    print(f"--- Running Security Scan ({scan_type}) on: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+    report = auditor.run_security_scan(scan_type=scan_type, severity=severity)
+
+    # Check if report has findings
+    if not report.findings:
+        print("✅ No security issues found.")
+    else:
+        print(f"⚠️  Found {len(report.findings)} issue(s):")
+
+        # Group by type
+        static_issues = [f for f in report.findings if f.type == 'static']
+        secret_issues = [f for f in report.findings if f.type == 'secret']
+
+        if secret_issues:
+            print(f"\n[SECRETS] ({len(secret_issues)} found)")
+            for i, finding in enumerate(secret_issues, 1):
+                print(f"  {i}. {finding.description}")
+                print(f"     File: {finding.file_path}:{finding.line_number}")
+                if finding.code:
+                    print(f"     Match: {finding.code}")
+                print(f"     Severity: {finding.severity}")
+
+        if static_issues:
+            print(f"\n[STATIC ANALYSIS] ({len(static_issues)} found)")
+            for i, finding in enumerate(static_issues, 1):
+                print(f"  {i}. {finding.description} ({finding.severity})")
+                print(f"     File: {finding.file_path}:{finding.line_number}")
+                if finding.more_info:
+                    print(f"     Info: {finding.more_info}")
+
+        # Summary by severity
+        print("\n--- Summary ---")
+        for sev, count in report.summary.items():
+            print(f"  {sev}: {count}")
+
+    # Output to file if requested
+    if output_file:
+        try:
+            with open(output_file, 'w') as f:
+                json.dump(report.to_dict(), f, indent=2)
+            print(f"\n✅ Report saved to: {output_file}")
+        except IOError as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    # Exit with code 1 if there are high severity issues
+    if report.summary.get("HIGH", 0) > 0:
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_setup(args):
@@ -7101,6 +7191,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "help":

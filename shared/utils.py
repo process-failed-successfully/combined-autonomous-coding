@@ -509,6 +509,27 @@ class EnhancedJSONEncoder(json.JSONEncoder):
                 return str(o)
 
 
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates a git reference to prevent command injection via flags.
+
+    Allows alphanumeric characters, underscores, forward slashes, periods, hyphens,
+    and specific git metacharacters (~, ^, @, {, }) to support relative references.
+    Explicitly rejects references starting with a hyphen.
+    """
+    if not ref:
+        return False
+
+    # Reject anything starting with a dash (flag injection)
+    if ref.startswith("-"):
+        return False
+
+    # Allowed characters: alphanumeric, _, -, ., /, @, {, }, ^, ~
+    import re
+    pattern = r"^[a-zA-Z0-9_\-./@{}~^]+$"
+    return bool(re.match(pattern, ref))
+
+
 def sanitize_url(url: str) -> str:
     """Mask sensitive information (tokens) in a URL."""
     if not url:

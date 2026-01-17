@@ -8,7 +8,7 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
-from shared.utils import execute_read_block, execute_write_block
+from shared.utils import execute_read_block, execute_write_block, is_safe_git_ref
 
 class TestUtilsSecurity(unittest.TestCase):
 
@@ -73,6 +73,41 @@ class TestUtilsSecurity(unittest.TestCase):
 
         with open(self.project_dir / filename, "r") as f:
             self.assertEqual(f.read(), content)
+
+    def test_git_ref_valid(self):
+        valid_refs = [
+            "HEAD",
+            "main",
+            "feature/new-branch",
+            "v1.0.0",
+            "a1b2c3d",
+            "HEAD~1",
+            "HEAD^",
+            "stash@{0}",
+            "origin/main",
+            "user_name/branch-name.1",
+        ]
+        for ref in valid_refs:
+            with self.subTest(ref=ref):
+                self.assertTrue(is_safe_git_ref(ref), f"Ref '{ref}' should be valid")
+
+    def test_git_ref_invalid(self):
+        invalid_refs = [
+            "-flag",
+            "--option",
+            "; rm -rf /",
+            "commit; command",
+            "| pipe",
+            "> redirect",
+            "`backtick`",
+            "$(command)",
+            "",
+            None,
+            "HEAD:file.txt", # Colon not allowed
+        ]
+        for ref in invalid_refs:
+            with self.subTest(ref=ref):
+                self.assertFalse(is_safe_git_ref(ref), f"Ref '{ref}' should be invalid")
 
 if __name__ == "__main__":
     unittest.main()

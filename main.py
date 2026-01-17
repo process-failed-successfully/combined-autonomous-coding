@@ -3490,6 +3490,53 @@ def run_git(args):
         sys.exit(1)
 
 
+def run_security(args):
+    """Runs a security audit on the project."""
+    from shared.security import SecurityAuditor
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Security Audit: {project_dir} ---")
+
+    auditor = SecurityAuditor()
+    report = auditor.audit_project(
+        project_dir=project_dir,
+        scan_type=args.scan_type,
+        severity=args.severity
+    )
+
+    issues_found = report.get("summary", {}).get("issues_found", 0)
+
+    # Display Results
+    if "static_analysis" in report:
+        bandit_data = report["static_analysis"]
+        if "results" in bandit_data and bandit_data["results"]:
+            print("\n🚨 Static Analysis Issues (Bandit):")
+            for issue in bandit_data["results"]:
+                print(f"  [{issue.get('issue_severity', 'UNKNOWN')}] {issue.get('filename')}:{issue.get('line_number')}")
+                print(f"    - {issue.get('issue_text')}")
+                print(f"    - ID: {issue.get('test_id')}")
+        elif "error" in bandit_data:
+             print(f"\n⚠️ Static Analysis Error: {bandit_data['error']}")
+        elif args.scan_type in ['all', 'static']:
+            print("\n✅ Static Analysis: No issues found.")
+
+    if "secrets" in report:
+        secrets = report["secrets"]
+        if secrets:
+            print("\n🚨 Secrets Detected:")
+            for secret in secrets:
+                print(f"  [HIGH] {secret['file']}:{secret['line']} - {secret['type']}")
+                print(f"    - Match: {secret['match']}")
+        elif args.scan_type in ['all', 'secrets']:
+            print("\n✅ Secret Scanning: No secrets found.")
+
+    print(f"\n--- Summary: {issues_found} potential issue(s) found. ---")
+
+    if issues_found > 0 and not args.no_fail:
+        sys.exit(1)
+    sys.exit(0)
+
+
 def run_test(args):
     """Detects the project type and runs the appropriate test command."""
     project_dir = args.project_dir.resolve()
@@ -4828,6 +4875,35 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (static analysis and secret scanning)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "static", "secrets"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity level for static analysis (default: medium).",
+    )
+    parser_security.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Do not exit with a non-zero status code if issues are found.",
     )
 
     # --- New 'test' command ---
@@ -7014,6 +7090,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "test":

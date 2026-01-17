@@ -31,6 +31,10 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+try:
+    from shared.security import SecurityAuditor
+except ImportError:
+    SecurityAuditor = None
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -5232,6 +5236,29 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (SAST and secret scanning) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory)."
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity level for SAST findings (default: medium)."
+    )
+    parser_security.add_argument(
+        "--ignore-failure",
+        action="store_true",
+        help="Do not exit with a non-zero code if issues are found."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -5576,6 +5603,33 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+async def run_security(args):
+    """Runs security checks (SAST and secret scanning) on the project."""
+    if SecurityAuditor is None:
+        print("Error: Security dependencies not found.", file=sys.stderr)
+        sys.exit(1)
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit on: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir, severity=args.severity)
+
+    # Run async tasks
+    await auditor.run_all()
+
+    auditor.print_report()
+
+    # Exit with non-zero code if issues found (optional, good for CI)
+    summary = auditor.results.get("summary", {})
+    if summary.get("total_issues", 0) > 0:
+        print(f"❌ Security audit failed with {summary['total_issues']} issue(s).")
+        if not args.ignore_failure:
+            sys.exit(1)
+    else:
+        print("✅ Security audit passed.")
+    sys.exit(0)
 
 
 def run_setup(args):
@@ -7101,6 +7155,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "security":
+        await run_security(args)
         return
 
     if args.command == "help":

@@ -7,10 +7,10 @@ import os
 import sys
 
 # Add the root of the project to the Python path
-# This is necessary for the tests to be able to import the 'main' module
+# This is necessary for the tests to be able to import the 'shared' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_cherry_pick
+from shared.git_commands.cherry_pick import run_cherry_pick
 
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):

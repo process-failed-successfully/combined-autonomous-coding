@@ -257,9 +257,17 @@ async def execute_search_block(query: str, cwd: Path) -> str:
     logger.info(f"[Searching] {query}")
     try:
         # Recursive, line number, context=2
-        cmd = f"grep -rnC 2 '{query}' ."
-        process = await asyncio.create_subprocess_shell(
-            cmd, cwd=cwd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        # Use exec to avoid shell injection
+        process = await asyncio.create_subprocess_exec(
+            "grep",
+            "-rnC",
+            "2",
+            "-e",
+            query,
+            ".",
+            cwd=cwd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
 

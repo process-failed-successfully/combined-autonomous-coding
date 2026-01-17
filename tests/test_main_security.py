@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import sys
 import subprocess
+import os
 from pathlib import Path
 
 class TestMainSecurity(unittest.TestCase):
@@ -14,12 +15,21 @@ class TestMainSecurity(unittest.TestCase):
         # Simpler approach: Verify main.py accepts the command.
         # We can run main.py --help and check for 'security'.
 
+        # Ensure PYTHONPATH includes the current directory so main.py can import 'shared'
+        env = os.environ.copy()
+        cwd = os.getcwd()
+        if "PYTHONPATH" in env:
+            env["PYTHONPATH"] = f"{cwd}{os.pathsep}{env['PYTHONPATH']}"
+        else:
+            env["PYTHONPATH"] = cwd
+
         result = subprocess.run(
             [sys.executable, "main.py", "--help"],
             capture_output=True,
-            text=True
+            text=True,
+            env=env
         )
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, f"main.py --help failed with stderr: {result.stderr}")
         self.assertIn("security", result.stdout)
 
     @patch("shared.security.SecurityAuditor.audit")

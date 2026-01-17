@@ -10,7 +10,7 @@ import sys
 # This is necessary for the tests to be able to import the 'shared' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.git_commands.cherry_pick import run_cherry_pick
+from shared.git_commands.cherry_pick import run_cherry_pick, _find_commit_by_run_id
 
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):
@@ -136,6 +136,25 @@ class TestCherryPickCommand(unittest.TestCase):
         # Verify stderr message
         stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
         self.assertIn("Error: Invalid git reference", stderr_output)
+
+    @patch('shared.git_commands.cherry_pick.subprocess.run')
+    def test_find_commit_by_run_id_uses_fixed_strings(self, mock_run):
+        """Test that _find_commit_by_run_id uses --fixed-strings to prevent regex injection."""
+        project_dir = Path("/tmp/test_project")
+        git_path = "/usr/bin/git"
+        run_id = "run-123"
+
+        # Mock the return value for subprocess.run
+        mock_run.return_value.stdout = "commit_hash\n"
+        mock_run.return_value.returncode = 0
+
+        _find_commit_by_run_id(project_dir, git_path, run_id)
+
+        # Verify that subprocess.run was called with the correct arguments
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args[0][0]
+        self.assertIn("--fixed-strings", call_args)
+        self.assertIn(f"--grep=Run ID: {run_id}", call_args)
 
 if __name__ == '__main__':
     unittest.main()

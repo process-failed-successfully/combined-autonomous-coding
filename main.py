@@ -29,7 +29,7 @@ except ImportError:
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+from shared.git import ensure_git_safe, is_safe_git_ref, find_commit_by_run_id
 from shared.config_loader import load_config_from_file, ensure_config_exists
 try:
     from shared.security import SecurityAuditor
@@ -1744,22 +1744,6 @@ def run_discard(args):
     sys.exit(0)
 
 
-def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str | None:
-    """Searches the git log for a commit associated with a Run ID."""
-    try:
-        # Search the entire commit history for the Run ID in the message body
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
-            capture_output=True, text=True, check=True
-        )
-        if result.stdout.strip():
-            # Return the first commit hash found
-            return result.stdout.strip().split('\n')[0]
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-    return None
-
-
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -1779,20 +1763,23 @@ def run_cherry_pick(args):
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
-    is_git_ref = False
-    try:
-        check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
-            capture_output=True, text=True
-        )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
-            is_git_ref = True
-    except Exception:
-        pass  # Ignore errors, we'll handle the 'not found' case below
+    is_valid_ref = False
 
-    if not is_git_ref:
+    # Use is_safe_git_ref to prevent argument injection
+    if is_safe_git_ref(target):
+        try:
+            check_commit_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                capture_output=True, text=True
+            )
+            if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+                is_valid_ref = True
+        except Exception:
+            pass  # Ignore errors, we'll handle the 'not found' case below
+
+    if not is_valid_ref:
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
-        commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+        commit_hash = find_commit_by_run_id(project_dir, target, git_path)
         if commit_hash:
             print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
             target = commit_hash
@@ -1805,7 +1792,8 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        # Use -- to separate options from revisions
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:
@@ -1907,27 +1895,30 @@ def run_rewind(args):
         # --- Target Resolution: Commit Hash vs. Run ID ---
         # First, check if the target is a valid git object (commit, tag, etc.)
         is_git_ref = False
-        try:
-            check_ref_result = subprocess.run(
-                [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{target}"],
-                capture_output=True, text=True
-            )
-            if check_ref_result.returncode == 0:
-                is_git_ref = True
-            else:
-                # Also check if it's a commit hash
-                check_commit_result = subprocess.run(
-                    [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+
+        # Use is_safe_git_ref to prevent argument injection
+        if is_safe_git_ref(target):
+            try:
+                check_ref_result = subprocess.run(
+                    [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{target}"],
                     capture_output=True, text=True
                 )
-                if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+                if check_ref_result.returncode == 0:
                     is_git_ref = True
-        except Exception:
-            pass  # Ignore errors, we'll handle the 'not found' case below
+                else:
+                    # Also check if it's a commit hash
+                    check_commit_result = subprocess.run(
+                        [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                        capture_output=True, text=True
+                    )
+                    if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+                        is_git_ref = True
+            except Exception:
+                pass  # Ignore errors, we'll handle the 'not found' case below
 
         if not is_git_ref:
             print(f"'{target}' is not a known git reference. Assuming it is a Run ID and searching history...")
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            commit_hash = find_commit_by_run_id(project_dir, target, git_path)
             if commit_hash:
                 print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
                 target = commit_hash
@@ -1954,8 +1945,9 @@ def run_rewind(args):
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         # Step 2: Reset to the target commit
+        # Use -- to separate options from revisions
         subprocess.run(
-            [git_path, "-C", str(project_dir), "reset", "--hard", target],
+            [git_path, "-C", str(project_dir), "reset", "--hard", "--", target],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         print("✅ Rewind complete.")
@@ -2592,14 +2584,17 @@ def run_diff(args):
         # Case 2: Target is provided (Run ID or commit hash)
         original_target = target
         # Check if it's a known git reference first
-        is_git_ref = subprocess.run(
-            [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
-            capture_output=True, text=True
-        ).returncode == 0
+        is_git_ref = False
+        if is_safe_git_ref(target):
+            # We must validate it's a safe ref before passing to rev-parse or show
+            is_git_ref = subprocess.run(
+                [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
+                capture_output=True, text=True
+            ).returncode == 0
 
         if not is_git_ref:
             # If not a direct git ref, assume it's a Run ID
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            commit_hash = find_commit_by_run_id(project_dir, target, git_path)
             if not commit_hash:
                 print(f"❌ Error: Target '{original_target}' is not a valid commit or Run ID.", file=sys.stderr)
                 sys.exit(1)
@@ -2609,7 +2604,8 @@ def run_diff(args):
             print(f"--- Showing diff for Commit: {target} ---")
 
         # Use 'git show' which nicely formats the commit info and the diff
-        cmd = [git_path, "-C", str(project_dir), "show", "--color=always", target]
+        # Use -- to separate options from revisions
+        cmd = [git_path, "-C", str(project_dir), "show", "--color=always", "--", target]
         result = subprocess.run(cmd)
         sys.exit(result.returncode)
 

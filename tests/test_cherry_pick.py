@@ -10,7 +10,7 @@ import sys
 # This is necessary for the tests to be able to import the 'main' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_cherry_pick
+from main import run_cherry_pick  # noqa: E402
 
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):

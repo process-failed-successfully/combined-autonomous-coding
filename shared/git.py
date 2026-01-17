@@ -8,6 +8,7 @@ Functions for managing git state and ensuring safe branching for agents.
 import logging
 import subprocess
 import time
+import re
 from pathlib import Path
 from typing import Optional
 from shared.utils import sanitize_url
@@ -199,3 +200,34 @@ def get_current_branch(project_dir: Path) -> Optional[str]:
     except Exception as e:
         logger.error(f"An unexpected error occurred while getting the current branch: {e}")
         return None
+
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates a git reference to prevent argument injection.
+    Allows alphanumeric chars, _, /, ., -, and specific git chars (~, ^, @, {, }).
+    MUST NOT start with a hyphen.
+    """
+    if not ref:
+        return False
+    # Regex allows typical git refs but rejects leading hyphens to prevent flag injection
+    pattern = r"^[a-zA-Z0-9_/@\.][a-zA-Z0-9_/@\.\-\~\^\{\}]*$"
+    return bool(re.match(pattern, ref))
+
+
+def find_commit_by_run_id(project_dir: Path, run_id: str, git_path: str = "git") -> Optional[str]:
+    """Searches the git log for a commit associated with a Run ID."""
+    try:
+        # Search the entire commit history for the Run ID in the message body
+        # Using --fixed-strings to prevent regex injection in grep
+        cmd = [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", f"--grep=Run ID: {run_id}", "--format=%H"]
+        result = subprocess.run(
+            cmd,
+            capture_output=True, text=True, check=True
+        )
+        if result.stdout.strip():
+            # Return the first commit hash found
+            return result.stdout.strip().split('\n')[0]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return None

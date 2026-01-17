@@ -2947,6 +2947,7 @@ def run_help(args):
     print_command("suggest", "Suggest the next logical command(s) based on project state.")
     print_command("shell", "Start an interactive shell with all commands available.")
     print_command("tui", "Start the interactive Textual User Interface (TUI).")
+    print_command("security", "Run security checks (Bandit, Secret Scanning).")
     print_command("show-config", "Show the final, resolved configuration that will be used for a run.")
     print_command("help", "Show this help message.")
 
@@ -3739,6 +3740,42 @@ def run_sprint_command(args):
         _worktree_diff(mock_args, git_path, worktrees_base_dir)
     elif args.action == "merge":
         _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
+
+
+async def run_security(args):
+    """Runs security checks on the project."""
+    from shared.security import SecurityAuditor
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Checks in: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+    bandit_findings = []
+    secret_findings = []
+
+    # Run Bandit
+    if args.scan_type in ["all", "bandit"]:
+        print("Running Bandit (Static Analysis)...")
+        bandit_findings = auditor.run_bandit(severity=args.severity)
+
+    # Run Secret Scanner
+    if args.scan_type in ["all", "secrets"]:
+        print("Running Secret Scanner...")
+        secret_findings = auditor.scan_secrets()
+
+    # Generate Report
+    report = auditor.generate_report(bandit_findings, secret_findings)
+
+    if args.output:
+        try:
+            args.output.write_text(report, encoding="utf-8")
+            print(f"\n✅ Security report saved to: {args.output}")
+        except Exception as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+            print(report)
+    else:
+        print("\n" + report)
+
+    sys.exit(0)
 
 
 async def run_plan(args):
@@ -5191,6 +5228,35 @@ def parse_args(argv=None):
 
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (Bandit, Secret Scanning) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory)."
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to run (default: all)."
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Minimum severity level to report (default: LOW)."
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the report file. If omitted, prints to console."
+    )
 
     # --- New 'cherry-pick' command ---
     parser_cherry_pick = subparsers.add_parser(
@@ -7105,6 +7171,10 @@ async def main():
 
     if args.command == "help":
         run_help(args)
+        return
+
+    if args.command == "security":
+        await run_security(args)
         return
 
     if args.command == "cherry-pick":

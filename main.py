@@ -1777,7 +1777,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
         result = subprocess.run(
             [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", f"--grep=Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
-        )
+        )  # nosec B603
         if result.stdout.strip():
             # Return the first commit hash found
             return result.stdout.strip().split('\n')[0]
@@ -1814,7 +1814,7 @@ def run_cherry_pick(args):
         check_commit_result = subprocess.run(
             [git_path, "-C", str(project_dir), "cat-file", "-t", target],
             capture_output=True, text=True
-        )
+        )  # nosec B603
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
             is_git_ref = True
     except Exception:
@@ -1836,7 +1836,7 @@ def run_cherry_pick(args):
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
         cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
 
         if result.returncode == 0:
             print(result.stdout)

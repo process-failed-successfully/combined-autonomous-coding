@@ -1820,9 +1820,9 @@ def run_cherry_pick(args):
             print(result.stderr, file=sys.stderr)
             print("------------------", file=sys.stderr)
             print("\nPlease resolve the conflicts in your editor and then run:", file=sys.stderr)
-            print(f"  git cherry-pick --continue", file=sys.stderr)
+            print("  git cherry-pick --continue", file=sys.stderr)
             print("\nTo abort the cherry-pick and return to the previous state, run:", file=sys.stderr)
-            print(f"  git cherry-pick --abort", file=sys.stderr)
+            print("  git cherry-pick --abort", file=sys.stderr)
             sys.exit(1)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:

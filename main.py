@@ -3490,6 +3490,59 @@ def run_git(args):
         sys.exit(1)
 
 
+def run_security(args):
+    """Runs security checks on the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit in: {project_dir} ---")
+
+    from shared.security import SecurityAuditor
+    auditor = SecurityAuditor(project_dir)
+
+    scan_type = args.scan_type
+    severity = args.severity
+
+    results = auditor.audit(scan_type=scan_type, severity=severity)
+
+    # Display Results
+    total_issues = results["summary"]["total_issues"]
+
+    if results.get("bandit"):
+        bandit = results["bandit"]
+        if "error" in bandit:
+             print(f"\n❌ Bandit Error: {bandit['error']}")
+        elif "results" in bandit and bandit["results"]:
+            print(f"\n--- Bandit Findings ({len(bandit['results'])}) ---")
+            for issue in bandit["results"]:
+                sev = issue['issue_severity']
+                conf = issue['issue_confidence']
+                print(f"[{sev}][{conf}] {issue['issue_text']}")
+                print(f"  File: {issue['filename']}:{issue['line_number']}")
+                print(f"  Link: {issue['issue_cwe']['link'] if 'issue_cwe' in issue else 'N/A'}")
+        else:
+            print("\n✅ Bandit: No issues found.")
+
+    if results.get("secrets"):
+        secrets = results["secrets"]
+        if secrets:
+            print(f"\n--- Secret Findings ({len(secrets)}) ---")
+            for secret in secrets:
+                print(f"[Secret] {secret['type']}")
+                print(f"  File: {secret['file']}:{secret['line']}")
+        else:
+             print("\n✅ Secrets: No secrets found.")
+
+    print("\n--- Summary ---")
+    if total_issues == 0:
+        print("✅ No security issues found.")
+        sys.exit(0)
+    else:
+        print(f"❌ Found {total_issues} potential security issue(s).")
+        if not args.no_fail:
+            sys.exit(1)
+        else:
+            sys.exit(0)
+
+
 def run_test(args):
     """Detects the project type and runs the appropriate test command."""
     project_dir = args.project_dir.resolve()
@@ -4828,6 +4881,35 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (bandit + secret scanning)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to audit (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to run (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="low",
+        help="Minimum severity level for bandit (default: low).",
+    )
+    parser_security.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Do not exit with a non-zero status code if issues are found.",
     )
 
     # --- New 'test' command ---
@@ -7014,6 +7096,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "test":

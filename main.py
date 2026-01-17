@@ -2908,6 +2908,7 @@ def run_help(args):
     print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
     print_command("plan", "Generate a feature plan from a spec file without executing code.")
     print_command("test", "Automatically detect project type and run tests.")
+    print_command("security", "Run security checks (Bandit SAST and Secret Scanning).")
     print_command("lint", "Automatically detect project type and run a linter.")
     print_command("format", "Automatically detect project type and format code.")
 
@@ -3556,6 +3557,41 @@ def run_test(args):
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def run_security(args):
+    """Runs security checks on the project."""
+    from shared.security import SecurityAuditor
+    import sys
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Scan in: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+    findings = auditor.run_security_scan(
+        scan_type=args.scan_type,
+        severity=args.severity
+    )
+
+    report = auditor.generate_report(findings)
+    print(report)
+
+    if args.output:
+        try:
+            output_path = args.output.resolve()
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(report)
+            print(f"\n✅ Report saved to {output_path}")
+        except Exception as e:
+            print(f"❌ Error saving report: {e}", file=sys.stderr)
+
+    # Exit with error if high severity issues found
+    has_high = any(f.get('severity') == 'HIGH' for f in findings)
+    if has_high:
+        print("\n❌ High severity issues found.")
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_lint(args):
@@ -4865,6 +4901,35 @@ def parse_args(argv=None):
         "test_args",
         nargs=argparse.REMAINDER,
         help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (Bandit SAST and Secret Scanning)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to run (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Minimum severity level to report (default: LOW).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the Markdown report file. If omitted, prints to console.",
     )
 
     # --- New 'lint' command ---
@@ -7018,6 +7083,10 @@ async def main():
 
     if args.command == "test":
         run_test(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "lint":

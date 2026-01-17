@@ -3490,6 +3490,70 @@ def run_git(args):
         sys.exit(1)
 
 
+def run_security(args):
+    """Runs security checks on the project."""
+    from shared.security import SecurityAuditor
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Scan in: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+    issues_found = False
+
+    # 1. Secret Scanning
+    if args.scan_type in ["all", "secrets"]:
+        print("\n[1] Scanning for Secrets...")
+        secrets = auditor.scan_secrets()
+        if secrets:
+            issues_found = True
+            print(f"❌ Found {len(secrets)} potential secrets:")
+            for s in secrets:
+                print(f"  - [{s['severity']}] {s['type']} in {s['file']}:{s['line']}")
+                print(f"    Snippet: {s['snippet']}")
+        else:
+            print("✅ No secrets found.")
+
+    # 2. Bandit (Static Analysis)
+    if args.scan_type in ["all", "bandit"]:
+        print(f"\n[2] Running Bandit Static Analysis (Severity: {args.severity.upper()})...")
+        bandit_results = auditor.run_bandit(severity=args.severity)
+
+        if "error" in bandit_results:
+            print(f"❌ Error running Bandit: {bandit_results['error']}")
+            issues_found = True
+        else:
+            results = bandit_results.get("results", [])
+            if results:
+                issues_found = True
+                print(f"❌ Found {len(results)} security issues:")
+                for issue in results:
+                    sev = (issue.get('issue_severity') or 'LOW').upper()
+                    print(f"  - [{sev}] {issue['test_id']}: {issue['issue_text']}")
+                    print(f"    File: {issue['filename']}:{issue['line_number']}")
+                    print(f"    More Info: {issue['more_info']}")
+            else:
+                print("✅ No security issues found by Bandit.")
+
+    if args.output:
+        import json
+        report = {
+            "secrets": secrets if args.scan_type in ["all", "secrets"] else [],
+            "bandit": bandit_results.get("results", []) if args.scan_type in ["all", "bandit"] and "error" not in bandit_results else []
+        }
+        try:
+            with open(args.output, 'w') as f:
+                json.dump(report, f, indent=2)
+            print(f"\nReport saved to {args.output}")
+        except Exception as e:
+            print(f"❌ Error saving report: {e}")
+
+    if issues_found:
+        sys.exit(1)
+
+    print("\n✅ Security check passed.")
+    sys.exit(0)
+
+
 def run_test(args):
     """Detects the project type and runs the appropriate test command."""
     project_dir = args.project_dir.resolve()
@@ -4865,6 +4929,35 @@ def parse_args(argv=None):
         "test_args",
         nargs=argparse.REMAINDER,
         help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (static analysis and secret scanning)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "-t", "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "-s", "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity level for Bandit (default: medium).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Save report to JSON file.",
     )
 
     # --- New 'lint' command ---
@@ -7018,6 +7111,10 @@ async def main():
 
     if args.command == "test":
         run_test(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "lint":

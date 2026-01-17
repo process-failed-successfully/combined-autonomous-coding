@@ -2381,6 +2381,56 @@ def run_glance(args):
     print(f"  {CYAN_BOLD}Next Step{ENDC}:  `{next_action}`")
 
 
+def _read_log_summary(file_path, num_lines=5):
+    """
+    Efficiently reads the first line and the last `num_lines` of a file.
+    """
+    first_line = ""
+    last_lines = []
+
+    try:
+        with open(file_path, 'rb') as f:
+            # 1. Read first line
+            first_line_bytes = f.readline()
+            if first_line_bytes:
+                first_line = first_line_bytes.decode('utf-8', errors='ignore').strip()
+
+            # 2. Read last lines
+            f.seek(0, 2)  # Seek to end
+            file_size = f.tell()
+
+            if file_size == 0:
+                return "", []
+
+            # If file is small (e.g. < 8KB), just read it all
+            if file_size < 8192:
+                f.seek(0)
+                content = f.read().decode('utf-8', errors='ignore')
+                lines = [line.strip() for line in content.splitlines() if line.strip()]
+                if not lines:
+                    return "", []
+                first_line = lines[0]
+                last_lines = lines[-num_lines:]
+            else:
+                # Large file optimization
+                # Read the last 4KB
+                read_size = 4096
+                f.seek(-read_size, 2)
+                content = f.read(read_size)
+                text = content.decode('utf-8', errors='ignore')
+                lines = [line.strip() for line in text.splitlines() if line.strip()]
+                if len(lines) > num_lines:
+                    last_lines = lines[-num_lines:]
+                else:
+                    last_lines = lines
+
+    except Exception as e:
+        print(f"Error reading log summary: {e}")
+        return "", []
+
+    return first_line, last_lines
+
+
 def _run_history_logic(project_dir):
     """The core logic for displaying agent run history."""
     history_file = project_dir / ".agent_history"
@@ -2409,21 +2459,15 @@ def _run_history_logic(project_dir):
         print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
         log_file = logs_dir / f"{run_id}.log"
         if log_file.exists():
-            try:
-                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = f.readlines()
-                first_line = lines[0].strip() if lines else ""
-                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
-                print(f"  Timestamp: {timestamp}")
-                if lines:
-                    print("  Log Summary (last 5 lines):")
-                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
-                    for line in last_lines:
-                        print(f"    {line}")
-                else:
-                    print("  Log file is empty.")
-            except Exception as e:
-                print(f"  Error reading log file: {e}")
+            first_line, last_lines = _read_log_summary(log_file)
+            timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
+            print(f"  Timestamp: {timestamp}")
+            if last_lines:
+                print("  Log Summary (last 5 lines):")
+                for line in last_lines:
+                    print(f"    {line}")
+            else:
+                print("  Log file is empty.")
         else:
             print("  Log file not found.")
 

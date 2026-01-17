@@ -29,7 +29,7 @@ except ImportError:
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+from shared.git import ensure_git_safe, is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 from shared.security import SecurityAuditor
 
@@ -1775,7 +1775,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     try:
         # Search the entire commit history for the Run ID in the message body
         result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+            [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", f"--grep=Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
         )
         if result.stdout.strip():
@@ -1790,6 +1790,10 @@ def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
     target = args.target
+
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains unsafe characters or starts with a dash.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
@@ -1831,7 +1835,7 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:

@@ -9,7 +9,8 @@ import sys
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import parse_args, run_diff
+from main import parse_args, run_diff  # noqa: E402
+
 
 class TestDiffCommand(unittest.TestCase):
     def setUp(self):
@@ -23,7 +24,6 @@ class TestDiffCommand(unittest.TestCase):
         subprocess.run([self.git_path, "init", "-b", "main"], cwd=self.project_dir, capture_output=True)
         subprocess.run([self.git_path, "config", "user.name", "Test User"], cwd=self.project_dir)
         subprocess.run([self.git_path, "config", "user.email", "test@example.com"], cwd=self.project_dir)
-
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
@@ -45,7 +45,7 @@ class TestDiffCommand(unittest.TestCase):
         self.assertIn("diff", called_args)
         self.assertIn("HEAD", called_args)
 
-    @patch('main._find_commit_by_run_id')
+    @patch('main.find_commit_by_run_id')
     @patch('main.subprocess.run')
     def test_diff_with_run_id(self, mock_subprocess_run, mock_find_commit):
         # Arrange
@@ -102,7 +102,7 @@ class TestDiffCommand(unittest.TestCase):
         self.assertIn("show", show_call_args)
         self.assertIn(commit_hash, show_call_args)
 
-    @patch('main._find_commit_by_run_id')
+    @patch('main.find_commit_by_run_id')
     @patch('main.subprocess.run')
     def test_diff_invalid_target(self, mock_subprocess_run, mock_find_commit):
         # Arrange
@@ -123,6 +123,7 @@ class TestDiffCommand(unittest.TestCase):
         # Assert
         self.assertEqual(cm.exception.code, 1)
         mock_find_commit.assert_called_once_with(self.project_dir, self.git_path, invalid_target)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -46,6 +46,10 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+try:
+    from shared.security import SecurityAuditor
+except ImportError:
+    SecurityAuditor = None
 import json
 import yaml
 import platformdirs
@@ -3490,6 +3494,67 @@ def run_git(args):
         sys.exit(1)
 
 
+def run_security(args):
+    """Runs security checks on the project."""
+    if not SecurityAuditor:
+        print("❌ Error: Security module not loaded. Please ensure shared/security.py exists.", file=sys.stderr)
+        sys.exit(1)
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Scan on {project_dir} ---")
+    print(f"  Scan Type: {args.scan_type}")
+    print(f"  Severity:  {args.severity}")
+
+    auditor = SecurityAuditor(project_dir)
+    report = auditor.audit(scan_type=args.scan_type, severity=args.severity)
+
+    has_issues = False
+
+    # 1. Bandit Results
+    if "bandit" in report:
+        bandit_data = report["bandit"]
+        if "error" in bandit_data:
+            print(f"\n❌ Bandit Error: {bandit_data['error']}")
+            if "stderr" in bandit_data:
+                print(bandit_data["stderr"])
+        else:
+            results = bandit_data.get("results", [])
+            print(f"\n--- Bandit Static Analysis ---")
+
+            if results:
+                has_issues = True
+                print(f"  Found {len(results)} issue(s):")
+                for issue in results:
+                    print(f"  - [{issue['severity']}] {issue['issue_text']}")
+                    print(f"    File: {issue['filename']}:{issue['line_number']}")
+                    if 'more_info' in issue:
+                        print(f"    More info: {issue['more_info']}")
+                    print("")
+            else:
+                print("  ✅ No security issues found by Bandit.")
+
+    # 2. Secret Results
+    if "secrets" in report:
+        secrets = report["secrets"]
+        print(f"\n--- Secret Scan ---")
+        if secrets:
+            has_issues = True
+            print(f"  Found {len(secrets)} potential secret(s):")
+            for secret in secrets:
+                print(f"  - [{secret['type']}] in {secret['file']}:{secret['line']}")
+                print(f"    Match: {secret['match']}")
+        else:
+            print("  ✅ No secrets found.")
+
+    if has_issues and not args.no_fail:
+        print("\n❌ Security scan failed. Issues were found.")
+        sys.exit(1)
+
+    if not has_issues:
+        print("\n✅ Security scan passed.")
+    sys.exit(0)
+
+
 def run_test(args):
     """Detects the project type and runs the appropriate test command."""
     project_dir = args.project_dir.resolve()
@@ -4828,6 +4893,35 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of security scan to run (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity level for Bandit issues (default: medium).",
+    )
+    parser_security.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Do not exit with a failure code if issues are found.",
     )
 
     # --- New 'test' command ---
@@ -7014,6 +7108,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "test":

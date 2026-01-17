@@ -2087,6 +2087,72 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
 
+def run_security(args):
+    """Runs security checks on the project."""
+    from shared.security import SecurityAuditor
+
+    project_dir = args.project_dir.resolve()
+    scan_type = args.scan_type
+    severity = args.severity
+    output_file = args.output
+
+    print(f"--- Security Audit: {project_dir} ---")
+    print(f"  Scan Type: {scan_type}")
+    print(f"  Severity:  {severity}")
+
+    auditor = SecurityAuditor(project_dir)
+    findings = []
+
+    if scan_type == "all":
+        findings = auditor.run_all(severity)
+    elif scan_type == "bandit":
+        findings = auditor.run_bandit(severity)
+    elif scan_type == "secrets":
+        findings = auditor.scan_secrets()
+
+    if not findings:
+        print("\n✅ No security issues found.")
+        sys.exit(0)
+        return
+
+    print(f"\n⚠️ Found {len(findings)} potential issue(s):")
+
+    # Group by tool
+    by_tool = {}
+    for f in findings:
+        tool = f.get("tool", "unknown")
+        if tool not in by_tool:
+            by_tool[tool] = []
+        by_tool[tool].append(f)
+
+    for tool, items in by_tool.items():
+        print(f"\n[ {tool.upper()} ]")
+        for item in items:
+            sev = (item.get('severity') or 'LOW').upper()
+            msg = item.get('message', '')
+            loc = f"{item.get('file')}:{item.get('line')}"
+            print(f"  [{sev}] {msg}")
+            print(f"    Location: {loc}")
+            if item.get('snippet'):
+                print(f"    Snippet:  {item['snippet'].strip()}")
+            if item.get('suggestion'):
+                print(f"    Fix:      {item['suggestion']}")
+            if item.get('link'):
+                print(f"    Ref:      {item['link']}")
+            print("")
+
+    if output_file:
+        try:
+            with open(output_file, 'w') as f:
+                json.dump(findings, f, indent=2)
+            print(f"✅ Report saved to {output_file}")
+        except IOError as e:
+            print(f"❌ Error saving report: {e}", file=sys.stderr)
+
+    # Exit with error code if high severity issues found
+    has_high = any((f.get('severity') or 'LOW').upper() == 'HIGH' for f in findings)
+    sys.exit(1 if has_high else 0)
+
 def run_context(args):
     """Displays an analysis of the agent's context."""
     if args.action == "show":
@@ -2922,6 +2988,7 @@ def run_help(args):
     print_command("report", "Generate a Markdown summary report for a specific run.")
     print_command("blame", "Show which agent Run ID was responsible for each line in a file.")
     print_command("benchmark", "Analyze and compare performance metrics from different runs.")
+    print_command("security", "Run security checks (Bandit, Secret Scanning) on the project.")
 
     print_header("Git & Workflow")
     print_command("commit", "Stage all changes and create a commit, with interactive prompts.")
@@ -4828,6 +4895,35 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (Bandit, Secret Scanning) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Minimum severity level to report (for Bandit).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the findings as a JSON report.",
     )
 
     # --- New 'test' command ---
@@ -7014,6 +7110,10 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "test":

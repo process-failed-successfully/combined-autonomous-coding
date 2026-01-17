@@ -1774,10 +1774,10 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     """Searches the git log for a commit associated with a Run ID."""
     try:
         # Search the entire commit history for the Run ID in the message body
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", f"--grep=Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
-        )  # nosec B603
+        )
         if result.stdout.strip():
             # Return the first commit hash found
             return result.stdout.strip().split('\n')[0]
@@ -1811,13 +1811,13 @@ def run_cherry_pick(args):
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
-        check_commit_result = subprocess.run(
+        check_commit_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "cat-file", "-t", target],
             capture_output=True, text=True
-        )  # nosec B603
+        )
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
             is_git_ref = True
-    except Exception:
+    except (subprocess.SubprocessError, OSError):
         pass  # Ignore errors, we'll handle the 'not found' case below
 
     if not is_git_ref:

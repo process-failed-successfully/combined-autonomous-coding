@@ -7,10 +7,12 @@ import os
 import sys
 
 # Add the root of the project to the Python path
-# This is necessary for the tests to be able to import the 'main' module
+# This is necessary for the tests to be able to import the 'shared' module
+# if it is not installed as a package.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_cherry_pick
+from shared.git_commands.cherry_pick import run_cherry_pick  # noqa: E402
+
 
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):
@@ -83,7 +85,7 @@ class TestCherryPickCommand(unittest.TestCase):
         """Test successfully resolving the commit from a Run ID."""
         args = MagicMock()
         args.project_dir = self.test_dir
-        args.target = "run-12345" # This ID is in the commit message
+        args.target = "run-12345"  # This ID is in the commit message
 
         with self.assertRaises(SystemExit) as cm:
             run_cherry_pick(args)
@@ -119,6 +121,7 @@ class TestCherryPickCommand(unittest.TestCase):
             text=True
         ).stdout
         self.assertIn("UU file1.txt", git_status)
+
 
 if __name__ == '__main__':
     unittest.main()

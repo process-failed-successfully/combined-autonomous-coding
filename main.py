@@ -29,7 +29,7 @@ except ImportError:
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+from shared.git import ensure_git_safe, find_commit_by_run_id, is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 from shared.security import SecurityAuditor
 
@@ -1784,22 +1784,6 @@ def run_discard(args):
     sys.exit(0)
 
 
-def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str | None:
-    """Searches the git log for a commit associated with a Run ID."""
-    try:
-        # Search the entire commit history for the Run ID in the message body
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
-            capture_output=True, text=True, check=True
-        )
-        if result.stdout.strip():
-            # Return the first commit hash found
-            return result.stdout.strip().split('\n')[0]
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-    return None
-
-
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -1816,25 +1800,35 @@ def run_cherry_pick(args):
         print("❌ Error: Not a git repository. Cannot cherry-pick.", file=sys.stderr)
         sys.exit(1)
 
+    # Validate target format first
+    if not is_safe_git_ref(target):
+        # If it's not a safe git ref, it might be a run_id, which we validate loosely here
+        # but find_commit_by_run_id handles it safely with fixed-strings.
+        # However, to be strict:
+        if target.startswith("-"):
+            print(f"❌ Error: Invalid target '{target}'. Cannot start with '-'.", file=sys.stderr)
+            sys.exit(1)
+
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
-    try:
-        check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
-            capture_output=True, text=True
-        )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
-            is_git_ref = True
-    except Exception:
-        pass  # Ignore errors, we'll handle the 'not found' case below
+    if is_safe_git_ref(target):
+        try:
+            check_commit_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                capture_output=True, text=True
+            )
+            if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+                is_git_ref = True
+        except Exception:
+            pass  # Ignore errors, we'll handle the 'not found' case below
 
     if not is_git_ref:
-        print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
-        commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+        print(f"'{original_target}' is not a known git commit. Assuming it is a Run ID and searching history...")
+        commit_hash = find_commit_by_run_id(project_dir, git_path, original_target)
         if commit_hash:
-            print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
+            print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{original_target}'.")
             target = commit_hash
         else:
             print(f"❌ Error: Could not find a git commit for target '{original_target}'.", file=sys.stderr)
@@ -1860,9 +1854,9 @@ def run_cherry_pick(args):
             print(result.stderr, file=sys.stderr)
             print("------------------", file=sys.stderr)
             print("\nPlease resolve the conflicts in your editor and then run:", file=sys.stderr)
-            print(f"  git cherry-pick --continue", file=sys.stderr)
+            print("  git cherry-pick --continue", file=sys.stderr)
             print("\nTo abort the cherry-pick and return to the previous state, run:", file=sys.stderr)
-            print(f"  git cherry-pick --abort", file=sys.stderr)
+            print("  git cherry-pick --abort", file=sys.stderr)
             sys.exit(1)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -1967,7 +1961,7 @@ def run_rewind(args):
 
         if not is_git_ref:
             print(f"'{target}' is not a known git reference. Assuming it is a Run ID and searching history...")
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            commit_hash = find_commit_by_run_id(project_dir, git_path, target)
             if commit_hash:
                 print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
                 target = commit_hash
@@ -2639,7 +2633,7 @@ def run_diff(args):
 
         if not is_git_ref:
             # If not a direct git ref, assume it's a Run ID
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            commit_hash = find_commit_by_run_id(project_dir, git_path, target)
             if not commit_hash:
                 print(f"❌ Error: Target '{original_target}' is not a valid commit or Run ID.", file=sys.stderr)
                 sys.exit(1)

@@ -942,7 +942,7 @@ def _snapshot_diff(args):
             "--ignore-cr-at-eol", "--ignore-space-change",
             str(snapshot_dir), str(project_dir)
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
 
         # git diff exits with 1 if there are differences, 0 if not.
         if result.returncode == 0:
@@ -2180,7 +2180,7 @@ def _stash_push(args, git_path, project_dir):
         if args.message:
             cmd.extend(["-m", args.message])
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
         if result.returncode != 0:
             print(f"❌ Error stashing changes: {result.stderr}", file=sys.stderr)
             sys.exit(1)

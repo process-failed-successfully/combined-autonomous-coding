@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.security import SecurityAuditor
 import json
 import yaml
 import platformdirs
@@ -5220,6 +5221,43 @@ def parse_args(argv=None):
         help="The project directory to review.",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run a security audit (vulnerability scan & secret detection)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-secrets",
+        action="store_true",
+        help="Run only the secret scanner.",
+    )
+    parser_security.add_argument(
+        "--scan-code",
+        action="store_true",
+        help="Run only the code vulnerability scanner (Bandit).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=['low', 'medium', 'high'],
+        default='medium',
+        help="Minimum severity level for code scan (default: medium).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        help="Path to save the report file.",
+    )
+    parser_security.add_argument(
+        "--fail-on-high",
+        action="store_true",
+        help="Exit with error code 1 if HIGH severity issues are found.",
+    )
+
     # --- New 'setup' command ---
     parser_setup = subparsers.add_parser(
         "setup",
@@ -5576,6 +5614,54 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+def run_security(args):
+    """Runs a security audit on the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit in: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+    findings = []
+
+    # Run Code Scan (Bandit)
+    if not args.scan_secrets: # If --scan-secrets is set, skip code scan. Default is to run if no specific flag or if --scan-code
+        print("[1/2] Scanning code for vulnerabilities (Bandit)...")
+        bandit_findings = auditor.run_bandit(severity_level=args.severity or 'medium')
+        if not bandit_findings:
+            print("  ✅ No code vulnerabilities found.")
+        else:
+            print(f"  ⚠️ Found {len(bandit_findings)} potential issue(s).")
+
+    # Run Secret Scan
+    if not args.scan_code: # If --scan-code is set, skip secret scan.
+        print("[2/2] Scanning for hardcoded secrets...")
+        secret_findings = auditor.scan_secrets()
+        if not secret_findings:
+            print("  ✅ No secrets detected.")
+        else:
+            print(f"  ⚠️ Found {len(secret_findings)} potential secret(s).")
+
+    # Report Generation
+    report = auditor.generate_report()
+    print("\n" + report)
+
+    if args.output:
+        try:
+            output_path = Path(args.output)
+            output_path.write_text(report)
+            print(f"\nReport saved to: {output_path}")
+        except Exception as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    # Exit Status
+    if args.fail_on_high:
+        high_severity_count = sum(1 for f in auditor.findings if f.get('severity') == 'HIGH')
+        if high_severity_count > 0:
+            print(f"\n❌ FAILED: Found {high_severity_count} HIGH severity issue(s).", file=sys.stderr)
+            sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_setup(args):
@@ -7097,6 +7183,10 @@ async def main():
 
     if args.command == "review":
         run_review(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "setup":

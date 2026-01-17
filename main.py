@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.security import SecurityAuditor
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -5208,6 +5209,35 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (Bandit + Secret Scanning) on the project."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Minimum severity level to report (default: LOW).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the security report as JSON.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -6600,6 +6630,69 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     sys.exit(0)
 
 
+def run_security(args):
+    """Runs a security scan on the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Scan on {project_dir} ---")
+    print(f"Scan Type: {args.scan_type}, Severity: {args.severity}")
+
+    auditor = SecurityAuditor()
+    results = auditor.run_security_scan(
+        project_dir=project_dir,
+        scan_type=args.scan_type,
+        severity=args.severity
+    )
+
+    findings = results.get("findings", [])
+    summary = results.get("summary", {})
+
+    # Handle output format
+    if args.output:
+        output_path = args.output.resolve()
+        try:
+            with open(output_path, "w") as f:
+                json.dump(results, f, indent=2)
+            print(f"✅ Security report saved to {output_path}")
+        except IOError as e:
+            print(f"❌ Error saving report to {output_path}: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Print to console if not saving to file or if verbose (maybe?)
+    # For now, let's always print a summary to console
+
+    print("\n--- Security Findings ---")
+    if not findings:
+        print("✅ No issues found.")
+    else:
+        # Sort by severity
+        severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "UNKNOWN": 3}
+        findings.sort(key=lambda x: severity_order.get(x.get("severity", "UNKNOWN").upper(), 4))
+
+        for finding in findings:
+            sev = finding.get("severity", "UNKNOWN").upper()
+            msg = finding.get("issue_text", "Unknown issue")
+            loc = finding.get("filename", "unknown file")
+            line = finding.get("line_number", "?")
+
+            icon = "🔴" if sev == "HIGH" else "🟠" if sev == "MEDIUM" else "⚪"
+
+            print(f"{icon} [{sev}] {msg}")
+            print(f"   Location: {loc}:{line}")
+            if "snippet" in finding:
+                print(f"   Snippet:  {finding['snippet']}")
+            print("")
+
+    print("--- Summary ---")
+    print(f"Total Issues: {summary.get('total', 0)}")
+    print(f"  High:   {summary.get('high', 0)}")
+    print(f"  Medium: {summary.get('medium', 0)}")
+    print(f"  Low:    {summary.get('low', 0)}")
+
+    if summary.get("high", 0) > 0:
+        sys.exit(1)
+    sys.exit(0)
+
+
 def run_worktrees(args):
     """Manages agent-created git worktrees."""
     project_dir = args.project_dir.resolve()
@@ -7109,6 +7202,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     # Initialize Agent Client

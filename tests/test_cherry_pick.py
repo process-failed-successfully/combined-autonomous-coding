@@ -154,7 +154,14 @@ class TestCherryPickCommand(unittest.TestCase):
         mock_run.assert_called_once()
         call_args = mock_run.call_args[0][0]
         self.assertIn("--fixed-strings", call_args)
-        self.assertIn(f"--grep=Run ID: {run_id}", call_args)
+
+        # Check that --grep and the value are separate arguments
+        self.assertIn("--grep", call_args)
+        self.assertIn(f"Run ID: {run_id}", call_args)
+
+        # Ensure they are adjacent
+        grep_index = call_args.index("--grep")
+        self.assertEqual(call_args[grep_index + 1], f"Run ID: {run_id}")
 
 if __name__ == '__main__':
     unittest.main()

@@ -1759,10 +1759,8 @@ def run_cherry_pick(args):
 
     # Validate input format to prevent command injection
     if not is_safe_git_ref(target):
-        # If it doesn't look like a safe ref, check if it's a Run ID which might contain special chars
-        # But generally Run IDs should also be safe (alphanumeric + dashes)
-        # We'll allow it to pass to find_commit_by_run_id which handles it safely via --fixed-strings
-        pass
+        print(f"❌ Error: Invalid target format '{target}'.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target

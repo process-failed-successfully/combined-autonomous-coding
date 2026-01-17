@@ -121,6 +121,28 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('main.find_commit_by_run_id')
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_unsafe_input(self, mock_stderr, mock_stdout, mock_find):
+        """Test that unsafe input is rejected immediately."""
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        args.target = "-v"
+
+        with self.assertRaises(SystemExit) as cm:
+             run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 1)
+
+        # Verify find_commit_by_run_id was NOT called
+        mock_find.assert_not_called()
+
+        stdout_output = "".join(call.args[0] for call in mock_stdout.write.call_args_list)
+        stderr_output = "".join(call.args[0] for call in mock_stderr.write.call_args_list)
+
+        self.assertNotIn("Assuming it is a Run ID", stdout_output)
+        self.assertIn("Invalid target format", stderr_output)
 
 if __name__ == '__main__':
     unittest.main()

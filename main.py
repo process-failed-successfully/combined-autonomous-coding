@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.security import SecurityAuditor
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -241,6 +242,35 @@ dashboard_state.json
     print(f"    {executable_name} doctor")
 
     sys.exit(0)
+
+
+def run_security(args):
+    """Runs a security scan on the project."""
+    project_dir = args.project_dir.resolve()
+    scan_type = args.scan_type
+    severity = args.severity
+    output_format = args.output
+
+    if output_format != 'json':
+        print(f"--- Running Security Scan on: {project_dir} ---")
+        print(f"  Type: {scan_type}")
+        print(f"  Severity: {severity}")
+
+    auditor = SecurityAuditor(project_dir)
+    findings = auditor.scan(scan_type=scan_type, severity=severity)
+
+    report = auditor.format_report(findings, output_format=output_format)
+    if output_format == 'json':
+        print(report)
+    else:
+        print("\n" + report)
+
+    # Exit with error if HIGH severity issues are found
+    high_issues = [f for f in findings if f.get('severity') == 'HIGH']
+    if high_issues:
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 
 def run_validate():
@@ -4089,6 +4119,47 @@ def parse_args(argv=None):
         help="The project directory to check (default: current directory)",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security scans (bandit, secrets) on the project."
+    )
+    security_subparsers = parser_security.add_subparsers(
+        dest="action",
+        required=True,
+        help="Specify security action"
+    )
+
+    # Security 'scan' action
+    parser_security_scan = security_subparsers.add_parser(
+        "scan",
+        help="Execute the security scan."
+    )
+    parser_security_scan.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan.",
+    )
+    parser_security_scan.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security_scan.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Minimum severity level to report (default: LOW).",
+    )
+    parser_security_scan.add_argument(
+        "--output",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text).",
+    )
+
     # Subparser for 'init'
     parser_init = subparsers.add_parser("init", help="Run an interactive setup wizard for a new project")
     parser_init.add_argument(
@@ -6866,6 +6937,12 @@ async def main():
     # Handle `doctor` command
     if args.command == "doctor":
         run_doctor(args)
+        return
+
+    # Handle `security` command
+    if args.command == "security":
+        if args.action == "scan":
+            run_security(args)
         return
 
     # Handle `clean` command

@@ -199,3 +199,19 @@ def get_current_branch(project_dir: Path) -> Optional[str]:
     except Exception as e:
         logger.error(f"An unexpected error occurred while getting the current branch: {e}")
         return None
+
+
+def find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> Optional[str]:
+    """Searches the git log for a commit associated with a Run ID."""
+    try:
+        # Search the entire commit history for the Run ID in the message body
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+            capture_output=True, text=True, check=True
+        )
+        if result.stdout.strip():
+            # Return the first commit hash found
+            return result.stdout.strip().split('\n')[0]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return None

@@ -29,7 +29,7 @@ except ImportError:
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+from shared.git import ensure_git_safe, find_commit_by_run_id
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1835,7 +1835,7 @@ def run_rewind(args):
 
         if not is_git_ref:
             print(f"'{target}' is not a known git reference. Assuming it is a Run ID and searching history...")
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            commit_hash = find_commit_by_run_id(project_dir, git_path, target)
             if commit_hash:
                 print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
                 target = commit_hash
@@ -2507,7 +2507,7 @@ def run_diff(args):
 
         if not is_git_ref:
             # If not a direct git ref, assume it's a Run ID
-            commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+            commit_hash = find_commit_by_run_id(project_dir, git_path, target)
             if not commit_hash:
                 print(f"❌ Error: Target '{original_target}' is not a valid commit or Run ID.", file=sys.stderr)
                 sys.exit(1)

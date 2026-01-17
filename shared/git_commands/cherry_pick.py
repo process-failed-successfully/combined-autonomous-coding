@@ -1,23 +1,8 @@
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 
-
-def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str | None:
-    """Searches the git log for a commit associated with a Run ID."""
-    try:
-        # Search the entire commit history for the Run ID in the message body
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
-            capture_output=True, text=True, check=True
-        )
-        if result.stdout.strip():
-            # Return the first commit hash found
-            return result.stdout.strip().split('\n')[0]
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-    return None
+from shared.git import find_commit_by_run_id
 
 
 def run_cherry_pick(args):
@@ -52,7 +37,7 @@ def run_cherry_pick(args):
 
     if not is_git_ref:
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
-        commit_hash = _find_commit_by_run_id(project_dir, git_path, target)
+        commit_hash = find_commit_by_run_id(project_dir, git_path, target)
         if commit_hash:
             print(f"✅ Found commit '{commit_hash[:7]}' associated with Run ID '{target}'.")
             target = commit_hash

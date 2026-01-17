@@ -10,6 +10,11 @@ from typing import Optional, Tuple
 from shared.log_handler import MemoryLogHandler
 
 
+def get_logger(name: str) -> logging.Logger:
+    """Get a logger instance by name."""
+    return logging.getLogger(name)
+
+
 def setup_logger(
     name: str = "agent",
     log_file: Optional[Path] = None,

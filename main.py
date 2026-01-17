@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.security import SecurityAuditor
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -71,6 +72,49 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_security(args):
+    """Runs security checks on the codebase."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit on: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+
+    # Determine what scans to run
+    run_all = args.scan_type == "all"
+
+    if run_all or args.scan_type == "bandit":
+        # Check if bandit is installed
+        if not shutil.which("bandit"):
+             print("❌ Error: 'bandit' is not installed. Please run 'pip install bandit'.", file=sys.stderr)
+        else:
+             auditor.run_bandit_scan(severity=args.severity.lower())
+
+    if run_all or args.scan_type == "secrets":
+        auditor.scan_secrets()
+
+    # Generate Report
+    report = auditor.generate_report()
+    print(report)
+
+    # Save report if requested
+    if args.output:
+        try:
+            args.output.write_text(report)
+            print(f"\n✅ Report saved to: {args.output}")
+        except OSError as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    # Exit with error if high severity issues found
+    has_high_severity = any(
+        (f.get('severity') or '').upper() in ['HIGH', 'CRITICAL']
+        for f in auditor.findings
+    )
+
+    if has_high_severity:
+        sys.exit(1)
+    sys.exit(0)
+
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -4647,6 +4691,35 @@ def parse_args(argv=None):
         help="Select a configuration profile from agent_config.yaml.",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks on the codebase (Bandit + Secret Scanning)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        help="Type of scan to perform.",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["LOW", "MEDIUM", "HIGH"],
+        default="LOW",
+        help="Minimum severity level for bandit (default: LOW).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the report (text format).",
+    )
+
     # Subparser for 'shell'
     parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
 
@@ -6847,6 +6920,11 @@ async def main():
     # Handle `plan` command
     if args.command == "plan":
         await run_plan(args)
+        return
+
+    # Handle `security` command
+    if args.command == "security":
+        run_security(args)
         return
 
     # Handle `config` command

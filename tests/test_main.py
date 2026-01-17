@@ -317,13 +317,11 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             mock_conf.sprint_mode = False
 
             # Mock PROJECT_SIGNED_OFF check
-            mock_project_dir = MagicMock()
-            mock_conf.project_dir = mock_project_dir
-
-            signed_off_path = MagicMock()
-            signed_off_path.exists.return_value = True
-
-            mock_project_dir.__truediv__.return_value = signed_off_path
+            # Use real project dir to avoid subprocess crash
+            mock_conf.project_dir = self.project_dir
+            # Ensure Jira flow is disabled (Mocks are truthy by default)
+            mock_conf.jira = None
+            mock_conf.jira_ticket_key = None
 
             mock_config_cls.return_value = mock_conf
 

@@ -31,6 +31,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.security import SecurityAuditor
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -5232,6 +5233,36 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security audits (bandit, secrets) on the project."
+    )
+    parser_security.add_argument(
+        "scan_type",
+        choices=["all", "bandit", "secrets"],
+        default="all",
+        nargs="?",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Minimum severity level to report (default: medium).",
+    )
+    parser_security.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Do not exit with error code even if issues are found.",
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -5576,6 +5607,55 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+def run_security(args):
+    """Runs security audits (bandit, secret scanning) on the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit in: {project_dir} ---")
+
+    auditor = SecurityAuditor()
+    report = auditor.audit(
+        project_dir,
+        scan_type=args.scan_type,
+        severity=args.severity
+    )
+
+    # Display Findings
+    findings = report.get("findings", [])
+    summary = report.get("summary", {})
+
+    print(f"\n--- Audit Summary ---")
+    print(f"  Score: {summary.get('score', 0)}/100")
+    print(f"  Issues Found: {summary.get('issues', 0)}")
+
+    if "errors" in report:
+        print(f"\n❌ Tool Execution Errors:")
+        print(f"  {report['errors']}")
+
+    if findings:
+        print(f"\n--- Detailed Findings ---")
+        for i, finding in enumerate(findings, 1):
+            severity = finding.get('severity', 'UNKNOWN').upper()
+            sev_icon = "🔴" if severity == "HIGH" else "🟠" if severity == "MEDIUM" else "🔵"
+
+            print(f"\n[{i}] {sev_icon} {finding.get('issue_text')} ({severity})")
+            print(f"    File: {finding.get('filename')}:{finding.get('line_number')}")
+            if finding.get('code'):
+                print(f"    Code: {finding.get('code').strip()}")
+            if finding.get('more_info'):
+                print(f"    Info: {finding.get('more_info')}")
+    else:
+        print("\n✅ No significant issues found.")
+
+    if not args.no_fail and findings:
+        # Exit with error if high severity issues are found
+        high_sev_count = sum(1 for f in findings if f.get('severity') == 'HIGH')
+        if high_sev_count > 0:
+            print(f"\n❌ FAILED: Found {high_sev_count} high severity issue(s).")
+            sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_setup(args):
@@ -7101,6 +7181,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "help":

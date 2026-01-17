@@ -74,5 +74,29 @@ class TestUtilsSecurity(unittest.TestCase):
         with open(self.project_dir / filename, "r") as f:
             self.assertEqual(f.read(), content)
 
+    def test_is_safe_git_ref(self):
+        """Test the is_safe_git_ref validator."""
+        from shared.utils import is_safe_git_ref
+
+        # Valid refs
+        self.assertTrue(is_safe_git_ref("main"))
+        self.assertTrue(is_safe_git_ref("feature/branch-name"))
+        self.assertTrue(is_safe_git_ref("v1.0.0"))
+        self.assertTrue(is_safe_git_ref("HEAD"))
+        self.assertTrue(is_safe_git_ref("HEAD~1"))
+        self.assertTrue(is_safe_git_ref("HEAD^"))
+        self.assertTrue(is_safe_git_ref("origin/main"))
+        self.assertTrue(is_safe_git_ref("a"*40)) # Commit hash
+
+        # Invalid refs
+        self.assertFalse(is_safe_git_ref("-flag"))
+        self.assertFalse(is_safe_git_ref("--option"))
+        self.assertFalse(is_safe_git_ref("branch with spaces"))
+        self.assertFalse(is_safe_git_ref("branch;command"))
+        self.assertFalse(is_safe_git_ref("branch|command"))
+        self.assertFalse(is_safe_git_ref("branch&command"))
+        self.assertFalse(is_safe_git_ref("branch>file"))
+        self.assertFalse(is_safe_git_ref(""))
+
 if __name__ == "__main__":
     unittest.main()

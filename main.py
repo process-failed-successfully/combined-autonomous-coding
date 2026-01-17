@@ -1744,8 +1744,9 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     """Searches the git log for a commit associated with a Run ID."""
     try:
         # Search the entire commit history for the Run ID in the message body
+        # Use --fixed-strings to avoid regex injection and separate args
         result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+            [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", "--grep", f"Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
         )
         if result.stdout.strip():
@@ -1758,6 +1759,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
 
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
+    from shared.utils import is_safe_git_ref
     project_dir = args.project_dir.resolve()
     target = args.target
 
@@ -1774,17 +1776,19 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
+
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
-    try:
-        check_commit_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
-            capture_output=True, text=True
-        )
-        if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
-            is_git_ref = True
-    except Exception:
-        pass  # Ignore errors, we'll handle the 'not found' case below
+    if is_safe_git_ref(target):
+        try:
+            check_commit_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+                capture_output=True, text=True
+            )
+            if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
+                is_git_ref = True
+        except Exception:
+            pass  # Ignore errors, we'll handle the 'not found' case below
 
     if not is_git_ref:
         print(f"'{target}' is not a known git commit. Assuming it is a Run ID and searching history...")
@@ -1797,11 +1801,17 @@ def run_cherry_pick(args):
             print("Please provide a valid commit hash or a Run ID from the agent's history.", file=sys.stderr)
             sys.exit(1)
 
+    # Final validation on the resolved target
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Resolved target '{target}' is not a safe git reference.", file=sys.stderr)
+        sys.exit(1)
+
     # --- Execute Cherry-Pick ---
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
-        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", target]
+        # Use -- to strictly separate options from the revision
+        cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode == 0:

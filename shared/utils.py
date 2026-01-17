@@ -517,3 +517,20 @@ def sanitize_url(url: str) -> str:
     import re
     # Mask https://token@github.com... or https://user:token@github.com...
     return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)
+
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates that a string is a safe git reference (commit hash, branch name, tag).
+    Strictly blocks references starting with '-' to prevent argument injection.
+    Allows alphanumeric, underscores, forward slashes, periods, and git metacharacters (~, ^, @, {, }).
+    """
+    import re
+    if not ref:
+        return False
+    # Regex explanation:
+    # ^[^-]       : Start with any character that is NOT a hyphen.
+    # [a-zA-Z0-9_./~^@{}-]* : Followed by allowed chars (including hyphen now).
+    # $          : End of string.
+    pattern = r"^[^-][a-zA-Z0-9_./~^@{}-]*$"
+    return bool(re.match(pattern, ref))

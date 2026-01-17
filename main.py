@@ -1745,7 +1745,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     try:
         # Search the entire commit history for the Run ID in the message body
         # Use --fixed-strings to prevent regex injection from run_id
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", f"--grep=Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
         )

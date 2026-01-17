@@ -3741,6 +3741,58 @@ def run_sprint_command(args):
         _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
 
 
+def run_security(args):
+    """Runs security checks on the project."""
+    from shared.security import SecurityAuditor
+    import json
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Scan on: {project_dir} ---")
+
+    auditor = SecurityAuditor(project_dir)
+    issues = auditor.run_security_scan(
+        scan_type=args.scan_type,
+        severity=args.severity,
+        confidence=args.confidence
+    )
+
+    if not issues:
+        print("\n✅ No security issues found!")
+        sys.exit(0)
+
+    print(f"\n⚠️ Found {len(issues)} security issue(s):")
+
+    # Sort issues by severity (High > Medium > Low)
+    severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "UNDEFINED": 3}
+    issues.sort(key=lambda x: severity_order.get(x.severity.upper(), 4))
+
+    for i, issue in enumerate(issues):
+        print(f"\n[{i+1}] {issue.check_id} ({issue.severity})")
+        print(f"    File: {issue.filename}:{issue.line_number}")
+        print(f"    Issue: {issue.description}")
+        if issue.remediation:
+            print(f"    More Info: {issue.remediation}")
+
+    if args.output:
+        try:
+            output_path = args.output.resolve()
+            report_data = {
+                "generated_at": datetime.now().isoformat(),
+                "scan_type": args.scan_type,
+                "project_dir": str(project_dir),
+                "issues": [issue.to_dict() for issue in issues]
+            }
+            with open(output_path, 'w') as f:
+                json.dump(report_data, f, indent=2)
+            print(f"\n✅ Report saved to: {output_path}")
+        except IOError as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    if not args.no_fail:
+        sys.exit(1)
+    sys.exit(0)
+
+
 async def run_plan(args):
     """Generates a feature plan from a spec file without executing it."""
     # This is a stripped down version of the main() function's setup
@@ -4865,6 +4917,46 @@ def parse_args(argv=None):
         "test_args",
         nargs=argparse.REMAINDER,
         help="Arguments to pass through to the underlying test runner (e.g., specific files, flags).",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Run security checks (static analysis and secret scanning)."
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "static", "secrets"],
+        default="all",
+        help="Type of security scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="low",
+        help="Minimum severity level to report (default: low).",
+    )
+    parser_security.add_argument(
+        "--confidence",
+        choices=["low", "medium", "high"],
+        default="low",
+        help="Minimum confidence level to report (default: low).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=Path,
+        help="Path to save the report (JSON format).",
+    )
+    parser_security.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Do not exit with a non-zero status code if issues are found.",
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
     )
 
     # --- New 'lint' command ---
@@ -7018,6 +7110,10 @@ async def main():
 
     if args.command == "test":
         run_test(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "lint":

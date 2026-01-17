@@ -6,6 +6,7 @@ Functions for managing git state and ensuring safe branching for agents.
 """
 
 import logging
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -13,6 +14,25 @@ from typing import Optional
 from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
+
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates that a git reference is safe to use in commands.
+    Allows alphanumeric characters, -, _, ., /, @, {, }, ^, and ~.
+    Specifically blocks leading dashes to prevent flag injection.
+    """
+    if not ref:
+        return False
+
+    # Block leading dashes
+    if ref.startswith("-"):
+        return False
+
+    # whitelist regex
+    # Alphanumeric + _ . / @ { } - ^ ~
+    pattern = r"^[a-zA-Z0-9_./@{}\-^~]+$"
+    return bool(re.match(pattern, ref))
 
 
 def is_git_safeguard_active() -> bool:

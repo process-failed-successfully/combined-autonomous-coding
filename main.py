@@ -29,7 +29,7 @@ except ImportError:
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+from shared.git import ensure_git_safe, is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1774,6 +1774,12 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
+
+    # 0. Validate input safety
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Contains potentially unsafe characters.", file=sys.stderr)
+        sys.exit(1)
+
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:

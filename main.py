@@ -2088,7 +2088,20 @@ def run_restore(args):
     sys.exit(0)
 
 
-from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
+from shared.cli_utils import (
+    get_project_summary,
+    get_suggestions,
+    _run_enhanced_status_logic,
+    _run_tree_logic,
+    _run_report_logic,
+    _run_dashboard_logic,
+    _run_blame_logic,
+    _run_next_logic,
+    _run_context_show_logic,
+    _run_context_analyze_logic,
+    _find_metrics_file,
+    _parse_metrics,
+)
 
 def run_analytics(args):
     """Runs project analytics."""
@@ -3142,59 +3155,6 @@ def run_completion():
         sys.exit(1)
 
 
-def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
-    """Finds the final_metrics.txt file for a given run_id."""
-    # 1. Check the main project directory
-    metrics_file = project_dir / "final_metrics.txt"
-    if metrics_file.exists():
-        try:
-            with open(metrics_file, 'r') as f:
-                content = f.read()
-            if f"Run ID: {run_id}" in content:
-                return metrics_file
-        except IOError:
-            pass
-
-    # 2. Check archives and trash directories
-    for base_dir_name in [".agent_archives", ".agent_trash"]:
-        base_dir = project_dir / base_dir_name
-        if base_dir.is_dir():
-            for archive_dir in base_dir.iterdir():
-                if archive_dir.is_dir():
-                    metrics_file = archive_dir / "final_metrics.txt"
-                    if metrics_file.exists():
-                        try:
-                            with open(metrics_file, 'r') as f:
-                                content = f.read()
-                            if f"Run ID: {run_id}" in content:
-                                return metrics_file
-                        except IOError:
-                            continue
-    return None
-
-
-def _parse_metrics(metrics_file: Path) -> dict:
-    """Parses a final_metrics.txt file into a dictionary."""
-    metrics = {}
-    try:
-        with open(metrics_file, 'r') as f:
-            for line in f:
-                if ':' in line:
-                    key, value = line.split(':', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    # Attempt to convert to float/int if possible
-                    try:
-                        if '.' in value:
-                            metrics[key] = float(value)
-                        else:
-                            metrics[key] = int(value)
-                    except ValueError:
-                        metrics[key] = value
-    except (IOError, FileNotFoundError) as e:
-        print(f"Error reading metrics file {metrics_file}: {e}", file=sys.stderr)
-        return {}
-    return metrics
 
 
 def _format_duration(seconds: float) -> str:
@@ -3202,6 +3162,109 @@ def _format_duration(seconds: float) -> str:
     seconds = float(seconds)
     minutes, seconds = divmod(seconds, 60)
     return f"{int(minutes)}m {seconds:.2f}s"
+
+
+PRICING_MODELS = {
+    "gemini-1.5-pro": {"input": 3.50, "output": 10.50},  # Per 1M tokens
+    "gemini-1.5-flash": {"input": 0.35, "output": 1.05},
+    "claude-3.5-sonnet": {"input": 3.00, "output": 15.00},
+    "gpt-4o": {"input": 5.00, "output": 15.00},
+    "unknown": {"input": 0.0, "output": 0.0},
+}
+
+def run_cost(args):
+    """Estimates the cost of the agent run based on token usage."""
+    run_id = args.run_id
+    project_dir = args.project_dir.resolve()
+
+    if not run_id:
+        # Default to latest run
+        metrics_file = project_dir / "final_metrics.txt"
+        if not metrics_file.exists():
+             # Try history
+             history_file = project_dir / ".agent_history"
+             if history_file.exists():
+                 try:
+                     with open(history_file, "r") as f:
+                         run_ids = [line.strip() for line in f if line.strip()]
+                     if run_ids:
+                         run_id = run_ids[-1]
+                 except IOError:
+                     pass
+
+        if not run_id and not metrics_file.exists():
+             print("❌ Error: Could not determine Run ID or find metrics file.", file=sys.stderr)
+             sys.exit(1)
+
+    if run_id:
+        metrics_file = _find_metrics_file(run_id, project_dir)
+        if not metrics_file:
+            print(f"❌ Error: Could not find metrics for Run ID: {run_id}", file=sys.stderr)
+            sys.exit(1)
+
+    metrics = _parse_metrics(metrics_file)
+    if not metrics:
+        print("❌ Error: Metrics file is empty or could not be parsed.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Cost Estimate for Run: {metrics.get('Run ID', 'Unknown')} ---")
+
+    model = metrics.get("Model", "unknown")
+    # Clean up model string (sometimes it has extra info or is "auto")
+    pricing = PRICING_MODELS.get(model, None)
+    if not pricing:
+        # fuzzy match?
+        for key in PRICING_MODELS:
+            if key in model:
+                pricing = PRICING_MODELS[key]
+                break
+
+    if not pricing:
+        print(f"⚠️  Warning: No pricing model found for '{model}'. Using $0.00.")
+        pricing = {"input": 0.0, "output": 0.0}
+    else:
+        print(f"Model: {model} (Pricing: ${pricing['input']}/1M in, ${pricing['output']}/1M out)")
+
+    # Extract detailed usage if available (from our new parser logic)
+    # We stored breakdowns as `llm_tokens_total__{model}__{type}`
+
+    input_tokens = 0
+    output_tokens = 0
+
+    # Try to find breakdown keys
+    for key, value in metrics.items():
+        if key.startswith("llm_tokens_total__"):
+            parts = key.split("__")
+            if len(parts) == 3:
+                # _, model_label, type_label = parts
+                type_label = parts[2]
+                if type_label == "input":
+                    input_tokens += value
+                elif type_label == "output":
+                    output_tokens += value
+
+    # Fallback to total if breakdown not found (e.g. legacy metrics)
+    total_tokens = metrics.get("LLM Tokens Used", 0)
+    if input_tokens == 0 and output_tokens == 0 and total_tokens > 0:
+        print("⚠️  Detailed input/output breakdown not available. Assuming 75% input, 25% output.")
+        input_tokens = total_tokens * 0.75
+        output_tokens = total_tokens * 0.25
+
+    input_cost = (input_tokens / 1_000_000) * pricing["input"]
+    output_cost = (output_tokens / 1_000_000) * pricing["output"]
+    total_cost = input_cost + output_cost
+
+    print(f"\nUsage:")
+    print(f"  Input Tokens:  {int(input_tokens):,}")
+    print(f"  Output Tokens: {int(output_tokens):,}")
+    print(f"  Total Tokens:  {int(input_tokens + output_tokens):,}")
+
+    print(f"\nEstimated Cost:")
+    print(f"  Input:  ${input_cost:.4f}")
+    print(f"  Output: ${output_cost:.4f}")
+    print(f"  Total:  ${total_cost:.4f}")
+
+    sys.exit(0)
 
 
 def _display_metrics_table(metrics: dict, title: str):
@@ -4843,6 +4906,23 @@ def parse_args(argv=None):
     parser_completion = subparsers.add_parser(
         "completion",
         help="Display shell completion scripts. To install, use: 'eval \"$(main.py completion)\"'",
+    )
+
+    # --- New 'cost' command ---
+    parser_cost = subparsers.add_parser(
+        "cost",
+        help="Estimate the cost of an agent run based on token usage."
+    )
+    parser_cost.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID to estimate. If omitted, uses the latest run.",
+    )
+    parser_cost.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
     )
 
     # --- New 'benchmark' command ---
@@ -7388,6 +7468,11 @@ async def main():
     # Handle `workflow` command
     if args.command == "workflow":
         run_workflow(args)
+        return
+
+    # Handle `cost` command
+    if args.command == "cost":
+        run_cost(args)
         return
 
     # Handle `benchmark` command

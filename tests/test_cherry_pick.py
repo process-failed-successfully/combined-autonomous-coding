@@ -120,5 +120,39 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout
         self.assertIn("UU file1.txt", git_status)
 
+    @patch('sys.stdout')
+    @patch('sys.stderr')
+    def test_cherry_pick_with_regex_run_id(self, mock_stderr, mock_stdout):
+        """Test resolving a Run ID that contains regex special characters."""
+        # Create a new branch and commit with a 'regex-like' Run ID
+        subprocess.run(["git", "checkout", "-b", "regex-branch"], cwd=self.test_dir, check=True)
+        (self.test_dir / "regex_file.txt").write_text("Regex content")
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)
+
+        # This ID would match 'run-12345' if treated as regex 'run-[0-9]+' but we want it to match literally
+        special_id = "run-[0-9]+"
+        subprocess.run(["git", "commit", "-m", f"feat: Regex ID\n\nRun ID: {special_id}"], cwd=self.test_dir, check=True)
+
+        # Switch back to main
+        subprocess.run(["git", "checkout", "main"], cwd=self.test_dir, check=True)
+
+        args = MagicMock()
+        args.project_dir = self.test_dir
+        args.target = special_id
+
+        with self.assertRaises(SystemExit) as cm:
+            run_cherry_pick(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertTrue((self.test_dir / "regex_file.txt").exists())
+        # Ensure we didn't pick the 'run-12345' commit (file2.txt should not be here, unless cherry-picked too?)
+        # Since we just cherry-picked the regex one, file2.txt should NOT be present from that action.
+        # But wait, main branch in setUp already has file1.txt. feature branch added file2.txt.
+        # regex-branch was created off main (after setup), so it doesn't have file2.txt.
+        # So if we cherry-pick regex-branch commit, we get regex_file.txt.
+        # If we mistakenly picked feature branch commit (run-12345), we would get file2.txt.
+
+        self.assertFalse((self.test_dir / "file2.txt").exists(), "Should not have picked the wrong commit matching regex")
+
 if __name__ == '__main__':
     unittest.main()

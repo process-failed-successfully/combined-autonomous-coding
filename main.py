@@ -1744,8 +1744,8 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     """Searches the git log for a commit associated with a Run ID."""
     try:
         # Search the entire commit history for the Run ID in the message body
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
+        result = subprocess.run(  # nosec B603
+            [git_path, "-C", str(project_dir), "log", "--all", "--fixed-strings", f"--grep=Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
         )
         if result.stdout.strip():

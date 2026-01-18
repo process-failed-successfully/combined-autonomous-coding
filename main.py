@@ -20,6 +20,7 @@ import subprocess
 from pathlib import Path
 import time
 from collections import deque
+from typing import Dict, List, Any
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -205,7 +206,7 @@ dashboard_state.json
         if not args.yes:
              overwrite_spec = input("Do you want to overwrite it? [y/N]: ").strip().lower()
              if overwrite_spec != 'y':
-                 spec_path = None # Skip writing
+                 spec_path = None  # Skip writing
 
     if spec_path:
         print("Please describe the application you want to build.")
@@ -218,7 +219,7 @@ dashboard_state.json
                 line = input("> ")
                 if not line and len(spec_lines) > 0 and spec_lines[-1] == "":
                     # Two consecutive empty lines
-                    spec_lines.pop() # Remove the last empty line
+                    spec_lines.pop()  # Remove the last empty line
                     break
                 spec_lines.append(line)
         except (EOFError, KeyboardInterrupt):
@@ -2042,7 +2043,7 @@ def run_restore(args):
     artifacts_to_restore = list(latest_trash_dir.iterdir())
     if not artifacts_to_restore:
         print("Trash archive is empty. Nothing to restore.")
-        latest_trash_dir.rmdir() # Clean up empty dir
+        latest_trash_dir.rmdir()  # Clean up empty dir
         print(f"Removed empty trash archive: {latest_trash_dir.name}")
         sys.exit(0)
 
@@ -2357,18 +2358,18 @@ def run_search(args):
         results_by_file[f].append(res)
 
     for file_path, matches in results_by_file.items():
-        print(f"\n📄 \033[1m{file_path}\033[0m") # Bold filename
+        print(f"\n📄 \033[1m{file_path}\033[0m")  # Bold filename
         for m in matches:
             # Context before
             for ctx in m['context_before']:
-                print(f"    \033[90m{ctx}\033[0m") # Gray context
+                print(f"    \033[90m{ctx}\033[0m")  # Gray context
 
             # Match
             # Highlight the pattern in the content?
             # Simple highlight if not regex or complex
             content = m['content']
             # We skip highlighting for now to avoid messiness with regex matches
-            print(f"  \033[32m{m['line']}\033[0m: {content}") # Green line num
+            print(f"  \033[32m{m['line']}\033[0m: {content}")  # Green line num
 
             # Context after
             for ctx in m['context_after']:
@@ -2527,7 +2528,7 @@ def _stash_push(args, git_path, project_dir):
             sys.exit(1)
 
         print("✅ Changes stashed successfully.")
-        _stash_list(args, git_path, project_dir, count=1) # Show the latest stash
+        _stash_list(args, git_path, project_dir, count=1)  # Show the latest stash
 
     except subprocess.CalledProcessError as e:
         print(f"❌ An error occurred: {e.stderr}", file=sys.stderr)
@@ -3831,7 +3832,7 @@ def run_branch(args):
             subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             if "did not match any file(s) known to git" in e.stderr:
-                main_branch = "master" # Fallback to master
+                main_branch = "master"  # Fallback to master
                 try:
                     subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
                 except subprocess.CalledProcessError as e2:
@@ -3989,7 +3990,7 @@ def run_test(args):
         sys.exit(1)
     except KeyboardInterrupt:
         print("\nTest execution interrupted by user.")
-        sys.exit(130) # Standard exit code for Ctrl+C
+        sys.exit(130)  # Standard exit code for Ctrl+C
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
         sys.exit(1)
@@ -4115,7 +4116,7 @@ def run_format(args):
             if is_check_mode:
                 check_flags = ["--check"]
             else:
-                check_flags = ["--write"] # Prettier's equivalent of formatting
+                check_flags = ["--write"]  # Prettier's equivalent of formatting
         else:
             print("Warning: Node.js formatter 'prettier' not found.", file=sys.stderr)
 
@@ -4336,7 +4337,7 @@ def run_config(args):
                 try:
                     parsed_value = float(value)
                 except ValueError:
-                    parsed_value = value # Keep as string
+                    parsed_value = value  # Keep as string
 
         current_level[keys[-1]] = parsed_value
 
@@ -6348,7 +6349,7 @@ def run_feature(args):
             action="create",
             branch_name=branch_name,
             project_dir=project_dir,
-            keep_branch=False # Not used in create
+            keep_branch=False  # Not used in create
         )
         try:
             run_branch(branch_args)
@@ -6367,7 +6368,7 @@ def run_feature(args):
 
         commit_args = argparse.Namespace(
             message=commit_message,
-            run_tests=False, # For simplicity, don't run tests in this guided flow
+            run_tests=False,  # For simplicity, don't run tests in this guided flow
             project_dir=project_dir
         )
         try:
@@ -6524,7 +6525,7 @@ async def run_docstring(args):
 
         print(f"Found {len(items)} missing docstrings:")
         # Group by file
-        items_by_file = {}
+        items_by_file: Dict[str, List[Dict[str, Any]]] = {}
         for item in items:
             p = str(item["file"].relative_to(project_dir))
             if p not in items_by_file:
@@ -6602,11 +6603,11 @@ def run_security(args):
         # Color coding
         sev_color = ""
         if sev == "HIGH":
-            sev_color = "\033[91m" # Red
+            sev_color = "\033[91m"  # Red
         elif sev == "MEDIUM":
-            sev_color = "\033[93m" # Yellow
+            sev_color = "\033[93m"  # Yellow
         elif sev == "LOW":
-            sev_color = "\033[94m" # Blue
+            sev_color = "\033[94m"  # Blue
         reset = "\033[0m"
 
         print(f"\n[{i+1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
@@ -6712,7 +6713,7 @@ def run_interact(args):
         "2": {"text": "Run tests", "func": run_test, "args": {"project_dir": project_dir, "test_args": []}},
         "3": {"text": "Run linter", "func": run_lint, "args": {"project_dir": project_dir, "fix": False, "lint_args": []}},
         "4": {"text": "Format code", "func": run_format, "args": {"project_dir": project_dir, "check": False, "format_args": []}},
-        "5": {"text": "Commit changes", "func": run_commit}, # Special handling
+        "5": {"text": "Commit changes", "func": run_commit},  # Special handling
         "6": {"text": "Suggest next step", "func": run_suggest, "args": {"project_dir": project_dir}},
     }
 
@@ -7175,7 +7176,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
             else:
                 key, value = line.split(" ", 1)
                 current_worktree[key] = value
-        if not branch_name and current_worktree: # Check last block
+        if not branch_name and current_worktree:  # Check last block
              path = Path(current_worktree.get("worktree", ""))
              if path.resolve() == worktree_path.resolve():
                  branch_ref = current_worktree.get("branch", "")
@@ -7228,7 +7229,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         )
     except subprocess.CalledProcessError as e:
         if "did not match any file(s) known to git" in e.stderr:
-             main_branch = "master" # Fallback to master
+             main_branch = "master"  # Fallback to master
              print(f"  - '{main_branch}' not found, trying 'master'...")
              try:
                  subprocess.run(
@@ -7388,7 +7389,7 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
             else:
                 key, value = line.split(" ", 1)
                 current_worktree[key] = value
-        if branch_name == "N/A" and current_worktree: # Check last block
+        if branch_name == "N/A" and current_worktree:  # Check last block
              path = Path(current_worktree.get("worktree", ""))
              if path.resolve() == worktree_path.resolve():
                  branch_ref = current_worktree.get("branch", "")
@@ -7833,7 +7834,7 @@ def run_worktrees(args):
                 cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
                 if args.force:
                     cmd.append("--force")
-                cmd.append(name) # Can just be the name if it's in worktrees/ dir
+                cmd.append(name)  # Can just be the name if it's in worktrees/ dir
 
                 subprocess.run(cmd, check=True, capture_output=True, text=True)
                 print(f"✅ Removed worktree: {name}")

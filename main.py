@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.ask import run_ask_logic
 import json
 import yaml
 import platformdirs
@@ -2095,6 +2096,11 @@ def run_context(args):
     elif args.action == "analyze":
         context_output = _run_context_analyze_logic(project_dir=args.project_dir)
         print(context_output)
+    sys.exit(0)
+
+async def run_ask(args):
+    """Asks the agent a question about the project."""
+    await run_ask_logic(args)
     sys.exit(0)
 
 def run_next(args):
@@ -5124,6 +5130,43 @@ def parse_args(argv=None):
         help="The project directory to analyze (default: current directory).",
     )
 
+    # --- New 'ask' command ---
+    parser_ask = subparsers.add_parser(
+        "ask",
+        help="Ask the agent a question about the project without making changes."
+    )
+    parser_ask.add_argument(
+        "question",
+        help="The question to ask the agent.",
+    )
+    parser_ask.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    parser_ask.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default).",
+    )
+    parser_ask.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini).",
+    )
+    parser_ask.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging.",
+    )
+    parser_ask.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
+    )
+
     # --- New 'blame' command ---
     parser_blame = subparsers.add_parser(
         "blame",
@@ -7077,6 +7120,10 @@ async def main():
 
     if args.command == "why":
         run_why(args)
+        return
+
+    if args.command == "ask":
+        await run_ask(args)
         return
 
     if args.command == "blame":

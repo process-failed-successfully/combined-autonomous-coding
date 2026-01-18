@@ -315,6 +315,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             mock_conf = MagicMock()
             mock_conf.feature_list_path.exists.return_value = True  # Not fresh
             mock_conf.sprint_mode = False
+            mock_conf.jira = None  # Ensure Jira is disabled to avoid import errors
 
             # Mock PROJECT_SIGNED_OFF check
             mock_project_dir = MagicMock()

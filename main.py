@@ -47,7 +47,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
-from shared.ask import run_ask_logic
+from shared.ask import run_ask_logic, ask_agent
 from shared.security import SecurityAuditor
 import json
 import yaml
@@ -5274,6 +5274,11 @@ def parse_args(argv=None):
         help="Run project tests before committing. If tests fail, the commit is aborted."
     )
     parser_commit.add_argument(
+        "-g", "--generate",
+        action="store_true",
+        help="Generate a commit message using AI based on the staged changes."
+    )
+    parser_commit.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -5800,7 +5805,7 @@ def run_watch(args):
     sys.exit(0)
 
 
-def run_feature(args):
+async def run_feature(args):
     """Runs a guided workflow for creating a feature branch, committing, pushing, and creating a PR."""
     project_dir = args.project_dir.resolve()
     print("--- Guided Feature Workflow ---")
@@ -5847,7 +5852,7 @@ def run_feature(args):
             project_dir=project_dir
         )
         try:
-            run_commit(commit_args)
+            await run_commit(commit_args)
         except SystemExit as e:
             if e.code != 0:
                 print("❌ Commit failed. Aborting workflow.", file=sys.stderr)
@@ -6119,8 +6124,9 @@ def run_setup(args):
         sys.exit(1)
 
 
-def run_interact(args):
+async def run_interact(args):
     """Starts an interactive session to guide the user through common commands."""
+    import inspect
     project_dir = args.project_dir.resolve()
     print("--- Interactive Session ---")
     print(f"Project Directory: {project_dir}")
@@ -6162,13 +6168,16 @@ def run_interact(args):
                                 run_tests=False,
                                 project_dir=project_dir
                             )
-                            run_commit(commit_args)
+                            await run_commit(commit_args)
                         else:
                             print("Commit message cannot be empty. Aborting.")
                     else:
                         # Construct the args namespace for the command
                         command_args = argparse.Namespace(**item["args"])
-                        item["func"](command_args)
+                        if inspect.iscoroutinefunction(item["func"]):
+                            await item["func"](command_args)
+                        else:
+                            item["func"](command_args)
                 except SystemExit as e:
                     if e.code != 0:
                         print(f"--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
@@ -6452,13 +6461,14 @@ def run_pr(args):
         sys.exit(1)
 
 
-def run_commit(args):
+async def run_commit(args):
     """Handles the git commit command with safety checks."""
     import shutil
     import subprocess
 
     project_dir = args.project_dir.resolve()
     commit_message = args.message
+    generate_ai = getattr(args, "generate", False)
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
@@ -6496,6 +6506,59 @@ def run_commit(args):
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
         sys.exit(0)
+
+    # --- AI Generation ---
+    if generate_ai and not commit_message:
+        print("--- Generating Commit Message with AI ---")
+        try:
+            diff_result = subprocess.run(
+                [git_path, "-C", str(project_dir), "diff", "--cached"],
+                check=True, capture_output=True, text=True
+            )
+            diff_text = diff_result.stdout
+
+            if not diff_text.strip():
+                print("No changes in diff to analyze.")
+            else:
+                prompt = (
+                    "You are an expert developer. "
+                    "Generate a concise and descriptive commit message following Conventional Commits conventions (e.g. feat: ..., fix: ...) "
+                    "based on the following staged changes. "
+                    "Only output the commit message, no markdown formatting or extra text.\n\n"
+                    f"{diff_text}"
+                )
+
+                # Truncate diff if too large (approx 100k chars)
+                if len(prompt) > 100000:
+                    print("⚠️ Diff is too large, truncating for AI context...")
+                    prompt = prompt[:100000] + "\n... (truncated)"
+
+                generated_msg = await ask_agent(
+                    query=prompt,
+                    project_dir=project_dir,
+                    agent_type="gemini", # Default to gemini, could be configurable
+                    verbose=False,
+                    stream_output=False
+                )
+
+                if generated_msg:
+                    commit_message = generated_msg.strip()
+                    # Remove any Markdown code blocks if present
+                    if commit_message.startswith("```"):
+                         lines = commit_message.splitlines()
+                         if lines[0].startswith("```"):
+                             lines = lines[1:]
+                         if lines and lines[-1].startswith("```"):
+                             lines = lines[:-1]
+                         commit_message = "\n".join(lines).strip()
+
+                    print(f"\n--- Generated Commit Message ---\n{commit_message}\n--------------------------------")
+                else:
+                    print("❌ Failed to generate commit message.")
+
+        except Exception as e:
+            print(f"❌ Error generating commit message: {e}", file=sys.stderr)
+
 
     # --- Interactive Commit Message Generation ---
     if not commit_message:
@@ -6537,6 +6600,25 @@ def run_commit(args):
             print("------------------------------")
             confirm = input("Confirm commit? [Y/n]: ").strip().lower()
             if confirm not in ['y', '']:
+                print("Commit aborted.")
+                sys.exit(0)
+
+        except (KeyboardInterrupt, EOFError):
+            print("\nCommit aborted by user.")
+            sys.exit(1)
+
+    # --- Confirmation for AI generated message ---
+    elif generate_ai:
+        try:
+            # If message was generated by AI, ask for confirmation
+            confirm = input("Confirm commit? [Y/n/e]: ").strip().lower()
+            if confirm == 'e':
+                 # Edit mode - simple re-entry for now as we don't have a sophisticated editor integration
+                 print("Please enter the new commit message:")
+                 # Read lines until EOF or double newline? Standard input is simpler.
+                 print("(Type your message, press Enter to finish)")
+                 commit_message = input("> ").strip()
+            elif confirm not in ['y', '']:
                 print("Commit aborted.")
                 sys.exit(0)
 
@@ -7529,15 +7611,15 @@ async def main():
         return
 
     if args.command == "commit":
-        run_commit(args)
+        await run_commit(args)
         return
 
     if args.command == "feature":
-        run_feature(args)
+        await run_feature(args)
         return
 
     if args.command == "interact":
-        run_interact(args)
+        await run_interact(args)
         return
 
     if args.command == "profile":

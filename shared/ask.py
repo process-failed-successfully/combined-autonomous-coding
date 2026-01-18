@@ -20,29 +20,30 @@ from shared.utils import get_file_tree
 
 logger = logging.getLogger(__name__)
 
-async def run_ask_logic(
+async def ask_agent(
     query: str,
     project_dir: Path,
     agent_type: str = "gemini",
     model: Optional[str] = None,
     files: Optional[List[str]] = None,
     verbose: bool = False,
-) -> bool:
+    stream_output: bool = True,
+) -> Optional[str]:
     """
-    Executes the 'ask' logic.
+    Core logic to query the agent and return the response text.
 
     Args:
-        query: The user's question.
+        query: The user's question or prompt.
         project_dir: The project root directory.
         agent_type: The type of agent to use.
         model: The model to use.
         files: Optional list of files to include in the context.
         verbose: Enable verbose logging.
+        stream_output: Whether to stream the agent's output.
 
     Returns:
-        True if successful, False otherwise.
+        The response string from the agent, or None if an error occurred.
     """
-
     # Setup Config
     config = Config(
         project_dir=project_dir,
@@ -50,7 +51,7 @@ async def run_ask_logic(
         model=model,
         verbose=verbose,
         max_iterations=1, # Single shot
-        stream_output=True,
+        stream_output=stream_output,
     )
 
     # Initialize Agent
@@ -64,7 +65,7 @@ async def run_ask_logic(
     agent_class = agent_class_map.get(agent_type)
     if not agent_class:
         logger.error(f"Unknown agent type: {agent_type}")
-        return False
+        return None
 
     agent = agent_class(config)
 
@@ -87,6 +88,8 @@ async def run_ask_logic(
     file_tree = get_file_tree(project_dir)
 
     # Construct Prompt
+    # If the query is just a prompt (like "Generate commit message..."), we might not need the full "Ask" wrapper.
+    # But get_ask_prompt() is generic enough ("YOUR ROLE - EXPERT CODEBASE ANALYST").
     base_prompt = get_ask_prompt()
     formatted_prompt = base_prompt.replace("{user_question}", query)
 
@@ -99,7 +102,6 @@ async def run_ask_logic(
         # If no specific files provided, maybe include README or app_spec if they exist?
         # For now, let's keep it minimal to avoid huge context, unless the user asks for it.
         # But a naive "ask" might need some content.
-        # Let's verify if we should add README.md automatically.
         readme_path = project_dir / "README.md"
         if readme_path.exists():
              try:
@@ -114,13 +116,49 @@ async def run_ask_logic(
         # We reuse run_agent_session but we expect it might try to execute actions
         # if the prompt wasn't strict enough. The prompt says "No Execution".
         status, response, actions = await agent.run_agent_session(full_prompt)
+        return response
+    except Exception as e:
+        logger.error(f"Error during ask session: {e}")
+        return None
 
+
+async def run_ask_logic(
+    query: str,
+    project_dir: Path,
+    agent_type: str = "gemini",
+    model: Optional[str] = None,
+    files: Optional[List[str]] = None,
+    verbose: bool = False,
+) -> bool:
+    """
+    Executes the 'ask' logic.
+
+    Args:
+        query: The user's question.
+        project_dir: The project root directory.
+        agent_type: The type of agent to use.
+        model: The model to use.
+        files: Optional list of files to include in the context.
+        verbose: Enable verbose logging.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    response = await ask_agent(
+        query=query,
+        project_dir=project_dir,
+        agent_type=agent_type,
+        model=model,
+        files=files,
+        verbose=verbose,
+        stream_output=True
+    )
+
+    if response:
         # We output the response directly to stdout for the user
         print("\n--- Answer ---")
         print(response)
         print("--------------")
-
         return True
-    except Exception as e:
-        logger.error(f"Error during ask session: {e}")
+    else:
         return False

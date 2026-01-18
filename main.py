@@ -46,6 +46,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.ask import run_ask_logic
 import json
 import yaml
 import platformdirs
@@ -2086,6 +2087,22 @@ def run_restore(args):
 
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
+
+async def run_ask(args):
+    """Queries the codebase using the configured agent."""
+    # Setup logging
+    logger, _ = setup_logger(name="ask_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_ask_logic(
+        query=args.query,
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        files=args.files,
+        verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
 
 def run_context(args):
     """Displays an analysis of the agent's context."""
@@ -5141,6 +5158,43 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'ask' command ---
+    parser_ask = subparsers.add_parser(
+        "ask",
+        help="Ask a question about the codebase."
+    )
+    parser_ask.add_argument(
+        "query",
+        help="The question to ask."
+    )
+    parser_ask.add_argument(
+        "--files",
+        nargs="*",
+        help="Specific files to include in the context."
+    )
+    parser_ask.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_ask.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_ask.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_ask.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory)."
+    )
+
     # --- New 'context' command ---
     parser_context = subparsers.add_parser(
         "context",
@@ -6832,6 +6886,11 @@ async def main():
     # Handle `tui` command
     if args.command == "tui":
         run_tui(args)
+        return
+
+    # Handle `ask` command
+    if args.command == "ask":
+        await run_ask(args)
         return
 
     # Handle `init` command

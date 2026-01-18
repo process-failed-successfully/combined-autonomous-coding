@@ -30,6 +30,7 @@ class TestPromptLoading(unittest.TestCase):
             gemini_prompts.get_jira_initializer_prompt(),
             gemini_prompts.get_jira_manager_prompt(),
             gemini_prompts.get_jira_worker_prompt(),
+            gemini_prompts.get_code_review_prompt(),
         ]
         for p in prompts:
             self.assertTrue(len(p) > 0, "Prompt should not be empty")

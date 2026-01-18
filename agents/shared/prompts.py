@@ -76,6 +76,11 @@ def get_ask_prompt() -> str:
     return load_prompt("ask_prompt")
 
 
+def get_code_review_prompt() -> str:
+    """Load the code review prompt."""
+    return load_prompt("code_review_prompt")
+
+
 def copy_spec_to_project(project_dir: Path, custom_spec_path: Optional[Path] = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = custom_spec_path if custom_spec_path else PROMPTS_DIR / "app_spec.txt"

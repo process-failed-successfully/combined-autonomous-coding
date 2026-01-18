@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import tempfile
 import shutil
@@ -7,6 +7,7 @@ import subprocess
 import json
 
 from shared.cli_utils import get_suggestions, _run_enhanced_status_logic, _parse_metrics
+
 
 class TestCliUtils(unittest.TestCase):
 
@@ -168,6 +169,7 @@ agent_iterations_total{project="test"} 5
         self.assertEqual(metrics.get("Total Iterations"), 5)
         self.assertEqual(metrics.get("llm_tokens_total__gemini-1.5-pro__input"), 1000)
         self.assertEqual(metrics.get("llm_tokens_total__gemini-1.5-pro__output"), 500)
+
 
 if __name__ == '__main__':
     unittest.main()

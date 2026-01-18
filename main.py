@@ -2627,7 +2627,7 @@ def _run_last_logic(project_dir):
     if metrics_file:
         metrics = _parse_metrics(metrics_file)
         # Reuse the display table but with a different title
-        _display_metrics_table(metrics, f"Performance Metrics")
+        _display_metrics_table(metrics, "Performance Metrics")
     else:
         print("\n--- Performance Metrics ---")
         print("No metrics file found for the last run.")
@@ -2829,7 +2829,6 @@ def run_log(args):
     sys.exit(0 if success else 1)
 
 
-import time
 def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
     """The core logic for displaying agent logs."""
     repo_root = Path(__file__).parent

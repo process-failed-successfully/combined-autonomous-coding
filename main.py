@@ -1812,9 +1812,9 @@ def run_cherry_pick(args):
     is_git_ref = False
     try:
         check_commit_result = subprocess.run(  # nosec B603  # nosec B603
-            [git_path, "-C", str(project_dir), "cat-file", "-t", target],
+            [git_path, "-C", str(project_dir), "cat-file", "-t", "--", target],
             capture_output=True, text=True
-        )
+        )  # nosec B603
         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
             is_git_ref = True
     except (subprocess.SubprocessError, OSError):
@@ -1835,8 +1835,9 @@ def run_cherry_pick(args):
     print(f"--- Applying commit {target[:7]} onto the current branch ---")
     try:
         # Use --no-commit to allow the user to inspect the changes before committing
+        # We use '--' to separate the revision from options, preventing flag injection
         cmd = [git_path, "-C", str(project_dir), "cherry-pick", "--no-commit", "--", target]
-        result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603  # nosec B603
+        result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
 
         if result.returncode == 0:
             print(result.stdout)

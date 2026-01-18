@@ -2115,6 +2115,12 @@ def run_analytics(args):
         _run_analytics_complexity_logic(args.project_dir)
     sys.exit(0)
 
+def run_deps(args):
+    """Generates a dependency graph."""
+    from shared.dependencies import _run_deps_logic
+    print(_run_deps_logic(args.project_dir, args.format))
+    sys.exit(0)
+
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
     # Setup logging
@@ -5599,6 +5605,24 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'deps' command ---
+    parser_deps = subparsers.add_parser(
+        "deps",
+        help="Visualize project dependencies (Tree, Mermaid, JSON)."
+    )
+    parser_deps.add_argument(
+        "--format",
+        choices=["tree", "mermaid", "json"],
+        default="tree",
+        help="Output format (default: tree)."
+    )
+    parser_deps.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7613,6 +7637,10 @@ async def main():
 
     if args.command == "analytics":
         run_analytics(args)
+        return
+
+    if args.command == "deps":
+        run_deps(args)
         return
 
     # Initialize Agent Client

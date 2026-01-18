@@ -1,6 +1,1129 @@
 # CHANGELOG
 
 
+## v0.12.0 (2026-01-18)
+
+### Features
+
+- Add 'benchmark' command for performance analysis
+  ([#126](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/126),
+  [`17b3af2`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/17b3af2162e84b831a2c8a8a72fd7c57cec0b4f2))
+
+This commit introduces a new `benchmark` subcommand to the CLI, providing tools to analyze and
+  compare agent performance metrics.
+
+The `benchmark` command includes three actions: - `show [RUN_ID]`: Displays a formatted summary of
+  performance metrics from `final_metrics.txt`. It can find the metric file in the project root,
+  `.agent_archives`, or `.agent_trash`. If no RUN_ID is provided, it defaults to the latest run in
+  the current project. - `compare [RUN_ID_1] [RUN_ID_2]`: Shows a side-by-side comparison of two
+  runs, highlighting differences in key numerical metrics and indicating whether the change is an
+  improvement or a regression. - `summary`: Displays a table summarizing the key performance
+  indicators for the last 10 agent runs, allowing users to track performance trends over time.
+
+A comprehensive suite of unit tests has been added in `tests/test_main_benchmark.py` to ensure the
+  new functionality is robust and correct.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'commit' subcommand with pre-commit test execution
+  ([#172](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/172),
+  [`fe0f655`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/fe0f655b517667016cf8eeb3ef957d8ec8e9ba91))
+
+Introduces a new `commit` subcommand to the main CLI. This command provides a safe and convenient
+  wrapper for creating git commits.
+
+Key features: - Stages all unstaged changes before committing using `git add -A`, correctly handling
+  new, modified, and deleted files. - Includes a `--run-tests` flag to execute project-specific
+  tests. If the tests fail, the commit is automatically aborted, preventing broken code from being
+  committed. - Provides clear feedback to the user throughout the process.
+
+This feature enhances the CLI's capabilities as a developer tool by streamlining a common workflow
+  and integrating a quality gate directly into the commit process.
+
+A new test file, `tests/test_main_commit_command.py`, has been added with a comprehensive suite of
+  unit tests to verify the functionality, including the pre-commit test execution and the correct
+  handling of file deletions.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'config' subcommand for managing settings
+  ([#186](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/186),
+  [`dc26a02`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/dc26a02b9e197590f34ab28af618edb1c6ad2e7b))
+
+Introduces a new `config` subcommand to the CLI to dynamically manage settings in
+  `agent_config.yaml`.
+
+This command provides three actions: - `list`: Displays all current configurations. - `get [KEY]`:
+  Retrieves the value of a specific key, supporting nested keys (e.g., 'jira.url'). - `set [KEY]
+  [VALUE]`: Sets the value for a specific key. It automatically parses string inputs into boolean,
+  integer, or float types.
+
+This feature improves usability by allowing users to manage their configuration without manually
+  editing YAML files.
+
+Includes a new test suite (`tests/test_main_config_command.py`) with comprehensive unit tests for
+  all actions, ensuring the new functionality is robust and correct.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'feature' command for guided workflow
+  ([#177](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/177),
+  [`cff59c0`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/cff59c0efdd0eabbfcbd4ec5e1b867f7967e116f))
+
+Introduces a new 'feature' subcommand to streamline the development workflow.
+
+This command provides an interactive, guided process for: 1. Creating a new feature branch. 2.
+  Committing all current changes. 3. Pushing the branch to the remote repository. 4. Creating a pull
+  request on GitHub.
+
+This composes existing commands (`branch`, `commit`, `push`, `pr`) into a single, user-friendly
+  workflow, reducing friction and enforcing a consistent process.
+
+Includes a comprehensive test suite that covers the successful "golden path" as well as user-aborted
+  paths and various failure scenarios to ensure robustness.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'models' subcommand to CLI
+  ([#131](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/131),
+  [`508eb00`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/508eb004e0f540d41f03e560f53eb2e031fb9658))
+
+This commit introduces a new 'models' subcommand to the CLI. This feature allows users to easily
+  view the recommended models for each agent, improving discoverability and making it easier to
+  configure the right model for their needs.
+
+The subcommand can be filtered by agent using the `--agent` flag.
+
+A new unit test file, `tests/test_main_models.py`, has been added to ensure the new command works as
+  expected.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'plan' subcommand to generate a feature plan
+  ([#115](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/115),
+  [`eabf9ed`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/eabf9ed5e6dab650fd2718a19ff2e0d26d281fb4))
+
+This commit introduces a new 'plan' subcommand to the main CLI.
+
+This command allows users to perform a dry run of the agent's planning phase. It reads a spec file,
+  generates a `feature_list.json` with the proposed plan, and prints it to the console without
+  executing any code.
+
+This feature enhances usability by allowing users to review and validate the agent's plan before
+  committing to a full execution run.
+
+- Adds a `plan` subparser and `run_plan` function to `main.py`. - Implements a
+  `run_planning_session` method in `BaseAgent` to encapsulate the planning-only logic. - Includes a
+  new test file `tests/test_main_plan.py` with unit tests for the new subcommand, covering both
+  success and failure cases. - Updates `__init__.py` files to correctly export agent classes. - Adds
+  `console_output` parameter to `setup_logger` to facilitate testing.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'pr' subcommand to create GitHub pull requests
+  ([#169](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/169),
+  [`dc8d4ae`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/dc8d4ae1302faab49f9ad04c02ce139885c7acb3))
+
+This commit introduces a new `pr` subcommand to the CLI, allowing users to create GitHub pull
+  requests directly from the command line.
+
+The `pr create` command includes the following features: - Creates a pull request with a specified
+  title and body. - Automatically detects the current feature branch and sets it as the head branch.
+  - Performs pre-flight checks to ensure the branch has been pushed to the remote repository. -
+  Supports both public GitHub and GitHub Enterprise instances.
+
+To support this new feature, the following changes were made: - A new `shared/github_client.py`
+  module was created to handle all interactions with the GitHub API. - The `configure` command was
+  updated to include prompts for a GitHub token and host, which are stored in `agent_config.yaml`. -
+  Comprehensive unit tests were added in `tests/test_main_pr.py` and `tests/test_github_client.py`
+  to ensure the new functionality is well-tested.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'push' subcommand with safety checks
+  ([#158](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/158),
+  [`6de318d`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6de318d5a0e41fc473433669fc60d363133ae6dd))
+
+This commit introduces a new 'push' subcommand to the CLI.
+
+This command provides a "smart" push that: - Automatically detects the current feature branch. -
+  Pushes the branch to the 'origin' remote. - Includes a critical safety check to prevent direct
+  pushes to protected branches ('main', 'master').
+
+This feature improves the developer experience by simplifying the push process and adds a layer of
+  protection against common Git mistakes.
+
+The implementation includes: - A new `push` subcommand in `main.py`. - A `get_current_branch` helper
+  function in `shared/git.py`. - A comprehensive suite of unit tests in `tests/test_main_push.py` to
+  ensure the command is robust and reliable.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'test' subcommand for automated test execution
+  ([#139](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/139),
+  [`ed7b284`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/ed7b284d00b80bc7354139686fb862428f10cb2e))
+
+Adds a new 'test' subcommand to the main CLI.
+
+This feature enhances the CLI by providing a unified command to run tests in the agent's project
+  directory. It automatically detects the project type (Node.js, Python, Go) and executes the
+  appropriate test runner.
+
+Key features: - Detects Node.js projects (npm, yarn, pnpm), Python projects (pytest, unittest), and
+  Go projects. - Supports passing through additional arguments to the underlying test runner. -
+  Includes a comprehensive suite of unit tests to verify functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add 'why' subcommand and refactor commands
+  ([#201](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/201),
+  [`6dea8b1`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6dea8b1c3faaac169003a48907454280072ea6c8))
+
+Adds a new 'why' subcommand to the CLI. This command provides a user-friendly explanation of what
+  other commands do, improving the discoverability and usability of the tool.
+
+- Implemented the `why` command with descriptions for all major subcommands. - Added comprehensive
+  unit tests for the `why` command. - Refactored `main.py` by moving several command implementations
+  into a new `shared/commands.py` module to improve code organization and maintainability.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `diff` subcommand to view changes
+  ([#188](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/188),
+  [`30a45cd`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/30a45cd1524bfbbf5fee9e275cc37cc06bee2845))
+
+This commit introduces a new `diff` subcommand to the CLI.
+
+The `diff` command provides a way for users to easily view code changes directly from the command
+  line. It supports three modes: - `diff`: Shows all uncommitted changes in the current project,
+  equivalent to `git diff HEAD`. - `diff <run_id>`: Shows the complete diff of the commit associated
+  with a specific agent Run ID. - `diff <commit_hash>`: Shows the complete diff for a given git
+  commit hash.
+
+This feature enhances observability and makes it easier to debug and track the agent's work. The
+  implementation reuses existing logic for finding commits by Run ID and leverages `git` to provide
+  colorized output.
+
+Strong unit tests have been added to verify all modes of the `diff` command.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `last` command to summarize the last run
+  ([#168](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/168),
+  [`21dda9e`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/21dda9e2c08b9a6d51c18740dc498d67a27bab92))
+
+This commit introduces a new `last` subcommand to the CLI.
+
+The `last` command provides a concise summary of the most recent agent run by displaying: - Key
+  performance metrics from `final_metrics.txt`. - The contents of `qa_summary.txt`. - The last 10
+  lines of the corresponding log file.
+
+This provides a convenient way for users to quickly check the outcome of an agent run without
+  manually inspecting multiple files.
+
+A new unit test file, `tests/test_main_last.py`, has been added to ensure the functionality of the
+  `last` command is working correctly and handles missing files gracefully.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `lint` subcommand to CLI
+  ([#157](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/157),
+  [`bf1003f`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/bf1003fd24843acc9ee0b844e89870d26e4e2c86))
+
+This introduces a new `lint` subcommand to the main CLI, providing a convenient way to run
+  project-appropriate linters.
+
+The command automatically detects the project type (Python or Node.js) based on the presence of
+  common marker files like `pyproject.toml` or `package.json`. It then executes a suitable linter:
+
+- For Python, it prefers `ruff`, falling back to `flake8` and then `pylint`. - For Node.js, it runs
+  the `lint` script defined in `package.json`.
+
+A `--fix` option is included to allow for automatic fixing of linting errors. The implementation is
+  smart enough to check for a dedicated `lint:fix` script in Node.js projects and warns users when a
+  linter (like `flake8`) does not support the fix flag.
+
+This feature improves developer experience and helps maintain code quality by integrating linting
+  directly into the agent's toolkit. Comprehensive unit tests have been added to ensure the command
+  functions correctly across different scenarios.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add `log` subcommand for git history
+  ([#136](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/136),
+  [`4be16ac`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/4be16aca9448c5853cce3ac911f9e6a9a4bafa6e))
+
+Adds a new `log` subcommand to the CLI.
+
+This command provides a formatted and colorized view of the `git log`, allowing users to quickly
+  inspect the commit history of the project directly from the tool.
+
+The subcommand includes: - A `--count` (`-n`) argument to limit the number of commits shown. -
+  Robust checks to ensure `git` is installed and the command is run within a valid git repository. -
+  Comprehensive unit and integration tests for the new functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add blame command to trace agent changes
+  ([#192](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/192),
+  [`b8ec8a0`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/b8ec8a0c5fb8fbb81aa4ad1ba3406f966402c4c2))
+
+Adds a new 'blame' subcommand to the CLI.
+
+This command functions like 'git blame' but is tailored for the agentic workflow. It inspects the
+  git history for a given file and displays the agent 'Run ID' responsible for each line's last
+  modification.
+
+If a commit was not made by an agent (i.e., it lacks a 'Run ID:' trailer in the commit message), the
+  command falls back to showing the author's name.
+
+This feature provides a powerful tool for debugging and understanding the agent's behavior by
+  creating a direct, line-level link between the code and the specific agent run that produced it.
+
+Includes comprehensive unit tests to validate the new functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add branch subcommand for feature branch management
+  ([#137](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/137),
+  [`6fcc7e5`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6fcc7e52b9feaef888ec640ffe603c8f6fb00e58))
+
+This commit introduces a new `branch` subcommand to the CLI, allowing users to manage a dedicated
+  feature branch for the agent's work.
+
+The `branch` subcommand supports the following actions: - `create`: Creates and checks out a new
+  branch, setting it as the agent's active branch. - `checkout`: Checks out an existing branch and
+  sets it as the agent's active branch. - `status`: Shows the currently configured agent branch. -
+  `merge`: Merges the agent's branch into the main branch. - `list`: Lists all branches and
+  indicates the active agent branch.
+
+The agent's core logic has been updated to recognize and use the configured branch, falling back to
+  the previous behavior if no branch is set.
+
+This feature improves the agent's workflow by allowing for better organization and isolation of
+  changes, aligning it with standard development practices.
+
+Comprehensive unit tests have been added to ensure the reliability of the new subcommand.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add cherry-pick command to CLI
+  ([#319](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/319),
+  [`5657461`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/5657461717136b15311615906ce01dcd5de4a597))
+
+This commit introduces a new `cherry-pick` command to the CLI, allowing users to apply the changes
+  from a specific commit onto the current branch.
+
+The command accepts a `target` argument, which can be either a standard git commit hash or an
+  agent-generated Run ID. The implementation resolves the Run ID by searching the git log for the
+  corresponding commit.
+
+To ensure safety and allow for user review, the command uses the `--no-commit` flag, staging the
+  changes instead of committing them immediately. The command also provides clear user feedback,
+  especially in the case of merge conflicts, guiding the user on how to resolve them.
+
+Comprehensive unit tests have been added in `tests/test_cherry_pick.py` to verify the functionality,
+  including success cases, conflict handling, and Run ID resolution.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add completion subcommand and tests
+  ([#154](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/154),
+  [`4c18ca2`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/4c18ca240189a9de255c3f28aa7d4f61bce2a6b7))
+
+Adds a `completion` subcommand to the CLI to provide shell completion for users.
+
+This feature improves the usability of the CLI by allowing users to auto-complete commands and
+  arguments.
+
+The implementation includes: - A `run_completion` function to generate the completion script. - A
+  new test file `tests/test_main_completion.py` with tests for the subcommand. - Refactoring of
+  `main.py` to make the completion logic testable.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add context command for analyzing agent file context
+  ([#310](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/310),
+  [`c47d1a7`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/c47d1a7a4b346545cb903c98e96c79abbb323be5))
+
+This commit introduces a new `context` subcommand to provide users with tools to inspect and analyze
+  the file context that will be used by the AI agent.
+
+This command helps users understand the scope of the files the agent will see, identify large files,
+  and analyze the composition of the project context by file type. This is crucial for managing
+  token count, reducing costs, and improving agent focus.
+
+The new command has two actions: - `context show`: Displays a git-aware file tree with file sizes
+  and a summary of the total context size. - `context analyze`: Provides a summary table of the
+  project context, categorized by file extension.
+
+The implementation includes: - Logic in `shared/cli_utils.py` to handle file traversal, gitignore
+  checks, and output formatting. - Integration into `main.py` with a new subparser and command
+  dispatcher. - A new test suite in `tests/test_main_context.py` to ensure the command functions
+  correctly and respects `.gitignore` rules.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add dashboard command
+  ([#185](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/185),
+  [`133ac97`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/133ac977665254cac99ed508b2b38af49c5dc9b3))
+
+This commit introduces a new `dashboard` command to the CLI.
+
+The `dashboard` command provides a comprehensive, scannable summary of the project's current state,
+  including: - Workflow status - Git status - A summary of the last agent run - Suggested next
+  commands
+
+This feature improves the user experience by consolidating key information from multiple commands
+  into a single, easy-to-use command.
+
+This commit also includes comprehensive unit tests for the new command's logic, ensuring its
+  correctness and robustness.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add discard subcommand
+  ([#147](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/147),
+  [`7be8fcf`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/7be8fcfa28544033c55a3aad1570fdffc329da69))
+
+Adds a new `discard` subcommand to the CLI.
+
+This command provides a safe and user-friendly way to discard uncommitted changes in the current git
+  repository.
+
+Features: - `discard`: Discards all uncommitted changes (both staged and unstaged) and removes all
+  untracked files. - `discard <file1> <file2> ...`: Discards changes only for the specified files. -
+  `discard --interactive`: Presents a list of all changed files and allows the user to interactively
+  select which ones to discard.
+
+The command includes safety prompts for all destructive operations, which can be bypassed with the
+  `--yes` flag.
+
+This feature was named `discard` to avoid ambiguity with the `git revert` command.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add format subcommand
+  ([#159](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/159),
+  [`08856b2`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/08856b28b80e00535fbbb88ae9e7345275be98e4))
+
+Adds a new `format` subcommand to the CLI.
+
+This command automatically detects the project type (Python or Node.js) and runs the appropriate
+  code formatter (`black` for Python, `prettier` for Node.js).
+
+It includes a `--check` flag to run in a dry-run mode, which is useful for CI checks.
+
+This feature improves developer productivity and ensures code consistency across the project.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add git proxy subcommand for worktrees
+  ([#146](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/146),
+  [`6986698`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/69866989740dfe9c232686dd661dc4aadd515e97))
+
+This commit introduces a new `git` subcommand to the CLI.
+
+This command acts as a proxy, allowing users to run any Git command directly on a specific task's
+  worktree by providing a task ID. This significantly improves the developer experience and
+  streamlines the workflow when interacting with agent-managed worktrees.
+
+For example: `./main.py git --task <task_id> status`
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add glance command for a high-level project overview
+  ([#138](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/138),
+  [`3ff6b01`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/3ff6b01d1f349c63ab85228588432c940c21cce8))
+
+This commit introduces a new `glance` command to the CLI.
+
+The `glance` command provides a quick, high-level terminal dashboard that displays the most critical
+  project information in a single screen: - The project's current workflow stage - A summary of the
+  git status, including counts of staged, unstaged, and untracked files - A suggestion for the next
+  logical command to run
+
+This feature reuses existing logic from the `status` and `suggest` commands to ensure consistency
+  and minimize new code.
+
+The implementation includes: - A `run_glance` function in `main.py` to orchestrate the data
+  gathering and formatting. - The addition of the `glance` subcommand to the `argparse`
+  configuration. - A new test file, `tests/test_main_glance.py`, with unit tests that verify the
+  command's output in various scenarios, including clean, modified, and mixed git states, as well as
+  in a non-git repository. - A non-breaking update to `shared/cli_utils.py` to allow the
+  `get_suggestions` function to be limited to a single suggestion.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add interactive `init` command
+  ([#144](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/144),
+  [`68ca99d`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/68ca99db4ff3a054986fe6f820d1519ff6e9b76e))
+
+This commit introduces a new `init` subcommand to the CLI. This command provides an interactive
+  setup wizard for new projects, guiding the user through the following steps:
+
+- **Git Initialization:** Checks for an existing Git repository and offers to initialize one if it's
+  missing. - **.gitignore Creation:** Prompts the user to create a standard Python `.gitignore`
+  file. - **Spec File Generation:** Interactively prompts the user to create the initial
+  `app_spec.txt` file. - **Next Steps:** Provides guidance on what commands to run next.
+
+This feature improves the user onboarding experience by simplifying the initial project setup
+  process into a single, user-friendly command.
+
+A comprehensive suite of unit tests has been added in `tests/test_main_init.py` to ensure the
+  command's functionality is robust and handles various scenarios, including user input,
+  non-interactive mode, and pre-existing files.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add interactive mode CLI command
+  ([#191](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/191),
+  [`2fbc6ea`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/2fbc6ea35b61c9fb0134f96defd129446df878d8))
+
+Adds a new `interact` subcommand to the `main.py` CLI.
+
+This command provides a user-friendly, menu-driven interface for running common project commands,
+  such as `status`, `test`, `lint`, and `commit`.
+
+The implementation reuses the existing command functions (`run_status`, `run_test`, etc.) by
+  programmatically constructing `argparse.Namespace` objects and calling them, ensuring consistency
+  and maximizing code reuse.
+
+A new test file, `tests/test_main_interact.py`, is added with unit tests that mock user input and
+  verify that the correct functions are called.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add interactive review command
+  ([#311](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/311),
+  [`1c5c1c4`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1c5c1c435c9916353803dc82ede7fc4cbe645d17))
+
+This commit introduces a new `review` command to the CLI. This command provides a guided,
+  interactive workflow for a human to conduct a QA review of the agent's completed work.
+
+The `review` command: - Verifies that the agent has marked its work as 'COMPLETED'. - Automatically
+  runs the project's test suite. - Displays a git diff of the changes. - Prompts the user to approve
+  or reject the work. - On approval, creates a `QA_PASSED` file to advance the workflow. - On
+  rejection, removes the `COMPLETED` file to signal the agent to continue.
+
+This feature enhances the human-in-the-loop aspect of the agent's workflow, making the QA process
+  more robust and user-friendly.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add interactive shell for CLI
+  ([#117](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/117),
+  [`d752a72`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/d752a72c6fb74c1ba02f5eba71494e0191f22be0))
+
+This commit introduces a new `shell` subcommand that launches an interactive session for the agent
+  CLI.
+
+The interactive shell provides a persistent environment for running multiple commands without
+  restarting the script, improving workflow and discoverability.
+
+Key changes: - Created `shared/shell.py` with the `InteractiveShell` class based on `cmd.Cmd`. -
+  Integrated the shell into `main.py` with a new `shell` subcommand. - Refactored existing `run_*`
+  command functions to be shell-compatible by separating logic from argument parsing. - Implemented
+  `do_*` command handlers in `InteractiveShell` for existing subcommands. - Added comprehensive unit
+  tests for the interactive shell in `tests/test_shell.py`.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add interactive TUI dashboard
+  ([#128](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/128),
+  [`d80fa72`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/d80fa72462b4d1b96a7e6216deb365008dab9055))
+
+This commit introduces a new `tui` subcommand that launches an interactive terminal user interface
+  for the autonomous coding agent.
+
+The TUI is built using the `textual` library and provides a dashboard view with: - A project summary
+  widget that displays key information about the project's state. - A live log viewer that tails the
+  latest agent log file.
+
+To support this new feature, the following changes were made: - The `textual` dependency was added
+  to `requirements-dev.txt`. - Project summary logic was refactored from `main.py` into a new
+  `shared/cli_utils.py` module to allow for code reuse between the CLI and the TUI. - Unit tests for
+  the TUI were added in `tests/test_tui.py`. - The `run_tests.sh` script was updated to install both
+  `requirements.txt` and `requirements-dev.txt` to ensure a consistent testing environment.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add last-run-id command
+  ([#180](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/180),
+  [`a8d279b`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/a8d279b52fc60d619238e6528ce7b68c3ed526fd))
+
+Adds a new 'last-run-id' subcommand to the CLI to print the ID of the most recent agent run. This is
+  useful for scripting and chaining commands. Includes unit tests and adds .agent_history to
+  .gitignore.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add next command for guided workflow
+  ([#306](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/306),
+  [`fea8641`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/fea86415e255884cd2e4a25e8741e3f9cd1a15c7))
+
+Adds a new `next` command to the CLI.
+
+This command acts as a workflow copilot by: 1. Analyzing the current project state to determine the
+  most logical next action. 2. Presenting the suggested command and its reasoning to the user. 3.
+  Executing the command upon user confirmation.
+
+This feature improves usability by guiding users through the development lifecycle, making the tool
+  more interactive and accessible.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add patch subcommand
+  ([#315](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/315),
+  [`da7ddea`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/da7ddeab9ce4c17753e67560610e8eb223eaa448))
+
+This commit introduces a new `patch` subcommand to the CLI.
+
+The `patch` command allows applying a standard `git diff` patch to the current project. It can read
+  the patch from a specified file or directly from standard input, providing flexibility for various
+  workflows.
+
+Key features: - Apply a patch from a file: `main.py patch <path/to/patch.file>` - Apply a patch from
+  stdin: `cat my.patch | main.py patch` - Reverse a patch (unpatch): `main.py patch --reverse
+  <path/to/patch.file>`
+
+The implementation uses `git apply` for robust patch handling.
+
+Added comprehensive unit tests in `tests/test_main_patch.py` to cover: - Patching from a file -
+  Patching from stdin - Reversing a patch - Handling invalid patch content
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add profile subcommand for configuration management
+  ([#190](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/190),
+  [`ac9b435`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/ac9b435fb57d741e3011a2ccea5631bae1acb4a2))
+
+This commit introduces a new `profile` subcommand to the CLI, allowing users to manage configuration
+  profiles directly from the command line.
+
+The `profile` subcommand supports the following actions: - `list`: Lists all available configuration
+  profiles. - `create`: Interactively creates a new profile and saves it to the `agent_config.yaml`
+  file. - `show`: Displays the configuration for a specified profile. - `delete`: Removes a
+  specified profile after a confirmation prompt.
+
+This feature improves usability by providing a streamlined way to handle multiple project
+  configurations without needing to manually edit the YAML file.
+
+Key implementation details: - Adds a new subparser and a `run_profile` handler function in
+  `main.py`. - Implements robust logic for each action, including error handling for missing files
+  or profiles. - Ensures security by setting file permissions to `0o600` on the configuration file
+  after any modification. - Includes a comprehensive suite of unit tests in
+  `tests/test_main_profile_command.py` to validate all aspects of the new functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add pull subcommand
+  ([#167](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/167),
+  [`f253f18`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/f253f1820e997c62cfd86eb7a2939d360c42e062))
+
+This commit introduces a new `pull` subcommand to the CLI.
+
+This command provides a safe way to pull the latest changes from the remote repository. It includes
+  pre-flight checks to ensure the working directory is clean, preventing accidental merges or
+  conflicts with uncommitted changes.
+
+The implementation mirrors the existing `push` command's structure for consistency. Comprehensive
+  unit tests have been added in `tests/test_main_pull.py` to cover various scenarios, including
+  success, uncommitted changes, and non-Git directories.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add push command with safety checks
+  ([#160](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/160),
+  [`6039dc9`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6039dc98592a43ee1a521607a1076ea53be3a49b))
+
+Adds a new `push` subcommand to the CLI.
+
+This command acts as a safe wrapper around `git push`, providing the following features:
+
+- Prevents pushing directly to protected branches (`main`, `master`). - Checks for uncommitted
+  changes before pushing and aborts if any are found. - Pushes the current feature branch to the
+  `origin` remote.
+
+Includes a comprehensive suite of unit tests to verify the new functionality and its error handling.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add report command to generate run summaries
+  ([#150](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/150),
+  [`c9dfb97`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/c9dfb971e9854ed23a20be8ba69c9ef57ce8a289))
+
+This commit introduces a new `report` subcommand to the CLI.
+
+The `report` command generates a Markdown summary for a specific agent run, identified by its
+  `run_id`. The report includes: - A summary table with key performance metrics from
+  `final_metrics.txt`. - A code changes section with the git commit summary associated with the run.
+  - A list of notable events extracted from the agent's log file.
+
+This feature improves the user experience by providing a quick and easy way to assess the outcome of
+  an agent's run without manually inspecting multiple files.
+
+The implementation includes: - A new `report` subcommand in `main.py`. - Core report generation
+  logic in `shared/cli_utils.py`. - Unit tests for the new command.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add rewind command for project state time travel
+  ([#148](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/148),
+  [`a3a610a`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/a3a610a320c093046cce5c979310da7d5eee43cd))
+
+This commit introduces a new `rewind` subcommand to the CLI, providing a powerful and safe mechanism
+  for developers to revert the project to a previous state.
+
+The `rewind` command acts as a user-friendly wrapper around `git reset --hard`, with several key
+  features:
+
+- **Targeted Rewind:** Allows rewinding to a specific git commit hash or a relative reference (e.g.,
+  `HEAD~2`). - **Interactive Mode:** If no target is specified, it launches an interactive mode that
+  displays a list of the 15 most recent commits, allowing the user to easily select a target. -
+  **Safety First:** - It performs a pre-flight check to ensure the repository has no uncommitted
+  changes, preventing accidental data loss. - It requires user confirmation for the destructive `git
+  reset` operation, unless the `--yes` flag is provided. - **Thoroughly Tested:** The command is
+  accompanied by a new test suite (`tests/test_main_rewind.py`) that covers its core functionality,
+  safety checks, and interactive mode.
+
+This feature enhances the developer experience by providing a safe and intuitive way to navigate the
+  project's history, which is invaluable for debugging agent behavior, experimenting with different
+  approaches, or recovering from undesired changes.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add safer discard with undo functionality
+  ([#151](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/151),
+  [`1e7849c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1e7849c67ac912294bd8c6fd1bcd104a63cb27b6))
+
+Introduces a safer `discard` command that stashes changes before deleting them, preventing
+  accidental data loss. A corresponding `undo` command is added to allow users to easily restore
+  these stashed changes.
+
+Key changes: - The `discard` command now uses `git stash` to save uncommitted changes with a unique
+  message (`agent-discard-stash-<timestamp>`) before cleaning the working directory. - A new `undo`
+  command is implemented to list these specific stashes and interactively restore a selected one. -
+  Added a new test file, `tests/test_main_undo.py`, with integration tests to verify the
+  stash-and-restore functionality. - Moved the `datetime` import to the top of the file to adhere to
+  PEP 8.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add shell completion to CLI
+  ([#129](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/129),
+  [`95383fe`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/95383fec0f349d5d55bc8fa76838eb0d8f90b15e))
+
+This commit introduces shell autocompletion for the CLI, significantly improving usability and
+  discoverability of commands and options.
+
+The `argcomplete` library is used to provide tab completion for `argparse`. A new `completion`
+  subcommand has been added to generate the necessary shell script for activation.
+
+The implementation includes: - The `argcomplete` library as an optional dependency. - A new
+  `completion` subcommand to generate the shell completion script. - A unit test to verify the
+  functionality of the `completion` subcommand.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add sprint subcommand for better observability
+  ([#127](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/127),
+  [`b62f7a0`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/b62f7a0a68ad609bbf82fe10f2a08a8ba50f25d1))
+
+This commit introduces a new `sprint` subcommand to the CLI. This command provides a dedicated
+  interface for observing and managing sprint progress, which was previously only possible through a
+  combination of more generic commands like `worktrees` and `logs`.
+
+The `sprint` subcommand includes the following actions: - `status`: Displays a summary of all tasks
+  in the current sprint, including their ID, title, and status (Pending, In Progress, or Merged). -
+  `diff [task_id]`: Shows the git diff for a specific task's worktree. - `merge [task_id]`: Merges a
+  completed task's branch into the main branch.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add stash command
+  ([#307](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/307),
+  [`124a685`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/124a685d2e08ace6129ecaebafaf5a83872252c6))
+
+This commit introduces a new `stash` command to the CLI, providing a user-friendly interface for
+  `git stash`.
+
+The `stash` command includes the following actions: - `push`: Stashes all uncommitted changes,
+  including untracked files, with an optional message. - `list`: Displays all stashes in the
+  repository. - `pop`: Interactively prompts the user to select a stash to apply and remove. -
+  `drop`: Interactively prompts the user to select a stash to delete.
+
+This feature improves the CLI's usability for developers by providing a non-destructive way to
+  temporarily save work-in-progress.
+
+The implementation includes comprehensive unit tests that run in an isolated, temporary Git
+  repository to ensure robustness. The `help` command has also been updated to include the new
+  `stash` functionality.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add suggest command to CLI
+  ([#132](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/132),
+  [`2bff6bd`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/2bff6bd783e672c883b12bafe2b07b9d486a6abe))
+
+Implements a new `suggest` subcommand that analyzes the current project state and provides
+  context-aware recommendations for the next most logical commands to run.
+
+This feature improves CLI usability and discoverability by guiding the user through the agent's
+  workflow. The suggestions are based on: - Git status (e.g., uncommitted changes) - Workflow stage
+  (e.g., `COMPLETED`, `QA_PASSED`) - Presence of artifacts (e.g., items in the trash)
+
+The implementation includes the CLI plumbing in `main.py`, the suggestion logic in
+  `shared/cli_utils.py`, and a comprehensive suite of unit tests.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add summary command for high-level overview
+  ([#116](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/116),
+  [`1598fcb`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/1598fcb8a91a35ed825a86fa90b1c4ec7e015233))
+
+Adds a new `summary` subcommand to the CLI.
+
+This command provides a quick, high-level overview of the project's status by consolidating key
+  information into a single view: - Current workflow stage (e.g., In Progress, QA Passed) - Presence
+  of key artifacts (e.g., Feature Plan, QA Summary) - Current Git branch and status (e.g., Clean, 2
+  uncommitted changes) - Last agent run ID
+
+This improves CLI usability by giving users a simple way to quickly assess the state of the agent's
+  work without needing to run multiple, more detailed commands.
+
+Includes a comprehensive new unit test suite for the `summary` command, ensuring its correctness and
+  stability.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add tree command to display project structure
+  ([#143](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/143),
+  [`f015e5f`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/f015e5fb6df00550b3628c75b72ce0375381de65))
+
+This commit introduces a new `tree` subcommand to the CLI, providing a convenient way to visualize
+  the project's file and directory structure.
+
+The `tree` command includes the following features: - A `--depth` option to limit the recursion
+  depth of the tree. - A `--full` option to include all files, even those ignored by `.gitignore`.
+
+The implementation is separated into a new `_run_tree_logic` function in `shared/cli_utils.py` and
+  is integrated into `main.py` with its own subparser and command handler.
+
+Comprehensive unit tests have been added in `tests/test_main_tree.py` to ensure the correctness of
+  the command's output, options, and edge case handling.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add watch command to CLI
+  ([#189](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/189),
+  [`6720556`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6720556ff7d5ca38c524f3e1fd5dbe9ab703e749))
+
+This commit introduces a new `watch` command to the CLI.
+
+The `watch` command monitors the project directory for file changes and runs a specified command in
+  response to a modification. This is useful for automatically running tests or linters during
+  development.
+
+This change includes: - The `watch` subcommand implementation in `main.py`. - The `watchdog` library
+  added to `requirements.txt` and `requirements-dev.txt`. - Unit tests for the `watch` command in
+  `tests/test_main_watch.py`.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Add workflow subcommand for manual state management
+  ([#114](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/114),
+  [`d72a1ec`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/d72a1ec3e915ecb7bca722d171a47ab73724f2be))
+
+Adds a new `workflow` subcommand to the `main.py` CLI to provide users with manual control over the
+  agent's high-level workflow state.
+
+The agent's workflow is tracked by the presence of marker files (`COMPLETED`, `QA_PASSED`,
+  `PROJECT_SIGNED_OFF`). Previously, users had no direct way to influence this state without
+  manually creating or deleting these files.
+
+This change introduces three actions: - `workflow status`: Displays the current workflow stage
+  (e.g., In Progress, Completed). - `workflow advance`: Moves the project to the next stage by
+  creating the appropriate marker file. - `workflow revert`: Moves the project to the previous stage
+  by deleting the current marker file.
+
+This feature enhances usability by giving users a safe and intuitive way to manage the project's
+  lifecycle, especially in cases where manual intervention is desired.
+
+Comprehensive unit tests have been added in `tests/test_main_workflow.py` to ensure the new
+  functionality is robust and correct.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Implement `worktrees` subcommand
+  ([#145](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/145),
+  [`3fa6fd1`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/3fa6fd104ebd74c0e64c488a54ece0e0bfd99712))
+
+This commit introduces a new `worktrees` subcommand to provide a comprehensive and user-friendly
+  interface for managing agent-created git worktrees.
+
+The subcommand includes the following actions: - `create`: Creates a new worktree with a specified
+  name and branch. - `list`: Lists all agent-created worktrees. - `show`: Displays a dashboard for a
+  specific worktree, including its path, branch, associated sprint task, git status, and a diff
+  summary. - `clean`: Removes a specific worktree or all worktrees. - `revert`: Discards uncommitted
+  changes in a specific worktree. - `merge`: Merges a worktree branch back into the main branch. -
+  `diff`: Shows the git diff for a specific worktree. - `manage`: Provides an interactive interface
+  for managing worktrees.
+
+This feature enhances the developer's ability to interact with, debug, and finalize agent-driven
+  tasks by providing a high-level abstraction over the underlying git commands.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- Optimize agent dashboard rendering
+  ([#155](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/155),
+  [`b64080c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/b64080cabe201c1c5c3cdd04a02ffe779a5d2832))
+
+Optimized the `renderAgents` function in `ui/public/script.js` to use a differential update
+  strategy. Instead of clearing and rebuilding the entire DOM tree every 2 seconds, it now: -
+  Updates existing agent cards in place if their content changes. - Adds new cards only when
+  necessary. - Removes stale cards.
+
+This reduces DOM layout thrashing and improves performance, especially with larger lists of agents.
+
+Tests: - Verified `ui/server.test.js` passes. - Verified manual correctness of the logic.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add comprehensive `worktrees show` dashboard
+  ([#135](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/135),
+  [`747584c`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/747584cc6fc3793ea6879cfd769654604796843d))
+
+This commit enhances the `worktrees show` command, transforming it from a basic status check into a
+  comprehensive dashboard for a specific worktree.
+
+The new "dashboard" view provides a wealth of information in a single, easy-to-read format,
+  including:
+
+- The worktree's absolute path and its associated Git branch. - The corresponding sprint task's
+  title and description from `sprint_plan.json` (if applicable). - A summary of any uncommitted
+  changes within the worktree. - A high-level `git diff --stat` to show the overall scope of the
+  changes compared to the main branch.
+
+This feature streamlines the development workflow by providing a single, intuitive command to get a
+  complete picture of any ongoing task.
+
+To support this new feature, this commit also:
+
+- Adds a new `_worktree_show` helper function to `main.py` to encapsulate the logic for the new
+  dashboard. - Adds a comprehensive suite of unit tests to `tests/test_main_worktrees.py` to ensure
+  the new feature is working correctly and to prevent future regressions.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add setup command for dependency installation
+  ([#314](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/314),
+  [`c265a64`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/c265a6437628f40bc456f9ec672744b2f70918cb))
+
+Adds a new `setup` subcommand to the CLI that automatically detects the project type and installs
+  its dependencies.
+
+This command streamlines the project setup process by providing a unified way to install
+  dependencies for different project types: - Python: Installs dependencies from `requirements.txt`
+  and `requirements-dev.txt`. - Node.js: Intelligently selects `pnpm`, `yarn`, or `npm` based on the
+  presence of lock files. - Go: Runs `go mod tidy` to ensure module consistency.
+
+The new command is accompanied by a comprehensive suite of unit tests to ensure its correctness and
+  reliability.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add structured help command
+  ([#204](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/204),
+  [`cda4919`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/cda491984630d7e97da07d72b220510ff9476f3f))
+
+Adds a new `help` command to the CLI.
+
+This command provides a structured, user-friendly, and color-coded overview of all available
+  commands, grouped by functionality. This improves discoverability and makes the CLI easier to
+  navigate for both new and experienced users.
+
+The implementation includes: - A `run_help` function to generate the formatted help text. -
+  Integration into `argparse` as a dedicated subcommand. - A new unit test
+  (`tests/test_main_help.py`) to verify the command's output and ensure its correctness.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Add worktrees subcommand
+  ([#130](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/130),
+  [`6aa9cff`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/6aa9cffff87122318338a3d88de8f05fc07dc9fd))
+
+This commit adds a new `worktrees` subcommand to the CLI to manage Git worktrees.
+
+The `worktrees` subcommand provides the following actions: - `list`: Lists all active agent-created
+  worktrees. - `show <worktree_name>`: Shows the status of a specific worktree. - `clean [--force]
+  [<worktree_name>]`: Removes a specific worktree or all worktrees. - `revert <worktree_name>`:
+  Reverts all uncommitted changes in a specific worktree. - `create <worktree_name> [--branch
+  <branch_name>]`: Creates a new worktree. - `merge [--clean] <worktree_name>`: Merges a worktree's
+  branch into the main branch. - `diff <worktree_name>`: Shows the diff of a worktree against the
+  main repo's HEAD. - `manage`: An interactive mode to manage worktrees.
+
+This feature improves the usability of the CLI by providing better visibility and control over the
+  Git worktrees used by agents for concurrent tasks.
+
+I have also added a new test file, `tests/test_main_worktrees.py`, with comprehensive integration
+  tests for all the actions of the `worktrees` subcommand. The tests use temporary directories and
+  `subprocess` to create and manipulate test-specific Git repositories, ensuring that the feature is
+  robust and reliable.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Enable rewind by run id
+  ([#175](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/175),
+  [`a9e01b2`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/a9e01b26eeff0a1a7504a82e80e362a642be4ea4))
+
+This change enhances the `rewind` command to accept an agent Run ID as a target, in addition to a
+  git commit hash or reference.
+
+This improves the user experience by allowing users to easily revert to the state of a specific
+  agent run without needing to manually find the corresponding commit.
+
+The implementation includes: - A new function `_find_commit_by_run_id` that searches the git log for
+  a commit message containing the specified Run ID. - Updated logic in the `run_rewind` function to
+  first check if the target is a git reference, and if not, to search for it as a Run ID. - A new
+  unit test `test_rewind_by_run_id` to verify the functionality. - An update to the agent's coding
+  prompt to include the `Run ID: {run_id}` in the commit message template. - An update to the
+  `BaseAgent` to inject the `run_id` into the prompt.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Enhance `status` command and deprecate `summary`
+  ([#133](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/133),
+  [`5554b44`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/5554b4455bc57d9eb1d85143a1466ab8c6d03ade))
+
+This commit introduces a new, enhanced `status` command that acts as a comprehensive terminal
+  dashboard for the project.
+
+The new `status` command provides: - The current workflow stage - A summary of features from
+  `feature_list.json` - A timeline of recent agent activity from `.agent_history` - A list of recent
+  file changes from `git status` - Actionable next steps based on the project's state
+
+The old `summary` command is now deprecated in favor of the new `status` command. A warning is
+  printed when `summary` is used.
+
+This change also includes: - Unit tests for the new `_run_enhanced_status_logic` function. - Updates
+  to existing tests for the `status` command to reflect the new output. - Restoration of previously
+  removed tests for the `get_suggestions` function.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Enhance doctor command validation
+  ([#125](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/125),
+  [`591ebf7`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/591ebf74c2e487a61f8be76d68a06c3aec7d5d71))
+
+Improves the `doctor` command by adding more robust validation for the `agent_config.yaml` file.
+
+- Adds a specific check for malformed YAML, providing a clearer error message to the user. -
+  Enhances the Jira configuration check to ensure that `url`, `email`, and `token` not only exist
+  but also have non-empty values. - Adds validation for the format of Slack and Discord webhook
+  URLs.
+
+Includes comprehensive unit tests for the new validation logic, covering malformed files, invalid
+  configurations, and multiple simultaneous failures.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Enhance logs command with advanced features
+  ([#118](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/118),
+  [`47629c9`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/47629c97f15f77344874f611bb8b4101f6a1316a))
+
+This commit enhances the `logs` subcommand to provide a more powerful and interactive log viewing
+  experience.
+
+The following features have been added: - **Real-time Tailing (`-f`, `--follow`):** Allows users to
+  stream log output in real-time, which is crucial for monitoring active agent sessions. - **Line
+  Limiting (`-n`, `--lines`):** Enables users to specify the number of recent log lines to display,
+  preventing overwhelmingly large outputs. When no run ID is provided, this applies to the latest
+  log file. - **Content Filtering (`-g`, `--grep`):** Provides a way to filter log lines, showing
+  only those that contain a specific string, which is useful for quickly finding errors or specific
+  events.
+
+A comprehensive test suite has been added to verify the new functionality, including tests for line
+  limiting, content filtering, real-time following, and various combinations of the new flags.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Enhance status command with run metrics
+  ([#149](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/149),
+  [`a6a3af7`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/a6a3af787ea8e29ad5b9cdc2f63697738b8b0b0d))
+
+Adds a "Latest Run Metrics" section to the `status` command's output.
+
+This provides users with an immediate, at-a-glance summary of the most recent agent run's
+  performance, including execution time, iteration count, errors, and token usage.
+
+The implementation reads from `final_metrics.txt` and gracefully handles cases where the file is
+  missing or contains non-numeric data.
+
+Includes unit tests to verify both the successful display of metrics and the graceful handling of
+  the missing metrics file scenario.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **cli**: Implement interactive commit command
+  ([#193](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/193),
+  [`643ee42`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/643ee426b53362898ab73c7cca18deb033a1af4b))
+
+Adds an interactive mode to the `commit` subcommand, triggered when the `-m` flag is not provided.
+
+This feature guides the user through creating a Conventional Commit message by prompting for: -
+  Commit type (e.g., feat, fix, chore) - Scope - Short description - Optional body - Breaking change
+  information
+
+This encourages a more structured and consistent commit history, which is especially valuable in an
+  agent-driven development workflow.
+
+The original functionality of providing a commit message directly with the `-m` flag is preserved.
+  Added unit tests to verify both the interactive and non-interactive modes.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+- **revert**: Add interactive mode for reverting changes
+  ([#119](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/119),
+  [`22989c0`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/22989c07282e85f4b5f920792c0ba7f225cdd00e))
+
+This commit introduces an interactive mode to the `revert` subcommand.
+
+Users can now run `revert --interactive` to get a numbered list of all uncommitted (modified and
+  untracked) files. They can then select which files to revert, providing a safer and more
+  user-friendly way to discard specific changes without having to manually list them or revert
+  everything at once.
+
+This new feature is accompanied by a comprehensive suite of unit tests to ensure its functionality,
+  including tests for selecting modified files, untracked files, a mix of both, and handling user
+  cancellation or invalid input.
+
+The existing non-interactive modes (reverting all files or a specified list of files) are preserved
+  and are also now covered by the new test suite.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+### Performance Improvements
+
+- Optimize `has_recent_activity` file traversal
+  ([#181](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/181),
+  [`058f4da`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/058f4da11cd27eeaa2701ff8ba02dfd7a4996a1f))
+
+Replaced `pathlib.Path.rglob` with `os.walk` and implemented explicit pruning of common ignored
+  directories (`.git`, `node_modules`, etc.). This significantly improves performance in large
+  repositories by avoiding unnecessary recursion into build artifacts and hidden directories.
+
+Optimization details: - Used `os.walk` instead of `rglob` for manual control over traversal. -
+  Pruned `IGNORED_DIRS` in-place to skip entire subtrees. - Reduced object creation overhead by
+  using strings instead of `Path` objects in the loop. - Moved `ignored_dirs` to a module-level
+  constant for efficiency.
+
+Benchmark results showed a reduction from ~0.3s to ~0.06s in a test environment with simulated large
+  directories.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+
 ## v0.11.0 (2026-01-06)
 
 ### Bug Fixes

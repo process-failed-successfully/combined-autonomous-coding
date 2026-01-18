@@ -1,0 +1,102 @@
+name: Cleanup Stale Draft PRs
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Runs daily at midnight UTC
+  workflow_dispatch: # Allows manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create cleanup script
+        run: |
+          cat << 'EOF' > cleanup_prs.py
+          import json
+          import subprocess
+          import sys
+          from datetime import datetime, timedelta, timezone
+
+          def run_command(command):
+              try:
+                  result = subprocess.run(
+                      command,
+                      shell=True,
+                      check=True,
+                      text=True,
+                      capture_output=True
+                  )
+                  return result.stdout.strip()
+              except subprocess.CalledProcessError as e:
+                  print(f"Error running command: {command}")
+                  print(f"Stdout: {e.stdout}")
+                  print(f"Stderr: {e.stderr}")
+                  return None
+
+          def main():
+              print("Starting cleanup of stale draft PRs...")
+              
+              # Calculate cutoff time (8 hours ago)
+              cutoff_time = datetime.now(timezone.utc) - timedelta(hours=8)
+              print(f"Cutoff time: {cutoff_time.isoformat()}")
+
+              # Get all open PRs
+              cmd = "gh pr list --state open --json number,createdAt,isDraft,title,url --limit 1000"
+              stdout = run_command(cmd)
+              
+              if not stdout:
+                  print("No PRs found or error fetching PRs.")
+                  return
+
+              try:
+                  prs = json.loads(stdout)
+              except json.JSONDecodeError:
+                  print("Failed to decode JSON from gh command")
+                  return
+
+              print(f"Found {len(prs)} open PRs total.")
+
+              for pr in prs:
+                  if not pr.get("isDraft"):
+                      continue
+
+                  created_at_str = pr.get("createdAt")
+                  try:
+                      created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                  except ValueError as e:
+                      print(f"Error parsing date {created_at_str} for PR #{pr['number']}: {e}")
+                      continue
+
+                  if created_at < cutoff_time:
+                      print(f"PR #{pr['number']} ({pr['title']}) is a draft created at {created_at} (older than 8 hours). Closing...")
+                      
+                      # Escape quotes for shell command if needed, though title is just for logging here.
+                      # Ideally we pass title safely but for 'gh pr close' we only need number.
+                      close_cmd = f"gh pr close {pr['number']} --delete-branch --comment 'Closing stale draft PR older than 8 hours.'"
+                      result = run_command(close_cmd)
+                      
+                      if result is not None:
+                          print(f"Successfully closed PR #{pr['number']}")
+                  else:
+                      print(f"PR #{pr['number']} is a draft but created at {created_at} (newer than cutoff). Skipping.")
+
+          if __name__ == "__main__":
+              main()
+          EOF
+
+      - name: Run cleanup script
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 cleanup_prs.py

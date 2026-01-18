@@ -6,6 +6,7 @@ import subprocess
 import json
 from datetime import datetime
 from typing import Optional
+import re
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -205,48 +206,24 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
     else:
         lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
 
-    # 4. Latest Run Metrics
-    lines.append("\n[ Latest Run Metrics ]")
-    metrics_file = project_dir / "final_metrics.txt"
-    if metrics_file.exists():
-        metrics = _parse_metrics(metrics_file)
-        if metrics:
-            time_val = metrics.get("Total Execution Time (s)")
-            time_str = _format_duration(time_val) if isinstance(time_val, (int, float)) else "N/A"
-
-            lines.append(f"  - Run Time:     {time_str}")
-            lines.append(f"  - Iterations:   {metrics.get('Total Iterations', 'N/A')}")
-            lines.append(f"  - Errors:       {metrics.get('Total Errors', 'N/A')}")
-            lines.append(f"  - Tokens Used:  {metrics.get('LLM Tokens Used', 'N/A')}")
-        else:
-            lines.append("  Could not parse metrics file.")
-    else:
-        lines.append("  No metrics file found for the last run.")
-
-    # 5. Actionable Suggestions
-    lines.append("\n[ Next Steps ]")
-    suggestions = get_suggestions(project_dir)
-    if suggestions:
-        for suggestion in suggestions[:3]: # Show top 3
-            lines.append(f"  - {suggestion['reason']}")
-            lines.append(f"    👉 `{suggestion['command']}`")
-    else:
-        lines.append("  ✅ Project is in a clean state. No specific actions to suggest.")
-
     return "\n".join(lines)
 
 
 def _parse_metrics(metrics_file: Path) -> dict:
-    """Parses a final_metrics.txt file into a dictionary."""
+    """Parses a final_metrics.txt file into a dictionary (handles key:value and Prometheus formats)."""
     metrics = {}
     try:
         with open(metrics_file, 'r') as f:
             for line in f:
-                if ':' in line:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+
+                # Legacy Format: Key: Value
+                if ':' in line and '{' not in line:
                     key, value = line.split(':', 1)
                     key = key.strip()
                     value = value.strip()
-                    # Attempt to convert to float/int if possible
                     try:
                         if '.' in value:
                             metrics[key] = float(value)
@@ -254,6 +231,70 @@ def _parse_metrics(metrics_file: Path) -> dict:
                             metrics[key] = int(value)
                     except ValueError:
                         metrics[key] = value
+
+                # Prometheus Format: name{labels} value
+                else:
+                    # Regex to match: metric_name{label="value",...} 123.45
+                    match = re.match(r'^(\w+)\{(.*)\}\s+(.+)$', line)
+                    if match:
+                        name, labels_str, value_str = match.groups()
+
+                        # Parse value
+                        try:
+                            if '.' in value_str or 'e+' in value_str:
+                                value = float(value_str)
+                            else:
+                                value = int(value_str)
+                        except ValueError:
+                            value = value_str
+
+                        # Parse labels
+                        labels = {}
+                        for pair in labels_str.split(','):
+                            if '=' in pair:
+                                lk, lv = pair.split('=', 1)
+                                labels[lk.strip()] = lv.strip('"')
+
+                        # Map to friendly keys and aggregate where necessary
+                        if name == "llm_tokens_total":
+                            current_total = metrics.get("LLM Tokens Used", 0)
+                            if isinstance(current_total, (int, float)) and isinstance(value, (int, float)):
+                                metrics["LLM Tokens Used"] = current_total + value
+
+                            # Keep raw breakdown for cost calculation (store in a special key or separate dict?)
+                            # For simplicity, we just store it in the metrics dict with a unique key
+                            type_label = labels.get("type", "unknown")
+                            model_label = labels.get("model", "unknown")
+                            breakdown_key = f"llm_tokens_total__{model_label}__{type_label}"
+                            metrics[breakdown_key] = value
+
+                            # Extract model if available
+                            if "model" in labels:
+                                metrics["Model"] = labels["model"]
+
+                        elif name == "agent_errors_total":
+                            current_errors = metrics.get("Total Errors", 0)
+                            if isinstance(current_errors, (int, float)) and isinstance(value, (int, float)):
+                                metrics["Total Errors"] = current_errors + value
+
+                        elif name == "agent_iterations_total":
+                            # Assuming this is a counter, so the latest value is the total
+                            metrics["Total Iterations"] = value
+
+                        elif name == "agent_uptime_seconds":
+                             metrics["Total Execution Time (s)"] = value
+
+                        elif name == "iteration_duration_seconds":
+                             # This is likely a gauge for the last iteration duration
+                             pass
+
+                        # Also extract Agent Type and Run ID (agent_id)
+                        if "agent_type" in labels:
+                            metrics["Agent Type"] = labels["agent_type"]
+
+                        if "agent_id" in labels:
+                            metrics["Run ID"] = labels["agent_id"]
+
     except (IOError, FileNotFoundError):
         return {}
     return metrics

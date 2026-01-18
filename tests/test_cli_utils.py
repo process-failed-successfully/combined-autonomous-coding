@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import json
 
-from shared.cli_utils import get_suggestions, _run_enhanced_status_logic
+from shared.cli_utils import get_suggestions, _run_enhanced_status_logic, _parse_metrics
 
 class TestCliUtils(unittest.TestCase):
 
@@ -144,6 +144,30 @@ LLM Tokens Used: 5000
         output = _run_enhanced_status_logic(self.project_dir)
         self.assertIn("[ Latest Run Metrics ]", output)
         self.assertIn("No metrics file found for the last run.", output)
+
+    def test_parse_metrics_prometheus(self):
+        """Test parsing Prometheus-style metrics."""
+        metrics_file = self.project_dir / "prom_metrics.txt"
+        metrics_file.write_text("""
+# HELP llm_tokens_total Combined token counter
+# TYPE llm_tokens_total counter
+llm_tokens_total{agent_id="gemini_agent",model="gemini-1.5-pro",type="input"} 1000
+llm_tokens_total{agent_id="gemini_agent",model="gemini-1.5-pro",type="output"} 500
+# HELP agent_errors_total All agent errors
+# TYPE agent_errors_total counter
+agent_errors_total{error_type="log_error"} 2
+# HELP agent_iterations_total Total iterations
+# TYPE agent_iterations_total gauge
+agent_iterations_total{project="test"} 5
+        """.strip())
+
+        metrics = _parse_metrics(metrics_file)
+        self.assertEqual(metrics.get("LLM Tokens Used"), 1500)
+        self.assertEqual(metrics.get("Model"), "gemini-1.5-pro")
+        self.assertEqual(metrics.get("Total Errors"), 2)
+        self.assertEqual(metrics.get("Total Iterations"), 5)
+        self.assertEqual(metrics.get("llm_tokens_total__gemini-1.5-pro__input"), 1000)
+        self.assertEqual(metrics.get("llm_tokens_total__gemini-1.5-pro__output"), 500)
 
 if __name__ == '__main__':
     unittest.main()

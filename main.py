@@ -2130,6 +2130,62 @@ def run_blame(args):
     sys.exit(0)
 
 
+def run_search(args):
+    """Searches the codebase for a pattern."""
+    from shared.search import search_codebase
+
+    project_dir = args.project_dir.resolve()
+
+    print(f"--- Searching in: {project_dir} ---")
+    print(f"Pattern: {args.pattern}")
+
+    try:
+        results = search_codebase(
+            project_dir,
+            args.pattern,
+            file_pattern=args.files,
+            case_sensitive=args.case_sensitive,
+            is_regex=args.regex,
+            context_lines=args.context
+        )
+    except Exception as e:
+        print(f"❌ Error during search: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not results:
+        print("✅ No matches found.")
+        sys.exit(0)
+
+    # Group by file for cleaner output
+    results_by_file = {}
+    for res in results:
+        f = res['file']
+        if f not in results_by_file:
+            results_by_file[f] = []
+        results_by_file[f].append(res)
+
+    for file_path, matches in results_by_file.items():
+        print(f"\n📄 \033[1m{file_path}\033[0m") # Bold filename
+        for m in matches:
+            # Context before
+            for ctx in m['context_before']:
+                print(f"    \033[90m{ctx}\033[0m") # Gray context
+
+            # Match
+            # Highlight the pattern in the content?
+            # Simple highlight if not regex or complex
+            content = m['content']
+            # We skip highlighting for now to avoid messiness with regex matches
+            print(f"  \033[32m{m['line']}\033[0m: {content}") # Green line num
+
+            # Context after
+            for ctx in m['context_after']:
+                print(f"    \033[90m{ctx}\033[0m")
+
+    print(f"\nFound {len(results)} matches in {len(results_by_file)} files.")
+    sys.exit(0)
+
+
 def run_todos(args):
     """Scans the project for TODO comments."""
     from shared.todos import scan_todos, get_todo_blame
@@ -5318,6 +5374,42 @@ def parse_args(argv=None):
         help="Output results in JSON format.",
     )
 
+    # --- New 'search' command ---
+    parser_search = subparsers.add_parser(
+        "search",
+        help="Search the codebase for a text pattern."
+    )
+    parser_search.add_argument(
+        "pattern",
+        help="The text or regex pattern to search for."
+    )
+    parser_search.add_argument(
+        "--files",
+        help="Glob pattern to filter files (e.g., '*.py')."
+    )
+    parser_search.add_argument(
+        "--case-sensitive",
+        action="store_true",
+        help="Enable case-sensitive search."
+    )
+    parser_search.add_argument(
+        "--regex",
+        action="store_true",
+        help="Treat pattern as a regular expression."
+    )
+    parser_search.add_argument(
+        "-C", "--context",
+        type=int,
+        default=0,
+        help="Number of context lines to show."
+    )
+    parser_search.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to search (default: current directory)."
+    )
+
     # --- New 'stash' command ---
     parser_stash = subparsers.add_parser(
         "stash",
@@ -7345,6 +7437,10 @@ async def main():
 
     if args.command == "context":
         run_context(args)
+        return
+
+    if args.command == "search":
+        run_search(args)
         return
 
     if args.command == "todos":

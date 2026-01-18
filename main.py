@@ -47,6 +47,7 @@ from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouter
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 from shared.ask import run_ask_logic
+from shared.security import SecurityAuditor
 import json
 import yaml
 import platformdirs
@@ -5286,6 +5287,35 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Audit the project for security issues (SAST, secrets, dependencies)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "sast", "secrets", "deps"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="low",
+        help="Minimum severity level to report (default: low).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=str,
+        help="Path to save the security report (JSON).",
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -5630,6 +5660,64 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+def run_security(args):
+    """Runs security checks on the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit in: {project_dir} ---")
+    print(f"Scan Type: {args.scan_type}")
+    print(f"Severity Threshold: {args.severity}")
+
+    auditor = SecurityAuditor(project_dir)
+    findings = auditor.run_all(scan_type=args.scan_type, severity=args.severity)
+
+    if args.output:
+        output_path = Path(args.output)
+        try:
+            with open(output_path, 'w') as f:
+                json.dump(findings, f, indent=2)
+            print(f"\n✅ Report saved to {output_path}")
+        except IOError as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    if not findings:
+        print("\n✅ No security issues found.")
+        sys.exit(0)
+
+    print(f"\n⚠️  Found {len(findings)} security issue(s):")
+
+    # Sort findings by severity (HIGH > MEDIUM > LOW > UNKNOWN)
+    severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "UNKNOWN": 3}
+    findings.sort(key=lambda x: severity_order.get(str(x.get("severity", "UNKNOWN")).upper(), 3))
+
+    for i, finding in enumerate(findings):
+        sev = str(finding.get('severity', 'UNKNOWN')).upper()
+        ftype = finding.get('type', 'generic').upper()
+        desc = finding.get('description', 'No description')
+        file_path = finding.get('file', 'N/A')
+        line = finding.get('line', 0)
+
+        # Color coding
+        sev_color = ""
+        if sev == "HIGH":
+            sev_color = "\033[91m" # Red
+        elif sev == "MEDIUM":
+            sev_color = "\033[93m" # Yellow
+        elif sev == "LOW":
+            sev_color = "\033[94m" # Blue
+        reset = "\033[0m"
+
+        print(f"\n[{i+1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
+        print(f"    File: {file_path}:{line}")
+        if finding.get('snippet'):
+            print(f"    Snippet: {finding['snippet'].strip()}")
+
+    # Exit with error if high severity issues found
+    if any(str(f.get('severity')).upper() == "HIGH" for f in findings):
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_setup(args):
@@ -7160,6 +7248,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "help":

@@ -3172,6 +3172,7 @@ PRICING_MODELS = {
     "unknown": {"input": 0.0, "output": 0.0},
 }
 
+
 def run_cost(args):
     """Estimates the cost of the agent run based on token usage."""
     run_id = args.run_id

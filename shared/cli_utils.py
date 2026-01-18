@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 from typing import Optional
 import re
+import shlex
+
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -116,7 +118,7 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
                 features = json.load(f)
             if isinstance(features, list) and features:
                 lines.append(f"  Found {len(features)} features in feature_list.json:")
-                for i, feature in enumerate(features[:3]): # Show top 3
+                for i, feature in enumerate(features[:3]):  # Show top 3
                     lines.append(f"    - {feature}")
                 if len(features) > 3:
                     lines.append("    ...")
@@ -141,14 +143,14 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
                     try:
                         dt_part = run_id.split('-')[-1]
                         # Handling different timestamp formats that might exist
-                        if len(dt_part) == 14: # YYYYMMDDHHMMSS
+                        if len(dt_part) == 14:  # YYYYMMDDHHMMSS
                             timestamp = datetime.strptime(dt_part, "%Y%m%d%H%M%S")
                             lines.append(f"  - {timestamp.strftime('%Y-%m-%d %H:%M:%S')} : Agent Run ({run_id})")
-                        elif len(dt_part) > 14: # ISO format with microseconds
-                             timestamp = datetime.fromisoformat(dt_part.replace('Z', '+00:00'))
-                             lines.append(f"  - {timestamp.strftime('%Y-%m-%d %H:%M:%S')} : Agent Run ({run_id})")
+                        elif len(dt_part) > 14:  # ISO format with microseconds
+                            timestamp = datetime.fromisoformat(dt_part.replace('Z', '+00:00'))
+                            lines.append(f"  - {timestamp.strftime('%Y-%m-%d %H:%M:%S')} : Agent Run ({run_id})")
                         else:
-                             lines.append(f"  - Agent Run ({run_id})")
+                            lines.append(f"  - Agent Run ({run_id})")
                     except (ValueError, IndexError):
                         lines.append(f"  - Agent Run ({run_id})")
             else:
@@ -200,7 +202,7 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
     lines.append("\n[ Next Steps ]")
     suggestions = get_suggestions(project_dir)
     if suggestions:
-        for suggestion in suggestions[:3]: # Show top 3
+        for suggestion in suggestions[:3]:  # Show top 3
             lines.append(f"  - {suggestion['reason']}")
             lines.append(f"    👉 `{suggestion['command']}`")
     else:
@@ -282,11 +284,11 @@ def _parse_metrics(metrics_file: Path) -> dict:
                             metrics["Total Iterations"] = value
 
                         elif name == "agent_uptime_seconds":
-                             metrics["Total Execution Time (s)"] = value
+                            metrics["Total Execution Time (s)"] = value
 
                         elif name == "iteration_duration_seconds":
-                             # This is likely a gauge for the last iteration duration
-                             pass
+                            # This is likely a gauge for the last iteration duration
+                            pass
 
                         # Also extract Agent Type and Run ID (agent_id)
                         if "agent_type" in labels:
@@ -338,26 +340,34 @@ def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
 
     # 1. Git-based suggestions
     if has_changes:
-        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."): return suggestions
-        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."): return suggestions
+        if not add_suggestion("main.py diff-summary", "You have uncommitted changes. This command will show a summary of what has been modified."):
+            return suggestions
+        if not add_suggestion("main.py revert --interactive", "If the uncommitted changes are unwanted, you can use this command to interactively discard them."):
+            return suggestions
 
     # 2. Workflow-based suggestions
     if stage == "COMPLETED":
-        if not add_suggestion("main.py workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."): return suggestions
+        if not add_suggestion("main.py workflow advance", "The agent has completed its work. Advance the workflow to the 'QA Passed' stage if you have verified the results."):
+            return suggestions
     elif stage == "QA_PASSED":
-        if not add_suggestion("main.py workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."): return suggestions
+        if not add_suggestion("main.py workflow advance", "The project has passed QA. Advance to 'Signed Off' to finalize the project."):
+            return suggestions
     elif stage == "SIGNED_OFF":
-        if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."): return suggestions
+        if not add_suggestion("main.py clean --archive", "The project is complete. Archive the agent-generated artifacts to keep the directory clean."):
+            return suggestions
 
     # 3. Artifact-based suggestions
     trash_dir = project_dir / ".agent_trash"
     if trash_dir.exists() and any(trash_dir.iterdir()):
-        if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."): return suggestions
-        if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."): return suggestions
+        if not add_suggestion("main.py artifacts trash list", "You have items in the trash. Use this command to see what's there."):
+            return suggestions
+        if not add_suggestion("main.py artifacts trash restore", "If you need to recover deleted artifacts, you can restore them from the trash."):
+            return suggestions
 
     # 4. General "what happened" suggestions
     if (project_dir / ".agent_run_id").exists():
-        if not add_suggestion("main.py logs", "To see the logs from the last agent run."): return suggestions
+        if not add_suggestion("main.py logs", "To see the logs from the last agent run."):
+            return suggestions
 
     return suggestions
 
@@ -500,6 +510,7 @@ def _run_report_logic(run_id: str, output_path: Optional[Path], project_dir: Pat
 
     return True
 
+
 def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
     """
     The core logic for generating a tree view of a directory.
@@ -562,6 +573,7 @@ def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
     generate_tree_recursive(project_dir, "", 0)
     return "\n".join(output_lines)
 
+
 def _run_dashboard_logic(project_dir: Path) -> str:
     """The core logic for the dashboard command, returned as a string."""
     project_dir = project_dir.resolve()
@@ -581,7 +593,6 @@ def _run_dashboard_logic(project_dir: Path) -> str:
         lines.append(f"  Next: `main.py workflow advance` to move to '{next_stage_name}'.\n")
     else:
         lines.append("  Project is complete.\n")
-
 
     # --- 2. Git Status ---
     lines.append("[ Git ]")
@@ -611,7 +622,6 @@ def _run_dashboard_logic(project_dir: Path) -> str:
 
     except (subprocess.CalledProcessError, FileNotFoundError):
         lines.append("  Could not retrieve git status.\n")
-
 
     # --- 3. Last Run Summary ---
     lines.append("[ Last Run ]")
@@ -655,8 +665,6 @@ def _run_dashboard_logic(project_dir: Path) -> str:
     return "\n".join(lines)
 
 
-import shlex
-
 def _run_next_logic(project_dir: Path) -> bool:
     """
     The core logic for the 'next' command.
@@ -682,7 +690,7 @@ def _run_next_logic(project_dir: Path) -> bool:
         confirm = input("\nDo you want to execute this command? [Y/n]: ").strip().lower()
         if confirm not in ['y', '']:
             print("Aborted.")
-            return True # Returning True because the operation was not a failure.
+            return True  # Returning True because the operation was not a failure.
 
     except (KeyboardInterrupt, EOFError):
         print("\nAborted.")
@@ -703,9 +711,9 @@ def _run_next_logic(project_dir: Path) -> bool:
         if command_parts and "main.py" in command_parts[0]:
             actual_command = [str(executable_path), str(main_script_path)] + command_parts[1:]
         else:
-             # This case is unlikely if suggestions are formatted correctly, but it's a safe fallback.
-             print(f"Warning: Could not determine how to execute '{command_str}'.", file=sys.stderr)
-             return False
+            # This case is unlikely if suggestions are formatted correctly, but it's a safe fallback.
+            print(f"Warning: Could not determine how to execute '{command_str}'.", file=sys.stderr)
+            return False
 
         # Execute the command, streaming its output
         result = subprocess.run(actual_command, cwd=project_dir)
@@ -760,7 +768,7 @@ def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
 
     # --- Process blame output ---
     output = []
-    commit_info_cache = {} # Cache for storing Run ID or author for a given commit hash
+    commit_info_cache = {}  # Cache for storing Run ID or author for a given commit hash
 
     # First pass: Parse porcelain output to gather commit data for each line
     line_blame_info = []
@@ -774,7 +782,7 @@ def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
         while not lines[j].startswith('\t'):
             j += 1
 
-        code_line = lines[j][1:] # The actual line of code
+        code_line = lines[j][1:]  # The actual line of code
         line_blame_info.append({"hash": commit_hash, "code": code_line})
         i = j + 1
 

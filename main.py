@@ -19,6 +19,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
+from collections import deque
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -2492,17 +2493,24 @@ def _run_history_logic(project_dir):
         if log_file.exists():
             try:
                 with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = f.readlines()
-                first_line = lines[0].strip() if lines else ""
-                timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
-                print(f"  Timestamp: {timestamp}")
-                if lines:
-                    print("  Log Summary (last 5 lines):")
-                    last_lines = [line.strip() for line in lines if line.strip()][-5:]
-                    for line in last_lines:
-                        print(f"    {line}")
-                else:
-                    print("  Log file is empty.")
+                    # Read first line for timestamp
+                    first_line_raw = f.readline()
+                    first_line = first_line_raw.strip()
+
+                    if not first_line:
+                        print("  Log file is empty.")
+                    else:
+                        timestamp = first_line.split(" - ")[0] if " - " in first_line else "[No Timestamp]"
+                        print(f"  Timestamp: {timestamp}")
+                        print("  Log Summary (last 5 lines):")
+
+                        # Reset to beginning to get full tail to correctly capture the last 5 lines
+                        # even if the file is short or the first line is part of the last 5.
+                        f.seek(0)
+                        last_lines = deque((line.strip() for line in f if line.strip()), maxlen=5)
+                        for line in last_lines:
+                            print(f"    {line}")
+
             except Exception as e:
                 print(f"  Error reading log file: {e}")
         else:
@@ -2565,8 +2573,8 @@ def _run_last_logic(project_dir):
     if log_file.exists():
         try:
             with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                lines = [line.strip() for line in f if line.strip()]
-                for line in lines[-10:]:
+                last_lines = deque((line.strip() for line in f if line.strip()), maxlen=10)
+                for line in last_lines:
                     print(f"  {line}")
         except IOError as e:
             print(f"Error reading log file: {e}")
@@ -2803,11 +2811,18 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
         with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
             # If not following, it's simple: read, filter, print.
             if not follow:
-                log_lines = f.readlines()
                 if lines is not None:
-                    log_lines = log_lines[-lines:]
+                    # To preserve original behavior (filter applied AFTER selecting last N lines):
+                    # We must read the last N lines of the file, then filter.
+                    # This means we use deque on the raw file, then apply filter.
+                    log_lines = deque(f, maxlen=lines)
+                else:
+                    # Iterator to avoid loading full file
+                    log_lines = f
+
                 for line in log_lines:
                     print_filtered(line)
+
                 return True
 
             # If following, the logic is more complex.

@@ -2090,6 +2090,15 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
 
+def run_analytics(args):
+    """Runs project analytics."""
+    if args.type == "git":
+        from shared.analytics import _run_analytics_git_logic
+        _run_analytics_git_logic(args.project_dir)
+    elif args.type == "code":
+        print(_run_context_analyze_logic(args.project_dir))
+    sys.exit(0)
+
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
     # Setup logging
@@ -5460,6 +5469,41 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'analytics' command ---
+    parser_analytics = subparsers.add_parser(
+        "analytics",
+        help="Display project analytics (git stats, code stats)."
+    )
+    analytics_subparsers = parser_analytics.add_subparsers(
+        dest="type",
+        required=True,
+        help="Type of analytics to run"
+    )
+
+    # Analytics 'git' action
+    parser_analytics_git = analytics_subparsers.add_parser(
+        "git",
+        help="Show Git analytics (contributors, hotspots, activity)."
+    )
+    parser_analytics_git.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
+    # Analytics 'code' action
+    parser_analytics_code = analytics_subparsers.add_parser(
+        "code",
+        help="Show code file statistics (count, size, type)."
+    )
+    parser_analytics_code.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7465,6 +7509,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "analytics":
+        run_analytics(args)
         return
 
     # Initialize Agent Client

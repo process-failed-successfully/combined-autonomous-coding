@@ -2103,6 +2103,96 @@ from shared.cli_utils import (
     _parse_metrics,
 )
 
+def run_release(args):
+    """Manages the release process."""
+    from shared.release import (
+        get_latest_tag,
+        get_commits_since_tag,
+        determine_next_version,
+        generate_changelog,
+        bump_version_file,
+        parse_current_version
+    )
+
+    project_dir = args.project_dir.resolve()
+
+    # 1. Get current status
+    latest_tag = get_latest_tag(project_dir)
+    print(f"--- Release Management: {project_dir.name} ---")
+    print(f"Latest tag: {latest_tag or 'None'}")
+
+    commits = get_commits_since_tag(project_dir, latest_tag)
+    print(f"Commits since tag: {len(commits)}")
+
+    current_version = parse_current_version(project_dir)
+    # If no current version in file, fallback to tag
+    if not current_version and latest_tag:
+        current_version = latest_tag.lstrip("v")
+
+    print(f"Current version (file/tag): {current_version or '0.0.0'}")
+
+    # 2. Determine bump
+    if args.force_version:
+        next_version = args.force_version
+        print(f"Next version (forced): {next_version}")
+    else:
+        next_version = determine_next_version(current_version, commits)
+        print(f"Next version (calculated): {next_version}")
+
+    if next_version == current_version and not args.force_version:
+        print("No version bump required based on commits.")
+        if not args.yes:
+            sys.exit(0)
+
+    # 3. Generate Changelog
+    changelog = generate_changelog(commits, next_version)
+
+    if args.action == "plan":
+        print("\n--- Plan: Changelog Preview ---")
+        print(changelog)
+        print("\n--- Plan: Actions ---")
+        print(f"1. Update version to {next_version} in config files.")
+        print(f"2. Create git tag v{next_version}.")
+        sys.exit(0)
+
+    elif args.action == "apply":
+        if args.dry_run:
+            print("[Dry Run] Would update files and create tag.")
+            sys.exit(0)
+
+        print("\n--- Applying Release ---")
+
+        # Bump files
+        modified = bump_version_file(project_dir, next_version)
+        if modified:
+            print(f"Updated version in: {', '.join(modified)}")
+            # Commit these changes
+            subprocess.run(["git", "-C", str(project_dir), "add"] + modified, check=True)
+            subprocess.run(["git", "-C", str(project_dir), "commit", "-m", f"chore: bump version to {next_version}"], check=True)
+            print("Committed version bump.")
+
+        # Create tag
+        tag_name = f"v{next_version}"
+        if not args.no_changelog:
+             # Use changelog as tag message
+             # Write to temp file for safety
+             import tempfile
+             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tf:
+                 tf.write(changelog)
+                 tf_path = tf.name
+
+             try:
+                 subprocess.run(["git", "-C", str(project_dir), "tag", "-a", tag_name, "-F", tf_path], check=True)
+             finally:
+                 os.unlink(tf_path)
+        else:
+             subprocess.run(["git", "-C", str(project_dir), "tag", tag_name], check=True)
+
+        print(f"✅ Created tag: {tag_name}")
+        print("Don't forget to push: git push --follow-tags")
+        sys.exit(0)
+
+
 def run_analytics(args):
     """Runs project analytics."""
     if args.type == "git":
@@ -5623,6 +5713,45 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'release' command ---
+    parser_release = subparsers.add_parser(
+        "release",
+        help="Manage releases (version bump, changelog, tagging)."
+    )
+    parser_release.add_argument(
+        "action",
+        choices=["plan", "apply"],
+        default="plan",
+        nargs="?",
+        help="Action to perform (default: plan)."
+    )
+    parser_release.add_argument(
+        "--force-version",
+        type=str,
+        help="Manually specify the next version.",
+    )
+    parser_release.add_argument(
+        "--no-changelog",
+        action="store_true",
+        help="Do not use the generated changelog for the tag message.",
+    )
+    parser_release.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate the apply action.",
+    )
+    parser_release.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_release.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation if no bump detected.",
+    )
+
     # --- New 'review' command ---
     parser_review = subparsers.add_parser(
         "review",
@@ -7641,6 +7770,10 @@ async def main():
 
     if args.command == "deps":
         run_deps(args)
+        return
+
+    if args.command == "release":
+        run_release(args)
         return
 
     # Initialize Agent Client

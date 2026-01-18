@@ -47,6 +47,8 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.ask import run_ask_logic
+from shared.security import SecurityAuditor
 import json
 import yaml
 import platformdirs
@@ -2088,6 +2090,22 @@ def run_restore(args):
 
 from shared.cli_utils import get_project_summary, get_suggestions, _run_enhanced_status_logic, _run_tree_logic, _run_report_logic, _run_dashboard_logic, _run_blame_logic, _run_next_logic, _run_context_show_logic, _run_context_analyze_logic
 
+async def run_ask(args):
+    """Queries the codebase using the configured agent."""
+    # Setup logging
+    logger, _ = setup_logger(name="ask_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_ask_logic(
+        query=args.query,
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        files=args.files,
+        verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
+
 def run_context(args):
     """Displays an analysis of the agent's context."""
     if args.action == "show":
@@ -2109,6 +2127,69 @@ def run_blame(args):
     print(blame_output)
     if "❌ Error" in blame_output:
         sys.exit(1)
+    sys.exit(0)
+
+
+def run_todos(args):
+    """Scans the project for TODO comments."""
+    from shared.todos import scan_todos, get_todo_blame
+
+    project_dir = args.project_dir.resolve()
+    tags = [t.strip() for t in args.tags.split(",")] if args.tags else None
+
+    if not args.json:
+        print(f"--- Scanning for TODOs in: {project_dir} ---")
+        if tags:
+            print(f"Tags: {', '.join(tags)}")
+
+    try:
+        todos = scan_todos(project_dir, tags=tags)
+    except Exception as e:
+        print(f"❌ Error scanning for TODOs: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not todos:
+        print("✅ No TODOs found.")
+        sys.exit(0)
+
+    # Process results (blame if requested)
+    if args.blame:
+        print("Fetching git blame information (this might take a moment)...")
+        for todo in todos:
+            blame_info = get_todo_blame(project_dir, todo['file'], todo['line'])
+            todo['author'] = blame_info.get('author', 'Unknown')
+            todo['date'] = blame_info.get('date', 'Unknown')
+
+    # Output formatting
+    if args.json:
+        print(json.dumps(todos, indent=2))
+        sys.exit(0)
+
+    # Console output
+    # Group by file
+    todos_by_file = {}
+    for todo in todos:
+        file_path = todo['file']
+        if file_path not in todos_by_file:
+            todos_by_file[file_path] = []
+        todos_by_file[file_path].append(todo)
+
+    for file_path, file_todos in sorted(todos_by_file.items()):
+        print(f"\n📄 {file_path}")
+        for todo in file_todos:
+            line_str = str(todo['line']).rjust(4)
+            tag_str = todo['tag'].ljust(5)
+            text = todo['text']
+
+            blame_str = ""
+            if args.blame:
+                author = todo.get('author', 'Unknown')
+                date = todo.get('date', 'Unknown')
+                blame_str = f" [{author}, {date}]"
+
+            print(f"  {line_str}: {tag_str} {text}{blame_str}")
+
+    print(f"\nFound {len(todos)} item(s).")
     sys.exit(0)
 
 
@@ -5156,6 +5237,43 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'ask' command ---
+    parser_ask = subparsers.add_parser(
+        "ask",
+        help="Ask a question about the codebase."
+    )
+    parser_ask.add_argument(
+        "query",
+        help="The question to ask."
+    )
+    parser_ask.add_argument(
+        "--files",
+        nargs="*",
+        help="Specific files to include in the context."
+    )
+    parser_ask.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_ask.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_ask.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_ask.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze (default: current directory)."
+    )
+
     # --- New 'context' command ---
     parser_context = subparsers.add_parser(
         "context",
@@ -5171,6 +5289,33 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to analyze (default: current directory).",
+    )
+
+    # --- New 'todos' command ---
+    parser_todos = subparsers.add_parser(
+        "todos",
+        help="Scan the codebase for TODO, FIXME, and other task tags."
+    )
+    parser_todos.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_todos.add_argument(
+        "--tags",
+        type=str,
+        help="Comma-separated list of tags to search for (e.g., 'TODO,FIXME').",
+    )
+    parser_todos.add_argument(
+        "--blame",
+        action="store_true",
+        help="Use git blame to identify the author and date of each TODO (slower).",
+    )
+    parser_todos.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format.",
     )
 
     # --- New 'stash' command ---
@@ -5245,6 +5390,35 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to set up (default: current directory).",
+    )
+
+    # --- New 'security' command ---
+    parser_security = subparsers.add_parser(
+        "security",
+        help="Audit the project for security issues (SAST, secrets, dependencies)."
+    )
+    parser_security.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_security.add_argument(
+        "--scan-type",
+        choices=["all", "sast", "secrets", "deps"],
+        default="all",
+        help="Type of scan to perform (default: all).",
+    )
+    parser_security.add_argument(
+        "--severity",
+        choices=["low", "medium", "high"],
+        default="low",
+        help="Minimum severity level to report (default: low).",
+    )
+    parser_security.add_argument(
+        "-o", "--output",
+        type=str,
+        help="Path to save the security report (JSON).",
     )
 
     if argcomplete:
@@ -5591,6 +5765,64 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+def run_security(args):
+    """Runs security checks on the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Running Security Audit in: {project_dir} ---")
+    print(f"Scan Type: {args.scan_type}")
+    print(f"Severity Threshold: {args.severity}")
+
+    auditor = SecurityAuditor(project_dir)
+    findings = auditor.run_all(scan_type=args.scan_type, severity=args.severity)
+
+    if args.output:
+        output_path = Path(args.output)
+        try:
+            with open(output_path, 'w') as f:
+                json.dump(findings, f, indent=2)
+            print(f"\n✅ Report saved to {output_path}")
+        except IOError as e:
+            print(f"\n❌ Error saving report: {e}", file=sys.stderr)
+
+    if not findings:
+        print("\n✅ No security issues found.")
+        sys.exit(0)
+
+    print(f"\n⚠️  Found {len(findings)} security issue(s):")
+
+    # Sort findings by severity (HIGH > MEDIUM > LOW > UNKNOWN)
+    severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "UNKNOWN": 3}
+    findings.sort(key=lambda x: severity_order.get(str(x.get("severity", "UNKNOWN")).upper(), 3))
+
+    for i, finding in enumerate(findings):
+        sev = str(finding.get('severity', 'UNKNOWN')).upper()
+        ftype = finding.get('type', 'generic').upper()
+        desc = finding.get('description', 'No description')
+        file_path = finding.get('file', 'N/A')
+        line = finding.get('line', 0)
+
+        # Color coding
+        sev_color = ""
+        if sev == "HIGH":
+            sev_color = "\033[91m" # Red
+        elif sev == "MEDIUM":
+            sev_color = "\033[93m" # Yellow
+        elif sev == "LOW":
+            sev_color = "\033[94m" # Blue
+        reset = "\033[0m"
+
+        print(f"\n[{i+1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
+        print(f"    File: {file_path}:{line}")
+        if finding.get('snippet'):
+            print(f"    Snippet: {finding['snippet'].strip()}")
+
+    # Exit with error if high severity issues found
+    if any(str(f.get('severity')).upper() == "HIGH" for f in findings):
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 def run_setup(args):
@@ -6849,6 +7081,11 @@ async def main():
         run_tui(args)
         return
 
+    # Handle `ask` command
+    if args.command == "ask":
+        await run_ask(args)
+        return
+
     # Handle `init` command
     if args.command == "init":
         run_init(args)
@@ -7110,12 +7347,20 @@ async def main():
         run_context(args)
         return
 
+    if args.command == "todos":
+        run_todos(args)
+        return
+
     if args.command == "review":
         run_review(args)
         return
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "security":
+        run_security(args)
         return
 
     if args.command == "help":

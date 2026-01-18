@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.13.0 (2026-01-18)
+
+### Features
+
+- Add 'todos' command to scan codebase for tasks
+  ([#516](https://github.com/process-failed-successfully/combined-autonomous-coding/pull/516),
+  [`b08b9b9`](https://github.com/process-failed-successfully/combined-autonomous-coding/commit/b08b9b9740bcd070bbc6e430db69485be00650f5))
+
+- Implemented `shared/todos.py` to scan for TODO, FIXME, etc. - Added `todos` subcommand to
+  `main.py` with CLI options. - Supports `--blame` to fetch author/date info. - Supports `--json`
+  for structured output. - Uses git search capabilities for performance with a Python fallback. -
+  Added comprehensive unit and integration tests.
+
+Co-authored-by: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+
+
 ## v0.12.0 (2026-01-18)
 
 ### Features

@@ -27,6 +27,7 @@ dependencies = [
     "prometheus-client",
     "psutil",
     "platformdirs",
+    "jaraco.context>=6.1.0",
 ]
 requires-python = ">=3.11"
 

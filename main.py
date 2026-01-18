@@ -2110,6 +2110,9 @@ def run_analytics(args):
         _run_analytics_git_logic(args.project_dir)
     elif args.type == "code":
         print(_run_context_analyze_logic(args.project_dir))
+    elif args.type == "complexity":
+        from shared.complexity import _run_analytics_complexity_logic
+        _run_analytics_complexity_logic(args.project_dir)
     sys.exit(0)
 
 async def run_ask(args):
@@ -5578,6 +5581,18 @@ def parse_args(argv=None):
         help="Show code file statistics (count, size, type)."
     )
     parser_analytics_code.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
+    # Analytics 'complexity' action
+    parser_analytics_complexity = analytics_subparsers.add_parser(
+        "complexity",
+        help="Show code complexity analysis (cyclomatic complexity)."
+    )
+    parser_analytics_complexity.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),

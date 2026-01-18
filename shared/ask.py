@@ -1,7 +1,5 @@
 import logging
 import sys
-from pathlib import Path
-from typing import Optional
 
 from shared.config import Config
 from shared.config_loader import load_config_from_file, ensure_config_exists
@@ -13,6 +11,7 @@ from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
+
 
 async def run_ask_logic(args):
     """
@@ -44,8 +43,8 @@ async def run_ask_logic(args):
         agent_type=args.agent,
         model=resolve(args.model, "model", None),
         verbose=args.verbose,
-        stream_output=True, # Always stream for interactive ask
-        max_iterations=1 # We only need one turn
+        stream_output=True,  # Always stream for interactive ask
+        max_iterations=1  # We only need one turn
     )
 
     # Generate a temporary agent ID
@@ -103,11 +102,11 @@ Your goal is to explain, analyze, or query the code.
         # If we want multi-turn (Agent reads file -> LLM analyzes -> Final Answer), we might need a mini-loop.
 
         if any("Read File" in action for action in actions):
-             # If it read files, we should probably give it a chance to synthesize the answer.
-             # This is a simple 2-turn max loop for 'ask'
-             logger.info("Agent read files. synthesizing answer...")
-             follow_up_prompt = "Based on the files you read, please answer the original question."
-             status, response, actions = await agent.run_agent_session(follow_up_prompt)
+            # If it read files, we should probably give it a chance to synthesize the answer.
+            # This is a simple 2-turn max loop for 'ask'
+            logger.info("Agent read files. synthesizing answer...")
+            follow_up_prompt = "Based on the files you read, please answer the original question."
+            status, response, actions = await agent.run_agent_session(follow_up_prompt)
 
         # The response is usually printed by the agent logic (streaming) or we can print it here if not.
         # But BaseAgent usually handles streaming if config.stream_output is True.

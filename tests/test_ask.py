@@ -5,10 +5,10 @@ import argparse
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))  # noqa: E402
 
-from shared.ask import run_ask_logic
-from shared.config import Config
+from shared.ask import run_ask_logic  # noqa: E402
+
 
 class TestAskCommand(unittest.IsolatedAsyncioTestCase):
 
@@ -77,6 +77,7 @@ class TestAskCommand(unittest.IsolatedAsyncioTestCase):
         mock_cursor_agent.assert_called_once()
         call_args = mock_agent_instance.run_agent_session.call_args
         self.assertIn("Explain main.py", call_args[0][0])
+
 
 if __name__ == '__main__':
     unittest.main()

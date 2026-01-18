@@ -2129,6 +2129,69 @@ def run_blame(args):
     sys.exit(0)
 
 
+def run_todos(args):
+    """Scans the project for TODO comments."""
+    from shared.todos import scan_todos, get_todo_blame
+
+    project_dir = args.project_dir.resolve()
+    tags = [t.strip() for t in args.tags.split(",")] if args.tags else None
+
+    if not args.json:
+        print(f"--- Scanning for TODOs in: {project_dir} ---")
+        if tags:
+            print(f"Tags: {', '.join(tags)}")
+
+    try:
+        todos = scan_todos(project_dir, tags=tags)
+    except Exception as e:
+        print(f"❌ Error scanning for TODOs: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not todos:
+        print("✅ No TODOs found.")
+        sys.exit(0)
+
+    # Process results (blame if requested)
+    if args.blame:
+        print("Fetching git blame information (this might take a moment)...")
+        for todo in todos:
+            blame_info = get_todo_blame(project_dir, todo['file'], todo['line'])
+            todo['author'] = blame_info.get('author', 'Unknown')
+            todo['date'] = blame_info.get('date', 'Unknown')
+
+    # Output formatting
+    if args.json:
+        print(json.dumps(todos, indent=2))
+        sys.exit(0)
+
+    # Console output
+    # Group by file
+    todos_by_file = {}
+    for todo in todos:
+        file_path = todo['file']
+        if file_path not in todos_by_file:
+            todos_by_file[file_path] = []
+        todos_by_file[file_path].append(todo)
+
+    for file_path, file_todos in sorted(todos_by_file.items()):
+        print(f"\n📄 {file_path}")
+        for todo in file_todos:
+            line_str = str(todo['line']).rjust(4)
+            tag_str = todo['tag'].ljust(5)
+            text = todo['text']
+
+            blame_str = ""
+            if args.blame:
+                author = todo.get('author', 'Unknown')
+                date = todo.get('date', 'Unknown')
+                blame_str = f" [{author}, {date}]"
+
+            print(f"  {line_str}: {tag_str} {text}{blame_str}")
+
+    print(f"\nFound {len(todos)} item(s).")
+    sys.exit(0)
+
+
 def run_stash(args):
     """Manages git stashes for the project."""
     project_dir = args.project_dir.resolve()
@@ -5213,6 +5276,33 @@ def parse_args(argv=None):
         help="The project directory to analyze (default: current directory).",
     )
 
+    # --- New 'todos' command ---
+    parser_todos = subparsers.add_parser(
+        "todos",
+        help="Scan the codebase for TODO, FIXME, and other task tags."
+    )
+    parser_todos.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan (default: current directory).",
+    )
+    parser_todos.add_argument(
+        "--tags",
+        type=str,
+        help="Comma-separated list of tags to search for (e.g., 'TODO,FIXME').",
+    )
+    parser_todos.add_argument(
+        "--blame",
+        action="store_true",
+        help="Use git blame to identify the author and date of each TODO (slower).",
+    )
+    parser_todos.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format.",
+    )
+
     # --- New 'stash' command ---
     parser_stash = subparsers.add_parser(
         "stash",
@@ -7240,6 +7330,10 @@ async def main():
 
     if args.command == "context":
         run_context(args)
+        return
+
+    if args.command == "todos":
+        run_todos(args)
         return
 
     if args.command == "review":

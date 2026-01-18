@@ -6484,7 +6484,6 @@ def run_review(args):
     except Exception as e:
         print(f"Warning: Could not display diff. {e}", file=sys.stderr)
 
-
     print("\n--- Decision ---")
     print("Do you approve these changes?")
     try:
@@ -6538,7 +6537,7 @@ async def run_docstring(args):
                 print(f"  - Line {item['lineno']}: {item['type']} '{item['name']}'")
 
         print(f"\nTotal: {len(items)} missing.")
-        sys.exit(1) # Exit 1 to indicate issues found (like lint)
+        sys.exit(1)  # Exit 1 to indicate issues found (like lint)
 
     elif args.action == "generate":
         print("Scanning for missing docstrings...")

@@ -1,8 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 import argparse
 from pathlib import Path
 from main import run_docstring
+
 
 class TestMainDocstring(unittest.IsolatedAsyncioTestCase):
     @patch("shared.docstring.DocstringManager")
@@ -55,7 +56,7 @@ class TestMainDocstring(unittest.IsolatedAsyncioTestCase):
             project_dir=Path("."),
             agent="gemini",
             model=None,
-            yes=True # Skip confirmation
+            yes=True  # Skip confirmation
         )
 
         # Expect SystemExit(0)
@@ -67,6 +68,7 @@ class TestMainDocstring(unittest.IsolatedAsyncioTestCase):
         mock_instance.generate_and_apply.assert_called_once()
         call_args = mock_instance.generate_and_apply.call_args
         self.assertEqual(call_args.kwargs["agent_type"], "gemini")
+
 
 if __name__ == '__main__':
     unittest.main()

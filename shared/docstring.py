@@ -1,16 +1,18 @@
 import ast
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Type
 from shared.utils import IGNORED_DIRS
 from shared.config import Config
 from agents.shared.prompts import get_docstring_prompt
+from agents.shared.base_agent import BaseAgent
 from agents.gemini import GeminiAgent
 from agents.cursor import CursorAgent
 from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
+
 
 class DocstringManager:
     def __init__(self, project_dir: Path):
@@ -74,7 +76,7 @@ class DocstringManager:
             stream_output=False,
         )
 
-        agent_class_map = {
+        agent_class_map: Dict[str, Type[BaseAgent]] = {
             "gemini": GeminiAgent,
             "cursor": CursorAgent,
             "local": LocalAgent,
@@ -89,7 +91,7 @@ class DocstringManager:
         prompt_template = get_docstring_prompt()
 
         # Group by file
-        items_by_file = {}
+        items_by_file: Dict[Path, List[Dict[str, Any]]] = {}
         for item in items:
             path = item["file"]
             if path not in items_by_file:
@@ -113,7 +115,7 @@ class DocstringManager:
                     node = item["node"]
 
                     # Get source segment
-                    full_source = code_text # Use original text for extraction
+                    full_source = code_text  # Use original text for extraction
                     source_segment = ast.get_source_segment(full_source, node)
 
                     if not source_segment:
@@ -134,13 +136,13 @@ class DocstringManager:
                         # Sometimes agents return `"""doc"""` or just `doc`.
                         # We should robustly handle this.
                         if docstring.startswith('"""') and docstring.endswith('"""'):
-                             # Good.
-                             pass
+                            # Good.
+                            pass
                         elif docstring.startswith("'''") and docstring.endswith("'''"):
-                             docstring = '"""' + docstring[3:-3] + '"""'
+                            docstring = '"""' + docstring[3:-3] + '"""'
                         else:
-                             # Wrap it
-                             docstring = '"""' + docstring + '"""'
+                            # Wrap it
+                            docstring = '"""' + docstring + '"""'
 
                         # Determine insertion point
                         # logic from experiment:
@@ -149,7 +151,7 @@ class DocstringManager:
                         # We want to insert before it.
 
                         first_stmt = node.body[0]
-                        start_line_idx = first_stmt.lineno - 1 # 0-indexed
+                        start_line_idx = first_stmt.lineno - 1  # 0-indexed
 
                         # Determine indentation of first stmt
                         line_content = code_lines[start_line_idx]

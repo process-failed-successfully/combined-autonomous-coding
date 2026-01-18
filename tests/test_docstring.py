@@ -1,10 +1,10 @@
 import unittest
 import shutil
 import tempfile
-import asyncio
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 from shared.docstring import DocstringManager
+
 
 class TestDocstringManager(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -98,13 +98,14 @@ def my_func(a):
         p.write_text(code)
 
         items = self.manager.scan()
-        count = await self.manager.generate_and_apply(items, agent_type="gemini")
+        await self.manager.generate_and_apply(items, agent_type="gemini")
 
         new_code = p.read_text()
 
         # It should wrap in quotes and indent correctly
         self.assertIn('"""Summary.', new_code)
         self.assertIn('    Args:', new_code)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1950,7 +1950,7 @@ def run_rewind(args):
                 )
                 if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == "commit":
                     is_git_ref = True
-        except Exception:
+        except (subprocess.SubprocessError, OSError):
             pass  # Ignore errors, we'll handle the 'not found' case below
 
         if not is_git_ref:

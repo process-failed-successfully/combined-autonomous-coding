@@ -18,24 +18,27 @@ class TestCherryPickCommand(unittest.TestCase):
         """Set up a temporary git repository for testing."""
         self.test_dir = Path("test_repo_cherry_pick")
         self.test_dir.mkdir(exist_ok=True)
+        self.git = shutil.which("git")
+        if not self.git:
+            self.skipTest("git command not found")
 
-        subprocess.run(["git", "init", "-b", "main"], cwd=self.test_dir, check=True, capture_output=True)  # nosec
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir, check=True)  # nosec
-        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "init", "-b", "main"], cwd=self.test_dir, check=True, capture_output=True)  # nosec
+        subprocess.run([self.git, "config", "user.email", "test@example.com"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "config", "user.name", "Test User"], cwd=self.test_dir, check=True)  # nosec
 
         # Create the first commit on 'main'
         (self.test_dir / "file1.txt").write_text("Initial content")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)  # nosec
-        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "add", "."], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "commit", "-m", "Initial commit"], cwd=self.test_dir, check=True)  # nosec
 
         # Create a feature branch and a commit to be cherry-picked
-        subprocess.run(["git", "checkout", "-b", "feature"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "checkout", "-b", "feature"], cwd=self.test_dir, check=True)  # nosec
         (self.test_dir / "file2.txt").write_text("Feature content")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "add", "."], cwd=self.test_dir, check=True)  # nosec
         run_id = "run-12345"
-        subprocess.run(["git", "commit", "-m", f"feat: Add file2\n\nRun ID: {run_id}"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "commit", "-m", f"feat: Add file2\n\nRun ID: {run_id}"], cwd=self.test_dir, check=True)  # nosec
         self.cherry_pick_commit = subprocess.run(  # nosec
-            ["git", "rev-parse", "HEAD"],
+            [self.git, "rev-parse", "HEAD"],
             cwd=self.test_dir,
             check=True,
             capture_output=True,
@@ -44,10 +47,10 @@ class TestCherryPickCommand(unittest.TestCase):
 
         # Create a commit that will cause a conflict
         (self.test_dir / "file1.txt").write_text("Feature branch modification")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)  # nosec
-        subprocess.run(["git", "commit", "-m", "feat: Modify file1 on feature"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "add", "."], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "commit", "-m", "feat: Modify file1 on feature"], cwd=self.test_dir, check=True)  # nosec
         self.conflict_commit = subprocess.run(  # nosec
-            ["git", "rev-parse", "HEAD"],
+            [self.git, "rev-parse", "HEAD"],
             cwd=self.test_dir,
             check=True,
             capture_output=True,
@@ -55,17 +58,17 @@ class TestCherryPickCommand(unittest.TestCase):
         ).stdout.strip()
 
         # Switch back to main and make a conflicting change
-        subprocess.run(["git", "checkout", "main"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "checkout", "main"], cwd=self.test_dir, check=True)  # nosec
         (self.test_dir / "file1.txt").write_text("Main branch modification")
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True)  # nosec
-        subprocess.run(["git", "commit", "-m", "Modify file1 on main"], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "add", "."], cwd=self.test_dir, check=True)  # nosec
+        subprocess.run([self.git, "commit", "-m", "Modify file1 on main"], cwd=self.test_dir, check=True)  # nosec
 
     def tearDown(self):
         """Remove the temporary directory."""
         shutil.rmtree(self.test_dir)
 
     @patch('sys.stdout')
-    def test_cherry_pick_successful(self, mock_stdout):
+    def test_cherry_pick_successful(self, _):
         """Test a successful cherry-pick operation using a commit hash."""
         args = MagicMock()
         args.project_dir = self.test_dir
@@ -80,7 +83,7 @@ class TestCherryPickCommand(unittest.TestCase):
 
     @patch('sys.stdout')
     @patch('sys.stderr')
-    def test_cherry_pick_with_run_id(self, mock_stderr, mock_stdout):
+    def test_cherry_pick_with_run_id(self, _, __):
         """Test successfully resolving the commit from a Run ID."""
         args = MagicMock()
         args.project_dir = self.test_dir
@@ -94,7 +97,7 @@ class TestCherryPickCommand(unittest.TestCase):
 
     @patch('sys.stdout')
     @patch('sys.stderr')
-    def test_cherry_pick_conflict(self, mock_stderr, mock_stdout):
+    def test_cherry_pick_conflict(self, mock_stderr, _):
         """Test a cherry-pick operation that results in a merge conflict."""
         args = MagicMock()
         args.project_dir = self.test_dir
@@ -114,7 +117,7 @@ class TestCherryPickCommand(unittest.TestCase):
 
         # Verify that the repository is in a conflicted state
         git_status = subprocess.run(  # nosec
-            ["git", "status", "--porcelain"],
+            [self.git, "status", "--porcelain"],
             cwd=self.test_dir,
             capture_output=True,
             text=True

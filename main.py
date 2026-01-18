@@ -6110,6 +6110,39 @@ def parse_args(argv=None):
         help="Path to save the security report (JSON).",
     )
 
+    # --- New 'docstring' command ---
+    parser_docstring = subparsers.add_parser(
+        "docstring",
+        help="Manage Python docstrings (check and generate)."
+    )
+    parser_docstring.add_argument(
+        "action",
+        choices=["check", "generate"],
+        help="Action to perform."
+    )
+    parser_docstring.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_docstring.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for generation (default: gemini)."
+    )
+    parser_docstring.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_docstring.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt for 'generate' action."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -6454,6 +6487,63 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+async def run_docstring(args):
+    """Manages Python docstrings."""
+    from shared.docstring import DocstringManager
+
+    project_dir = args.project_dir.resolve()
+    manager = DocstringManager(project_dir)
+
+    print(f"--- Docstring Manager in: {project_dir} ---")
+
+    if args.action == "check":
+        print("Scanning for missing docstrings...")
+        items = manager.scan()
+        if not items:
+            print("✅ No missing docstrings found.")
+            sys.exit(0)
+
+        print(f"Found {len(items)} missing docstrings:")
+        # Group by file
+        items_by_file = {}
+        for item in items:
+            p = str(item["file"].relative_to(project_dir))
+            if p not in items_by_file:
+                items_by_file[p] = []
+            items_by_file[p].append(item)
+
+        for p in sorted(items_by_file.keys()):
+            print(f"\n📄 {p}")
+            for item in items_by_file[p]:
+                print(f"  - Line {item['lineno']}: {item['type']} '{item['name']}'")
+
+        print(f"\nTotal: {len(items)} missing.")
+        sys.exit(1) # Exit 1 to indicate issues found (like lint)
+
+    elif args.action == "generate":
+        print("Scanning for missing docstrings...")
+        items = manager.scan()
+        if not items:
+            print("✅ No missing docstrings found.")
+            sys.exit(0)
+
+        print(f"Found {len(items)} items to document.")
+        if not args.yes:
+            confirm = input("Do you want to generate and apply docstrings for these items? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
+                sys.exit(0)
+
+        print("\nStarting generation (this may take a while)...")
+        count = await manager.generate_and_apply(
+            items,
+            agent_type=args.agent,
+            model=args.model
+        )
+        print(f"\n✅ Successfully generated and applied {count} docstrings.")
+        sys.exit(0)
 
 
 def run_security(args):
@@ -8096,6 +8186,10 @@ async def main():
 
     if args.command == "release":
         run_release(args)
+        return
+
+    if args.command == "docstring":
+        await run_docstring(args)
         return
 
     # Initialize Agent Client

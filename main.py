@@ -2104,6 +2104,12 @@ from shared.cli_utils import (
     _parse_metrics,
 )
 
+def run_coverage(args):
+    """Runs tests and calculates code coverage."""
+    from shared.coverage import _run_coverage_logic
+    _run_coverage_logic(args.project_dir)
+    sys.exit(0)
+
 def run_release(args):
     """Manages the release process."""
     from shared.release import (
@@ -6018,6 +6024,18 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'coverage' command ---
+    parser_coverage = subparsers.add_parser(
+        "coverage",
+        help="Run tests and display code coverage analysis."
+    )
+    parser_coverage.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'release' command ---
     parser_release = subparsers.add_parser(
         "release",
@@ -8182,6 +8200,10 @@ async def main():
 
     if args.command == "map":
         run_map(args)
+        return
+
+    if args.command == "coverage":
+        run_coverage(args)
         return
 
     if args.command == "release":

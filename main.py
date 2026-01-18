@@ -2307,6 +2307,49 @@ def run_search(args):
     sys.exit(0)
 
 
+def run_replace(args):
+    """Replaces text in the codebase."""
+    from shared.replace import replace_in_codebase
+
+    project_dir = args.project_dir.resolve()
+
+    print(f"--- Replacing in: {project_dir} ---")
+    print(f"Pattern: {args.pattern}")
+    print(f"Replacement: {args.replacement}")
+    if args.dry_run:
+        print("(Dry Run - No changes will be saved)")
+
+    try:
+        stats = replace_in_codebase(
+            project_dir,
+            args.pattern,
+            args.replacement,
+            file_pattern=args.files,
+            case_sensitive=args.case_sensitive,
+            is_regex=args.regex,
+            dry_run=args.dry_run
+        )
+    except Exception as e:
+        print(f"❌ Error during replace: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\nMatched files: {stats['files_matched']}")
+    print(f"Files changed: {stats['files_changed']}")
+    print(f"Replacements:  {stats['replacements_count']}")
+
+    if stats["diffs"]:
+        print("\n--- Diffs ---")
+        for file, diff in stats["diffs"].items():
+            print(f"📄 {file}")
+            print(diff)
+            print("-" * 20)
+
+    if args.dry_run and stats['files_changed'] > 0:
+        print("\nTo apply these changes, run the command again without --dry-run")
+
+    sys.exit(0)
+
+
 def run_todos(args):
     """Scans the project for TODO comments."""
     from shared.todos import scan_todos, get_todo_blame
@@ -5598,6 +5641,45 @@ def parse_args(argv=None):
         help="The project directory to search (default: current directory)."
     )
 
+    # --- New 'replace' command ---
+    parser_replace = subparsers.add_parser(
+        "replace",
+        help="Find and replace text in the codebase."
+    )
+    parser_replace.add_argument(
+        "pattern",
+        help="The text or regex pattern to search for."
+    )
+    parser_replace.add_argument(
+        "replacement",
+        help="The text to replace matches with."
+    )
+    parser_replace.add_argument(
+        "--files",
+        help="Glob pattern to filter files (e.g., '*.py')."
+    )
+    parser_replace.add_argument(
+        "--case-sensitive",
+        action="store_true",
+        help="Enable case-sensitive match."
+    )
+    parser_replace.add_argument(
+        "--regex",
+        action="store_true",
+        help="Treat pattern as a regular expression."
+    )
+    parser_replace.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show changes without applying them."
+    )
+    parser_replace.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory)."
+    )
+
     # --- New 'stash' command ---
     parser_stash = subparsers.add_parser(
         "stash",
@@ -7738,6 +7820,10 @@ async def main():
 
     if args.command == "search":
         run_search(args)
+        return
+
+    if args.command == "replace":
+        run_replace(args)
         return
 
     if args.command == "todos":

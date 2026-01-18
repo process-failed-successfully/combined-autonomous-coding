@@ -2572,7 +2572,7 @@ def _run_diff_summary_logic(project_dir):
     print(f"--- Diff Summary: {project_dir} ---")
     try:
         cmd = [git_path, "-C", str(project_dir), "diff", "--stat"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec B603
+        result = subprocess.run(cmd, capture_output=True, text=True)  # nosec B603
         if not result.stdout.strip():
             print("✅ No uncommitted changes.")
         else:

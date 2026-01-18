@@ -5,6 +5,7 @@ Unified Jira Workflow Utilities
 
 import logging
 import subprocess
+import shutil
 from pathlib import Path
 from typing import Optional, Tuple, List, Any
 
@@ -15,13 +16,18 @@ from shared.github_client import GitHubClient
 
 logger = logging.getLogger(__name__)
 
+GIT_PATH = shutil.which("git")
 
 def _get_remote_info(project_dir: Path) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Extract (host, owner, repo) from git remote origin.
     """
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return None, None, None
+
     try:
-        res = subprocess.run(["git", "remote", "get-url", "origin"],
+        res = subprocess.run([GIT_PATH, "remote", "get-url", "origin"],
                              cwd=project_dir, check=True, stdout=subprocess.PIPE, text=True)
         remote_url = res.stdout.strip()
         gh_helper = GitHubClient()
@@ -78,6 +84,21 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
         return None
 
 
+def get_workflow_stage(project_dir: Path) -> str:
+    """
+    Determine the current workflow stage based on marker files.
+    """
+    if (project_dir / "PROJECT_SIGNED_OFF").exists():
+        return "SIGNED_OFF"
+    if (project_dir / "QA_PASSED").exists():
+        return "QA_PASSED"
+    if (project_dir / "COMPLETED").exists():
+        return "COMPLETED"
+
+    # Default to IN_PROGRESS
+    return "IN_PROGRESS"
+
+
 async def complete_jira_ticket(config: Config) -> bool:
     """
     Handle the final steps of completing a Jira ticket:
@@ -90,12 +111,16 @@ async def complete_jira_ticket(config: Config) -> bool:
         logger.warning("No Jira configuration found. Skipping Jira completion logic.")
         return False
 
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return False
+
     try:
         logger.info(f"Initiating completion for Jira Ticket: {config.jira_ticket_key}")
 
         # 1. Get Current Branch
         try:
-            res = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            res = subprocess.run([GIT_PATH, "rev-parse", "--abbrev-ref", "HEAD"],
                                  cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)
             current_branch = res.stdout.strip()
         except subprocess.CalledProcessError:

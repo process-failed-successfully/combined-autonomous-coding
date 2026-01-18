@@ -8,12 +8,14 @@ Functions for managing git state and ensuring safe branching for agents.
 import logging
 import subprocess
 import time
+import shutil
 from pathlib import Path
 from typing import Optional
 from shared.utils import sanitize_url
 
 logger = logging.getLogger(__name__)
 
+GIT_PATH = shutil.which("git")
 
 def is_git_safeguard_active() -> bool:
     """Check if the git push safeguard wrapper is active."""
@@ -30,6 +32,10 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
     Configure global git to use the provided token for authentication.
     Uses 'insteadOf' to transparently rewrite URL.
     """
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return False
+
     try:
         # Construct the authenticated URL base
         # e.g. https://x-access-token:MYTOKEN@github.com/
@@ -52,7 +58,7 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
             base_url
         ]
 
-        subprocess.run(["git"] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run([GIT_PATH] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     except Exception as e:
         logger.error(f"Failed to configure git auth: {e}")
@@ -61,9 +67,13 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
 
 def run_git(cmd: list[str], cwd: Path) -> bool:
     """Run a git command and return success status."""
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return False
+
     try:
         subprocess.run(
-            ["git"] + cmd,
+            [GIT_PATH] + cmd,
             cwd=cwd,
             check=True,
             stdout=subprocess.PIPE,
@@ -135,11 +145,15 @@ def ensure_git_safe(project_dir: Path, ticket_key: Optional[str] = None) -> None
 
 def push_branch(project_dir: Path, branch_name: Optional[str] = None) -> bool:
     """Push the current branch to origin."""
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return False
+
     try:
         if not branch_name:
             # Get current branch
             res = subprocess.run(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                [GIT_PATH, "rev-parse", "--abbrev-ref", "HEAD"],
                 cwd=project_dir,
                 check=True,
                 stdout=subprocess.PIPE,
@@ -163,10 +177,14 @@ def push_branch(project_dir: Path, branch_name: Optional[str] = None) -> bool:
 
 def clone_repo(url: str, dest_path: Path) -> bool:
     """Clone a repository to the destination path."""
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return False
+
     try:
         logger.info(f"Cloning {sanitize_url(url)} to {dest_path}...")
         subprocess.run(
-            ["git", "clone", url, str(dest_path)],
+            [GIT_PATH, "clone", url, str(dest_path)],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -182,9 +200,13 @@ def clone_repo(url: str, dest_path: Path) -> bool:
 
 def get_current_branch(project_dir: Path) -> Optional[str]:
     """Gets the current active git branch name."""
+    if not GIT_PATH:
+        logger.error("Git executable not found.")
+        return None
+
     try:
         res = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            [GIT_PATH, "rev-parse", "--abbrev-ref", "HEAD"],
             cwd=project_dir,
             check=True,
             stdout=subprocess.PIPE,

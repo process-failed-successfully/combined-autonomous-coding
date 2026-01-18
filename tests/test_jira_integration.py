@@ -3,6 +3,7 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+import shutil
 
 # Add repo root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -13,6 +14,7 @@ from shared.config import JiraConfig  # noqa: E402
 # This is necessary because the jira library might not be installed in the test env
 mock_jira_module = MagicMock()
 
+GIT_PATH = shutil.which("git")
 
 class MockJIRAError(Exception):
     def __init__(self, text=None, status_code=None, **kwargs):
@@ -160,7 +162,10 @@ class TestJiraIntegration(unittest.TestCase):
         self.assertTrue(success)
         mock_subprocess.assert_called()
         args = mock_subprocess.call_args[0][0]
-        self.assertIn("git", args)
+        if GIT_PATH:
+            self.assertIn(GIT_PATH, args)
+        else:
+            self.assertIn("git", args)
         self.assertIn("clone", args)
         self.assertIn("https://github.com/test/repo.git", args)
 

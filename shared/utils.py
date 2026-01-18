@@ -13,12 +13,14 @@ from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
+import shutil
 
 if TYPE_CHECKING:
     from shared.config import Config
 
 logger = logging.getLogger(__name__)
 
+GIT_PATH = shutil.which("git")
 
 def log_startup_config(config: "Config", logger: logging.Logger):
     """Logs the startup configuration in a clean format."""
@@ -47,10 +49,13 @@ def get_file_tree(root_dir: Path) -> str:
     try:
         # Use git ls-files if available for cleaner output (respects
         # .gitignore)
-        result = subprocess.run(
-            ["git", "ls-files"], cwd=root_dir, capture_output=True, text=True
-        )
-        if result.returncode == 0 and result.stdout:
+        result = None
+        if GIT_PATH:
+            result = subprocess.run(
+                [GIT_PATH, "ls-files"], cwd=root_dir, capture_output=True, text=True
+            )
+
+        if result and result.returncode == 0 and result.stdout:
             lines = result.stdout.splitlines()
             if len(lines) > 400:
                 tree_str = f"Project Files (Truncated first 400 of {len(lines)}): \n"

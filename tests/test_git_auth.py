@@ -3,12 +3,14 @@ import unittest
 from unittest.mock import patch
 import sys
 from pathlib import Path
+import shutil
 
 # Add repo root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from shared.git import configure_git_auth  # noqa: E402
 
+GIT_PATH = shutil.which("git")
 
 class TestGitAuth(unittest.TestCase):
 
@@ -21,7 +23,11 @@ class TestGitAuth(unittest.TestCase):
         args = mock_run.call_args[0][0]
 
         # Verify git config structure
-        self.assertIn("git", args)
+        if GIT_PATH:
+            self.assertIn(GIT_PATH, args)
+        else:
+            self.assertIn("git", args)
+
         self.assertIn("config", args)
         self.assertIn("--global", args)
 

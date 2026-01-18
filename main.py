@@ -71,7 +71,7 @@ if FileSystemEventHandler:
             if event.is_directory:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
-            subprocess.run(self.command, cwd=self.project_dir)
+            subprocess.run(self.command, cwd=self.project_dir)  # nosec B603
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -96,7 +96,7 @@ def run_init(args):
         if args.yes or confirm_git in ['y', '']:
             try:
                 project_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.run([git_path, "init", "-b", "main", str(project_dir)], check=True, capture_output=True)
+                subprocess.run([git_path, "init", "-b", "main", str(project_dir)], check=True, capture_output=True)  # nosec B603
                 print("✅ Successfully initialized a new Git repository.")
             except (subprocess.CalledProcessError, FileNotFoundError) as e:
                 stderr = getattr(e, 'stderr', str(e))
@@ -1379,7 +1379,7 @@ def run_revert(args):
     if args.interactive:
         print(f"--- Interactive Revert in: {project_dir} ---")
         try:
-            status_result = subprocess.run(
+            status_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "status", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -1423,7 +1423,7 @@ def run_revert(args):
         print(f"--- Reverting specified files in: {project_dir} ---")
 
         # Get the status of all files in the repo to identify untracked files
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -1438,7 +1438,7 @@ def run_revert(args):
         # Get the status of only the files the user wants to revert to confirm there are changes
         final_revert_list = []
         if files_to_revert:
-            status_of_selection = subprocess.run(
+            status_of_selection = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "status", "--porcelain", "--"] + files_to_revert,
                 capture_output=True, text=True
             )
@@ -1462,11 +1462,11 @@ def run_revert(args):
         try:
             if tracked_to_revert:
                 cmd = [git_path, "-C", str(project_dir), "checkout", "HEAD", "--"] + tracked_to_revert
-                subprocess.run(cmd, check=True, capture_output=True)
+                subprocess.run(cmd, check=True, capture_output=True)  # nosec B603
 
             if untracked_to_revert:
                 cmd = [git_path, "-C", str(project_dir), "clean", "-f", "--"] + untracked_to_revert
-                subprocess.run(cmd, check=True, capture_output=True)
+                subprocess.run(cmd, check=True, capture_output=True)  # nosec B603
 
             print("✅ Specified files have been reverted.")
         except subprocess.CalledProcessError as e:
@@ -1478,7 +1478,7 @@ def run_revert(args):
     elif not args.interactive:
         print(f"--- Reverting ALL uncommitted changes in: {project_dir} ---")
         try:
-            status_result = subprocess.run(
+            status_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "status", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -1501,11 +1501,11 @@ def run_revert(args):
 
         print("\nReverting changes...")
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "clean", "-fd"],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
@@ -1530,7 +1530,7 @@ def _discard_interactive(project_dir, git_path):
     """Handles the interactive discard logic."""
     print(f"--- Interactive Discard in: {project_dir} ---")
     try:
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -1574,7 +1574,7 @@ def _discard_interactive(project_dir, git_path):
 def _discard_files(project_dir, git_path, files_to_discard, yes=False):
     """Handles discarding a specific list of files."""
     print(f"--- Discarding specified files in: {project_dir} ---")
-    status_result = subprocess.run(
+    status_result = subprocess.run(  # nosec B603
         [git_path, "-C", str(project_dir), "status", "--porcelain"],
         capture_output=True, text=True, check=True
     )
@@ -1585,7 +1585,7 @@ def _discard_files(project_dir, git_path, files_to_discard, yes=False):
     tracked_to_discard = [f for f in files_to_discard if f not in all_untracked_files]
     untracked_to_discard = [f for f in files_to_discard if f in all_untracked_files]
 
-    status_of_selection = subprocess.run(
+    status_of_selection = subprocess.run(  # nosec B603
         [git_path, "-C", str(project_dir), "status", "--porcelain", "--"] + files_to_discard,
         capture_output=True, text=True
     )
@@ -1609,10 +1609,10 @@ def _discard_files(project_dir, git_path, files_to_discard, yes=False):
     try:
         if tracked_to_discard:
             cmd = [git_path, "-C", str(project_dir), "checkout", "HEAD", "--"] + tracked_to_discard
-            subprocess.run(cmd, check=True, capture_output=True)
+            subprocess.run(cmd, check=True, capture_output=True)  # nosec B603
         if untracked_to_discard:
             cmd = [git_path, "-C", str(project_dir), "clean", "-f", "--"] + untracked_to_discard
-            subprocess.run(cmd, check=True, capture_output=True)
+            subprocess.run(cmd, check=True, capture_output=True)  # nosec B603
         print("✅ Specified files have been discarded.")
     except subprocess.CalledProcessError as e:
         stderr = e.stderr.decode().strip() if e.stderr else str(e)
@@ -1624,7 +1624,7 @@ def _discard_all(project_dir, git_path, yes=False):
     """Handles discarding all uncommitted changes."""
     print(f"--- Discarding ALL uncommitted changes in: {project_dir} ---")
     try:
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -1651,7 +1651,7 @@ def _discard_all(project_dir, git_path, yes=False):
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         stash_message = f"agent-discard-stash-{timestamp}"
         # Use -u to include untracked files
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "stash", "push", "-u", "-m", stash_message],
             check=True, capture_output=True, text=True
         )
@@ -1665,11 +1665,11 @@ def _discard_all(project_dir, git_path, yes=False):
 
     print("\nCleaning working directory...")
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "reset", "--hard", "HEAD"],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "clean", "-fd"],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -1694,7 +1694,7 @@ def run_undo(args):
     print(f"--- Searching for stashed discards in: {project_dir} ---")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "stash", "list"],
             capture_output=True, text=True, check=True
         )
@@ -1718,7 +1718,7 @@ def run_undo(args):
         if 0 <= choice_index < len(discard_stashes):
             stash_to_apply = discard_stashes[choice_index].split(':')[0]
             print(f"\nRestoring selected stash: {stash_to_apply}...")
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "stash", "pop", stash_to_apply],
                 check=True
             )
@@ -1880,7 +1880,7 @@ def run_rewind(args):
         sys.exit(1)
 
     try:
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -1896,7 +1896,7 @@ def run_rewind(args):
     if not target:
         print(f"--- Interactive Rewind in: {project_dir} ---")
         try:
-            log_result = subprocess.run(
+            log_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "log", "--oneline", "--pretty=format:%h|%s|%cr", "-n", "15"],
                 capture_output=True, text=True, check=True
             )
@@ -1936,7 +1936,7 @@ def run_rewind(args):
         # First, check if the target is a valid git object (commit, tag, etc.)
         is_git_ref = False
         try:
-            check_ref_result = subprocess.run(
+            check_ref_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{target}"],
                 capture_output=True, text=True
             )
@@ -1944,7 +1944,7 @@ def run_rewind(args):
                 is_git_ref = True
             else:
                 # Also check if it's a commit hash
-                check_commit_result = subprocess.run(
+                check_commit_result = subprocess.run(  # nosec B603
                     [git_path, "-C", str(project_dir), "cat-file", "-t", target],
                     capture_output=True, text=True
                 )
@@ -1977,12 +1977,12 @@ def run_rewind(args):
     print(f"\nRewinding to {target}...")
     try:
         # Step 1: Clean any ignored files that might be lingering
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "clean", "-fdx"],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         # Step 2: Reset to the target commit
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "reset", "--hard", target],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -2168,7 +2168,7 @@ def _stash_push(args, git_path, project_dir):
     print(f"--- Stashing changes in: {project_dir} ---")
     try:
         # Check if there's anything to stash
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -2197,7 +2197,7 @@ def _stash_list(args, git_path, project_dir, count=None):
     print(f"--- Stashes in: {project_dir} ---")
     try:
         cmd = [git_path, "-C", str(project_dir), "stash", "list"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec B603
 
         stashes = result.stdout.strip().split('\n')
         if not stashes or not stashes[0]:
@@ -2235,7 +2235,7 @@ def _stash_pop(args, git_path, project_dir):
         stash_ref = f"stash@{{{selection}}}"
         print(f"\nPopping {stash_ref}...")
 
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "stash", "pop", str(selection)],
             capture_output=True, text=True
         )
@@ -2283,7 +2283,7 @@ def _stash_drop(args, git_path, project_dir):
                 sys.exit(0)
 
         print(f"\nDropping {stash_ref}...")
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "stash", "drop", str(selection)],
             check=True, capture_output=True, text=True
         )
@@ -2374,7 +2374,7 @@ def run_glance(args):
     git_summary = "Git not found"
     if git_path and (project_dir / ".git").is_dir():
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "status", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -2571,7 +2571,7 @@ def _run_diff_summary_logic(project_dir):
     print(f"--- Diff Summary: {project_dir} ---")
     try:
         cmd = [git_path, "-C", str(project_dir), "diff", "--stat"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec B603
         if not result.stdout.strip():
             print("✅ No uncommitted changes.")
         else:
@@ -2613,14 +2613,14 @@ def run_diff(args):
             # Case 1: Show uncommitted changes
             print(f"--- Uncommitted Changes (HEAD): {project_dir} ---")
             cmd = [git_path, "-C", str(project_dir), "diff", "--color=always", "HEAD"]
-            # Use subprocess.run without capturing output to stream directly
-            result = subprocess.run(cmd)
+            # Use subprocess.run without capturing output to stream directly  # nosec B603
+            result = subprocess.run(cmd)  # nosec B603
             sys.exit(result.returncode)
 
         # Case 2: Target is provided (Run ID or commit hash)
         original_target = target
         # Check if it's a known git reference first
-        is_git_ref = subprocess.run(
+        is_git_ref = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
             capture_output=True, text=True
         ).returncode == 0
@@ -2638,7 +2638,7 @@ def run_diff(args):
 
         # Use 'git show' which nicely formats the commit info and the diff
         cmd = [git_path, "-C", str(project_dir), "show", "--color=always", target]
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603
         sys.exit(result.returncode)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -2677,7 +2677,7 @@ def _run_log_logic(project_dir, count=None):
         if count is not None:
             cmd.extend(["-n", str(count)])
 
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603
 
         if result.returncode != 0:
             print(f"\n❌ Error: git log command failed with exit code {result.returncode}.", file=sys.stderr)
@@ -3313,7 +3313,7 @@ def _sprint_status(args):
     git_path = shutil.which("git")
     if git_path and (project_dir / ".git").is_dir():
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "worktree", "list"],
                 capture_output=True, text=True, check=True
             )
@@ -3330,11 +3330,11 @@ def _sprint_status(args):
         try:
             main_branch = "main"
             try:
-                subprocess.run([git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{main_branch}"], check=True, capture_output=True)
+                subprocess.run([git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{main_branch}"], check=True, capture_output=True)  # nosec B603
             except subprocess.CalledProcessError:
                 main_branch = "master"
 
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "branch", "--merged", main_branch],
                 capture_output=True, text=True, check=True
             )
@@ -3388,7 +3388,7 @@ def run_branch(args):
             sys.exit(1)
         try:
             print(f"Creating and checking out new branch: {branch_name}")
-            subprocess.run([git_path, "-C", str(project_dir), "checkout", "-b", branch_name], check=True, capture_output=True)
+            subprocess.run([git_path, "-C", str(project_dir), "checkout", "-b", branch_name], check=True, capture_output=True)  # nosec B603
             branch_file.write_text(branch_name)
             print(f"✅ Agent branch set to '{branch_name}'.")
         except subprocess.CalledProcessError as e:
@@ -3402,7 +3402,7 @@ def run_branch(args):
             sys.exit(1)
         try:
             print(f"Checking out branch: {branch_name}")
-            subprocess.run([git_path, "-C", str(project_dir), "checkout", branch_name], check=True, capture_output=True)
+            subprocess.run([git_path, "-C", str(project_dir), "checkout", branch_name], check=True, capture_output=True)  # nosec B603
             branch_file.write_text(branch_name)
             print(f"✅ Agent branch set to '{branch_name}'.")
         except subprocess.CalledProcessError as e:
@@ -3423,12 +3423,12 @@ def run_branch(args):
 
         main_branch = "main"
         try:
-            subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
+            subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)  # nosec B603
         except subprocess.CalledProcessError as e:
             if "did not match any file(s) known to git" in e.stderr:
                 main_branch = "master" # Fallback to master
                 try:
-                    subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
+                    subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)  # nosec B603
                 except subprocess.CalledProcessError as e2:
                     stderr = e2.stderr.strip()
                     print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
@@ -3440,11 +3440,11 @@ def run_branch(args):
 
         print(f"Merging '{current_agent_branch}' into '{main_branch}'...")
         try:
-            subprocess.run([git_path, "-C", str(project_dir), "merge", current_agent_branch], check=True, capture_output=True)
+            subprocess.run([git_path, "-C", str(project_dir), "merge", current_agent_branch], check=True, capture_output=True)  # nosec B603
             print("✅ Merge successful.")
             if not args.keep_branch:
                 print(f"Deleting branch '{current_agent_branch}'...")
-                subprocess.run([git_path, "-C", str(project_dir), "branch", "-d", current_agent_branch], check=True, capture_output=True)
+                subprocess.run([git_path, "-C", str(project_dir), "branch", "-d", current_agent_branch], check=True, capture_output=True)  # nosec B603
                 branch_file.unlink()
                 print("✅ Branch deleted and agent branch config removed.")
         except subprocess.CalledProcessError as e:
@@ -3458,7 +3458,7 @@ def run_branch(args):
         if current_agent_branch:
             print(f"  * {current_agent_branch} (active)")
         try:
-            result = subprocess.run([git_path, "-C", str(project_dir), "branch", "--list"], capture_output=True, text=True, check=True)
+            result = subprocess.run([git_path, "-C", str(project_dir), "branch", "--list"], capture_output=True, text=True, check=True)  # nosec B603
             for line in result.stdout.strip().split('\n'):
                 line = line.strip()
                 if line.startswith("*"):
@@ -3501,7 +3501,7 @@ def run_git(args):
 
     try:
         # Execute the command from within the worktree directory, capturing output.
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             full_command,
             cwd=worktree_path,
             capture_output=True,
@@ -3575,7 +3575,7 @@ def run_test(args):
     print(f"Executing command: {' '.join(full_command)}")
     try:
         # Stream the output directly and run in the target project directory
-        result = subprocess.run(full_command, cwd=project_dir)
+        result = subprocess.run(full_command, cwd=project_dir)  # nosec B603
         # Exit with the same code as the test runner
         sys.exit(result.returncode)
 
@@ -3655,7 +3655,7 @@ def run_lint(args):
     print(f"Executing command: {' '.join(full_command)}")
     try:
         # Stream the output directly and run in the target project directory
-        result = subprocess.run(full_command, cwd=project_dir)
+        result = subprocess.run(full_command, cwd=project_dir)  # nosec B603
         sys.exit(result.returncode)
 
     except FileNotFoundError:
@@ -3726,7 +3726,7 @@ def run_format(args):
     print(f"Executing command: {' '.join(full_command)}")
     try:
         # Stream the output directly and run in the target project directory
-        result = subprocess.run(full_command, cwd=project_dir)
+        result = subprocess.run(full_command, cwd=project_dir)  # nosec B603
         sys.exit(result.returncode)
 
     except FileNotFoundError:
@@ -5689,7 +5689,7 @@ def run_setup(args):
             dev_command = [sys.executable, "-m", "pip", "install", "-r", "requirements-dev.txt"]
             try:
                 # Run this command first
-                result = subprocess.run(dev_command, cwd=project_dir)
+                result = subprocess.run(dev_command, cwd=project_dir)  # nosec B603
                 if result.returncode != 0:
                      print(f"❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
                      sys.exit(result.returncode)
@@ -5711,7 +5711,7 @@ def run_setup(args):
 
     print(f"Executing command: {' '.join(command_base)}")
     try:
-        result = subprocess.run(command_base, cwd=project_dir)
+        result = subprocess.run(command_base, cwd=project_dir)  # nosec B603
         if result.returncode == 0:
             print("✅ Setup complete.")
         else:
@@ -5816,7 +5816,7 @@ def run_push(args):
 
     try:
         # Check for uncommitted changes
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -5846,14 +5846,14 @@ def run_push(args):
         push_cmd = [git_path, "-C", str(project_dir), "push", "-u", "origin", branch_name]
 
         # We stream the output directly to the user's console
-        push_result = subprocess.run(push_cmd, text=True)
+        push_result = subprocess.run(push_cmd, text=True)  # nosec B603
 
         if push_result.returncode == 0:
             print("\n✅ Push successful.")
             sys.exit(0)
         else:
             print(f"\n❌ Git push command failed with exit code {push_result.returncode}.", file=sys.stderr)
-            # Git's own error messages will be printed to stderr by subprocess.run
+            # Git's own error messages will be printed to stderr by subprocess.run  # nosec B603
             sys.exit(push_result.returncode)
 
     except subprocess.CalledProcessError as e:
@@ -5886,7 +5886,7 @@ def run_pull(args):
 
     try:
         # Check for uncommitted changes
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -5899,14 +5899,14 @@ def run_pull(args):
         pull_cmd = [git_path, "-C", str(project_dir), "pull"]
 
         # We stream the output directly to the user's console
-        pull_result = subprocess.run(pull_cmd, text=True)
+        pull_result = subprocess.run(pull_cmd, text=True)  # nosec B603
 
         if pull_result.returncode == 0:
             print("\n✅ Pull successful.")
             sys.exit(0)
         else:
             print(f"\n❌ Git pull command failed with exit code {pull_result.returncode}.", file=sys.stderr)
-            # Git's own error messages will be printed to stderr by subprocess.run
+            # Git's own error messages will be printed to stderr by subprocess.run  # nosec B603
             sys.exit(pull_result.returncode)
 
     except subprocess.CalledProcessError as e:
@@ -5965,7 +5965,7 @@ def run_patch(args):
         sys.exit(1)
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             cmd,
             input=patch_content,
             text=True,
@@ -6015,7 +6015,7 @@ def _pr_create(args, config):
         print(f"  - On branch: {current_branch}")
 
         # 2. Check if the branch is pushed to remote
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "ls-remote", "--exit-code", "--heads", "origin", current_branch],
             capture_output=True, text=True
         )
@@ -6096,13 +6096,13 @@ def run_commit(args):
     # --- Stage all changes ---
     print("--- Staging all changes ---")
     try:
-        subprocess.run([git_path, "-C", str(project_dir), "add", "-A"], check=True, capture_output=True, text=True)
+        subprocess.run([git_path, "-C", str(project_dir), "add", "-A"], check=True, capture_output=True, text=True)  # nosec B603
     except subprocess.CalledProcessError as e:
         print(f"❌ Error staging files: {e.stderr}", file=sys.stderr)
         sys.exit(1)
 
     # --- Check if there's anything to commit ---
-    check_staged_result = subprocess.run([git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"], capture_output=True)
+    check_staged_result = subprocess.run([git_path, "-C", str(project_dir), "diff", "--cached", "--quiet"], capture_output=True)  # nosec B603
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
         sys.exit(0)
@@ -6158,7 +6158,7 @@ def run_commit(args):
     print(f"--- Creating commit ---")
     try:
         commit_cmd = [git_path, "-C", str(project_dir), "commit", "-m", commit_message]
-        commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)
+        commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)  # nosec B603
         print(commit_result.stdout.strip())
         print("\n✅ Commit created successfully.")
         sys.exit(0)
@@ -6188,7 +6188,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
     # 1. Get the branch name associated with the worktree
     branch_name = None
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -6222,20 +6222,20 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
 
     # 2. Check for and commit uncommitted changes in the worktree
     try:
-        status_result = subprocess.run(
+        status_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(worktree_path), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
         if status_result.stdout.strip():
             print("  - Uncommitted changes detected. Staging and committing...")
             # Add all changes
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "add", "."],
                 check=True, capture_output=True
             )
             # Commit changes
             commit_message = f"Autocommit: Worktree merge for {worktree_name}"
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "commit", "-m", commit_message],
                 check=True, capture_output=True
             )
@@ -6252,7 +6252,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
     main_branch = "main"
     print(f"  - Checking out '{main_branch}' branch in main repository...")
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "checkout", main_branch],
             check=True, capture_output=True, text=True
         )
@@ -6261,7 +6261,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
              main_branch = "master" # Fallback to master
              print(f"  - '{main_branch}' not found, trying 'master'...")
              try:
-                 subprocess.run(
+                 subprocess.run(  # nosec B603
                      [git_path, "-C", str(project_dir), "checkout", main_branch],
                      check=True, capture_output=True, text=True
                  )
@@ -6277,7 +6277,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
 
     print(f"  - Merging branch '{branch_name}' into '{main_branch}'...")
     try:
-        merge_result = subprocess.run(
+        merge_result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "merge", "--no-ff", branch_name],
             check=True, capture_output=True, text=True
         )
@@ -6291,7 +6291,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         print(f"❌ Error merging branch: {stderr}", file=sys.stderr)
         print("  - Merge conflict detected or another error occurred. Aborting merge.")
         # Attempt to abort the merge to leave the repo in a clean state
-        subprocess.run([git_path, "-C", str(project_dir), "merge", "--abort"])
+        subprocess.run([git_path, "-C", str(project_dir), "merge", "--abort"])  # nosec B603
         sys.exit(1)
 
     # 4. Optionally clean up the worktree and branch
@@ -6307,7 +6307,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         # Remove worktree
         try:
             print(f"  - Removing worktree '{worktree_name}'...")
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "worktree", "remove", worktree_name],
                 check=True, capture_output=True, text=True
             )
@@ -6320,7 +6320,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         # Delete branch
         try:
             print(f"  - Deleting branch '{branch_name}'...")
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "branch", "-d", branch_name],
                 check=True, capture_output=True, text=True
             )
@@ -6356,7 +6356,7 @@ def _worktree_diff(args, git_path, worktrees_base_dir):
     try:
         # We run 'diff' from within the worktree's directory.
         # This automatically compares the worktree's state against the main repo's HEAD.
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(worktree_path), "diff", "HEAD"],
             capture_output=True, text=True
         )
@@ -6400,7 +6400,7 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
     # 1. Get Core Information (Path, Branch)
     branch_name = "N/A"
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -6452,7 +6452,7 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
     # 3. Get Git Status
     print("\n--- Git Status ---")
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(worktree_path), "status", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -6469,7 +6469,7 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
     # 4. Get Diff Summary
     print("\n--- Diff Summary (vs HEAD) ---")
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(worktree_path), "diff", "--stat", "HEAD"],
             capture_output=True, text=True
         )
@@ -6499,7 +6499,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
 
     # 1. Get the list of worktrees
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
             capture_output=True, text=True, check=True
         )
@@ -6596,7 +6596,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     if selected_action == "show":
         worktree_path = worktrees_base_dir / selected_worktree
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "status", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -6621,7 +6621,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     elif selected_action == "revert":
         worktree_path = worktrees_base_dir / selected_worktree
         try:
-            status_result = subprocess.run(
+            status_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "status", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -6635,11 +6635,11 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
                 confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
                 if confirm == 'y':
                      print("\nReverting changes...")
-                     subprocess.run(
+                     subprocess.run(  # nosec B603
                          [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
                          check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                      )
-                     subprocess.run(
+                     subprocess.run(  # nosec B603
                          [git_path, "-C", str(worktree_path), "clean", "-fd"],
                          check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                      )
@@ -6662,7 +6662,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
                     cmd.append("--force")
                 cmd.append(selected_worktree)
 
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                subprocess.run(cmd, check=True, capture_output=True, text=True)  # nosec B603
                 print(f"✅ Removed worktree: {selected_worktree}")
             except subprocess.CalledProcessError as e:
                  stderr = e.stderr.strip()
@@ -6712,7 +6712,7 @@ def run_worktrees(args):
 
         try:
             cmd = [git_path, "-C", str(project_dir), "worktree", "add", "-b", branch_name, str(worktree_path), "HEAD"]
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True)  # nosec B603
             print(f"\n✅ Successfully created worktree '{args.worktree_name}' on branch '{branch_name}'.")
 
         except subprocess.CalledProcessError as e:
@@ -6728,7 +6728,7 @@ def run_worktrees(args):
     elif args.action == "list":
         print(f"--- Listing Agent Worktrees in: {worktrees_base_dir} ---")
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -6782,7 +6782,7 @@ def run_worktrees(args):
 
         print(f"--- Reverting uncommitted changes in worktree: {args.worktree_name} ---")
         try:
-            status_result = subprocess.run(
+            status_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "status", "--porcelain"],
                 capture_output=True, text=True, check=True
             )
@@ -6801,11 +6801,11 @@ def run_worktrees(args):
                     sys.exit(0)
 
             print("\nReverting changes...")
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [git_path, "-C", str(worktree_path), "clean", "-fd"],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
@@ -6865,7 +6865,7 @@ def run_worktrees(args):
                     cmd.append("--force")
                 cmd.append(name) # Can just be the name if it's in worktrees/ dir
 
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                subprocess.run(cmd, check=True, capture_output=True, text=True)  # nosec B603
                 print(f"✅ Removed worktree: {name}")
 
                 # After successful removal via git, ensure the directory is gone

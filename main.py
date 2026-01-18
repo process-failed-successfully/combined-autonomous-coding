@@ -2193,6 +2193,12 @@ def run_release(args):
         sys.exit(0)
 
 
+def run_map(args):
+    """Generates a code map."""
+    from shared.map import _run_map_logic
+    _run_map_logic(args.project_dir, args.format, args.focus)
+    sys.exit(0)
+
 def run_analytics(args):
     """Runs project analytics."""
     if args.type == "git":
@@ -5795,6 +5801,29 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'map' command ---
+    parser_map = subparsers.add_parser(
+        "map",
+        help="Visualize the project's internal structure (files, classes, functions)."
+    )
+    parser_map.add_argument(
+        "--format",
+        choices=["mermaid", "json", "text"],
+        default="mermaid",
+        help="Output format (default: mermaid)."
+    )
+    parser_map.add_argument(
+        "--focus",
+        type=str,
+        help="Focus on a specific file or module pattern."
+    )
+    parser_map.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'release' command ---
     parser_release = subparsers.add_parser(
         "release",
@@ -7856,6 +7885,10 @@ async def main():
 
     if args.command == "deps":
         run_deps(args)
+        return
+
+    if args.command == "map":
+        run_map(args)
         return
 
     if args.command == "release":

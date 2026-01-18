@@ -48,6 +48,7 @@ from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouter
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 from shared.ask import run_ask_logic
+from shared.code_review import run_code_review_logic
 from shared.security import SecurityAuditor
 import json
 import yaml
@@ -2228,6 +2229,22 @@ async def run_ask(args):
         agent_type=args.agent,
         model=args.model,
         files=args.files,
+        verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
+
+async def run_code_review(args):
+    """Runs an AI-powered code review."""
+    # Setup logging
+    logger, _ = setup_logger(name="review_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_code_review_logic(
+        project_dir=args.project_dir,
+        files=args.files,
+        diff=args.diff,
+        agent_type=args.agent,
+        model=args.model,
         verbose=args.verbose
     )
     sys.exit(0 if success else 1)
@@ -5567,6 +5584,44 @@ def parse_args(argv=None):
         help="The project directory to analyze (default: current directory)."
     )
 
+    # --- New 'code-review' command ---
+    parser_code_review = subparsers.add_parser(
+        "code-review",
+        help="Request an AI code review of specific files or git diffs."
+    )
+    parser_code_review.add_argument(
+        "files",
+        nargs="*",
+        help="Specific files to review. If omitted, defaults to reviewing uncommitted changes."
+    )
+    parser_code_review.add_argument(
+        "--diff",
+        action="store_true",
+        help="Include git diff (HEAD) in the review. Implied if no files are provided."
+    )
+    parser_code_review.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_code_review.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_code_review.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_code_review.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory)."
+    )
+
     # --- New 'context' command ---
     parser_context = subparsers.add_parser(
         "context",
@@ -7579,6 +7634,11 @@ async def main():
     # Handle `ask` command
     if args.command == "ask":
         await run_ask(args)
+        return
+
+    # Handle `code-review` command
+    if args.command == "code-review":
+        await run_code_review(args)
         return
 
     # Handle `init` command

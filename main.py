@@ -29,7 +29,7 @@ except ImportError:
 
 from shared.config import Config
 from shared.logger import setup_logger
-from shared.git import ensure_git_safe
+from shared.git import ensure_git_safe, is_safe_git_ref
 from shared.config_loader import load_config_from_file, ensure_config_exists
 
 # Import agent runners
@@ -1744,7 +1744,7 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     """Searches the git log for a commit associated with a Run ID."""
     try:
         # Search the entire commit history for the Run ID in the message body
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "log", "--all", f"--grep=Run ID: {run_id}", "--format=%H"],
             capture_output=True, text=True, check=True
         )
@@ -1774,6 +1774,11 @@ def run_cherry_pick(args):
 
     # --- Target Resolution: Commit Hash vs. Run ID ---
     original_target = target
+
+    if not is_safe_git_ref(target):
+        print(f"❌ Error: Invalid target '{target}'. Must be a safe git reference or Run ID.", file=sys.stderr)
+        sys.exit(1)
+
     # First, check if the target is a valid git object (commit, tag, etc.)
     is_git_ref = False
     try:
@@ -1901,10 +1906,14 @@ def run_rewind(args):
             sys.exit(0)
     else:
         # --- Target Resolution: Commit Hash vs. Run ID ---
+        if not is_safe_git_ref(target):
+            print(f"❌ Error: Invalid target '{target}'. Must be a safe git reference or Run ID.", file=sys.stderr)
+            sys.exit(1)
+
         # First, check if the target is a valid git object (commit, tag, etc.)
         is_git_ref = False
         try:
-            check_ref_result = subprocess.run(
+            check_ref_result = subprocess.run(  # nosec B603
                 [git_path, "-C", str(project_dir), "show-ref", "--verify", f"refs/heads/{target}"],
                 capture_output=True, text=True
             )
@@ -1912,7 +1921,7 @@ def run_rewind(args):
                 is_git_ref = True
             else:
                 # Also check if it's a commit hash
-                check_commit_result = subprocess.run(
+                check_commit_result = subprocess.run(  # nosec B603
                     [git_path, "-C", str(project_dir), "cat-file", "-t", target],
                     capture_output=True, text=True
                 )
@@ -1945,12 +1954,12 @@ def run_rewind(args):
     print(f"\nRewinding to {target}...")
     try:
         # Step 1: Clean any ignored files that might be lingering
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "clean", "-fdx"],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         # Step 2: Reset to the target commit
-        subprocess.run(
+        subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "reset", "--hard", target],
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -2539,7 +2548,7 @@ def _run_diff_summary_logic(project_dir):
     print(f"--- Diff Summary: {project_dir} ---")
     try:
         cmd = [git_path, "-C", str(project_dir), "diff", "--stat"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec B603
         if not result.stdout.strip():
             print("✅ No uncommitted changes.")
         else:
@@ -2582,13 +2591,18 @@ def run_diff(args):
             print(f"--- Uncommitted Changes (HEAD): {project_dir} ---")
             cmd = [git_path, "-C", str(project_dir), "diff", "--color=always", "HEAD"]
             # Use subprocess.run without capturing output to stream directly
-            result = subprocess.run(cmd)
+            result = subprocess.run(cmd)  # nosec B603
             sys.exit(result.returncode)
 
         # Case 2: Target is provided (Run ID or commit hash)
         original_target = target
+
+        if not is_safe_git_ref(target):
+            print(f"❌ Error: Invalid target '{target}'. Must be a safe git reference or Run ID.", file=sys.stderr)
+            sys.exit(1)
+
         # Check if it's a known git reference first
-        is_git_ref = subprocess.run(
+        is_git_ref = subprocess.run(  # nosec B603
             [git_path, "-C", str(project_dir), "rev-parse", "--verify", f"{target}^{{commit}}"],
             capture_output=True, text=True
         ).returncode == 0
@@ -2606,7 +2620,7 @@ def run_diff(args):
 
         # Use 'git show' which nicely formats the commit info and the diff
         cmd = [git_path, "-C", str(project_dir), "show", "--color=always", target]
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603
         sys.exit(result.returncode)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -2645,7 +2659,7 @@ def _run_log_logic(project_dir, count=None):
         if count is not None:
             cmd.extend(["-n", str(count)])
 
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603
 
         if result.returncode != 0:
             print(f"\n❌ Error: git log command failed with exit code {result.returncode}.", file=sys.stderr)

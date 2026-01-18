@@ -9,6 +9,7 @@ import logging
 import subprocess
 import time
 import shutil
+import re
 from pathlib import Path
 from typing import Optional
 from shared.utils import sanitize_url
@@ -16,6 +17,20 @@ from shared.utils import sanitize_url
 logger = logging.getLogger(__name__)
 
 GIT_PATH = shutil.which("git")
+
+def is_safe_git_ref(ref: str) -> bool:
+    """
+    Validates a git reference to prevent command injection.
+    Only allows alphanumeric characters, underscores, hyphens, forward slashes, periods, carets, and tildes.
+    Explicitly rejects references starting with a dash.
+    """
+    if not ref or ref.startswith("-"):
+        return False
+    # Only allow safe characters
+    # Allowed: a-z A-Z 0-9 _ - / . ^ ~
+    pattern = r"^[a-zA-Z0-9_/\.\-\^~]+$"
+    return bool(re.match(pattern, ref))
+
 
 def is_git_safeguard_active() -> bool:
     """Check if the git push safeguard wrapper is active."""

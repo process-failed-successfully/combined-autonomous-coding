@@ -2194,6 +2194,48 @@ def run_release(args):
         sys.exit(0)
 
 
+async def run_bisect(args):
+    """Runs smart bisect."""
+    from shared.bisect import run_bisect_logic, analyze_commit
+
+    project_dir = args.project_dir.resolve()
+
+    if args.action == "run":
+        if not args.good or not args.bad or not args.command:
+             print("Error: --good, --bad, and --command are required for 'run' action.", file=sys.stderr)
+             sys.exit(1)
+
+        success = await run_bisect_logic(
+            project_dir=project_dir,
+            good_commit=args.good,
+            bad_commit=args.bad,
+            run_command=args.command,
+            agent_type=args.agent,
+            model=args.model,
+            verbose=args.verbose,
+            no_analysis=args.no_analysis
+        )
+        sys.exit(0 if success else 1)
+
+    elif args.action == "analyze":
+        if not args.commit:
+             print("Error: Commit hash required for analysis.", file=sys.stderr)
+             sys.exit(1)
+
+        description = args.bug_description or "A regression was reported on this commit."
+        print(f"--- Analyzing Commit: {args.commit} ---")
+        analysis = await analyze_commit(
+            project_dir=project_dir,
+            commit_hash=args.commit,
+            bug_description=description,
+            agent_type=args.agent,
+            model=args.model,
+            verbose=args.verbose
+        )
+        print("\n" + analysis)
+        sys.exit(0)
+
+
 def run_map(args):
     """Generates a code map."""
     from shared.map import _run_map_logic
@@ -5856,6 +5898,103 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'bisect' command ---
+    parser_bisect = subparsers.add_parser(
+        "bisect",
+        help="Automate regression finding with git bisect and AI analysis."
+    )
+    bisect_subparsers = parser_bisect.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Bisect 'run' action
+    parser_bisect_run = bisect_subparsers.add_parser(
+        "run",
+        help="Run an automated git bisect session."
+    )
+    parser_bisect_run.add_argument(
+        "--good",
+        required=True,
+        help="A known good commit hash or reference."
+    )
+    parser_bisect_run.add_argument(
+        "--bad",
+        required=True,
+        help="A known bad commit hash or reference."
+    )
+    parser_bisect_run.add_argument(
+        "--test-command",
+        required=True,
+        dest="test_command",
+        help="The shell command to run for testing (exit 0 for good, non-zero for bad)."
+    )
+    parser_bisect_run.add_argument(
+        "--no-analysis",
+        action="store_true",
+        help="Skip the AI analysis of the bad commit."
+    )
+    # Common agent args
+    parser_bisect_run.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for analysis (default: gemini)."
+    )
+    parser_bisect_run.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_bisect_run.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_bisect_run.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
+    # Bisect 'analyze' action
+    parser_bisect_analyze = bisect_subparsers.add_parser(
+        "analyze",
+        help="Analyze a specific commit for a bug."
+    )
+    parser_bisect_analyze.add_argument(
+        "commit",
+        help="The commit hash to analyze."
+    )
+    parser_bisect_analyze.add_argument(
+        "--bug-description",
+        help="Description of the bug or failure."
+    )
+    parser_bisect_analyze.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_bisect_analyze.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_bisect_analyze.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_bisect_analyze.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'map' command ---
     parser_map = subparsers.add_parser(
         "map",
@@ -7945,6 +8084,10 @@ async def main():
 
     if args.command == "deps":
         run_deps(args)
+        return
+
+    if args.command == "bisect":
+        await run_bisect(args)
         return
 
     if args.command == "map":

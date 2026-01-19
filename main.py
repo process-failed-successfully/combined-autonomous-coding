@@ -4021,6 +4021,24 @@ def run_branch(args):
     sys.exit(0)
 
 
+def run_hooks(args):
+    """Manages git hooks for the project."""
+    from shared.hooks import install_pre_commit_hook, uninstall_pre_commit_hook, run_hooks_logic
+
+    project_dir = args.project_dir.resolve()
+
+    if args.action == "install":
+        success = install_pre_commit_hook(project_dir)
+        sys.exit(0 if success else 1)
+    elif args.action == "uninstall":
+        success = uninstall_pre_commit_hook(project_dir)
+        sys.exit(0 if success else 1)
+    elif args.action == "run":
+        success = run_hooks_logic(project_dir)
+        sys.exit(0 if success else 1)
+    sys.exit(0)
+
+
 def run_git(args):
     """Acts as a proxy to run git commands within a specified task's worktree."""
     project_dir = args.project_dir.resolve()
@@ -5528,6 +5546,53 @@ def parse_args(argv=None):
         "format_args",
         nargs=argparse.REMAINDER,
         help="Arguments to pass through to the underlying formatter (e.g., specific files, flags).",
+    )
+
+    # --- New 'hooks' command ---
+    parser_hooks = subparsers.add_parser(
+        "hooks",
+        help="Manage git hooks (pre-commit) for the project."
+    )
+    hooks_subparsers = parser_hooks.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Hooks 'install' action
+    parser_hooks_install = hooks_subparsers.add_parser(
+        "install",
+        help="Install the agent's pre-commit hook."
+    )
+    parser_hooks_install.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
+    # Hooks 'uninstall' action
+    parser_hooks_uninstall = hooks_subparsers.add_parser(
+        "uninstall",
+        help="Uninstall the agent's pre-commit hook."
+    )
+    parser_hooks_uninstall.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
+    # Hooks 'run' action
+    parser_hooks_run = hooks_subparsers.add_parser(
+        "run",
+        help="Manually run the hooks checks."
+    )
+    parser_hooks_run.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
     )
 
     # --- New 'git' command ---
@@ -8498,6 +8563,10 @@ async def main():
 
     if args.command == "format":
         run_format(args)
+        return
+
+    if args.command == "hooks":
+        run_hooks(args)
         return
 
     if args.command == "git":

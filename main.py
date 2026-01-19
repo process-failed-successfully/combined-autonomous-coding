@@ -2276,6 +2276,15 @@ def run_unused(args):
     )
     sys.exit(0)
 
+def run_risk(args):
+    """Runs the risk analysis (hotspots)."""
+    from shared.risk_analysis import _run_risk_logic
+    _run_risk_logic(
+        project_dir=args.project_dir,
+        limit=args.limit
+    )
+    sys.exit(0)
+
 def run_deps(args):
     """Generates a dependency graph or updates dependencies."""
     from shared.dependencies import _run_deps_logic, DependencyAnalyzer, DependencyUpdater
@@ -6080,6 +6089,24 @@ def parse_args(argv=None):
         help="The project directory to scan."
     )
 
+    # --- New 'risk' command ---
+    parser_risk = subparsers.add_parser(
+        "risk",
+        help="Identify high-risk files based on complexity and churn (Hotspots)."
+    )
+    parser_risk.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze."
+    )
+    parser_risk.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=20,
+        help="Number of files to show (default: 20)."
+    )
+
     # --- New 'bisect' command ---
     parser_bisect = subparsers.add_parser(
         "bisect",
@@ -8519,6 +8546,10 @@ async def main():
 
     if args.command == "unused":
         run_unused(args)
+        return
+
+    if args.command == "risk":
+        run_risk(args)
         return
 
     if args.command == "bisect":

@@ -14,6 +14,7 @@ class DependencyAnalyzer:
 
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
+        self.license_cache = {}
 
     def scan(self) -> Dict[str, Any]:
         """Scans the project directory for dependency files and parses them."""
@@ -263,6 +264,78 @@ class DependencyAnalyzer:
 
         return data
 
+    def check_licenses(self, data: Dict[str, Any], allow_list: List[str] = None, deny_list: List[str] = None) -> List[Dict[str, Any]]:
+        """
+        Checks licenses for all found dependencies.
+        Returns a list of violations (or all items if just listing).
+        """
+        import concurrent.futures
+        print("Checking licenses (this may take a moment)...")
+        results = []
+
+        def normalize(lic):
+            if not lic: return "unknown"
+            # Basic normalization: lowercase, remove common suffixes
+            return lic.lower().replace(" license", "").replace(" software", "").strip()
+
+        allow_set = {normalize(l) for l in allow_list} if allow_list else set()
+        deny_set = {normalize(l) for l in deny_list} if deny_list else set()
+
+        # Helper to process a dependency
+        def process_dep(lang, file_info, dep):
+            name = dep["name"]
+            license_name = "Unknown"
+
+            if lang == "python":
+                license_name = self._get_pypi_license(name) or "Unknown"
+            elif lang == "node":
+                license_name = self._get_npm_license(name) or "Unknown"
+
+            status = "OK"
+            msg = ""
+            lic_norm = normalize(license_name)
+
+            if deny_set and lic_norm in deny_set:
+                status = "VIOLATION"
+                msg = f"License '{license_name}' is explicitly denied."
+            elif allow_set and lic_norm not in allow_set:
+                status = "VIOLATION"
+                msg = f"License '{license_name}' is not in the allowed list."
+
+            # If no lists provided, just list everything as OK (audit mode)
+            if not allow_set and not deny_set:
+                status = "INFO"
+
+            return {
+                "package": name,
+                "version": dep.get("version", ""),
+                "license": license_name,
+                "file": file_info["source"],
+                "status": status,
+                "message": msg
+            }
+
+        # Collect all tasks
+        tasks = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            # Python
+            for file_info in data.get("python", []):
+                for dep in file_info.get("dependencies", []):
+                    tasks.append(executor.submit(process_dep, "python", file_info, dep))
+
+            # Node
+            for file_info in data.get("node", []):
+                for dep in file_info.get("dependencies", []):
+                    tasks.append(executor.submit(process_dep, "node", file_info, dep))
+
+            for future in concurrent.futures.as_completed(tasks):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    print(f"Error checking license: {e}")
+
+        return results
+
     def _get_latest_pypi_version(self, package_name: str) -> Optional[str]:
         try:
             url = f"https://pypi.org/pypi/{package_name}/json"
@@ -281,6 +354,66 @@ class DependencyAnalyzer:
                 return response.json()["version"]
         except Exception:
             pass
+        return None
+
+    def _get_pypi_license(self, package_name: str) -> Optional[str]:
+        if package_name in self.license_cache:
+            return self.license_cache[package_name]
+
+        try:
+            url = f"https://pypi.org/pypi/{package_name}/json"
+            response = requests.get(url, timeout=2)
+            if response.status_code == 200:
+                info = response.json()["info"]
+
+                # 1. Try Classifiers first (more standard)
+                classifiers = info.get("classifiers", [])
+                for c in classifiers:
+                    if c.startswith("License :: OSI Approved :: "):
+                        lic = c.replace("License :: OSI Approved :: ", "").strip()
+                        self.license_cache[package_name] = lic
+                        return lic
+                    elif c.startswith("License :: "):
+                        lic = c.replace("License :: ", "").strip()
+                        # Avoid "License :: OSI Approved" parent category
+                        if lic != "OSI Approved":
+                            self.license_cache[package_name] = lic
+                            return lic
+
+                # 2. Try license field
+                license_field = info.get("license", "")
+                if license_field and len(license_field) < 50: # Avoid long license texts
+                     self.license_cache[package_name] = license_field
+                     return license_field
+
+        except Exception:
+            pass
+
+        self.license_cache[package_name] = None
+        return None
+
+    def _get_npm_license(self, package_name: str) -> Optional[str]:
+        if package_name in self.license_cache:
+            return self.license_cache[package_name]
+
+        try:
+            url = f"https://registry.npmjs.org/{package_name}/latest"
+            response = requests.get(url, timeout=2)
+            if response.status_code == 200:
+                data = response.json()
+                license_field = data.get("license", "")
+
+                # Sometimes it's a dict { type: "MIT", ... }
+                if isinstance(license_field, dict):
+                    license_field = license_field.get("type", "")
+
+                if license_field:
+                    self.license_cache[package_name] = license_field
+                    return license_field
+        except Exception:
+            pass
+
+        self.license_cache[package_name] = None
         return None
 
     def generate_updates_table(self, data: Dict[str, Any]) -> str:

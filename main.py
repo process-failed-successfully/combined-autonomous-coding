@@ -2285,6 +2285,46 @@ def run_risk(args):
     )
     sys.exit(0)
 
+def run_license(args):
+    """Checks dependency license compliance."""
+    from shared.dependencies import DependencyAnalyzer
+
+    analyzer = DependencyAnalyzer(args.project_dir)
+    data = analyzer.scan()
+
+    allow_list = args.allow.split(",") if args.allow else None
+    deny_list = args.deny.split(",") if args.deny else None
+
+    results = analyzer.check_licenses(data, allow_list=allow_list, deny_list=deny_list)
+
+    if args.action == "list":
+        print(f"\n--- License Report for {args.project_dir} ---")
+        print(f"  {'Package':<30} | {'License':<20} | {'Status':<10}")
+        print("  " + "-" * 70)
+        for item in results:
+            pkg = item["package"]
+            lic = item["license"]
+            status = item["status"]
+
+            # Truncate if too long
+            if len(pkg) > 30: pkg = pkg[:27] + "..."
+            if len(lic) > 20: lic = lic[:17] + "..."
+
+            print(f"  {pkg:<30} | {lic:<20} | {status:<10}")
+
+    elif args.action == "check":
+        violations = [r for r in results if r["status"] == "VIOLATION"]
+        if not violations:
+            print("✅ No license violations found.")
+            sys.exit(0)
+        else:
+            print(f"❌ Found {len(violations)} license violation(s):")
+            for v in violations:
+                print(f"  - {v['package']} ({v['license']}): {v['message']}")
+            sys.exit(1)
+
+    sys.exit(0)
+
 def run_deps(args):
     """Generates a dependency graph or updates dependencies."""
     from shared.dependencies import _run_deps_logic, DependencyAnalyzer, DependencyUpdater
@@ -6107,6 +6147,33 @@ def parse_args(argv=None):
         help="Number of files to show (default: 20)."
     )
 
+    # --- New 'license' command ---
+    parser_license = subparsers.add_parser(
+        "license",
+        help="Check dependency license compliance."
+    )
+    parser_license.add_argument(
+        "action",
+        choices=["check", "list"],
+        help="Action to perform."
+    )
+    parser_license.add_argument(
+        "--allow",
+        type=str,
+        help="Comma-separated list of allowed licenses (e.g., 'MIT,Apache-2.0')."
+    )
+    parser_license.add_argument(
+        "--deny",
+        type=str,
+        help="Comma-separated list of denied licenses (e.g., 'GPL-3.0')."
+    )
+    parser_license.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'bisect' command ---
     parser_bisect = subparsers.add_parser(
         "bisect",
@@ -8550,6 +8617,10 @@ async def main():
 
     if args.command == "risk":
         run_risk(args)
+        return
+
+    if args.command == "license":
+        run_license(args)
         return
 
     if args.command == "bisect":

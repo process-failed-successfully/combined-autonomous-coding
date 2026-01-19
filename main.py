@@ -4060,6 +4060,24 @@ def run_branch(args):
     sys.exit(0)
 
 
+def run_hooks(args):
+    """Manages git hooks for the project."""
+    from shared.hooks import install_pre_commit_hook, uninstall_pre_commit_hook, run_hooks_logic
+
+    project_dir = args.project_dir.resolve()
+
+    if args.action == "install":
+        success = install_pre_commit_hook(project_dir)
+        sys.exit(0 if success else 1)
+    elif args.action == "uninstall":
+        success = uninstall_pre_commit_hook(project_dir)
+        sys.exit(0 if success else 1)
+    elif args.action == "run":
+        success = run_hooks_logic(project_dir)
+        sys.exit(0 if success else 1)
+    sys.exit(0)
+
+
 def run_git(args):
     """Acts as a proxy to run git commands within a specified task's worktree."""
     project_dir = args.project_dir.resolve()
@@ -8572,6 +8590,10 @@ async def main():
 
     if args.command == "format":
         run_format(args)
+        return
+
+    if args.command == "hooks":
+        run_hooks(args)
         return
 
     if args.command == "git":

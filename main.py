@@ -6552,7 +6552,7 @@ async def run_docstring(args):
                 print(f"  - Line {item['lineno']}: {item['type']} '{item['name']}'")
 
         print(f"\nTotal: {len(items)} missing.")
-        sys.exit(1) # Exit 1 to indicate issues found (like lint)
+        sys.exit(1)  # Exit 1 to indicate issues found (like lint)
 
     elif args.action == "generate":
         print("Scanning for missing docstrings...")
@@ -6676,12 +6676,11 @@ def run_setup(args):
                 # Run this command first
                 result = subprocess.run(dev_command, cwd=project_dir)
                 if result.returncode != 0:
-                     print(f"❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
-                     sys.exit(result.returncode)
+                    print("❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
+                    sys.exit(result.returncode)
             except Exception as e:
                 print(f"❌ An unexpected error occurred while installing dev dependencies: {e}", file=sys.stderr)
                 sys.exit(1)
-
 
     # 3. Go Project
     elif (project_dir / "go.mod").exists():

@@ -5898,6 +5898,38 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'coverage' command ---
+    parser_coverage = subparsers.add_parser(
+        "coverage",
+        help="Run tests with code coverage analysis."
+    )
+    parser_coverage.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_coverage.add_argument(
+        "--html",
+        action="store_true",
+        help="Generate an HTML report (htmlcov/).",
+    )
+    parser_coverage.add_argument(
+        "--xml",
+        action="store_true",
+        help="Generate an XML report (coverage.xml).",
+    )
+    parser_coverage.add_argument(
+        "--fail-under",
+        type=int,
+        help="Fail if coverage is below this percentage.",
+    )
+    parser_coverage.add_argument(
+        "test_args",
+        nargs=argparse.REMAINDER,
+        help="Additional arguments to pass to pytest.",
+    )
+
     # --- New 'bisect' command ---
     parser_bisect = subparsers.add_parser(
         "bisect",
@@ -8175,6 +8207,17 @@ async def main():
     if args.command == "deps":
         run_deps(args)
         return
+
+    if args.command == "coverage":
+        from shared.coverage import run_coverage_logic
+        success = run_coverage_logic(
+            project_dir=args.project_dir,
+            html_report=args.html,
+            xml_report=args.xml,
+            fail_under=args.fail_under,
+            test_args=args.test_args
+        )
+        sys.exit(0 if success else 1)
 
     if args.command == "bisect":
         await run_bisect(args)

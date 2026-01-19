@@ -48,6 +48,7 @@ from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouter
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 from shared.ask import run_ask_logic
+from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.security import SecurityAuditor
@@ -2418,6 +2419,22 @@ async def run_ask(args):
 
     success = await run_ask_logic(
         query=args.query,
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        files=args.files,
+        verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
+
+async def run_debug(args):
+    """Runs the debug command logic."""
+    # Setup logging
+    logger, _ = setup_logger(name="debug_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_debug_logic(
+        command=" ".join(args.command_to_run),
         project_dir=args.project_dir,
         agent_type=args.agent,
         model=args.model,
@@ -5797,6 +5814,44 @@ def parse_args(argv=None):
         help="The project directory to analyze (default: current directory)."
     )
 
+    # --- New 'debug' command ---
+    parser_debug = subparsers.add_parser(
+        "debug",
+        help="Execute a command and use AI to analyze failures."
+    )
+    parser_debug.add_argument(
+        "command_to_run",
+        nargs=argparse.REMAINDER,
+        help="The shell command to run and debug."
+    )
+    parser_debug.add_argument(
+        "--files",
+        nargs="*",
+        help="Specific files to include in the context."
+    )
+    parser_debug.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_debug.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_debug.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_debug.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory)."
+    )
+
     # --- New 'code-review' command ---
     parser_code_review = subparsers.add_parser(
         "code-review",
@@ -8286,6 +8341,11 @@ async def main():
     # Handle `ask` command
     if args.command == "ask":
         await run_ask(args)
+        return
+
+    # Handle `debug` command
+    if args.command == "debug":
+        await run_debug(args)
         return
 
     # Handle `code-review` command

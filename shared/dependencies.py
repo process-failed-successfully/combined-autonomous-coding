@@ -1,7 +1,9 @@
 import json
 import re
+import requests
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+
 
 class DependencyAnalyzer:
     """
@@ -153,7 +155,7 @@ class DependencyAnalyzer:
                         parts = line.split("=", 1)
                         name = parts[0].strip()
                         version = parts[1].strip().strip('"').strip("'")
-                        if name != "python": # Poetry often includes python version
+                        if name != "python":  # Poetry often includes python version
                             dependencies.append({
                                 "name": name,
                                 "version": version
@@ -161,14 +163,14 @@ class DependencyAnalyzer:
 
                 # Handle list items
                 if in_dependency_list:
-                     # Usually strings in a list
-                     # Regex fallback for strings like '"flask>=2.0",'
-                     # We use non-greedy matching for version part to stop before the closing quote
-                     match = re.match(r'^[\'"]([a-zA-Z0-9\-_]+)(.*?)[\'"],?$', line)
-                     if match:
-                         name = match.group(1)
-                         version = match.group(2).strip()
-                         dependencies.append({
+                    # Usually strings in a list
+                    # Regex fallback for strings like '"flask>=2.0",'
+                    # We use non-greedy matching for version part to stop before the closing quote
+                    match = re.match(r'^[\'"]([a-zA-Z0-9\-_]+)(.*?)[\'"],?$', line)
+                    if match:
+                        name = match.group(1)
+                        version = match.group(2).strip()
+                        dependencies.append({
                             "name": name,
                             "version": version
                         })
@@ -231,9 +233,93 @@ class DependencyAnalyzer:
 
         return "\n".join(lines)
 
-def _run_deps_logic(project_dir: Path, output_format: str = "text"):
+    def check_updates(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Checks for updates for all found dependencies."""
+        print("Checking for updates (this may take a moment)...")
+
+        # Python
+        for file_info in data.get("python", []):
+            for dep in file_info.get("dependencies", []):
+                latest = self._get_latest_pypi_version(dep["name"])
+                if latest:
+                    dep["latest"] = latest
+                    # Basic check: if latest is not in version string (e.g. '==1.0.0')
+                    # This is naive but works for '==', '>=', etc if versions don't match.
+                    # For a robust solution we'd need a semver parser.
+                    # Here we treat any mismatch in string presence or just difference as potentially outdated
+                    current_clean = dep.get("version", "").replace("==", "").replace(">=", "").strip()
+                    dep["outdated"] = current_clean != latest
+
+        # Node
+        for file_info in data.get("node", []):
+            for dep in file_info.get("dependencies", []):
+                latest = self._get_latest_npm_version(dep["name"])
+                if latest:
+                    dep["latest"] = latest
+                    current_clean = dep.get("version", "").replace("^", "").replace("~", "").strip()
+                    dep["outdated"] = current_clean != latest
+
+        return data
+
+    def _get_latest_pypi_version(self, package_name: str) -> Optional[str]:
+        try:
+            url = f"https://pypi.org/pypi/{package_name}/json"
+            response = requests.get(url, timeout=2)
+            if response.status_code == 200:
+                return response.json()["info"]["version"]
+        except Exception:
+            pass
+        return None
+
+    def _get_latest_npm_version(self, package_name: str) -> Optional[str]:
+        try:
+            url = f"https://registry.npmjs.org/{package_name}/latest"
+            response = requests.get(url, timeout=2)
+            if response.status_code == 200:
+                return response.json()["version"]
+        except Exception:
+            pass
+        return None
+
+    def generate_updates_table(self, data: Dict[str, Any]) -> str:
+        output = []
+
+        for lang, files in data.items():
+            if not files:
+                continue
+
+            output.append(f"\n📦 {lang.capitalize()} Updates")
+            header = f"  {'Package':<30} | {'Current':<15} | {'Latest':<15}"
+            output.append(header)
+            output.append("  " + "-" * len(header))
+
+            updates_found = False
+            for file_info in files:
+                for dep in file_info.get("dependencies", []):
+                    if dep.get("outdated"):
+                        updates_found = True
+                        name = dep["name"]
+                        current = dep.get("version", "") or "(none)"
+                        latest = dep.get("latest", "")
+                        output.append(f"  {name:<30} | {current:<15} | {latest:<15}")
+
+            if not updates_found:
+                output.append("  ✅ All dependencies appear up to date.")
+
+        return "\n".join(output)
+
+
+def _run_deps_logic(project_dir: Path, output_format: str = "text", check_updates: bool = False):
     analyzer = DependencyAnalyzer(project_dir)
     data = analyzer.scan()
+
+    if check_updates:
+        data = analyzer.check_updates(data)
+        if output_format == "json":
+            return json.dumps(data, indent=2)
+        else:
+            # For text mode, we show the updates table instead of the tree if check is requested
+            return analyzer.generate_updates_table(data)
 
     if output_format == "json":
         return json.dumps(data, indent=2)

@@ -49,7 +49,7 @@ async def run_debug_logic(
         # we use shell=True to allow complex commands
         result = subprocess.run(
             command,
-            shell=True,
+            shell=True,  # nosec
             cwd=project_dir,
             capture_output=True,
             text=True

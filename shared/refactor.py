@@ -12,6 +12,7 @@ from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
 
+
 class RefactorManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
@@ -81,14 +82,14 @@ class RefactorManager:
         # But _extract_code_block tries to handle it.
 
         if not new_content.strip():
-             # Fallback: if no code blocks, maybe the whole response is code?
-             # But usually agents are chatty. Let's assume the agent failed if no code block.
-             logger.warning("No code block found in agent response.")
-             # Try to strip markdown if it's just the code
-             if "def " in response or "class " in response or "import " in response:
-                 new_content = response.strip()
-             else:
-                 new_content = original_content # No change
+            # Fallback: if no code blocks, maybe the whole response is code?
+            # But usually agents are chatty. Let's assume the agent failed if no code block.
+            logger.warning("No code block found in agent response.")
+            # Try to strip markdown if it's just the code
+            if "def " in response or "class " in response or "import " in response:
+                new_content = response.strip()
+            else:
+                new_content = original_content  # No change
 
         # Generate Diff
         diff_lines = list(difflib.unified_diff(

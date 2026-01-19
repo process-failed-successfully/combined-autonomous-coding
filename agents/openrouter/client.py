@@ -10,6 +10,9 @@ from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
+# Mock key used for verification mode to bypass validation without using a real key.
+MOCK_API_KEY = "sk-or-v1-mock-key"
+
 class OpenRouterClient(BaseClient):
     """Handles interactions with OpenRouter API."""
 
@@ -18,7 +21,7 @@ class OpenRouterClient(BaseClient):
         self.base_url = "https://openrouter.ai/api/v1"
         self.api_key = os.environ.get("OPENROUTER_API_KEY")
         if self.config.verify_creation and not self.api_key:
-            self.api_key = "sk-or-v1-mock-key"
+            self.api_key = MOCK_API_KEY
         
         if not self.api_key:
             logger.error("OPENROUTER_API_KEY not found in environment.")

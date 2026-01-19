@@ -2265,6 +2265,16 @@ def run_duplication(args):
     )
     sys.exit(0)
 
+def run_unused(args):
+    """Runs the unused code detector."""
+    from shared.unused import _run_unused_logic
+    _run_unused_logic(
+        project_dir=args.project_dir,
+        files=args.files,
+        ignore=args.ignore
+    )
+    sys.exit(0)
+
 def run_deps(args):
     """Generates a dependency graph."""
     from shared.dependencies import _run_deps_logic
@@ -5942,6 +5952,28 @@ def parse_args(argv=None):
         help="The project directory to scan."
     )
 
+    # --- New 'unused' command ---
+    parser_unused = subparsers.add_parser(
+        "unused",
+        help="Scan for potentially unused code (dead code)."
+    )
+    parser_unused.add_argument(
+        "--files",
+        type=str,
+        help="Glob pattern to include (e.g. '*.py')."
+    )
+    parser_unused.add_argument(
+        "--ignore",
+        type=str,
+        help="Comma-separated patterns to ignore."
+    )
+    parser_unused.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan."
+    )
+
     # --- New 'bisect' command ---
     parser_bisect = subparsers.add_parser(
         "bisect",
@@ -8222,6 +8254,10 @@ async def main():
 
     if args.command == "duplication":
         run_duplication(args)
+        return
+
+    if args.command == "unused":
+        run_unused(args)
         return
 
     if args.command == "bisect":

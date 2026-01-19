@@ -40,6 +40,7 @@ try:
     from shared.jira_client import JiraClient
 except ImportError:
     JiraClient = None
+from shared.issues import _run_issues_logic
 from agents.gemini import run_autonomous_agent as run_gemini, GeminiAgent
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
@@ -5684,6 +5685,38 @@ def parse_args(argv=None):
         help="Apply the patch in reverse (unpatch)."
     )
 
+    # --- New 'issues' command ---
+    parser_issues = subparsers.add_parser(
+        "issues",
+        help="List and manage GitHub issues."
+    )
+    parser_issues.add_argument(
+        "--state",
+        choices=["open", "closed", "all"],
+        default="open",
+        help="Filter issues by state (default: open)."
+    )
+    parser_issues.add_argument(
+        "--assignee",
+        help="Filter by assignee (username, 'none', or '*')."
+    )
+    parser_issues.add_argument(
+        "-i", "--interactive",
+        action="store_true",
+        help="Enable interactive mode to select an issue and start working."
+    )
+    parser_issues.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_issues.add_argument(
+        "--profile",
+        type=str,
+        help="Select a configuration profile from agent_config.yaml.",
+    )
+
     # --- New 'pr' command ---
     parser_pr = subparsers.add_parser(
         "pr",
@@ -8725,6 +8758,10 @@ async def main():
 
     if args.command == "patch":
         run_patch(args)
+        return
+
+    if args.command == "issues":
+        _run_issues_logic(args)
         return
 
     if args.command == "pr":

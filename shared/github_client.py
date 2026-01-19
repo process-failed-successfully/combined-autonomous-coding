@@ -67,3 +67,43 @@ class GitHubClient:
             return response.json()
         else:
             response.raise_for_status()
+
+    def get_issues(self, project_dir, state="open", assignee=None):
+        """Fetches issues from GitHub."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/issues"
+        headers = self._get_headers()
+        params = {
+            "state": state,
+            "per_page": 100,
+        }
+        if assignee:
+            params["assignee"] = assignee
+
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+
+        if response.status_code == 200:
+            # Filter out pull requests as they are also returned by the issues endpoint
+            issues = [issue for issue in response.json() if "pull_request" not in issue]
+            return issues
+        else:
+            response.raise_for_status()
+
+    def get_issue(self, project_dir, issue_number):
+        """Fetches a single issue by number."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/issues/{issue_number}"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()

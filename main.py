@@ -7,6 +7,21 @@ Combined Autonomous Coding Agent
 Main entry point for running autonomous coding agents (Gemini or Cursor).
 """
 
+from shared.cli_utils import get_workflow_stage, WORKFLOW_STAGES, WORKFLOW_ORDER
+from shared.cli_utils import (
+    get_project_summary,
+    get_suggestions,
+    _run_enhanced_status_logic,
+    _run_tree_logic,
+    _run_report_logic,
+    _run_dashboard_logic,
+    _run_blame_logic,
+    _run_next_logic,
+    _run_context_show_logic,
+    _run_context_analyze_logic,
+    _find_metrics_file,
+    _parse_metrics,
+)
 import argparse
 import asyncio
 try:
@@ -55,7 +70,6 @@ from shared.security import SecurityAuditor
 import json
 import yaml
 import platformdirs
-from dataclasses import asdict, is_dataclass
 from datetime import datetime
 
 # Agent Definitions
@@ -77,6 +91,7 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -105,7 +120,8 @@ def run_init(args):
                 print("✅ Successfully initialized a new Git repository.")
             except (subprocess.CalledProcessError, FileNotFoundError) as e:
                 stderr = getattr(e, 'stderr', str(e))
-                if isinstance(stderr, bytes): stderr = stderr.decode()
+                if isinstance(stderr, bytes):
+                    stderr = stderr.decode()
                 print(f"❌ Error initializing Git repository: {stderr}")
 
     # --- Step 2: .gitignore ---
@@ -205,9 +221,9 @@ dashboard_state.json
     if spec_path.exists():
         print(f"✅ Application spec file already exists: {spec_path.name}")
         if not args.yes:
-             overwrite_spec = input("Do you want to overwrite it? [y/N]: ").strip().lower()
-             if overwrite_spec != 'y':
-                 spec_path = None # Skip writing
+            overwrite_spec = input("Do you want to overwrite it? [y/N]: ").strip().lower()
+            if overwrite_spec != 'y':
+                spec_path = None  # Skip writing
 
     if spec_path:
         print("Please describe the application you want to build.")
@@ -220,7 +236,7 @@ dashboard_state.json
                 line = input("> ")
                 if not line and len(spec_lines) > 0 and spec_lines[-1] == "":
                     # Two consecutive empty lines
-                    spec_lines.pop() # Remove the last empty line
+                    spec_lines.pop()  # Remove the last empty line
                     break
                 spec_lines.append(line)
         except (EOFError, KeyboardInterrupt):
@@ -239,11 +255,11 @@ dashboard_state.json
     print("✅ Project initialization complete!")
     print("\nYou're ready to start working with the agent. Here are some common next steps:")
     executable_name = os.path.basename(sys.argv[0])
-    print(f"  - To start the agent and build your app:")
+    print("  - To start the agent and build your app:")
     print(f"    {executable_name} --spec app_spec.txt")
-    print(f"  - To see all available commands:")
+    print("  - To see all available commands:")
     print(f"    {executable_name} --help")
-    print(f"  - For a detailed health check of your environment:")
+    print("  - For a detailed health check of your environment:")
     print(f"    {executable_name} doctor")
 
     sys.exit(0)
@@ -484,6 +500,7 @@ RECOMMENDED_MODELS = {
     ]
 }
 
+
 def run_models(args):
     """Prints a list of recommended models for each agent."""
     agent_filter = args.agent
@@ -501,7 +518,7 @@ def run_models(args):
         print(f"\n# {agent_name.capitalize()} Agent")
         header = f"  {'Model Name':<30} | {'Description'}"
         print(header)
-        print(f"  {'-'*30}-+-{'-'*40}")
+        print(f"  {'-' * 30}-+-{'-' * 40}")
 
         for model_info in models:
             rec_marker = " (recommended)" if model_info["recommended"] else ""
@@ -961,7 +978,7 @@ def _artifacts_list(base_dir, mode):
 
     for i, archive_dir in enumerate(archives):
         latest_marker = " (latest)" if i == 0 else ""
-        print(f"\n[{i+1}] {archive_dir.name}{latest_marker}")
+        print(f"\n[{i + 1}] {archive_dir.name}{latest_marker}")
         try:
             contents = list(archive_dir.iterdir())
             if not contents:
@@ -1011,7 +1028,7 @@ def _artifacts_restore(args, base_dir, mode):
         else:
             print(f"Please select a {mode} archive to restore:")
             for i, archive_dir in enumerate(archives):
-                print(f"  [{i+1}] {archive_dir.name}")
+                print(f"  [{i + 1}] {archive_dir.name}")
 
             while True:
                 try:
@@ -1156,7 +1173,7 @@ def _artifacts_clear(args, base_dir, mode):
 def _artifacts_inspect(args, base_dir, mode):
     """Generic helper function to inspect trash or archives."""
     if not args.archive_name:
-        print(f"❌ Error: 'inspect' action requires an archive name.", file=sys.stderr)
+        print("❌ Error: 'inspect' action requires an archive name.", file=sys.stderr)
         sys.exit(1)
 
     archive_dir = base_dir / args.archive_name
@@ -1287,6 +1304,7 @@ def _artifacts_diff(args, base_dir, mode):
 
     sys.exit(0)
 
+
 def run_artifacts(args, mode):
     """Manages agent artifacts (trash or archives)."""
     project_dir = args.project_dir.resolve()
@@ -1298,8 +1316,6 @@ def run_artifacts(args, mode):
         sys.exit(0)
 
     # Convert the Namespace object to a dictionary for easier handling
-    args_dict = vars(args)
-
     if args.action == "list":
         _artifacts_list(base_dir, mode)
     elif args.action == "restore":
@@ -1310,6 +1326,7 @@ def run_artifacts(args, mode):
         _artifacts_inspect(args, base_dir, mode)
     elif args.action == "diff":
         _artifacts_diff(args, base_dir, mode)
+
 
 def run_archives(args):
     """Manages the agent archives directory."""
@@ -1326,6 +1343,7 @@ def run_archives(args):
         dry_run=args.dry_run
     )
     run_artifacts(new_args, mode='archive')
+
 
 def run_revert(args):
     """Discards uncommitted changes for specified files or for the entire repository."""
@@ -1369,7 +1387,7 @@ def run_revert(args):
             for i, change in enumerate(changes):
                 status, filename = change[:2], change[3:]
                 all_files.append(filename)
-                print(f"  [{i+1}] {status.strip()}: {filename}")
+                print(f"  [{i + 1}] {status.strip()}: {filename}")
 
             selection = input("> ").strip()
             if not selection:
@@ -1520,7 +1538,7 @@ def _discard_interactive(project_dir, git_path):
         for i, change in enumerate(changes):
             status, filename = change[:2], change[3:]
             all_files.append(filename)
-            print(f"  [{i+1}] {status.strip()}: {filename}")
+            print(f"  [{i + 1}] {status.strip()}: {filename}")
 
         selection = input("> ").strip()
         if not selection:
@@ -1631,7 +1649,7 @@ def _discard_all(project_dir, git_path, yes=False):
             [git_path, "-C", str(project_dir), "stash", "push", "-u", "-m", stash_message],
             check=True, capture_output=True, text=True
         )
-        print(f"✅ Changes stashed safely. To recover, use the 'undo' command.")
+        print("✅ Changes stashed safely. To recover, use the 'undo' command.")
     except subprocess.CalledProcessError as e:
         # It's possible there are no changes to stash if only ignored files are present
         if "No local changes to save" not in e.stderr:
@@ -1683,7 +1701,7 @@ def run_undo(args):
 
         print("Please select a discard to undo (press Enter to cancel):")
         for i, stash in enumerate(discard_stashes):
-            print(f"  [{i+1}] {stash}")
+            print(f"  [{i + 1}] {stash}")
 
         selection = input("> ").strip()
         if not selection:
@@ -1822,9 +1840,9 @@ def run_cherry_pick(args):
             print(result.stderr, file=sys.stderr)
             print("------------------", file=sys.stderr)
             print("\nPlease resolve the conflicts in your editor and then run:", file=sys.stderr)
-            print(f"  git cherry-pick --continue", file=sys.stderr)
+            print("  git cherry-pick --continue", file=sys.stderr)
             print("\nTo abort the cherry-pick and return to the previous state, run:", file=sys.stderr)
-            print(f"  git cherry-pick --abort", file=sys.stderr)
+            print("  git cherry-pick --abort", file=sys.stderr)
             sys.exit(1)
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -1839,7 +1857,6 @@ def run_rewind(args):
     """Resets the project to a previous state (git commit)."""
     project_dir = args.project_dir.resolve()
     target = args.target
-    original_target = target  # Keep a copy for error messages
 
     # --- Pre-flight checks ---
     git_path = shutil.which("git")
@@ -1865,7 +1882,6 @@ def run_rewind(args):
         print(f"❌ Error checking git status: {e}", file=sys.stderr)
         sys.exit(1)
 
-
     # --- Interactive Mode ---
     if not target:
         print(f"--- Interactive Rewind in: {project_dir} ---")
@@ -1880,8 +1896,8 @@ def run_rewind(args):
                 sys.exit(0)
 
             print("Select a commit to rewind to (press Enter to cancel):")
-            for i, (hash, subject, time) in enumerate(commits):
-                print(f"  [{i+1}] {hash} - {subject} ({time})")
+            for i, (hash, subject, commit_time) in enumerate(commits):
+                print(f"  [{i+1}] {hash} - {subject} ({commit_time})")
 
             selection = input("> ").strip()
             if not selection:
@@ -1937,7 +1953,6 @@ def run_rewind(args):
                 print(f"❌ Error: Could not find a git commit for Run ID '{target}'.", file=sys.stderr)
                 print("Please provide a valid commit hash, reference, or a Run ID from the agent's history.", file=sys.stderr)
                 sys.exit(1)
-
 
     # --- Confirmation and Execution ---
     print(f"\nThis will perform a 'git reset --hard' to '{target}'.")
@@ -2044,7 +2059,7 @@ def run_restore(args):
     artifacts_to_restore = list(latest_trash_dir.iterdir())
     if not artifacts_to_restore:
         print("Trash archive is empty. Nothing to restore.")
-        latest_trash_dir.rmdir() # Clean up empty dir
+        latest_trash_dir.rmdir()  # Clean up empty dir
         print(f"Removed empty trash archive: {latest_trash_dir.name}")
         sys.exit(0)
 
@@ -2090,21 +2105,6 @@ def run_restore(args):
     print("\n✅ Restore complete.")
     sys.exit(0)
 
-
-from shared.cli_utils import (
-    get_project_summary,
-    get_suggestions,
-    _run_enhanced_status_logic,
-    _run_tree_logic,
-    _run_report_logic,
-    _run_dashboard_logic,
-    _run_blame_logic,
-    _run_next_logic,
-    _run_context_show_logic,
-    _run_context_analyze_logic,
-    _find_metrics_file,
-    _parse_metrics,
-)
 
 def run_release(args):
     """Manages the release process."""
@@ -2177,19 +2177,19 @@ def run_release(args):
         # Create tag
         tag_name = f"v{next_version}"
         if not args.no_changelog:
-             # Use changelog as tag message
-             # Write to temp file for safety
-             import tempfile
-             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tf:
-                 tf.write(changelog)
-                 tf_path = tf.name
+            # Use changelog as tag message
+            # Write to temp file for safety
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tf:
+                tf.write(changelog)
+                tf_path = tf.name
 
-             try:
-                 subprocess.run(["git", "-C", str(project_dir), "tag", "-a", tag_name, "-F", tf_path], check=True)
-             finally:
-                 os.unlink(tf_path)
+            try:
+                subprocess.run(["git", "-C", str(project_dir), "tag", "-a", tag_name, "-F", tf_path], check=True)
+            finally:
+                os.unlink(tf_path)
         else:
-             subprocess.run(["git", "-C", str(project_dir), "tag", tag_name], check=True)
+            subprocess.run(["git", "-C", str(project_dir), "tag", tag_name], check=True)
 
         print(f"✅ Created tag: {tag_name}")
         print("Don't forget to push: git push --follow-tags")
@@ -2204,8 +2204,8 @@ async def run_bisect(args):
 
     if args.action == "run":
         if not args.good or not args.bad or not args.command:
-             print("Error: --good, --bad, and --command are required for 'run' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: --good, --bad, and --command are required for 'run' action.", file=sys.stderr)
+            sys.exit(1)
 
         success = await run_bisect_logic(
             project_dir=project_dir,
@@ -2221,8 +2221,8 @@ async def run_bisect(args):
 
     elif args.action == "analyze":
         if not args.commit:
-             print("Error: Commit hash required for analysis.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Commit hash required for analysis.", file=sys.stderr)
+            sys.exit(1)
 
         description = args.bug_description or "A regression was reported on this commit."
         print(f"--- Analyzing Commit: {args.commit} ---")
@@ -2244,6 +2244,7 @@ def run_map(args):
     _run_map_logic(args.project_dir, args.format, args.focus)
     sys.exit(0)
 
+
 def run_analytics(args):
     """Runs project analytics."""
     if args.type == "git":
@@ -2256,6 +2257,7 @@ def run_analytics(args):
         _run_analytics_complexity_logic(args.project_dir)
     sys.exit(0)
 
+
 def run_duplication(args):
     """Runs the code duplication detector."""
     from shared.duplication import _run_duplication_logic
@@ -2266,6 +2268,7 @@ def run_duplication(args):
         ignore=args.ignore
     )
     sys.exit(0)
+
 
 def run_unused(args):
     """Runs the unused code detector."""
@@ -2366,7 +2369,7 @@ def run_deps(args):
         # 3. Interactive Selection
         print("\n--- Outdated Dependencies ---")
         for i, item in enumerate(outdated_list):
-            print(f"[{i+1}] {item['name']} ({item['lang']}): {item['current']} -> {item['latest']} (in {item['file'].name})")
+            print(f"[{i + 1}] {item['name']} ({item['lang']}): {item['current']} -> {item['latest']} (in {item['file'].name})")
 
         print("\nEnter numbers to update (e.g., '1 3 5'), 'a' for all, or Enter to cancel.")
         try:
@@ -2416,6 +2419,7 @@ def run_deps(args):
 
     print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
+
 
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
@@ -2475,10 +2479,12 @@ def run_context(args):
         print(context_output)
     sys.exit(0)
 
+
 def run_next(args):
     """Analyzes the project and executes the next logical command upon confirmation."""
     success = _run_next_logic(project_dir=args.project_dir)
     sys.exit(0 if success else 1)
+
 
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
@@ -2524,18 +2530,18 @@ def run_search(args):
         results_by_file[f].append(res)
 
     for file_path, matches in results_by_file.items():
-        print(f"\n📄 \033[1m{file_path}\033[0m") # Bold filename
+        print(f"\n📄 \033[1m{file_path}\033[0m")  # Bold filename
         for m in matches:
             # Context before
             for ctx in m['context_before']:
-                print(f"    \033[90m{ctx}\033[0m") # Gray context
+                print(f"    \033[90m{ctx}\033[0m")  # Gray context
 
             # Match
             # Highlight the pattern in the content?
             # Simple highlight if not regex or complex
             content = m['content']
             # We skip highlighting for now to avoid messiness with regex matches
-            print(f"  \033[32m{m['line']}\033[0m: {content}") # Green line num
+            print(f"  \033[32m{m['line']}\033[0m: {content}")  # Green line num
 
             # Context after
             for ctx in m['context_after']:
@@ -2671,6 +2677,7 @@ def run_stash(args):
     elif args.action == "drop":
         _stash_drop(args, git_path, project_dir)
 
+
 def _stash_push(args, git_path, project_dir):
     """Stashes uncommitted changes."""
     print(f"--- Stashing changes in: {project_dir} ---")
@@ -2694,11 +2701,12 @@ def _stash_push(args, git_path, project_dir):
             sys.exit(1)
 
         print("✅ Changes stashed successfully.")
-        _stash_list(args, git_path, project_dir, count=1) # Show the latest stash
+        _stash_list(args, git_path, project_dir, count=1)  # Show the latest stash
 
     except subprocess.CalledProcessError as e:
         print(f"❌ An error occurred: {e.stderr}", file=sys.stderr)
         sys.exit(1)
+
 
 def _stash_list(args, git_path, project_dir, count=None):
     """Lists all available stashes."""
@@ -2723,6 +2731,7 @@ def _stash_list(args, git_path, project_dir, count=None):
         print(f"❌ Error listing stashes: {e.stderr}", file=sys.stderr)
         return []
 
+
 def _stash_pop(args, git_path, project_dir):
     """Interactively applies and removes a stash."""
     stashes = _stash_list(args, git_path, project_dir)
@@ -2730,7 +2739,7 @@ def _stash_pop(args, git_path, project_dir):
         sys.exit(0)
 
     try:
-        selection_str = input(f"\nEnter the number of the stash to pop (0-{len(stashes)-1}), or press Enter to cancel: ").strip()
+        selection_str = input(f"\nEnter the number of the stash to pop (0-{len(stashes) - 1}), or press Enter to cancel: ").strip()
         if not selection_str:
             print("Aborted.")
             sys.exit(0)
@@ -2765,6 +2774,7 @@ def _stash_pop(args, git_path, project_dir):
         print("\nAborted.")
         sys.exit(0)
 
+
 def _stash_drop(args, git_path, project_dir):
     """Interactively deletes a stash."""
     stashes = _stash_list(args, git_path, project_dir)
@@ -2772,7 +2782,7 @@ def _stash_drop(args, git_path, project_dir):
         sys.exit(0)
 
     try:
-        selection_str = input(f"\nEnter the number of the stash to drop (0-{len(stashes)-1}), or press Enter to cancel: ").strip()
+        selection_str = input(f"\nEnter the number of the stash to drop (0-{len(stashes) - 1}), or press Enter to cancel: ").strip()
         if not selection_str:
             print("Aborted.")
             sys.exit(0)
@@ -2820,11 +2830,13 @@ def run_report(args):
     )
     sys.exit(0 if success else 1)
 
+
 def run_dashboard(args):
     """Displays a comprehensive dashboard of the project's status."""
     dashboard_text = _run_dashboard_logic(project_dir=args.project_dir)
     print(dashboard_text)
     sys.exit(0)
+
 
 def run_tree(args):
     """Displays a tree view of the project directory."""
@@ -2895,9 +2907,12 @@ def run_glance(args):
                 staged = sum(1 for line in tracked_changes if line and line[0] != ' ')
                 unstaged = sum(1 for line in tracked_changes if line and len(line) > 1 and line[1] != ' ')
                 summary_parts = []
-                if staged: summary_parts.append(f"{staged} staged")
-                if unstaged: summary_parts.append(f"{unstaged} unstaged")
-                if untracked: summary_parts.append(f"{untracked} untracked")
+                if staged:
+                    summary_parts.append(f"{staged} staged")
+                if unstaged:
+                    summary_parts.append(f"{unstaged} unstaged")
+                if untracked:
+                    summary_parts.append(f"{untracked} untracked")
                 git_summary = f"⚠️ {', '.join(summary_parts)}"
         except (subprocess.CalledProcessError, FileNotFoundError):
             git_summary = "Error checking status"
@@ -2909,8 +2924,6 @@ def run_glance(args):
     # --- Formatting the Output ---
     # Use ANSI escape codes for color and boldness
     BOLD = '\033[1m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
     CYAN = '\033[96m'
     ENDC = '\033[0m'
     CYAN_BOLD = BOLD + CYAN
@@ -2946,7 +2959,7 @@ def _run_history_logic(project_dir):
 
     for i, run_id in enumerate(reversed(run_ids)):
         latest_marker = " (latest)" if i == 0 else ""
-        print(f"\n[{len(run_ids)-i}] Run ID: {run_id}{latest_marker}")
+        print(f"\n[{len(run_ids) - i}] Run ID: {run_id}{latest_marker}")
         log_file = logs_dir / f"{run_id}.log"
         if log_file.exists():
             try:
@@ -2973,6 +2986,7 @@ def _run_history_logic(project_dir):
                 print(f"  Error reading log file: {e}")
         else:
             print("  Log file not found.")
+
 
 def run_history(args):
     """Displays a history of agent runs for the project."""
@@ -3007,7 +3021,7 @@ def _run_last_logic(project_dir):
     if metrics_file:
         metrics = _parse_metrics(metrics_file)
         # Reuse the display table but with a different title
-        _display_metrics_table(metrics, f"Performance Metrics")
+        _display_metrics_table(metrics, "Performance Metrics")
     else:
         print("\n--- Performance Metrics ---")
         print("No metrics file found for the last run.")
@@ -3040,6 +3054,7 @@ def _run_last_logic(project_dir):
         print("Log file not found.")
 
     return True
+
 
 def run_last(args):
     """Displays a summary of the last agent run."""
@@ -3100,6 +3115,7 @@ def _run_diff_summary_logic(project_dir):
         return False
     return True
 
+
 def run_diff_summary(args):
     """Displays a summary of uncommitted git changes."""
     success = _run_diff_summary_logic(project_dir=args.project_dir)
@@ -3158,7 +3174,8 @@ def run_diff(args):
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         stderr = getattr(e, 'stderr', str(e))
-        if isinstance(stderr, bytes): stderr = stderr.decode().strip()
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode().strip()
         print(f"❌ An error occurred: {stderr}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
@@ -3203,13 +3220,13 @@ def _run_log_logic(project_dir, count=None):
         return False
     return True
 
+
 def run_log(args):
     """Displays the git commit history for the project."""
     success = _run_log_logic(project_dir=args.project_dir, count=args.count)
     sys.exit(0 if success else 1)
 
 
-import time
 def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
     """The core logic for displaying agent logs."""
     repo_root = Path(__file__).parent
@@ -3309,6 +3326,7 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
 
     return True
 
+
 def run_logs(args):
     """Displays agent logs."""
     success = _run_logs_logic(
@@ -3321,7 +3339,7 @@ def run_logs(args):
 
 
 # --- Workflow Subcommand Helpers ---
-from shared.cli_utils import get_workflow_stage, WORKFLOW_STAGES, WORKFLOW_ORDER
+
 
 def _workflow_status(args):
     """Displays the current workflow status."""
@@ -3355,7 +3373,7 @@ def _workflow_advance(args):
     next_stage = WORKFLOW_STAGES[next_stage_key]
     marker_file_path = project_dir / next_stage["file"]
 
-    print(f"--- Advancing Workflow Stage ---")
+    print("--- Advancing Workflow Stage ---")
     print(f"  Current stage: {WORKFLOW_STAGES[current_stage_key]['name']}")
     print(f"  Next stage:    {next_stage['name']}")
     print(f"  Action:        Create the marker file '{next_stage['file']}'")
@@ -3389,7 +3407,7 @@ def _workflow_revert(args):
     marker_to_remove = WORKFLOW_STAGES[current_stage_key]["file"]
     marker_file_path = project_dir / marker_to_remove
 
-    print(f"--- Reverting Workflow Stage ---")
+    print("--- Reverting Workflow Stage ---")
     print(f"  Current stage:  {WORKFLOW_STAGES[current_stage_key]['name']}")
     print(f"  Previous stage: {previous_stage['name']}")
     print(f"  Action:         Delete the marker file '{marker_to_remove}'")
@@ -3459,7 +3477,7 @@ def run_help(args):
     print_command("validate", "Validate the agent configuration file.")
 
     print_header("Core Commands")
-    print_command("(run agent)", f"The default action. Use `main.py --spec <file>` to start.")
+    print_command("(run agent)", "The default action. Use `main.py --spec <file>` to start.")
     print_command("plan", "Generate a feature plan from a spec file without executing code.")
     print_command("test", "Automatically detect project type and run tests.")
     print_command("lint", "Automatically detect project type and run a linter.")
@@ -3535,8 +3553,6 @@ def run_completion():
         sys.exit(1)
 
 
-
-
 def _format_duration(seconds: float) -> str:
     """Formats seconds into a human-readable string (m s)."""
     seconds = float(seconds)
@@ -3552,6 +3568,7 @@ PRICING_MODELS = {
     "unknown": {"input": 0.0, "output": 0.0},
 }
 
+
 def run_cost(args):
     """Estimates the cost of the agent run based on token usage."""
     run_id = args.run_id
@@ -3561,20 +3578,20 @@ def run_cost(args):
         # Default to latest run
         metrics_file = project_dir / "final_metrics.txt"
         if not metrics_file.exists():
-             # Try history
-             history_file = project_dir / ".agent_history"
-             if history_file.exists():
-                 try:
-                     with open(history_file, "r") as f:
-                         run_ids = [line.strip() for line in f if line.strip()]
-                     if run_ids:
-                         run_id = run_ids[-1]
-                 except IOError:
-                     pass
+            # Try history
+            history_file = project_dir / ".agent_history"
+            if history_file.exists():
+                try:
+                    with open(history_file, "r") as f:
+                        run_ids = [line.strip() for line in f if line.strip()]
+                    if run_ids:
+                        run_id = run_ids[-1]
+                except IOError:
+                    pass
 
         if not run_id and not metrics_file.exists():
-             print("❌ Error: Could not determine Run ID or find metrics file.", file=sys.stderr)
-             sys.exit(1)
+            print("❌ Error: Could not determine Run ID or find metrics file.", file=sys.stderr)
+            sys.exit(1)
 
     if run_id:
         metrics_file = _find_metrics_file(run_id, project_dir)
@@ -3634,12 +3651,12 @@ def run_cost(args):
     output_cost = (output_tokens / 1_000_000) * pricing["output"]
     total_cost = input_cost + output_cost
 
-    print(f"\nUsage:")
+    print("\nUsage:")
     print(f"  Input Tokens:  {int(input_tokens):,}")
     print(f"  Output Tokens: {int(output_tokens):,}")
     print(f"  Total Tokens:  {int(input_tokens + output_tokens):,}")
 
-    print(f"\nEstimated Cost:")
+    print("\nEstimated Cost:")
     print(f"  Input:  ${input_cost:.4f}")
     print(f"  Output: ${output_cost:.4f}")
     print(f"  Total:  ${total_cost:.4f}")
@@ -3698,8 +3715,8 @@ def _benchmark_show(args):
             sys.exit(1)
         metrics = _parse_metrics(metrics_file)
         if not metrics.get("Run ID"):
-             print("❌ Error: Could not determine Run ID from final_metrics.txt.", file=sys.stderr)
-             sys.exit(1)
+            print("❌ Error: Could not determine Run ID from final_metrics.txt.", file=sys.stderr)
+            sys.exit(1)
         run_id = metrics["Run ID"]
     else:
         metrics_file = _find_metrics_file(run_id, project_dir)
@@ -3752,12 +3769,12 @@ def _benchmark_compare(args):
             prefix = "✅ " if is_improvement else "🔻 "
             diff_str = f"{prefix}{diff:+.2f}"
             if "Time" in key:
-                 val1_str = _format_duration(val1)
-                 val2_str = _format_duration(val2)
-                 diff_str = f"{prefix}{_format_duration(abs(diff))}"
+                val1_str = _format_duration(val1)
+                val2_str = _format_duration(val2)
+                diff_str = f"{prefix}{_format_duration(abs(diff))}"
             else:
-                 val1_str = str(val1)
-                 val2_str = str(val2)
+                val1_str = str(val1)
+                val2_str = str(val2)
         else:
             val1_str = str(val1)
             val2_str = str(val2)
@@ -3998,7 +4015,7 @@ def run_branch(args):
             subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             if "did not match any file(s) known to git" in e.stderr:
-                main_branch = "master" # Fallback to master
+                main_branch = "master"  # Fallback to master
                 try:
                     subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
                 except subprocess.CalledProcessError as e2:
@@ -4143,7 +4160,6 @@ def run_test(args):
             full_command.append("--")
         full_command.extend(passthrough_args)
 
-
     print(f"Executing command: {' '.join(full_command)}")
     try:
         # Stream the output directly and run in the target project directory
@@ -4156,7 +4172,7 @@ def run_test(args):
         sys.exit(1)
     except KeyboardInterrupt:
         print("\nTest execution interrupted by user.")
-        sys.exit(130) # Standard exit code for Ctrl+C
+        sys.exit(130)  # Standard exit code for Ctrl+C
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
         sys.exit(1)
@@ -4186,13 +4202,13 @@ def run_lint(args):
                 with open(project_dir / "package.json", 'r') as f:
                     package_data = json.load(f)
                     if "lint:fix" in package_data.get("scripts", {}):
-                         command_base = ["npm", "run", "lint:fix"]
+                        command_base = ["npm", "run", "lint:fix"]
                     else:
-                         command_base = ["npm", "run", "lint"]
-                         fix_flags = ["--", "--fix"]
+                        command_base = ["npm", "run", "lint"]
+                        fix_flags = ["--", "--fix"]
             except (IOError, json.JSONDecodeError):
-                 command_base = ["npm", "run", "lint"]
-                 fix_flags = ["--", "--fix"]
+                command_base = ["npm", "run", "lint"]
+                fix_flags = ["--", "--fix"]
 
         else:
             command_base = ["npm", "run", "lint"]
@@ -4214,7 +4230,7 @@ def run_lint(args):
             if is_fix_mode:
                 print("Warning: --fix is not supported by pylint. Ignoring.", file=sys.stderr)
         else:
-             print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
+            print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
 
     # --- Command Construction & Execution ---
     if not command_base:
@@ -4276,16 +4292,14 @@ def run_format(args):
         elif shutil.which("npx"):
             prettier_executable = "npx prettier"
 
-
         if prettier_executable:
             command_base = [prettier_executable, "."]
             if is_check_mode:
                 check_flags = ["--check"]
             else:
-                check_flags = ["--write"] # Prettier's equivalent of formatting
+                check_flags = ["--write"]  # Prettier's equivalent of formatting
         else:
             print("Warning: Node.js formatter 'prettier' not found.", file=sys.stderr)
-
 
     # --- Command Construction & Execution ---
     if not command_base:
@@ -4503,7 +4517,7 @@ def run_config(args):
                 try:
                     parsed_value = float(value)
                 except ValueError:
-                    parsed_value = value # Keep as string
+                    parsed_value = value  # Keep as string
 
         current_level[keys[-1]] = parsed_value
 
@@ -4664,7 +4678,7 @@ def parse_args(argv=None):
 
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
-    parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
+    subparsers.add_parser("configure", help="Run interactive configuration setup")
 
     # Subparser for 'config'
     parser_config = subparsers.add_parser("config", help="Manage agent configuration settings")
@@ -4672,9 +4686,9 @@ def parse_args(argv=None):
     parser_config.add_argument("key", nargs="?", help="The configuration key to get or set (e.g., 'model', 'jira.url')")
     parser_config.add_argument("value", nargs="?", help="The value to set for the specified key")
 
-    parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
-    parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
-    parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
+    subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
+    subparsers.add_parser("list-agents", help="List available agents")
+    subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
 
     # Subparser for 'models'
     parser_models = subparsers.add_parser("models", help="List recommended models for each agent")
@@ -5002,7 +5016,6 @@ def parse_args(argv=None):
         help="Skip confirmation prompt",
     )
 
-
     # Subparser for 'rewind'
     parser_rewind = subparsers.add_parser("rewind", help="Reset the project to a previous state (git commit)")
     parser_rewind.add_argument(
@@ -5021,7 +5034,6 @@ def parse_args(argv=None):
         action="store_true",
         help="Skip confirmation prompt",
     )
-
 
     # Subparser for 'worktrees'
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
@@ -5211,7 +5223,6 @@ def parse_args(argv=None):
         help="Skip confirmation prompts for 'advance' or 'revert' actions.",
     )
 
-
     # --- New 'plan' command ---
     parser_plan = subparsers.add_parser(
         "plan",
@@ -5252,7 +5263,7 @@ def parse_args(argv=None):
     )
 
     # Subparser for 'shell'
-    parser_shell = subparsers.add_parser("shell", help="Start an interactive shell session")
+    subparsers.add_parser("shell", help="Start an interactive shell session")
 
     # Subparser for 'tui'
     parser_tui = subparsers.add_parser("tui", help="Start the interactive Textual TUI")
@@ -5283,7 +5294,7 @@ def parse_args(argv=None):
     )
 
     # --- New 'completion' command ---
-    parser_completion = subparsers.add_parser(
+    subparsers.add_parser(
         "completion",
         help="Display shell completion scripts. To install, use: 'eval \"$(main.py completion)\"'",
     )
@@ -6034,9 +6045,9 @@ def parse_args(argv=None):
     parser_stash_push = stash_subparsers.add_parser("push", help="Stash all uncommitted changes (including untracked).")
     parser_stash_push.add_argument("-m", "--message", help="Optional descriptive message for the stash.")
     # Stash 'list' action
-    parser_stash_list = stash_subparsers.add_parser("list", help="List all stashes in the repository.")
+    stash_subparsers.add_parser("list", help="List all stashes in the repository.")
     # Stash 'pop' action
-    parser_stash_pop = stash_subparsers.add_parser("pop", help="Interactively select a stash to apply and remove.")
+    stash_subparsers.add_parser("pop", help="Interactively select a stash to apply and remove.")
     # Stash 'drop' action
     parser_stash_drop = stash_subparsers.add_parser("drop", help="Interactively select a stash to delete.")
     parser_stash_drop.add_argument(
@@ -6046,7 +6057,7 @@ def parse_args(argv=None):
     )
 
     # --- New 'help' command ---
-    parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
+    subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
     # --- New 'cherry-pick' command ---
     parser_cherry_pick = subparsers.add_parser(
@@ -6704,7 +6715,7 @@ def run_watch(args):
         sys.exit(1)
 
     print(f"--- Watching for file changes in: {project_dir} ---")
-    print(f"--- Press Ctrl+C to stop ---")
+    print("--- Press Ctrl+C to stop ---")
 
     event_handler = CommandEventHandler(command_to_run, project_dir)
     observer = Observer()
@@ -6744,7 +6755,7 @@ def run_feature(args):
             action="create",
             branch_name=branch_name,
             project_dir=project_dir,
-            keep_branch=False # Not used in create
+            keep_branch=False  # Not used in create
         )
         try:
             run_branch(branch_args)
@@ -6763,7 +6774,7 @@ def run_feature(args):
 
         commit_args = argparse.Namespace(
             message=commit_message,
-            run_tests=False, # For simplicity, don't run tests in this guided flow
+            run_tests=False,  # For simplicity, don't run tests in this guided flow
             project_dir=project_dir
         )
         try:
@@ -6879,7 +6890,6 @@ def run_review(args):
         pass
     except Exception as e:
         print(f"Warning: Could not display diff. {e}", file=sys.stderr)
-
 
     print("\n--- Decision ---")
     print("Do you approve these changes?")
@@ -7003,7 +7013,7 @@ async def run_docstring(args):
                 print(f"  - Line {item['lineno']}: {item['type']} '{item['name']}'")
 
         print(f"\nTotal: {len(items)} missing.")
-        sys.exit(1) # Exit 1 to indicate issues found (like lint)
+        sys.exit(1)  # Exit 1 to indicate issues found (like lint)
 
     elif args.action == "generate":
         print("Scanning for missing docstrings...")
@@ -7068,14 +7078,14 @@ def run_security(args):
         # Color coding
         sev_color = ""
         if sev == "HIGH":
-            sev_color = "\033[91m" # Red
+            sev_color = "\033[91m"  # Red
         elif sev == "MEDIUM":
-            sev_color = "\033[93m" # Yellow
+            sev_color = "\033[93m"  # Yellow
         elif sev == "LOW":
-            sev_color = "\033[94m" # Blue
+            sev_color = "\033[94m"  # Blue
         reset = "\033[0m"
 
-        print(f"\n[{i+1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
+        print(f"\n[{i + 1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
         print(f"    File: {file_path}:{line}")
         if finding.get('snippet'):
             print(f"    Snippet: {finding['snippet'].strip()}")
@@ -7127,12 +7137,11 @@ def run_setup(args):
                 # Run this command first
                 result = subprocess.run(dev_command, cwd=project_dir)
                 if result.returncode != 0:
-                     print(f"❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
-                     sys.exit(result.returncode)
+                    print("❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
+                    sys.exit(result.returncode)
             except Exception as e:
                 print(f"❌ An unexpected error occurred while installing dev dependencies: {e}", file=sys.stderr)
                 sys.exit(1)
-
 
     # 3. Go Project
     elif (project_dir / "go.mod").exists():
@@ -7178,7 +7187,7 @@ def run_interact(args):
         "2": {"text": "Run tests", "func": run_test, "args": {"project_dir": project_dir, "test_args": []}},
         "3": {"text": "Run linter", "func": run_lint, "args": {"project_dir": project_dir, "fix": False, "lint_args": []}},
         "4": {"text": "Format code", "func": run_format, "args": {"project_dir": project_dir, "check": False, "format_args": []}},
-        "5": {"text": "Commit changes", "func": run_commit}, # Special handling
+        "5": {"text": "Commit changes", "func": run_commit},  # Special handling
         "6": {"text": "Suggest next step", "func": run_suggest, "args": {"project_dir": project_dir}},
     }
 
@@ -7219,7 +7228,7 @@ def run_interact(args):
                     if e.code != 0:
                         print(f"--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
                     else:
-                        print(f"--- Command finished successfully ---")
+                        print("--- Command finished successfully ---")
                 except Exception as e:
                     print(f"An unexpected error occurred: {e}", file=sys.stderr)
             else:
@@ -7331,7 +7340,7 @@ def run_pull(args):
             sys.exit(1)
 
         # Execute the pull command
-        print(f"Pulling latest changes...")
+        print("Pulling latest changes...")
         pull_cmd = [git_path, "-C", str(project_dir), "pull"]
 
         # We stream the output directly to the user's console
@@ -7483,6 +7492,7 @@ def _pr_create(args, config):
 
     sys.exit(0)
 
+
 def run_pr(args):
     """Handles the creation of GitHub pull requests."""
     file_config = load_config_from_file(profile=getattr(args, 'profile', None))
@@ -7591,7 +7601,7 @@ def run_commit(args):
             sys.exit(1)
 
     # --- Create the commit ---
-    print(f"--- Creating commit ---")
+    print("--- Creating commit ---")
     try:
         commit_cmd = [git_path, "-C", str(project_dir), "commit", "-m", commit_message]
         commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)
@@ -7599,7 +7609,7 @@ def run_commit(args):
         print("\n✅ Commit created successfully.")
         sys.exit(0)
     except subprocess.CalledProcessError as e:
-        print(f"❌ Git commit command failed:", file=sys.stderr)
+        print("❌ Git commit command failed:", file=sys.stderr)
         print(e.stdout, file=sys.stderr)
         print(e.stderr, file=sys.stderr)
         sys.exit(e.returncode)
@@ -7641,11 +7651,11 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
             else:
                 key, value = line.split(" ", 1)
                 current_worktree[key] = value
-        if not branch_name and current_worktree: # Check last block
-             path = Path(current_worktree.get("worktree", ""))
-             if path.resolve() == worktree_path.resolve():
-                 branch_ref = current_worktree.get("branch", "")
-                 branch_name = branch_ref.split('/')[-1]
+        if not branch_name and current_worktree:  # Check last block
+            path = Path(current_worktree.get("worktree", ""))
+            if path.resolve() == worktree_path.resolve():
+                branch_ref = current_worktree.get("branch", "")
+                branch_name = branch_ref.split('/')[-1]
 
         if not branch_name:
             print(f"❌ Error: Could not determine branch for worktree '{worktree_name}'.", file=sys.stderr)
@@ -7694,22 +7704,21 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         )
     except subprocess.CalledProcessError as e:
         if "did not match any file(s) known to git" in e.stderr:
-             main_branch = "master" # Fallback to master
-             print(f"  - '{main_branch}' not found, trying 'master'...")
-             try:
-                 subprocess.run(
-                     [git_path, "-C", str(project_dir), "checkout", main_branch],
-                     check=True, capture_output=True, text=True
-                 )
-             except subprocess.CalledProcessError as e2:
-                 stderr = e2.stderr.strip()
-                 print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
-                 sys.exit(1)
+            main_branch = "master"  # Fallback to master
+            print(f"  - '{main_branch}' not found, trying 'master'...")
+            try:
+                subprocess.run(
+                    [git_path, "-C", str(project_dir), "checkout", main_branch],
+                    check=True, capture_output=True, text=True
+                )
+            except subprocess.CalledProcessError as e2:
+                stderr = e2.stderr.strip()
+                print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+                sys.exit(1)
         else:
-             stderr = e.stderr.strip()
-             print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
-             sys.exit(1)
-
+            stderr = e.stderr.strip()
+            print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+            sys.exit(1)
 
     print(f"  - Merging branch '{branch_name}' into '{main_branch}'...")
     try:
@@ -7747,7 +7756,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
                 [git_path, "-C", str(project_dir), "worktree", "remove", worktree_name],
                 check=True, capture_output=True, text=True
             )
-            print(f"  - Successfully removed worktree.")
+            print("  - Successfully removed worktree.")
         except subprocess.CalledProcessError as e:
             stderr = e.stderr.strip()
             print(f"❌ Error removing worktree: {stderr}", file=sys.stderr)
@@ -7760,7 +7769,7 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
                 [git_path, "-C", str(project_dir), "branch", "-d", branch_name],
                 check=True, capture_output=True, text=True
             )
-            print(f"  - Successfully deleted branch.")
+            print("  - Successfully deleted branch.")
         except subprocess.CalledProcessError as e:
             stderr = e.stderr.strip()
             print(f"❌ Error deleting branch: {stderr}", file=sys.stderr)
@@ -7848,18 +7857,18 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
                     if path.resolve() == worktree_path.resolve():
                         branch_ref = current_worktree.get("branch", "")
                         if branch_ref:
-                             branch_name = branch_ref.replace("refs/heads/", "")
+                            branch_name = branch_ref.replace("refs/heads/", "")
                         break
                 current_worktree = {}
             else:
                 key, value = line.split(" ", 1)
                 current_worktree[key] = value
-        if branch_name == "N/A" and current_worktree: # Check last block
-             path = Path(current_worktree.get("worktree", ""))
-             if path.resolve() == worktree_path.resolve():
-                 branch_ref = current_worktree.get("branch", "")
-                 if branch_ref:
-                     branch_name = branch_ref.replace("refs/heads/", "")
+        if branch_name == "N/A" and current_worktree:  # Check last block
+            path = Path(current_worktree.get("worktree", ""))
+            if path.resolve() == worktree_path.resolve():
+                branch_ref = current_worktree.get("branch", "")
+                if branch_ref:
+                    branch_name = branch_ref.replace("refs/heads/", "")
 
     except subprocess.CalledProcessError as e:
         print(f"❌ Warning: Could not determine branch for worktree: {e.stderr}", file=sys.stderr)
@@ -7970,7 +7979,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     for i, wt in enumerate(worktrees):
         path = Path(wt['worktree'])
         branch = wt.get('branch', 'detached HEAD').split('/')[-1]
-        print(f"  [{i+1}] {path.name} (branch: {branch})")
+        print(f"  [{i + 1}] {path.name} (branch: {branch})")
 
     selected_worktree = None
     while True:
@@ -7999,7 +8008,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     while True:
         print("\nAvailable actions:")
         for i, action in enumerate(actions):
-            print(f"  [{i+1}] {action.capitalize()}")
+            print(f"  [{i + 1}] {action.capitalize()}")
 
         try:
             action_selection = input(f"Select an action (1-{len(actions)}), or press Enter to exit: ").strip()
@@ -8070,16 +8079,16 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
 
                 confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
                 if confirm == 'y':
-                     print("\nReverting changes...")
-                     subprocess.run(
-                         [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
-                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                     )
-                     subprocess.run(
-                         [git_path, "-C", str(worktree_path), "clean", "-fd"],
-                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                     )
-                     print("✅ Revert complete. Worktree is now clean.")
+                    print("\nReverting changes...")
+                    subprocess.run(
+                        [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
+                        check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    )
+                    subprocess.run(
+                        [git_path, "-C", str(worktree_path), "clean", "-fd"],
+                        check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    )
+                    print("✅ Revert complete. Worktree is now clean.")
                 else:
                     print("Aborted.")
         except subprocess.CalledProcessError as e:
@@ -8101,8 +8110,8 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
                 subprocess.run(cmd, check=True, capture_output=True, text=True)
                 print(f"✅ Removed worktree: {selected_worktree}")
             except subprocess.CalledProcessError as e:
-                 stderr = e.stderr.strip()
-                 print(f"❌ Error removing worktree '{selected_worktree}': {stderr}", file=sys.stderr)
+                stderr = e.stderr.strip()
+                print(f"❌ Error removing worktree '{selected_worktree}': {stderr}", file=sys.stderr)
         else:
             print("Aborted.")
 
@@ -8299,7 +8308,7 @@ def run_worktrees(args):
                 cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
                 if args.force:
                     cmd.append("--force")
-                cmd.append(name) # Can just be the name if it's in worktrees/ dir
+                cmd.append(name)  # Can just be the name if it's in worktrees/ dir
 
                 subprocess.run(cmd, check=True, capture_output=True, text=True)
                 print(f"✅ Removed worktree: {name}")
@@ -8307,24 +8316,24 @@ def run_worktrees(args):
                 # After successful removal via git, ensure the directory is gone
                 worktree_dir = worktrees_base_dir / name
                 if worktree_dir.exists():
-                     print(f"Warning: Git removed worktree but directory '{worktree_dir}' still exists.", file=sys.stderr)
+                    print(f"Warning: Git removed worktree but directory '{worktree_dir}' still exists.", file=sys.stderr)
 
             except subprocess.CalledProcessError as e:
                 # Try to parse the error
                 stderr = e.stderr.strip()
                 if "is not a working tree" in stderr:
-                     # Git doesn't know about it, maybe it was partially deleted.
-                     # Let's try to clean up the directory.
+                    # Git doesn't know about it, maybe it was partially deleted.
+                    # Let's try to clean up the directory.
                     print(f"Git worktree '{name}' is in an inconsistent state. Attempting to clean up directory...")
                     worktree_dir = worktrees_base_dir / name
                     if worktree_dir.exists():
-                         try:
+                        try:
                             shutil.rmtree(worktree_dir)
                             print(f"✅ Forcefully removed directory: {worktree_dir}")
-                         except OSError as rm_e:
+                        except OSError as rm_e:
                             print(f"❌ Failed to remove directory {worktree_dir}: {rm_e}", file=sys.stderr)
                     else:
-                         print(f"Directory for '{name}' not found, already clean.")
+                        print(f"Directory for '{name}' not found, already clean.")
                 else:
                     print(f"❌ Error removing worktree '{name}': {stderr}", file=sys.stderr)
         sys.exit(0)

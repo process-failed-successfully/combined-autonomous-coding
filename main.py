@@ -2277,6 +2277,7 @@ def run_unused(args):
     )
     sys.exit(0)
 
+
 def run_risk(args):
     """Runs the risk analysis (hotspots)."""
     from shared.risk_analysis import _run_risk_logic
@@ -2328,6 +2329,7 @@ def run_license(args):
             sys.exit(1)
 
     sys.exit(0)
+
 
 def run_deps(args):
     """Generates a dependency graph or updates dependencies."""

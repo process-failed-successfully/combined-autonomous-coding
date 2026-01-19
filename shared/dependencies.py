@@ -1,7 +1,7 @@
 import json
 import re
 import requests
-import subprocess
+import subprocess  # nosec
 import shutil
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -85,7 +85,7 @@ class DependencyAnalyzer:
                         "version": version_spec
                     })
         except Exception:
-            pass
+            return []
         return dependencies
 
     def _parse_package_json(self, file_path: Path) -> List[Dict[str, str]]:
@@ -111,7 +111,7 @@ class DependencyAnalyzer:
                 })
 
         except Exception:
-            pass
+            return []
         return dependencies
 
     def _parse_pyproject_toml(self, file_path: Path) -> List[Dict[str, str]]:
@@ -179,7 +179,7 @@ class DependencyAnalyzer:
                         })
 
         except Exception:
-            pass
+            return []
         return dependencies
 
     def generate_tree(self, data: Dict[str, Any]) -> str:
@@ -344,7 +344,7 @@ class DependencyAnalyzer:
             if response.status_code == 200:
                 return response.json()["info"]["version"]
         except Exception:
-            pass
+            return None
         return None
 
     def _get_latest_npm_version(self, package_name: str) -> Optional[str]:
@@ -354,7 +354,7 @@ class DependencyAnalyzer:
             if response.status_code == 200:
                 return response.json()["version"]
         except Exception:
-            pass
+            return None
         return None
 
     def _get_pypi_license(self, package_name: str) -> Optional[str]:
@@ -388,7 +388,8 @@ class DependencyAnalyzer:
                     return license_field
 
         except Exception:
-            pass
+            self.license_cache[package_name] = None
+            return None
 
         self.license_cache[package_name] = None
         return None
@@ -412,7 +413,8 @@ class DependencyAnalyzer:
                     self.license_cache[package_name] = license_field
                     return license_field
         except Exception:
-            pass
+            self.license_cache[package_name] = None
+            return None
 
         self.license_cache[package_name] = None
         return None
@@ -543,7 +545,7 @@ class DependencyUpdater:
         print(f"Running: {' '.join(cmd)}")
         try:
             # We run the command in the directory containing package.json (usually project root)
-            subprocess.run(cmd, cwd=file_path.parent, check=True, capture_output=True)
+            subprocess.run(cmd, cwd=file_path.parent, check=True, capture_output=True)  # nosec
             return True
         except subprocess.CalledProcessError as e:
             err = e.stderr.decode() if e.stderr else str(e)

@@ -51,6 +51,7 @@ from shared.ask import run_ask_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.security import SecurityAuditor
+from shared.commit_msg import generate_commit_message
 import json
 import yaml
 import platformdirs
@@ -5608,6 +5609,27 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory to run the commit command in (default: current directory).",
     )
+    parser_commit.add_argument(
+        "--generate",
+        action="store_true",
+        help="Generate a commit message using AI based on staged changes."
+    )
+    parser_commit.add_argument(
+        "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for generation (default: gemini)."
+    )
+    parser_commit.add_argument(
+        "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_commit.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation for generated message."
+    )
 
     # --- New 'feature' command ---
     parser_feature = subparsers.add_parser(
@@ -6566,7 +6588,7 @@ def run_watch(args):
     sys.exit(0)
 
 
-def run_feature(args):
+async def run_feature(args):
     """Runs a guided workflow for creating a feature branch, committing, pushing, and creating a PR."""
     project_dir = args.project_dir.resolve()
     print("--- Guided Feature Workflow ---")
@@ -6610,10 +6632,14 @@ def run_feature(args):
         commit_args = argparse.Namespace(
             message=commit_message,
             run_tests=False, # For simplicity, don't run tests in this guided flow
-            project_dir=project_dir
+            project_dir=project_dir,
+            generate=False, # Guided flow uses manual message for now
+            yes=False,
+            agent="gemini",
+            model=None
         )
         try:
-            run_commit(commit_args)
+            await run_commit(commit_args)
         except SystemExit as e:
             if e.code != 0:
                 print("❌ Commit failed. Aborting workflow.", file=sys.stderr)
@@ -7011,7 +7037,7 @@ def run_setup(args):
         sys.exit(1)
 
 
-def run_interact(args):
+async def run_interact(args):
     """Starts an interactive session to guide the user through common commands."""
     project_dir = args.project_dir.resolve()
     print("--- Interactive Session ---")
@@ -7052,9 +7078,13 @@ def run_interact(args):
                             commit_args = argparse.Namespace(
                                 message=message,
                                 run_tests=False,
-                                project_dir=project_dir
+                                project_dir=project_dir,
+                                generate=False,
+                                yes=False,
+                                agent="gemini",
+                                model=None
                             )
-                            run_commit(commit_args)
+                            await run_commit(commit_args)
                         else:
                             print("Commit message cannot be empty. Aborting.")
                     else:
@@ -7344,7 +7374,7 @@ def run_pr(args):
         sys.exit(1)
 
 
-def run_commit(args):
+async def run_commit(args):
     """Handles the git commit command with safety checks."""
     import shutil
     import subprocess
@@ -7388,6 +7418,50 @@ def run_commit(args):
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
         sys.exit(0)
+
+    # --- AI Commit Message Generation ---
+    if args.generate and not commit_message:
+        print("--- AI Commit Message Generation ---")
+        try:
+            diff_proc = subprocess.run(
+                [git_path, "-C", str(project_dir), "diff", "--cached"],
+                capture_output=True, text=True, check=True
+            )
+            diff = diff_proc.stdout
+            if not diff.strip():
+                print("⚠️ No staged changes found to analyze.")
+            else:
+                print("Analyzing staged changes...")
+                generated_msg = await generate_commit_message(
+                    project_dir,
+                    diff,
+                    agent_type=args.agent,
+                    model=args.model
+                )
+                if generated_msg:
+                    print("\n--- Generated Message ---")
+                    print(generated_msg)
+                    print("-------------------------")
+                    if args.yes:
+                        commit_message = generated_msg
+                    else:
+                        use_gen = input("Use this message? [Y/n/e(dit)]: ").strip().lower()
+                        if use_gen in ['y', '']:
+                            commit_message = generated_msg
+                        elif use_gen == 'e':
+                            # Basic edit: let user type it out, or maybe we could open an editor?
+                            # For simplicity, we fallback to interactive input but pre-fill is hard in standard input
+                            print("Please enter your edited message below:")
+                            # We can't easily pre-fill input() in python standard lib without readline magic.
+                            # So we just ask for a new one or copy paste.
+                            pass # Fall through to interactive
+                        else:
+                            pass # Fall through to interactive
+                else:
+                    print("❌ Failed to generate commit message.")
+
+        except Exception as e:
+            print(f"❌ Error during generation: {e}")
 
     # --- Interactive Commit Message Generation ---
     if not commit_message:
@@ -8434,15 +8508,15 @@ async def main():
         return
 
     if args.command == "commit":
-        run_commit(args)
+        await run_commit(args)
         return
 
     if args.command == "feature":
-        run_feature(args)
+        await run_feature(args)
         return
 
     if args.command == "interact":
-        run_interact(args)
+        await run_interact(args)
         return
 
     if args.command == "profile":

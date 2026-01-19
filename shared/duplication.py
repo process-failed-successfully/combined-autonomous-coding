@@ -6,7 +6,6 @@ Finds duplicate code blocks across the project using token-based analysis.
 """
 
 import tokenize
-import io
 import os
 from pathlib import Path
 from collections import defaultdict
@@ -30,22 +29,17 @@ def tokenize_file(filepath: Path):
     try:
         # Read as bytes for tokenize
         with open(filepath, 'rb') as f:
-            content = f.read()
+            for tok in tokenize.tokenize(f.readline):
+                if tok.type in IGNORED_TOKENS:
+                    continue
 
-        # tokenize.tokenize requires a readline function
-        reader = io.BytesIO(content).readline
+                # Normalize strings?
+                # For strict CPD, we keep strings as is.
+                # For "fuzzy" match, we might abstract them, but let's do exact match first.
 
-        for tok in tokenize.tokenize(reader):
-            if tok.type in IGNORED_TOKENS:
-                continue
-
-            # Normalize strings?
-            # For strict CPD, we keep strings as is.
-            # For "fuzzy" match, we might abstract them, but let's do exact match first.
-
-            # We store (type, string, line)
-            # For NAME tokens, we keep the string.
-            tokens.append((tok.type, tok.string, tok.start[0]))
+                # We store (type, string, line)
+                # For NAME tokens, we keep the string.
+                tokens.append((tok.type, tok.string, tok.start[0]))
 
     except (tokenize.TokenError, IndentationError, IOError):
         # Skip files that can't be parsed
@@ -96,11 +90,15 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
 
     # 2. Tokenize All Files
     # We flatten all tokens into a single list but keep track of their origin
-    # global_tokens: list of (type, string) - used for matching
+    # global_tokens: list of int - used for matching (mapped IDs)
     # token_map: list of (file_path, line_number) - used for mapping back
 
     global_tokens = []
     token_map = []
+
+    # Optimization: Map token tuples to integers to reduce memory and comparison cost
+    token_to_id = {}
+    next_id = 0
 
     for f in all_files:
         file_tokens = tokenize_file(f)
@@ -108,7 +106,12 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
             continue
 
         for t_type, t_string, t_line in file_tokens:
-            global_tokens.append((t_type, t_string))
+            token_key = (t_type, t_string)
+            if token_key not in token_to_id:
+                token_to_id[token_key] = next_id
+                next_id += 1
+
+            global_tokens.append(token_to_id[token_key])
             token_map.append((f, t_line))
 
     if len(global_tokens) < min_tokens:
@@ -124,6 +127,7 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
 
     for i in range(1, len(global_tokens) - min_tokens + 1):
         # Sliding window
+        # Slicing a list of ints is faster than slicing a list of tuples
         current_window = tuple(global_tokens[i : i + min_tokens])
         windows[current_window].append(i)
 
@@ -158,7 +162,7 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
         current_run_len = 1
 
         for k in range(1, len(starts)):
-            if starts[k] == starts[k-1] + 1:
+            if starts[k] == starts[k - 1] + 1:
                 current_run_len += 1
             else:
                 # End of run
@@ -226,11 +230,11 @@ def _run_duplication_logic(project_dir: Path, min_tokens: int = 50, files: str =
     # With diagonal merging, we shouldn't have sub-segments reported unless they are separate diagonals.
     # But internal repetition (A matches B, A matches C) will result in multiple pairs.
 
-    for i, dup in enumerate(duplicates[:20]): # Limit output
+    for i, dup in enumerate(duplicates[:20]):  # Limit output
         count = dup['token_count']
         locs = dup['locations']
 
-        print(f"[{i+1}] {count} tokens duplicated:")
+        print(f"[{i + 1}] {count} tokens duplicated:")
         for loc in locs:
             print(f"    📄 {loc['file']} : lines {loc['start_line']}-{loc['end_line']}")
         print("")

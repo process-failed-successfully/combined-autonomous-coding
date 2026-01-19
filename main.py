@@ -2277,6 +2277,7 @@ def run_unused(args):
     )
     sys.exit(0)
 
+
 def run_deps(args):
     """Generates a dependency graph or updates dependencies."""
     from shared.dependencies import _run_deps_logic, DependencyAnalyzer, DependencyUpdater

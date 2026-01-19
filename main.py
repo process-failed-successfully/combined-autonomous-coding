@@ -6524,6 +6524,7 @@ def run_review(args):
 async def run_docstring(args):
     """Manages Python docstrings."""
     from shared.docstring import DocstringManager
+    from typing import Dict, List, Any
 
     project_dir = args.project_dir.resolve()
     manager = DocstringManager(project_dir)
@@ -6539,7 +6540,7 @@ async def run_docstring(args):
 
         print(f"Found {len(items)} missing docstrings:")
         # Group by file
-        items_by_file = {}
+        items_by_file: Dict[str, List[Dict[str, Any]]] = {}
         for item in items:
             p = str(item["file"].relative_to(project_dir))
             if p not in items_by_file:

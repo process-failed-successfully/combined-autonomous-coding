@@ -53,7 +53,7 @@ async def run_debug_logic(
     try:
         # We use shell=True to support complex commands like "python test.py && echo ok"
         # Security Note: This is intended for local dev use.
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             command,
             cwd=project_dir,
             shell=True,

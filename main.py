@@ -6728,6 +6728,44 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'optimize' command ---
+    parser_optimize = subparsers.add_parser(
+        "optimize",
+        help="Profile a script and get AI optimization suggestions."
+    )
+    parser_optimize.add_argument(
+        "script",
+        help="The Python script to profile."
+    )
+    parser_optimize.add_argument(
+        "--args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass to the script."
+    )
+    parser_optimize.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_optimize.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_optimize.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_optimize.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=20,
+        help="Number of top functions to show in stats."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -7140,6 +7178,13 @@ async def run_refactor(args):
 
     manager.apply_changes(target_file, result["new_content"])
     print(f"\n✅ Successfully updated {target_file.name}")
+    sys.exit(0)
+
+
+async def run_optimize(args):
+    """Runs the profiler and AI optimization analysis."""
+    from shared.optimize import run_optimize_logic
+    await run_optimize_logic(args)
     sys.exit(0)
 
 
@@ -8956,6 +9001,10 @@ async def main():
 
     if args.command in ["generate-tests", "gentest"]:
         await run_generate_tests(args)
+        return
+
+    if args.command == "optimize":
+        await run_optimize(args)
         return
 
     # Initialize Agent Client

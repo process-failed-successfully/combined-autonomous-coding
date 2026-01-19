@@ -48,6 +48,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.onboarding import run_onboard_logic
 from shared.ask import run_ask_logic
 from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
@@ -79,6 +80,11 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_onboard(args):
+    """Runs the onboarding wizard."""
+    run_onboard_logic(args.project_dir)
+    sys.exit(0)
 
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
@@ -6148,6 +6154,18 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'onboard' command ---
+    parser_onboard = subparsers.add_parser(
+        "onboard",
+        help="Run an interactive onboarding wizard for new developers."
+    )
+    parser_onboard.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
@@ -8568,6 +8586,11 @@ async def main():
     # Handle `init` command
     if args.command == "init":
         run_init(args)
+        return
+
+    # Handle `onboard` command
+    if args.command == "onboard":
+        run_onboard(args)
         return
 
     # Handle `completion` command

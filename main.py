@@ -6219,6 +6219,43 @@ def parse_args(argv=None):
         help="Skip confirmation prompt for 'generate' action."
     )
 
+    # --- New 'generate-tests' command ---
+    parser_gentest = subparsers.add_parser(
+        "generate-tests",
+        aliases=["gentest"],
+        help="Generate unit tests for a specific file."
+    )
+    parser_gentest.add_argument(
+        "file",
+        help="The source file to generate tests for."
+    )
+    parser_gentest.add_argument(
+        "-o", "--output",
+        help="The output path for the test file (optional)."
+    )
+    parser_gentest.add_argument(
+        "-f", "--framework",
+        default="pytest",
+        help="The testing framework to use (default: pytest)."
+    )
+    parser_gentest.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_gentest.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_gentest.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -6563,6 +6600,26 @@ def run_review(args):
     except (KeyboardInterrupt, EOFError):
         print("\nReview aborted. No changes made to workflow state.")
         sys.exit(1)
+
+
+async def run_generate_tests(args):
+    """Generates tests for a specific file."""
+    from shared.test_generator import TestGenerator
+
+    project_dir = args.project_dir.resolve()
+    target_file = Path(args.file).resolve()
+
+    output_file = Path(args.output).resolve() if args.output else None
+
+    generator = TestGenerator(project_dir)
+    success = await generator.generate_tests(
+        target_file=target_file,
+        output_file=output_file,
+        framework=args.framework,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sys.exit(0 if success else 1)
 
 
 async def run_docstring(args):
@@ -8274,6 +8331,10 @@ async def main():
 
     if args.command == "docstring":
         await run_docstring(args)
+        return
+
+    if args.command in ["generate-tests", "gentest"]:
+        await run_generate_tests(args)
         return
 
     # Initialize Agent Client

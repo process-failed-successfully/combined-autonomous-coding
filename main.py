@@ -48,6 +48,7 @@ from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouter
 from shared.shell import InteractiveShell
 from shared.commands import run_why
 from shared.ask import run_ask_logic
+from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.security import SecurityAuditor
 import json
@@ -5299,6 +5300,26 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'mutate' command ---
+    parser_mutate = subparsers.add_parser(
+        "mutate",
+        help="Run mutation testing to evaluate test suite quality."
+    )
+    parser_mutate.add_argument(
+        "target_file",
+        help="The file to mutate."
+    )
+    parser_mutate.add_argument(
+        "--test-command",
+        help="Custom test command (e.g. 'pytest tests/'). If omitted, auto-detected."
+    )
+    parser_mutate.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'test' command ---
     parser_test = subparsers.add_parser(
         "test",
@@ -8278,6 +8299,14 @@ async def main():
 
     if args.command == "branch":
         run_branch(args)
+        return
+
+    if args.command == "mutate":
+        run_mutate(
+            project_dir=args.project_dir,
+            target_file=args.target_file,
+            test_command=args.test_command
+        )
         return
 
     if args.command == "test":

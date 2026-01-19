@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 from collections import Counter
 from datetime import datetime, timedelta
+from typing import Optional
 
 def get_git_contributors(project_dir: Path) -> list[tuple[int, str]]:
     """Returns a list of contributors sorted by commit count."""
@@ -34,7 +35,7 @@ def get_git_contributors(project_dir: Path) -> list[tuple[int, str]]:
     except subprocess.CalledProcessError:
         return []
 
-def get_git_hotspots(project_dir: Path, limit: int = 10) -> list[tuple[str, int]]:
+def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> list[tuple[str, int]]:
     """Returns the most frequently modified files."""
     git_path = shutil.which("git")
     if not git_path:

@@ -1,12 +1,13 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 from shared.dependencies import DependencyAnalyzer
+
 
 @pytest.fixture
 def temp_project(tmp_path):
     (tmp_path / "requirements.txt").write_text("flask==2.0.1\n")
     return tmp_path
+
 
 def test_get_pypi_license_classifiers(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
@@ -27,6 +28,7 @@ def test_get_pypi_license_classifiers(temp_project):
         lic = analyzer._get_pypi_license("flask")
         assert lic == "MIT License"
 
+
 def test_get_pypi_license_field(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
 
@@ -42,6 +44,7 @@ def test_get_pypi_license_field(temp_project):
     with patch("requests.get", return_value=mock_response):
         lic = analyzer._get_pypi_license("flask")
         assert lic == "BSD-3-Clause"
+
 
 def test_check_licenses_allow_list(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
@@ -66,6 +69,7 @@ def test_check_licenses_allow_list(temp_project):
         assert results[0]["status"] == "VIOLATION"
         assert "not in the allowed list" in results[0]["message"]
 
+
 def test_check_licenses_deny_list(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
     data = {
@@ -87,6 +91,7 @@ def test_check_licenses_deny_list(temp_project):
         # Case 2: Not Denied
         results = analyzer.check_licenses(data, deny_list=["MIT"])
         assert results[0]["status"] == "OK"
+
 
 def test_check_licenses_normalization(temp_project):
     analyzer = DependencyAnalyzer(temp_project)

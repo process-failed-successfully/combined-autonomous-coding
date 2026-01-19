@@ -2286,6 +2286,7 @@ def run_risk(args):
     )
     sys.exit(0)
 
+
 def run_license(args):
     """Checks dependency license compliance."""
     from shared.dependencies import DependencyAnalyzer

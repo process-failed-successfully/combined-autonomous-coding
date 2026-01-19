@@ -6219,6 +6219,47 @@ def parse_args(argv=None):
         help="Skip confirmation prompt for 'generate' action."
     )
 
+    # --- New 'refactor' command ---
+    parser_refactor = subparsers.add_parser(
+        "refactor",
+        help="Refactor a file using AI based on a natural language instruction."
+    )
+    parser_refactor.add_argument(
+        "file",
+        help="The file to refactor."
+    )
+    parser_refactor.add_argument(
+        "instruction",
+        help="The refactoring instruction (e.g., 'Extract the login logic into a separate function')."
+    )
+    parser_refactor.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_refactor.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_refactor.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_refactor.add_argument(
+        "--diff-only",
+        action="store_true",
+        help="Show the diff but do not apply changes.",
+    )
+    parser_refactor.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt.",
+    )
+
     # --- New 'generate-tests' command ---
     parser_gentest = subparsers.add_parser(
         "generate-tests",
@@ -6620,6 +6661,55 @@ async def run_generate_tests(args):
         model=args.model
     )
     sys.exit(0 if success else 1)
+
+
+async def run_refactor(args):
+    """Refactors a file based on an instruction."""
+    from shared.refactor import RefactorManager
+
+    project_dir = args.project_dir.resolve()
+    target_file = Path(args.file)
+    if not target_file.is_absolute():
+        target_file = project_dir / target_file
+
+    if not target_file.exists():
+        print(f"❌ Error: File '{target_file}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    manager = RefactorManager(project_dir)
+    print(f"--- Refactoring {target_file.name} ---")
+    print(f"Instruction: {args.instruction}")
+
+    try:
+        result = await manager.refactor_file(
+            target_file=target_file,
+            instruction=args.instruction,
+            agent_type=args.agent,
+            model=args.model
+        )
+    except Exception as e:
+        print(f"❌ Error during refactoring: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not result["changed"]:
+        print("✅ No changes were deemed necessary by the agent.")
+        sys.exit(0)
+
+    print("\n--- Proposed Changes ---")
+    print(result["diff"])
+
+    if args.diff_only:
+        sys.exit(0)
+
+    if not args.yes:
+        confirm = input("\nDo you want to apply these changes? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    manager.apply_changes(target_file, result["new_content"])
+    print(f"\n✅ Successfully updated {target_file.name}")
+    sys.exit(0)
 
 
 async def run_docstring(args):
@@ -8331,6 +8421,10 @@ async def main():
 
     if args.command == "docstring":
         await run_docstring(args)
+        return
+
+    if args.command == "refactor":
+        await run_refactor(args)
         return
 
     if args.command in ["generate-tests", "gentest"]:

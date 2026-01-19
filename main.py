@@ -2308,8 +2308,10 @@ def run_license(args):
             status = item["status"]
 
             # Truncate if too long
-            if len(pkg) > 30: pkg = pkg[:27] + "..."
-            if len(lic) > 20: lic = lic[:17] + "..."
+            if len(pkg) > 30:
+                pkg = pkg[:27] + "..."
+            if len(lic) > 20:
+                lic = lic[:17] + "..."
 
             print(f"  {pkg:<30} | {lic:<20} | {status:<10}")
 

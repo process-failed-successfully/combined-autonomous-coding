@@ -2268,7 +2268,7 @@ def run_duplication(args):
 def run_deps(args):
     """Generates a dependency graph."""
     from shared.dependencies import _run_deps_logic
-    print(_run_deps_logic(args.project_dir, args.format))
+    print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
 
 async def run_ask(args):
@@ -5901,6 +5901,11 @@ def parse_args(argv=None):
         choices=["tree", "mermaid", "json"],
         default="tree",
         help="Output format (default: tree)."
+    )
+    parser_deps.add_argument(
+        "--check",
+        action="store_true",
+        help="Check online registries for updates.",
     )
     parser_deps.add_argument(
         "-p", "--project-dir",

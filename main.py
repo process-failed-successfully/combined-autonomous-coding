@@ -2281,6 +2281,21 @@ def run_deps(args):
     print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
 
+def run_risk(args):
+    """Runs the risk analysis (complexity * lack of coverage)."""
+    from shared.risk_analysis import _run_risk_logic
+
+    # Auto-detect coverage.xml if not specified
+    xml_path = Path(args.xml) if args.xml else args.project_dir / "coverage.xml"
+
+    _run_risk_logic(
+        project_dir=args.project_dir,
+        coverage_xml=xml_path,
+        threshold=args.threshold,
+        json_output=args.json
+    )
+    sys.exit(0)
+
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
     # Setup logging
@@ -5924,6 +5939,34 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'risk' command ---
+    parser_risk = subparsers.add_parser(
+        "risk",
+        help="Identify high-risk code (High Complexity + Low Coverage)."
+    )
+    parser_risk.add_argument(
+        "--xml",
+        type=str,
+        help="Path to coverage.xml file (defaults to coverage.xml in project dir)."
+    )
+    parser_risk.add_argument(
+        "--threshold",
+        type=float,
+        default=10.0,
+        help="Minimum risk score to report (default: 10.0)."
+    )
+    parser_risk.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format."
+    )
+    parser_risk.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'duplication' command ---
     parser_duplication = subparsers.add_parser(
         "duplication",
@@ -8397,6 +8440,10 @@ async def main():
 
     if args.command == "deps":
         run_deps(args)
+        return
+
+    if args.command == "risk":
+        run_risk(args)
         return
 
     if args.command == "duplication":

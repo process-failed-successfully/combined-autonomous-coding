@@ -2277,8 +2277,88 @@ def run_unused(args):
     sys.exit(0)
 
 def run_deps(args):
-    """Generates a dependency graph."""
-    from shared.dependencies import _run_deps_logic
+    """Generates a dependency graph or updates dependencies."""
+    from shared.dependencies import _run_deps_logic, DependencyAnalyzer, DependencyUpdater
+
+    if args.update:
+        # 1. Scan and check for updates
+        print("Scanning project and checking for updates...")
+        analyzer = DependencyAnalyzer(args.project_dir)
+        data = analyzer.scan()
+        data = analyzer.check_updates(data)
+
+        # 2. Collect outdated packages
+        outdated_list = []
+        for lang, files in data.items():
+            for file_info in files:
+                source = file_info["source"]
+                file_path = args.project_dir / source
+                for dep in file_info.get("dependencies", []):
+                    if dep.get("outdated"):
+                        outdated_list.append({
+                            "lang": lang,
+                            "file": file_path,
+                            "name": dep["name"],
+                            "current": dep.get("version", ""),
+                            "latest": dep.get("latest", ""),
+                            "type": dep.get("type", "prod")
+                        })
+
+        if not outdated_list:
+            print("✅ All dependencies are up to date.")
+            sys.exit(0)
+
+        # 3. Interactive Selection
+        print("\n--- Outdated Dependencies ---")
+        for i, item in enumerate(outdated_list):
+            print(f"[{i+1}] {item['name']} ({item['lang']}): {item['current']} -> {item['latest']} (in {item['file'].name})")
+
+        print("\nEnter numbers to update (e.g., '1 3 5'), 'a' for all, or Enter to cancel.")
+        try:
+            selection = input("> ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            sys.exit(0)
+
+        to_update = []
+        if selection == 'a':
+            to_update = outdated_list
+        elif selection:
+            try:
+                indices = [int(x) - 1 for x in selection.split()]
+                for idx in indices:
+                    if 0 <= idx < len(outdated_list):
+                        to_update.append(outdated_list[idx])
+            except ValueError:
+                print("Invalid input.")
+                sys.exit(1)
+        else:
+            print("Aborted.")
+            sys.exit(0)
+
+        if not to_update:
+            print("No valid packages selected.")
+            sys.exit(0)
+
+        # 4. Perform Updates
+        updater = DependencyUpdater(args.project_dir)
+        print(f"\nUpdating {len(to_update)} packages...")
+
+        for item in to_update:
+            print(f"Updating {item['name']}...")
+            success = updater.update_dependency(
+                item['file'],
+                item['name'],
+                item['latest'],
+                item['type']
+            )
+            if success:
+                print(f"✅ Updated {item['name']}")
+            else:
+                print(f"❌ Failed to update {item['name']}")
+
+        sys.exit(0)
+
     print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
 
@@ -5937,6 +6017,11 @@ def parse_args(argv=None):
         "--check",
         action="store_true",
         help="Check online registries for updates.",
+    )
+    parser_deps.add_argument(
+        "--update",
+        action="store_true",
+        help="Interactively check and update dependencies.",
     )
     parser_deps.add_argument(
         "-p", "--project-dir",

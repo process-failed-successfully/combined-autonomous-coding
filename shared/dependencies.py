@@ -1,6 +1,8 @@
 import json
 import re
 import requests
+import subprocess
+import shutil
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
@@ -307,6 +309,112 @@ class DependencyAnalyzer:
                 output.append("  ✅ All dependencies appear up to date.")
 
         return "\n".join(output)
+
+
+class DependencyUpdater:
+    """
+    Handles updating dependencies in project files.
+    """
+
+    def __init__(self, project_dir: Path):
+        self.project_dir = project_dir.resolve()
+
+    def update_dependency(self, file_path: Path, package_name: str, new_version: str, dep_type: str = "prod") -> bool:
+        """
+        Updates a dependency in the specified file.
+        Returns True if successful, False otherwise.
+        """
+        if file_path.name == "requirements.txt":
+            return self._update_python_requirement(file_path, package_name, new_version)
+        elif file_path.name == "package.json":
+            return self._update_node_package(file_path, package_name, new_version, dep_type)
+        else:
+            print(f"Skipping update for unsupported file: {file_path.name}")
+            return False
+
+    def _update_python_requirement(self, file_path: Path, package_name: str, new_version: str) -> bool:
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            new_lines = []
+            updated = False
+
+            # Pattern to match the package name at the start of the line, ignoring case.
+            # It also captures any existing version specifiers and comments.
+            # Group 1: Package Name
+            # Group 2: Version Spec (optional)
+            # Group 3: Comment (optional)
+            pattern = re.compile(r"^(" + re.escape(package_name) + r")([<=>!~].*)?(\s*#.*)?$", re.IGNORECASE)
+
+            for line in lines:
+                if not line.strip() or line.strip().startswith('#'):
+                    new_lines.append(line)
+                    continue
+
+                match = pattern.match(line.strip())
+                if match:
+                    # Found the package. Preserve name case from file (Group 1).
+                    name_in_file = match.group(1)
+                    comment = match.group(3) or ""
+
+                    # Update to exact version
+                    new_line = f"{name_in_file}=={new_version}{comment}"
+                    new_lines.append(new_line)
+                    updated = True
+                else:
+                    new_lines.append(line)
+
+            if updated:
+                file_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+                return True
+            else:
+                print(f"Could not find package '{package_name}' in {file_path.name}")
+        except Exception as e:
+            print(f"Error updating requirements.txt: {e}")
+        return False
+
+    def _detect_package_manager(self) -> str:
+        if (self.project_dir / "pnpm-lock.yaml").exists() and shutil.which("pnpm"):
+            return "pnpm"
+        if (self.project_dir / "yarn.lock").exists() and shutil.which("yarn"):
+            return "yarn"
+        if shutil.which("npm"):
+            return "npm"
+        return ""
+
+    def _update_node_package(self, file_path: Path, package_name: str, new_version: str, dep_type: str) -> bool:
+        pm = self._detect_package_manager()
+        if not pm:
+            print("No compatible Node.js package manager found (npm, yarn, pnpm).")
+            return False
+
+        # Construct command
+        cmd = []
+        if pm == "npm":
+            cmd = ["npm", "install"]
+            if dep_type == "dev":
+                cmd.append("--save-dev")
+            cmd.append(f"{package_name}@{new_version}")
+        elif pm == "yarn":
+            cmd = ["yarn", "add"]
+            if dep_type == "dev":
+                cmd.append("--dev")
+            cmd.append(f"{package_name}@{new_version}")
+        elif pm == "pnpm":
+            cmd = ["pnpm", "add"]
+            if dep_type == "dev":
+                cmd.append("--save-dev")
+            cmd.append(f"{package_name}@{new_version}")
+
+        print(f"Running: {' '.join(cmd)}")
+        try:
+            # We run the command in the directory containing package.json (usually project root)
+            subprocess.run(cmd, cwd=file_path.parent, check=True, capture_output=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            err = e.stderr.decode() if e.stderr else str(e)
+            print(f"Error updating node package: {err}")
+            return False
 
 
 def _run_deps_logic(project_dir: Path, output_format: str = "text", check_updates: bool = False):

@@ -52,6 +52,7 @@ from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.security import SecurityAuditor
+from shared.dockerizer import Dockerizer
 import json
 import yaml
 import platformdirs
@@ -6475,6 +6476,28 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'dockerize' command ---
+    parser_dockerize = subparsers.add_parser(
+        "dockerize",
+        help="Generate Dockerfile and docker-compose.yml for the project."
+    )
+    parser_dockerize.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_dockerize.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Overwrite existing files.",
+    )
+    parser_dockerize.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print contents without writing files.",
+    )
+
     # --- New 'security' command ---
     parser_security = subparsers.add_parser(
         "security",
@@ -7141,6 +7164,60 @@ def run_security(args):
     # Exit with error if high severity issues found
     if any(str(f.get('severity')).upper() == "HIGH" for f in findings):
         sys.exit(1)
+
+    sys.exit(0)
+
+
+def run_dockerize(args):
+    """Generates Docker configuration files for the project."""
+    project_dir = args.project_dir.resolve()
+    print(f"--- Dockerizing project in: {project_dir} ---")
+
+    dockerizer = Dockerizer(project_dir)
+    project_type = dockerizer.detect_project_type()
+
+    if project_type == "unknown":
+        print("❌ Error: Could not detect project type (Python, Node, Go).")
+        print("   Ensure you have a requirements.txt, package.json, or go.mod file.")
+        sys.exit(1)
+
+    print(f"Detected project type: {project_type}")
+
+    # Files to generate
+    files_to_generate = {
+        "Dockerfile": dockerizer.generate_dockerfile(project_type),
+        "docker-compose.yml": dockerizer.generate_docker_compose(project_type),
+        ".dockerignore": dockerizer.generate_dockerignore(project_type)
+    }
+
+    generated_files = []
+
+    if args.dry_run:
+        print("\n[Dry Run] The following files would be generated:\n")
+        for filename, content in files_to_generate.items():
+            print(f"--- {filename} ---")
+            print(content)
+            print("-" * 20 + "\n")
+        sys.exit(0)
+
+    for filename, content in files_to_generate.items():
+        file_path = project_dir / filename
+        if file_path.exists() and not args.force:
+            print(f"⚠️  Skipping {filename} (already exists). Use --force to overwrite.")
+            continue
+
+        try:
+            file_path.write_text(content)
+            generated_files.append(filename)
+            print(f"✅ Generated {filename}")
+        except IOError as e:
+            print(f"❌ Error writing {filename}: {e}", file=sys.stderr)
+
+    if generated_files:
+        print(f"\n🎉 Successfully dockerized! You can now run:")
+        print(f"  docker-compose up --build")
+    else:
+        print("\nNo files were generated (they might already exist).")
 
     sys.exit(0)
 
@@ -8712,6 +8789,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "dockerize":
+        run_dockerize(args)
         return
 
     if args.command == "security":

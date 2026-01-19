@@ -2288,6 +2288,17 @@ def run_risk(args):
     )
     sys.exit(0)
 
+def run_a11y(args):
+    """Runs the accessibility scanner."""
+    from shared.a11y import _run_a11y_logic
+    _run_a11y_logic(
+        project_dir=args.project_dir,
+        files=args.files,
+        ignore=args.ignore,
+        output_format=args.format
+    )
+    sys.exit(0)
+
 def run_license(args):
     """Checks dependency license compliance."""
     from shared.dependencies import DependencyAnalyzer
@@ -6299,6 +6310,34 @@ def parse_args(argv=None):
         help="Number of files to show (default: 20)."
     )
 
+    # --- New 'a11y' command ---
+    parser_a11y = subparsers.add_parser(
+        "a11y",
+        help="Scan for accessibility issues (HTML, JSX, Vue)."
+    )
+    parser_a11y.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan."
+    )
+    parser_a11y.add_argument(
+        "--files",
+        type=str,
+        help="Glob pattern to include (e.g. '*.html')."
+    )
+    parser_a11y.add_argument(
+        "--ignore",
+        type=str,
+        help="Comma-separated patterns to ignore."
+    )
+    parser_a11y.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)."
+    )
+
     # --- New 'license' command ---
     parser_license = subparsers.add_parser(
         "license",
@@ -8862,6 +8901,10 @@ async def main():
 
     if args.command == "risk":
         run_risk(args)
+        return
+
+    if args.command == "a11y":
+        run_a11y(args)
         return
 
     if args.command == "license":

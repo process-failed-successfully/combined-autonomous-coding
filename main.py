@@ -2254,6 +2254,17 @@ def run_analytics(args):
         _run_analytics_complexity_logic(args.project_dir)
     sys.exit(0)
 
+def run_duplication(args):
+    """Runs the code duplication detector."""
+    from shared.duplication import _run_duplication_logic
+    _run_duplication_logic(
+        project_dir=args.project_dir,
+        min_tokens=args.min_tokens,
+        files=args.files,
+        ignore=args.ignore
+    )
+    sys.exit(0)
+
 def run_deps(args):
     """Generates a dependency graph."""
     from shared.dependencies import _run_deps_logic
@@ -5898,6 +5909,34 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'duplication' command ---
+    parser_duplication = subparsers.add_parser(
+        "duplication",
+        help="Scan for code duplication (Copy-Paste Detector)."
+    )
+    parser_duplication.add_argument(
+        "--min-tokens",
+        type=int,
+        default=50,
+        help="Minimum number of tokens to consider a duplicate (default: 50)."
+    )
+    parser_duplication.add_argument(
+        "--files",
+        type=str,
+        help="Comma-separated glob patterns to include (e.g. '*.py')."
+    )
+    parser_duplication.add_argument(
+        "--ignore",
+        type=str,
+        help="Comma-separated glob patterns to ignore."
+    )
+    parser_duplication.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to scan."
+    )
+
     # --- New 'bisect' command ---
     parser_bisect = subparsers.add_parser(
         "bisect",
@@ -8174,6 +8213,10 @@ async def main():
 
     if args.command == "deps":
         run_deps(args)
+        return
+
+    if args.command == "duplication":
+        run_duplication(args)
         return
 
     if args.command == "bisect":

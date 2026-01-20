@@ -32,7 +32,7 @@ dependencies = [
 requires-python = ">=3.11"
 
 [tool.bandit]
-exclude_dirs = ["tests", ".venv", "venv"]
+exclude_dirs = ["tests", ".venv", "venv", "build"]
 
 [tool.flake8]
 max-line-length = 160

@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import concurrent.futures
 
 class ComplexityVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -122,19 +123,17 @@ def get_python_files(project_dir: Path):
 
     if git_path and (project_dir / ".git").is_dir():
         try:
-            # Use git ls-files to get tracked files
+            # Use git ls-files to get tracked and untracked files (respecting .gitignore)
+            # -c: cached (tracked)
+            # -o: others (untracked)
+            # --exclude-standard: respect .gitignore for untracked files
             result = subprocess.run(
-                [git_path, "-C", str(project_dir), "ls-files", "*.py"],
+                [git_path, "-C", str(project_dir), "ls-files", "-c", "-o", "--exclude-standard", "*.py"],
                 capture_output=True, text=True, check=True
             )
             files = [project_dir / f for f in result.stdout.splitlines() if f]
-            # Also get untracked files that are not ignored
-            result_untracked = subprocess.run(
-                 [git_path, "-C", str(project_dir), "ls-files", "--others", "--exclude-standard", "*.py"],
-                 capture_output=True, text=True, check=True
-            )
-            files.extend([project_dir / f for f in result_untracked.stdout.splitlines() if f])
-            return files
+            # Remove duplicates (in case a file is listed twice, though ls-files handles this well usually)
+            return list(set(files))
         except subprocess.CalledProcessError:
             pass
 
@@ -154,23 +153,29 @@ def analyze_project_complexity(project_dir: Path):
     files = get_python_files(project_dir)
     results = []
 
-    for file_path in files:
+    def process_file(file_path):
         if not file_path.exists():
-            continue
-
+            return []
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
             functions = calculate_complexity(content)
+            file_results = []
             for func in functions:
-                results.append({
+                file_results.append({
                     "file": str(file_path.relative_to(project_dir)),
                     "function": func["name"],
                     "complexity": func["complexity"],
                     "lineno": func["lineno"]
                 })
+            return file_results
         except Exception:
             # Ignore read errors
-            pass
+            return []
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_file = {executor.submit(process_file, f): f for f in files}
+        for future in concurrent.futures.as_completed(future_to_file):
+            results.extend(future.result())
 
     return results
 

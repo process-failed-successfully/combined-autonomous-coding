@@ -2551,6 +2551,36 @@ def run_blame(args):
     sys.exit(0)
 
 
+def run_smart_search(args):
+    """Runs a smart semantic search using BM25."""
+    from shared.smart_search import SmartSearchEngine
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Smart Search in: {project_dir} ---")
+    print(f"Indexing codebase... (this might take a moment)")
+
+    engine = SmartSearchEngine(project_dir)
+    engine.index(file_pattern=args.files)
+
+    print(f"Indexed {engine.num_docs} documents.")
+    print(f"Searching for: '{args.query}'")
+
+    results = engine.search(args.query, limit=args.limit)
+
+    if not results:
+        print("✅ No relevant results found.")
+        sys.exit(0)
+
+    print(f"\nFound {len(results)} relevant results:\n")
+
+    for i, res in enumerate(results):
+        print(f"[{i+1}] \033[1m{res['file']}\033[0m (Score: {res['score']:.2f})")
+        print(f"    \033[90m{res['snippet']}\033[0m") # Gray snippet
+        print()
+
+    sys.exit(0)
+
+
 def run_search(args):
     """Searches the codebase for a pattern."""
     from shared.search import search_codebase
@@ -6222,6 +6252,33 @@ def parse_args(argv=None):
         help="The project directory to search (default: current directory)."
     )
 
+    # --- New 'smart-search' command ---
+    parser_smart_search = subparsers.add_parser(
+        "smart-search",
+        aliases=["ssearch"],
+        help="Search the codebase using relevance ranking (BM25)."
+    )
+    parser_smart_search.add_argument(
+        "query",
+        help="The search query (keywords)."
+    )
+    parser_smart_search.add_argument(
+        "--files",
+        help="Glob pattern to filter files (e.g., '*.py')."
+    )
+    parser_smart_search.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=10,
+        help="Number of results to show (default: 10)."
+    )
+    parser_smart_search.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'replace' command ---
     parser_replace = subparsers.add_parser(
         "replace",
@@ -9025,6 +9082,10 @@ async def main():
 
     if args.command == "search":
         run_search(args)
+        return
+
+    if args.command in ["smart-search", "ssearch"]:
+        run_smart_search(args)
         return
 
     if args.command == "replace":

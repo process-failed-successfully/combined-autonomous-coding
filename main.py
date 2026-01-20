@@ -6873,6 +6873,36 @@ def parse_args(argv=None):
         help="The project directory to review.",
     )
 
+    # --- New 'env' command ---
+    parser_env = subparsers.add_parser(
+        "env",
+        help="Manage environment variables (.env files)."
+    )
+    env_subparsers = parser_env.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Env 'init'
+    parser_env_init = env_subparsers.add_parser("init", help="Initialize .env and .env.example.")
+    parser_env_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Env 'check'
+    parser_env_check = env_subparsers.add_parser("check", help="Check sync status between .env and .env.example.")
+    parser_env_check.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Env 'sync'
+    parser_env_sync = env_subparsers.add_parser("sync", help="Synchronize keys between .env and .env.example.")
+    parser_env_sync.add_argument("-i", "--interactive", action="store_true", help="Interactively fill values.")
+    parser_env_sync.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Env 'generate'
+    parser_env_generate = env_subparsers.add_parser("generate", help="Generate a secure secret for a key.")
+    parser_env_generate.add_argument("key", help="The environment variable key.")
+    parser_env_generate.add_argument("-l", "--length", type=int, default=32, help="Length of the secret (default: 32).")
+    parser_env_generate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'setup' command ---
     parser_setup = subparsers.add_parser(
         "setup",
@@ -7678,6 +7708,46 @@ def run_dockerize(args):
         print(f"  docker-compose up --build")
     else:
         print("\nNo files were generated (they might already exist).")
+
+    sys.exit(0)
+
+
+def run_env(args):
+    """Manages environment variables."""
+    from shared.env_manager import EnvManager
+
+    project_dir = args.project_dir.resolve()
+    manager = EnvManager(project_dir)
+    print(f"--- Environment Manager in: {project_dir} ---")
+
+    if args.action == "init":
+        success, msg = manager.init()
+        if success:
+            print(f"✅ {msg}")
+        else:
+            print(f"ℹ️  {msg}")
+
+    elif args.action == "check":
+        is_valid, missing_env, missing_example = manager.check()
+        if is_valid:
+            print("✅ .env and .env.example are in sync.")
+        else:
+            print("⚠️  Issues found:")
+            if missing_env:
+                print(f"  Missing in .env: {', '.join(missing_env)}")
+            if missing_example:
+                print(f"  Missing in .env.example: {', '.join(missing_example)}")
+            sys.exit(1)
+
+    elif args.action == "sync":
+        print("Syncing .env and .env.example...")
+        success, msg = manager.sync(interactive=args.interactive)
+        print(f"✅ {msg}")
+
+    elif args.action == "generate":
+        secret = manager.generate_secret(args.key, length=args.length)
+        print(f"✅ Generated secret for '{args.key}'.")
+        print(f"  Value: {secret}")
 
     sys.exit(0)
 
@@ -9278,6 +9348,10 @@ async def main():
 
     if args.command == "review":
         run_review(args)
+        return
+
+    if args.command == "env":
+        run_env(args)
         return
 
     if args.command == "setup":

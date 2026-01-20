@@ -4403,6 +4403,84 @@ def run_branch(args):
     sys.exit(0)
 
 
+def run_recipes(args):
+    """Manages and runs agent recipes."""
+    from shared.recipes import RecipeManager
+
+    project_dir = args.project_dir.resolve()
+    manager = RecipeManager(project_dir)
+
+    if args.action == "list":
+        recipes = manager.list_recipes()
+        if not recipes:
+            print("No recipes found.")
+            sys.exit(0)
+        print("--- Available Recipes ---")
+        for name, steps in recipes.items():
+            print(f"\n🏷️  {name}")
+            for i, step in enumerate(steps):
+                print(f"  {i+1}. {step}")
+        sys.exit(0)
+
+    elif args.action == "show":
+        if not args.name:
+             print("Error: Name required for 'show' action.", file=sys.stderr)
+             sys.exit(1)
+        steps = manager.get_recipe(args.name)
+        if not steps:
+            print(f"Recipe '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+        print(f"--- Recipe: {args.name} ---")
+        for i, step in enumerate(steps):
+            print(f"  {i+1}. {step}")
+        sys.exit(0)
+
+    elif args.action == "run":
+        if not args.name:
+             print("Error: Name required for 'run' action.", file=sys.stderr)
+             sys.exit(1)
+        success = manager.run_recipe(args.name, dry_run=args.dry_run)
+        sys.exit(0 if success else 1)
+
+    elif args.action == "delete":
+        if not args.name:
+             print("Error: Name required for 'delete' action.", file=sys.stderr)
+             sys.exit(1)
+        if manager.delete_recipe(args.name):
+            print(f"✅ Deleted recipe '{args.name}'.")
+        else:
+             print(f"Recipe '{args.name}' not found.", file=sys.stderr)
+             sys.exit(1)
+
+    elif args.action == "create":
+        print("--- Create New Recipe ---")
+        name = args.name
+        if not name:
+            name = input("Recipe name: ").strip()
+        if not name:
+            print("Aborted.")
+            sys.exit(1)
+
+        print(f"Enter commands for recipe '{name}' (one per line).")
+        print("Enter an empty line to finish.")
+        steps = []
+        while True:
+            cmd = input(f"Step {len(steps)+1}> ").strip()
+            if not cmd:
+                break
+            steps.append(cmd)
+
+        if not steps:
+            print("No steps provided. Aborted.")
+            sys.exit(1)
+
+        if manager.add_recipe(name, steps):
+            print(f"✅ Recipe '{name}' created successfully.")
+        else:
+            print("❌ Error saving recipe.")
+            sys.exit(1)
+
+
 def run_hooks(args):
     """Manages git hooks for the project."""
     from shared.hooks import install_pre_commit_hook, uninstall_pre_commit_hook, run_hooks_logic
@@ -6000,6 +6078,44 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory.",
     )
+
+    # --- New 'recipes' command ---
+    parser_recipes = subparsers.add_parser(
+        "recipes",
+        aliases=["macro"],
+        help="Manage and run agent recipes (sequences of commands)."
+    )
+    parser_recipes.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    recipes_subparsers = parser_recipes.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Recipes 'list'
+    recipes_subparsers.add_parser("list", help="List available recipes.")
+
+    # Recipes 'show'
+    parser_recipes_show = recipes_subparsers.add_parser("show", help="Show steps in a recipe.")
+    parser_recipes_show.add_argument("name", help="Name of the recipe.")
+
+    # Recipes 'run'
+    parser_recipes_run = recipes_subparsers.add_parser("run", help="Execute a recipe.")
+    parser_recipes_run.add_argument("name", help="Name of the recipe.")
+    parser_recipes_run.add_argument("--dry-run", action="store_true", help="Print commands without executing.")
+
+    # Recipes 'create'
+    parser_recipes_create = recipes_subparsers.add_parser("create", help="Create a new recipe interactively.")
+    parser_recipes_create.add_argument("name", nargs="?", help="Name of the recipe.")
+
+    # Recipes 'delete'
+    parser_recipes_delete = recipes_subparsers.add_parser("delete", help="Delete a recipe.")
+    parser_recipes_delete.add_argument("name", help="Name of the recipe.")
 
     # --- New 'git' command ---
     parser_git = subparsers.add_parser(
@@ -9711,6 +9827,10 @@ async def main():
 
     if args.command == "hooks":
         run_hooks(args)
+        return
+
+    if args.command in ["recipes", "macro"]:
+        run_recipes(args)
         return
 
     if args.command == "git":

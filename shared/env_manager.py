@@ -114,7 +114,7 @@ class EnvManager:
                 for key in missing_in_env:
                     val = ""
                     if interactive:
-                        val = input(f"Enter value for new key '{key}' (or leave empty): ").strip() # nosec
+                        val = input(f"Enter value for new key '{key}' (or leave empty): ").strip()
                     f.write(f"{key}={val}\n")
                     changes.append(f"Added {key} to .env")
 

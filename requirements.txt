@@ -18,3 +18,4 @@ argcomplete
 watchdog
 watchdog
 jaraco.context>=6.1.0
+textual

@@ -2428,6 +2428,12 @@ def run_analytics(args):
         _run_analytics_complexity_logic(args.project_dir)
     sys.exit(0)
 
+def run_health(args):
+    """Runs the project health check."""
+    from shared.health import run_health
+    run_health(args.project_dir, args.json)
+    sys.exit(0)
+
 def run_duplication(args):
     """Runs the code duplication detector."""
     from shared.duplication import _run_duplication_logic
@@ -6944,6 +6950,23 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'health' command ---
+    parser_health = subparsers.add_parser(
+        "health",
+        help="Calculate and display the project health score."
+    )
+    parser_health.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_health.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format."
+    )
+
     # --- New 'deps' command ---
     parser_deps = subparsers.add_parser(
         "deps",
@@ -9963,6 +9986,10 @@ async def main():
 
     if args.command == "analytics":
         run_analytics(args)
+        return
+
+    if args.command == "health":
+        run_health(args)
         return
 
     if args.command == "deps":

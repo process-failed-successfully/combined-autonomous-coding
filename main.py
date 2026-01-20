@@ -2418,6 +2418,15 @@ def run_risk(args):
     )
     sys.exit(0)
 
+def run_impact(args):
+    """Runs the predictive impact analysis."""
+    from shared.impact import run_impact_logic
+    run_impact_logic(
+        project_dir=args.project_dir,
+        json_output=args.json
+    )
+    sys.exit(0)
+
 def run_a11y(args):
     """Runs the accessibility scanner."""
     from shared.a11y import _run_a11y_logic
@@ -6845,6 +6854,23 @@ def parse_args(argv=None):
         help="Number of files to show (default: 20)."
     )
 
+    # --- New 'impact' command ---
+    parser_impact = subparsers.add_parser(
+        "impact",
+        help="Predictively analyze the impact of changes (dependency graph)."
+    )
+    parser_impact.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to analyze."
+    )
+    parser_impact.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format."
+    )
+
     # --- New 'a11y' command ---
     parser_a11y = subparsers.add_parser(
         "a11y",
@@ -9758,6 +9784,10 @@ async def main():
 
     if args.command == "risk":
         run_risk(args)
+        return
+
+    if args.command == "impact":
+        run_impact(args)
         return
 
     if args.command == "a11y":

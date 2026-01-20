@@ -2431,6 +2431,22 @@ def run_deps(args):
     print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
 
+async def run_optimize(args):
+    """Runs the optimization logic."""
+    from shared.optimize import OptimizationManager
+
+    project_dir = args.project_dir.resolve()
+    manager = OptimizationManager(project_dir)
+
+    success = await manager.optimize(
+        script_path=Path(args.script),
+        args=args.args,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sys.exit(0 if success else 1)
+
+
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
     # Setup logging
@@ -5879,6 +5895,38 @@ def parse_args(argv=None):
         help="The project directory to analyze (default: current directory).",
     )
 
+    # --- New 'optimize' command ---
+    parser_optimize = subparsers.add_parser(
+        "optimize",
+        help="Profile a Python script and suggest AI-driven optimizations."
+    )
+    parser_optimize.add_argument(
+        "script",
+        help="The Python script to optimize."
+    )
+    parser_optimize.add_argument(
+        "args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass to the script."
+    )
+    parser_optimize.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_optimize.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_optimize.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory)."
+    )
+
     # --- New 'debug' command ---
     parser_debug = subparsers.add_parser(
         "debug",
@@ -8571,6 +8619,11 @@ async def main():
     # Handle `ask` command
     if args.command == "ask":
         await run_ask(args)
+        return
+
+    # Handle `optimize` command
+    if args.command == "optimize":
+        await run_optimize(args)
         return
 
     # Handle `debug` command

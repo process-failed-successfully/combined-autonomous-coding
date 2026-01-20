@@ -54,6 +54,7 @@ from shared.cli import run_do_logic
 from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
+from shared.roadmap import run_roadmap_logic
 from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
 import json
@@ -2443,6 +2444,12 @@ def run_deps(args):
 
     print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
+
+def run_roadmap(args):
+    """Displays a visual roadmap of the project features."""
+    success = run_roadmap_logic(args.project_dir)
+    sys.exit(0 if success else 1)
+
 
 async def run_optimize(args):
     """Runs the optimization logic."""
@@ -6380,6 +6387,18 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'roadmap' command ---
+    parser_roadmap = subparsers.add_parser(
+        "roadmap",
+        help="Visualize project roadmap and feature progress."
+    )
+    parser_roadmap.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'analytics' command ---
     parser_analytics = subparsers.add_parser(
         "analytics",
@@ -9150,6 +9169,10 @@ async def main():
 
     if args.command == "bisect":
         await run_bisect(args)
+        return
+
+    if args.command == "roadmap":
+        run_roadmap(args)
         return
 
     if args.command == "map":

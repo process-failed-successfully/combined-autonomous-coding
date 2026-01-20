@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional
 import re
 from shared.charts import draw_ascii_bar_chart
+from shared.feature_list import load_feature_list
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -112,19 +113,17 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
     lines.append("\n[ Feature Summary ]")
     feature_file = project_dir / "feature_list.json"
     if feature_file.exists():
-        try:
-            with open(feature_file, 'r') as f:
-                features = json.load(f)
-            if isinstance(features, list) and features:
-                lines.append(f"  Found {len(features)} features in feature_list.json:")
-                for i, feature in enumerate(features[:3]): # Show top 3
-                    lines.append(f"    - {feature}")
-                if len(features) > 3:
-                    lines.append("    ...")
-            else:
-                lines.append("  feature_list.json is empty or invalid.")
-        except (json.JSONDecodeError, IOError):
-            lines.append("  Could not parse feature_list.json.")
+        features = load_feature_list(feature_file)
+        if features:
+            lines.append(f"  Found {len(features)} features in feature_list.json:")
+            for i, feature in enumerate(features[:3]): # Show top 3
+                title = feature.get("title", feature.get("name", "Unknown Feature"))
+                status = "✅" if feature.get("passes") or feature.get("status") == "completed" else "❌"
+                lines.append(f"    - {status} {title}")
+            if len(features) > 3:
+                lines.append("    ...")
+        else:
+            lines.append("  feature_list.json is empty.")
     else:
         lines.append("  No feature_list.json found.")
 

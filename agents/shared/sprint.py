@@ -9,6 +9,7 @@ from shared.config import Config
 from shared.agent_client import AgentClient
 from shared.notifications import NotificationManager
 from shared.telemetry import get_telemetry, init_telemetry
+from shared.feature_list import load_feature_list, save_feature_list
 from agents.gemini.client import GeminiClient
 from agents.shared.prompts import get_sprint_planner_prompt, get_sprint_coding_prompt, get_initializer_prompt
 from agents.gemini.agent import run_agent_session as run_gemini_session, GeminiAgent
@@ -652,10 +653,8 @@ class SprintManager:
         if not self.config.feature_list_path.exists():
             return
 
-        try:
-            features = json.loads(self.config.feature_list_path.read_text())
-        except Exception as e:
-            logger.error(f"Failed to read feature list: {e}")
+        features = load_feature_list(self.config.feature_list_path)
+        if not features:
             return
 
         # Map: Feature Name -> List of Task Statuses
@@ -697,7 +696,7 @@ class SprintManager:
                             logger.info(f"Marking feature '{f_name}' as COMPLETED in feature_list.json")
 
         if updated_any:
-            self.config.feature_list_path.write_text(json.dumps(features, indent=2))
+            save_feature_list(self.config.feature_list_path, features)
 
     async def run_post_sprint_checks(self):
         """Runs Manager and optional QA agents after sprint execution."""
@@ -755,15 +754,8 @@ class SprintManager:
         if not self.config.feature_list_path.exists():
             needs_init = True
         else:
-            try:
-                content = self.config.feature_list_path.read_text().strip()
-                if not content:
-                    needs_init = True
-                else:
-                    data = json.loads(content)
-                    if not isinstance(data, list) or not data:
-                        needs_init = True
-            except Exception:
+            features = load_feature_list(self.config.feature_list_path)
+            if not features:
                 needs_init = True
 
         if needs_init:

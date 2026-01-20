@@ -1,6 +1,6 @@
 {
   "errors": [],
-  "generated_at": "2026-01-20T12:59:56Z",
+  "generated_at": "2026-01-20T13:24:27Z",
   "metrics": {
     "./agents/__init__.py": {
       "CONFIDENCE.HIGH": 0,

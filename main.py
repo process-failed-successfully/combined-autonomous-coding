@@ -50,6 +50,7 @@ from shared.shell import InteractiveShell
 from shared.commands import run_why
 from shared.onboarding import run_onboard_logic
 from shared.ask import run_ask_logic
+from shared.cli import run_do_logic
 from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
@@ -2471,6 +2472,22 @@ async def run_ask(args):
         model=args.model,
         files=args.files,
         verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
+
+async def run_do(args):
+    """Translates natural language to shell commands."""
+    # Setup logging
+    logger, _ = setup_logger(name="do_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_do_logic(
+        instruction=args.instruction,
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        verbose=args.verbose,
+        yes=args.yes
     )
     sys.exit(0 if success else 1)
 
@@ -6050,6 +6067,43 @@ def parse_args(argv=None):
         help="The project directory to analyze (default: current directory)."
     )
 
+    # --- New 'do' command ---
+    parser_do = subparsers.add_parser(
+        "do",
+        help="Translate a natural language instruction to a shell command."
+    )
+    parser_do.add_argument(
+        "instruction",
+        help="The natural language instruction (e.g. 'undo last commit')."
+    )
+    parser_do.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_do.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_do.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Execute the suggested command without confirmation."
+    )
+    parser_do.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_do.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory)."
+    )
+
     # --- New 'code-review' command ---
     parser_code_review = subparsers.add_parser(
         "code-review",
@@ -8655,6 +8709,11 @@ async def main():
     # Handle `ask` command
     if args.command == "ask":
         await run_ask(args)
+        return
+
+    # Handle `do` command
+    if args.command == "do":
+        await run_do(args)
         return
 
     # Handle `optimize` command

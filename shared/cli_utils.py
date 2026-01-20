@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 from typing import Optional
 import re
+from shared.charts import draw_ascii_bar_chart
 
 WORKFLOW_STAGES = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
@@ -990,3 +991,56 @@ def _run_context_analyze_logic(project_dir: Path) -> str:
     )
 
     return "\n".join(output_lines)
+
+def _run_history_graph_logic(project_dir: Path, metric: str = "tokens", limit: int = 10) -> str:
+    """
+    Generates an ASCII chart for historical metrics.
+
+    Args:
+        project_dir: Path to the project.
+        metric: One of 'tokens', 'duration', 'errors', 'iterations'.
+        limit: Number of recent runs to show.
+    """
+    history_file = project_dir / ".agent_history"
+    if not history_file.exists():
+        return "No agent history found."
+
+    try:
+        with open(history_file, "r") as f:
+            run_ids = [line.strip() for line in f if line.strip()]
+    except IOError:
+        return "Error reading history file."
+
+    if not run_ids:
+        return "History is empty."
+
+    # Limit to last N runs
+    recent_runs = run_ids[-limit:]
+    data = {}
+
+    for run_id in recent_runs:
+        metrics_file = _find_metrics_file(run_id, project_dir)
+        val = 0.0
+        if metrics_file:
+            metrics = _parse_metrics(metrics_file)
+            if metric == "tokens":
+                val = float(metrics.get("LLM Tokens Used", 0))
+            elif metric == "duration":
+                val = float(metrics.get("Total Execution Time (s)", 0))
+            elif metric == "errors":
+                val = float(metrics.get("Total Errors", 0))
+            elif metric == "iterations":
+                val = float(metrics.get("Total Iterations", 0))
+
+        # Use short run ID for label
+        label = run_id[-6:]  # last 6 chars
+        data[label] = val
+
+    title_map = {
+        "tokens": "LLM Tokens Used",
+        "duration": "Execution Time (s)",
+        "errors": "Total Errors",
+        "iterations": "Total Iterations"
+    }
+
+    return draw_ascii_bar_chart(data, title=f"History: {title_map.get(metric, metric)}")

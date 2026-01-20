@@ -3,6 +3,7 @@ import re
 import subprocess
 import shutil
 import json
+import math
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -19,10 +20,18 @@ class SecurityAuditor:
         "Generic API Key": r"(?i)(api_key|apikey|secret|token|password|passwd)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9\-_]{16,}['\"]?",
     }
 
+    DANGEROUS_PATTERNS = {
+        "Dangerous Function (eval)": r"\beval\(",
+        "Dangerous Function (exec)": r"\bexec\(",
+        "Dangerous Function (pickle.load)": r"\bpickle\.load\(",
+        "Subprocess with shell=True": r"subprocess\.(call|run|Popen).*shell\s*=\s*True",
+        "Hardcoded Temp Path": r"\/tmp\/",
+    }
+
     # Files/Dirs to ignore during secret scan
     IGNORE_DIRS = {
         ".git", "__pycache__", ".venv", "venv", "node_modules",
-        ".idea", ".vscode", "dist", "build", ".agent_trash", ".agent_archives"
+        ".idea", ".vscode", "dist", "build", ".agent_trash", ".agent_archives", "tests"
     }
     IGNORE_EXTENSIONS = {
         ".pyc", ".pyo", ".pyd", ".so", ".dll", ".dylib", ".exe",
@@ -32,6 +41,17 @@ class SecurityAuditor:
 
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
+
+    def _calculate_entropy(self, data: str) -> float:
+        """Calculates the Shannon entropy of a string."""
+        if not data:
+            return 0
+        entropy = 0
+        for x in range(256):
+            p_x = float(data.count(chr(x))) / len(data)
+            if p_x > 0:
+                entropy += - p_x * math.log(p_x, 2)
+        return entropy
 
     def scan_secrets(self) -> List[Dict[str, Any]]:
         """Scans the project for hardcoded secrets."""
@@ -44,6 +64,10 @@ class SecurityAuditor:
             for file in files:
                 file_path = Path(root) / file
                 if file_path.suffix in self.IGNORE_EXTENSIONS:
+                    continue
+
+                # Check if path contains ignored keyword
+                if any(ignored in file_path.parts for ignored in self.IGNORE_DIRS):
                     continue
 
                 try:
@@ -67,6 +91,22 @@ class SecurityAuditor:
 
                             # Mask the secret in the snippet for display
                             match_str = match.group(0)
+
+                            # Additional validation for "Generic API Key" to reduce false positives
+                            if name == "Generic API Key":
+                                # Extract value part
+                                parts = re.split(r"[:=]\s*", match_str, 1)
+                                if len(parts) > 1:
+                                    value = parts[1].strip("'\"")
+                                    # Ignore if value looks like a variable reference or placeholder
+                                    if value.isupper() or "{" in value or "YOUR_" in value or "mock" in value.lower():
+                                        continue
+
+                                    # Entropy check
+                                    entropy = self._calculate_entropy(value)
+                                    if entropy < 3.0: # Arbitrary threshold, typical random keys have high entropy
+                                        continue
+
                             masked_match = match_str[:4] + "***" + match_str[-4:] if len(match_str) > 8 else "***"
                             snippet = snippet.replace(match_str, masked_match)
 
@@ -78,6 +118,24 @@ class SecurityAuditor:
                                 "line": content[:match.start()].count('\n') + 1,
                                 "snippet": snippet
                             })
+
+                    # Scan for dangerous patterns
+                    for name, pattern in self.DANGEROUS_PATTERNS.items():
+                         matches = re.finditer(pattern, content)
+                         for match in matches:
+                            start = max(0, match.start() - 30)
+                            end = min(len(content), match.end() + 30)
+                            snippet = content[start:end].replace('\n', ' ')
+
+                            findings.append({
+                                "type": "dangerous_pattern",
+                                "severity": "MEDIUM",
+                                "description": f"{name} detected",
+                                "file": str(file_path.relative_to(self.project_dir)),
+                                "line": content[:match.start()].count('\n') + 1,
+                                "snippet": snippet.strip()
+                            })
+
                 except Exception as e:
                     # Log error or skip file
                     continue

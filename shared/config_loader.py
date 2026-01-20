@@ -70,7 +70,7 @@ notification_settings:
 # jira:
 #   url: "https://your-domain.atlassian.net"
 #   email: "your@email.com"
-#   token: "API_TOKEN_OR_PASSWORD"
+#   token: "YOUR_JIRA_API_TOKEN"
 #   status_map:
 #     start: "In Progress"
 #     done: "Code Review"

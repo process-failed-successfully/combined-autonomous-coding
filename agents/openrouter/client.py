@@ -11,7 +11,7 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 
 # Mock key used for verification mode to bypass validation without using a real key.
-MOCK_API_KEY = "sk-or-v1-mock-key"
+MOCK_API_KEY = "mock-key-for-verification"
 
 class OpenRouterClient(BaseClient):
     """Handles interactions with OpenRouter API."""

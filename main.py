@@ -2541,6 +2541,15 @@ def run_knowledge(args):
          else:
               console.print(f"[red]Question #{args.id} not found.[/red]")
 
+    elif args.action == "learn":
+         try:
+             console.print(f"Ingesting knowledge from {args.source}...")
+             item = manager.ingest_knowledge(args.source, category=args.category)
+             console.print(f"[green]Successfully ingested knowledge #{item.id} from {args.source}[/green]")
+         except Exception as e:
+             console.print(f"[red]Error ingesting knowledge: {e}[/red]")
+             sys.exit(1)
+
     sys.exit(0)
 
 
@@ -6182,6 +6191,12 @@ def parse_args(argv=None):
     parser_knowledge_answer.add_argument("id", type=int, help="The ID of the question.")
     parser_knowledge_answer.add_argument("answer", help="The answer text.")
     parser_knowledge_answer.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Knowledge 'learn' action
+    parser_knowledge_learn = knowledge_subparsers.add_parser("learn", help="Ingest knowledge from file or URL.")
+    parser_knowledge_learn.add_argument("source", help="File path or URL.")
+    parser_knowledge_learn.add_argument("--category", default="LEARNING", help="Category (default: LEARNING).")
+    parser_knowledge_learn.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
 
     # --- New 'ask' command ---

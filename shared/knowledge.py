@@ -1,4 +1,7 @@
 from typing import List, Optional
+import requests
+from bs4 import BeautifulSoup
+from pathlib import Path
 from sqlalchemy.orm import Session
 from shared.database import SessionLocal
 from shared.models import AgentKnowledge, AgentQuestion
@@ -51,6 +54,45 @@ class KnowledgeManager:
             return False
         finally:
             db.close()
+
+    def ingest_knowledge(self, source: str, category: str = "LEARNING") -> AgentKnowledge:
+        """
+        Ingests knowledge from a file path or URL.
+        """
+        content = ""
+        source_type = "user"
+
+        if source.startswith("http://") or source.startswith("https://"):
+            try:
+                response = requests.get(source, timeout=10)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
+                # Remove script and style elements
+                for script in soup(["script", "style"]):
+                    script.extract()
+                content = soup.get_text()
+                # Clean up whitespace
+                lines = (line.strip() for line in content.splitlines())
+                chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+                content = '\n'.join(chunk for chunk in chunks if chunk)
+                source_type = f"url:{source}"
+            except Exception as e:
+                raise ValueError(f"Failed to fetch URL {source}: {e}")
+        else:
+            # Assume file path
+            path = Path(source)
+            if not path.exists():
+                raise FileNotFoundError(f"File not found: {source}")
+            try:
+                content = path.read_text(encoding='utf-8', errors='ignore')
+                source_type = f"file:{path.name}"
+            except Exception as e:
+                raise ValueError(f"Failed to read file {source}: {e}")
+
+        if not content:
+             raise ValueError("No content found.")
+
+        return self.add_knowledge(content, category=category, source=source_type)
 
     def get_questions(self, status: str = "pending") -> List[AgentQuestion]:
         """Retrieves questions asked by the agent."""

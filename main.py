@@ -1783,6 +1783,115 @@ def _find_commit_by_run_id(project_dir: Path, git_path: str, run_id: str) -> str
     return None
 
 
+def run_rollback(args):
+    """Reverts all commits associated with a specific agent Run ID."""
+    project_dir = args.project_dir.resolve()
+    run_id = args.run_id
+
+    # --- Pre-flight checks ---
+    git_path = shutil.which("git")
+    if not git_path:
+        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    git_dir = project_dir / ".git"
+    if not git_dir.exists() or not git_dir.is_dir():
+        print("❌ Error: Not a git repository. Cannot rollback.", file=sys.stderr)
+        sys.exit(1)
+
+    # Check for uncommitted changes
+    try:
+        status_result = subprocess.run(
+            [git_path, "-C", str(project_dir), "status", "--porcelain"],
+            capture_output=True, text=True, check=True
+        )
+        if status_result.stdout.strip():
+            print("❌ Error: Your repository has uncommitted changes.", file=sys.stderr)
+            print("Please commit or stash them before using rollback.", file=sys.stderr)
+            sys.exit(1)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"❌ Error checking git status: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Resolve Run ID
+    if not run_id or run_id == "last":
+        history_file = project_dir / ".agent_history"
+        if not history_file.exists():
+            print("❌ Error: No agent history found.", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            with open(history_file, "r") as f:
+                lines = [l.strip() for l in f if l.strip()]
+            if not lines:
+                print("❌ Error: Agent history is empty.", file=sys.stderr)
+                sys.exit(1)
+            run_id = lines[-1]
+            print(f"Rolling back last run: {run_id}")
+        except IOError as e:
+            print(f"❌ Error reading history file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"Rolling back run: {run_id}")
+
+    # Find commits associated with Run ID
+    print("Searching for commits...")
+    try:
+        # We look for "Run ID: <run_id>" in the commit message body
+        # git log --grep="Run ID: <run_id>" --format="%H"
+        # This returns commits in reverse chronological order (newest first).
+        # We want to revert them in that order.
+        result = subprocess.run(
+            [git_path, "-C", str(project_dir), "log", "--grep", f"Run ID: {run_id}", "--format=%H"],
+            capture_output=True, text=True, check=True
+        )
+        commits = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error searching git log: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not commits:
+        print(f"✅ No commits found for Run ID '{run_id}'. Nothing to rollback.")
+        sys.exit(0)
+
+    print(f"Found {len(commits)} commit(s) to revert:")
+    for c in commits:
+        print(f"  - {c[:7]}")
+
+    if not args.yes:
+        confirm = input("\nAre you sure you want to revert these commits? This will create new revert commits. [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    print("\nReverting commits...")
+    reverted_count = 0
+    try:
+        # Iterate through commits (already newest first) and revert them
+        for commit_hash in commits:
+            print(f"  Reverting {commit_hash[:7]}...")
+            # Use --no-edit to skip editor launch.
+            revert_cmd = [git_path, "-C", str(project_dir), "revert", "--no-edit", commit_hash]
+
+            revert_result = subprocess.run(revert_cmd, capture_output=True, text=True)
+
+            if revert_result.returncode != 0:
+                print(f"❌ Error reverting commit {commit_hash[:7]}:", file=sys.stderr)
+                print(revert_result.stderr, file=sys.stderr)
+                print("\nConflict detected or error occurred. Aborting rollback sequence.", file=sys.stderr)
+                print("You may need to resolve the conflict manually or run 'git revert --abort'.", file=sys.stderr)
+                sys.exit(1)
+
+            reverted_count += 1
+
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\n✅ Successfully reverted {reverted_count} commit(s).")
+    sys.exit(0)
+
+
 def run_cherry_pick(args):
     """Applies the changes from a specific commit onto the current branch."""
     project_dir = args.project_dir.resolve()
@@ -5888,6 +5997,29 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory (default: current directory).",
     )
+
+    # --- New 'rollback' command ---
+    parser_rollback = subparsers.add_parser(
+        "rollback",
+        help="Revert all commits associated with a specific agent Run ID."
+    )
+    parser_rollback.add_argument(
+        "run_id",
+        nargs="?",
+        default="last",
+        help="The agent Run ID to rollback (default: last run).",
+    )
+    parser_rollback.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
+    )
+    parser_rollback.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt.",
+    )
     parser_patch.add_argument(
         "-R", "--reverse",
         action="store_true",
@@ -9387,6 +9519,10 @@ async def main():
 
     if args.command == "cherry-pick":
         run_cherry_pick(args)
+        return
+
+    if args.command == "rollback":
+        run_rollback(args)
         return
 
     if args.command == "analytics":

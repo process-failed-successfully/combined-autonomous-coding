@@ -1,6 +1,6 @@
 {
   "errors": [],
-  "generated_at": "2026-01-20T13:24:27Z",
+  "generated_at": "2026-01-20T13:49:23Z",
   "metrics": {
     "./agents/__init__.py": {
       "CONFIDENCE.HIGH": 0,
@@ -315,15 +315,15 @@
       "skipped_tests": 0
     },
     "./main.py": {
-      "CONFIDENCE.HIGH": 115,
+      "CONFIDENCE.HIGH": 118,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 115,
+      "SEVERITY.LOW": 118,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 7788,
+      "loc": 7894,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -1017,15 +1017,15 @@
       "skipped_tests": 0
     },
     "_totals": {
-      "CONFIDENCE.HIGH": 264,
+      "CONFIDENCE.HIGH": 267,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 1,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 265,
+      "SEVERITY.LOW": 268,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 18166,
+      "loc": 18272,
       "nosec": 0,
       "skipped_tests": 1
     }
@@ -2222,7 +2222,73 @@
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1806     try:\n1807         check_commit_result = subprocess.run(\n1808             [git_path, \"-C\", str(project_dir), \"cat-file\", \"-t\", target],\n1809             capture_output=True, text=True\n1810         )\n1811         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == \"commit\":\n",
+      "code": "1803     try:\n1804         status_result = subprocess.run(\n1805             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n1806             capture_output=True, text=True, check=True\n1807         )\n1808         if status_result.stdout.strip():\n",
+      "col_offset": 24,
+      "end_col_offset": 9,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 1804,
+      "line_range": [
+        1804,
+        1805,
+        1806,
+        1807
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "1843         # We want to revert them in that order.\n1844         result = subprocess.run(\n1845             [git_path, \"-C\", str(project_dir), \"log\", \"--grep\", f\"Run ID: {run_id}\", \"--format=%H\"],\n1846             capture_output=True, text=True, check=True\n1847         )\n1848         commits = [line.strip() for line in result.stdout.splitlines() if line.strip()]\n",
+      "col_offset": 17,
+      "end_col_offset": 9,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 1844,
+      "line_range": [
+        1844,
+        1845,
+        1846,
+        1847
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "1875 \n1876             revert_result = subprocess.run(revert_cmd, capture_output=True, text=True)\n1877 \n",
+      "col_offset": 28,
+      "end_col_offset": 86,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 1876,
+      "line_range": [
+        1876
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "1915     try:\n1916         check_commit_result = subprocess.run(\n1917             [git_path, \"-C\", str(project_dir), \"cat-file\", \"-t\", target],\n1918             capture_output=True, text=True\n1919         )\n1920         if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == \"commit\":\n",
       "col_offset": 30,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2233,19 +2299,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1807,
+      "line_number": 1916,
       "line_range": [
-        1807,
-        1808,
-        1809,
-        1810
+        1916,
+        1917,
+        1918,
+        1919
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1812             is_git_ref = True\n1813     except Exception:\n1814         pass  # Ignore errors, we'll handle the 'not found' case below\n1815 \n",
+      "code": "1921             is_git_ref = True\n1922     except Exception:\n1923         pass  # Ignore errors, we'll handle the 'not found' case below\n1924 \n",
       "col_offset": 4,
       "end_col_offset": 12,
       "filename": "./main.py",
@@ -2256,17 +2322,17 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Try, Except, Pass detected.",
-      "line_number": 1813,
+      "line_number": 1922,
       "line_range": [
-        1813,
-        1814
+        1922,
+        1923
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b110_try_except_pass.html",
       "test_id": "B110",
       "test_name": "try_except_pass"
     },
     {
-      "code": "1831         cmd = [git_path, \"-C\", str(project_dir), \"cherry-pick\", \"--no-commit\", target]\n1832         result = subprocess.run(cmd, capture_output=True, text=True)\n1833 \n",
+      "code": "1940         cmd = [git_path, \"-C\", str(project_dir), \"cherry-pick\", \"--no-commit\", target]\n1941         result = subprocess.run(cmd, capture_output=True, text=True)\n1942 \n",
       "col_offset": 17,
       "end_col_offset": 68,
       "filename": "./main.py",
@@ -2277,16 +2343,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1832,
+      "line_number": 1941,
       "line_range": [
-        1832
+        1941
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1876     try:\n1877         status_result = subprocess.run(\n1878             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n1879             capture_output=True, text=True, check=True\n1880         )\n1881         if status_result.stdout.strip():\n",
+      "code": "1985     try:\n1986         status_result = subprocess.run(\n1987             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n1988             capture_output=True, text=True, check=True\n1989         )\n1990         if status_result.stdout.strip():\n",
       "col_offset": 24,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2297,19 +2363,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1877,
+      "line_number": 1986,
       "line_range": [
-        1877,
-        1878,
-        1879,
-        1880
+        1986,
+        1987,
+        1988,
+        1989
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1893         try:\n1894             log_result = subprocess.run(\n1895                 [git_path, \"-C\", str(project_dir), \"log\", \"--oneline\", \"--pretty=format:%h|%s|%cr\", \"-n\", \"15\"],\n1896                 capture_output=True, text=True, check=True\n1897             )\n1898             commits = [line.split('|') for line in log_result.stdout.strip().split('\\n')]\n",
+      "code": "2002         try:\n2003             log_result = subprocess.run(\n2004                 [git_path, \"-C\", str(project_dir), \"log\", \"--oneline\", \"--pretty=format:%h|%s|%cr\", \"-n\", \"15\"],\n2005                 capture_output=True, text=True, check=True\n2006             )\n2007             commits = [line.split('|') for line in log_result.stdout.strip().split('\\n')]\n",
       "col_offset": 25,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -2320,19 +2386,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1894,
+      "line_number": 2003,
       "line_range": [
-        1894,
-        1895,
-        1896,
-        1897
+        2003,
+        2004,
+        2005,
+        2006
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1933         try:\n1934             check_ref_result = subprocess.run(\n1935                 [git_path, \"-C\", str(project_dir), \"show-ref\", \"--verify\", f\"refs/heads/{target}\"],\n1936                 capture_output=True, text=True\n1937             )\n1938             if check_ref_result.returncode == 0:\n",
+      "code": "2042         try:\n2043             check_ref_result = subprocess.run(\n2044                 [git_path, \"-C\", str(project_dir), \"show-ref\", \"--verify\", f\"refs/heads/{target}\"],\n2045                 capture_output=True, text=True\n2046             )\n2047             if check_ref_result.returncode == 0:\n",
       "col_offset": 31,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -2343,19 +2409,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1934,
+      "line_number": 2043,
       "line_range": [
-        1934,
-        1935,
-        1936,
-        1937
+        2043,
+        2044,
+        2045,
+        2046
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1941                 # Also check if it's a commit hash\n1942                 check_commit_result = subprocess.run(\n1943                     [git_path, \"-C\", str(project_dir), \"cat-file\", \"-t\", target],\n1944                     capture_output=True, text=True\n1945                 )\n1946                 if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == \"commit\":\n",
+      "code": "2050                 # Also check if it's a commit hash\n2051                 check_commit_result = subprocess.run(\n2052                     [git_path, \"-C\", str(project_dir), \"cat-file\", \"-t\", target],\n2053                     capture_output=True, text=True\n2054                 )\n2055                 if check_commit_result.returncode == 0 and check_commit_result.stdout.strip() == \"commit\":\n",
       "col_offset": 38,
       "end_col_offset": 17,
       "filename": "./main.py",
@@ -2366,19 +2432,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1942,
+      "line_number": 2051,
       "line_range": [
-        1942,
-        1943,
-        1944,
-        1945
+        2051,
+        2052,
+        2053,
+        2054
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1947                     is_git_ref = True\n1948         except Exception:\n1949             pass  # Ignore errors, we'll handle the 'not found' case below\n1950 \n",
+      "code": "2056                     is_git_ref = True\n2057         except Exception:\n2058             pass  # Ignore errors, we'll handle the 'not found' case below\n2059 \n",
       "col_offset": 8,
       "end_col_offset": 16,
       "filename": "./main.py",
@@ -2389,17 +2455,17 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Try, Except, Pass detected.",
-      "line_number": 1948,
+      "line_number": 2057,
       "line_range": [
-        1948,
-        1949
+        2057,
+        2058
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b110_try_except_pass.html",
       "test_id": "B110",
       "test_name": "try_except_pass"
     },
     {
-      "code": "1974         # Step 1: Clean any ignored files that might be lingering\n1975         subprocess.run(\n1976             [git_path, \"-C\", str(project_dir), \"clean\", \"-fdx\"],\n1977             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n1978         )\n1979         # Step 2: Reset to the target commit\n",
+      "code": "2083         # Step 1: Clean any ignored files that might be lingering\n2084         subprocess.run(\n2085             [git_path, \"-C\", str(project_dir), \"clean\", \"-fdx\"],\n2086             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n2087         )\n2088         # Step 2: Reset to the target commit\n",
       "col_offset": 8,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2410,19 +2476,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1975,
+      "line_number": 2084,
       "line_range": [
-        1975,
-        1976,
-        1977,
-        1978
+        2084,
+        2085,
+        2086,
+        2087
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "1979         # Step 2: Reset to the target commit\n1980         subprocess.run(\n1981             [git_path, \"-C\", str(project_dir), \"reset\", \"--hard\", target],\n1982             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n1983         )\n1984         print(\"\u2705 Rewind complete.\")\n",
+      "code": "2088         # Step 2: Reset to the target commit\n2089         subprocess.run(\n2090             [git_path, \"-C\", str(project_dir), \"reset\", \"--hard\", target],\n2091             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n2092         )\n2093         print(\"\u2705 Rewind complete.\")\n",
       "col_offset": 8,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2433,19 +2499,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1980,
+      "line_number": 2089,
       "line_range": [
-        1980,
-        1981,
-        1982,
-        1983
+        2089,
+        2090,
+        2091,
+        2092
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2193             # Commit these changes\n2194             subprocess.run([\"git\", \"-C\", str(project_dir), \"add\"] + modified, check=True)\n2195             subprocess.run([\"git\", \"-C\", str(project_dir), \"commit\", \"-m\", f\"chore: bump version to {next_version}\"], check=True)\n",
+      "code": "2302             # Commit these changes\n2303             subprocess.run([\"git\", \"-C\", str(project_dir), \"add\"] + modified, check=True)\n2304             subprocess.run([\"git\", \"-C\", str(project_dir), \"commit\", \"-m\", f\"chore: bump version to {next_version}\"], check=True)\n",
       "col_offset": 12,
       "end_col_offset": 89,
       "filename": "./main.py",
@@ -2456,16 +2522,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2194,
+      "line_number": 2303,
       "line_range": [
-        2194
+        2303
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2194             subprocess.run([\"git\", \"-C\", str(project_dir), \"add\"] + modified, check=True)\n2195             subprocess.run([\"git\", \"-C\", str(project_dir), \"commit\", \"-m\", f\"chore: bump version to {next_version}\"], check=True)\n2196             print(\"Committed version bump.\")\n",
+      "code": "2303             subprocess.run([\"git\", \"-C\", str(project_dir), \"add\"] + modified, check=True)\n2304             subprocess.run([\"git\", \"-C\", str(project_dir), \"commit\", \"-m\", f\"chore: bump version to {next_version}\"], check=True)\n2305             print(\"Committed version bump.\")\n",
       "col_offset": 12,
       "end_col_offset": 129,
       "filename": "./main.py",
@@ -2476,16 +2542,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Starting a process with a partial executable path",
-      "line_number": 2195,
+      "line_number": 2304,
       "line_range": [
-        2195
+        2304
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b607_start_process_with_partial_path.html",
       "test_id": "B607",
       "test_name": "start_process_with_partial_path"
     },
     {
-      "code": "2194             subprocess.run([\"git\", \"-C\", str(project_dir), \"add\"] + modified, check=True)\n2195             subprocess.run([\"git\", \"-C\", str(project_dir), \"commit\", \"-m\", f\"chore: bump version to {next_version}\"], check=True)\n2196             print(\"Committed version bump.\")\n",
+      "code": "2303             subprocess.run([\"git\", \"-C\", str(project_dir), \"add\"] + modified, check=True)\n2304             subprocess.run([\"git\", \"-C\", str(project_dir), \"commit\", \"-m\", f\"chore: bump version to {next_version}\"], check=True)\n2305             print(\"Committed version bump.\")\n",
       "col_offset": 12,
       "end_col_offset": 129,
       "filename": "./main.py",
@@ -2496,16 +2562,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2195,
+      "line_number": 2304,
       "line_range": [
-        2195
+        2304
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2208              try:\n2209                  subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", \"-a\", tag_name, \"-F\", tf_path], check=True)\n2210              finally:\n",
+      "code": "2317              try:\n2318                  subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", \"-a\", tag_name, \"-F\", tf_path], check=True)\n2319              finally:\n",
       "col_offset": 17,
       "end_col_offset": 114,
       "filename": "./main.py",
@@ -2516,16 +2582,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Starting a process with a partial executable path",
-      "line_number": 2209,
+      "line_number": 2318,
       "line_range": [
-        2209
+        2318
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b607_start_process_with_partial_path.html",
       "test_id": "B607",
       "test_name": "start_process_with_partial_path"
     },
     {
-      "code": "2208              try:\n2209                  subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", \"-a\", tag_name, \"-F\", tf_path], check=True)\n2210              finally:\n",
+      "code": "2317              try:\n2318                  subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", \"-a\", tag_name, \"-F\", tf_path], check=True)\n2319              finally:\n",
       "col_offset": 17,
       "end_col_offset": 114,
       "filename": "./main.py",
@@ -2536,16 +2602,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2209,
+      "line_number": 2318,
       "line_range": [
-        2209
+        2318
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2212         else:\n2213              subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", tag_name], check=True)\n2214 \n",
+      "code": "2321         else:\n2322              subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", tag_name], check=True)\n2323 \n",
       "col_offset": 13,
       "end_col_offset": 89,
       "filename": "./main.py",
@@ -2556,16 +2622,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Starting a process with a partial executable path",
-      "line_number": 2213,
+      "line_number": 2322,
       "line_range": [
-        2213
+        2322
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b607_start_process_with_partial_path.html",
       "test_id": "B607",
       "test_name": "start_process_with_partial_path"
     },
     {
-      "code": "2212         else:\n2213              subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", tag_name], check=True)\n2214 \n",
+      "code": "2321         else:\n2322              subprocess.run([\"git\", \"-C\", str(project_dir), \"tag\", tag_name], check=True)\n2323 \n",
       "col_offset": 13,
       "end_col_offset": 89,
       "filename": "./main.py",
@@ -2576,16 +2642,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2213,
+      "line_number": 2322,
       "line_range": [
-        2213
+        2322
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2863         # Check if there's anything to stash\n2864         status_result = subprocess.run(\n2865             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n2866             capture_output=True, text=True, check=True\n2867         )\n2868         if not status_result.stdout.strip():\n",
+      "code": "2972         # Check if there's anything to stash\n2973         status_result = subprocess.run(\n2974             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n2975             capture_output=True, text=True, check=True\n2976         )\n2977         if not status_result.stdout.strip():\n",
       "col_offset": 24,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2596,19 +2662,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2864,
+      "line_number": 2973,
       "line_range": [
-        2864,
-        2865,
-        2866,
-        2867
+        2973,
+        2974,
+        2975,
+        2976
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2875 \n2876         result = subprocess.run(cmd, capture_output=True, text=True)\n2877         if result.returncode != 0:\n",
+      "code": "2984 \n2985         result = subprocess.run(cmd, capture_output=True, text=True)\n2986         if result.returncode != 0:\n",
       "col_offset": 17,
       "end_col_offset": 68,
       "filename": "./main.py",
@@ -2619,16 +2685,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2876,
+      "line_number": 2985,
       "line_range": [
-        2876
+        2985
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2892         cmd = [git_path, \"-C\", str(project_dir), \"stash\", \"list\"]\n2893         result = subprocess.run(cmd, capture_output=True, text=True, check=True)\n2894 \n",
+      "code": "3001         cmd = [git_path, \"-C\", str(project_dir), \"stash\", \"list\"]\n3002         result = subprocess.run(cmd, capture_output=True, text=True, check=True)\n3003 \n",
       "col_offset": 17,
       "end_col_offset": 80,
       "filename": "./main.py",
@@ -2639,16 +2705,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2893,
+      "line_number": 3002,
       "line_range": [
-        2893
+        3002
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2930 \n2931         result = subprocess.run(\n2932             [git_path, \"-C\", str(project_dir), \"stash\", \"pop\", str(selection)],\n2933             capture_output=True, text=True\n2934         )\n2935 \n",
+      "code": "3039 \n3040         result = subprocess.run(\n3041             [git_path, \"-C\", str(project_dir), \"stash\", \"pop\", str(selection)],\n3042             capture_output=True, text=True\n3043         )\n3044 \n",
       "col_offset": 17,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2659,19 +2725,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2931,
+      "line_number": 3040,
       "line_range": [
-        2931,
-        2932,
-        2933,
-        2934
+        3040,
+        3041,
+        3042,
+        3043
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "2978         print(f\"\\nDropping {stash_ref}...\")\n2979         result = subprocess.run(\n2980             [git_path, \"-C\", str(project_dir), \"stash\", \"drop\", str(selection)],\n2981             check=True, capture_output=True, text=True\n2982         )\n2983 \n",
+      "code": "3087         print(f\"\\nDropping {stash_ref}...\")\n3088         result = subprocess.run(\n3089             [git_path, \"-C\", str(project_dir), \"stash\", \"drop\", str(selection)],\n3090             check=True, capture_output=True, text=True\n3091         )\n3092 \n",
       "col_offset": 17,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2682,19 +2748,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 2979,
+      "line_number": 3088,
       "line_range": [
-        2979,
-        2980,
-        2981,
-        2982
+        3088,
+        3089,
+        3090,
+        3091
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "3069         try:\n3070             result = subprocess.run(\n3071                 [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n3072                 capture_output=True, text=True, check=True\n3073             )\n3074             changes = result.stdout.strip().split('\\n') if result.stdout.strip() else []\n",
+      "code": "3178         try:\n3179             result = subprocess.run(\n3180                 [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n3181                 capture_output=True, text=True, check=True\n3182             )\n3183             changes = result.stdout.strip().split('\\n') if result.stdout.strip() else []\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -2705,19 +2771,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 3070,
+      "line_number": 3179,
       "line_range": [
-        3070,
-        3071,
-        3072,
-        3073
+        3179,
+        3180,
+        3181,
+        3182
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "3273         cmd = [git_path, \"-C\", str(project_dir), \"diff\", \"--stat\"]\n3274         result = subprocess.run(cmd, capture_output=True, text=True, check=True)\n3275         if not result.stdout.strip():\n",
+      "code": "3382         cmd = [git_path, \"-C\", str(project_dir), \"diff\", \"--stat\"]\n3383         result = subprocess.run(cmd, capture_output=True, text=True, check=True)\n3384         if not result.stdout.strip():\n",
       "col_offset": 17,
       "end_col_offset": 80,
       "filename": "./main.py",
@@ -2728,16 +2794,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 3274,
+      "line_number": 3383,
       "line_range": [
-        3274
+        3383
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "3316             # Use subprocess.run without capturing output to stream directly\n3317             result = subprocess.run(cmd)\n3318             sys.exit(result.returncode)\n",
+      "code": "3425             # Use subprocess.run without capturing output to stream directly\n3426             result = subprocess.run(cmd)\n3427             sys.exit(result.returncode)\n",
       "col_offset": 21,
       "end_col_offset": 40,
       "filename": "./main.py",
@@ -2748,16 +2814,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 3317,
+      "line_number": 3426,
       "line_range": [
-        3317
+        3426
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "3322         # Check if it's a known git reference first\n3323         is_git_ref = subprocess.run(\n3324             [git_path, \"-C\", str(project_dir), \"rev-parse\", \"--verify\", f\"{target}^{{commit}}\"],\n3325             capture_output=True, text=True\n3326         ).returncode == 0\n3327 \n",
+      "code": "3431         # Check if it's a known git reference first\n3432         is_git_ref = subprocess.run(\n3433             [git_path, \"-C\", str(project_dir), \"rev-parse\", \"--verify\", f\"{target}^{{commit}}\"],\n3434             capture_output=True, text=True\n3435         ).returncode == 0\n3436 \n",
       "col_offset": 21,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -2768,19 +2834,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 3323,
+      "line_number": 3432,
       "line_range": [
-        3323,
-        3324,
-        3325,
-        3326
+        3432,
+        3433,
+        3434,
+        3435
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "3340         cmd = [git_path, \"-C\", str(project_dir), \"show\", \"--color=always\", target]\n3341         result = subprocess.run(cmd)\n3342         sys.exit(result.returncode)\n",
+      "code": "3449         cmd = [git_path, \"-C\", str(project_dir), \"show\", \"--color=always\", target]\n3450         result = subprocess.run(cmd)\n3451         sys.exit(result.returncode)\n",
       "col_offset": 17,
       "end_col_offset": 36,
       "filename": "./main.py",
@@ -2791,16 +2857,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 3341,
+      "line_number": 3450,
       "line_range": [
-        3341
+        3450
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "3379 \n3380         result = subprocess.run(cmd)\n3381 \n",
+      "code": "3488 \n3489         result = subprocess.run(cmd)\n3490 \n",
       "col_offset": 17,
       "end_col_offset": 36,
       "filename": "./main.py",
@@ -2811,16 +2877,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 3380,
+      "line_number": 3489,
       "line_range": [
-        3380
+        3489
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4041     import json\n4042     import subprocess\n4043     import shutil\n",
+      "code": "4150     import json\n4151     import subprocess\n4152     import shutil\n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -2831,16 +2897,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 4042,
+      "line_number": 4151,
       "line_range": [
-        4042
+        4151
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "4072         try:\n4073             result = subprocess.run(\n4074                 [git_path, \"-C\", str(project_dir), \"worktree\", \"list\"],\n4075                 capture_output=True, text=True, check=True\n4076             )\n4077             for line in result.stdout.strip().split('\\n'):\n",
+      "code": "4181         try:\n4182             result = subprocess.run(\n4183                 [git_path, \"-C\", str(project_dir), \"worktree\", \"list\"],\n4184                 capture_output=True, text=True, check=True\n4185             )\n4186             for line in result.stdout.strip().split('\\n'):\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -2851,19 +2917,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4073,
+      "line_number": 4182,
       "line_range": [
-        4073,
-        4074,
-        4075,
-        4076
+        4182,
+        4183,
+        4184,
+        4185
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4089             try:\n4090                 subprocess.run([git_path, \"-C\", str(project_dir), \"show-ref\", \"--verify\", f\"refs/heads/{main_branch}\"], check=True, capture_output=True)\n4091             except subprocess.CalledProcessError:\n",
+      "code": "4198             try:\n4199                 subprocess.run([git_path, \"-C\", str(project_dir), \"show-ref\", \"--verify\", f\"refs/heads/{main_branch}\"], check=True, capture_output=True)\n4200             except subprocess.CalledProcessError:\n",
       "col_offset": 16,
       "end_col_offset": 152,
       "filename": "./main.py",
@@ -2874,16 +2940,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4090,
+      "line_number": 4199,
       "line_range": [
-        4090
+        4199
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4093 \n4094             result = subprocess.run(\n4095                 [git_path, \"-C\", str(project_dir), \"branch\", \"--merged\", main_branch],\n4096                 capture_output=True, text=True, check=True\n4097             )\n4098             for line in result.stdout.strip().split('\\n'):\n",
+      "code": "4202 \n4203             result = subprocess.run(\n4204                 [git_path, \"-C\", str(project_dir), \"branch\", \"--merged\", main_branch],\n4205                 capture_output=True, text=True, check=True\n4206             )\n4207             for line in result.stdout.strip().split('\\n'):\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -2894,19 +2960,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4094,
+      "line_number": 4203,
       "line_range": [
-        4094,
-        4095,
-        4096,
-        4097
+        4203,
+        4204,
+        4205,
+        4206
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4147             print(f\"Creating and checking out new branch: {branch_name}\")\n4148             subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", \"-b\", branch_name], check=True, capture_output=True)\n4149             branch_file.write_text(branch_name)\n",
+      "code": "4256             print(f\"Creating and checking out new branch: {branch_name}\")\n4257             subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", \"-b\", branch_name], check=True, capture_output=True)\n4258             branch_file.write_text(branch_name)\n",
       "col_offset": 12,
       "end_col_offset": 126,
       "filename": "./main.py",
@@ -2917,16 +2983,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4148,
+      "line_number": 4257,
       "line_range": [
-        4148
+        4257
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4161             print(f\"Checking out branch: {branch_name}\")\n4162             subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", branch_name], check=True, capture_output=True)\n4163             branch_file.write_text(branch_name)\n",
+      "code": "4270             print(f\"Checking out branch: {branch_name}\")\n4271             subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", branch_name], check=True, capture_output=True)\n4272             branch_file.write_text(branch_name)\n",
       "col_offset": 12,
       "end_col_offset": 120,
       "filename": "./main.py",
@@ -2937,16 +3003,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4162,
+      "line_number": 4271,
       "line_range": [
-        4162
+        4271
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4182         try:\n4183             subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", main_branch], check=True, capture_output=True, text=True)\n4184         except subprocess.CalledProcessError as e:\n",
+      "code": "4291         try:\n4292             subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", main_branch], check=True, capture_output=True, text=True)\n4293         except subprocess.CalledProcessError as e:\n",
       "col_offset": 12,
       "end_col_offset": 131,
       "filename": "./main.py",
@@ -2957,16 +3023,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4183,
+      "line_number": 4292,
       "line_range": [
-        4183
+        4292
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4187                 try:\n4188                     subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", main_branch], check=True, capture_output=True, text=True)\n4189                 except subprocess.CalledProcessError as e2:\n",
+      "code": "4296                 try:\n4297                     subprocess.run([git_path, \"-C\", str(project_dir), \"checkout\", main_branch], check=True, capture_output=True, text=True)\n4298                 except subprocess.CalledProcessError as e2:\n",
       "col_offset": 20,
       "end_col_offset": 139,
       "filename": "./main.py",
@@ -2977,16 +3043,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4188,
+      "line_number": 4297,
       "line_range": [
-        4188
+        4297
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4199         try:\n4200             subprocess.run([git_path, \"-C\", str(project_dir), \"merge\", current_agent_branch], check=True, capture_output=True)\n4201             print(\"\u2705 Merge successful.\")\n",
+      "code": "4308         try:\n4309             subprocess.run([git_path, \"-C\", str(project_dir), \"merge\", current_agent_branch], check=True, capture_output=True)\n4310             print(\"\u2705 Merge successful.\")\n",
       "col_offset": 12,
       "end_col_offset": 126,
       "filename": "./main.py",
@@ -2997,16 +3063,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4200,
+      "line_number": 4309,
       "line_range": [
-        4200
+        4309
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4203                 print(f\"Deleting branch '{current_agent_branch}'...\")\n4204                 subprocess.run([git_path, \"-C\", str(project_dir), \"branch\", \"-d\", current_agent_branch], check=True, capture_output=True)\n4205                 branch_file.unlink()\n",
+      "code": "4312                 print(f\"Deleting branch '{current_agent_branch}'...\")\n4313                 subprocess.run([git_path, \"-C\", str(project_dir), \"branch\", \"-d\", current_agent_branch], check=True, capture_output=True)\n4314                 branch_file.unlink()\n",
       "col_offset": 16,
       "end_col_offset": 137,
       "filename": "./main.py",
@@ -3017,16 +3083,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4204,
+      "line_number": 4313,
       "line_range": [
-        4204
+        4313
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4217         try:\n4218             result = subprocess.run([git_path, \"-C\", str(project_dir), \"branch\", \"--list\"], capture_output=True, text=True, check=True)\n4219             for line in result.stdout.strip().split('\\n'):\n",
+      "code": "4326         try:\n4327             result = subprocess.run([git_path, \"-C\", str(project_dir), \"branch\", \"--list\"], capture_output=True, text=True, check=True)\n4328             for line in result.stdout.strip().split('\\n'):\n",
       "col_offset": 21,
       "end_col_offset": 135,
       "filename": "./main.py",
@@ -3037,16 +3103,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4218,
+      "line_number": 4327,
       "line_range": [
-        4218
+        4327
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4278         # Execute the command from within the worktree directory, capturing output.\n4279         result = subprocess.run(\n4280             full_command,\n4281             cwd=worktree_path,\n4282             capture_output=True,\n4283             text=True\n4284         )\n4285         # Print the captured output\n",
+      "code": "4387         # Execute the command from within the worktree directory, capturing output.\n4388         result = subprocess.run(\n4389             full_command,\n4390             cwd=worktree_path,\n4391             capture_output=True,\n4392             text=True\n4393         )\n4394         # Print the captured output\n",
       "col_offset": 17,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -3057,21 +3123,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4279,
+      "line_number": 4388,
       "line_range": [
-        4279,
-        4280,
-        4281,
-        4282,
-        4283,
-        4284
+        4388,
+        4389,
+        4390,
+        4391,
+        4392,
+        4393
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4352         # Stream the output directly and run in the target project directory\n4353         result = subprocess.run(full_command, cwd=project_dir)\n4354         # Exit with the same code as the test runner\n",
+      "code": "4461         # Stream the output directly and run in the target project directory\n4462         result = subprocess.run(full_command, cwd=project_dir)\n4463         # Exit with the same code as the test runner\n",
       "col_offset": 17,
       "end_col_offset": 62,
       "filename": "./main.py",
@@ -3082,16 +3148,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4353,
+      "line_number": 4462,
       "line_range": [
-        4353
+        4462
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4432         # Stream the output directly and run in the target project directory\n4433         result = subprocess.run(full_command, cwd=project_dir)\n4434         sys.exit(result.returncode)\n",
+      "code": "4541         # Stream the output directly and run in the target project directory\n4542         result = subprocess.run(full_command, cwd=project_dir)\n4543         sys.exit(result.returncode)\n",
       "col_offset": 17,
       "end_col_offset": 62,
       "filename": "./main.py",
@@ -3102,16 +3168,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4433,
+      "line_number": 4542,
       "line_range": [
-        4433
+        4542
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "4503         # Stream the output directly and run in the target project directory\n4504         result = subprocess.run(full_command, cwd=project_dir)\n4505         sys.exit(result.returncode)\n",
+      "code": "4612         # Stream the output directly and run in the target project directory\n4613         result = subprocess.run(full_command, cwd=project_dir)\n4614         sys.exit(result.returncode)\n",
       "col_offset": 17,
       "end_col_offset": 62,
       "filename": "./main.py",
@@ -3122,16 +3188,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 4504,
+      "line_number": 4613,
       "line_range": [
-        4504
+        4613
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "7807                 # Run this command first\n7808                 result = subprocess.run(dev_command, cwd=project_dir)\n7809                 if result.returncode != 0:\n",
+      "code": "7939                 # Run this command first\n7940                 result = subprocess.run(dev_command, cwd=project_dir)\n7941                 if result.returncode != 0:\n",
       "col_offset": 25,
       "end_col_offset": 69,
       "filename": "./main.py",
@@ -3142,16 +3208,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 7808,
+      "line_number": 7940,
       "line_range": [
-        7808
+        7940
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "7829     try:\n7830         result = subprocess.run(command_base, cwd=project_dir)\n7831         if result.returncode == 0:\n",
+      "code": "7961     try:\n7962         result = subprocess.run(command_base, cwd=project_dir)\n7963         if result.returncode == 0:\n",
       "col_offset": 17,
       "end_col_offset": 62,
       "filename": "./main.py",
@@ -3162,16 +3228,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 7830,
+      "line_number": 7962,
       "line_range": [
-        7830
+        7962
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "7916     import shutil\n7917     import subprocess\n7918 \n",
+      "code": "8048     import shutil\n8049     import subprocess\n8050 \n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3182,16 +3248,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 7917,
+      "line_number": 8049,
       "line_range": [
-        7917
+        8049
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "7934         # Check for uncommitted changes\n7935         status_result = subprocess.run(\n7936             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n7937             capture_output=True, text=True, check=True\n7938         )\n7939         if status_result.stdout.strip():\n",
+      "code": "8066         # Check for uncommitted changes\n8067         status_result = subprocess.run(\n8068             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n8069             capture_output=True, text=True, check=True\n8070         )\n8071         if status_result.stdout.strip():\n",
       "col_offset": 24,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -3202,19 +3268,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 7935,
+      "line_number": 8067,
       "line_range": [
-        7935,
-        7936,
-        7937,
-        7938
+        8067,
+        8068,
+        8069,
+        8070
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "7964         # We stream the output directly to the user's console\n7965         push_result = subprocess.run(push_cmd, text=True)\n7966 \n",
+      "code": "8096         # We stream the output directly to the user's console\n8097         push_result = subprocess.run(push_cmd, text=True)\n8098 \n",
       "col_offset": 22,
       "end_col_offset": 57,
       "filename": "./main.py",
@@ -3225,16 +3291,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 7965,
+      "line_number": 8097,
       "line_range": [
-        7965
+        8097
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "7986     import shutil\n7987     import subprocess\n7988 \n",
+      "code": "8118     import shutil\n8119     import subprocess\n8120 \n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3245,16 +3311,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 7987,
+      "line_number": 8119,
       "line_range": [
-        7987
+        8119
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "8004         # Check for uncommitted changes\n8005         status_result = subprocess.run(\n8006             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n8007             capture_output=True, text=True, check=True\n8008         )\n8009         if status_result.stdout.strip():\n",
+      "code": "8136         # Check for uncommitted changes\n8137         status_result = subprocess.run(\n8138             [git_path, \"-C\", str(project_dir), \"status\", \"--porcelain\"],\n8139             capture_output=True, text=True, check=True\n8140         )\n8141         if status_result.stdout.strip():\n",
       "col_offset": 24,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -3265,19 +3331,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8005,
+      "line_number": 8137,
       "line_range": [
-        8005,
-        8006,
-        8007,
-        8008
+        8137,
+        8138,
+        8139,
+        8140
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8017         # We stream the output directly to the user's console\n8018         pull_result = subprocess.run(pull_cmd, text=True)\n8019 \n",
+      "code": "8149         # We stream the output directly to the user's console\n8150         pull_result = subprocess.run(pull_cmd, text=True)\n8151 \n",
       "col_offset": 22,
       "end_col_offset": 57,
       "filename": "./main.py",
@@ -3288,16 +3354,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8018,
+      "line_number": 8150,
       "line_range": [
-        8018
+        8150
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8038     \"\"\"Applies a patch from a file or stdin.\"\"\"\n8039     import subprocess\n8040     import sys\n",
+      "code": "8170     \"\"\"Applies a patch from a file or stdin.\"\"\"\n8171     import subprocess\n8172     import sys\n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3308,16 +3374,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8039,
+      "line_number": 8171,
       "line_range": [
-        8039
+        8171
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "8083     try:\n8084         result = subprocess.run(\n8085             cmd,\n8086             input=patch_content,\n8087             text=True,\n8088             capture_output=True\n8089         )\n8090         if result.returncode != 0:\n",
+      "code": "8215     try:\n8216         result = subprocess.run(\n8217             cmd,\n8218             input=patch_content,\n8219             text=True,\n8220             capture_output=True\n8221         )\n8222         if result.returncode != 0:\n",
       "col_offset": 17,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -3328,21 +3394,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8084,
+      "line_number": 8216,
       "line_range": [
-        8084,
-        8085,
-        8086,
-        8087,
-        8088,
-        8089
+        8216,
+        8217,
+        8218,
+        8219,
+        8220,
+        8221
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8106     import shutil\n8107     import subprocess\n8108     import requests\n",
+      "code": "8238     import shutil\n8239     import subprocess\n8240     import requests\n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3353,16 +3419,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8107,
+      "line_number": 8239,
       "line_range": [
-        8107
+        8239
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "8133         # 2. Check if the branch is pushed to remote\n8134         result = subprocess.run(\n8135             [git_path, \"-C\", str(project_dir), \"ls-remote\", \"--exit-code\", \"--heads\", \"origin\", current_branch],\n8136             capture_output=True, text=True\n8137         )\n8138         if result.returncode != 0:\n",
+      "code": "8265         # 2. Check if the branch is pushed to remote\n8266         result = subprocess.run(\n8267             [git_path, \"-C\", str(project_dir), \"ls-remote\", \"--exit-code\", \"--heads\", \"origin\", current_branch],\n8268             capture_output=True, text=True\n8269         )\n8270         if result.returncode != 0:\n",
       "col_offset": 17,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -3373,19 +3439,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8134,
+      "line_number": 8266,
       "line_range": [
-        8134,
-        8135,
-        8136,
-        8137
+        8266,
+        8267,
+        8268,
+        8269
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8183     import shutil\n8184     import subprocess\n8185 \n",
+      "code": "8315     import shutil\n8316     import subprocess\n8317 \n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3396,16 +3462,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8184,
+      "line_number": 8316,
       "line_range": [
-        8184
+        8316
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "8214     try:\n8215         subprocess.run([git_path, \"-C\", str(project_dir), \"add\", \"-A\"], check=True, capture_output=True, text=True)\n8216     except subprocess.CalledProcessError as e:\n",
+      "code": "8346     try:\n8347         subprocess.run([git_path, \"-C\", str(project_dir), \"add\", \"-A\"], check=True, capture_output=True, text=True)\n8348     except subprocess.CalledProcessError as e:\n",
       "col_offset": 8,
       "end_col_offset": 115,
       "filename": "./main.py",
@@ -3416,16 +3482,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8215,
+      "line_number": 8347,
       "line_range": [
-        8215
+        8347
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8220     # --- Check if there's anything to commit ---\n8221     check_staged_result = subprocess.run([git_path, \"-C\", str(project_dir), \"diff\", \"--cached\", \"--quiet\"], capture_output=True)\n8222     if check_staged_result.returncode == 0:\n",
+      "code": "8352     # --- Check if there's anything to commit ---\n8353     check_staged_result = subprocess.run([git_path, \"-C\", str(project_dir), \"diff\", \"--cached\", \"--quiet\"], capture_output=True)\n8354     if check_staged_result.returncode == 0:\n",
       "col_offset": 26,
       "end_col_offset": 128,
       "filename": "./main.py",
@@ -3436,16 +3502,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8221,
+      "line_number": 8353,
       "line_range": [
-        8221
+        8353
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8276         commit_cmd = [git_path, \"-C\", str(project_dir), \"commit\", \"-m\", commit_message]\n8277         commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)\n8278         print(commit_result.stdout.strip())\n",
+      "code": "8408         commit_cmd = [git_path, \"-C\", str(project_dir), \"commit\", \"-m\", commit_message]\n8409         commit_result = subprocess.run(commit_cmd, check=True, capture_output=True, text=True)\n8410         print(commit_result.stdout.strip())\n",
       "col_offset": 24,
       "end_col_offset": 94,
       "filename": "./main.py",
@@ -3456,16 +3522,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8277,
+      "line_number": 8409,
       "line_range": [
-        8277
+        8409
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8289     \"\"\"Helper function to merge a worktree branch back into the main branch.\"\"\"\n8290     import subprocess\n8291 \n",
+      "code": "8421     \"\"\"Helper function to merge a worktree branch back into the main branch.\"\"\"\n8422     import subprocess\n8423 \n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3476,222 +3542,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8290,
+      "line_number": 8422,
       "line_range": [
-        8290
+        8422
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "8306     try:\n8307         result = subprocess.run(\n8308             [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8309             capture_output=True, text=True, check=True\n8310         )\n8311         current_worktree: dict = {}\n",
+      "code": "8438     try:\n8439         result = subprocess.run(\n8440             [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8441             capture_output=True, text=True, check=True\n8442         )\n8443         current_worktree: dict = {}\n",
       "col_offset": 17,
       "end_col_offset": 9,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8307,
-      "line_range": [
-        8307,
-        8308,
-        8309,
-        8310
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8340     try:\n8341         status_result = subprocess.run(\n8342             [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8343             capture_output=True, text=True, check=True\n8344         )\n8345         if status_result.stdout.strip():\n",
-      "col_offset": 24,
-      "end_col_offset": 9,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8341,
-      "line_range": [
-        8341,
-        8342,
-        8343,
-        8344
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8347             # Add all changes\n8348             subprocess.run(\n8349                 [git_path, \"-C\", str(worktree_path), \"add\", \".\"],\n8350                 check=True, capture_output=True\n8351             )\n8352             # Commit changes\n",
-      "col_offset": 12,
-      "end_col_offset": 13,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8348,
-      "line_range": [
-        8348,
-        8349,
-        8350,
-        8351
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8353             commit_message = f\"Autocommit: Worktree merge for {worktree_name}\"\n8354             subprocess.run(\n8355                 [git_path, \"-C\", str(worktree_path), \"commit\", \"-m\", commit_message],\n8356                 check=True, capture_output=True\n8357             )\n8358             print(f\"  - Created commit on branch '{branch_name}'.\")\n",
-      "col_offset": 12,
-      "end_col_offset": 13,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8354,
-      "line_range": [
-        8354,
-        8355,
-        8356,
-        8357
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8370     try:\n8371         subprocess.run(\n8372             [git_path, \"-C\", str(project_dir), \"checkout\", main_branch],\n8373             check=True, capture_output=True, text=True\n8374         )\n8375     except subprocess.CalledProcessError as e:\n",
-      "col_offset": 8,
-      "end_col_offset": 9,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8371,
-      "line_range": [
-        8371,
-        8372,
-        8373,
-        8374
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8379              try:\n8380                  subprocess.run(\n8381                      [git_path, \"-C\", str(project_dir), \"checkout\", main_branch],\n8382                      check=True, capture_output=True, text=True\n8383                  )\n8384              except subprocess.CalledProcessError as e2:\n",
-      "col_offset": 17,
-      "end_col_offset": 18,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8380,
-      "line_range": [
-        8380,
-        8381,
-        8382,
-        8383
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8395     try:\n8396         merge_result = subprocess.run(\n8397             [git_path, \"-C\", str(project_dir), \"merge\", \"--no-ff\", branch_name],\n8398             check=True, capture_output=True, text=True\n8399         )\n8400         print(\"  - Merge successful.\")\n",
-      "col_offset": 23,
-      "end_col_offset": 9,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8396,
-      "line_range": [
-        8396,
-        8397,
-        8398,
-        8399
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8409         # Attempt to abort the merge to leave the repo in a clean state\n8410         subprocess.run([git_path, \"-C\", str(project_dir), \"merge\", \"--abort\"])\n8411         sys.exit(1)\n",
-      "col_offset": 8,
-      "end_col_offset": 78,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8410,
-      "line_range": [
-        8410
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8425             print(f\"  - Removing worktree '{worktree_name}'...\")\n8426             subprocess.run(\n8427                 [git_path, \"-C\", str(project_dir), \"worktree\", \"remove\", worktree_name],\n8428                 check=True, capture_output=True, text=True\n8429             )\n8430             print(f\"  - Successfully removed worktree.\")\n",
-      "col_offset": 12,
-      "end_col_offset": 13,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8426,
-      "line_range": [
-        8426,
-        8427,
-        8428,
-        8429
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8438             print(f\"  - Deleting branch '{branch_name}'...\")\n8439             subprocess.run(\n8440                 [git_path, \"-C\", str(project_dir), \"branch\", \"-d\", branch_name],\n8441                 check=True, capture_output=True, text=True\n8442             )\n8443             print(f\"  - Successfully deleted branch.\")\n",
-      "col_offset": 12,
-      "end_col_offset": 13,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3712,28 +3574,8 @@
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8457     \"\"\"Helper function to show a diff of the worktree against the main repo's HEAD.\"\"\"\n8458     import subprocess\n8459 \n",
-      "col_offset": 4,
-      "end_col_offset": 21,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8458,
-      "line_range": [
-        8458
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
-      "test_id": "B404",
-      "test_name": "blacklist"
-    },
-    {
-      "code": "8474         # This automatically compares the worktree's state against the main repo's HEAD.\n8475         result = subprocess.run(\n8476             [git_path, \"-C\", str(worktree_path), \"diff\", \"HEAD\"],\n8477             capture_output=True, text=True\n8478         )\n8479 \n",
-      "col_offset": 17,
+      "code": "8472     try:\n8473         status_result = subprocess.run(\n8474             [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8475             capture_output=True, text=True, check=True\n8476         )\n8477         if status_result.stdout.strip():\n",
+      "col_offset": 24,
       "end_col_offset": 9,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
@@ -3743,21 +3585,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8475,
+      "line_number": 8473,
       "line_range": [
+        8473,
+        8474,
         8475,
-        8476,
-        8477,
-        8478
+        8476
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8500     \"\"\"Helper function to show a comprehensive dashboard for a worktree.\"\"\"\n8501     import subprocess\n8502     import json\n",
-      "col_offset": 4,
-      "end_col_offset": 21,
+      "code": "8479             # Add all changes\n8480             subprocess.run(\n8481                 [git_path, \"-C\", str(worktree_path), \"add\", \".\"],\n8482                 check=True, capture_output=True\n8483             )\n8484             # Commit changes\n",
+      "col_offset": 12,
+      "end_col_offset": 13,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3765,18 +3607,44 @@
         "link": "https://cwe.mitre.org/data/definitions/78.html"
       },
       "issue_severity": "LOW",
-      "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8501,
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8480,
       "line_range": [
-        8501
+        8480,
+        8481,
+        8482,
+        8483
       ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
-      "test_id": "B404",
-      "test_name": "blacklist"
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8518     try:\n8519         result = subprocess.run(\n8520             [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8521             capture_output=True, text=True, check=True\n8522         )\n8523         current_worktree: dict = {}\n",
-      "col_offset": 17,
+      "code": "8485             commit_message = f\"Autocommit: Worktree merge for {worktree_name}\"\n8486             subprocess.run(\n8487                 [git_path, \"-C\", str(worktree_path), \"commit\", \"-m\", commit_message],\n8488                 check=True, capture_output=True\n8489             )\n8490             print(f\"  - Created commit on branch '{branch_name}'.\")\n",
+      "col_offset": 12,
+      "end_col_offset": 13,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8486,
+      "line_range": [
+        8486,
+        8487,
+        8488,
+        8489
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8502     try:\n8503         subprocess.run(\n8504             [git_path, \"-C\", str(project_dir), \"checkout\", main_branch],\n8505             check=True, capture_output=True, text=True\n8506         )\n8507     except subprocess.CalledProcessError as e:\n",
+      "col_offset": 8,
       "end_col_offset": 9,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
@@ -3786,21 +3654,110 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8519,
+      "line_number": 8503,
       "line_range": [
-        8519,
-        8520,
-        8521,
-        8522
+        8503,
+        8504,
+        8505,
+        8506
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8570     try:\n8571         result = subprocess.run(\n8572             [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8573             capture_output=True, text=True, check=True\n8574         )\n8575         if result.stdout.strip():\n",
+      "code": "8511              try:\n8512                  subprocess.run(\n8513                      [git_path, \"-C\", str(project_dir), \"checkout\", main_branch],\n8514                      check=True, capture_output=True, text=True\n8515                  )\n8516              except subprocess.CalledProcessError as e2:\n",
       "col_offset": 17,
+      "end_col_offset": 18,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8512,
+      "line_range": [
+        8512,
+        8513,
+        8514,
+        8515
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8527     try:\n8528         merge_result = subprocess.run(\n8529             [git_path, \"-C\", str(project_dir), \"merge\", \"--no-ff\", branch_name],\n8530             check=True, capture_output=True, text=True\n8531         )\n8532         print(\"  - Merge successful.\")\n",
+      "col_offset": 23,
       "end_col_offset": 9,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8528,
+      "line_range": [
+        8528,
+        8529,
+        8530,
+        8531
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8541         # Attempt to abort the merge to leave the repo in a clean state\n8542         subprocess.run([git_path, \"-C\", str(project_dir), \"merge\", \"--abort\"])\n8543         sys.exit(1)\n",
+      "col_offset": 8,
+      "end_col_offset": 78,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8542,
+      "line_range": [
+        8542
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8557             print(f\"  - Removing worktree '{worktree_name}'...\")\n8558             subprocess.run(\n8559                 [git_path, \"-C\", str(project_dir), \"worktree\", \"remove\", worktree_name],\n8560                 check=True, capture_output=True, text=True\n8561             )\n8562             print(f\"  - Successfully removed worktree.\")\n",
+      "col_offset": 12,
+      "end_col_offset": 13,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8558,
+      "line_range": [
+        8558,
+        8559,
+        8560,
+        8561
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8570             print(f\"  - Deleting branch '{branch_name}'...\")\n8571             subprocess.run(\n8572                 [git_path, \"-C\", str(project_dir), \"branch\", \"-d\", branch_name],\n8573                 check=True, capture_output=True, text=True\n8574             )\n8575             print(f\"  - Successfully deleted branch.\")\n",
+      "col_offset": 12,
+      "end_col_offset": 13,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3821,30 +3778,7 @@
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8587     try:\n8588         result = subprocess.run(\n8589             [git_path, \"-C\", str(worktree_path), \"diff\", \"--stat\", \"HEAD\"],\n8590             capture_output=True, text=True\n8591         )\n8592         if result.returncode != 0:\n",
-      "col_offset": 17,
-      "end_col_offset": 9,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8588,
-      "line_range": [
-        8588,
-        8589,
-        8590,
-        8591
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8613     \"\"\"Helper function for interactive worktree management.\"\"\"\n8614     import subprocess\n8615 \n",
+      "code": "8589     \"\"\"Helper function to show a diff of the worktree against the main repo's HEAD.\"\"\"\n8590     import subprocess\n8591 \n",
       "col_offset": 4,
       "end_col_offset": 21,
       "filename": "./main.py",
@@ -3855,16 +3789,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 8614,
+      "line_number": 8590,
       "line_range": [
-        8614
+        8590
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "8617     try:\n8618         result = subprocess.run(\n8619             [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8620             capture_output=True, text=True, check=True\n8621         )\n8622         worktrees = []\n",
+      "code": "8606         # This automatically compares the worktree's state against the main repo's HEAD.\n8607         result = subprocess.run(\n8608             [git_path, \"-C\", str(worktree_path), \"diff\", \"HEAD\"],\n8609             capture_output=True, text=True\n8610         )\n8611 \n",
       "col_offset": 17,
       "end_col_offset": 9,
       "filename": "./main.py",
@@ -3875,21 +3809,41 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8618,
+      "line_number": 8607,
       "line_range": [
-        8618,
-        8619,
-        8620,
-        8621
+        8607,
+        8608,
+        8609,
+        8610
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8714         try:\n8715             result = subprocess.run(\n8716                 [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8717                 capture_output=True, text=True, check=True\n8718             )\n8719             if result.stdout.strip():\n",
-      "col_offset": 21,
-      "end_col_offset": 13,
+      "code": "8632     \"\"\"Helper function to show a comprehensive dashboard for a worktree.\"\"\"\n8633     import subprocess\n8634     import json\n",
+      "col_offset": 4,
+      "end_col_offset": 21,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 8633,
+      "line_range": [
+        8633
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "8650     try:\n8651         result = subprocess.run(\n8652             [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8653             capture_output=True, text=True, check=True\n8654         )\n8655         current_worktree: dict = {}\n",
+      "col_offset": 17,
+      "end_col_offset": 9,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3898,21 +3852,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8715,
+      "line_number": 8651,
       "line_range": [
-        8715,
-        8716,
-        8717,
-        8718
+        8651,
+        8652,
+        8653,
+        8654
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8739         try:\n8740             status_result = subprocess.run(\n8741                 [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8742                 capture_output=True, text=True, check=True\n8743             )\n8744             if not status_result.stdout.strip():\n",
-      "col_offset": 28,
-      "end_col_offset": 13,
+      "code": "8702     try:\n8703         result = subprocess.run(\n8704             [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8705             capture_output=True, text=True, check=True\n8706         )\n8707         if result.stdout.strip():\n",
+      "col_offset": 17,
+      "end_col_offset": 9,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3921,21 +3875,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8740,
+      "line_number": 8703,
       "line_range": [
-        8740,
-        8741,
-        8742,
-        8743
+        8703,
+        8704,
+        8705,
+        8706
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8753                      print(\"\\nReverting changes...\")\n8754                      subprocess.run(\n8755                          [git_path, \"-C\", str(worktree_path), \"reset\", \"--hard\", \"HEAD\"],\n8756                          check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n8757                      )\n8758                      subprocess.run(\n",
-      "col_offset": 21,
-      "end_col_offset": 22,
+      "code": "8719     try:\n8720         result = subprocess.run(\n8721             [git_path, \"-C\", str(worktree_path), \"diff\", \"--stat\", \"HEAD\"],\n8722             capture_output=True, text=True\n8723         )\n8724         if result.returncode != 0:\n",
+      "col_offset": 17,
+      "end_col_offset": 9,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3944,21 +3898,41 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8754,
+      "line_number": 8720,
       "line_range": [
-        8754,
-        8755,
-        8756,
-        8757
+        8720,
+        8721,
+        8722,
+        8723
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8757                      )\n8758                      subprocess.run(\n8759                          [git_path, \"-C\", str(worktree_path), \"clean\", \"-fd\"],\n8760                          check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n8761                      )\n8762                      print(\"\u2705 Revert complete. Worktree is now clean.\")\n",
-      "col_offset": 21,
-      "end_col_offset": 22,
+      "code": "8745     \"\"\"Helper function for interactive worktree management.\"\"\"\n8746     import subprocess\n8747 \n",
+      "col_offset": 4,
+      "end_col_offset": 21,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Consider possible security implications associated with the subprocess module.",
+      "line_number": 8746,
+      "line_range": [
+        8746
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess",
+      "test_id": "B404",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "8749     try:\n8750         result = subprocess.run(\n8751             [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8752             capture_output=True, text=True, check=True\n8753         )\n8754         worktrees = []\n",
+      "col_offset": 17,
+      "end_col_offset": 9,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -3967,59 +3941,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8758,
+      "line_number": 8750,
       "line_range": [
-        8758,
-        8759,
-        8760,
-        8761
+        8750,
+        8751,
+        8752,
+        8753
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8780 \n8781                 subprocess.run(cmd, check=True, capture_output=True, text=True)\n8782                 print(f\"\u2705 Removed worktree: {selected_worktree}\")\n",
-      "col_offset": 16,
-      "end_col_offset": 79,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8781,
-      "line_range": [
-        8781
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8830             cmd = [git_path, \"-C\", str(project_dir), \"worktree\", \"add\", \"-b\", branch_name, str(worktree_path), \"HEAD\"]\n8831             subprocess.run(cmd, check=True, capture_output=True, text=True)\n8832             print(f\"\\n\u2705 Successfully created worktree '{args.worktree_name}' on branch '{branch_name}'.\")\n",
-      "col_offset": 12,
-      "end_col_offset": 75,
-      "filename": "./main.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8831,
-      "line_range": [
-        8831
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "8846         try:\n8847             result = subprocess.run(\n8848                 [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8849                 capture_output=True, text=True, check=True\n8850             )\n8851             worktrees = []\n",
+      "code": "8846         try:\n8847             result = subprocess.run(\n8848                 [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8849                 capture_output=True, text=True, check=True\n8850             )\n8851             if result.stdout.strip():\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -4042,7 +3976,7 @@
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8900         try:\n8901             status_result = subprocess.run(\n8902                 [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8903                 capture_output=True, text=True, check=True\n8904             )\n8905             if not status_result.stdout.strip():\n",
+      "code": "8871         try:\n8872             status_result = subprocess.run(\n8873                 [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n8874                 capture_output=True, text=True, check=True\n8875             )\n8876             if not status_result.stdout.strip():\n",
       "col_offset": 28,
       "end_col_offset": 13,
       "filename": "./main.py",
@@ -4053,21 +3987,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8901,
+      "line_number": 8872,
       "line_range": [
-        8901,
-        8902,
-        8903,
-        8904
+        8872,
+        8873,
+        8874,
+        8875
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8919             print(\"\\nReverting changes...\")\n8920             subprocess.run(\n8921                 [git_path, \"-C\", str(worktree_path), \"reset\", \"--hard\", \"HEAD\"],\n8922                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n8923             )\n8924             subprocess.run(\n",
-      "col_offset": 12,
-      "end_col_offset": 13,
+      "code": "8885                      print(\"\\nReverting changes...\")\n8886                      subprocess.run(\n8887                          [git_path, \"-C\", str(worktree_path), \"reset\", \"--hard\", \"HEAD\"],\n8888                          check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n8889                      )\n8890                      subprocess.run(\n",
+      "col_offset": 21,
+      "end_col_offset": 22,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -4076,21 +4010,21 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8920,
+      "line_number": 8886,
       "line_range": [
-        8920,
-        8921,
-        8922,
-        8923
+        8886,
+        8887,
+        8888,
+        8889
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8923             )\n8924             subprocess.run(\n8925                 [git_path, \"-C\", str(worktree_path), \"clean\", \"-fd\"],\n8926                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n8927             )\n8928             print(\"\u2705 Revert complete. Worktree is now clean.\")\n",
-      "col_offset": 12,
-      "end_col_offset": 13,
+      "code": "8889                      )\n8890                      subprocess.run(\n8891                          [git_path, \"-C\", str(worktree_path), \"clean\", \"-fd\"],\n8892                          check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n8893                      )\n8894                      print(\"\u2705 Revert complete. Worktree is now clean.\")\n",
+      "col_offset": 21,
+      "end_col_offset": 22,
       "filename": "./main.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -4099,19 +4033,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8924,
+      "line_number": 8890,
       "line_range": [
-        8924,
-        8925,
-        8926,
-        8927
+        8890,
+        8891,
+        8892,
+        8893
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "8983 \n8984                 subprocess.run(cmd, check=True, capture_output=True, text=True)\n8985                 print(f\"\u2705 Removed worktree: {name}\")\n",
+      "code": "8912 \n8913                 subprocess.run(cmd, check=True, capture_output=True, text=True)\n8914                 print(f\"\u2705 Removed worktree: {selected_worktree}\")\n",
       "col_offset": 16,
       "end_col_offset": 79,
       "filename": "./main.py",
@@ -4122,9 +4056,141 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 8984,
+      "line_number": 8913,
       "line_range": [
-        8984
+        8913
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8962             cmd = [git_path, \"-C\", str(project_dir), \"worktree\", \"add\", \"-b\", branch_name, str(worktree_path), \"HEAD\"]\n8963             subprocess.run(cmd, check=True, capture_output=True, text=True)\n8964             print(f\"\\n\u2705 Successfully created worktree '{args.worktree_name}' on branch '{branch_name}'.\")\n",
+      "col_offset": 12,
+      "end_col_offset": 75,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8963,
+      "line_range": [
+        8963
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "8978         try:\n8979             result = subprocess.run(\n8980                 [git_path, \"-C\", str(project_dir), \"worktree\", \"list\", \"--porcelain\"],\n8981                 capture_output=True, text=True, check=True\n8982             )\n8983             worktrees = []\n",
+      "col_offset": 21,
+      "end_col_offset": 13,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 8979,
+      "line_range": [
+        8979,
+        8980,
+        8981,
+        8982
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "9032         try:\n9033             status_result = subprocess.run(\n9034                 [git_path, \"-C\", str(worktree_path), \"status\", \"--porcelain\"],\n9035                 capture_output=True, text=True, check=True\n9036             )\n9037             if not status_result.stdout.strip():\n",
+      "col_offset": 28,
+      "end_col_offset": 13,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 9033,
+      "line_range": [
+        9033,
+        9034,
+        9035,
+        9036
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "9051             print(\"\\nReverting changes...\")\n9052             subprocess.run(\n9053                 [git_path, \"-C\", str(worktree_path), \"reset\", \"--hard\", \"HEAD\"],\n9054                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n9055             )\n9056             subprocess.run(\n",
+      "col_offset": 12,
+      "end_col_offset": 13,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 9052,
+      "line_range": [
+        9052,
+        9053,
+        9054,
+        9055
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "9055             )\n9056             subprocess.run(\n9057                 [git_path, \"-C\", str(worktree_path), \"clean\", \"-fd\"],\n9058                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n9059             )\n9060             print(\"\u2705 Revert complete. Worktree is now clean.\")\n",
+      "col_offset": 12,
+      "end_col_offset": 13,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 9056,
+      "line_range": [
+        9056,
+        9057,
+        9058,
+        9059
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "9115 \n9116                 subprocess.run(cmd, check=True, capture_output=True, text=True)\n9117                 print(f\"\u2705 Removed worktree: {name}\")\n",
+      "col_offset": 16,
+      "end_col_offset": 79,
+      "filename": "./main.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 9116,
+      "line_range": [
+        9116
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.3/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",

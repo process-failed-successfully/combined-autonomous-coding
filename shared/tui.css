@@ -1,17 +1,69 @@
-Dashboard {
-    layout: grid;
-    grid-size: 2;
-    grid-gutter: 1 2;
+Screen {
+    layout: vertical;
+}
+
+Header {
+    dock: top;
+    background: $primary;
+    color: $text;
+}
+
+Footer {
+    dock: bottom;
+    background: $secondary;
+    color: $text;
 }
 
 #left-pane {
-    width: 1fr;
+    width: 30%;
     height: 100%;
-    overflow: auto;
+    dock: left;
+    border-right: solid $primary;
+    padding: 1;
 }
 
-#log-viewer {
-    width: 4fr;
+#right-pane {
+    width: 70%;
     height: 100%;
-    border: round white;
+    dock: right;
+    padding: 1;
+}
+
+ProjectInfo {
+    margin-bottom: 2;
+    border: solid $secondary;
+    padding: 1;
+    background: $surface;
+}
+
+.stat-box {
+    border: solid $accent;
+    padding: 1;
+    margin: 1;
+    height: auto;
+}
+
+DirectoryTree {
+    background: $surface;
+    border: solid $secondary;
+    padding: 1;
+}
+
+RichLog {
+    background: $surface;
+    border: solid $secondary;
+    padding: 1;
+    height: 100%;
+}
+
+Button {
+    margin: 1;
+    width: 100%;
+}
+
+.welcome-text {
+    text-align: center;
+    color: $accent;
+    text-style: bold;
+    margin-bottom: 1;
 }

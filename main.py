@@ -51,6 +51,7 @@ from shared.commands import run_why
 from shared.onboarding import run_onboard_logic
 from shared.ask import run_ask_logic
 from shared.cli import run_do_logic
+from shared.playground import PlaygroundManager
 from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
@@ -87,6 +88,45 @@ if FileSystemEventHandler:
 def run_onboard(args):
     """Runs the onboarding wizard."""
     run_onboard_logic(args.project_dir)
+    sys.exit(0)
+
+def run_playground(args):
+    """Manages the agent playground."""
+    project_dir = args.project_dir.resolve()
+    manager = PlaygroundManager(project_dir)
+
+    if args.action == "create":
+        name = args.name or "scratch.py"
+        path = manager.create(name)
+        print(f"✅ Created playground file: {path}")
+        print(f"Run it with: {sys.argv[0]} playground run {path.name}")
+
+    elif args.action == "run":
+        if not args.name:
+            print("Error: Name required for 'run' action.", file=sys.stderr)
+            sys.exit(1)
+        success = manager.run(args.name)
+        sys.exit(0 if success else 1)
+
+    elif args.action == "list":
+        files = manager.list_files()
+        if not files:
+            print("Playground is empty.")
+        else:
+            print("--- Playground Files ---")
+            for f in files:
+                print(f"  - {f.name}")
+
+    elif args.action == "delete":
+        if not args.name:
+            print("Error: Name required for 'delete' action.", file=sys.stderr)
+            sys.exit(1)
+        if manager.delete(args.name):
+            print(f"✅ Deleted {args.name}")
+        else:
+            print(f"❌ File {args.name} not found.")
+            sys.exit(1)
+
     sys.exit(0)
 
 def run_init(args):
@@ -6669,6 +6709,36 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'playground' command ---
+    parser_playground = subparsers.add_parser(
+        "playground",
+        help="Manage a safe scratchpad for code experiments."
+    )
+    playground_subparsers = parser_playground.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Playground 'create'
+    parser_pg_create = playground_subparsers.add_parser("create", help="Create a new playground file.")
+    parser_pg_create.add_argument("name", nargs="?", default="scratch.py", help="Name of the file (default: scratch.py).")
+    parser_pg_create.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Playground 'run'
+    parser_pg_run = playground_subparsers.add_parser("run", help="Run a playground file.")
+    parser_pg_run.add_argument("name", help="Name of the file to run.")
+    parser_pg_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Playground 'list'
+    parser_pg_list = playground_subparsers.add_parser("list", help="List playground files.")
+    parser_pg_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Playground 'delete'
+    parser_pg_delete = playground_subparsers.add_parser("delete", help="Delete a playground file.")
+    parser_pg_delete.add_argument("name", help="Name of the file to delete.")
+    parser_pg_delete.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'help' command ---
     parser_help = subparsers.add_parser("help", help="Show a structured and user-friendly help message.")
 
@@ -9430,6 +9500,11 @@ async def main():
     # Handle `onboard` command
     if args.command == "onboard":
         run_onboard(args)
+        return
+
+    # Handle `playground` command
+    if args.command == "playground":
+        run_playground(args)
         return
 
     # Handle `completion` command

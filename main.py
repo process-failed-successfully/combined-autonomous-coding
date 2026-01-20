@@ -6886,6 +6886,41 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'resolve' command ---
+    parser_resolve = subparsers.add_parser(
+        "resolve",
+        help="Interactively resolve TODO/FIXME comments using AI."
+    )
+    parser_resolve.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_resolve.add_argument(
+        "--no-interactive",
+        dest="interactive",
+        action="store_false",
+        help="Disable interactive selection.",
+    )
+    parser_resolve.set_defaults(interactive=True)
+    parser_resolve.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_resolve.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_resolve.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt.",
+    )
+
     # --- New 'generate-tests' command ---
     parser_gentest = subparsers.add_parser(
         "generate-tests",
@@ -7336,6 +7371,22 @@ async def run_refactor(args):
     manager.apply_changes(target_file, result["new_content"])
     print(f"\n✅ Successfully updated {target_file.name}")
     sys.exit(0)
+
+
+async def run_resolve(args):
+    """Resolves a TODO item using AI."""
+    from shared.resolve import run_resolve_logic
+
+    project_dir = args.project_dir.resolve()
+
+    success = await run_resolve_logic(
+        project_dir=project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        interactive=args.interactive,
+        yes=args.yes
+    )
+    sys.exit(0 if success else 1)
 
 
 async def run_docstring(args):
@@ -9166,6 +9217,10 @@ async def main():
 
     if args.command == "refactor":
         await run_refactor(args)
+        return
+
+    if args.command == "resolve":
+        await run_resolve(args)
         return
 
     if args.command in ["generate-tests", "gentest"]:

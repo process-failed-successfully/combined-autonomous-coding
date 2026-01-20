@@ -67,3 +67,34 @@ Button {
     text-style: bold;
     margin-bottom: 1;
 }
+
+/* Chat / Interact Tab */
+#chat-history {
+    height: 85%;
+    background: $surface;
+    border: solid $secondary;
+    margin-bottom: 1;
+    padding: 1;
+}
+
+#chat-input {
+    dock: bottom;
+    margin: 1;
+}
+
+/* Knowledge Tab */
+DataTable {
+    height: 70%;
+    border: solid $secondary;
+    margin-bottom: 1;
+}
+
+#knowledge-input {
+    margin: 1;
+}
+
+#history-log {
+    height: 5;
+    border: none;
+    padding: 0;
+}

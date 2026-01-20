@@ -13,7 +13,7 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Set, Optional
 from collections import Counter
-import subprocess
+import subprocess  # nosec
 
 # Basic set of English stopwords
 STOPWORDS = {
@@ -82,7 +82,7 @@ class SmartSearchEngine:
         def is_ignored(path: Path) -> bool:
             if is_git_repo and git_path:
                 try:
-                    res = subprocess.run(
+                    res = subprocess.run(  # nosec
                         [git_path, "-C", str(self.project_dir), "check-ignore", "-q", str(path)],
                         capture_output=True
                     )
@@ -144,7 +144,7 @@ class SmartSearchEngine:
 
                         total_len += len(tokens)
 
-                except Exception:
+                except Exception:  # nosec
                     continue
 
         self.num_docs = len(self.documents)

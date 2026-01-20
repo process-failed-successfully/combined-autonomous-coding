@@ -96,10 +96,12 @@ def run_security_scan(project_dir: Path, output_format: str = "text") -> Dict[st
     print("Running Security Scan (Bandit)...")
     # Using baseline if it exists
     cmd = ["bandit", "-r", ".", "-ll", "-x", ".venv,venv,build,tests"]
+
+    if (project_dir / "pyproject.toml").exists():
+        cmd.extend(["-c", "pyproject.toml"])
+
     if (project_dir / "bandit_baseline.json").exists():
         cmd.extend(["-b", "bandit_baseline.json", "-f", "custom"])
-    elif (project_dir / "pyproject.toml").exists():
-        cmd.extend(["-c", "pyproject.toml"])
 
     result = run_command(cmd, project_dir)
 

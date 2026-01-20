@@ -56,6 +56,7 @@ from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
+from shared.verify import run_verify_logic
 import json
 import yaml
 import platformdirs
@@ -7069,6 +7070,34 @@ def parse_args(argv=None):
         help="Print contents without writing files.",
     )
 
+    # --- New 'verify' command ---
+    parser_verify = subparsers.add_parser(
+        "verify",
+        help="Run comprehensive project verification (Lint, Type, Security, Test)."
+    )
+    parser_verify.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_verify.add_argument(
+        "--check",
+        type=str,
+        help="Comma-separated list of checks to run (lint, type, security, test, all). Default: all.",
+    )
+    parser_verify.add_argument(
+        "--fix",
+        action="store_true",
+        help="Attempt to auto-fix issues (e.g. format code).",
+    )
+    parser_verify.add_argument(
+        "-o", "--output",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text).",
+    )
+
     # --- New 'security' command ---
     parser_security = subparsers.add_parser(
         "security",
@@ -7788,6 +7817,18 @@ def run_security(args):
         sys.exit(1)
 
     sys.exit(0)
+
+
+def run_verify(args):
+    """Runs verification checks (lint, type, security, tests)."""
+    checks = args.check.split(",") if args.check else None
+    success = run_verify_logic(
+        project_dir=args.project_dir,
+        checks=checks,
+        fix=args.fix,
+        output_format=args.output
+    )
+    sys.exit(0 if success else 1)
 
 
 def run_dockerize(args):
@@ -9492,6 +9533,10 @@ async def main():
 
     if args.command == "dockerize":
         run_dockerize(args)
+        return
+
+    if args.command == "verify":
+        run_verify(args)
         return
 
     if args.command == "security":

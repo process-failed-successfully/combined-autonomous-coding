@@ -456,6 +456,18 @@ def run_show_config(config):
     print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
     sys.exit(0)
 
+from shared.cli_utils import _run_history_graph_logic
+
+def run_history_graph(args):
+    """Displays a graph of historical metrics."""
+    graph_output = _run_history_graph_logic(
+        project_dir=args.project_dir,
+        metric=args.metric,
+        limit=args.limit
+    )
+    print(graph_output)
+    sys.exit(0)
+
 
 def run_list_agents():
     """Prints a list of available agents and their descriptions."""
@@ -5522,6 +5534,30 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'history-graph' command ---
+    parser_history_graph = subparsers.add_parser(
+        "history-graph",
+        help="Visualize agent history as a graph."
+    )
+    parser_history_graph.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_history_graph.add_argument(
+        "-m", "--metric",
+        choices=["tokens", "duration", "errors", "iterations"],
+        default="tokens",
+        help="The metric to visualize (default: tokens)."
+    )
+    parser_history_graph.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=10,
+        help="Number of recent runs to show (default: 10)."
+    )
+
     # --- New 'test' command ---
     parser_test = subparsers.add_parser(
         "test",
@@ -8854,6 +8890,11 @@ async def main():
 
     if args.command == "git":
         run_git(args)
+        return
+
+    # Handle `history-graph` command
+    if args.command == "history-graph":
+        run_history_graph(args)
         return
 
     if args.command == "tree":

@@ -6081,6 +6081,22 @@ def parse_args(argv=None):
         help="Run project tests before committing. If tests fail, the commit is aborted."
     )
     parser_commit.add_argument(
+        "-g", "--generate",
+        action="store_true",
+        help="Generate a commit message using AI."
+    )
+    parser_commit.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for generation (default: gemini)."
+    )
+    parser_commit.add_argument(
+        "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_commit.add_argument(
         "-p", "--project-dir",
         type=Path,
         default=Path("."),
@@ -7436,7 +7452,7 @@ def run_watch(args):
     sys.exit(0)
 
 
-def run_feature(args):
+async def run_feature(args):
     """Runs a guided workflow for creating a feature branch, committing, pushing, and creating a PR."""
     project_dir = args.project_dir.resolve()
     print("--- Guided Feature Workflow ---")
@@ -7480,10 +7496,11 @@ def run_feature(args):
         commit_args = argparse.Namespace(
             message=commit_message,
             run_tests=False, # For simplicity, don't run tests in this guided flow
-            project_dir=project_dir
+            project_dir=project_dir,
+            generate=False # Disable AI generation in guided flow
         )
         try:
-            run_commit(commit_args)
+            await run_commit(commit_args)
         except SystemExit as e:
             if e.code != 0:
                 print("❌ Commit failed. Aborting workflow.", file=sys.stderr)
@@ -8003,7 +8020,7 @@ def run_setup(args):
         sys.exit(1)
 
 
-def run_interact(args):
+async def run_interact(args):
     """Starts an interactive session to guide the user through common commands."""
     project_dir = args.project_dir.resolve()
     print("--- Interactive Session ---")
@@ -8044,15 +8061,19 @@ def run_interact(args):
                             commit_args = argparse.Namespace(
                                 message=message,
                                 run_tests=False,
-                                project_dir=project_dir
+                                project_dir=project_dir,
+                                generate=False # Disable AI for simple interactive menu for now
                             )
-                            run_commit(commit_args)
+                            await run_commit(commit_args)
                         else:
                             print("Commit message cannot be empty. Aborting.")
                     else:
                         # Construct the args namespace for the command
                         command_args = argparse.Namespace(**item["args"])
-                        item["func"](command_args)
+                        if asyncio.iscoroutinefunction(item["func"]):
+                            await item["func"](command_args)
+                        else:
+                            item["func"](command_args)
                 except SystemExit as e:
                     if e.code != 0:
                         print(f"--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
@@ -8336,7 +8357,45 @@ def run_pr(args):
         sys.exit(1)
 
 
-def run_commit(args):
+async def _handle_commit_message_generation(project_dir, agent, model):
+    """Helper function to generate and confirm a commit message."""
+    from shared.commit_msg import generate_commit_message
+    import tempfile
+
+    commit_message = await generate_commit_message(
+        project_dir=project_dir,
+        agent_type=agent,
+        model=model
+    )
+
+    if not commit_message:
+        return None
+
+    print("\n--- AI Generated Commit Message ---")
+    print(commit_message)
+    print("-----------------------------------")
+
+    choice = input("Use this message? [Y/n/e(dit)]: ").strip().lower()
+    if choice == 'e':
+         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode='w') as tf:
+             tf.write(commit_message)
+             tf_path = tf.name
+
+         editor = os.environ.get('EDITOR', 'vim')
+         subprocess.call([editor, tf_path])
+
+         with open(tf_path, 'r') as tf:
+             commit_message = tf.read().strip()
+         os.unlink(tf_path)
+         print(f"Updated message:\n{commit_message}")
+         return commit_message
+
+    elif choice in ['y', '']:
+        return commit_message
+
+    return None
+
+async def run_commit(args):
     """Handles the git commit command with safety checks."""
     import shutil
     import subprocess
@@ -8383,50 +8442,75 @@ def run_commit(args):
 
     # --- Interactive Commit Message Generation ---
     if not commit_message:
-        try:
-            print("--- Interactive Commit ---")
-            print("Please provide the details for your commit message.")
+        # Check if user requested AI generation
+        if args.generate:
+            try:
+                commit_message = await _handle_commit_message_generation(
+                    project_dir, args.agent, args.model
+                )
+                if not commit_message:
+                    print("Failed to generate commit message or discarded by user. Falling back to manual input.")
+            except Exception as e:
+                print(f"Error during generation: {e}")
+                commit_message = None
 
-            commit_type = input("Commit type (e.g., feat, fix, chore, docs): ").strip()
-            while not commit_type:
-                print("Commit type cannot be empty.")
-                commit_type = input("Commit type: ").strip()
+        if not commit_message:
+            try:
+                print("--- Interactive Commit ---")
 
-            scope = input("Scope (optional, e.g., cli, agent): ").strip()
-            short_description = input("Short description (max 72 chars): ").strip()
-            while not short_description:
-                print("Short description cannot be empty.")
-                short_description = input("Short description: ").strip()
+                # Offer generation option if not already tried
+                if not args.generate:
+                    use_ai = input("Generate message with AI? [y/N]: ").strip().lower()
+                    if use_ai == 'y':
+                        try:
+                            commit_message = await _handle_commit_message_generation(
+                                project_dir, args.agent, args.model
+                            )
+                        except Exception as e:
+                            print(f"Error during generation: {e}")
 
-            body = input("Body (optional, press Enter to skip): ").strip()
-            is_breaking_change = input("Is this a breaking change? [y/N]: ").strip().lower() == 'y'
-            breaking_change_description = ""
-            if is_breaking_change:
-                breaking_change_description = input("Describe the breaking change: ").strip()
+                if not commit_message:
+                    print("Please provide the details for your commit message.")
+                    commit_type = input("Commit type (e.g., feat, fix, chore, docs): ").strip()
+                    while not commit_type:
+                        print("Commit type cannot be empty.")
+                        commit_type = input("Commit type: ").strip()
 
-            # Assemble the commit message
-            header = f"{commit_type}"
-            if scope:
-                header += f"({scope})"
-            header += f": {short_description}"
+                    scope = input("Scope (optional, e.g., cli, agent): ").strip()
+                    short_description = input("Short description (max 72 chars): ").strip()
+                    while not short_description:
+                        print("Short description cannot be empty.")
+                        short_description = input("Short description: ").strip()
 
-            commit_message = header
-            if body:
-                commit_message += f"\n\n{body}"
-            if breaking_change_description:
-                commit_message += f"\n\nBREAKING CHANGE: {breaking_change_description}"
+                    body = input("Body (optional, press Enter to skip): ").strip()
+                    is_breaking_change = input("Is this a breaking change? [y/N]: ").strip().lower() == 'y'
+                    breaking_change_description = ""
+                    if is_breaking_change:
+                        breaking_change_description = input("Describe the breaking change: ").strip()
 
-            print("\n--- Generated Commit Message ---")
-            print(commit_message)
-            print("------------------------------")
-            confirm = input("Confirm commit? [Y/n]: ").strip().lower()
-            if confirm not in ['y', '']:
-                print("Commit aborted.")
-                sys.exit(0)
+                    # Assemble the commit message
+                    header = f"{commit_type}"
+                    if scope:
+                        header += f"({scope})"
+                    header += f": {short_description}"
 
-        except (KeyboardInterrupt, EOFError):
-            print("\nCommit aborted by user.")
-            sys.exit(1)
+                    commit_message = header
+                    if body:
+                        commit_message += f"\n\n{body}"
+                    if breaking_change_description:
+                        commit_message += f"\n\nBREAKING CHANGE: {breaking_change_description}"
+
+                    print("\n--- Generated Commit Message ---")
+                    print(commit_message)
+                    print("------------------------------")
+                    confirm = input("Confirm commit? [Y/n]: ").strip().lower()
+                    if confirm not in ['y', '']:
+                        print("Commit aborted.")
+                        sys.exit(0)
+
+            except (KeyboardInterrupt, EOFError):
+                print("\nCommit aborted by user.")
+                sys.exit(1)
 
     # --- Create the commit ---
     print(f"--- Creating commit ---")
@@ -9464,15 +9548,15 @@ async def main():
         return
 
     if args.command == "commit":
-        run_commit(args)
+        await run_commit(args)
         return
 
     if args.command == "feature":
-        run_feature(args)
+        await run_feature(args)
         return
 
     if args.command == "interact":
-        run_interact(args)
+        await run_interact(args)
         return
 
     if args.command == "profile":

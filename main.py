@@ -2651,6 +2651,15 @@ def run_knowledge(args):
          else:
               console.print(f"[red]Question #{args.id} not found.[/red]")
 
+    elif args.action == "graph":
+        from shared.knowledge_graph import generate_knowledge_graph
+        result = generate_knowledge_graph(
+            project_dir=args.project_dir,
+            output_format=args.format,
+            output_file=Path(args.output) if args.output else None
+        )
+        print(result)
+
     sys.exit(0)
 
 
@@ -6292,6 +6301,12 @@ def parse_args(argv=None):
     parser_knowledge_answer.add_argument("id", type=int, help="The ID of the question.")
     parser_knowledge_answer.add_argument("answer", help="The answer text.")
     parser_knowledge_answer.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Knowledge 'graph' action
+    parser_knowledge_graph = knowledge_subparsers.add_parser("graph", help="Visualize knowledge graph.")
+    parser_knowledge_graph.add_argument("--format", choices=["html", "mermaid", "json"], default="html", help="Output format (default: html).")
+    parser_knowledge_graph.add_argument("-o", "--output", help="Output file path.")
+    parser_knowledge_graph.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
 
     # --- New 'ask' command ---

@@ -54,6 +54,7 @@ from shared.cli import run_do_logic
 from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
+from shared.summarize import run_summarize_logic
 from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
@@ -2723,6 +2724,21 @@ async def run_code_review(args):
         project_dir=args.project_dir,
         files=args.files,
         diff=args.diff,
+        agent_type=args.agent,
+        model=args.model,
+        verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
+
+async def run_summarize(args):
+    """Summarizes git changes using AI."""
+    # Setup logging
+    logger, _ = setup_logger(name="summarize_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_summarize_logic(
+        project_dir=args.project_dir,
+        target=args.target,
         agent_type=args.agent,
         model=args.model,
         verbose=args.verbose
@@ -6421,6 +6437,40 @@ def parse_args(argv=None):
         help="The project directory (default: current directory)."
     )
 
+    # --- New 'summarize' command ---
+    parser_summarize = subparsers.add_parser(
+        "summarize",
+        aliases=["explain"],
+        help="Summarize git changes using AI."
+    )
+    parser_summarize.add_argument(
+        "target",
+        nargs="?",
+        help="The git target to summarize (commit hash, range, or omitted for uncommitted changes)."
+    )
+    parser_summarize.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_summarize.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_summarize.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+    parser_summarize.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory)."
+    )
+
     # --- New 'context' command ---
     parser_context = subparsers.add_parser(
         "context",
@@ -9224,6 +9274,11 @@ async def main():
     # Handle `code-review` command
     if args.command == "code-review":
         await run_code_review(args)
+        return
+
+    # Handle `summarize` command
+    if args.command in ["summarize", "explain"]:
+        await run_summarize(args)
         return
 
     # Handle `init` command

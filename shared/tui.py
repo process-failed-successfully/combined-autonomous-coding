@@ -1,13 +1,18 @@
 import sys
+import io
+import contextlib
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.binding import Binding
 
 from shared.cli_utils import get_latest_log_file, get_workflow_stage
+from shared.knowledge import KnowledgeManager
+from shared.ask import run_ask_logic
+from shared.database import init_db
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -57,6 +62,11 @@ class DashboardTab(Container):
             with Container(classes="stat-box"):
                 yield Label(f"[bold]Workflow Stage:[/bold] {stage}")
 
+            # Recent History
+            with Container(classes="stat-box"):
+                yield Label("[bold]Recent Agent Runs[/bold]")
+                yield RichLog(id="history-log")
+
             # Quick Actions
             with Container(classes="stat-box"):
                 yield Label("[bold]Quick Actions[/bold]")
@@ -64,6 +74,25 @@ class DashboardTab(Container):
                     yield Button("Run Tests", id="btn-test", variant="primary")
                     yield Button("Run Lint", id="btn-lint", variant="warning")
                     yield Button("Refresh", id="btn-refresh", variant="success")
+
+    def on_mount(self) -> None:
+        self.update_history()
+
+    def update_history(self) -> None:
+        history_log = self.query_one("#history-log", RichLog)
+        history_log.clear()
+        history_file = self.project_dir / ".agent_history"
+        if history_file.exists():
+            try:
+                with open(history_file, "r") as f:
+                    # Get last 5 lines
+                    lines = f.readlines()
+                    for line in reversed(lines[-5:]):
+                        history_log.write(line.strip())
+            except Exception:
+                history_log.write("Error reading history.")
+        else:
+            history_log.write("No history found.")
 
 class FileExplorerTab(Container):
     """Tab for browsing files."""
@@ -124,6 +153,116 @@ class LogsTab(Container):
             log_viewer.clear()
             log_viewer.write("No log file found.")
 
+class InteractTab(Container):
+    """Tab for interacting with the agent (Chat)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield RichLog(id="chat-history", wrap=True, highlight=True, markup=True)
+            with Horizontal(id="chat-controls", classes="stat-box"):
+                yield Select.from_values(["gemini", "cursor", "local"], id="agent-select", value="gemini")
+                yield Input(placeholder="Ask a question or give an instruction...", id="chat-input")
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        query = event.value
+        if not query:
+            return
+
+        chat_log = self.query_one("#chat-history", RichLog)
+        chat_log.write(f"[bold blue]You:[/bold blue] {query}")
+
+        # Clear input
+        event.input.value = ""
+
+        # Get selected agent
+        agent_select = self.query_one("#agent-select", Select)
+        agent_type = agent_select.value or "gemini"
+
+        chat_log.write(f"[italic]Agent ({agent_type}) is thinking...[/italic]")
+
+        # Run logic capturing stdout
+        output_capture = io.StringIO()
+        success = False
+        with contextlib.redirect_stdout(output_capture):
+            try:
+                # We use run_ask_logic for now as it's safer than 'do' which executes code
+                success = await run_ask_logic(
+                    query=query,
+                    project_dir=self.project_dir,
+                    agent_type=agent_type,
+                    verbose=False
+                )
+            except Exception as e:
+                print(f"Error: {e}")
+
+        response = output_capture.getvalue()
+
+        # Format response
+        if success:
+             chat_log.write(f"[bold green]Agent:[/bold green]")
+             chat_log.write(response)
+        else:
+             chat_log.write(f"[bold red]Agent Error:[/bold red]")
+             chat_log.write(response)
+
+class KnowledgeTab(Container):
+    """Tab for managing knowledge."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = KnowledgeManager()
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Knowledge Base[/bold]", classes="welcome-text")
+            yield DataTable(id="knowledge-table")
+            with Horizontal(classes="stat-box"):
+                yield Input(placeholder="Add new knowledge...", id="knowledge-input")
+                yield Button("Add", id="btn-add-knowledge", variant="primary")
+            yield Button("Refresh", id="btn-refresh-knowledge", variant="default")
+
+    def on_mount(self) -> None:
+        # Init DB
+        init_db(self.project_dir / ".agent_db.sqlite")
+
+        table = self.query_one("#knowledge-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("ID", "Category", "Content", "Source")
+        self.load_knowledge()
+
+    def load_knowledge(self) -> None:
+        table = self.query_one("#knowledge-table", DataTable)
+        table.clear()
+        try:
+            items = self.manager.list_knowledge()
+            for item in items:
+                table.add_row(str(item.id), item.category, item.content, item.source_agent)
+        except Exception as e:
+            self.notify(f"Error loading knowledge: {e}", severity="error")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-refresh-knowledge":
+            self.load_knowledge()
+            self.notify("Knowledge refreshed.")
+        elif event.button.id == "btn-add-knowledge":
+            inp = self.query_one("#knowledge-input", Input)
+            content = inp.value
+            if content:
+                try:
+                    self.manager.add_knowledge(content, source="user_tui")
+                    self.notify("Knowledge added.")
+                    inp.value = ""
+                    self.load_knowledge()
+                except Exception as e:
+                    self.notify(f"Error adding knowledge: {e}", severity="error")
+            else:
+                self.notify("Content cannot be empty.", severity="warning")
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -142,6 +281,10 @@ class AgentTUI(App):
         with TabbedContent():
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Interact", id="tab-interact"):
+                yield InteractTab(self.project_dir)
+            with TabPane("Knowledge", id="tab-knowledge"):
+                yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):
                 yield FileExplorerTab(self.project_dir)
             with TabPane("Logs", id="tab-logs"):
@@ -150,15 +293,14 @@ class AgentTUI(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         import subprocess
+
+        # Handle dashboard buttons (bubble up)
         if event.button.id == "btn-refresh":
-            # In a real app, this would refresh data models
-            self.query_one(DashboardTab).compose() # Naive refresh attempt or just notify
+            self.query_one(DashboardTab).update_history()
             self.notify("Dashboard refreshed.")
         elif event.button.id == "btn-test":
             self.notify("Running tests...")
             try:
-                # We run in a separate process to avoid blocking the TUI completely,
-                # although ideally this would be async/threaded.
                 subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])
                 self.notify("Tests started in background.")
             except Exception as e:

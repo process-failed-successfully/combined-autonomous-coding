@@ -2460,6 +2460,90 @@ async def run_optimize(args):
     sys.exit(0 if success else 1)
 
 
+def run_knowledge(args):
+    """Manages the agent's knowledge base."""
+    from shared.database import init_db
+    from shared.knowledge import KnowledgeManager
+    from rich.console import Console
+    from rich.table import Table
+
+    # Ensure DB is initialized
+    config_dir = args.project_dir.resolve()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    init_db(config_dir / ".agent_db.sqlite")
+
+    manager = KnowledgeManager()
+    console = Console()
+
+    if args.action == "list":
+        items = manager.list_knowledge(category=args.category)
+        if not items:
+            console.print("No knowledge items found.", style="yellow")
+            sys.exit(0)
+
+        table = Table(title=f"Agent Knowledge ({args.category if args.category else 'All'})")
+        table.add_column("ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Category", style="magenta")
+        table.add_column("Source", style="green")
+        table.add_column("Content", style="white")
+
+        for item in items:
+            table.add_row(str(item.id), item.category, item.source_agent, item.content)
+
+        console.print(table)
+
+    elif args.action == "add":
+        if not args.content:
+            console.print("Error: Content is required for 'add' action.", style="red")
+            sys.exit(1)
+
+        item = manager.add_knowledge(args.content, category=args.category, source="user")
+        console.print(f"[green]Added knowledge item #{item.id}[/green]")
+
+    elif args.action == "delete":
+        if not args.id:
+             console.print("Error: ID is required for 'delete' action.", style="red")
+             sys.exit(1)
+
+        if manager.delete_knowledge(int(args.id)):
+            console.print(f"[green]Deleted knowledge item #{args.id}[/green]")
+        else:
+            console.print(f"[red]Item #{args.id} not found.[/red]")
+
+    elif args.action == "questions":
+        questions = manager.get_questions(status=args.status)
+        if not questions:
+            console.print(f"No {args.status} questions found.", style="yellow")
+            sys.exit(0)
+
+        table = Table(title=f"Agent Questions ({args.status})")
+        table.add_column("ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Source", style="green")
+        table.add_column("Question", style="white")
+        if args.status == "answered":
+             table.add_column("Answer", style="yellow")
+
+        for q in questions:
+            row = [str(q.id), q.source_agent, q.question]
+            if args.status == "answered":
+                row.append(q.answer)
+            table.add_row(*row)
+
+        console.print(table)
+
+    elif args.action == "answer":
+         if not args.id or not args.answer:
+              console.print("Error: ID and Answer are required.", style="red")
+              sys.exit(1)
+
+         if manager.answer_question(int(args.id), args.answer):
+              console.print(f"[green]Answered question #{args.id}[/green]")
+         else:
+              console.print(f"[red]Question #{args.id} not found.[/red]")
+
+    sys.exit(0)
+
+
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
     # Setup logging
@@ -6060,6 +6144,46 @@ def parse_args(argv=None):
         help="The project directory (default: current directory).",
     )
 
+    # --- New 'knowledge' command ---
+    parser_knowledge = subparsers.add_parser(
+        "knowledge",
+        help="Manage the agent's knowledge base and questions."
+    )
+    knowledge_subparsers = parser_knowledge.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Knowledge 'list' action
+    parser_knowledge_list = knowledge_subparsers.add_parser("list", help="List knowledge items.")
+    parser_knowledge_list.add_argument("--category", help="Filter by category.")
+    parser_knowledge_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Knowledge 'add' action
+    parser_knowledge_add = knowledge_subparsers.add_parser("add", help="Add a knowledge item.")
+    parser_knowledge_add.add_argument("content", help="The knowledge content.")
+    parser_knowledge_add.add_argument("--category", default="GENERAL_NOTE", help="Category (default: GENERAL_NOTE).")
+    parser_knowledge_add.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Knowledge 'delete' action
+    parser_knowledge_delete = knowledge_subparsers.add_parser("delete", help="Delete a knowledge item.")
+    parser_knowledge_delete.add_argument("id", type=int, help="The ID of the item to delete.")
+    parser_knowledge_delete.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Knowledge 'questions' action
+    parser_knowledge_questions = knowledge_subparsers.add_parser("questions", help="List agent questions.")
+    parser_knowledge_questions.add_argument("--status", default="pending", choices=["pending", "answered"], help="Filter by status.")
+    parser_knowledge_questions.add_argument("-i", "--interactive", action="store_true", help="Interactively answer questions.")
+    parser_knowledge_questions.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Knowledge 'answer' action
+    parser_knowledge_answer = knowledge_subparsers.add_parser("answer", help="Answer a specific question.")
+    parser_knowledge_answer.add_argument("id", type=int, help="The ID of the question.")
+    parser_knowledge_answer.add_argument("answer", help="The answer text.")
+    parser_knowledge_answer.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+
     # --- New 'ask' command ---
     parser_ask = subparsers.add_parser(
         "ask",
@@ -8812,6 +8936,11 @@ async def main():
     # Handle `tui` command
     if args.command == "tui":
         run_tui(args)
+        return
+
+    # Handle `knowledge` command
+    if args.command == "knowledge":
+        run_knowledge(args)
         return
 
     # Handle `ask` command

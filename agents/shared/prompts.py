@@ -116,6 +116,11 @@ def get_summarize_prompt() -> str:
     return load_prompt("summarize_prompt")
 
 
+def get_conflict_resolution_prompt() -> str:
+    """Load the conflict resolution prompt."""
+    return load_prompt("conflict_resolution_prompt")
+
+
 def copy_spec_to_project(project_dir: Path, custom_spec_path: Optional[Path] = None) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = custom_spec_path if custom_spec_path else PROMPTS_DIR / "app_spec.txt"

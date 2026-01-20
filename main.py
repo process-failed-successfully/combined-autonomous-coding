@@ -7301,6 +7301,55 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'resolve-conflicts' command ---
+    parser_resolve_conflicts = subparsers.add_parser(
+        "resolve-conflicts",
+        aliases=["fix-conflicts"],
+        help="Resolve git merge conflicts using AI."
+    )
+    parser_resolve_conflicts.add_argument(
+        "files",
+        nargs="*",
+        help="Specific files to resolve."
+    )
+    parser_resolve_conflicts.add_argument(
+        "--all",
+        action="store_true",
+        help="Scan and resolve all files with conflicts."
+    )
+    parser_resolve_conflicts.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_resolve_conflicts.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_resolve_conflicts.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_resolve_conflicts.add_argument(
+        "--diff",
+        action="store_true",
+        help="Show diff before applying.",
+    )
+    parser_resolve_conflicts.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt.",
+    )
+    parser_resolve_conflicts.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+
     # --- New 'generate-tests' command ---
     parser_gentest = subparsers.add_parser(
         "generate-tests",
@@ -7767,6 +7816,72 @@ async def run_resolve(args):
         yes=args.yes
     )
     sys.exit(0 if success else 1)
+
+
+async def run_resolve_conflicts(args):
+    """Resolves merge conflicts using AI."""
+    from shared.conflict_resolver import ConflictResolver
+
+    project_dir = args.project_dir.resolve()
+    resolver = ConflictResolver(project_dir)
+
+    # Identify files
+    files_to_resolve = []
+    if args.files:
+        files_to_resolve = [project_dir / f for f in args.files]
+    elif args.all:
+        print("Scanning for conflicted files...")
+        files_to_resolve = resolver.find_conflicted_files()
+    else:
+        print("Error: Please specify files to resolve or use --all.")
+        sys.exit(1)
+
+    if not files_to_resolve:
+        print("✅ No conflicted files found.")
+        sys.exit(0)
+
+    print(f"Found {len(files_to_resolve)} file(s) with conflicts.")
+
+    for file_path in files_to_resolve:
+        print(f"\n--- Resolving: {file_path.name} ---")
+        try:
+            result = await resolver.resolve_file(
+                target_file=file_path,
+                agent_type=args.agent,
+                model=args.model
+            )
+
+            if result["resolved"]:
+                print("✅ Resolution successful.")
+                if args.diff:
+                     import difflib
+                     diff = difflib.unified_diff(
+                        result["original_content"].splitlines(),
+                        result["resolved_content"].splitlines(),
+                        fromfile=f"a/{file_path.name}",
+                        tofile=f"b/{file_path.name}",
+                        lineterm=""
+                     )
+                     print("\n".join(diff))
+
+                if not args.yes:
+                     confirm = input("Apply changes? [y/N]: ").strip().lower()
+                     if confirm != 'y':
+                         print("Skipped.")
+                         continue
+
+                resolver.apply_resolution(file_path, result["resolved_content"])
+                print(f"Saved changes to {file_path.name}")
+            else:
+                print(f"❌ Failed to resolve {file_path.name}: {result.get('message', 'Unknown error')}")
+
+        except Exception as e:
+            print(f"❌ Error processing {file_path.name}: {e}")
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
+
+    sys.exit(0)
 
 
 async def run_docstring(args):
@@ -9675,6 +9790,10 @@ async def main():
 
     if args.command == "resolve":
         await run_resolve(args)
+        return
+
+    if args.command in ["resolve-conflicts", "fix-conflicts"]:
+        await run_resolve_conflicts(args)
         return
 
     if args.command in ["generate-tests", "gentest"]:

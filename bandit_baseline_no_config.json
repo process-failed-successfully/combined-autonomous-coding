@@ -1,6 +1,6 @@
 {
   "errors": [],
-  "generated_at": "2026-01-20T12:03:08Z",
+  "generated_at": "2026-01-20T12:02:14Z",
   "metrics": {
     "./agents/__init__.py": {
       "CONFIDENCE.HIGH": 0,
@@ -596,7 +596,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 128,
+      "loc": 131,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -3248,7 +3248,7 @@
       "SEVERITY.LOW": 926,
       "SEVERITY.MEDIUM": 49,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 32054,
+      "loc": 32057,
       "nosec": 0,
       "skipped_tests": 1
     }

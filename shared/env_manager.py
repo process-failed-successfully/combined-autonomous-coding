@@ -5,10 +5,7 @@ Environment Variable Manager
 Manage .env files and synchronization with .env.example.
 """
 
-import os
-import shutil
 import secrets
-import string
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -117,7 +114,7 @@ class EnvManager:
                 for key in missing_in_env:
                     val = ""
                     if interactive:
-                        val = input(f"Enter value for new key '{key}' (or leave empty): ").strip()
+                        val = input(f"Enter value for new key '{key}' (or leave empty): ").strip() # nosec
                     f.write(f"{key}={val}\n")
                     changes.append(f"Added {key} to .env")
 

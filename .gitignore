@@ -56,3 +56,5 @@ manager_directives.txt
 successes.txt.mypy_cache/
 .mypy_cache/
 .agent_db.sqlite
+
+.playground/

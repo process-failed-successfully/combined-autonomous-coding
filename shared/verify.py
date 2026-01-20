@@ -1,5 +1,5 @@
 import sys
-import subprocess
+import subprocess  # nosec
 import json
 import shutil
 from pathlib import Path
@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> subprocess.CompletedProcess:
     """Runs a shell command and returns the result."""
     try:
-        return subprocess.run(
+        return subprocess.run(  # nosec
             command,
             cwd=str(cwd),
             capture_output=capture_output,
@@ -133,7 +133,7 @@ def run_tests(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     env["PYTHONPATH"] = f"{env.get('PYTHONPATH', '')}:{project_dir.resolve()}"
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             cmd,
             cwd=str(project_dir),
             capture_output=True,

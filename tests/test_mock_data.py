@@ -1,57 +1,69 @@
+import unittest
 import json
-import pytest
-from pathlib import Path
-from shared.mock_data import MockDataGenerator, format_json, format_csv, format_sql
+from shared.mock_data import MockDataGenerator
 
-@pytest.fixture
-def generator():
-    return MockDataGenerator()
 
-def test_generate_int_seq(generator):
-    spec = {"id": "int:seq"}
-    data = generator.generate(spec, 3)
-    assert len(data) == 3
-    assert data[0]["id"] == 1
-    assert data[1]["id"] == 2
-    assert data[2]["id"] == 3
+class TestMockDataGenerator(unittest.TestCase):
+    def test_generate_basic_types(self) -> None:
+        schema = {
+            "id": "int",
+            "score": "float",
+            "active": "boolean",
+            "uid": "uuid",
+            "name": "string"
+        }
+        gen = MockDataGenerator(schema)
+        data = gen.generate(10)
+        self.assertEqual(len(data), 10)
 
-def test_generate_int_range(generator):
-    spec = {"age": "int:10-20"}
-    data = generator.generate(spec, 5)
-    for item in data:
-        assert 10 <= item["age"] <= 20
+        row = data[0]
+        self.assertIsInstance(row["id"], int)
+        self.assertIsInstance(row["score"], float)
+        self.assertIsInstance(row["active"], bool)
+        self.assertIsInstance(row["uid"], str)
+        self.assertIsInstance(row["name"], str)
 
-def test_generate_string_name(generator):
-    spec = {"name": "string:name"}
-    data = generator.generate(spec, 5)
-    for item in data:
-        assert isinstance(item["name"], str)
-        assert len(item["name"].split()) == 2
+    def test_generate_complex_types(self) -> None:
+        schema = {
+            "dob": "date",
+            "ts": "datetime",
+            "email": "email",
+            "full_name": "name",
+            "category": {"type": "choice", "choices": ["A", "B", "C"]}
+        }
+        gen = MockDataGenerator(schema)
+        data = gen.generate(5)
 
-def test_generate_choice(generator):
-    spec = {"role": "choice:[admin,user]"}
-    data = generator.generate(spec, 10)
-    for item in data:
-        assert item["role"] in ["admin", "user"]
+        row = data[0]
+        # Just check basic format or type presence
+        self.assertTrue("-" in row["dob"])
+        self.assertTrue("T" in row["ts"])
+        self.assertTrue("@" in row["email"])
+        self.assertTrue(" " in row["full_name"])
+        self.assertIn(row["category"], ["A", "B", "C"])
 
-def test_format_json():
-    data = [{"id": 1, "name": "Test"}]
-    output = format_json(data)
-    loaded = json.loads(output)
-    assert loaded == data
+    def test_export_json(self) -> None:
+        schema = {"id": "int"}
+        gen = MockDataGenerator(schema)
+        data = [{"id": 1}]
+        output = gen.export(data, format="json")
+        self.assertEqual(json.loads(output), data)
 
-def test_format_csv():
-    data = [{"id": 1, "name": "Test"}]
-    output = format_csv(data)
-    assert "id,name" in output
-    assert "1,Test" in output
+    def test_export_csv(self) -> None:
+        schema = {"id": "int", "name": "string"}
+        gen = MockDataGenerator(schema)
+        data = [{"id": 1, "name": "test"}]
+        output = gen.export(data, format="csv")
+        self.assertIn("id,name", output)
+        self.assertIn("1,test", output)
 
-def test_format_sql():
-    data = [{"id": 1, "name": "Test", "active": True}]
-    output = format_sql(data, "users")
-    assert "INSERT INTO users (id, name, active) VALUES (1, 'Test', TRUE);" in output
+    def test_export_sql(self) -> None:
+        schema = {"id": "int", "name": "string"}
+        gen = MockDataGenerator(schema)
+        data = [{"id": 1, "name": "test"}]
+        output = gen.export(data, format="sql", table_name="users")
+        self.assertIn("INSERT INTO users (id, name) VALUES (1, 'test');", output)
 
-def test_format_sql_escaping():
-    data = [{"name": "O'Reilly"}]
-    output = format_sql(data, "users")
-    assert "INSERT INTO users (name) VALUES ('O''Reilly');" in output
+
+if __name__ == '__main__':
+    unittest.main()

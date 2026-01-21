@@ -157,10 +157,6 @@ def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
     if not data:
         return ""
 
-    # Validate table_name to prevent SQL injection via table name
-    if not table_name.isidentifier():
-        raise ValueError(f"Invalid table name: {table_name}")
-
     statements = []
     for record in data:
         columns = ", ".join(record.keys())
@@ -176,7 +172,7 @@ def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
             else:
                 values.append(str(v))
         values_str = ", ".join(values)
-        statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")  # nosec B608
+        statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")
 
     return "\n".join(statements)
 

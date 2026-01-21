@@ -54,6 +54,12 @@ def configure_git_auth(token: str, host: str = "github.com", username: str = "x-
 
         subprocess.run(["git"] + cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
+    except subprocess.CalledProcessError as e:
+        # Do not log 'e' directly as it contains the command with the token
+        logger.error(f"Failed to configure git auth. Command failed with return code {e.returncode}.")
+        if e.stderr:
+            logger.error(f"Git error output: {e.stderr.decode('utf-8', errors='replace').strip()}")
+        return False
     except Exception as e:
         logger.error(f"Failed to configure git auth: {e}")
         return False

@@ -21,13 +21,7 @@ ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 LOG_DIR = os.getenv("LOG_DIR", "./agents/logs")
 
 
-if TYPE_CHECKING:
-    BaseHandler = logging.StreamHandler[Any]
-else:
-    BaseHandler = logging.StreamHandler
-
-
-class SafeStreamHandler(BaseHandler):
+class SafeStreamHandler(logging.StreamHandler):  # type: ignore
     """A StreamHandler that suppresses errors when writing to closed streams."""
 
     def emit(self, record: logging.LogRecord) -> None:

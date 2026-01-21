@@ -11,6 +11,7 @@ def test_imports():
         "shared.telemetry",
         "shared.agent_client",
         "shared.utils",
+        "shared.mock_data",
         "agents.cursor.agent",
         "agents.gemini.agent",
     ]

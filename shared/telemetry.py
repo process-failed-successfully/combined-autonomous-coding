@@ -110,8 +110,23 @@ class Telemetry:
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
         self._is_shutting_down = True
+        # Close monitoring thread
+        self.monitoring_active = False
+
+        # Flush metrics
         self._push_metrics(force=True, sync=True, is_shutdown=True)
         self._push_executor.shutdown(wait=True)
+
+        # Close handlers to release file locks
+        for handler in self.logger.handlers:
+            handler.close()
+            self.logger.removeHandler(handler)
+
+    def reset(self):
+        """Explicitly reset the telemetry instance for testing."""
+        self._shutdown()
+        # Unregister atexit to prevent double shutdown
+        atexit.unregister(self._shutdown)
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""

@@ -10,6 +10,9 @@ class TestTelemetryExtended(unittest.TestCase):
         self.telemetry = Telemetry("test_agent", "test_job")
         self.telemetry.synchronous_mode = True
 
+    def tearDown(self):
+        self.telemetry.reset()
+
     @patch("shared.telemetry.push_to_gateway")
     def test_record_histogram(self, mock_push):
         with patch("shared.telemetry.ENABLE_METRICS", True):

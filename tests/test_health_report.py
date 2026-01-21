@@ -1,9 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch
-from pathlib import Path
+from unittest.mock import patch
 import json
-import os
-from shared.health import run_health_check, HealthCalculator
+from shared.health import run_health_check
 
 @pytest.fixture
 def mock_dependencies():

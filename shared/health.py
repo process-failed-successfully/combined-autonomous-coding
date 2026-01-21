@@ -273,25 +273,25 @@ class HealthCalculator:
         <div class="section">
             <h2>Breakdown</h2>
             <div class="metric-grid">
-                <div class="metric-card {"pass" if self.metrics["test_score"] == 30 else "fail"}">
+                <div class="metric-card {'pass' if self.metrics['test_score'] == 30 else 'fail'}">
                     <div class="metric-title">Tests</div>
-                    <div class="metric-value">{self.metrics["test_score"]}/30</div>
+                    <div class="metric-value">{self.metrics['test_score']}/30</div>
                 </div>
-                <div class="metric-card {"pass" if self.metrics["lint_score"] >= 15 else "fail"}">
+                <div class="metric-card {'pass' if self.metrics['lint_score'] >= 15 else 'fail'}">
                     <div class="metric-title">Linting</div>
-                    <div class="metric-value">{self.metrics["lint_score"]}/20</div>
+                    <div class="metric-value">{self.metrics['lint_score']}/20</div>
                 </div>
-                <div class="metric-card {"pass" if self.metrics["complexity_score"] >= 15 else "fail"}">
+                <div class="metric-card {'pass' if self.metrics['complexity_score'] >= 15 else 'fail'}">
                     <div class="metric-title">Complexity</div>
-                    <div class="metric-value">{self.metrics["complexity_score"]}/20</div>
+                    <div class="metric-value">{self.metrics['complexity_score']}/20</div>
                 </div>
-                <div class="metric-card {"pass" if self.metrics["security_score"] >= 15 else "fail"}">
+                <div class="metric-card {'pass' if self.metrics['security_score'] >= 15 else 'fail'}">
                     <div class="metric-title">Security</div>
-                    <div class="metric-value">{self.metrics["security_score"]}/20</div>
+                    <div class="metric-value">{self.metrics['security_score']}/20</div>
                 </div>
-                <div class="metric-card {"pass" if self.metrics["dependency_score"] >= 8 else "fail"}">
+                <div class="metric-card {'pass' if self.metrics['dependency_score'] >= 8 else 'fail'}">
                     <div class="metric-title">Dependencies</div>
-                    <div class="metric-value">{self.metrics["dependency_score"]}/10</div>
+                    <div class="metric-value">{self.metrics['dependency_score']}/10</div>
                 </div>
             </div>
         </div>

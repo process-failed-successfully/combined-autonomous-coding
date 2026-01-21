@@ -19,6 +19,7 @@ from shared.optimize import OptimizationManager
 from shared.database import init_db
 from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
+from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -453,6 +454,124 @@ class ProfileTab(Container):
         ai_output.update(suggestion)
         self.notify("Analysis complete.")
 
+class DependenciesTab(Container):
+    """Tab for managing dependencies."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.analyzer = DependencyAnalyzer(project_dir)
+        self.updater = DependencyUpdater(project_dir)
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Project Dependencies[/bold]", classes="welcome-text")
+            yield DataTable(id="deps-table")
+            with Horizontal(classes="stat-box"):
+                yield Button("Refresh", id="btn-deps-refresh", variant="default")
+                yield Button("Check Updates", id="btn-deps-check", variant="primary")
+            yield Label("", id="deps-status")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#deps-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Language", "Package", "Version", "Type", "Latest", "Status")
+        self.load_deps()
+
+    def load_deps(self) -> None:
+        table = self.query_one("#deps-table", DataTable)
+        table.clear()
+
+        try:
+            data = self.analyzer.scan()
+
+            # Python
+            for file_info in data.get("python", []):
+                for dep in file_info.get("dependencies", []):
+                    table.add_row(
+                        "Python",
+                        dep["name"],
+                        dep.get("version", ""),
+                        "prod",
+                        dep.get("latest", "-"),
+                        "Outdated" if dep.get("outdated") else "OK"
+                    )
+
+            # Node
+            for file_info in data.get("node", []):
+                for dep in file_info.get("dependencies", []):
+                    table.add_row(
+                        "Node",
+                        dep["name"],
+                        dep.get("version", ""),
+                        dep.get("type", "prod"),
+                        dep.get("latest", "-"),
+                        "Outdated" if dep.get("outdated") else "OK"
+                    )
+
+            self.query_one("#deps-status", Label).update("Dependencies loaded.")
+        except Exception as e:
+            self.notify(f"Error loading dependencies: {e}", severity="error")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-deps-refresh":
+            self.load_deps()
+            self.notify("Dependencies refreshed.")
+        elif event.button.id == "btn-deps-check":
+            await self.check_updates()
+
+    async def check_updates(self):
+        self.query_one("#deps-status", Label).update("Checking for updates... (this may take a while)")
+        self.notify("Checking updates...", severity="information")
+
+        # Run potentially blocking check_updates in a thread
+        import asyncio
+
+        try:
+            # We need to re-scan and then check updates
+            def do_check():
+                data = self.analyzer.scan()
+                return self.analyzer.check_updates(data)
+
+            data = await asyncio.to_thread(do_check)
+
+            # Update table with new data
+            table = self.query_one("#deps-table", DataTable)
+            table.clear()
+
+            # Python
+            for file_info in data.get("python", []):
+                for dep in file_info.get("dependencies", []):
+                    status = "[red]Outdated[/red]" if dep.get("outdated") else "[green]OK[/green]"
+                    table.add_row(
+                        "Python",
+                        dep["name"],
+                        dep.get("version", ""),
+                        "prod",
+                        dep.get("latest", "-"),
+                        status
+                    )
+
+            # Node
+            for file_info in data.get("node", []):
+                for dep in file_info.get("dependencies", []):
+                    status = "[red]Outdated[/red]" if dep.get("outdated") else "[green]OK[/green]"
+                    table.add_row(
+                        "Node",
+                        dep["name"],
+                        dep.get("version", ""),
+                        dep.get("type", "prod"),
+                        dep.get("latest", "-"),
+                        status
+                    )
+
+            self.query_one("#deps-status", Label).update("Update check complete.")
+            self.notify("Update check complete.")
+
+        except Exception as e:
+            self.notify(f"Error checking updates: {e}", severity="error")
+            self.query_one("#deps-status", Label).update("Error checking updates.")
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -475,6 +594,8 @@ class AgentTUI(App):
                 yield InteractTab(self.project_dir)
             with TabPane("Issues", id="tab-issues"):
                 yield IssuesTab(self.project_dir)
+            with TabPane("Dependencies", id="tab-deps"):
+                yield DependenciesTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):

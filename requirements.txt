@@ -13,9 +13,8 @@ prometheus-client
 psutil
 platformdirs
 google-generativeai
-prometheus-client
 argcomplete
-watchdog
 watchdog
 jaraco.context>=6.1.0
 textual
+jira

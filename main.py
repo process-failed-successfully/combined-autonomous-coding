@@ -168,6 +168,24 @@ def run_secrets(args):
 
     sys.exit(0)
 
+def run_db(args):
+    """Manages database operations."""
+    from shared.database_manager import DatabaseManager
+    project_dir = args.project_dir.resolve()
+    manager = DatabaseManager(project_dir)
+
+    if args.action == "init":
+        sys.exit(0 if manager.init() else 1)
+    elif args.action == "migrate":
+        sys.exit(0 if manager.migrate() else 1)
+    elif args.action == "seed":
+        sys.exit(0 if manager.seed() else 1)
+    elif args.action == "inspect":
+        sys.exit(0 if manager.inspect() else 1)
+    else:
+        print(f"Unknown action: {args.action}", file=sys.stderr)
+        sys.exit(1)
+
 def run_session(args):
     """Manages work sessions."""
     project_dir = args.project_dir.resolve()
@@ -7248,6 +7266,34 @@ def parse_args(argv=None):
     parser_sec_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
     parser_sec_run.add_argument("command_args", nargs=argparse.REMAINDER, help="The command to run (use -- before command).")
 
+    # --- New 'db' command ---
+    parser_db = subparsers.add_parser(
+        "db",
+        aliases=["database"],
+        help="Manage application database (init, migrate, seed)."
+    )
+    db_subparsers = parser_db.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # db init
+    parser_db_init = db_subparsers.add_parser("init", help="Initialize database configuration.")
+    parser_db_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # db migrate
+    parser_db_migrate = db_subparsers.add_parser("migrate", help="Run database migrations.")
+    parser_db_migrate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # db seed
+    parser_db_seed = db_subparsers.add_parser("seed", help="Seed the database with initial data.")
+    parser_db_seed.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # db inspect
+    parser_db_inspect = db_subparsers.add_parser("inspect", help="Inspect database schema.")
+    parser_db_inspect.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'playground' command ---
     parser_playground = subparsers.add_parser(
         "playground",
@@ -10284,6 +10330,11 @@ async def main():
     # Handle `secrets` command
     if args.command == "secrets":
         run_secrets(args)
+        return
+
+    # Handle `db` command
+    if args.command in ["db", "database"]:
+        run_db(args)
         return
 
     # Handle `playground` command

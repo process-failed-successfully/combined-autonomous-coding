@@ -4,8 +4,9 @@ import csv
 import io
 import datetime
 import uuid
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any
 from pathlib import Path
+
 
 class MockDataGenerator:
     """Generates mock data based on a JSON specification."""
@@ -34,7 +35,7 @@ class MockDataGenerator:
             # simple parser for [a,b,c]
             options_str = options_str.strip("[]")
             options = [o.strip() for o in options_str.split(",")]
-            return random.choice(options)
+            return random.choice(options)  # nosec B311
 
         parts = type_def.split(":")
         base_type = parts[0]
@@ -47,7 +48,7 @@ class MockDataGenerator:
         elif base_type in ["str", "string"]:
             return self._gen_string(args)
         elif base_type in ["bool", "boolean"]:
-            return random.choice([True, False])
+            return random.choice([True, False])  # nosec B311
         elif base_type == "date":
             return self._gen_date(args)
         elif base_type == "uuid":
@@ -57,7 +58,7 @@ class MockDataGenerator:
 
     def _gen_int(self, field_name: str, args: List[str]) -> int:
         if not args:
-            return random.randint(0, 100)
+            return random.randint(0, 100)  # nosec B311
 
         mode = args[0]
         if mode == "seq":
@@ -72,11 +73,11 @@ class MockDataGenerator:
         if "-" in mode:
             try:
                 min_val, max_val = map(int, mode.split("-"))
-                return random.randint(min_val, max_val)
+                return random.randint(min_val, max_val)  # nosec B311
             except ValueError:
                 pass
 
-        return random.randint(0, 100)
+        return random.randint(0, 100)  # nosec B311
 
     def _gen_float(self, args: List[str]) -> float:
         min_val, max_val = 0.0, 100.0
@@ -95,7 +96,7 @@ class MockDataGenerator:
                 except ValueError:
                     pass
 
-        val = random.uniform(min_val, max_val)
+        val = random.uniform(min_val, max_val)  # nosec B311
         return round(val, precision)
 
     def _gen_string(self, args: List[str]) -> str:
@@ -104,45 +105,47 @@ class MockDataGenerator:
 
         mode = args[0]
         if mode == "name":
-            return f"{random.choice(self.names)} {random.choice(self.surnames)}"
+            return f"{random.choice(self.names)} {random.choice(self.surnames)}"  # nosec B311
         elif mode == "email":
-            name = random.choice(self.names).lower()
-            surname = random.choice(self.surnames).lower()
-            domain = random.choice(self.domains)
+            name = random.choice(self.names).lower()  # nosec B311
+            surname = random.choice(self.surnames).lower()  # nosec B311
+            domain = random.choice(self.domains)  # nosec B311
             return f"{name}.{surname}@{domain}"
         elif mode == "uuid":
             return str(uuid.uuid4())
         elif mode == "alpha":
             length = int(args[1]) if len(args) > 1 else 10
             chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            return "".join(random.choice(chars) for _ in range(length))
+            return "".join(random.choice(chars) for _ in range(length))  # nosec B311
 
         return self._random_word()
 
     def _random_word(self) -> str:
         words = ["lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit"]
-        return random.choice(words)
+        return random.choice(words)  # nosec B311
 
     def _gen_date(self, args: List[str]) -> str:
         if not args or args[0] == "now":
             return datetime.datetime.now().isoformat()
 
-        if "-" in args[0]: # Start-End year? Or full date?
+        if "-" in args[0]:  # Start-End year? Or full date?
             # Supporting YYYY-MM-DD:YYYY-MM-DD
-             parts = args[0].split(":") # Split range by : if possible, else - is confusing with date separator
-             if len(parts) == 2:
-                 try:
-                     start_date = datetime.datetime.strptime(parts[0], "%Y-%m-%d")
-                     end_date = datetime.datetime.strptime(parts[1], "%Y-%m-%d")
-                     delta = end_date - start_date
-                     random_days = random.randrange(delta.days + 1)
-                     return (start_date + datetime.timedelta(days=random_days)).date().isoformat()
-                 except ValueError:
-                     pass
+            parts = args[0].split(":")  # Split range by : if possible, else - is confusing with date separator
+            if len(parts) == 2:
+                try:
+                    start_date = datetime.datetime.strptime(parts[0], "%Y-%m-%d")
+                    end_date = datetime.datetime.strptime(parts[1], "%Y-%m-%d")
+                    delta = end_date - start_date
+                    random_days = random.randrange(delta.days + 1)  # nosec B311
+                    return (start_date + datetime.timedelta(days=random_days)).date().isoformat()
+                except ValueError:
+                    pass
         return datetime.datetime.now().date().isoformat()
+
 
 def format_json(data: List[Dict[str, Any]]) -> str:
     return json.dumps(data, indent=2)
+
 
 def format_csv(data: List[Dict[str, Any]]) -> str:
     if not data:
@@ -152,6 +155,7 @@ def format_csv(data: List[Dict[str, Any]]) -> str:
     writer.writeheader()
     writer.writerows(data)
     return output.getvalue()
+
 
 def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
     if not data:
@@ -172,15 +176,16 @@ def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
             else:
                 values.append(str(v))
         values_str = ", ".join(values)
-        statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")
+        statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")  # nosec B608
 
     return "\n".join(statements)
+
 
 def run_mock_logic(
     spec_path: Path,
     count: int = 10,
     output_format: str = "json",
-    output_file: Path = None,
+    output_file: Path | None = None,
     table_name: str = "table"
 ) -> bool:
     try:

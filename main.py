@@ -60,6 +60,7 @@ from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
 from shared.polish import run_polish_logic
+from shared.health import run_health_check
 import json
 import yaml
 import platformdirs
@@ -7476,6 +7477,18 @@ def parse_args(argv=None):
         help="Output format (default: text).",
     )
 
+    # --- New 'health' command ---
+    parser_health = subparsers.add_parser(
+        "health",
+        help="Calculate the overall health score of the project."
+    )
+    parser_health.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+
     # --- New 'security' command ---
     parser_security = subparsers.add_parser(
         "security",
@@ -10146,6 +10159,11 @@ async def main():
 
     if args.command == "verify":
         run_verify(args)
+        return
+
+    # Handle `health` command
+    if args.command == "health":
+        run_health_check(args.project_dir)
         return
 
     if args.command == "security":

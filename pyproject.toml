@@ -33,6 +33,7 @@ dependencies = [
     "google-generativeai",
     "argcomplete",
     "jira",
+    "cryptography",
 ]
 requires-python = ">=3.11"
 

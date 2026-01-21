@@ -2416,6 +2416,60 @@ def run_map(args):
     _run_map_logic(args.project_dir, args.format, args.focus)
     sys.exit(0)
 
+def run_architecture(args):
+    """Checks the project architecture against defined rules."""
+    from shared.architecture import check_architecture
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Checking Architecture in: {project_dir} ---")
+
+    rules = []
+
+    # 1. Try to load from specific rules file
+    if args.rules and Path(args.rules).exists():
+        try:
+            with open(args.rules, 'r') as f:
+                loaded = yaml.safe_load(f)
+                if isinstance(loaded, list):
+                    rules = loaded
+                elif isinstance(loaded, dict) and "architecture_rules" in loaded:
+                    rules = loaded["architecture_rules"]
+                else:
+                    print(f"❌ Error: Invalid format in rules file {args.rules}. Expected list or dict with 'architecture_rules'.", file=sys.stderr)
+                    sys.exit(1)
+            print(f"Loaded rules from {args.rules}")
+        except Exception as e:
+            print(f"❌ Error loading rules file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # 2. Try to load from agent_config.yaml (if no specific rules file provided or additive?)
+    # For now, if rules file is provided, use it. If not, look in config.
+    elif not rules:
+        from shared.config_loader import load_config_from_file
+        config = load_config_from_file()
+        if "architecture_rules" in config:
+            rules = config["architecture_rules"]
+            print("Loaded rules from agent configuration.")
+
+    if not rules:
+        print("⚠️  No architecture rules found. Please define 'architecture_rules' in agent_config.yaml or provide a --rules file.")
+        print("Example rule format:")
+        print("  - source: \"shared/**\"")
+        print("    deny: \"agents/**\"")
+        sys.exit(0)
+
+    violations = check_architecture(project_dir, rules)
+
+    if violations:
+        print(f"\n❌ Found {len(violations)} architecture violation(s):")
+        for v in violations:
+            print(f"  - {v['source']} imports {v['imported']}")
+            print(f"    Rule: {v['rule']}")
+        sys.exit(1)
+    else:
+        print("\n✅ No architecture violations found.")
+        sys.exit(0)
+
 def run_analytics(args):
     """Runs project analytics."""
     if args.type == "git":
@@ -7232,6 +7286,24 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'architecture' command ---
+    parser_arch = subparsers.add_parser(
+        "architecture",
+        aliases=["arch"],
+        help="Validate project architecture against rules."
+    )
+    parser_arch.add_argument(
+        "--rules",
+        type=str,
+        help="Path to a YAML file containing architecture rules."
+    )
+    parser_arch.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'release' command ---
     parser_release = subparsers.add_parser(
         "release",
@@ -9999,6 +10071,10 @@ async def main():
 
     if args.command == "map":
         run_map(args)
+        return
+
+    if args.command in ["architecture", "arch"]:
+        run_architecture(args)
         return
 
     if args.command == "release":

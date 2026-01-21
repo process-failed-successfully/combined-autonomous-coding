@@ -1,0 +1,5 @@
+architecture_rules:
+  - source: "shared/*"
+    deny: "agents/*"
+  - source: "ui/*"
+    deny: "agents/*"

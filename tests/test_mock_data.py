@@ -2,6 +2,7 @@ import unittest
 import json
 from shared.mock_data import MockDataGenerator
 
+
 class TestMockDataGenerator(unittest.TestCase):
     def test_generate_basic_types(self):
         schema = {
@@ -62,6 +63,7 @@ class TestMockDataGenerator(unittest.TestCase):
         data = [{"id": 1, "name": "test"}]
         output = gen.export(data, format="sql", table_name="users")
         self.assertIn("INSERT INTO users (id, name) VALUES (1, 'test');", output)
+
 
 if __name__ == '__main__':
     unittest.main()

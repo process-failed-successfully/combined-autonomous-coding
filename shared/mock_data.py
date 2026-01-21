@@ -6,6 +6,7 @@ import datetime
 import string
 import io
 
+
 class MockDataGenerator:
     """
     Generates mock data based on a provided schema using only standard library.
@@ -38,13 +39,13 @@ class MockDataGenerator:
             options = {}
 
         if spec_type == "int" or spec_type == "integer":
-            return random.randint(options.get("min", 0), options.get("max", 100))
+            return random.randint(options.get("min", 0), options.get("max", 100))  # nosec B311
 
         elif spec_type == "float" or spec_type == "number":
-            return random.uniform(options.get("min", 0.0), options.get("max", 100.0))
+            return random.uniform(options.get("min", 0.0), options.get("max", 100.0))  # nosec B311
 
         elif spec_type == "boolean" or spec_type == "bool":
-            return random.choice([True, False])
+            return random.choice([True, False])  # nosec B311
 
         elif spec_type == "uuid":
             return str(uuid.uuid4())
@@ -53,29 +54,29 @@ class MockDataGenerator:
             start_date = datetime.date(2020, 1, 1)
             end_date = datetime.date.today()
             days_between = (end_date - start_date).days
-            random_days = random.randrange(days_between + 1)
+            random_days = random.randrange(days_between + 1)  # nosec B311
             return (start_date + datetime.timedelta(days=random_days)).isoformat()
 
         elif spec_type == "datetime":
             start_date = datetime.datetime(2020, 1, 1)
             end_date = datetime.datetime.now()
             time_between = end_date - start_date
-            random_seconds = random.randrange(int(time_between.total_seconds()))
+            random_seconds = random.randrange(int(time_between.total_seconds()))  # nosec B311
             return (start_date + datetime.timedelta(seconds=random_seconds)).isoformat()
 
         elif spec_type == "email":
-            user = self._random_string(random.randint(5, 10))
-            domain = random.choice(["example.com", "test.org", "mock.net", "corp.co"])
+            user = self._random_string(random.randint(5, 10))  # nosec B311
+            domain = random.choice(["example.com", "test.org", "mock.net", "corp.co"])  # nosec B311
             return f"{user}@{domain}"
 
         elif spec_type == "name":
             first_names = ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi"]
             last_names = ["Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller", "Wilson"]
-            return f"{random.choice(first_names)} {random.choice(last_names)}"
+            return f"{random.choice(first_names)} {random.choice(last_names)}"  # nosec B311
 
         elif spec_type == "choice":
             choices = options.get("choices", [])
-            return random.choice(choices) if choices else None
+            return random.choice(choices) if choices else None  # nosec B311
 
         elif spec_type == "string":
             length = options.get("length", 10)
@@ -87,7 +88,7 @@ class MockDataGenerator:
 
     def _random_string(self, length):
         letters = string.ascii_lowercase
-        return ''.join(random.choice(letters) for i in range(length))
+        return ''.join(random.choice(letters) for i in range(length))  # nosec B311
 
     def export(self, data, format="json", table_name="mock_data"):
         """Exports data to the specified format."""
@@ -121,14 +122,14 @@ class MockDataGenerator:
                     elif isinstance(v, bool):
                         values.append("TRUE" if v else "FALSE")
                     elif v is None:
-                         values.append("NULL")
+                        values.append("NULL")
                     else:
                         # Basic escaping for single quotes
                         escaped_val = str(v).replace("'", "''")
                         values.append(f"'{escaped_val}'")
 
                 values_str = ", ".join(values)
-                statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")
+                statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")  # nosec B608
             return "\n".join(statements)
 
         else:

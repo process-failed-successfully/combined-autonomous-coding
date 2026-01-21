@@ -58,3 +58,7 @@ successes.txt.mypy_cache/
 .agent_db.sqlite
 
 .playground/
+
+# Secrets
+.agent_secrets.key
+.agent_secrets.enc

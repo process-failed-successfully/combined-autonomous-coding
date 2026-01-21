@@ -7419,6 +7419,34 @@ def parse_args(argv=None):
         help="Print contents without writing files.",
     )
 
+    # --- New 'cicd' command ---
+    parser_cicd = subparsers.add_parser(
+        "cicd",
+        help="Generate CI/CD pipeline configuration files."
+    )
+    parser_cicd.add_argument(
+        "--platform",
+        choices=["github", "gitlab"],
+        default="github",
+        help="Target CI/CD platform (default: github)."
+    )
+    parser_cicd.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_cicd.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Overwrite existing files.",
+    )
+    parser_cicd.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print contents without writing files.",
+    )
+
     # --- New 'verify' command ---
     parser_verify = subparsers.add_parser(
         "verify",
@@ -8293,6 +8321,49 @@ def run_verify(args):
         output_format=args.output
     )
     sys.exit(0 if success else 1)
+
+
+def run_cicd(args):
+    """Generates CI/CD configuration files."""
+    from shared.cicd import CICDGenerator
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Generating CI/CD configuration for: {project_dir} ---")
+
+    generator = CICDGenerator(project_dir)
+    project_type = generator.detect_project_type()
+
+    if project_type == "unknown":
+        print("❌ Error: Could not detect project type (Python, Node, Go).")
+        sys.exit(1)
+
+    print(f"Detected project type: {project_type}")
+    print(f"Target platform: {args.platform}")
+
+    generated_files = generator.generate(args.platform)
+
+    if args.dry_run:
+        print("\n[Dry Run] The following files would be generated:\n")
+        for filename, content in generated_files.items():
+            print(f"--- {filename} ---")
+            print(content)
+            print("-" * 20 + "\n")
+        sys.exit(0)
+
+    for filename, content in generated_files.items():
+        file_path = project_dir / filename
+        if file_path.exists() and not args.force:
+            print(f"⚠️  Skipping {filename} (already exists). Use --force to overwrite.")
+            continue
+
+        try:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(content)
+            print(f"✅ Generated {filename}")
+        except IOError as e:
+            print(f"❌ Error writing {filename}: {e}", file=sys.stderr)
+
+    sys.exit(0)
 
 
 def run_dockerize(args):
@@ -10011,6 +10082,10 @@ async def main():
 
     if args.command == "dockerize":
         run_dockerize(args)
+        return
+
+    if args.command == "cicd":
+        run_cicd(args)
         return
 
     if args.command == "verify":

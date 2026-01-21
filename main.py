@@ -7812,6 +7812,28 @@ def parse_args(argv=None):
         help="The project directory to set up (default: current directory).",
     )
 
+    # --- New 'scaffold' command ---
+    parser_scaffold = subparsers.add_parser(
+        "scaffold",
+        help="Scaffold a new project from a template."
+    )
+    scaffold_subparsers = parser_scaffold.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Scaffold 'list'
+    parser_scaffold_list = scaffold_subparsers.add_parser("list", help="List available templates.")
+    parser_scaffold_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Scaffold 'create'
+    parser_scaffold_create = scaffold_subparsers.add_parser("create", help="Create a project from a template.")
+    parser_scaffold_create.add_argument("template", help="Template name (run 'list' to see available options).")
+    parser_scaffold_create.add_argument("name", nargs="?", help="Project name (creates a subdirectory).")
+    parser_scaffold_create.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Base directory.")
+    parser_scaffold_create.add_argument("-f", "--force", action="store_true", help="Overwrite existing files.")
+
     # --- New 'dockerize' command ---
     parser_dockerize = subparsers.add_parser(
         "dockerize",
@@ -9060,6 +9082,29 @@ def run_setup(args):
     except Exception as e:
         print(f"❌ An unexpected error occurred during setup: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def run_scaffold(args):
+    """Scaffolds a new project from a template."""
+    from shared.scaffold import ScaffoldManager
+
+    project_dir = args.project_dir.resolve()
+    # If name is provided, append it to project_dir
+    if args.name:
+        project_dir = project_dir / args.name
+
+    manager = ScaffoldManager(project_dir)
+
+    if args.action == "list":
+        templates = manager.list_templates()
+        print("--- Available Templates ---")
+        for name, desc in templates.items():
+            print(f"  {name:<15} : {desc}")
+        sys.exit(0)
+
+    elif args.action == "create":
+        success = manager.scaffold(args.template, force=args.force)
+        sys.exit(0 if success else 1)
 
 
 def run_interact(args):
@@ -10659,6 +10704,10 @@ async def main():
 
     if args.command == "setup":
         run_setup(args)
+        return
+
+    if args.command == "scaffold":
+        run_scaffold(args)
         return
 
     if args.command == "dockerize":

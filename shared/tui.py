@@ -1,6 +1,7 @@
 import sys
 import io
 import contextlib
+import os
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select
@@ -8,11 +9,14 @@ from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.binding import Binding
+from textual import on
 
 from shared.cli_utils import get_latest_log_file, get_workflow_stage
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 from shared.database import init_db
+from shared.github_client import GitHubClient
+from shared.config_loader import load_config_from_file
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -263,6 +267,92 @@ class KnowledgeTab(Container):
             else:
                 self.notify("Content cannot be empty.", severity="warning")
 
+class IssuesTab(Container):
+    """Tab for viewing GitHub Issues."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.issues_cache = []
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]GitHub Issues[/bold]", classes="welcome-text")
+            with Horizontal(classes="stat-box"):
+                yield Button("Refresh", id="btn-issues-refresh", variant="primary")
+                yield Select.from_values(["open", "closed"], id="select-issue-state", value="open")
+                yield Input(placeholder="Filter by title...", id="input-issue-filter")
+
+            yield DataTable(id="issues-table")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#issues-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Number", "Title", "Assignee", "Labels")
+        # Ensure we don't double load if Select triggers on_changed immediately
+        # But Textual 0.73 might behave differently.
+        # Let's rely on on_mount for initial load.
+        self.load_issues()
+
+    def load_issues(self) -> None:
+        table = self.query_one("#issues-table", DataTable)
+        table.clear()
+
+        # Load config to get token
+        file_config = load_config_from_file()
+        github_token = file_config.get("github_token") or os.environ.get("GITHUB_TOKEN")
+        github_host = file_config.get("github_host", "github.com")
+
+        if not github_token:
+            self.notify("GitHub token not found. Please run 'configure'.", severity="error")
+            return
+
+        state_select = self.query_one("#select-issue-state", Select)
+        state = state_select.value or "open"
+
+        client = GitHubClient(token=github_token, host=github_host)
+
+        try:
+            issues = client.get_issues(self.project_dir, state=state)
+            self.issues_cache = issues
+            self._update_table(issues)
+            self.notify(f"Loaded {len(issues)} issues.")
+        except Exception as e:
+            self.notify(f"Error fetching issues: {e}", severity="error")
+
+    def _update_table(self, issues: list) -> None:
+        table = self.query_one("#issues-table", DataTable)
+        table.clear()
+
+        filter_text = self.query_one("#input-issue-filter", Input).value.lower()
+
+        for issue in issues:
+            title = issue['title']
+            if filter_text and filter_text not in title.lower():
+                continue
+
+            number = str(issue['number'])
+
+            assignee = "Unassigned"
+            if issue.get('assignee'):
+                assignee = issue['assignee']['login']
+
+            labels = ", ".join([l['name'] for l in issue.get('labels', [])])
+
+            table.add_row(number, title, assignee, labels)
+
+    @on(Button.Pressed, "#btn-issues-refresh")
+    def refresh_issues(self):
+        self.load_issues()
+
+    @on(Select.Changed, "#select-issue-state")
+    def filter_state(self):
+        self.load_issues()
+
+    @on(Input.Changed, "#input-issue-filter")
+    def filter_issues(self):
+        self._update_table(self.issues_cache)
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -283,6 +373,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
+            with TabPane("Issues", id="tab-issues"):
+                yield IssuesTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):

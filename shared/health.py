@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import json
+import html
+from datetime import datetime
 
 from shared.complexity import analyze_project_complexity
 from shared.verify import run_tests, run_lint
@@ -19,6 +21,7 @@ class HealthCalculator:
         self.score = 0.0
         self.grade = "F"
         self.issues = []
+        self.timestamp = datetime.now()
 
     def run_check(self, check_type: str) -> Dict[str, Any]:
         """Runs a specific check and returns normalized results."""
@@ -190,8 +193,172 @@ class HealthCalculator:
         if self.score == 100:
             print("  - Great job! Keep it up.")
 
-def run_health_check(project_dir: Path):
+    def generate_json_report(self, output_path: Path):
+        """Generates a JSON report."""
+        report = {
+            "project_name": self.project_dir.name,
+            "timestamp": self.timestamp.isoformat(),
+            "grade": self.grade,
+            "score": self.score,
+            "metrics": self.metrics,
+            "issues": self.issues
+        }
+        with open(output_path, 'w') as f:
+            json.dump(report, f, indent=2)
+
+    def generate_html_report(self, output_path: Path):
+        """Generates an HTML report."""
+
+        # Color coding for grade
+        grade_color = "#e74c3c" # Red (F)
+        if self.grade == "A": grade_color = "#2ecc71" # Green
+        elif self.grade == "B": grade_color = "#3498db" # Blue
+        elif self.grade == "C": grade_color = "#f1c40f" # Yellow
+        elif self.grade == "D": grade_color = "#e67e22" # Orange
+
+        project_name = html.escape(self.project_dir.name)
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Health Report - {project_name}</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; background: #f9f9f9; }}
+        .container {{ background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        h1, h2, h3 {{ color: #2c3e50; }}
+        .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }}
+        .grade-badge {{ background: {grade_color}; color: #fff; font-size: 3em; font-weight: bold; width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }}
+        .score-info {{ text-align: right; }}
+        .score-number {{ font-size: 2em; font-weight: bold; color: {grade_color}; }}
+        .section {{ margin-bottom: 30px; }}
+        .metric-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }}
+        .metric-card {{ background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #bdc3c7; }}
+        .metric-card.pass {{ border-left-color: #2ecc71; }}
+        .metric-card.fail {{ border-left-color: #e74c3c; }}
+        .metric-title {{ font-size: 0.9em; text-transform: uppercase; color: #7f8c8d; letter-spacing: 1px; }}
+        .metric-value {{ font-size: 1.5em; font-weight: bold; }}
+        .issues-list {{ background: #fff3cd; color: #856404; padding: 15px; border-radius: 6px; border: 1px solid #ffeeba; }}
+        .issues-list ul {{ margin: 0; padding-left: 20px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+        th, td {{ padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }}
+        th {{ background-color: #f2f2f2; }}
+        .footer {{ text-align: center; font-size: 0.8em; color: #7f8c8d; margin-top: 40px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Project Health Report</h1>
+                <p>Project: <strong>{project_name}</strong></p>
+                <p>Date: {self.timestamp.strftime('%Y-%m-%d %H:%M')}</p>
+            </div>
+            <div class="grade-badge">{self.grade}</div>
+        </div>
+
+        <div class="score-info">
+            Overall Score: <span class="score-number">{self.score:.0f}</span> / 100
+        </div>
+
+        <div class="section">
+            <h2>Breakdown</h2>
+            <div class="metric-grid">
+                <div class="metric-card {'pass' if self.metrics['test_score'] == 30 else 'fail'}">
+                    <div class="metric-title">Tests</div>
+                    <div class="metric-value">{self.metrics['test_score']}/30</div>
+                </div>
+                <div class="metric-card {'pass' if self.metrics['lint_score'] >= 15 else 'fail'}">
+                    <div class="metric-title">Linting</div>
+                    <div class="metric-value">{self.metrics['lint_score']}/20</div>
+                </div>
+                <div class="metric-card {'pass' if self.metrics['complexity_score'] >= 15 else 'fail'}">
+                    <div class="metric-title">Complexity</div>
+                    <div class="metric-value">{self.metrics['complexity_score']}/20</div>
+                </div>
+                <div class="metric-card {'pass' if self.metrics['security_score'] >= 15 else 'fail'}">
+                    <div class="metric-title">Security</div>
+                    <div class="metric-value">{self.metrics['security_score']}/20</div>
+                </div>
+                <div class="metric-card {'pass' if self.metrics['dependency_score'] >= 8 else 'fail'}">
+                    <div class="metric-title">Dependencies</div>
+                    <div class="metric-value">{self.metrics['dependency_score']}/10</div>
+                </div>
+            </div>
+        </div>
+
+        {self._render_issues_section()}
+        {self._render_details_section()}
+
+        <div class="footer">
+            Generated by Autonomous Coding Agent
+        </div>
+    </div>
+</body>
+</html>
+"""
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+    def _render_issues_section(self) -> str:
+        if not self.issues:
+            return """<div class="section"><h2>Key Issues</h2><p>✅ No significant issues found.</p></div>"""
+
+        items = "".join([f"<li>{html.escape(str(issue))}</li>" for issue in self.issues])
+        return f"""
+        <div class="section">
+            <h2>Key Issues</h2>
+            <div class="issues-list">
+                <ul>{items}</ul>
+            </div>
+        </div>
+        """
+
+    def _render_details_section(self) -> str:
+        # Construct detailed tables if data is available
+        details = ""
+
+        # Security Findings
+        findings = self.metrics.get("security_data", {}).get("findings", [])
+        if findings:
+            rows = ""
+            for f in findings:
+                ftype = html.escape(str(f.get('type', '')))
+                sev = html.escape(str(f.get('severity', '')))
+                desc = html.escape(str(f.get('description', '')))
+                file = html.escape(str(f.get('file', '')))
+                line = html.escape(str(f.get('line', '')))
+                rows += f"<tr><td>{ftype}</td><td>{sev}</td><td>{desc}</td><td>{file}:{line}</td></tr>"
+
+            details += f"""
+            <h3>Security Findings</h3>
+            <table>
+                <thead><tr><th>Type</th><th>Severity</th><th>Description</th><th>Location</th></tr></thead>
+                <tbody>{rows}</tbody>
+            </table>
+            """
+
+        return f"<div class=\"section\"><h2>Details</h2>{details if details else '<p>No detailed findings available.</p>'}</div>"
+
+
+def run_health_check(project_dir: Path, output_format: str = "text", output_file: str = None):
     """Entry point for the health command."""
     calc = HealthCalculator(project_dir)
     calc.calculate()
-    calc.print_report()
+
+    if output_format == "html":
+        out_path = Path(output_file) if output_file else project_dir / "health_report.html"
+        calc.generate_html_report(out_path)
+        print(f"\n✅ HTML Report generated: {out_path}")
+    elif output_format == "json":
+        out_path = Path(output_file) if output_file else project_dir / "health_report.json"
+        calc.generate_json_report(out_path)
+        print(f"\n✅ JSON Report generated: {out_path}")
+    else:
+        calc.print_report()
+        if output_file:
+            # If user specifically asked for text output to a file
+            # We redirect stdout or just write it. For now, let's keep it simple and just print to stdout
+            # as print_report does. If they want file, they can pipe it or use json/html.
+            print(f"Note: Text output is printed to console. Use --format html or json for file output.")

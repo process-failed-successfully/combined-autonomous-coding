@@ -7638,6 +7638,42 @@ def parse_args(argv=None):
     parser_env_generate.add_argument("-l", "--length", type=int, default=32, help="Length of the secret (default: 32).")
     parser_env_generate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'secrets' command ---
+    parser_secrets = subparsers.add_parser(
+        "secrets",
+        help="Securely manage encrypted secrets and files."
+    )
+    secrets_subparsers = parser_secrets.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Secrets 'encrypt'
+    parser_sec_enc = secrets_subparsers.add_parser("encrypt", help="Encrypt a file.")
+    parser_sec_enc.add_argument("file", type=Path, help="File to encrypt.")
+    parser_sec_enc.add_argument("-o", "--output", type=Path, help="Output file path.")
+    parser_sec_enc.add_argument("-p", "--password", help="Encryption password (or prompt).")
+    parser_sec_enc.add_argument("--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'decrypt'
+    parser_sec_dec = secrets_subparsers.add_parser("decrypt", help="Decrypt a file.")
+    parser_sec_dec.add_argument("file", type=Path, help="File to decrypt.")
+    parser_sec_dec.add_argument("-o", "--output", type=Path, help="Output file path.")
+    parser_sec_dec.add_argument("-p", "--password", help="Decryption password (or prompt).")
+    parser_sec_dec.add_argument("--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'rotate'
+    parser_sec_rot = secrets_subparsers.add_parser("rotate", help="Rotate a secret key in a file.")
+    parser_sec_rot.add_argument("file", type=Path, help="File containing the secret (e.g. .env).")
+    parser_sec_rot.add_argument("key", help="The key to rotate.")
+    parser_sec_rot.add_argument("-l", "--length", type=int, default=32, help="Length of new secret.")
+    parser_sec_rot.add_argument("--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'audit'
+    parser_sec_aud = secrets_subparsers.add_parser("audit", help="Scan project for exposed secrets.")
+    parser_sec_aud.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'setup' command ---
     parser_setup = subparsers.add_parser(
         "setup",
@@ -10415,6 +10451,19 @@ async def main():
 
     if args.command == "env":
         run_env(args)
+        return
+
+    if args.command == "secrets":
+        from shared.secrets import SecretsManager
+        manager = SecretsManager(args.project_dir)
+        if args.action == "encrypt":
+            manager.encrypt_file(args.file, args.output, args.password)
+        elif args.action == "decrypt":
+            manager.decrypt_file(args.file, args.output, args.password)
+        elif args.action == "rotate":
+            manager.rotate_secret(args.file, args.key, args.length)
+        elif args.action == "audit":
+            manager.audit_secrets()
         return
 
     if args.command == "setup":

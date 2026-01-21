@@ -19,3 +19,4 @@ watchdog
 watchdog
 jaraco.context>=6.1.0
 textual
+cryptography==46.0.3

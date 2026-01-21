@@ -55,3 +55,8 @@ def test_format_sql_escaping():
     data = [{"name": "O'Reilly"}]
     output = format_sql(data, "users")
     assert "INSERT INTO users (name) VALUES ('O''Reilly');" in output
+
+def test_format_sql_invalid_table_name():
+    data = [{"id": 1}]
+    with pytest.raises(ValueError):
+        format_sql(data, "drop table users;")

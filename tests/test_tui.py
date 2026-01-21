@@ -8,8 +8,9 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
+from textual.widgets import Label, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select  # noqa: E402
+from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab  # noqa: E402
+
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -38,7 +39,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
     async def test_app_startup(self):
         """Test that the app starts up and has the expected title and tabs."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             # Check if TabbedContent exists
             self.assertIsInstance(app.query_one(TabbedContent), TabbedContent)
             # Check if tabs are present by ID
@@ -52,7 +53,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
     async def test_dashboard_content(self):
         """Test that the dashboard tab displays project info."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             # Switch to dashboard is default
             dashboard = app.query_one(DashboardTab)
             self.assertIsNotNone(dashboard)
@@ -60,7 +61,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check for labels
             labels = dashboard.query(Label)
             # We look for partial matches as content might vary
-            self.assertTrue(any("Project:" in str(l.render()) for l in labels))
+            self.assertTrue(any("Project:" in str(label.render()) for label in labels))
 
             # Check for buttons
             self.assertTrue(dashboard.query_one("#btn-test"))
@@ -162,11 +163,11 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_select = MagicMock(spec=Select)
         mock_select.value = "gemini"
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#chat-history": mock_log,
             "#chat-input": mock_input,
             "#agent-select": mock_select
-        }.get(selector))
+        }.get(selector)))
 
         mock_event = MagicMock()
         mock_event.value = "Hello agent"
@@ -194,7 +195,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         tab = KnowledgeTab(self.project_dir)
 
         mock_table = MagicMock(spec=DataTable)
-        tab.query_one = MagicMock(return_value=mock_table)
+        setattr(tab, 'query_one', MagicMock(return_value=mock_table))
 
         tab.on_mount()
 
@@ -216,6 +217,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         MockAgentTUI.assert_called_with(project_dir=self.project_dir)
         MockAgentTUI.return_value.run.assert_called_once()
         mock_exit.assert_called_with(0)
+
 
 if __name__ == "__main__":
     unittest.main()

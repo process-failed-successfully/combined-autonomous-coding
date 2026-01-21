@@ -56,10 +56,10 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         mock_status = MagicMock(spec=Label)
 
         # We mock query_one to return our mocks
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#deps-table": mock_table,
             "#deps-status": mock_status
-        }.get(selector))
+        }.get(selector)))
 
         # Test on_mount (load_deps)
         tab.on_mount()
@@ -83,10 +83,10 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         # Mock UI
         mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#deps-table": mock_table,
             "#deps-status": mock_status
-        }.get(selector))
+        }.get(selector)))
 
         # Mock analyzer
         self.mock_analyzer.scan.return_value = {

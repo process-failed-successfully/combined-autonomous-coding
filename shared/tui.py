@@ -5,6 +5,7 @@ import os
 import shlex
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -35,7 +36,7 @@ from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 
 
 # Helper to get Git info safely
-def get_git_info(project_dir: Path) -> dict:
+def get_git_info(project_dir: Path) -> dict[str, Any]:
     import shutil
     import subprocess
     git_path = shutil.which("git")
@@ -204,7 +205,7 @@ class InteractTab(Container):
 
         # Get selected agent
         agent_select = self.query_one("#agent-select", Select)
-        agent_type = agent_select.value or "gemini"
+        agent_type = cast(str, agent_select.value or "gemini")
 
         chat_log.write(f"[italic]Agent ({agent_type}) is thinking...[/italic]")
 
@@ -295,7 +296,7 @@ class IssuesTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.issues_cache = []
+        self.issues_cache: list[dict[str, Any]] = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -342,7 +343,7 @@ class IssuesTab(Container):
         except Exception as e:
             self.notify(f"Error fetching issues: {e}", severity="error")
 
-    def _update_table(self, issues: list) -> None:
+    def _update_table(self, issues: list[Any]) -> None:
         table = self.query_one("#issues-table", DataTable)
         table.clear()
 
@@ -383,7 +384,7 @@ class ProfileTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = OptimizationManager(project_dir)
-        self.stats_file = None
+        self.stats_file: Path | None = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -464,7 +465,7 @@ class ProfileTab(Container):
             return
 
         agent_select = self.query_one("#profile-agent-select", Select)
-        agent_type = agent_select.value or "gemini"
+        agent_type = cast(str, agent_select.value or "gemini")
 
         self.notify(f"Asking {agent_type} for optimization tips...")
         ai_output = self.query_one("#profile-ai-output", Markdown)
@@ -592,7 +593,7 @@ class DependenciesTab(Container):
             self.query_one("#deps-status", Label).update("Error checking updates.")
 
 
-class AgentTUI(App):
+class AgentTUI(App[None]):
     """Mission Control TUI."""
 
     CSS_PATH = "tui.css"

@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 import sys
 import shutil
 import tempfile
@@ -8,8 +8,10 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import DataTable, Input, Select, Button
-from shared.tui import AgentTUI, IssuesTab
+from typing import cast
+from textual.widgets import DataTable, Input, Select, Button, TabbedContent  # noqa: E402
+from shared.tui import AgentTUI, IssuesTab  # noqa: E402
+
 
 class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -51,7 +53,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#tab-issues"))
 
             # Switch to issues tab
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             issues_tab = app.query_one(IssuesTab)
@@ -73,7 +75,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             issues_tab = app.query_one(IssuesTab)
@@ -90,7 +92,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             # Record current call count
@@ -113,7 +115,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             issues_tab = app.query_one(IssuesTab)
@@ -135,18 +137,18 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
             # If it failed before, it's likely due to timing or key presses not registering
             # Let's inspect what happened
             if table.row_count == 2:
-                 # Try explicit value setting if press fails in this env
-                 input_widget.value = "Alp"
-                 # Trigger handler manually? No, value change should trigger it if watched?
-                 # Or post message
-                 from textual.message import Message
-                 # Actually, setting value programmatically doesn't always trigger Changed message in all widgets/versions
-                 # But let's try assuming the first attempt failed.
+                # Try explicit value setting if press fails in this env
+                input_widget.value = "Alp"
+                # Trigger handler manually? No, value change should trigger it if watched?
+                # Or post message
+                # Actually, setting value programmatically doesn't always trigger Changed message in all widgets/versions
+                # But let's try assuming the first attempt failed.
 
-                 # Re-verify
-                 await pilot.pause()
+                # Re-verify
+                await pilot.pause()
 
             self.assertLess(table.row_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

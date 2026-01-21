@@ -7935,6 +7935,41 @@ def parse_args(argv=None):
         help="Output file path (optional)."
     )
 
+    # --- New 'check-links' command ---
+    parser_check_links = subparsers.add_parser(
+        "check-links",
+        help="Scan project files for broken HTTP/HTTPS links."
+    )
+    parser_check_links.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_check_links.add_argument(
+        "--files",
+        type=str,
+        default="**/*.md",
+        help="Glob pattern for files to scan (default: **/*.md)."
+    )
+    parser_check_links.add_argument(
+        "--ignore",
+        type=str,
+        help="Comma-separated list of URL patterns to ignore."
+    )
+    parser_check_links.add_argument(
+        "--timeout",
+        type=int,
+        default=5,
+        help="Request timeout in seconds (default: 5)."
+    )
+    parser_check_links.add_argument(
+        "--concurrency",
+        type=int,
+        default=10,
+        help="Number of concurrent requests (default: 10)."
+    )
+
     # --- New 'security' command ---
     parser_security = subparsers.add_parser(
         "security",
@@ -10726,6 +10761,17 @@ async def main():
     if args.command == "health":
         run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
         return
+
+    if args.command == "check-links":
+        from shared.link_checker import run_check_links
+        success = run_check_links(
+            project_dir=args.project_dir,
+            files_pattern=args.files,
+            ignore=args.ignore,
+            timeout=args.timeout,
+            concurrency=args.concurrency
+        )
+        sys.exit(0 if success else 1)
 
     if args.command == "security":
         run_security(args)

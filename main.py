@@ -8015,6 +8015,37 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'mock' command ---
+    parser_mock = subparsers.add_parser(
+        "mock",
+        help="Generate mock data based on a JSON schema."
+    )
+    parser_mock.add_argument(
+        "schema",
+        help="Path to the JSON schema file."
+    )
+    parser_mock.add_argument(
+        "--count",
+        type=int,
+        default=1,
+        help="Number of records to generate (default: 1)."
+    )
+    parser_mock.add_argument(
+        "--format",
+        choices=["json", "csv", "sql"],
+        default="json",
+        help="Output format (default: json)."
+    )
+    parser_mock.add_argument(
+        "--output",
+        help="Output file path (optional)."
+    )
+    parser_mock.add_argument(
+        "--table-name",
+        default="mock_data",
+        help="Table name for SQL export (default: mock_data)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -9200,6 +9231,43 @@ def run_pr(args):
     else:
         print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)
+
+
+def run_mock(args):
+    """Generates mock data based on a JSON schema."""
+    from shared.mock_data import MockDataGenerator
+
+    schema_path = Path(args.schema)
+    if not schema_path.exists():
+        print(f"❌ Error: Schema file '{schema_path}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        with open(schema_path, 'r') as f:
+            schema = json.load(f)
+    except Exception as e:
+        print(f"❌ Error parsing schema file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        generator = MockDataGenerator(schema)
+        data = generator.generate(count=args.count)
+        output_content = generator.export(data, format=args.format, table_name=args.table_name)
+    except Exception as e:
+         print(f"❌ Error generating data: {e}", file=sys.stderr)
+         sys.exit(1)
+
+    if args.output:
+        try:
+            with open(args.output, 'w') as f:
+                f.write(output_content)
+            print(f"✅ Mock data generated to {args.output}")
+        except Exception as e:
+             print(f"❌ Error writing output file: {e}", file=sys.stderr)
+             sys.exit(1)
+    else:
+        print(output_content)
+    sys.exit(0)
 
 
 def run_commit(args):
@@ -10524,6 +10592,10 @@ async def main():
 
     if args.command in ["generate-tests", "gentest"]:
         await run_generate_tests(args)
+        return
+
+    if args.command == "mock":
+        run_mock(args)
         return
 
     # Initialize Agent Client

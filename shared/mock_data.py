@@ -4,8 +4,9 @@ import csv
 import io
 import datetime
 import uuid
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any
 from pathlib import Path
+
 
 class MockDataGenerator:
     """Generates mock data based on a JSON specification."""
@@ -127,22 +128,24 @@ class MockDataGenerator:
         if not args or args[0] == "now":
             return datetime.datetime.now().isoformat()
 
-        if "-" in args[0]: # Start-End year? Or full date?
+        if "-" in args[0]:  # Start-End year? Or full date?
             # Supporting YYYY-MM-DD:YYYY-MM-DD
-             parts = args[0].split(":") # Split range by : if possible, else - is confusing with date separator
-             if len(parts) == 2:
-                 try:
-                     start_date = datetime.datetime.strptime(parts[0], "%Y-%m-%d")
-                     end_date = datetime.datetime.strptime(parts[1], "%Y-%m-%d")
-                     delta = end_date - start_date
-                     random_days = random.randrange(delta.days + 1)  # nosec
-                     return (start_date + datetime.timedelta(days=random_days)).date().isoformat()
-                 except ValueError:
-                     pass
+            parts = args[0].split(":")  # Split range by : if possible, else - is confusing with date separator
+            if len(parts) == 2:
+                try:
+                    start_date = datetime.datetime.strptime(parts[0], "%Y-%m-%d")
+                    end_date = datetime.datetime.strptime(parts[1], "%Y-%m-%d")
+                    delta = end_date - start_date
+                    random_days = random.randrange(delta.days + 1)  # nosec
+                    return (start_date + datetime.timedelta(days=random_days)).date().isoformat()
+                except ValueError:
+                    pass
         return datetime.datetime.now().date().isoformat()
+
 
 def format_json(data: List[Dict[str, Any]]) -> str:
     return json.dumps(data, indent=2)
+
 
 def format_csv(data: List[Dict[str, Any]]) -> str:
     if not data:
@@ -152,6 +155,7 @@ def format_csv(data: List[Dict[str, Any]]) -> str:
     writer.writeheader()
     writer.writerows(data)
     return output.getvalue()
+
 
 def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
     if not data:
@@ -178,6 +182,7 @@ def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
         statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")  # nosec
 
     return "\n".join(statements)
+
 
 def run_mock_logic(
     spec_path: Path,

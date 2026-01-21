@@ -658,6 +658,25 @@ def run_configure():
         print(f"\n❌ Error saving configuration: {e}")
 
 
+def run_prune(args):
+    """
+    Identifies and removes unused code and dependencies.
+    """
+    from shared.prune import PruneManager
+
+    project_dir = args.project_dir.resolve()
+    print(f"--- Project Prune (Cleanup) in: {project_dir} ---")
+
+    manager = PruneManager(project_dir)
+
+    types = []
+    if args.types:
+        types = [t.strip() for t in args.types.split(",")]
+
+    manager.prune_interactive(dry_run=args.dry_run, yes=args.yes, types=types)
+    sys.exit(0)
+
+
 def run_clean(args):
     """Moves or removes agent-generated artifacts from the project directory."""
     import shutil
@@ -6450,6 +6469,33 @@ def parse_args(argv=None):
         help="The project directory (default: current directory)."
     )
 
+    # --- New 'prune' command ---
+    parser_prune = subparsers.add_parser(
+        "prune",
+        help="Identify and remove unused code and dependencies."
+    )
+    parser_prune.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_prune.add_argument(
+        "--types",
+        type=str,
+        help="Comma-separated list of types to prune (deps, files). Default: all."
+    )
+    parser_prune.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be removed without making changes."
+    )
+    parser_prune.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt."
+    )
+
     # --- New 'debug' command ---
     parser_debug = subparsers.add_parser(
         "debug",
@@ -9867,6 +9913,11 @@ async def main():
     # Handle `clean` command
     if args.command == "clean":
         run_clean(args)
+        return
+
+    # Handle `prune` command
+    if args.command == "prune":
+        run_prune(args)
         return
 
     # Handle `archive` command

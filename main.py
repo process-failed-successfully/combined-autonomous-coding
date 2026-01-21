@@ -59,6 +59,7 @@ from shared.summarize import run_summarize_logic
 from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
+from shared.polish import run_polish_logic
 import json
 import yaml
 import platformdirs
@@ -7578,6 +7579,46 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'polish' command ---
+    parser_polish = subparsers.add_parser(
+        "polish",
+        help="Proactively find and refactor code quality issues (e.g. complexity)."
+    )
+    parser_polish.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_polish.add_argument(
+        "-t", "--threshold",
+        type=int,
+        default=10,
+        help="Complexity threshold to trigger refactoring (default: 10).",
+    )
+    parser_polish.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=1,
+        help="Maximum number of files to polish in one run (default: 1).",
+    )
+    parser_polish.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_polish.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_polish.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts (auto-confirm refactor plan).",
+    )
+
     # --- New 'resolve' command ---
     parser_resolve = subparsers.add_parser(
         "resolve",
@@ -8112,6 +8153,21 @@ async def run_refactor(args):
     manager.apply_changes(target_file, result["new_content"])
     print(f"\n✅ Successfully updated {target_file.name}")
     sys.exit(0)
+
+
+async def run_polish(args):
+    """Polishes code by proactively refactoring based on metrics."""
+    project_dir = args.project_dir.resolve()
+
+    success = await run_polish_logic(
+        project_dir=project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        threshold=args.threshold,
+        limit=args.limit,
+        yes=args.yes
+    )
+    sys.exit(0 if success else 1)
 
 
 async def run_resolve(args):
@@ -10162,6 +10218,10 @@ async def main():
 
     if args.command == "refactor":
         await run_refactor(args)
+        return
+
+    if args.command == "polish":
+        await run_polish(args)
         return
 
     if args.command == "resolve":

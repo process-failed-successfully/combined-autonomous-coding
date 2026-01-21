@@ -93,6 +93,81 @@ def run_onboard(args):
     run_onboard_logic(args.project_dir)
     sys.exit(0)
 
+def run_secrets(args):
+    """Manages encrypted secrets."""
+    from shared.secrets import SecretsManager
+    project_dir = args.project_dir.resolve()
+    manager = SecretsManager(project_dir)
+
+    try:
+        if args.action == "init":
+            if manager.generate_key(force=args.force):
+                print(f"✅ Generated new encryption key at {manager.key_path}")
+            else:
+                print(f"ℹ️  Key already exists at {manager.key_path}. Use --force to overwrite.")
+
+        elif args.action == "set":
+            if not args.name or not args.value:
+                print("Error: Name and value required.", file=sys.stderr)
+                sys.exit(1)
+            manager.set_secret(args.name, args.value)
+            print(f"✅ Secret '{args.name}' set.")
+
+        elif args.action == "get":
+            val = manager.get_secret(args.name)
+            if val is not None:
+                print(val)
+            else:
+                print(f"❌ Secret '{args.name}' not found.", file=sys.stderr)
+                sys.exit(1)
+
+        elif args.action == "list":
+            secrets = manager.list_secrets()
+            if secrets:
+                print("--- Secrets ---")
+                for s in secrets:
+                    print(f"  - {s}")
+            else:
+                print("No secrets found.")
+
+        elif args.action == "delete":
+            if manager.delete_secret(args.name):
+                print(f"✅ Secret '{args.name}' deleted.")
+            else:
+                print(f"❌ Secret '{args.name}' not found.", file=sys.stderr)
+                sys.exit(1)
+
+        elif args.action == "run":
+            cmd_list = args.command_args
+            if cmd_list and cmd_list[0] == "--":
+                cmd_list = cmd_list[1:]
+
+            if not cmd_list:
+                print("Error: Command required.", file=sys.stderr)
+                sys.exit(1)
+
+            # Decrypt secrets and inject into env
+            env = manager.get_env_with_secrets()
+
+            # Execute command
+            # We use os.execvpe to replace the current process
+            cmd = cmd_list[0]
+            cmd_args = cmd_list
+            try:
+                os.execvpe(cmd, cmd_args, env)
+            except FileNotFoundError:
+                print(f"❌ Command not found: {cmd}", file=sys.stderr)
+                sys.exit(1)
+            except OSError as e:
+                print(f"❌ Error executing command: {e}", file=sys.stderr)
+                sys.exit(1)
+
+    except Exception as e:
+        print(f"❌ Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
 def run_session(args):
     """Manages work sessions."""
     project_dir = args.project_dir.resolve()
@@ -7132,6 +7207,47 @@ def parse_args(argv=None):
     parser_sess_del.add_argument("name", help="Name of the session.")
     parser_sess_del.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'secrets' command ---
+    parser_secrets = subparsers.add_parser(
+        "secrets",
+        help="Manage encrypted secrets (API keys, passwords)."
+    )
+    secrets_subparsers = parser_secrets.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Secrets 'init'
+    parser_sec_init = secrets_subparsers.add_parser("init", help="Generate encryption key.")
+    parser_sec_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_sec_init.add_argument("-f", "--force", action="store_true", help="Overwrite existing key.")
+
+    # Secrets 'set'
+    parser_sec_set = secrets_subparsers.add_parser("set", help="Set a secret.")
+    parser_sec_set.add_argument("name", help="Secret name.")
+    parser_sec_set.add_argument("value", help="Secret value.")
+    parser_sec_set.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'get'
+    parser_sec_get = secrets_subparsers.add_parser("get", help="Get a secret.")
+    parser_sec_get.add_argument("name", help="Secret name.")
+    parser_sec_get.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'list'
+    parser_sec_list = secrets_subparsers.add_parser("list", help="List secret names.")
+    parser_sec_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'delete'
+    parser_sec_del = secrets_subparsers.add_parser("delete", help="Delete a secret.")
+    parser_sec_del.add_argument("name", help="Secret name.")
+    parser_sec_del.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Secrets 'run'
+    parser_sec_run = secrets_subparsers.add_parser("run", help="Run a command with secrets in environment.")
+    parser_sec_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_sec_run.add_argument("command_args", nargs=argparse.REMAINDER, help="The command to run (use -- before command).")
+
     # --- New 'playground' command ---
     parser_playground = subparsers.add_parser(
         "playground",
@@ -10163,6 +10279,11 @@ async def main():
     # Handle `session` command
     if args.command == "session":
         run_session(args)
+        return
+
+    # Handle `secrets` command
+    if args.command == "secrets":
+        run_secrets(args)
         return
 
     # Handle `playground` command

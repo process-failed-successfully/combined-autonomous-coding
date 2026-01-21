@@ -21,6 +21,16 @@ ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 LOG_DIR = os.getenv("LOG_DIR", "./agents/logs")
 
 
+class SafeStreamHandler(logging.StreamHandler):
+    """A StreamHandler that suppresses errors when writing to closed streams."""
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except (ValueError, OSError):
+            # Stream might be closed
+            pass
+
+
 class Telemetry:
     _instance = None
 
@@ -73,9 +83,12 @@ class Telemetry:
         self.logger.addHandler(self.file_handler)
 
         # Console Handler
-        console_handler = logging.StreamHandler()
+        console_handler = SafeStreamHandler()
         console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
+
+        # Prevent propagation to root logger (which might have broken handlers)
+        self.logger.propagate = False
 
         # Initialize Core Metrics
         self._init_metrics()
@@ -403,11 +416,16 @@ class Telemetry:
 
                 if not suppress_logging:
                     # Check for closed streams (common in pytest environment)
-                    for handler in self.logger.handlers:
-                        if isinstance(handler, logging.StreamHandler) and hasattr(handler, "stream"):
-                            if getattr(handler.stream, "closed", False):
-                                suppress_logging = True
-                                break
+                    # Check both local logger and root logger (due to propagation)
+                    loggers_to_check = [self.logger, logging.getLogger()]
+                    for logger in loggers_to_check:
+                        for handler in logger.handlers:
+                            if isinstance(handler, logging.StreamHandler) and hasattr(handler, "stream"):
+                                if getattr(handler.stream, "closed", False):
+                                    suppress_logging = True
+                                    break
+                        if suppress_logging:
+                            break
 
                 if not suppress_logging:
                     try:

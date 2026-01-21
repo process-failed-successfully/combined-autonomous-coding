@@ -84,6 +84,38 @@ class TestTelemetryExtended(unittest.TestCase):
         # Should not raise exception
         self.telemetry._push_metrics()
 
+    @patch("shared.telemetry.push_to_gateway")
+    def test_push_metrics_shutdown_flag(self, mock_push):
+        mock_push.side_effect = Exception("Push failed")
+        self.telemetry._is_shutting_down = True
+
+        with patch.object(self.telemetry.logger, "warning") as mock_warning:
+            self.telemetry._push_metrics_sync()
+            mock_warning.assert_not_called()
+
+    @patch("shared.telemetry.push_to_gateway")
+    def test_push_metrics_closed_stream(self, mock_push):
+        mock_push.side_effect = Exception("Push failed")
+
+        # Mock a handler with a closed stream
+        mock_handler = MagicMock(spec=logging.StreamHandler)
+        mock_handler.stream = MagicMock()
+        mock_handler.stream.closed = True
+
+        with patch.object(self.telemetry.logger, "handlers", [mock_handler]):
+            with patch.object(self.telemetry.logger, "warning") as mock_warning:
+                self.telemetry._push_metrics_sync()
+                mock_warning.assert_not_called()
+
+    @patch("shared.telemetry.push_to_gateway")
+    def test_push_metrics_logging_error(self, mock_push):
+        mock_push.side_effect = Exception("Push failed")
+
+        # Mock logger.warning to raise ValueError
+        with patch.object(self.telemetry.logger, "warning", side_effect=ValueError("Closed file")):
+            # Should not raise exception
+            self.telemetry._push_metrics_sync()
+
     @patch("psutil.Process")
     def test_system_monitoring_loop(self, mock_process):
         mock_p = MagicMock()

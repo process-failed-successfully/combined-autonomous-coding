@@ -4,6 +4,40 @@ import os
 import shutil
 from pathlib import Path
 from typing import List, Set, Dict, Any, Tuple
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import ast
+
+def parse_imports(file_path: Path) -> List[Tuple[str, int]]:
+    """Parses a Python file to extract imported module names and relative levels."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        tree = ast.parse(content, filename=str(file_path))
+    except (SyntaxError, UnicodeDecodeError, OSError):
+        return []
+
+    imports = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                imports.append((alias.name, 0))
+        elif isinstance(node, ast.ImportFrom):
+            level = node.level
+            module = node.module
+            if level == 0:
+                # Absolute import: from os import path
+                if module:
+                    imports.append((module, 0))
+            else:
+                # Relative import
+                if module:
+                    # from .utils import x
+                    imports.append((module, level))
+                else:
+                    # from . import utils
+                    for alias in node.names:
+                        imports.append((alias.name, level))
+    return imports
 
 class ImpactAnalyzer:
     """
@@ -30,50 +64,44 @@ class ImpactAnalyzer:
                     self.files_map[rel_path] = full_path
 
         # 2. Parse imports
+        # Optimization: Use parallel processing for larger codebases
+        if len(self.files_map) >= 50:
+            self._build_graph_parallel()
+        else:
+            self._build_graph_serial()
+
+    def _build_graph_serial(self):
         for rel_path, full_path in self.files_map.items():
-            try:
-                imports = self._get_imports(full_path)
-                for name, level in imports:
-                    # Resolve import to file path
-                    resolved = self._resolve_import(name, level, full_path)
-                    if resolved:
-                        self.dependencies[rel_path].add(resolved)
-                        self.reverse_dependencies[resolved].add(rel_path)
-            except Exception as e:
-                # Ignore parsing errors
-                pass
+            imports = parse_imports(full_path)
+            self._process_imports(rel_path, full_path, imports)
+
+    def _build_graph_parallel(self):
+        with ProcessPoolExecutor() as executor:
+            future_to_path = {
+                executor.submit(parse_imports, full_path): rel_path
+                for rel_path, full_path in self.files_map.items()
+            }
+
+            for future in as_completed(future_to_path):
+                rel_path = future_to_path[future]
+                full_path = self.files_map[rel_path]
+                try:
+                    imports = future.result()
+                    self._process_imports(rel_path, full_path, imports)
+                except Exception:
+                    pass
+
+    def _process_imports(self, rel_path: str, full_path: Path, imports: List[Tuple[str, int]]):
+        for name, level in imports:
+            # Resolve import to file path
+            resolved = self._resolve_import(name, level, full_path)
+            if resolved:
+                self.dependencies[rel_path].add(resolved)
+                self.reverse_dependencies[resolved].add(rel_path)
 
     def _get_imports(self, file_path: Path) -> List[Tuple[str, int]]:
         """Parses a Python file to extract imported module names and relative levels."""
-        import ast
-        with open(file_path, 'r', encoding='utf-8') as f:
-            try:
-                tree = ast.parse(f.read(), filename=str(file_path))
-            except SyntaxError:
-                return []
-
-        imports = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.append((alias.name, 0))
-            elif isinstance(node, ast.ImportFrom):
-                level = node.level
-                module = node.module
-                if level == 0:
-                    # Absolute import: from os import path
-                    if module:
-                        imports.append((module, 0))
-                else:
-                    # Relative import
-                    if module:
-                        # from .utils import x
-                        imports.append((module, level))
-                    else:
-                        # from . import utils
-                        for alias in node.names:
-                            imports.append((alias.name, level))
-        return imports
+        return parse_imports(file_path)
 
     def _resolve_import(self, name: str, level: int, source_file: Path) -> str:
         """

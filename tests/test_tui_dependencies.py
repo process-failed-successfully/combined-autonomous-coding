@@ -1,15 +1,12 @@
-import unittest
-from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
-import sys
 import shutil
 import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-# Ensure shared module is available
-sys.path.append(str(Path(__file__).parent.parent))
-
-from textual.widgets import Label, Button, DataTable
+from textual.widgets import Label, DataTable
 from shared.tui import AgentTUI, DependenciesTab
+
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -29,7 +26,7 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
     async def test_dependencies_tab_structure(self):
         """Test the dependencies tab structure."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             # Check if TabPane exists (it's inside TabbedContent)
             self.assertTrue(app.query_one("#tab-deps"))
             pass
@@ -117,6 +114,7 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(len(add_row_calls) > 0)
         # Check that status is red/outdated
         self.assertIn("Outdated", str(add_row_calls[0][0]))
+
 
 if __name__ == "__main__":
     unittest.main()

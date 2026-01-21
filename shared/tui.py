@@ -1,16 +1,28 @@
-import sys
-import io
+import asyncio
 import contextlib
+import io
 import os
 import shlex
+import sys
 from pathlib import Path
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown
-from textual.containers import Container, Horizontal, VerticalScroll, Vertical
-from textual.reactive import reactive
-from textual.screen import Screen
-from textual.binding import Binding
+
 from textual import on
+from textual.app import App, ComposeResult
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.widgets import (
+    Button,
+    DataTable,
+    DirectoryTree,
+    Footer,
+    Header,
+    Input,
+    Label,
+    Markdown,
+    RichLog,
+    Select,
+    TabbedContent,
+    TabPane,
+)
 
 from shared.cli_utils import get_latest_log_file, get_workflow_stage
 from shared.knowledge import KnowledgeManager
@@ -20,6 +32,7 @@ from shared.database import init_db
 from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
+
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -41,6 +54,7 @@ def get_git_info(project_dir: Path) -> dict:
         except Exception:
             pass
     return info
+
 
 class DashboardTab(Container):
     """The main dashboard tab."""
@@ -101,6 +115,7 @@ class DashboardTab(Container):
         else:
             history_log.write("No history found.")
 
+
 class FileExplorerTab(Container):
     """Tab for browsing files."""
 
@@ -131,6 +146,7 @@ class FileExplorerTab(Container):
         except Exception as e:
             preview.write(f"Error reading file: {e}")
 
+
 class LogsTab(Container):
     """Tab for viewing logs."""
 
@@ -159,6 +175,7 @@ class LogsTab(Container):
         else:
             log_viewer.clear()
             log_viewer.write("No log file found.")
+
 
 class InteractTab(Container):
     """Tab for interacting with the agent (Chat)."""
@@ -210,11 +227,12 @@ class InteractTab(Container):
 
         # Format response
         if success:
-             chat_log.write(f"[bold green]Agent:[/bold green]")
-             chat_log.write(response)
+            chat_log.write("[bold green]Agent:[/bold green]")
+            chat_log.write(response)
         else:
-             chat_log.write(f"[bold red]Agent Error:[/bold red]")
-             chat_log.write(response)
+            chat_log.write("[bold red]Agent Error:[/bold red]")
+            chat_log.write(response)
+
 
 class KnowledgeTab(Container):
     """Tab for managing knowledge."""
@@ -269,6 +287,7 @@ class KnowledgeTab(Container):
                     self.notify(f"Error adding knowledge: {e}", severity="error")
             else:
                 self.notify("Content cannot be empty.", severity="warning")
+
 
 class IssuesTab(Container):
     """Tab for viewing GitHub Issues."""
@@ -340,7 +359,7 @@ class IssuesTab(Container):
             if issue.get('assignee'):
                 assignee = issue['assignee']['login']
 
-            labels = ", ".join([l['name'] for l in issue.get('labels', [])])
+            labels = ", ".join([lbl['name'] for lbl in issue.get('labels', [])])
 
             table.add_row(number, title, assignee, labels)
 
@@ -355,6 +374,7 @@ class IssuesTab(Container):
     @on(Input.Changed, "#input-issue-filter")
     def filter_issues(self):
         self._update_table(self.issues_cache)
+
 
 class ProfileTab(Container):
     """Tab for performance profiling."""
@@ -454,6 +474,7 @@ class ProfileTab(Container):
         ai_output.update(suggestion)
         self.notify("Analysis complete.")
 
+
 class DependenciesTab(Container):
     """Tab for managing dependencies."""
 
@@ -525,8 +546,6 @@ class DependenciesTab(Container):
         self.notify("Checking updates...", severity="information")
 
         # Run potentially blocking check_updates in a thread
-        import asyncio
-
         try:
             # We need to re-scan and then check updates
             def do_check():
@@ -571,6 +590,7 @@ class DependenciesTab(Container):
         except Exception as e:
             self.notify(f"Error checking updates: {e}", severity="error")
             self.query_one("#deps-status", Label).update("Error checking updates.")
+
 
 class AgentTUI(App):
     """Mission Control TUI."""
@@ -627,6 +647,7 @@ class AgentTUI(App):
                 self.notify("Lint started in background.")
             except Exception as e:
                 self.notify(f"Failed to start lint: {e}", severity="error")
+
 
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution

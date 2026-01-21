@@ -7739,6 +7739,17 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory.",
     )
+    parser_health.add_argument(
+        "--format",
+        choices=["text", "html", "json"],
+        default="text",
+        help="Output format (default: text)."
+    )
+    parser_health.add_argument(
+        "-o", "--output",
+        type=str,
+        help="Output file path (optional)."
+    )
 
     # --- New 'security' command ---
     parser_security = subparsers.add_parser(
@@ -10424,7 +10435,7 @@ async def main():
 
     # Handle `health` command
     if args.command == "health":
-        run_health_check(args.project_dir)
+        run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
         return
 
     if args.command == "security":

@@ -94,7 +94,11 @@ class Telemetry:
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
-        self._push_metrics(force=True, sync=True)
+        try:
+            self._push_metrics(force=True, sync=True)
+        except (ValueError, OSError):
+            # Ignore errors related to closed files or network issues during shutdown
+            pass
         self._push_executor.shutdown(wait=True)
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
@@ -395,7 +399,11 @@ class Telemetry:
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                try:
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except (ValueError, OSError):
+                    # Logging system might be closed during shutdown
+                    pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):

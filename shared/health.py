@@ -1,6 +1,5 @@
-import sys
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 import json
 import html
 from datetime import datetime
@@ -67,16 +66,16 @@ class HealthCalculator:
             return {"findings": findings, "high": high_sev, "medium": med_sev}
 
         elif check_type == "dependencies":
-             analyzer = DependencyAnalyzer(self.project_dir)
-             data = analyzer.scan()
-             data = analyzer.check_updates(data)
-             outdated_count = 0
-             for lang, files in data.items():
+            analyzer = DependencyAnalyzer(self.project_dir)
+            data = analyzer.scan()
+            data = analyzer.check_updates(data)
+            outdated_count = 0
+            for lang, files in data.items():
                 for file_info in files:
                     for dep in file_info.get("dependencies", []):
                         if dep.get("outdated"):
                             outdated_count += 1
-             return {"outdated_count": outdated_count}
+            return {"outdated_count": outdated_count}
 
         return {}
 
@@ -94,11 +93,11 @@ class HealthCalculator:
         # 2. Linting (20 points)
         print("Running linter...")
         lint_res = self.run_check("lint")
-        lint_score = 20 if lint_res["passed"] else 10 # Partial credit? Or 0. Let's say 0 if failed.
+        lint_score = 20 if lint_res["passed"] else 10  # Partial credit? Or 0. Let's say 0 if failed.
         if not lint_res["passed"]:
-             # Check if it was a total failure or just warnings
-             lint_score = 0
-             self.issues.append("Linting failed (code style issues).")
+            # Check if it was a total failure or just warnings
+            lint_score = 0
+            self.issues.append("Linting failed (code style issues).")
 
         # 3. Complexity (20 points)
         print("Analyzing complexity...")
@@ -131,20 +130,25 @@ class HealthCalculator:
         dep_res = self.run_check("dependencies")
         dep_score = 10
         if dep_res.get("outdated_count", 0) > 0:
-             penalty = min(10, dep_res["outdated_count"] * 1)
-             dep_score -= penalty
-             self.issues.append(f"Found {dep_res['outdated_count']} outdated dependencies.")
+            penalty = min(10, dep_res["outdated_count"] * 1)
+            dep_score -= penalty
+            self.issues.append(f"Found {dep_res['outdated_count']} outdated dependencies.")
         dep_score = max(0, dep_score)
 
         # Total
         self.score = test_score + lint_score + comp_score + sec_score + dep_score
 
         # Grading
-        if self.score >= 90: self.grade = "A"
-        elif self.score >= 80: self.grade = "B"
-        elif self.score >= 70: self.grade = "C"
-        elif self.score >= 60: self.grade = "D"
-        else: self.grade = "F"
+        if self.score >= 90:
+            self.grade = "A"
+        elif self.score >= 80:
+            self.grade = "B"
+        elif self.score >= 70:
+            self.grade = "C"
+        elif self.score >= 60:
+            self.grade = "D"
+        else:
+            self.grade = "F"
 
         self.metrics = {
             "test_score": test_score,
@@ -159,12 +163,12 @@ class HealthCalculator:
 
     def print_report(self):
         """Prints a nice report."""
-        print("\n" + "="*40)
+        print("\n" + "=" * 40)
         print(f"  PROJECT HEALTH REPORT: {self.grade} ({self.score:.0f}/100)")
-        print("="*40)
+        print("=" * 40)
 
         # Breakdown
-        print(f"\nBreakdown:")
+        print("\nBreakdown:")
         print(f"  Tests:        {self.metrics['test_score']}/30")
         print(f"  Linting:      {self.metrics['lint_score']}/20")
         print(f"  Complexity:   {self.metrics['complexity_score']}/20")
@@ -172,7 +176,7 @@ class HealthCalculator:
         print(f"  Dependencies: {self.metrics['dependency_score']}/10")
 
         if self.issues:
-            print(f"\n⚠️  Key Issues:")
+            print("\n⚠️  Key Issues:")
             for issue in self.issues:
                 print(f"  - {issue}")
         else:
@@ -210,11 +214,15 @@ class HealthCalculator:
         """Generates an HTML report."""
 
         # Color coding for grade
-        grade_color = "#e74c3c" # Red (F)
-        if self.grade == "A": grade_color = "#2ecc71" # Green
-        elif self.grade == "B": grade_color = "#3498db" # Blue
-        elif self.grade == "C": grade_color = "#f1c40f" # Yellow
-        elif self.grade == "D": grade_color = "#e67e22" # Orange
+        grade_color = "#e74c3c"  # Red (F)
+        if self.grade == "A":
+            grade_color = "#2ecc71"  # Green
+        elif self.grade == "B":
+            grade_color = "#3498db"  # Blue
+        elif self.grade == "C":
+            grade_color = "#f1c40f"  # Yellow
+        elif self.grade == "D":
+            grade_color = "#e67e22"  # Orange
 
         project_name = html.escape(self.project_dir.name)
 
@@ -265,25 +273,25 @@ class HealthCalculator:
         <div class="section">
             <h2>Breakdown</h2>
             <div class="metric-grid">
-                <div class="metric-card {'pass' if self.metrics['test_score'] == 30 else 'fail'}">
+                <div class="metric-card {"pass" if self.metrics["test_score"] == 30 else "fail"}">
                     <div class="metric-title">Tests</div>
-                    <div class="metric-value">{self.metrics['test_score']}/30</div>
+                    <div class="metric-value">{self.metrics["test_score"]}/30</div>
                 </div>
-                <div class="metric-card {'pass' if self.metrics['lint_score'] >= 15 else 'fail'}">
+                <div class="metric-card {"pass" if self.metrics["lint_score"] >= 15 else "fail"}">
                     <div class="metric-title">Linting</div>
-                    <div class="metric-value">{self.metrics['lint_score']}/20</div>
+                    <div class="metric-value">{self.metrics["lint_score"]}/20</div>
                 </div>
-                <div class="metric-card {'pass' if self.metrics['complexity_score'] >= 15 else 'fail'}">
+                <div class="metric-card {"pass" if self.metrics["complexity_score"] >= 15 else "fail"}">
                     <div class="metric-title">Complexity</div>
-                    <div class="metric-value">{self.metrics['complexity_score']}/20</div>
+                    <div class="metric-value">{self.metrics["complexity_score"]}/20</div>
                 </div>
-                <div class="metric-card {'pass' if self.metrics['security_score'] >= 15 else 'fail'}">
+                <div class="metric-card {"pass" if self.metrics["security_score"] >= 15 else "fail"}">
                     <div class="metric-title">Security</div>
-                    <div class="metric-value">{self.metrics['security_score']}/20</div>
+                    <div class="metric-value">{self.metrics["security_score"]}/20</div>
                 </div>
-                <div class="metric-card {'pass' if self.metrics['dependency_score'] >= 8 else 'fail'}">
+                <div class="metric-card {"pass" if self.metrics["dependency_score"] >= 8 else "fail"}">
                     <div class="metric-title">Dependencies</div>
-                    <div class="metric-value">{self.metrics['dependency_score']}/10</div>
+                    <div class="metric-value">{self.metrics["dependency_score"]}/10</div>
                 </div>
             </div>
         </div>

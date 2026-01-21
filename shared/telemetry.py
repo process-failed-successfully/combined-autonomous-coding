@@ -6,7 +6,7 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import psutil
-from typing import Dict, Any, Optional, List, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Optional, List, Tuple
 from prometheus_client import (
     CollectorRegistry,
     Gauge,

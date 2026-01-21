@@ -120,24 +120,13 @@ class OptimizationManager:
             logger.warning(f"Error reading source for {filename}: {e}")
             return None
 
-    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: str = None):
-        """Main entry point."""
-        script_full_path = self.project_dir / script_path
-        if not script_full_path.exists():
-            print(f"❌ Script not found: {script_full_path}")
-            return False
-
-        print(f"--- Optimizing {script_path.name} ---")
-        stats_file = self.run_profile(script_full_path, args)
-        if not stats_file:
-            return False
-
+    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: str = None) -> str:
+        """Analyzes profiling stats using AI and returns the suggestion text."""
         print("\nAnalyzing profiling data...")
         top_funcs = self.analyze_stats(stats_file)
 
         if not top_funcs:
-            print("No significant functions found to optimize.")
-            return True
+            return "No significant functions found to optimize."
 
         # Prepare Prompt Data
         stats_summary = "Top Functions (by tottime):\n"
@@ -186,15 +175,28 @@ class OptimizationManager:
 
         agent_class = agent_map.get(agent_type)
         if not agent_class:
-            print(f"❌ Unknown agent type: {agent_type}")
-            return False
+            return f"❌ Unknown agent type: {agent_type}"
 
         agent = agent_class(config)
 
         try:
             status, response, actions = await agent.run_agent_session(full_prompt)
-            print("\n" + response)
-            return True
+            return response
         except Exception as e:
-            print(f"❌ Error querying agent: {e}")
+            return f"❌ Error querying agent: {e}"
+
+    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: str = None):
+        """Main entry point."""
+        script_full_path = self.project_dir / script_path
+        if not script_full_path.exists():
+            print(f"❌ Script not found: {script_full_path}")
             return False
+
+        print(f"--- Optimizing {script_path.name} ---")
+        stats_file = self.run_profile(script_full_path, args)
+        if not stats_file:
+            return False
+
+        response = await self.get_ai_suggestions(stats_file, agent_type, model)
+        print("\n" + response)
+        return True

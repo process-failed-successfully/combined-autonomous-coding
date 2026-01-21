@@ -2,9 +2,10 @@ import sys
 import io
 import contextlib
 import os
+import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -14,6 +15,7 @@ from textual import on
 from shared.cli_utils import get_latest_log_file, get_workflow_stage
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
+from shared.optimize import OptimizationManager
 from shared.database import init_db
 from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
@@ -353,6 +355,104 @@ class IssuesTab(Container):
     def filter_issues(self):
         self._update_table(self.issues_cache)
 
+class ProfileTab(Container):
+    """Tab for performance profiling."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = OptimizationManager(project_dir)
+        self.stats_file = None
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Performance Profiler[/bold]", classes="welcome-text")
+
+            with Horizontal(classes="stat-box"):
+                yield Label("Script:", classes="label")
+                yield Input(placeholder="path/to/script.py", id="profile-script-input")
+                yield Label("Args:", classes="label")
+                yield Input(placeholder="--arg val", id="profile-args-input")
+                yield Button("Run Profile", id="btn-run-profile", variant="primary")
+
+            yield DataTable(id="profile-table")
+
+            with Horizontal(classes="stat-box"):
+                yield Button("Analyze with AI", id="btn-analyze-profile", variant="warning", disabled=True)
+                yield Select.from_values(["gemini", "cursor", "local"], id="profile-agent-select", value="gemini")
+
+            with VerticalScroll(id="profile-output-container"):
+                yield Markdown(id="profile-ai-output")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#profile-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Function", "File:Line", "Calls", "Total Time", "Cum Time")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-run-profile":
+            await self.run_profiler()
+        elif event.button.id == "btn-analyze-profile":
+            await self.analyze_profile()
+
+    async def run_profiler(self):
+        script_val = self.query_one("#profile-script-input", Input).value
+        args_val = self.query_one("#profile-args-input", Input).value
+
+        if not script_val:
+            self.notify("Please enter a script path.", severity="error")
+            return
+
+        script_path = self.project_dir / script_val
+        if not script_path.exists():
+            self.notify(f"Script not found: {script_val}", severity="error")
+            return
+
+        args = shlex.split(args_val) if args_val else []
+
+        self.notify("Running profiler...", severity="information")
+        self.stats_file = self.manager.run_profile(script_path, args)
+
+        if self.stats_file:
+            self.notify("Profiling complete.")
+            self.load_stats()
+            self.query_one("#btn-analyze-profile").disabled = False
+        else:
+            self.notify("Profiling failed.", severity="error")
+
+    def load_stats(self):
+        table = self.query_one("#profile-table", DataTable)
+        table.clear()
+        if not self.stats_file:
+            return
+
+        stats = self.manager.analyze_stats(self.stats_file, limit=20)
+
+        for func in stats:
+            location = f"{Path(func['filename']).name}:{func['line']}"
+            table.add_row(
+                func['name'],
+                location,
+                str(func['ncalls']),
+                f"{func['tottime']:.4f}s",
+                f"{func['cumtime']:.4f}s"
+            )
+
+    async def analyze_profile(self):
+        if not self.stats_file:
+            return
+
+        agent_select = self.query_one("#profile-agent-select", Select)
+        agent_type = agent_select.value or "gemini"
+
+        self.notify(f"Asking {agent_type} for optimization tips...")
+        ai_output = self.query_one("#profile-ai-output", Markdown)
+        ai_output.update("Thinking...")
+
+        suggestion = await self.manager.get_ai_suggestions(self.stats_file, agent_type=agent_type)
+        ai_output.update(suggestion)
+        self.notify("Analysis complete.")
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -379,6 +479,8 @@ class AgentTUI(App):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):
                 yield FileExplorerTab(self.project_dir)
+            with TabPane("Profiler", id="tab-profile"):
+                yield ProfileTab(self.project_dir)
             with TabPane("Logs", id="tab-logs"):
                 yield LogsTab()
         yield Footer()

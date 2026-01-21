@@ -19,6 +19,7 @@ from agents.cursor import CursorAgent
 from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 from agents.shared.prompts import get_cli_prompt
+from shared.work_session import WorkSessionManager
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,20 @@ async def run_do_logic(
     shell_name = os.environ.get("SHELL", "unknown")
     if os_name == "Windows":
         shell_name = os.environ.get("COMSPEC", "cmd.exe")
+
+    # Check for active session context
+    session_manager = WorkSessionManager(project_dir)
+    active_session = session_manager.get_active_session()
+    session_context = ""
+    if active_session:
+        session_context = f"Active Session: {active_session.name}\n"
+        if active_session.files:
+            session_context += f"Relevant Files: {', '.join(active_session.files)}\n"
+        if active_session.notes:
+            session_context += f"Session Notes: {'; '.join(active_session.notes)}\n"
+
+        # Append session context to instruction
+        instruction = f"{instruction}\n\nContext:\n{session_context}"
 
     # Construct Prompt
     base_prompt = get_cli_prompt()

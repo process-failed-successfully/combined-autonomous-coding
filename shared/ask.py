@@ -17,6 +17,7 @@ from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 from agents.shared.prompts import get_ask_prompt
 from shared.utils import get_file_tree
+from shared.work_session import WorkSessionManager
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,20 @@ async def run_ask_logic(
 
     # Prepare Context
     context_files_content = ""
+    active_session_info = ""
+
+    # Check for active session if no files provided
+    if not files:
+        session_manager = WorkSessionManager(project_dir)
+        active_session = session_manager.get_active_session()
+        if active_session:
+            files = active_session.files
+            active_session_info = f"Active Session: {active_session.name}\n"
+            if active_session.description:
+                active_session_info += f"Description: {active_session.description}\n"
+            if active_session.notes:
+                active_session_info += "Session Notes:\n" + "\n".join(active_session.notes) + "\n"
+
     if files:
         for file_path_str in files:
             file_path = project_dir / file_path_str
@@ -92,6 +107,9 @@ async def run_ask_logic(
 
     # Append Context
     full_prompt = f"{formatted_prompt}\n\n### PROJECT CONTEXT\n\nFile Tree:\n{file_tree}\n"
+
+    if active_session_info:
+        full_prompt += f"\n{active_session_info}\n"
 
     if context_files_content:
         full_prompt += f"\nSelected Files Content:\n{context_files_content}"

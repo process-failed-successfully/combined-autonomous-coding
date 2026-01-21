@@ -8015,6 +8015,40 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'mock' command ---
+    parser_mock = subparsers.add_parser(
+        "mock",
+        help="Generate realistic mock data from a JSON spec."
+    )
+    parser_mock.add_argument(
+        "--spec",
+        type=Path,
+        required=True,
+        help="Path to the JSON specification file."
+    )
+    parser_mock.add_argument(
+        "--count",
+        type=int,
+        default=10,
+        help="Number of records to generate (default: 10)."
+    )
+    parser_mock.add_argument(
+        "--format",
+        choices=["json", "csv", "sql"],
+        default="json",
+        help="Output format (default: json)."
+    )
+    parser_mock.add_argument(
+        "--output",
+        type=Path,
+        help="Output file path."
+    )
+    parser_mock.add_argument(
+        "--table",
+        default="table",
+        help="Table name for SQL output."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -10525,6 +10559,18 @@ async def main():
     if args.command in ["generate-tests", "gentest"]:
         await run_generate_tests(args)
         return
+
+    # Handle `mock` command
+    if args.command == "mock":
+        from shared.mock_data import run_mock_logic
+        success = run_mock_logic(
+            spec_path=args.spec,
+            count=args.count,
+            output_format=args.format,
+            output_file=args.output,
+            table_name=args.table
+        )
+        sys.exit(0 if success else 1)
 
     # Initialize Agent Client
     from shared.agent_client import AgentClient

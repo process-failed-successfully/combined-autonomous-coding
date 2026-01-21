@@ -14,7 +14,7 @@ class TestImpactAnalyzer(unittest.TestCase):
             "main.py": self.project_dir / "main.py"
         }
 
-        resolved = self.analyzer._resolve_import("shared.utils", self.project_dir / "main.py")
+        resolved = self.analyzer._resolve_import("shared.utils", 0, self.project_dir / "main.py")
         self.assertEqual(resolved, "shared/utils.py")
 
     def test_resolve_import_init(self):
@@ -23,7 +23,7 @@ class TestImpactAnalyzer(unittest.TestCase):
             "main.py": self.project_dir / "main.py"
         }
 
-        resolved = self.analyzer._resolve_import("shared", self.project_dir / "main.py")
+        resolved = self.analyzer._resolve_import("shared", 0, self.project_dir / "main.py")
         self.assertEqual(resolved, "shared/__init__.py")
 
     def test_find_impacted_files(self):

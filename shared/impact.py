@@ -33,9 +33,9 @@ class ImpactAnalyzer:
         for rel_path, full_path in self.files_map.items():
             try:
                 imports = self._get_imports(full_path)
-                for imp in imports:
+                for name, level in imports:
                     # Resolve import to file path
-                    resolved = self._resolve_import(imp, full_path)
+                    resolved = self._resolve_import(name, level, full_path)
                     if resolved:
                         self.dependencies[rel_path].add(resolved)
                         self.reverse_dependencies[resolved].add(rel_path)
@@ -43,8 +43,8 @@ class ImpactAnalyzer:
                 # Ignore parsing errors
                 pass
 
-    def _get_imports(self, file_path: Path) -> List[str]:
-        """Parses a Python file to extract imported module names."""
+    def _get_imports(self, file_path: Path) -> List[Tuple[str, int]]:
+        """Parses a Python file to extract imported module names and relative levels."""
         import ast
         with open(file_path, 'r', encoding='utf-8') as f:
             try:
@@ -56,20 +56,36 @@ class ImpactAnalyzer:
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    imports.append(alias.name)
+                    imports.append((alias.name, 0))
             elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.append(node.module)
+                level = node.level
+                module = node.module
+                if level == 0:
+                    # Absolute import: from os import path
+                    if module:
+                        imports.append((module, 0))
                 else:
-                    # Relative import (from . import x) - handled later but requires context
-                    pass
+                    # Relative import
+                    if module:
+                        # from .utils import x
+                        imports.append((module, level))
+                    else:
+                        # from . import utils
+                        for alias in node.names:
+                            imports.append((alias.name, level))
         return imports
 
-    def _resolve_import(self, module_name: str, source_file: Path) -> str:
+    def _resolve_import(self, name: str, level: int, source_file: Path) -> str:
         """
-        Resolves a module name (e.g. 'shared.utils') to a relative file path (e.g. 'shared/utils.py').
-        Very basic resolution strategy.
+        Resolves a module name to a relative file path.
+        Handles both absolute (level=0) and relative (level>0) imports.
         """
+        if level == 0:
+            return self._resolve_absolute_import(name)
+        else:
+            return self._resolve_relative_import(name, level, source_file)
+
+    def _resolve_absolute_import(self, module_name: str) -> str:
         parts = module_name.split('.')
 
         # Try as file
@@ -81,6 +97,39 @@ class ImpactAnalyzer:
         possible_path_init = Path(*parts) / '__init__.py'
         if str(possible_path_init) in self.files_map:
             return str(possible_path_init)
+
+        return None
+
+    def _resolve_relative_import(self, name: str, level: int, source_file: Path) -> str:
+        # source_file is absolute path
+        current_dir = source_file.parent
+        for _ in range(level - 1):
+            current_dir = current_dir.parent
+            # Safety check to avoid going above project root?
+            # ImpactAnalyzer assumes self.project_dir is root.
+            # But checking if we go outside might be safer.
+            if not str(current_dir).startswith(str(self.project_dir)):
+                 return None
+
+        parts = name.split('.')
+
+        # Candidate 1: current_dir/name.py
+        candidate_file = current_dir.joinpath(*parts).with_suffix('.py')
+        try:
+            rel = candidate_file.relative_to(self.project_dir)
+            if str(rel) in self.files_map:
+                return str(rel)
+        except ValueError:
+            pass
+
+        # Candidate 2: current_dir/name/__init__.py
+        candidate_init = current_dir.joinpath(*parts) / '__init__.py'
+        try:
+            rel = candidate_init.relative_to(self.project_dir)
+            if str(rel) in self.files_map:
+                return str(rel)
+        except ValueError:
+            pass
 
         return None
 

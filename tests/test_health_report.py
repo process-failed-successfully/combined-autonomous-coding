@@ -1,11 +1,13 @@
 import pytest
 from unittest.mock import patch
 import json
+from pathlib import Path
+from typing import Any
 from shared.health import run_health_check
 
 
 @pytest.fixture
-def mock_dependencies():
+def mock_dependencies() -> Any:
     with patch("shared.health.run_tests") as mock_tests, \
          patch("shared.health.run_lint") as mock_lint, \
          patch("shared.health.analyze_project_complexity") as mock_complexity, \
@@ -27,7 +29,7 @@ def mock_dependencies():
         yield
 
 
-def test_health_report_html_generation(tmp_path, mock_dependencies):
+def test_health_report_html_generation(tmp_path: Path, mock_dependencies: Any) -> None:
     output_file = tmp_path / "report.html"
 
     # Run health check
@@ -40,7 +42,7 @@ def test_health_report_html_generation(tmp_path, mock_dependencies):
     assert "Overall Score" in content
 
 
-def test_health_report_json_generation(tmp_path, mock_dependencies):
+def test_health_report_json_generation(tmp_path: Path, mock_dependencies: Any) -> None:
     output_file = tmp_path / "report.json"
 
     # Run health check
@@ -56,7 +58,7 @@ def test_health_report_json_generation(tmp_path, mock_dependencies):
     assert "timestamp" in data
 
 
-def test_health_report_default_path(tmp_path, mock_dependencies):
+def test_health_report_default_path(tmp_path: Path, mock_dependencies: Any) -> None:
     # Run health check without explicit output file
     run_health_check(tmp_path, output_format="html")
 

@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> subprocess.CompletedProcess:
+def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> subprocess.CompletedProcess[str]:
     """Runs a shell command and returns the result."""
     try:
         return subprocess.run(
@@ -32,6 +32,7 @@ def check_dependencies() -> List[str]:
             missing.append(tool)
     return missing
 
+
 def run_formatter(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs a code formatter (black or autopep8)."""
     if shutil.which("black"):
@@ -57,6 +58,7 @@ def run_formatter(project_dir: Path, output_format: str = "text") -> Dict[str, A
         "stderr": result.stderr
     }
 
+
 def run_lint(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs flake8 linting."""
     print("Running Lint (Flake8)...")
@@ -76,6 +78,7 @@ def run_lint(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
         "stderr": result.stderr
     }
 
+
 def run_type_check(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs mypy type checking."""
     print("Running Type Check (Mypy)...")
@@ -90,6 +93,7 @@ def run_type_check(project_dir: Path, output_format: str = "text") -> Dict[str, 
         "stdout": result.stdout,
         "stderr": result.stderr
     }
+
 
 def run_security_scan(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs bandit security scan."""
@@ -111,13 +115,14 @@ def run_security_scan(project_dir: Path, output_format: str = "text") -> Dict[st
         "stderr": result.stderr
     }
 
+
 def run_tests(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs pytest."""
     print("Running Tests (Pytest)...")
     cmd = ["pytest", "--cov=.", "--cov-report=term-missing", "tests/"]
 
     # Adjust python path to include project dir
-    env = None # Inherit env by default
+    env = None  # Inherit env by default
 
     if shutil.which("pytest"):
         # We can run directly
@@ -157,9 +162,10 @@ def run_tests(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
         "stderr": result.stderr
     }
 
+
 def run_verify_logic(
     project_dir: Path,
-    checks: List[str] = None,
+    checks: Optional[List[str]] = None,
     fix: bool = False,
     output_format: str = "text"
 ) -> bool:
@@ -229,15 +235,15 @@ def run_verify_logic(
 
         print(f"[{status}] {check_name}")
 
-        if not res["success"] or (res["stdout"] and check_name != "TEST"): # Always show output on fail, or if there is output
-             # Indent output
-             print("-" * 20)
-             if res["stdout"].strip():
-                 print(res["stdout"].strip())
-             if res["stderr"].strip():
-                 print(res["stderr"].strip())
-             print("-" * 20)
-             print()
+        if not res["success"] or (res["stdout"] and check_name != "TEST"):  # Always show output on fail, or if there is output
+            # Indent output
+            print("-" * 20)
+            if res["stdout"].strip():
+                print(res["stdout"].strip())
+            if res["stderr"].strip():
+                print(res["stderr"].strip())
+            print("-" * 20)
+            print()
 
     if all_passed:
         print("\n\033[0;32mAll Checks Passed Successfully!\033[0m")

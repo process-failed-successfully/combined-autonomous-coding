@@ -5,7 +5,8 @@ import shutil
 import json
 import math
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
+
 
 class SecurityAuditor:
     """
@@ -46,7 +47,7 @@ class SecurityAuditor:
         """Calculates the Shannon entropy of a string."""
         if not data:
             return 0
-        entropy = 0
+        entropy = 0.0
         for x in range(256):
             p_x = float(data.count(chr(x))) / len(data)
             if p_x > 0:
@@ -104,7 +105,7 @@ class SecurityAuditor:
 
                                     # Entropy check
                                     entropy = self._calculate_entropy(value)
-                                    if entropy < 3.0: # Arbitrary threshold, typical random keys have high entropy
+                                    if entropy < 3.0:  # Arbitrary threshold, typical random keys have high entropy
                                         continue
 
                             masked_match = match_str[:4] + "***" + match_str[-4:] if len(match_str) > 8 else "***"
@@ -121,8 +122,8 @@ class SecurityAuditor:
 
                     # Scan for dangerous patterns
                     for name, pattern in self.DANGEROUS_PATTERNS.items():
-                         matches = re.finditer(pattern, content)
-                         for match in matches:
+                        matches = re.finditer(pattern, content)
+                        for match in matches:
                             start = max(0, match.start() - 30)
                             end = min(len(content), match.end() + 30)
                             snippet = content[start:end].replace('\n', ' ')
@@ -136,7 +137,7 @@ class SecurityAuditor:
                                 "snippet": snippet.strip()
                             })
 
-                except Exception as e:
+                except Exception:
                     # Log error or skip file
                     continue
 
@@ -155,9 +156,9 @@ class SecurityAuditor:
             if bandit_path:
                 try:
                     # Map severity to bandit args
-                    severity_arg = "-ll" # Default low (shows everything)
+                    severity_arg = "-ll"  # Default low (shows everything)
                     if severity == "medium":
-                        severity_arg = "-ll" # Bandit's severity flags are weird. -l is low, -ll is medium, -lll is high?
+                        severity_arg = "-ll"  # Bandit's severity flags are weird. -l is low, -ll is medium, -lll is high?
                         # Actually:
                         # -l: Report only issues of a given severity level or higher. (LOW)
                         # -ll: (MEDIUM)
@@ -244,18 +245,18 @@ class SecurityAuditor:
                                         "snippet": f"Upgrade {name}"
                                     })
                         elif 'advisories' in data:
-                             # Older npm audit format
-                             advisories = data.get('advisories', {})
-                             for id, advisory in advisories.items():
-                                 findings.append({
-                                     "type": "dependency",
-                                     "tool": "npm audit",
-                                     "severity": advisory.get('severity', 'unknown').upper(),
-                                     "description": advisory.get('title'),
-                                     "file": "package.json",
-                                     "line": 0,
-                                     "snippet": f"Module: {advisory.get('module_name')}"
-                                 })
+                            # Older npm audit format
+                            advisories = data.get('advisories', {})
+                            for id, advisory in advisories.items():
+                                findings.append({
+                                    "type": "dependency",
+                                    "tool": "npm audit",
+                                    "severity": advisory.get('severity', 'unknown').upper(),
+                                    "description": advisory.get('title'),
+                                    "file": "package.json",
+                                    "line": 0,
+                                    "snippet": f"Module: {advisory.get('module_name')}"
+                                })
 
                     except json.JSONDecodeError:
                         pass

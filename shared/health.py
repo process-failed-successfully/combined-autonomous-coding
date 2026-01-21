@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 import html
 from datetime import datetime
@@ -80,7 +80,7 @@ class HealthCalculator:
 
         return {}
 
-    def calculate(self):
+    def calculate(self) -> None:
         """Runs all checks and calculates the final score."""
         print(f"--- Calculating Project Health for: {self.project_dir.name} ---")
 
@@ -162,7 +162,7 @@ class HealthCalculator:
             "dependency_data": dep_res
         }
 
-    def print_report(self):
+    def print_report(self) -> None:
         """Prints a nice report."""
         print("\n" + "=" * 40)
         print(f"  PROJECT HEALTH REPORT: {self.grade} ({self.score:.0f}/100)")
@@ -198,7 +198,7 @@ class HealthCalculator:
         if self.score == 100:
             print("  - Great job! Keep it up.")
 
-    def generate_json_report(self, output_path: Path):
+    def generate_json_report(self, output_path: Path) -> None:
         """Generates a JSON report."""
         report = {
             "project_name": self.project_dir.name,
@@ -211,7 +211,7 @@ class HealthCalculator:
         with open(output_path, 'w') as f:
             json.dump(report, f, indent=2)
 
-    def generate_html_report(self, output_path: Path):
+    def generate_html_report(self, output_path: Path) -> None:
         """Generates an HTML report."""
 
         # Color coding for grade
@@ -351,7 +351,7 @@ class HealthCalculator:
         return f'<div class="section"><h2>Details</h2>{details if details else "<p>No detailed findings available.</p>"}</div>'
 
 
-def run_health_check(project_dir: Path, output_format: str = "text", output_file: str = None):
+def run_health_check(project_dir: Path, output_format: str = "text", output_file: Optional[str] = None) -> None:
     """Entry point for the health command."""
     calc = HealthCalculator(project_dir)
     calc.calculate()

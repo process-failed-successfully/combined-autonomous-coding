@@ -14,7 +14,7 @@ class DependencyAnalyzer:
 
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
-        self.license_cache = {}
+        self.license_cache: Dict[str, Optional[str]] = {}
 
     def scan(self) -> Dict[str, Any]:
         """Scans the project directory for dependency files and parses them."""
@@ -264,7 +264,7 @@ class DependencyAnalyzer:
 
         return data
 
-    def check_licenses(self, data: Dict[str, Any], allow_list: List[str] = None, deny_list: List[str] = None) -> List[Dict[str, Any]]:
+    def check_licenses(self, data: Dict[str, Any], allow_list: Optional[List[str]] = None, deny_list: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
         Checks licenses for all found dependencies.
         Returns a list of violations (or all items if just listing).
@@ -273,16 +273,17 @@ class DependencyAnalyzer:
         print("Checking licenses (this may take a moment)...")
         results = []
 
-        def normalize(lic):
-            if not lic: return "unknown"
+        def normalize(lic: Optional[str]) -> str:
+            if not lic:
+                return "unknown"
             # Basic normalization: lowercase, remove common suffixes
             return lic.lower().replace(" license", "").replace(" software", "").strip()
 
-        allow_set = {normalize(l) for l in allow_list} if allow_list else set()
-        deny_set = {normalize(l) for l in deny_list} if deny_list else set()
+        allow_set = {normalize(x) for x in allow_list} if allow_list else set()
+        deny_set = {normalize(x) for x in deny_list} if deny_list else set()
 
         # Helper to process a dependency
-        def process_dep(lang, file_info, dep):
+        def process_dep(lang: str, file_info: Dict[str, Any], dep: Dict[str, Any]) -> Dict[str, Any]:
             name = dep["name"]
             license_name = "Unknown"
 
@@ -341,7 +342,13 @@ class DependencyAnalyzer:
             url = f"https://pypi.org/pypi/{package_name}/json"
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
-                return response.json()["info"]["version"]
+                data = response.json()
+                if isinstance(data, dict):
+                    info = data.get("info", {})
+                    if isinstance(info, dict):
+                        version = info.get("version")
+                        if isinstance(version, str):
+                            return version
         except Exception:
             pass
         return None
@@ -351,7 +358,11 @@ class DependencyAnalyzer:
             url = f"https://registry.npmjs.org/{package_name}/latest"
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
-                return response.json()["version"]
+                data = response.json()
+                if isinstance(data, dict):
+                    version = data.get("version")
+                    if isinstance(version, str):
+                        return version
         except Exception:
             pass
         return None
@@ -364,27 +375,34 @@ class DependencyAnalyzer:
             url = f"https://pypi.org/pypi/{package_name}/json"
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
-                info = response.json()["info"]
+                data = response.json()
+                if not isinstance(data, dict):
+                    return None
+                info = data.get("info", {})
+                if not isinstance(info, dict):
+                    return None
 
                 # 1. Try Classifiers first (more standard)
                 classifiers = info.get("classifiers", [])
-                for c in classifiers:
-                    if c.startswith("License :: OSI Approved :: "):
-                        lic = c.replace("License :: OSI Approved :: ", "").strip()
-                        self.license_cache[package_name] = lic
-                        return lic
-                    elif c.startswith("License :: "):
-                        lic = c.replace("License :: ", "").strip()
-                        # Avoid "License :: OSI Approved" parent category
-                        if lic != "OSI Approved":
-                            self.license_cache[package_name] = lic
-                            return lic
+                if isinstance(classifiers, list):
+                    for c in classifiers:
+                        if isinstance(c, str):
+                            if c.startswith("License :: OSI Approved :: "):
+                                lic = c.replace("License :: OSI Approved :: ", "").strip()
+                                self.license_cache[package_name] = lic
+                                return lic
+                            elif c.startswith("License :: "):
+                                lic = c.replace("License :: ", "").strip()
+                                # Avoid "License :: OSI Approved" parent category
+                                if lic != "OSI Approved":
+                                    self.license_cache[package_name] = lic
+                                    return lic
 
                 # 2. Try license field
                 license_field = info.get("license", "")
-                if license_field and len(license_field) < 50: # Avoid long license texts
-                     self.license_cache[package_name] = license_field
-                     return license_field
+                if isinstance(license_field, str) and license_field and len(license_field) < 50:  # Avoid long license texts
+                    self.license_cache[package_name] = license_field
+                    return license_field
 
         except Exception:
             pass
@@ -401,13 +419,15 @@ class DependencyAnalyzer:
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
                 data = response.json()
+                if not isinstance(data, dict):
+                    return None
                 license_field = data.get("license", "")
 
                 # Sometimes it's a dict { type: "MIT", ... }
                 if isinstance(license_field, dict):
                     license_field = license_field.get("type", "")
 
-                if license_field:
+                if isinstance(license_field, str) and license_field:
                     self.license_cache[package_name] = license_field
                     return license_field
         except Exception:
@@ -550,7 +570,7 @@ class DependencyUpdater:
             return False
 
 
-def _run_deps_logic(project_dir: Path, output_format: str = "text", check_updates: bool = False):
+def _run_deps_logic(project_dir: Path, output_format: str = "text", check_updates: bool = False) -> str:
     analyzer = DependencyAnalyzer(project_dir)
     data = analyzer.scan()
 

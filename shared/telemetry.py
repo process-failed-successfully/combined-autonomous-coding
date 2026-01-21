@@ -6,7 +6,7 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import psutil
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List, Tuple, TYPE_CHECKING
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
@@ -21,7 +21,13 @@ ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 LOG_DIR = os.getenv("LOG_DIR", "./agents/logs")
 
 
-class SafeStreamHandler(logging.StreamHandler[Any]):
+if TYPE_CHECKING:
+    BaseHandler = logging.StreamHandler[Any]
+else:
+    BaseHandler = logging.StreamHandler
+
+
+class SafeStreamHandler(BaseHandler):
     """A StreamHandler that suppresses errors when writing to closed streams."""
 
     def emit(self, record: logging.LogRecord) -> None:

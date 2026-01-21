@@ -49,14 +49,14 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
 
         tab = DependenciesTab(self.project_dir)
         # Mock notify to prevent NoActiveAppError
-        tab.notify = MagicMock()
+        tab.notify = MagicMock()  # type: ignore
 
         # Mock UI elements
         mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
 
         # We mock query_one to return our mocks
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#deps-table": mock_table,
             "#deps-status": mock_status
         }.get(selector))
@@ -78,12 +78,12 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         """Test check updates button logic."""
         tab = DependenciesTab(self.project_dir)
         # Mock notify to prevent NoActiveAppError
-        tab.notify = MagicMock()
+        tab.notify = MagicMock()  # type: ignore
 
         # Mock UI
         mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#deps-table": mock_table,
             "#deps-status": mock_status
         }.get(selector))

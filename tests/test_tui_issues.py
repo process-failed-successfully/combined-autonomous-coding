@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from typing import cast
 from unittest.mock import MagicMock, patch, AsyncMock
 import sys
 import shutil
@@ -8,7 +9,7 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import DataTable, Input, Select, Button
+from textual.widgets import DataTable, Input, Select, Button, TabbedContent
 from shared.tui import AgentTUI, IssuesTab
 
 class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
@@ -51,7 +52,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#tab-issues"))
 
             # Switch to issues tab
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             issues_tab = app.query_one(IssuesTab)
@@ -73,7 +74,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             issues_tab = app.query_one(IssuesTab)
@@ -90,7 +91,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             # Record current call count
@@ -113,7 +114,7 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-issues"
+            cast(TabbedContent, app.query_one("TabbedContent")).active = "tab-issues"
             await pilot.pause()
 
             issues_tab = app.query_one(IssuesTab)

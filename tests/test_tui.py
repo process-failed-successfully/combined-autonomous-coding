@@ -162,11 +162,11 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_select = MagicMock(spec=Select)
         mock_select.value = "gemini"
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#chat-history": mock_log,
             "#chat-input": mock_input,
             "#agent-select": mock_select
-        }.get(selector))
+        }.get(selector)))
 
         mock_event = MagicMock()
         mock_event.value = "Hello agent"
@@ -194,7 +194,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         tab = KnowledgeTab(self.project_dir)
 
         mock_table = MagicMock(spec=DataTable)
-        tab.query_one = MagicMock(return_value=mock_table)
+        setattr(tab, 'query_one', MagicMock(return_value=mock_table))
 
         tab.on_mount()
 

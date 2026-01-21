@@ -40,14 +40,14 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_markdown = MagicMock(spec=Markdown)
         mock_btn_analyze = MagicMock(spec=Button)
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#profile-script-input": mock_input_script,
             "#profile-args-input": mock_input_args,
             "#profile-table": mock_table,
             "#profile-ai-output": mock_markdown,
             "#btn-analyze-profile": mock_btn_analyze,
             "#profile-agent-select": MagicMock(spec=Select)
-        }.get(selector))
+        }.get(selector)))
 
         # Initialize
         tab.on_mount()
@@ -74,13 +74,13 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_table = MagicMock(spec=DataTable)
         mock_btn_analyze = MagicMock(spec=Button)
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#profile-script-input": mock_input_script,
             "#profile-args-input": mock_input_args,
             "#profile-table": mock_table,
             "#btn-analyze-profile": mock_btn_analyze
-        }.get(selector))
-        tab.notify = MagicMock()
+        }.get(selector)))
+        setattr(tab, 'notify', MagicMock())
 
         # Run
         await tab.run_profiler()
@@ -105,11 +105,11 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_select.value = "gemini"
         mock_markdown = MagicMock(spec=Markdown)
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        setattr(tab, 'query_one', MagicMock(side_effect=lambda selector, type=None: {
             "#profile-agent-select": mock_select,
             "#profile-ai-output": mock_markdown
-        }.get(selector))
-        tab.notify = MagicMock()
+        }.get(selector)))
+        setattr(tab, 'notify', MagicMock())
 
         # Run
         await tab.analyze_profile()

@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 import sys
 import shutil
 import tempfile
@@ -8,8 +8,9 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import DataTable, Input, Select, Button
-from shared.tui import AgentTUI, IssuesTab
+from textual.widgets import DataTable, Input, Select, Button  # noqa: E402
+from shared.tui import AgentTUI, IssuesTab  # noqa: E402
+
 
 class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -35,12 +36,22 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
         self.mock_gh_class = self.patcher_gh.start()
         self.mock_gh = self.mock_gh_class.return_value
 
+        # Mock Telemetry to prevent shutdown crashes/leaks
+        self.patcher_telemetry = patch("shared.telemetry.get_telemetry")
+        self.mock_telemetry = self.patcher_telemetry.start()
+
+        # Ensure OptimizationManager doesn't start telemetry
+        self.patcher_opt_manager = patch("shared.tui.OptimizationManager")
+        self.patcher_opt_manager.start()
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
         self.patcher_config.stop()
         self.patcher_gh.stop()
+        self.patcher_telemetry.stop()
+        self.patcher_opt_manager.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_issues_tab_structure(self):
@@ -135,18 +146,18 @@ class TestTUIIssues(unittest.IsolatedAsyncioTestCase):
             # If it failed before, it's likely due to timing or key presses not registering
             # Let's inspect what happened
             if table.row_count == 2:
-                 # Try explicit value setting if press fails in this env
-                 input_widget.value = "Alp"
-                 # Trigger handler manually? No, value change should trigger it if watched?
-                 # Or post message
-                 from textual.message import Message
-                 # Actually, setting value programmatically doesn't always trigger Changed message in all widgets/versions
-                 # But let's try assuming the first attempt failed.
+                # Try explicit value setting if press fails in this env
+                input_widget.value = "Alp"
+                # Trigger handler manually? No, value change should trigger it if watched?
+                # Or post message
+                # Actually, setting value programmatically doesn't always trigger Changed message in all widgets/versions
+                # But let's try assuming the first attempt failed.
 
-                 # Re-verify
-                 await pilot.pause()
+                # Re-verify
+                await pilot.pause()
 
             self.assertLess(table.row_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

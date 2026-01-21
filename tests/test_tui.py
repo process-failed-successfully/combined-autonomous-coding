@@ -8,8 +8,9 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
+from textual.widgets import Label, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select  # noqa: E402
+from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab  # noqa: E402
+
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -29,16 +30,26 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
         self.mock_ask = self.patcher_ask.start()
 
+        # Mock Telemetry to prevent shutdown crashes/leaks
+        self.patcher_telemetry = patch("shared.telemetry.get_telemetry")
+        self.mock_telemetry = self.patcher_telemetry.start()
+
+        # Ensure OptimizationManager doesn't start telemetry
+        self.patcher_opt_manager = patch("shared.tui.OptimizationManager")
+        self.patcher_opt_manager.start()
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
+        self.patcher_telemetry.stop()
+        self.patcher_opt_manager.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_app_startup(self):
         """Test that the app starts up and has the expected title and tabs."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Check if TabbedContent exists
             self.assertIsInstance(app.query_one(TabbedContent), TabbedContent)
             # Check if tabs are present by ID
@@ -52,7 +63,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
     async def test_dashboard_content(self):
         """Test that the dashboard tab displays project info."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Switch to dashboard is default
             dashboard = app.query_one(DashboardTab)
             self.assertIsNotNone(dashboard)
@@ -60,7 +71,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check for labels
             labels = dashboard.query(Label)
             # We look for partial matches as content might vary
-            self.assertTrue(any("Project:" in str(l.render()) for l in labels))
+            self.assertTrue(any("Project:" in str(lbl.render()) for lbl in labels))
 
             # Check for buttons
             self.assertTrue(dashboard.query_one("#btn-test"))
@@ -216,6 +227,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         MockAgentTUI.assert_called_with(project_dir=self.project_dir)
         MockAgentTUI.return_value.run.assert_called_once()
         mock_exit.assert_called_with(0)
+
 
 if __name__ == "__main__":
     unittest.main()

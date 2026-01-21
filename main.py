@@ -61,6 +61,7 @@ from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
 from shared.polish import run_polish_logic
 from shared.health import run_health_check
+from shared.work_session import WorkSessionManager
 import json
 import yaml
 import platformdirs
@@ -90,6 +91,152 @@ if FileSystemEventHandler:
 def run_onboard(args):
     """Runs the onboarding wizard."""
     run_onboard_logic(args.project_dir)
+    sys.exit(0)
+
+def run_session(args):
+    """Manages work sessions."""
+    project_dir = args.project_dir.resolve()
+    manager = WorkSessionManager(project_dir)
+
+    if args.action == "new":
+        if not args.name:
+            print("Error: Name required for 'new' action.", file=sys.stderr)
+            sys.exit(1)
+        try:
+            session = manager.create(args.name, args.description or "")
+            print(f"✅ Created session: {session.name}")
+            print(f"   Files: {len(session.files)}")
+            print(f"   Notes: {len(session.notes)}")
+        except FileExistsError as e:
+            print(f"❌ Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "load":
+        if not args.name:
+            print("Error: Name required for 'load' action.", file=sys.stderr)
+            sys.exit(1)
+        try:
+            manager.set_active_session(args.name)
+            print(f"✅ Loaded session: {args.name}")
+        except FileNotFoundError:
+            print(f"❌ Session '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "list":
+        sessions = manager.list_sessions()
+        if not sessions:
+            print("No sessions found.")
+        else:
+            active = manager.get_active_session()
+            print("--- Available Sessions ---")
+            for s in sessions:
+                marker = "*" if active and active.name == s["name"] else " "
+                print(f"{marker} {s['name']:<20} {s['updated_at'][:16]}   {s['description']}")
+
+    elif args.action == "info":
+        name = args.name
+        if not name:
+            active = manager.get_active_session()
+            if active:
+                name = active.name
+            else:
+                print("Error: No active session. Please specify a name or load a session.", file=sys.stderr)
+                sys.exit(1)
+
+        session = manager.load_session(name)
+        if not session:
+            print(f"❌ Session '{name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"--- Session: {session.name} ---")
+        print(f"Created: {session.created_at}")
+        print(f"Updated: {session.updated_at}")
+        print(f"Description: {session.description}")
+        print("\nFiles:")
+        for f in session.files:
+            print(f"  - {f}")
+        print("\nNotes:")
+        for n in session.notes:
+            print(f"  {n}")
+
+    elif args.action == "add":
+        if not args.file:
+            print("Error: File required.", file=sys.stderr)
+            sys.exit(1)
+
+        target_session = args.name
+        if not target_session:
+            active = manager.get_active_session()
+            if active:
+                target_session = active.name
+            else:
+                 print("Error: No active session. Specify name with --name.", file=sys.stderr)
+                 sys.exit(1)
+
+        try:
+            manager.add_file(target_session, args.file)
+            print(f"✅ Added {args.file} to session '{target_session}'")
+        except FileNotFoundError:
+             print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
+             sys.exit(1)
+
+    elif args.action == "remove":
+        if not args.file:
+            print("Error: File required.", file=sys.stderr)
+            sys.exit(1)
+
+        target_session = args.name
+        if not target_session:
+            active = manager.get_active_session()
+            if active:
+                target_session = active.name
+            else:
+                 print("Error: No active session. Specify name with --name.", file=sys.stderr)
+                 sys.exit(1)
+
+        try:
+            manager.remove_file(target_session, args.file)
+            print(f"✅ Removed {args.file} from session '{target_session}'")
+        except FileNotFoundError:
+             print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
+             sys.exit(1)
+
+    elif args.action == "note":
+        if not args.note:
+             print("Error: Note text required.", file=sys.stderr)
+             sys.exit(1)
+
+        target_session = args.name
+        if not target_session:
+            active = manager.get_active_session()
+            if active:
+                target_session = active.name
+            else:
+                 print("Error: No active session. Specify name with --name.", file=sys.stderr)
+                 sys.exit(1)
+
+        try:
+            manager.add_note(target_session, args.note)
+            print(f"✅ Added note to session '{target_session}'")
+        except FileNotFoundError:
+             print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
+             sys.exit(1)
+
+    elif args.action == "stop":
+        manager.stop_session()
+        print("✅ Session stopped.")
+
+    elif args.action == "delete":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+
+        if manager.delete_session(args.name):
+            print(f"✅ Deleted session '{args.name}'")
+        else:
+            print(f"❌ Session '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
     sys.exit(0)
 
 def run_playground(args):
@@ -6927,6 +7074,64 @@ def parse_args(argv=None):
         help="The project directory.",
     )
 
+    # --- New 'session' command ---
+    parser_session = subparsers.add_parser(
+        "session",
+        help="Manage work sessions (context, files, notes)."
+    )
+    session_subparsers = parser_session.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Session 'new'
+    parser_sess_new = session_subparsers.add_parser("new", help="Create a new session.")
+    parser_sess_new.add_argument("name", help="Name of the session.")
+    parser_sess_new.add_argument("-d", "--description", help="Optional description.")
+    parser_sess_new.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'load'
+    parser_sess_load = session_subparsers.add_parser("load", help="Load (activate) a session.")
+    parser_sess_load.add_argument("name", help="Name of the session.")
+    parser_sess_load.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'list'
+    parser_sess_list = session_subparsers.add_parser("list", help="List all sessions.")
+    parser_sess_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'info'
+    parser_sess_info = session_subparsers.add_parser("info", help="Show info for a session.")
+    parser_sess_info.add_argument("name", nargs="?", help="Name of the session (defaults to active).")
+    parser_sess_info.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'add' (file)
+    parser_sess_add = session_subparsers.add_parser("add", help="Add a file to a session.")
+    parser_sess_add.add_argument("file", help="Path to the file.")
+    parser_sess_add.add_argument("-n", "--name", help="Session name (defaults to active).")
+    parser_sess_add.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'remove' (file)
+    parser_sess_rem = session_subparsers.add_parser("remove", help="Remove a file from a session.")
+    parser_sess_rem.add_argument("file", help="Path to the file.")
+    parser_sess_rem.add_argument("-n", "--name", help="Session name (defaults to active).")
+    parser_sess_rem.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'note'
+    parser_sess_note = session_subparsers.add_parser("note", help="Add a note to a session.")
+    parser_sess_note.add_argument("note", help="The note content.")
+    parser_sess_note.add_argument("-n", "--name", help="Session name (defaults to active).")
+    parser_sess_note.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'stop'
+    parser_sess_stop = session_subparsers.add_parser("stop", help="Stop (deactivate) the current session.")
+    parser_sess_stop.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Session 'delete'
+    parser_sess_del = session_subparsers.add_parser("delete", help="Delete a session.")
+    parser_sess_del.add_argument("name", help="Name of the session.")
+    parser_sess_del.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'playground' command ---
     parser_playground = subparsers.add_parser(
         "playground",
@@ -9874,6 +10079,11 @@ async def main():
     # Handle `onboard` command
     if args.command == "onboard":
         run_onboard(args)
+        return
+
+    # Handle `session` command
+    if args.command == "session":
+        run_session(args)
         return
 
     # Handle `playground` command

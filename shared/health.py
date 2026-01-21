@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 import json
 import html
 from datetime import datetime
@@ -9,6 +9,7 @@ from shared.verify import run_tests, run_lint
 from shared.security import SecurityAuditor
 from shared.dependencies import DependencyAnalyzer
 
+
 class HealthCalculator:
     """
     Calculates the project health score based on various metrics.
@@ -16,10 +17,10 @@ class HealthCalculator:
 
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
-        self.metrics = {}
+        self.metrics: Dict[str, Any] = {}
         self.score = 0.0
         self.grade = "F"
-        self.issues = []
+        self.issues: List[str] = []
         self.timestamp = datetime.now()
 
     def run_check(self, check_type: str) -> Dict[str, Any]:
@@ -117,7 +118,7 @@ class HealthCalculator:
         sec_res = self.run_check("security")
         sec_score = 20
         if sec_res.get("high", 0) > 0:
-            sec_score = 0 # automatic fail on security score if high sev
+            sec_score = 0  # automatic fail on security score if high sev
             self.issues.append(f"Found {sec_res['high']} HIGH severity security issues.")
         elif sec_res.get("medium", 0) > 0:
             penalty = min(10, sec_res["medium"] * 2)
@@ -347,7 +348,7 @@ class HealthCalculator:
             </table>
             """
 
-        return f"<div class=\"section\"><h2>Details</h2>{details if details else '<p>No detailed findings available.</p>'}</div>"
+        return f'<div class="section"><h2>Details</h2>{details if details else "<p>No detailed findings available.</p>"}</div>'
 
 
 def run_health_check(project_dir: Path, output_format: str = "text", output_file: str = None):
@@ -369,4 +370,4 @@ def run_health_check(project_dir: Path, output_format: str = "text", output_file
             # If user specifically asked for text output to a file
             # We redirect stdout or just write it. For now, let's keep it simple and just print to stdout
             # as print_report does. If they want file, they can pipe it or use json/html.
-            print(f"Note: Text output is printed to console. Use --format html or json for file output.")
+            print("Note: Text output is printed to console. Use --format html or json for file output.")

@@ -236,9 +236,10 @@ class DependencyAnalyzer:
 
         return "\n".join(lines)
 
-    def check_updates(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def check_updates(self, data: Dict[str, Any], verbose: bool = True) -> Dict[str, Any]:
         """Checks for updates for all found dependencies."""
-        print("Checking for updates (this may take a moment)...")
+        if verbose:
+            print("Checking for updates (this may take a moment)...")
 
         # Python
         for file_info in data.get("python", []):

@@ -3,6 +3,7 @@ import io
 import contextlib
 import os
 import shlex
+import asyncio
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown
@@ -10,12 +11,14 @@ from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.binding import Binding
+from textual.coordinate import Coordinate
 from textual import on
 
 from shared.cli_utils import get_latest_log_file, get_workflow_stage
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 from shared.optimize import OptimizationManager
+from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.database import init_db
 from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
@@ -355,6 +358,188 @@ class IssuesTab(Container):
     def filter_issues(self):
         self._update_table(self.issues_cache)
 
+class DependenciesTab(Container):
+    """Tab for managing project dependencies."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.analyzer = DependencyAnalyzer(project_dir)
+        self.updater = DependencyUpdater(project_dir)
+        self.current_data = {}
+        # Keep track of row keys -> dependency info for updating
+        self.row_map = {}
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Dependencies[/bold]", classes="welcome-text")
+
+            with Horizontal(classes="stat-box"):
+                yield Button("Scan", id="btn-deps-scan", variant="primary")
+                yield Button("Check Updates", id="btn-deps-check", variant="warning")
+                yield Button("Update Selected", id="btn-deps-update", variant="error", disabled=True)
+
+            yield DataTable(id="deps-table")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#deps-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Language", "Package", "Current", "Latest", "Type", "Status")
+        self.scan_dependencies()
+
+    async def scan_dependencies(self) -> None:
+        self.notify("Scanning dependencies...")
+        # Run scan in a thread to avoid blocking
+        self.current_data = await asyncio.to_thread(self.analyzer.scan)
+        self._refresh_table()
+        self.notify("Scan complete.")
+
+    async def check_updates(self) -> None:
+        self.notify("Checking for updates (this may take a moment)...", severity="information", timeout=5)
+        # Run check_updates in a thread
+        # Pass verbose=False to avoid stdout noise
+        self.current_data = await asyncio.to_thread(self.analyzer.check_updates, self.current_data, verbose=False)
+        self._refresh_table()
+        self.notify("Update check complete.")
+
+    def _refresh_table(self) -> None:
+        table = self.query_one("#deps-table", DataTable)
+        table.clear()
+        self.row_map = {}
+
+        # Flatten the data structure
+        # data = { "python": [ { "source": "...", "dependencies": [...] } ], ... }
+
+        for lang, files in self.current_data.items():
+            for file_info in files:
+                source_file = file_info["source"]
+                # Store full path for updater
+                full_path = self.project_dir / source_file
+
+                for dep in file_info.get("dependencies", []):
+                    name = dep["name"]
+                    current = dep.get("version", "")
+                    latest = dep.get("latest", "")
+                    dtype = dep.get("type", "prod")
+                    is_outdated = dep.get("outdated", False)
+
+                    status = "[red]Outdated[/red]" if is_outdated else "[green]OK[/green]"
+                    if not latest:
+                        status = "Unknown"
+
+                    row_key = table.add_row(
+                        lang.capitalize(),
+                        name,
+                        current,
+                        latest or "-",
+                        dtype,
+                        status
+                    )
+
+                    # Store info needed for update
+                    self.row_map[row_key] = {
+                        "file_path": full_path,
+                        "name": name,
+                        "latest": latest,
+                        "type": dtype,
+                        "outdated": is_outdated
+                    }
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        # Enable update button if the selected row is outdated and has a latest version
+        row_key = event.row_key
+        info = self.row_map.get(row_key)
+
+        btn = self.query_one("#btn-deps-update", Button)
+        if info and info["outdated"] and info["latest"]:
+            btn.disabled = False
+            btn.label = f"Update {info['name']} to {info['latest']}"
+        else:
+            btn.disabled = True
+            btn.label = "Update Selected"
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-deps-scan":
+            await self.scan_dependencies()
+        elif event.button.id == "btn-deps-check":
+            await self.check_updates()
+        elif event.button.id == "btn-deps-update":
+            await self.update_selected()
+
+    async def update_selected(self) -> None:
+        table = self.query_one("#deps-table", DataTable)
+        cursor_row = table.cursor_row
+        if cursor_row is None:
+            return
+
+        # Get row key from index
+        # Textual's DataTable doesn't easily expose key from cursor index directly in all versions,
+        # but coordinate (row_index, col_index) works.
+        # We need the RowKey to look up in self.row_map.
+        # table.coordinate_to_cell_key(Coordinate(cursor_row, 0)).row_key
+        # Coordinate is imported at top level
+        try:
+             # This might depend on textual version.
+             # Safe way: iterate rows and match index?
+             # Or check if `table.get_row_at(cursor_row)` returns keys? No.
+             # Actually `on_data_table_row_selected` gives us the key, so we can cache it.
+             # But the user might move the cursor without selecting?
+             # Textual: "Selection" usually means clicking or pressing Enter.
+             # "Cursor" is just highlighting.
+             # Let's rely on the last selected row via on_data_table_row_selected if possible.
+             # But the button press is a separate event.
+             pass
+        except:
+             pass
+
+        # Since we enabling the button based on selection, we assume selection is active.
+        # But `table.cursor_row` might be different from selection if multiple selection is off?
+        # Let's verify selection.
+        # `table.selection` returns a set of RowKeys.
+        # We only support single update for now.
+
+        # NOTE: DataTable selection logic can be tricky.
+        # Let's assume the user MUST select a row (click/enter) which triggers `on_data_table_row_selected`
+        # and enables the button. We just need to know WHICH row was selected.
+        # We can store `self.selected_row_key` in `on_data_table_row_selected`.
+
+        # However, I didn't add `self.selected_row_key` to `__init__`.
+        # Let's rely on `table.cursor_row` and mapping it to key if possible,
+        # OR simply iterating `table.rows` (which is a dict of key->row).
+        # Actually `table.get_row_at(index)` returns the data list.
+        # `table.coordinate_to_cell_key` is robust.
+
+        key = table.coordinate_to_cell_key(Coordinate(cursor_row, 0)).row_key
+        info = self.row_map.get(key)
+
+        if not info:
+            self.notify("No valid dependency selected.", severity="error")
+            return
+
+        if not info["outdated"] or not info["latest"]:
+            self.notify("Selected dependency is not outdated or latest version is unknown.", severity="warning")
+            return
+
+        self.notify(f"Updating {info['name']} to {info['latest']}...")
+
+        success = await asyncio.to_thread(
+            self.updater.update_dependency,
+            info["file_path"],
+            info["name"],
+            info["latest"],
+            info["type"]
+        )
+
+        if success:
+            self.notify(f"Successfully updated {info['name']}.")
+            # Refresh to reflect changes
+            await self.scan_dependencies()
+            # We might want to re-check updates too, but scan is a good start.
+            # Ideally we update the local state to avoid full re-scan/check loop,
+            # but that's complex.
+        else:
+            self.notify(f"Failed to update {info['name']}.", severity="error")
+
 class ProfileTab(Container):
     """Tab for performance profiling."""
 
@@ -473,6 +658,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
+            with TabPane("Dependencies", id="tab-deps"):
+                yield DependenciesTab(self.project_dir)
             with TabPane("Issues", id="tab-issues"):
                 yield IssuesTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):

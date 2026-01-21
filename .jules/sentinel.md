@@ -1,0 +1,4 @@
+## 2026-01-21 - [Sensitive Data Leak in Exception Logging]
+**Vulnerability:** Found that `subprocess.CalledProcessError`'s string representation includes the full command arguments, including sensitive tokens. In `configure_git_auth`, this exception was being caught and logged blindly with `logger.error(f"... {e}")`, exposing the git auth token in logs.
+**Learning:** Generic exception logging (`except Exception as e: log(e)`) is dangerous when dealing with `subprocess` calls that involve secrets, because the exception object itself can carry the secret payload.
+**Prevention:** Always catch `subprocess.CalledProcessError` explicitly when running commands with secrets. Log `e.returncode` and `e.stderr` instead of `e` or `e.cmd`. Ensure `e.cmd` is never logged or printed if it contains secrets.

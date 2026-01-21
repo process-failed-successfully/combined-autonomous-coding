@@ -49,6 +49,34 @@ class TestGitAuth(unittest.TestCase):
         self.assertIn(expected_key, args)
         self.assertIn(expected_value, args)
 
+    @patch("shared.git.logger")
+    @patch("shared.git.subprocess.run")
+    def test_configure_git_auth_error_safety(self, mock_run, mock_logger):
+        """Test that token is not leaked in logs when git command fails."""
+        import subprocess
+
+        token = "SECRET_TOKEN_123"
+        # Simulate failure
+        cmd = ["git", "config", "--global", f"url.https://x-access-token:{token}@github.com/.insteadOf", "https://github.com/"]
+
+        # raise CalledProcessError
+        error = subprocess.CalledProcessError(
+            returncode=1,
+            cmd=cmd,
+            stderr=b"fatal: cannot lock config file"
+        )
+        mock_run.side_effect = error
+
+        configure_git_auth(token)
+
+        # Assert logger was called with error
+        self.assertTrue(mock_logger.error.called)
+
+        # Check all calls to logger.error for the token
+        for call_args in mock_logger.error.call_args_list:
+            log_msg = call_args[0][0] # First arg is the message
+            self.assertNotIn(token, log_msg, "Token leaked in log message!")
+
 
 if __name__ == "__main__":
     unittest.main()

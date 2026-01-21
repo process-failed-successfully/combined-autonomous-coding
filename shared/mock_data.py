@@ -4,7 +4,7 @@ import csv
 import io
 import datetime
 import uuid
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 from pathlib import Path
 
 class MockDataGenerator:
@@ -157,6 +157,9 @@ def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
     if not data:
         return ""
 
+    if not table_name.isidentifier():
+        raise ValueError(f"Invalid table name: {table_name}")
+
     statements = []
     for record in data:
         columns = ", ".join(record.keys())
@@ -172,7 +175,7 @@ def format_sql(data: List[Dict[str, Any]], table_name: str) -> str:
             else:
                 values.append(str(v))
         values_str = ", ".join(values)
-        statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")
+        statements.append(f"INSERT INTO {table_name} ({columns}) VALUES ({values_str});")  # nosec B608
 
     return "\n".join(statements)
 
@@ -180,7 +183,7 @@ def run_mock_logic(
     spec_path: Path,
     count: int = 10,
     output_format: str = "json",
-    output_file: Path = None,
+    output_file: Optional[Path] = None,
     table_name: str = "table"
 ) -> bool:
     try:

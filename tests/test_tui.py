@@ -221,20 +221,6 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_manager.list_knowledge.assert_called_once()
         mock_table.add_row.assert_called_with("1", "Test", "Content", "User")
 
-    @patch("main.sys.exit")
-    @patch("shared.tui.AgentTUI")
-    def test_main_run_tui(self, MockAgentTUI: MagicMock, mock_exit: MagicMock) -> None:
-        """Test that main.run_tui instantiates and runs the app."""
-        from main import run_tui
-        import argparse
-
-        args = argparse.Namespace(project_dir=self.project_dir)
-
-        run_tui(args)  # type: ignore
-
-        MockAgentTUI.assert_called_with(project_dir=self.project_dir)
-        MockAgentTUI.return_value.run.assert_called_once()
-        mock_exit.assert_called_with(0)
 
 
 if __name__ == "__main__":

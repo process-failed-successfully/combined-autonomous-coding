@@ -1,15 +1,11 @@
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import sys
 import shutil
 import tempfile
 
-# Ensure shared module is available
-sys.path.append(str(Path(__file__).parent.parent))
-
-from textual.widgets import Label, DataTable  # noqa: E402
-from shared.tui import AgentTUI, DependenciesTab  # noqa: E402
+from textual.widgets import Label, DataTable
+from shared.tui import AgentTUI, DependenciesTab
 
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):

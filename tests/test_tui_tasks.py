@@ -1,16 +1,12 @@
 import unittest
 from pathlib import Path
 from unittest.mock import patch, AsyncMock
-import sys
 import shutil
 import tempfile
 
-# Ensure shared module is available
-sys.path.append(str(Path(__file__).parent.parent))
-
-from textual.widgets import DataTable, Input, Select, Button  # noqa: E402
-from shared.tui import AgentTUI, TasksTab  # noqa: E402
-from shared.task_manager import Task  # noqa: E402
+from textual.widgets import DataTable, Input, Select, Button
+from shared.tui import AgentTUI, TasksTab
+from shared.task_manager import Task
 
 
 class TestTUITasks(unittest.IsolatedAsyncioTestCase):

@@ -1,15 +1,11 @@
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
-import sys
 import shutil
 import tempfile
 
-# Ensure shared module is available
-sys.path.append(str(Path(__file__).parent.parent))
-
-from textual.widgets import Label, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView  # noqa: E402
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab  # noqa: E402
+from textual.widgets import Label, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
+from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
 
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
@@ -220,7 +216,6 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_init_db.assert_called_once()
         mock_manager.list_knowledge.assert_called_once()
         mock_table.add_row.assert_called_with("1", "Test", "Content", "User")
-
 
 
 if __name__ == "__main__":

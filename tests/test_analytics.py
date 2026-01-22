@@ -20,13 +20,13 @@ class TestAnalytics(unittest.TestCase):
     @patch("shared.debt.find_duplicates")
     @patch("shared.debt.UnusedCodeDetector")
     @patch("shared.security.SecurityAuditor.scan_secrets")
-    def test_collect_analytics_data(self, mock_scan_secrets: Any, MockUnused: Any, mock_duplication: Any, mock_complexity: Any, mock_todos: Any) -> None:
+    def test_collect_analytics_data(self, mock_scan_secrets: Any, mock_unused: Any, mock_duplication: Any, mock_complexity: Any, mock_todos: Any) -> None:  # pylint: disable=too-many-arguments
         """Test collecting overall analytics data."""
         # Mock Data for Debt
         mock_todos.return_value = [{"tag": "TODO", "text": "Fix"}]
         mock_complexity.return_value = [{"function": "f", "complexity": 5}]
         mock_duplication.return_value = []
-        MockUnused.return_value.get_unused_definitions.return_value = []
+        mock_unused.return_value.get_unused_definitions.return_value = []
 
         # Mock Data for Security
         mock_scan_secrets.return_value = [

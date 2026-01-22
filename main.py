@@ -5301,6 +5301,18 @@ def run_config(args):
     return 0
 
 
+def run_measure(args):
+    """Runs the benchmarking tool."""
+    from shared.measure import run_measure_logic
+
+    success = run_measure_logic(
+        commands=args.commands,
+        iterations=args.iterations,
+        warmup=args.warmup
+    )
+    sys.exit(0 if success else 1)
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
 
@@ -8330,6 +8342,30 @@ def parse_args(argv=None):
         help="Table name for SQL export (default: mock_data)."
     )
 
+    # --- New 'measure' command ---
+    parser_measure = subparsers.add_parser(
+        "measure",
+        aliases=["bench"],
+        help="Benchmark execution time of commands."
+    )
+    parser_measure.add_argument(
+        "commands",
+        nargs="+",
+        help="Command(s) to benchmark."
+    )
+    parser_measure.add_argument(
+        "-n", "--iterations",
+        type=int,
+        default=10,
+        help="Number of iterations (default: 10)."
+    )
+    parser_measure.add_argument(
+        "-w", "--warmup",
+        type=int,
+        default=0,
+        help="Number of warmup runs (default: 0)."
+    )
+
     # --- New 'presentation' command ---
     parser_presentation = subparsers.add_parser(
         "presentation",
@@ -10986,6 +11022,10 @@ async def main():
 
     if args.command == "mock":
         run_mock(args)
+        return
+
+    if args.command in ["measure", "bench"]:
+        run_measure(args)
         return
 
     if args.command == "presentation":

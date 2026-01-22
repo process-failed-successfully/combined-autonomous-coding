@@ -8265,6 +8265,39 @@ def parse_args(argv=None):
         help="Table name for SQL export (default: mock_data)."
     )
 
+    # --- New 'presentation' command ---
+    parser_presentation = subparsers.add_parser(
+        "presentation",
+        help="Generate a Marp-compatible Markdown presentation summarizing the project."
+    )
+    parser_presentation.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_presentation.add_argument(
+        "-o", "--output",
+        default="presentation.md",
+        help="Output file path (default: presentation.md)."
+    )
+    parser_presentation.add_argument(
+        "--theme",
+        default="default",
+        help="Marp theme (default, gaia, uncover)."
+    )
+    parser_presentation.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_presentation.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -10863,6 +10896,17 @@ async def main():
 
     if args.command == "mock":
         run_mock(args)
+        return
+
+    if args.command == "presentation":
+        from shared.presentation import run_presentation
+        await run_presentation(
+            project_dir=args.project_dir,
+            output=args.output,
+            theme=args.theme,
+            agent_type=args.agent,
+            model=args.model
+        )
         return
 
     # Initialize Agent Client

@@ -381,6 +381,21 @@ def get_latest_log_file() -> Path | None:
     return None
 
 
+def get_all_log_files() -> list[Path]:
+    """Returns a list of all log files sorted by modification time (newest first)."""
+    # This assumes the script is run from the repo root, so paths are relative to `main.py`
+    repo_root = Path(__file__).parent.parent
+    logs_dir = repo_root / "agents/logs"
+
+    if not logs_dir.exists():
+        return []
+
+    try:
+        return sorted(logs_dir.glob('*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
+    except OSError:
+        return []
+
+
 def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
     """Finds the final_metrics.txt file for a given run_id."""
     # 1. Check the main project directory

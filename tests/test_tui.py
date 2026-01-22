@@ -8,7 +8,7 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select
+from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
 from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
@@ -85,13 +85,16 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(explorer.query_one(DirectoryTree), DirectoryTree)
             self.assertIsInstance(explorer.query_one(RichLog), RichLog)
 
-    @patch("shared.tui.get_latest_log_file")
-    async def test_logs_tab(self, mock_get_log):
-        """Test log viewer updates."""
-        # Setup mock log file
-        mock_log_path = self.test_dir / "test.log"
-        mock_log_path.write_text("Test Log Entry")
-        mock_get_log.return_value = mock_log_path
+    @patch("shared.tui.get_all_log_files")
+    async def test_logs_tab(self, mock_get_logs):
+        """Test log viewer updates with file list."""
+        # Setup mock log files
+        log1 = self.test_dir / "test1.log"
+        log1.write_text("Log 1 Content")
+        log2 = self.test_dir / "test2.log"
+        log2.write_text("Log 2 Content")
+
+        mock_get_logs.return_value = [log1, log2]
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
@@ -102,11 +105,22 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
             logs_tab = app.query_one(LogsTab)
             log_viewer = logs_tab.query_one(RichLog)
+            log_list = logs_tab.query_one("#log-file-list", ListView)
+            log_filter = logs_tab.query_one("#log-filter", Input)
 
-            # Force update
-            logs_tab.update_log()
+            # Check list populated
+            self.assertEqual(len(log_list.children), 2)
 
+            # Check viewer exists
             self.assertTrue(log_viewer)
+
+            # Simulate filter input
+            log_filter.value = "Content"
+            await pilot.pause()
+
+            # Simulate refresh
+            await pilot.click("#btn-refresh-logs")
+            mock_get_logs.assert_called()
 
     async def test_interact_tab(self):
         """Test InteractTab structure."""

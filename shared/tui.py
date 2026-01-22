@@ -2,6 +2,7 @@ import sys
 import io
 import contextlib
 import shlex
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree
@@ -20,7 +21,7 @@ from shared.security import SecurityAuditor
 
 
 # Helper to get Git info safely
-def get_git_info(project_dir: Path) -> dict:
+def get_git_info(project_dir: Path) -> Dict[str, str]:
     import shutil
     import subprocess
     git_path = shutil.which("git")
@@ -173,7 +174,7 @@ class LogsTab(Container):
 
             item = ListItem(Label(label))
             # Attach the path to the item for retrieval
-            item.log_path = log_file
+            item.log_path = log_file  # type: ignore
             log_list.append(item)
 
         # Select the first one (latest) by default
@@ -181,12 +182,12 @@ class LogsTab(Container):
             log_list.index = 0
             # Manually trigger load as setting index doesn't always fire Selected
             if hasattr(log_list.children[0], "log_path"):
-                self.load_log_content(log_list.children[0].log_path)
+                self.load_log_content(log_list.children[0].log_path)  # type: ignore
 
     @on(ListView.Selected, "#log-file-list")
     def on_log_selected(self, event: ListView.Selected) -> None:
         if hasattr(event.item, "log_path"):
-            self.load_log_content(event.item.log_path)
+            self.load_log_content(event.item.log_path)  # type: ignore
 
     @on(Input.Changed, "#log-filter")
     def on_filter_changed(self, event: Input.Changed) -> None:
@@ -256,7 +257,10 @@ class InteractTab(Container):
 
         # Get selected agent
         agent_select = self.query_one("#agent-select", Select)
-        agent_type = agent_select.value or "gemini"
+        val = agent_select.value
+        agent_type = val if isinstance(val, str) else "gemini"
+        if not agent_type:
+            agent_type = "gemini"
 
         chat_log.write(f"[italic]Agent ({agent_type}) is thinking...[/italic]")
 
@@ -348,7 +352,7 @@ class TasksTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.task_manager = TaskManager(project_dir)
-        self.tasks_cache = []
+        self.tasks_cache: List[Task] = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -383,7 +387,11 @@ class TasksTab(Container):
         table = self.query_one("#tasks-table", DataTable)
         table.clear()
 
-        source_filter = self.query_one("#select-task-source", Select).value or "All"
+        val = self.query_one("#select-task-source", Select).value
+        source_filter = val if isinstance(val, str) else "All"
+        if not source_filter:
+            source_filter = "All"
+
         filter_text = self.query_one("#input-task-filter", Input).value.lower()
 
         for task in tasks:
@@ -428,7 +436,7 @@ class ProfileTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = OptimizationManager(project_dir)
-        self.stats_file = None
+        self.stats_file: Optional[Path] = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -509,7 +517,10 @@ class ProfileTab(Container):
             return
 
         agent_select = self.query_one("#profile-agent-select", Select)
-        agent_type = agent_select.value or "gemini"
+        val = agent_select.value
+        agent_type = val if isinstance(val, str) else "gemini"
+        if not agent_type:
+            agent_type = "gemini"
 
         self.notify(f"Asking {agent_type} for optimization tips...")
         ai_output = self.query_one("#profile-ai-output", Markdown)
@@ -528,7 +539,7 @@ class DependenciesTab(Container):
         self.project_dir = project_dir
         self.analyzer = DependencyAnalyzer(project_dir)
         self.updater = DependencyUpdater(project_dir)
-        self.cached_data = {}  # Store scan results
+        self.cached_data: Dict[str, Any] = {}  # Store scan results
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -609,7 +620,7 @@ class DependenciesTab(Container):
             self.notify(f"Error loading dependencies: {e}", severity="error")
 
     @on(Tree.NodeSelected, "#deps-tree")
-    def on_dep_selected(self, event: Tree.NodeSelected) -> None:
+    def on_dep_selected(self, event: Tree.NodeSelected[Any]) -> None:
         details_log = self.query_one("#dep-details-log", RichLog)
         details_log.clear()
         update_btn = self.query_one("#btn-dep-update", Button)
@@ -676,7 +687,7 @@ class DependenciesTab(Container):
             self.notify(f"Error checking updates: {e}", severity="error")
             self.query_one("#deps-status", Label).update("Error checking updates.")
 
-    async def update_package(self, dep_data: dict):
+    async def update_package(self, dep_data: Dict[str, Any]):
         name = dep_data["name"]
         latest = dep_data["latest"]
         source_file = self.project_dir / dep_data["source"]
@@ -707,7 +718,7 @@ class DependenciesTab(Container):
             self.query_one("#deps-status", Label).update(f"Failed to update {name}.")
 
 
-def collect_analytics_data(project_dir: Path) -> dict:
+def collect_analytics_data(project_dir: Path) -> Dict[str, Any]:
     """Collects analytics data for the dashboard."""
     debt_collector = DebtCollector(project_dir)
     security_auditor = SecurityAuditor(project_dir)
@@ -790,7 +801,7 @@ class AnalyticsTab(Container):
             self.query_one("#analytics-status", Label).update(f"Error: {e}")
             self.notify(f"Analysis failed: {e}", severity="error")
 
-    def _update_ui(self, data: dict) -> None:
+    def _update_ui(self, data: Dict[str, Any]) -> None:
         # Update Debt
         debt = data["debt"]
         metrics = debt["metrics"]
@@ -829,7 +840,7 @@ class AnalyticsTab(Container):
         sec_table.clear()
 
         # Sort by severity
-        severity_map = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+        severity_map: Dict[str, int] = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
         findings.sort(key=lambda x: severity_map.get(x["severity"], 3))
 
         for f in findings[:20]:  # Limit to top 20
@@ -843,7 +854,7 @@ class AnalyticsTab(Container):
             sec_table.add_row(sev, f["type"], f["description"], location)
 
 
-class AgentTUI(App):
+class AgentTUI(App[None]):
     """Mission Control TUI."""
 
     CSS_PATH = "tui.css"

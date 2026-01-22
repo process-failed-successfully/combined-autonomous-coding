@@ -140,7 +140,7 @@ def _scan_with_python(
     exclude_paths: List[str],
     line_parser: re.Pattern,
     is_git_repo: bool,
-    git_path: str
+    git_path: Optional[str]
 ) -> List[Dict]:
     """Fallback python scanning."""
     parsed_results = []

@@ -165,7 +165,7 @@ class OptimizationManager:
         from agents.cursor import CursorAgent
         from agents.local import LocalAgent
         from agents.openrouter import OpenRouterAgent
-        from shared.base_agent import BaseAgent
+        from agents.shared.base_agent import BaseAgent
         from typing import Type
 
         agent_map: Dict[str, Type[BaseAgent]] = {

@@ -5179,7 +5179,7 @@ async def run_plan(args):
 
     # Dispatch to the correct agent type
     from typing import Type
-    from shared.base_agent import BaseAgent
+    from agents.shared.base_agent import BaseAgent
     agent_class_map: dict[str, Type[BaseAgent]] = {
         "gemini": GeminiAgent,
         "cursor": CursorAgent,

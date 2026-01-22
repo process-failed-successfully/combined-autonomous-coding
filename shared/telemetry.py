@@ -2,6 +2,7 @@ import atexit
 import logging
 import os
 import socket
+import sys
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -19,6 +20,24 @@ from prometheus_client import (
 PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9081")
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 LOG_DIR = os.getenv("LOG_DIR", "./agents/logs")
+
+
+class SafeStreamHandler(logging.StreamHandler):
+    """A StreamHandler that suppresses errors when writing to closed streams."""
+    def handleError(self, record):
+        t, v, tb = sys.exc_info()
+        if isinstance(v, (ValueError, OSError)):
+            return
+        super().handleError(record)
+
+
+class SafeFileHandler(logging.FileHandler):
+    """A FileHandler that suppresses errors when writing to closed files."""
+    def handleError(self, record):
+        t, v, tb = sys.exc_info()
+        if isinstance(v, (ValueError, OSError)):
+            return
+        super().handleError(record)
 
 
 class Telemetry:
@@ -62,10 +81,15 @@ class Telemetry:
         # Setup Logger
         self.logger = logging.getLogger(service_name)
         self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False  # Prevent propagation to root logger (which has unsafe handlers)
+
+        # Clear existing handlers to avoid duplicates/unsafe handlers
+        if self.logger.handlers:
+            self.logger.handlers.clear()
 
         # File Handler
         log_file = os.path.join(LOG_DIR, f"{service_name}.log")
-        self.file_handler = logging.FileHandler(log_file)
+        self.file_handler = SafeFileHandler(log_file)
         formatter = logging.Formatter(
             '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "service": "%(name)s", "message": "%(message)s"}'
         )
@@ -73,7 +97,7 @@ class Telemetry:
         self.logger.addHandler(self.file_handler)
 
         # Console Handler
-        console_handler = logging.StreamHandler()
+        console_handler = SafeStreamHandler()
         console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
 
@@ -398,11 +422,7 @@ class Telemetry:
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                try:
-                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
-                except (ValueError, OSError):
-                    # Logging system might be closed during shutdown
-                    pass
+                self.logger.warning(f"Failed to push metrics to gateway: {e}")
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False, suppress_logging: bool = False):

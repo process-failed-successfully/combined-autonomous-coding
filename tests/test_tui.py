@@ -162,8 +162,11 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
     """Unit tests for individual components logic."""
     def setUp(self):
-        self.project_dir = Path("/tmp/test_project")
-        self.project_dir.mkdir(parents=True, exist_ok=True)
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
 
     @patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
     async def test_interact_tab_submit(self, mock_run_ask):

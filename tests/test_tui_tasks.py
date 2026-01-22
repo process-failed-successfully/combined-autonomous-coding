@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 import sys
 import shutil
 import tempfile
@@ -118,11 +118,12 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
             # Should filter to 1
             if table.row_count == 2:
-                 input_widget = tasks_tab.query_one("#input-task-filter", Input)
-                 input_widget.value = "Alp"
-                 await pilot.pause()
+                input_widget = tasks_tab.query_one("#input-task-filter", Input)
+                input_widget.value = "Alp"
+                await pilot.pause()
 
             self.assertLess(table.row_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

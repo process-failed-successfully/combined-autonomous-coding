@@ -119,5 +119,6 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_manager.get_ai_suggestions.assert_called_with(Path("stats_file"), agent_type="gemini")
         mock_markdown.update.assert_called_with("AI Suggestion")
 
+
 if __name__ == "__main__":
     unittest.main()

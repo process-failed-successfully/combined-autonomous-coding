@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 import sys
 import shutil
 import tempfile
@@ -117,6 +117,7 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(len(add_row_calls) > 0)
         # Check that status is red/outdated
         self.assertIn("Outdated", str(add_row_calls[0][0]))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10925,7 +10925,6 @@ async def main():
     # Handle `health` command
     if args.command == "health":
         run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
-        return
 
 
     if args.command == "debt":

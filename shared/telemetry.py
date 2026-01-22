@@ -1,6 +1,7 @@
 import atexit
 import logging
 import os
+import urllib.error
 import socket
 import time
 import threading
@@ -399,7 +400,7 @@ class Telemetry:
             if now - self._last_push_error_time > 60:  # Log once per minute
                 try:
                     # If shutting down, connection errors are expected and logging might fail
-                    if not self._is_shutting_down or not isinstance(e, ConnectionRefusedError):
+                    if not self._is_shutting_down or not (isinstance(e, ConnectionRefusedError) or isinstance(e, urllib.error.URLError)):
                         self.logger.warning(f"Failed to push metrics to gateway: {e}")
                 except Exception:
                     # Logging failed (e.g. file closed during shutdown), ignore.

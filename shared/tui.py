@@ -1,31 +1,27 @@
 import sys
 import io
 import contextlib
-import os
 import shlex
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem
+from textual.widgets import Header, Footer, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
-from textual.reactive import reactive
-from textual.screen import Screen
-from textual.binding import Binding
 from textual import on
 
-from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
+from shared.cli_utils import get_workflow_stage, get_all_log_files
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 from shared.optimize import OptimizationManager
 from shared.database import init_db
-from shared.github_client import GitHubClient
-from shared.config_loader import load_config_from_file
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
 
+
 # Helper to get Git info safely
-def get_git_info(project_dir: Path) -> dict:
+def get_git_info(project_dir: Path) -> Dict[str, str]:
     import shutil
     import subprocess
     git_path = shutil.which("git")
@@ -44,6 +40,7 @@ def get_git_info(project_dir: Path) -> dict:
         except Exception:
             pass
     return info
+
 
 class DashboardTab(Container):
     """The main dashboard tab."""
@@ -104,6 +101,7 @@ class DashboardTab(Container):
         else:
             history_log.write("No history found.")
 
+
 class FileExplorerTab(Container):
     """Tab for browsing files."""
 
@@ -133,6 +131,7 @@ class FileExplorerTab(Container):
                 preview.write(content)
         except Exception as e:
             preview.write(f"Error reading file: {e}")
+
 
 class LogsTab(Container):
     """Tab for viewing and filtering logs."""
@@ -175,7 +174,7 @@ class LogsTab(Container):
 
             item = ListItem(Label(label))
             # Attach the path to the item for retrieval
-            item.log_path = log_file
+            item.log_path = log_file  # type: ignore
             log_list.append(item)
 
         # Select the first one (latest) by default
@@ -183,12 +182,12 @@ class LogsTab(Container):
             log_list.index = 0
             # Manually trigger load as setting index doesn't always fire Selected
             if hasattr(log_list.children[0], "log_path"):
-                self.load_log_content(log_list.children[0].log_path)
+                self.load_log_content(log_list.children[0].log_path)  # type: ignore
 
     @on(ListView.Selected, "#log-file-list")
     def on_log_selected(self, event: ListView.Selected) -> None:
         if hasattr(event.item, "log_path"):
-            self.load_log_content(event.item.log_path)
+            self.load_log_content(event.item.log_path)  # type: ignore
 
     @on(Input.Changed, "#log-filter")
     def on_filter_changed(self, event: Input.Changed) -> None:
@@ -230,6 +229,7 @@ class LogsTab(Container):
         except Exception as e:
             log_viewer.write(f"[bold red]Error reading log file:[/bold red] {e}")
 
+
 class InteractTab(Container):
     """Tab for interacting with the agent (Chat)."""
 
@@ -257,7 +257,8 @@ class InteractTab(Container):
 
         # Get selected agent
         agent_select = self.query_one("#agent-select", Select)
-        agent_type = agent_select.value or "gemini"
+        val = agent_select.value
+        agent_type = str(val) if isinstance(val, str) else "gemini"
 
         chat_log.write(f"[italic]Agent ({agent_type}) is thinking...[/italic]")
 
@@ -280,11 +281,12 @@ class InteractTab(Container):
 
         # Format response
         if success:
-             chat_log.write(f"[bold green]Agent:[/bold green]")
-             chat_log.write(response)
+            chat_log.write("[bold green]Agent:[/bold green]")
+            chat_log.write(response)
         else:
-             chat_log.write(f"[bold red]Agent Error:[/bold red]")
-             chat_log.write(response)
+            chat_log.write("[bold red]Agent Error:[/bold red]")
+            chat_log.write(response)
+
 
 class KnowledgeTab(Container):
     """Tab for managing knowledge."""
@@ -340,6 +342,7 @@ class KnowledgeTab(Container):
             else:
                 self.notify("Content cannot be empty.", severity="warning")
 
+
 class TasksTab(Container):
     """Tab for viewing Unified Tasks (GitHub, Jira, Sprint, TODOs)."""
 
@@ -347,7 +350,7 @@ class TasksTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.task_manager = TaskManager(project_dir)
-        self.tasks_cache = []
+        self.tasks_cache: List[Task] = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -382,7 +385,8 @@ class TasksTab(Container):
         table = self.query_one("#tasks-table", DataTable)
         table.clear()
 
-        source_filter = self.query_one("#select-task-source", Select).value or "All"
+        source_val = self.query_one("#select-task-source", Select).value
+        source_filter = str(source_val) if isinstance(source_val, str) else "All"
         filter_text = self.query_one("#input-task-filter", Input).value.lower()
 
         for task in tasks:
@@ -419,6 +423,7 @@ class TasksTab(Container):
     def filter_text(self):
         self._update_table(self.tasks_cache)
 
+
 class ProfileTab(Container):
     """Tab for performance profiling."""
 
@@ -426,7 +431,7 @@ class ProfileTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = OptimizationManager(project_dir)
-        self.stats_file = None
+        self.stats_file: Optional[Path] = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -507,7 +512,8 @@ class ProfileTab(Container):
             return
 
         agent_select = self.query_one("#profile-agent-select", Select)
-        agent_type = agent_select.value or "gemini"
+        val = agent_select.value
+        agent_type = str(val) if isinstance(val, str) else "gemini"
 
         self.notify(f"Asking {agent_type} for optimization tips...")
         ai_output = self.query_one("#profile-ai-output", Markdown)
@@ -516,6 +522,7 @@ class ProfileTab(Container):
         suggestion = await self.manager.get_ai_suggestions(self.stats_file, agent_type=agent_type)
         ai_output.update(suggestion)
         self.notify("Analysis complete.")
+
 
 class DependenciesTab(Container):
     """Tab for managing dependencies."""
@@ -636,7 +643,7 @@ class DependenciesTab(Container):
             self.query_one("#deps-status", Label).update("Error checking updates.")
 
 
-def collect_analytics_data(project_dir: Path) -> dict:
+def collect_analytics_data(project_dir: Path) -> Dict[str, Any]:
     """Collects analytics data for the dashboard."""
     debt_collector = DebtCollector(project_dir)
     security_auditor = SecurityAuditor(project_dir)
@@ -719,7 +726,7 @@ class AnalyticsTab(Container):
             self.query_one("#analytics-status", Label).update(f"Error: {e}")
             self.notify(f"Analysis failed: {e}", severity="error")
 
-    def _update_ui(self, data: dict) -> None:
+    def _update_ui(self, data: Dict[str, Any]) -> None:
         # Update Debt
         debt = data["debt"]
         metrics = debt["metrics"]
@@ -772,7 +779,7 @@ class AnalyticsTab(Container):
             sec_table.add_row(sev, f["type"], f["description"], location)
 
 
-class AgentTUI(App):
+class AgentTUI(App[None]):
     """Mission Control TUI."""
 
     CSS_PATH = "tui.css"
@@ -829,6 +836,7 @@ class AgentTUI(App):
                 self.notify("Lint started in background.")
             except Exception as e:
                 self.notify(f"Failed to start lint: {e}", severity="error")
+
 
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution

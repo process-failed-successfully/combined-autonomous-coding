@@ -1,6 +1,6 @@
 import json
 import re
-import requests
+import requests  # type: ignore
 import subprocess
 import shutil
 from pathlib import Path

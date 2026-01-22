@@ -2,17 +2,17 @@ import ast
 import os
 import re
 from pathlib import Path
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Optional, Any
 import fnmatch
 
 class UnusedCodeDetector:
-    def __init__(self, project_dir: Path, file_pattern: str = "*.py", ignore_patterns: List[str] = None):
+    def __init__(self, project_dir: Path, file_pattern: str = "*.py", ignore_patterns: Optional[List[str]] = None):
         self.project_dir = project_dir
         self.file_pattern = file_pattern
         self.ignore_patterns = ignore_patterns or []
 
         # storage
-        self.definitions: List[Dict] = [] # {name, type, file, lineno}
+        self.definitions: List[Dict[str, Any]] = [] # {name, type, file, lineno}
         self.usages: Set[str] = set()
 
         # Stats
@@ -60,7 +60,7 @@ class UnusedCodeDetector:
             # Skip files that can't be parsed
             pass
 
-    def get_unused_definitions(self) -> List[Dict]:
+    def get_unused_definitions(self) -> List[Dict[str, Any]]:
         """Returns a list of definitions that have no recorded usages."""
         unused = []
         for defn in self.definitions:
@@ -76,7 +76,7 @@ class UnusedCodeDetector:
             if name not in self.usages:
                 unused.append(defn)
 
-        return sorted(unused, key=lambda x: (x['file'], x['lineno']))
+        return sorted(unused, key=lambda x: (str(x['file']), int(x['lineno'])))
 
 class SymbolVisitor(ast.NodeVisitor):
     def __init__(self, file_path: Path, project_root: Path):
@@ -86,8 +86,8 @@ class SymbolVisitor(ast.NodeVisitor):
         except ValueError:
             self.rel_path = str(file_path)
 
-        self.definitions = []
-        self.usages = set()
+        self.definitions: List[Dict[str, Any]] = []
+        self.usages: Set[str] = set()
 
     def visit_FunctionDef(self, node):
         self.definitions.append({
@@ -137,7 +137,7 @@ class SymbolVisitor(ast.NodeVisitor):
             self.usages.update(parts)
         self.generic_visit(node)
 
-def _run_unused_logic(project_dir: Path, files: str = None, ignore: str = None):
+def _run_unused_logic(project_dir: Path, files: Optional[str] = None, ignore: Optional[str] = None):
     """
     Main entry point for CLI.
     """
@@ -165,9 +165,9 @@ def _run_unused_logic(project_dir: Path, files: str = None, ignore: str = None):
     print(f"\nFound {len(unused)} potentially unused definitions:")
 
     # Group by file
-    by_file = {}
+    by_file: Dict[str, List[Dict[str, Any]]] = {}
     for item in unused:
-        f = item['file']
+        f = str(item['file'])
         if f not in by_file:
             by_file[f] = []
         by_file[f].append(item)
@@ -175,7 +175,7 @@ def _run_unused_logic(project_dir: Path, files: str = None, ignore: str = None):
     for f in sorted(by_file.keys()):
         print(f"\n📄 {f}")
         for item in by_file[f]:
-            print(f"  Line {item['lineno']:<4} [{item['type']}] {item['name']}")
+            print(f"  Line {str(item['lineno']):<4} [{item['type']}] {item['name']}")
 
     print("\nNote: This is a heuristic scan based on name matching.")
     print("      It may have false negatives (missed unused items) if names collide.")

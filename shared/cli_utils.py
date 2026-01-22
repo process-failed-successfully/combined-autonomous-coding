@@ -5,11 +5,11 @@ import shutil
 import subprocess
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any, List, Union
 import re
 from shared.charts import draw_ascii_bar_chart
 
-WORKFLOW_STAGES = {
+WORKFLOW_STAGES: Dict[str, Dict[str, Any]] = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
     "COMPLETED": {"name": "Completed", "file": "COMPLETED"},
     "QA_PASSED": {"name": "QA Passed", "file": "QA_PASSED"},
@@ -22,11 +22,11 @@ WORKFLOW_ORDER = ["IN_PROGRESS", "COMPLETED", "QA_PASSED", "SIGNED_OFF"]
 
 def get_workflow_stage(project_dir: Path):
     """Determines the current workflow stage by checking for marker files."""
-    if (project_dir / WORKFLOW_STAGES["SIGNED_OFF"]["file"]).exists():
+    if (project_dir / str(WORKFLOW_STAGES["SIGNED_OFF"]["file"])).exists():
         return "SIGNED_OFF"
-    if (project_dir / WORKFLOW_STAGES["QA_PASSED"]["file"]).exists():
+    if (project_dir / str(WORKFLOW_STAGES["QA_PASSED"]["file"])).exists():
         return "QA_PASSED"
-    if (project_dir / WORKFLOW_STAGES["COMPLETED"]["file"]).exists():
+    if (project_dir / str(WORKFLOW_STAGES["COMPLETED"]["file"])).exists():
         return "COMPLETED"
     return "IN_PROGRESS"
 
@@ -210,9 +210,9 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
     return "\n".join(lines)
 
 
-def _parse_metrics(metrics_file: Path) -> dict:
+def _parse_metrics(metrics_file: Path) -> Dict[str, Any]:
     """Parses a final_metrics.txt file into a dictionary (handles key:value and Prometheus formats)."""
-    metrics = {}
+    metrics: Dict[str, Any] = {}
     try:
         with open(metrics_file, 'r') as f:
             for line in f:
@@ -224,14 +224,14 @@ def _parse_metrics(metrics_file: Path) -> dict:
                 if ':' in line and '{' not in line:
                     key, value = line.split(':', 1)
                     key = key.strip()
-                    value = value.strip()
+                    val_str = value.strip()
                     try:
-                        if '.' in value:
-                            metrics[key] = float(value)
+                        if '.' in val_str:
+                            metrics[key] = float(val_str)
                         else:
-                            metrics[key] = int(value)
+                            metrics[key] = int(val_str)
                     except ValueError:
-                        metrics[key] = value
+                        metrics[key] = val_str
 
                 # Prometheus Format: name{labels} value
                 else:
@@ -240,14 +240,15 @@ def _parse_metrics(metrics_file: Path) -> dict:
                     if match:
                         name, labels_str, value_str = match.groups()
 
+                        parsed_value: Union[int, float, str]
                         # Parse value
                         try:
                             if '.' in value_str or 'e+' in value_str:
-                                value = float(value_str)
+                                parsed_value = float(value_str)
                             else:
-                                value = int(value_str)
+                                parsed_value = int(value_str)
                         except ValueError:
-                            value = value_str
+                            parsed_value = value_str
 
                         # Parse labels
                         labels = {}
@@ -259,15 +260,15 @@ def _parse_metrics(metrics_file: Path) -> dict:
                         # Map to friendly keys and aggregate where necessary
                         if name == "llm_tokens_total":
                             current_total = metrics.get("LLM Tokens Used", 0)
-                            if isinstance(current_total, (int, float)) and isinstance(value, (int, float)):
-                                metrics["LLM Tokens Used"] = current_total + value
+                            if isinstance(current_total, (int, float)) and isinstance(parsed_value, (int, float)):
+                                metrics["LLM Tokens Used"] = current_total + parsed_value
 
                             # Keep raw breakdown for cost calculation (store in a special key or separate dict?)
                             # For simplicity, we just store it in the metrics dict with a unique key
                             type_label = labels.get("type", "unknown")
                             model_label = labels.get("model", "unknown")
                             breakdown_key = f"llm_tokens_total__{model_label}__{type_label}"
-                            metrics[breakdown_key] = value
+                            metrics[breakdown_key] = parsed_value
 
                             # Extract model if available
                             if "model" in labels:
@@ -275,15 +276,15 @@ def _parse_metrics(metrics_file: Path) -> dict:
 
                         elif name == "agent_errors_total":
                             current_errors = metrics.get("Total Errors", 0)
-                            if isinstance(current_errors, (int, float)) and isinstance(value, (int, float)):
-                                metrics["Total Errors"] = current_errors + value
+                            if isinstance(current_errors, (int, float)) and isinstance(parsed_value, (int, float)):
+                                metrics["Total Errors"] = current_errors + parsed_value
 
                         elif name == "agent_iterations_total":
                             # Assuming this is a counter, so the latest value is the total
-                            metrics["Total Iterations"] = value
+                            metrics["Total Iterations"] = parsed_value
 
                         elif name == "agent_uptime_seconds":
-                             metrics["Total Execution Time (s)"] = value
+                             metrics["Total Execution Time (s)"] = parsed_value
 
                         elif name == "iteration_duration_seconds":
                              # This is likely a gauge for the last iteration duration
@@ -301,8 +302,10 @@ def _parse_metrics(metrics_file: Path) -> dict:
     return metrics
 
 
-def _format_duration(seconds: float) -> str:
+def _format_duration(seconds: Union[float, int, str, None]) -> str:
     """Formats seconds into a human-readable string (m s)."""
+    if seconds is None or isinstance(seconds, str):
+        return "N/A"
     seconds = float(seconds)
     minutes, seconds = divmod(seconds, 60)
     return f"{int(minutes)}m {seconds:.2f}s"
@@ -323,11 +326,11 @@ def _has_uncommitted_changes(project_dir: Path) -> bool:
         return False
 
 
-def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
+def get_suggestions(project_dir: Path, limit: Optional[int] = None) -> List[Dict[str, str]]:
     """
     Analyzes the project state and returns a list of suggested next commands.
     """
-    suggestions = []
+    suggestions: List[Dict[str, str]] = []
     stage = get_workflow_stage(project_dir)
     has_changes = _has_uncommitted_changes(project_dir)
 
@@ -363,7 +366,7 @@ def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
     return suggestions
 
 
-def get_latest_log_file() -> Path | None:
+def get_latest_log_file() -> Optional[Path]:
     """Finds the most recent agent log file."""
     # This assumes the script is run from the repo root, so paths are relative to `main.py`
     repo_root = Path(__file__).parent.parent
@@ -381,7 +384,7 @@ def get_latest_log_file() -> Path | None:
     return None
 
 
-def get_all_log_files() -> list[Path]:
+def get_all_log_files() -> List[Path]:
     """Returns a list of all log files sorted by modification time (newest first)."""
     # This assumes the script is run from the repo root, so paths are relative to `main.py`
     repo_root = Path(__file__).parent.parent
@@ -396,7 +399,7 @@ def get_all_log_files() -> list[Path]:
         return []
 
 
-def _find_metrics_file(run_id: str, project_dir: Path) -> Path | None:
+def _find_metrics_file(run_id: str, project_dir: Path) -> Optional[Path]:
     """Finds the final_metrics.txt file for a given run_id."""
     # 1. Check the main project directory
     metrics_file = project_dir / "final_metrics.txt"
@@ -439,7 +442,7 @@ def _run_report_logic(run_id: str, output_path: Optional[Path], project_dir: Pat
         print(f"❌ Error: Log file not found for Run ID: {run_id}", file=sys.stderr)
         return False
 
-    metrics = _parse_metrics(metrics_file) if metrics_file else {}
+    metrics: Dict[str, Any] = _parse_metrics(metrics_file) if metrics_file else {}
     log_content = log_file.read_text(encoding='utf-8', errors='ignore')
     log_lines = log_content.splitlines()
 
@@ -536,12 +539,13 @@ def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
         if full or not is_git_repo:
             return False
         try:
-            # Use relative path from the project root for check-ignore
             relative_path = path.relative_to(project_dir)
-            # The command returns 0 if the path is ignored, 1 if not.
-            return subprocess.run(
-                [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
-            ).returncode == 0
+            # Use --quiet to suppress errors for untracked files, and check return code
+            if git_path:
+                return subprocess.run(
+                    [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
+                ).returncode == 0
+            return False
         except Exception:
             # If any error occurs (e.g., path is outside repo), treat as not ignored
             return False
@@ -870,10 +874,13 @@ def _run_context_show_logic(project_dir: Path) -> str:
         try:
             relative_path = path.relative_to(project_dir)
             # Use --quiet to suppress errors for untracked files, and check return code
-            return subprocess.run(
-                [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
-            ).returncode == 0
+            if git_path:
+                return subprocess.run(
+                    [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
+                ).returncode == 0
+            return False
         except Exception:
+            # If any error occurs (e.g., path is outside repo), treat as not ignored
             return False
 
     def generate_tree_recursive(directory: Path, prefix: str):
@@ -935,7 +942,7 @@ def _run_context_analyze_logic(project_dir: Path) -> str:
     git_path = shutil.which("git")
     is_git_repo = git_path and (project_dir / ".git").is_dir()
 
-    file_stats = {}
+    file_stats: Dict[str, Dict[str, int]] = {}
     total_files = 0
     total_size = 0
 
@@ -951,9 +958,11 @@ def _run_context_analyze_logic(project_dir: Path) -> str:
             return False
         try:
             relative_path = path.relative_to(project_dir)
-            return subprocess.run(
-                [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
-            ).returncode == 0
+            if git_path:
+                return subprocess.run(
+                    [git_path, "-C", str(project_dir), "check-ignore", "--quiet", str(relative_path)],
+                ).returncode == 0
+            return False
         except Exception:
             return False
 
@@ -1031,7 +1040,7 @@ def _run_history_graph_logic(project_dir: Path, metric: str = "tokens", limit: i
 
     # Limit to last N runs
     recent_runs = run_ids[-limit:]
-    data = {}
+    data: Dict[str, float] = {}
 
     for run_id in recent_runs:
         metrics_file = _find_metrics_file(run_id, project_dir)

@@ -24,8 +24,8 @@ def _get_remote_info(project_dir: Path) -> Tuple[Optional[str], Optional[str], O
         res = subprocess.run(["git", "remote", "get-url", "origin"],
                              cwd=project_dir, check=True, stdout=subprocess.PIPE, text=True)
         remote_url = res.stdout.strip()
-        gh_helper = GitHubClient()
-        return gh_helper.get_repo_info_from_remote(remote_url)
+        gh_helper = GitHubClient(token="")  # type: ignore
+        return gh_helper.get_repo_info_from_remote(remote_url)  # type: ignore
     except Exception as e:
         logger.warning(f"Failed to get remote info: {e}")
         return None, None, None
@@ -41,11 +41,11 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
         return None
 
     try:
-        gh_client = GitHubClient(host=host)
+        gh_client = GitHubClient(host=host, token="")  # type: ignore
 
         # Detect default branch
         base_branch = "main"
-        repo_meta = gh_client.get_repo_metadata(owner, repo)
+        repo_meta = gh_client.get_repo_metadata(owner, repo)  # type: ignore
         if repo_meta and "default_branch" in repo_meta:
             base_branch = repo_meta["default_branch"]
             logger.info(f"Detected default branch '{base_branch}' for repo {owner}/{repo}")
@@ -65,7 +65,7 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
             except Exception as e:
                 logger.warning(f"Failed to read {pr_desc_file}: {e}")
 
-        pr_url = gh_client.create_pr(
+        pr_url = gh_client.create_pr(  # type: ignore
             owner, repo,
             title=f"Fixes {config.jira_ticket_key}",
             body=pr_body,

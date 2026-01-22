@@ -45,7 +45,7 @@ class KnowledgeManager:
         try:
             item = db.query(AgentKnowledge).filter(AgentKnowledge.id == knowledge_id).first()
             if item:
-                item.is_active = False
+                item.is_active = False  # type: ignore
                 db.commit()
                 return True
             return False
@@ -66,8 +66,8 @@ class KnowledgeManager:
         try:
             item = db.query(AgentQuestion).filter(AgentQuestion.id == question_id).first()
             if item:
-                item.answer = answer
-                item.status = "answered"
+                item.answer = answer  # type: ignore
+                item.status = "answered"  # type: ignore
                 db.commit()
                 return True
             return False

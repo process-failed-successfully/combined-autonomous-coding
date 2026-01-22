@@ -14,7 +14,7 @@ class DependencyAnalyzer:
 
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
-        self.license_cache = {}
+        self.license_cache: Dict[str, Optional[str]] = {}
 
     def scan(self) -> Dict[str, Any]:
         """Scans the project directory for dependency files and parses them."""
@@ -264,7 +264,12 @@ class DependencyAnalyzer:
 
         return data
 
-    def check_licenses(self, data: Dict[str, Any], allow_list: List[str] = None, deny_list: List[str] = None) -> List[Dict[str, Any]]:
+    def check_licenses(
+        self,
+        data: Dict[str, Any],
+        allow_list: Optional[List[str]] = None,
+        deny_list: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Checks licenses for all found dependencies.
         Returns a list of violations (or all items if just listing).

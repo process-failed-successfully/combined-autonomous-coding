@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime
 
 @dataclass
@@ -14,7 +14,7 @@ class Session:
     files: List[str]
     notes: List[str]
     description: str = ""
-    env_vars: Dict[str, str] = None
+    env_vars: Dict[str, str] = field(default_factory=dict)
 
 class WorkSessionManager:
     def __init__(self, project_dir: Path):
@@ -67,7 +67,7 @@ class WorkSessionManager:
             return None
 
     def list_sessions(self) -> List[Dict[str, str]]:
-        sessions = []
+        sessions: List[Dict[str, str]] = []
         if not self.sessions_dir.exists():
             return sessions
 

@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from collections import defaultdict
 import fnmatch
+from typing import List, Dict, Any, Tuple, Optional
 
 # Token types to ignore for duplication purposes
 IGNORED_TOKENS = {
@@ -20,7 +21,7 @@ IGNORED_TOKENS = {
     tokenize.ENDMARKER
 }
 
-def tokenize_file(filepath: Path):
+def tokenize_file(filepath: Path) -> List[Tuple[int, str, int]]:
     """
     Reads a file and returns a list of normalized tokens.
     Returns: list of (token_type, token_string, line_number)
@@ -47,7 +48,12 @@ def tokenize_file(filepath: Path):
 
     return tokens
 
-def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_patterns: list[str] = None, min_tokens: int = 50):
+def find_duplicates(
+    project_dir: Path,
+    file_patterns: Optional[List[str]] = None,
+    ignore_patterns: Optional[List[str]] = None,
+    min_tokens: int = 50
+) -> List[Dict[str, Any]]:
     """
     Scans the project for duplicate code.
 
@@ -178,7 +184,7 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
         merged_duplicates.append((current_start, current_start + offset, final_len))
 
     # 5. Format Results
-    results = []
+    results: List[Dict[str, Any]] = []
     for idx1, idx2, length in merged_duplicates:
         # Get file info
         file1, line1_start = token_map[idx1]
@@ -196,11 +202,16 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
         })
 
     # Sort by token count descending (most severe first)
-    results.sort(key=lambda x: x['token_count'], reverse=True)
+    results.sort(key=lambda x: int(x['token_count']), reverse=True)
 
     return results
 
-def _run_duplication_logic(project_dir: Path, min_tokens: int = 50, files: str = None, ignore: str = None):
+def _run_duplication_logic(
+    project_dir: Path,
+    min_tokens: int = 50,
+    files: Optional[str] = None,
+    ignore: Optional[str] = None
+):
     """
     CLI Handler for duplication detection.
     """

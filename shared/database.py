@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pathlib import Path
+from typing import Optional
 
 # Use a default path but allow override
 DB_PATH = os.getenv("GEMINI_DB_PATH", "gemini.db")
@@ -22,7 +23,7 @@ def get_db():
     finally:
         db.close()
 
-def init_db(path: Path = None):
+def init_db(path: Optional[Path] = None):
     global engine
     if path:
         db_url = f"sqlite:///{path}"

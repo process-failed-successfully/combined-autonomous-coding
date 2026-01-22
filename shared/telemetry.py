@@ -14,6 +14,7 @@ from prometheus_client import (
     Histogram,
     push_to_gateway,
 )
+import urllib.error
 
 # Configuration
 PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9081")
@@ -88,12 +89,14 @@ class Telemetry:
             target=self._system_monitoring_loop, daemon=True
         )
         self.monitoring_active = False
+        self._is_shutting_down = False
 
         # Ensure final metrics are pushed on exit
         atexit.register(self._shutdown)
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
+        self._is_shutting_down = True
         self._push_metrics(force=True, sync=True)
         self._push_executor.shutdown(wait=True)
 
@@ -390,17 +393,29 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
+        except (ConnectionRefusedError, urllib.error.URLError) as e:
+            # Common connection errors (gateway down, etc.)
+            # Only log if not shutting down to avoid "I/O operation on closed file"
+            if not getattr(self, "_is_shutting_down", False):
+                try:
+                    now = time.time()
+                    if now - self._last_push_error_time > 60:
+                        self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                        self._last_push_error_time = now
+                except Exception:
+                    pass
         except Exception as e:
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
-            try:
-                now = time.time()
-                if now - self._last_push_error_time > 60:  # Log once per minute
-                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
-                    self._last_push_error_time = now
-            except Exception:
-                # Fallback if logger is closed or other issues during shutdown
-                pass
+            if not getattr(self, "_is_shutting_down", False):
+                try:
+                    now = time.time()
+                    if now - self._last_push_error_time > 60:  # Log once per minute
+                        self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                        self._last_push_error_time = now
+                except Exception:
+                    # Fallback if logger is closed or other issues during shutdown
+                    pass
 
     def _push_metrics(self, force: bool = False, sync: bool = False):
         """

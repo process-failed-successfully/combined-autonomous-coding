@@ -94,8 +94,13 @@ class Telemetry:
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
-        self._push_metrics(force=True, sync=True)
-        self._push_executor.shutdown(wait=True)
+        try:
+            # Suppress logging errors during shutdown as streams might be closed
+            self._push_metrics(force=True, sync=True, suppress_logging=True)
+            self._push_executor.shutdown(wait=True)
+        except Exception:
+            # Prevent errors during shutdown from crashing the process or dirtying stderr
+            pass
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
@@ -374,7 +379,7 @@ class Telemetry:
         self.logger.error(message)
         self.increment_counter("agent_errors_total", labels={"error_type": "log_error"})
 
-    def _push_metrics_sync(self):
+    def _push_metrics_sync(self, suppress_logging: bool = False):
         """Synchronous version of push metrics for background thread or final flush."""
         try:
             grouping_key = {
@@ -391,14 +396,21 @@ class Telemetry:
                 grouping_key=grouping_key,
             )
         except Exception as e:
+            if suppress_logging:
+                return
+
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                try:
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except ValueError:
+                    # Logging system might be closed during shutdown
+                    pass
                 self._last_push_error_time = now
 
-    def _push_metrics(self, force: bool = False, sync: bool = False):
+    def _push_metrics(self, force: bool = False, sync: bool = False, suppress_logging: bool = False):
         """
         Push metrics to the gateway.
         If sync=True, blocks until completion (used for shutdown).
@@ -412,10 +424,10 @@ class Telemetry:
         self._last_push_time = now
 
         if sync or self.synchronous_mode:
-            self._push_metrics_sync()
+            self._push_metrics_sync(suppress_logging=suppress_logging)
         else:
             # Offload to thread pool
-            self._push_executor.submit(self._push_metrics_sync)
+            self._push_executor.submit(self._push_metrics_sync, suppress_logging)
 
     def start_system_monitoring(self, interval: int = 15):
         if self.monitoring_active:

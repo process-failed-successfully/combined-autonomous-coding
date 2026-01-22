@@ -5,12 +5,13 @@ import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.binding import Binding
 from textual import on
+from rich.syntax import Syntax
 
 from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
 from shared.knowledge import KnowledgeManager
@@ -23,6 +24,7 @@ from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
+from shared.map import scan_project, CodeNode
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -133,6 +135,99 @@ class FileExplorerTab(Container):
                 preview.write(content)
         except Exception as e:
             preview.write(f"Error reading file: {e}")
+
+class CodeMapTab(Container):
+    """Tab for visualizing project structure (Classes, Functions)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.map_data = {}
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            with Vertical(id="codemap-left-pane"):
+                yield Input(placeholder="Filter nodes...", id="codemap-filter")
+                yield Tree("Project Structure", id="codemap-tree")
+            with VerticalScroll(id="codemap-right-pane"):
+                yield RichLog(id="codemap-preview", markup=True)
+
+    def on_mount(self) -> None:
+        self.refresh_map()
+
+    def refresh_map(self) -> None:
+        self.map_data = scan_project(self.project_dir)
+        self.populate_tree()
+
+    def populate_tree(self, filter_text: str = "") -> None:
+        tree = self.query_one("#codemap-tree", Tree)
+        tree.clear()
+        tree.root.expand()
+
+        for file_path, node in sorted(self.map_data.items()):
+            # Apply filter: if filter matches file or any child
+            if filter_text and filter_text.lower() not in file_path.lower():
+                # Check children
+                has_match = any(filter_text.lower() in c.name.lower() for c in node.children)
+                if not has_match:
+                    continue
+
+            # Add file node
+            file_node = tree.root.add(f"📄 {file_path}", data=node, expand=True)
+
+            # Add children
+            for child in node.children:
+                if filter_text and filter_text.lower() not in child.name.lower() and filter_text.lower() not in file_path.lower():
+                    continue
+
+                icon = "C" if child.type == "class" else "F"
+                child_node = file_node.add(f"[{icon}] {child.name}", data=child)
+
+                # Grandchildren (methods in class)
+                for gc in child.children:
+                     if filter_text and filter_text.lower() not in gc.name.lower() and filter_text.lower() not in child.name.lower() and filter_text.lower() not in file_path.lower():
+                         continue
+                     icon_gc = "M" if gc.type == "function" else "?"
+                     child_node.add(f"[{icon_gc}] {gc.name}", data=gc)
+                     child_node.expand()
+
+    @on(Input.Changed, "#codemap-filter")
+    def on_filter_changed(self, event: Input.Changed) -> None:
+        self.populate_tree(event.value)
+
+    @on(Tree.NodeSelected, "#codemap-tree")
+    def on_node_selected(self, event: Tree.NodeSelected) -> None:
+        node_data = event.node.data
+        if not node_data:
+            return
+
+        preview = self.query_one("#codemap-preview", RichLog)
+        preview.clear()
+
+        try:
+            full_path = self.project_dir / node_data.file
+            if not full_path.exists():
+                preview.write(f"File not found: {full_path}")
+                return
+
+            content = full_path.read_text(encoding="utf-8", errors="replace")
+            lines = content.splitlines()
+
+            start = node_data.lineno - 1
+            end = node_data.end_lineno if node_data.end_lineno else start + 20
+
+            # Clamp end
+            end = min(end, len(lines))
+
+            # Extract snippet
+            snippet = "\n".join(lines[start:end])
+
+            syntax = Syntax(snippet, "python", theme="monokai", line_numbers=True, start_line=start+1)
+            preview.write(f"[bold]{node_data.type.capitalize()}: {node_data.name}[/bold] (Lines {start+1}-{end})")
+            preview.write(syntax)
+
+        except Exception as e:
+            preview.write(f"Error reading code: {e}")
 
 class LogsTab(Container):
     """Tab for viewing and filtering logs."""
@@ -802,6 +897,8 @@ class AgentTUI(App):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):
                 yield FileExplorerTab(self.project_dir)
+            with TabPane("Code Map", id="tab-codemap"):
+                yield CodeMapTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):
                 yield ProfileTab(self.project_dir)
             with TabPane("Logs", id="tab-logs"):

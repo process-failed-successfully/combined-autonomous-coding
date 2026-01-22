@@ -15,11 +15,12 @@ from typing import Dict, List, Any, Set, Optional
 from shared.complexity import get_python_files
 
 class CodeNode:
-    def __init__(self, name: str, type: str, file: str, lineno: int):
+    def __init__(self, name: str, type: str, file: str, lineno: int, end_lineno: Optional[int] = None):
         self.name = name
         self.type = type  # 'module', 'class', 'function'
         self.file = file
         self.lineno = lineno
+        self.end_lineno = end_lineno
         self.children: List['CodeNode'] = []
         self.dependencies: Set[str] = set()  # references to other nodes (e.g. imports)
 
@@ -29,6 +30,7 @@ class CodeNode:
             "type": self.type,
             "file": self.file,
             "lineno": self.lineno,
+            "end_lineno": self.end_lineno,
             "children": [c.to_dict() for c in self.children],
             "dependencies": list(sorted(self.dependencies))
         }
@@ -48,7 +50,8 @@ class PythonMapBuilder(ast.NodeVisitor):
         self.stack = [self.module_node]
 
     def visit_ClassDef(self, node):
-        class_node = CodeNode(node.name, 'class', self.rel_path, node.lineno)
+        end_lineno = getattr(node, 'end_lineno', None)
+        class_node = CodeNode(node.name, 'class', self.rel_path, node.lineno, end_lineno)
         self.current_scope.children.append(class_node)
 
         self.stack.append(class_node)
@@ -60,7 +63,8 @@ class PythonMapBuilder(ast.NodeVisitor):
         self.current_scope = self.stack[-1]
 
     def visit_FunctionDef(self, node):
-        func_node = CodeNode(node.name, 'function', self.rel_path, node.lineno)
+        end_lineno = getattr(node, 'end_lineno', None)
+        func_node = CodeNode(node.name, 'function', self.rel_path, node.lineno, end_lineno)
         self.current_scope.children.append(func_node)
 
         self.stack.append(func_node)

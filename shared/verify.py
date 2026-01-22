@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> subprocess.CompletedProcess:
+def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> subprocess.CompletedProcess[str]:
     """Runs a shell command and returns the result."""
     try:
         return subprocess.run(

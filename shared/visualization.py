@@ -3,7 +3,7 @@ import json
 import sys
 import math
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Optional, Union, Tuple, Set
 from rich.console import Console
 from rich.bar import Bar
 from rich.text import Text
@@ -89,7 +89,7 @@ class BrailleChart:
         canvas_w = self.width * 2
         canvas_h = self.height * 4
 
-        dots = set()
+        dots: Set[Tuple[int, int]] = set()
         count = len(y_values)
 
         for i in range(count - 1):

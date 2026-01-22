@@ -128,10 +128,10 @@ def determine_next_version(current_version_str: Optional[str], commits: List[Dic
 def generate_changelog(commits: List[Dict[str, str]], new_version: str) -> str:
     """Generates a simple Markdown changelog from commits."""
 
-    features = []
-    fixes = []
-    others = []
-    breaking = []
+    features: List[str] = []
+    fixes: List[str] = []
+    others: List[str] = []
+    breaking: List[str] = []
 
     for commit in commits:
         subject = commit['subject']

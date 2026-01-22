@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import re
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 
 def search_codebase(
     project_dir: Path,
@@ -68,7 +68,7 @@ def _search_with_git_grep(
     is_regex: bool,
     context_lines: int,
     git_path: str
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """Uses git grep to find matches."""
     cmd = [git_path, "-C", str(project_dir), "grep", "-n", "-I"]
 
@@ -171,7 +171,7 @@ def _parse_git_grep_output(output: str, context_lines: int) -> List[Dict]:
 
     # Group lines by file? No, git grep output is sorted by file.
 
-    buffer_lines = [] # list of (line_num, content, is_match, file)
+    buffer_lines: List[Dict[str, Any]] = [] # list of (line_num, content, is_match, file)
 
     for line in lines:
         if line == "--":
@@ -238,7 +238,7 @@ def _process_buffer(buffer: List[Dict], results: List[Dict]):
 
         # Context before: everything in buffer before i, belonging to same file
         # Check file consistency (should be same file in a block usually, but safely check)
-        c_before = []
+        c_before: List[str] = []
         for j in range(i - 1, -1, -1):
             if buffer[j]['file'] != item['file']:
                 break
@@ -292,12 +292,12 @@ def _process_buffer(buffer: List[Dict], results: List[Dict]):
 
 def _search_with_python(
     project_dir: Path,
-    regex: re.Pattern,
+    regex: re.Pattern[str],
     file_pattern: Optional[str],
     context_lines: int,
     is_git_repo: bool,
     git_path: str
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """Fallback python scanning."""
     results = []
 

@@ -11,7 +11,7 @@ import re
 import os
 import shutil
 from pathlib import Path
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Set, Optional, Any
 from collections import Counter
 import subprocess
 
@@ -49,9 +49,9 @@ class SmartSearchEngine:
     """
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
-        self.documents = []  # List of dicts: {path, content, tokens, len}
-        self.avg_doc_len = 0
-        self.doc_freqs = Counter() # Term -> number of docs containing it
+        self.documents: List[Dict[str, Any]] = []  # List of dicts: {path, content, tokens, len}
+        self.avg_doc_len: float = 0
+        self.doc_freqs: Counter[str] = Counter() # Term -> number of docs containing it
         self.num_docs = 0
 
         # BM25 parameters

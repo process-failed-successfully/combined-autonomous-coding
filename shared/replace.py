@@ -1,7 +1,7 @@
 import re
 import difflib
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from shared.search import search_codebase
 
 def replace_in_codebase(

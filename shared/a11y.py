@@ -3,7 +3,7 @@ import re
 import fnmatch
 from pathlib import Path
 from html.parser import HTMLParser
-from typing import List, Dict, Set, Tuple, Optional
+from typing import List, Dict, Set, Tuple, Optional, Any
 
 class A11yViolation:
     def __init__(self, rule_id: str, message: str, file: str, lineno: int, severity: str = "ERROR"):
@@ -30,7 +30,7 @@ class HTMLScanner(HTMLParser):
         self.current_line = 1
         self.ids: Set[str] = set()
         self.headings: List[Tuple[int, int]] = [] # (level, lineno)
-        self.stack: List[Dict] = [] # {tag, lineno, has_content, attrs}
+        self.stack: List[Dict[str, Any]] = [] # {tag, lineno, has_content, attrs}
 
     def error(self, message):
         pass

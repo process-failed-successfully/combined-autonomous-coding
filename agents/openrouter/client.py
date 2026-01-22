@@ -103,7 +103,7 @@ class OpenRouterClient(BaseClient):
             if self.config.stream_output:
                 print() # Newline after stream
             
-            result = {"content": full_response}
+            result: Dict[str, Any] = {"content": full_response}
             if usage:
                 result["usage"] = {
                     "prompt_tokens": usage.prompt_tokens,

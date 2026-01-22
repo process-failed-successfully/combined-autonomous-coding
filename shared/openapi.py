@@ -29,12 +29,12 @@ class OpenAPIGenerator:
         scan_data = self.analyzer.scan()
 
         # Flatten dependencies
-        python_deps = set()
+        python_deps: set[str] = set()
         for f in scan_data.get("python", []):
             for d in f.get("dependencies", []):
                 python_deps.add(d["name"].lower())
 
-        node_deps = set()
+        node_deps: set[str] = set()
         for f in scan_data.get("node", []):
             for d in f.get("dependencies", []):
                 node_deps.add(d["name"].lower())
@@ -61,8 +61,8 @@ class OpenAPIGenerator:
         relevant_files = []
 
         # Define patterns based on framework
-        patterns = []
-        content_indicators = [] # Simple string checks in file content
+        patterns: List[str] = []
+        content_indicators: List[str] = [] # Simple string checks in file content
 
         if framework == "flask":
             patterns = ["app.py", "views.py", "routes.py", "*/views.py", "*/routes.py", "*/controllers/*.py"]

@@ -62,3 +62,18 @@ class TestLinkChecker(unittest.TestCase):
         res = checker.check_url("https://broken.com")
         self.assertFalse(res['ok'])
         self.assertEqual(res['status'], 404)
+
+    def test_check_url_with_session(self) -> None:
+        checker = LinkChecker()
+        mock_session = MagicMock()
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.ok = True
+        mock_session.head.return_value = mock_response
+
+        res = checker.check_url("https://example.com", session=mock_session)
+
+        # Verify session.head was called
+        mock_session.head.assert_called_once()
+        self.assertTrue(res['ok'])
+        self.assertEqual(res['status'], 200)

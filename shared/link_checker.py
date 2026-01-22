@@ -40,7 +40,7 @@ class LinkChecker:
             print(f"Error reading {file_path}: {e}", file=sys.stderr)
         return links
 
-    def check_url(self, url: str) -> Dict[str, Any]:
+    def check_url(self, url: str, session: requests.Session = None) -> Dict[str, Any]:
         """
         Checks a single URL. Returns dict with status info.
         """
@@ -49,11 +49,12 @@ class LinkChecker:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
-            response = requests.head(url, timeout=self.timeout, headers=headers, allow_redirects=True)
+            requester = session if session else requests
+            response = requester.head(url, timeout=self.timeout, headers=headers, allow_redirects=True)
 
             # Some servers return 405 Method Not Allowed for HEAD, so try GET
             if response.status_code == 405:
-                 response = requests.get(url, timeout=self.timeout, headers=headers, stream=True)
+                 response = requester.get(url, timeout=self.timeout, headers=headers, stream=True)
                  response.close() # Close connection immediately
 
             return {
@@ -92,24 +93,30 @@ class LinkChecker:
 
         # 2. Check links
         results: Dict[str, Dict[str, Any]] = {}
-        with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
-            future_to_url = {executor.submit(self.check_url, url): url for url in unique_urls}
+        with requests.Session() as session:
+            # Pre-configure session to ensure connection reuse works best
+            # Note: check_url also sends headers, which will be merged/overridden.
+            session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=concurrency, pool_maxsize=concurrency))
+            session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=concurrency, pool_maxsize=concurrency))
 
-            # Progress bar simulation
-            completed = 0
-            total = len(unique_urls)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+                future_to_url = {executor.submit(self.check_url, url, session): url for url in unique_urls}
 
-            for future in concurrent.futures.as_completed(future_to_url):
-                url = future_to_url[future]
-                try:
-                    res = future.result()
-                    results[url] = res
-                except Exception as e:
-                    results[url] = {"url": url, "status": 0, "ok": False, "error": str(e)}
+                # Progress bar simulation
+                completed = 0
+                total = len(unique_urls)
 
-                completed += 1
-                if total > 0 and completed % 5 == 0:
-                    print(f"  Checking... {completed}/{total}", end='\r')
+                for future in concurrent.futures.as_completed(future_to_url):
+                    url = future_to_url[future]
+                    try:
+                        res = future.result()
+                        results[url] = res
+                    except Exception as e:
+                        results[url] = {"url": url, "status": 0, "ok": False, "error": str(e)}
+
+                    completed += 1
+                    if total > 0 and completed % 5 == 0:
+                        print(f"  Checking... {completed}/{total}", end='\r')
 
         print(f"  Checking... {total}/{total} (Done)")
 

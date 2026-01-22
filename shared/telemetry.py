@@ -97,6 +97,7 @@ class Telemetry:
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
         self._is_shutting_down = True
+        self.monitoring_active = False
         self._push_metrics(force=True, sync=True)
         self._push_executor.shutdown(wait=True)
 
@@ -371,10 +372,15 @@ class Telemetry:
             self._push_metrics()
 
     def log_info(self, message: str):
-        self.logger.info(message)
+        if not getattr(self, "_is_shutting_down", False):
+            self.logger.info(message)
 
     def log_error(self, message: str):
-        self.logger.error(message)
+        if not getattr(self, "_is_shutting_down", False):
+            try:
+                self.logger.error(message)
+            except Exception:
+                pass
         self.increment_counter("agent_errors_total", labels={"error_type": "log_error"})
 
     def _push_metrics_sync(self):
@@ -434,7 +440,11 @@ class Telemetry:
             self._push_metrics_sync()
         else:
             # Offload to thread pool
-            self._push_executor.submit(self._push_metrics_sync)
+            try:
+                self._push_executor.submit(self._push_metrics_sync)
+            except RuntimeError:
+                # Executor might be closed if shutting down
+                pass
 
     def start_system_monitoring(self, interval: int = 15):
         if self.monitoring_active:

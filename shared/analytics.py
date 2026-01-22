@@ -6,7 +6,7 @@ Functions for gathering and displaying project analytics (Git, Code, etc.).
 """
 
 import shutil
-import subprocess
+import subprocess  # nosec
 from pathlib import Path
 from collections import Counter
 from datetime import datetime, timedelta
@@ -24,7 +24,7 @@ def get_git_contributors(project_dir: Path) -> List[Tuple[int, str]]:
 
     try:
         # Use shortlog for a nice summary
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [git_path, "-C", str(project_dir), "shortlog", "-sn", "--all", "--no-merges"],
             capture_output=True, text=True, check=True
         )
@@ -47,7 +47,7 @@ def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> List[Tuple
 
     try:
         # Get list of all changed files in all commits
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [git_path, "-C", str(project_dir), "log", "--format=format:", "--name-only"],
             capture_output=True, text=True, check=True
         )
@@ -69,7 +69,7 @@ def get_git_activity(project_dir: Path, days: int = 30) -> List[Tuple[str, int]]
     try:
         # Get dates of all commits
         since_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [git_path, "-C", str(project_dir), "log", f"--since={since_date}", "--date=short", "--format=%ad"],
             capture_output=True, text=True, check=True
         )

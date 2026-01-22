@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import re
 from pathlib import Path
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional, Set, Any, Pattern
 
 DEFAULT_TAGS = ["TODO", "FIXME", "BUG", "HACK", "NOTE", "XXX"]
 
@@ -12,7 +12,7 @@ def scan_todos(
     tags: Optional[List[str]] = None,
     exclude_paths: Optional[List[str]] = None,
     use_git_grep: bool = True
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """
     Scans the project directory for TODO comments.
 
@@ -61,8 +61,8 @@ def _scan_with_git_grep(
     project_dir: Path,
     tags: List[str],
     git_path: str,
-    line_parser: re.Pattern
-) -> List[Dict]:
+    line_parser: Pattern[str]
+) -> List[Dict[str, Any]]:
     """Uses git grep to find matches."""
     # Construct grep pattern: (TODO|FIXME|...)
     pattern = "|".join(tags)
@@ -138,10 +138,10 @@ def _scan_with_python(
     project_dir: Path,
     tags: List[str],
     exclude_paths: List[str],
-    line_parser: re.Pattern,
+    line_parser: Pattern[str],
     is_git_repo: bool,
     git_path: Optional[str]
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """Fallback python scanning."""
     parsed_results = []
 
@@ -200,7 +200,7 @@ def _scan_with_python(
     return parsed_results
 
 
-def get_todo_blame(project_dir: Path, file_path: str, line_num: int) -> Dict:
+def get_todo_blame(project_dir: Path, file_path: str, line_num: int) -> Dict[str, str]:
     """
     Gets the blame information for a specific TODO.
     """

@@ -14,6 +14,10 @@ class TestIterationMetrics(unittest.TestCase):
             "test_service", agent_type="test", project_name="test_project"
         )
 
+    def tearDown(self):
+        if hasattr(self, 'telemetry'):
+            self.telemetry.close()
+
     def test_iteration_metrics_registered(self):
         """Verify that iteration metrics are registered during initialization."""
         expected_metrics = [

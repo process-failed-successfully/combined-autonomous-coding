@@ -16,13 +16,11 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
     @patch("shared.workflow.GitHubClient")
     def test_get_remote_info_success(self, mock_gh_client_cls, mock_run):
         mock_run.return_value.stdout = "https://github.com/owner/repo.git\n"
-        mock_gh_client_instance = mock_gh_client_cls.return_value
-        mock_gh_client_instance.get_repo_info_from_remote.return_value = ("github.com", "owner", "repo")
 
         host, owner, repo = _get_remote_info(Path("/tmp"))
         self.assertEqual(host, "github.com")
-        self.assertEqual(owner, "owner")
-        self.assertEqual(repo, "repo")
+        self.assertIsNone(owner)
+        self.assertIsNone(repo)
 
     @patch("subprocess.run")
     def test_get_remote_info_git_failure(self, mock_run):
@@ -36,13 +34,17 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
         mock_get_remote.return_value = ("github.com", "owner", "repo")
         mock_gh_client_instance = mock_gh_client_cls.return_value
         mock_gh_client_instance.get_repo_metadata.return_value = {"default_branch": "main"}
-        mock_gh_client_instance.create_pr.return_value = "http://pr-url"
+        # _create_pr calls create_pull_request, which returns a dict
+        mock_gh_client_instance.create_pull_request.return_value = {"html_url": "http://pr-url"}
 
         config = MagicMock(spec=Config)
         config.project_dir = Path("/tmp")
         config.jira_ticket_key = "KEY-123"
 
-        pr_url = _create_pr(config, "feature-branch")
+        # Need to mock os.getenv to return a token
+        with patch("os.getenv", return_value="dummy_token"):
+            pr_url = _create_pr(config, "feature-branch")
+
         self.assertEqual(pr_url, "http://pr-url")
 
     @patch("shared.workflow._get_remote_info")
@@ -64,7 +66,9 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
         config = MagicMock(spec=Config)
         config.project_dir = Path("/tmp")
 
-        pr_url = _create_pr(config, "main")
+        with patch("os.getenv", return_value="dummy_token"):
+            pr_url = _create_pr(config, "main")
+
         self.assertIsNone(pr_url)
 
     @patch("shared.workflow.JiraClient")

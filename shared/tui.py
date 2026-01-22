@@ -23,7 +23,7 @@ from shared.security import SecurityAuditor
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict[str, str]:
     import shutil
-    import subprocess
+    import subprocess  # nosec
     git_path = shutil.which("git")
     info = {"branch": "Unknown", "status": "Unknown"}
     if git_path and (project_dir / ".git").is_dir():

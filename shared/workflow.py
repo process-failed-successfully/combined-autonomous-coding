@@ -66,9 +66,8 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
 
         # Avoid PR from main to main
         if current_branch == base_branch:
-             # We should probably check if current_branch IS the default branch.
-             # Without API call, hard to be sure.
-             pass
+            logger.warning(f"Current branch '{current_branch}' matches base branch '{base_branch}'. Skipping PR creation.")
+            return None
 
         # Read PR Description
         pr_body = f"Automated PR for Jira Ticket {config.jira_ticket_key}."

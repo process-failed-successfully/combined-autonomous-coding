@@ -4,6 +4,7 @@ import os
 import socket
 import time
 import threading
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 import psutil
 from typing import Dict, Any, Optional, List, Tuple
@@ -91,10 +92,15 @@ class Telemetry:
 
         # Ensure final metrics are pushed on exit
         atexit.register(self._shutdown)
+        self._is_shutting_down = False
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
-        self._push_metrics(force=True, sync=True)
+        self._is_shutting_down = True
+        try:
+            self._push_metrics(force=True, sync=True)
+        except Exception:
+            pass  # Suppress errors during shutdown
         self._push_executor.shutdown(wait=True)
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
@@ -390,12 +396,25 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
+        except (ConnectionRefusedError, urllib.error.URLError) as e:
+            # Common connection errors (Prometheus gateway down)
+            now = time.time()
+            if not self._is_shutting_down and (now - self._last_push_error_time > 60):
+                try:
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except ValueError:
+                    # Handle I/O operation on closed file during shutdown
+                    pass
+                self._last_push_error_time = now
         except Exception as e:
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
             now = time.time()
-            if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+            if not self._is_shutting_down and (now - self._last_push_error_time > 60):  # Log once per minute
+                try:
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except ValueError:
+                    pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):

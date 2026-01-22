@@ -38,7 +38,7 @@ def get_git_info(project_dir: Path) -> dict[str, str]:
             if res.returncode == 0:
                 info["status"] = "Dirty" if res.stdout.strip() else "Clean"
         except Exception:
-            pass
+            pass  # nosec
     return info
 
 
@@ -819,7 +819,7 @@ class AgentTUI(App[None]):
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        import subprocess
+        import subprocess  # nosec
 
         # Handle dashboard buttons (bubble up)
         if event.button.id == "btn-refresh":

@@ -393,10 +393,14 @@ class Telemetry:
         except Exception as e:
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
-            now = time.time()
-            if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
-                self._last_push_error_time = now
+            try:
+                now = time.time()
+                if now - self._last_push_error_time > 60:  # Log once per minute
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                    self._last_push_error_time = now
+            except Exception:
+                # Fallback if logger is closed or other issues during shutdown
+                pass
 
     def _push_metrics(self, force: bool = False, sync: bool = False):
         """

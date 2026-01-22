@@ -6,11 +6,15 @@ Functions for gathering and displaying project analytics (Git, Code, etc.).
 """
 
 import shutil
-import subprocess
+import subprocess  # nosec
 from pathlib import Path
 from collections import Counter
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Any
+
+from shared.debt import DebtCollector
+from shared.security import SecurityAuditor
+
 
 def get_git_contributors(project_dir: Path) -> list[tuple[int, str]]:
     """Returns a list of contributors sorted by commit count."""
@@ -23,7 +27,7 @@ def get_git_contributors(project_dir: Path) -> list[tuple[int, str]]:
         result = subprocess.run(
             [git_path, "-C", str(project_dir), "shortlog", "-sn", "--all", "--no-merges"],
             capture_output=True, text=True, check=True
-        )
+        )  # nosec
         contributors = []
         for line in result.stdout.strip().split('\n'):
             if line:
@@ -34,6 +38,7 @@ def get_git_contributors(project_dir: Path) -> list[tuple[int, str]]:
         return contributors
     except subprocess.CalledProcessError:
         return []
+
 
 def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> list[tuple[str, int]]:
     """Returns the most frequently modified files."""
@@ -46,7 +51,7 @@ def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> list[tuple
         result = subprocess.run(
             [git_path, "-C", str(project_dir), "log", "--format=format:", "--name-only"],
             capture_output=True, text=True, check=True
-        )
+        )  # nosec
 
         # Filter out empty lines and count
         files = [line for line in result.stdout.split('\n') if line]
@@ -55,6 +60,7 @@ def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> list[tuple
         return counter.most_common(limit)
     except subprocess.CalledProcessError:
         return []
+
 
 def get_git_activity(project_dir: Path, days: int = 30) -> list[tuple[str, int]]:
     """Returns commit counts per day for the last N days."""
@@ -68,7 +74,7 @@ def get_git_activity(project_dir: Path, days: int = 30) -> list[tuple[str, int]]
         result = subprocess.run(
             [git_path, "-C", str(project_dir), "log", f"--since={since_date}", "--date=short", "--format=%ad"],
             capture_output=True, text=True, check=True
-        )
+        )  # nosec
 
         dates = [line for line in result.stdout.split('\n') if line]
         counter = Counter(dates)
@@ -78,6 +84,7 @@ def get_git_activity(project_dir: Path, days: int = 30) -> list[tuple[str, int]]
         return sorted_activity
     except subprocess.CalledProcessError:
         return []
+
 
 def _run_analytics_git_logic(project_dir: Path):
     """Orchestrates the git analytics display."""
@@ -92,7 +99,7 @@ def _run_analytics_git_logic(project_dir: Path):
     contributors = get_git_contributors(project_dir)
     print("[ Top Contributors ]")
     if contributors:
-        for count, name in contributors[:5]: # Show top 5
+        for count, name in contributors[:5]:  # Show top 5
             print(f"  {count:<5} {name}")
     else:
         print("  No contributors found.")
@@ -117,8 +124,27 @@ def _run_analytics_git_logic(project_dir: Path):
         max_commits = max(count for _, count in activity) if activity else 1
         for date, count in activity:
             bar = "█" * int((count / max_commits) * 20)
-            if not bar: bar = "▏" # At least show something for 1 commit if scaling makes it 0
+            if not bar:
+                bar = "▏"  # At least show something for 1 commit if scaling makes it 0
             print(f"  {date} : {count:<3} {bar}")
     else:
         print("  No recent activity.")
     print("")
+
+
+def collect_analytics_data(project_dir: Path) -> dict[str, Any]:
+    """Collects analytics data for the dashboard."""
+    debt_collector = DebtCollector(project_dir)
+    security_auditor = SecurityAuditor(project_dir)
+
+    # Debt
+    debt_metrics = debt_collector.collect()
+    debt_score, debt_grade = debt_collector.calculate_score(debt_metrics)
+
+    # Security
+    security_findings = security_auditor.scan_secrets()
+
+    return {
+        "debt": {"metrics": debt_metrics, "score": debt_score, "grade": debt_grade},
+        "security": security_findings
+    }

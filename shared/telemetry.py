@@ -7,6 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 import psutil
 from typing import Dict, Any, Optional, List, Tuple
+from urllib.error import URLError
 from prometheus_client import (
     CollectorRegistry,
     Gauge,
@@ -390,6 +391,12 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
+        except (URLError, ConnectionRefusedError) as e:
+            # Silence connection errors to avoid log spam when gateway is down
+            now = time.time()
+            if now - self._last_push_error_time > 300: # Log only once every 5 minutes for debug
+                self.logger.debug(f"Metrics gateway unreachable: {e}")
+                self._last_push_error_time = now
         except Exception as e:
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming

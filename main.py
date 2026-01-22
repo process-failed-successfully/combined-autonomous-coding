@@ -1068,6 +1068,7 @@ def run_clean(args):
             print(f"Error processing {path}: {e}", file=sys.stderr)
 
     if not is_force_delete:
+        assert dest_dir is not None
         print(completion_message.format(dest_dir_display_path=dest_dir.relative_to(project_dir)))
     else:
         print(completion_message)
@@ -5167,7 +5168,10 @@ async def run_plan(args):
 
     from shared.utils import generate_agent_id
     try:
-        spec_content = config.spec_file.read_text()
+        if config.spec_file:
+            spec_content = config.spec_file.read_text()
+        else:
+            spec_content = ""
         agent_id = generate_agent_id(project_name, spec_content, args.agent)
         config.agent_id = agent_id
     except Exception as e:
@@ -9042,7 +9046,7 @@ def run_security(args):
 
 def run_verify(args):
     """Runs verification checks (lint, type, security, tests)."""
-    checks = args.check.split(",") if args.check else None
+    checks = args.check.split(",") if args.check else []
     success = run_verify_logic(
         project_dir=args.project_dir,
         checks=checks,

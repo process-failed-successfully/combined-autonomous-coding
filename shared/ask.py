@@ -55,7 +55,9 @@ async def run_ask_logic(
     )
 
     # Initialize Agent
-    agent_class_map = {
+    from typing import Dict, Type
+    from agents.shared.base_agent import BaseAgent
+    agent_class_map: Dict[str, Type[BaseAgent]] = {
         "gemini": GeminiAgent,
         "cursor": CursorAgent,
         "local": LocalAgent,

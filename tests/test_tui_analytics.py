@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -7,7 +9,11 @@ from shared.analytics import collect_analytics_data
 
 class TestTUIAnalyticsLogic(unittest.TestCase):
     def setUp(self):
-        self.project_dir = Path("/tmp/test_project")
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
 
     @patch("shared.debt.scan_todos")
     @patch("shared.debt.analyze_project_complexity")

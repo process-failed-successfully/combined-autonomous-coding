@@ -30,7 +30,7 @@ dependencies = [
     "jaraco.context>=6.1.0",
     "cryptography",
     "jira",
-    "textual",
+    "textual==0.64.0",
     "watchdog",
     "argcomplete",
     "google-generativeai",

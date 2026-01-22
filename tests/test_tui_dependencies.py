@@ -8,11 +8,12 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DataTable
-from shared.tui import AgentTUI, DependenciesTab
+from textual.widgets import Label, DataTable  # noqa: E402
+from shared.tui import AgentTUI, DependenciesTab  # noqa: E402
+
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_dir = Path(tempfile.mkdtemp())
         self.project_dir = self.test_dir / "project"
         self.project_dir.mkdir()
@@ -22,19 +23,18 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.MockAnalyzer = self.patcher_analyzer.start()
         self.mock_analyzer = self.MockAnalyzer.return_value
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.patcher_analyzer.stop()
         shutil.rmtree(self.test_dir)
 
-    async def test_dependencies_tab_structure(self):
+    async def test_dependencies_tab_structure(self) -> None:
         """Test the dependencies tab structure."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Check if TabPane exists (it's inside TabbedContent)
             self.assertTrue(app.query_one("#tab-deps"))
-            pass
 
-    async def test_dependencies_tab_logic(self):
+    async def test_dependencies_tab_logic(self) -> None:
         """Test logic of DependenciesTab isolated."""
 
         # Setup mock data
@@ -52,14 +52,14 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
 
         tab = DependenciesTab(self.project_dir)
         # Mock notify to prevent NoActiveAppError
-        tab.notify = MagicMock()
+        tab.notify = MagicMock()  # type: ignore
 
         # Mock UI elements
         mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
 
         # We mock query_one to return our mocks
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#deps-table": mock_table,
             "#deps-status": mock_status
         }.get(selector))
@@ -77,16 +77,16 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(len(add_row_calls) > 0)
         self.assertEqual(add_row_calls[0][0][1], "requests")
 
-    async def test_check_updates_logic(self):
+    async def test_check_updates_logic(self) -> None:
         """Test check updates button logic."""
         tab = DependenciesTab(self.project_dir)
         # Mock notify to prevent NoActiveAppError
-        tab.notify = MagicMock()
+        tab.notify = MagicMock()  # type: ignore
 
         # Mock UI
         mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#deps-table": mock_table,
             "#deps-status": mock_status
         }.get(selector))
@@ -105,7 +105,7 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.mock_analyzer.check_updates.return_value = updated_data
 
         # Call check_updates
-        await tab.check_updates()
+        await tab.check_updates()  # type: ignore
 
         # Verify
         self.mock_analyzer.check_updates.assert_called()

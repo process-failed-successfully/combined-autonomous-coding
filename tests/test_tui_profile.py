@@ -8,11 +8,12 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Input, DataTable, Markdown, Button, Select
-from shared.tui import ProfileTab
+from textual.widgets import Input, DataTable, Markdown, Button, Select  # noqa: E402
+from shared.tui import ProfileTab  # noqa: E402
+
 
 class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_dir = Path(tempfile.mkdtemp())
         self.project_dir = self.test_dir / "project"
         self.project_dir.mkdir()
@@ -21,11 +22,11 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         self.script_path = self.project_dir / "slow_script.py"
         self.script_path.write_text("import time\ndef slow():\n    time.sleep(0.1)\nslow()")
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.test_dir)
 
     @patch("shared.tui.OptimizationManager")
-    async def test_profile_tab_structure(self, MockOptimizationManager):
+    async def test_profile_tab_structure(self, MockOptimizationManager: MagicMock) -> None:
         """Test that the profile tab has the correct widgets."""
         tab = ProfileTab(self.project_dir)
 
@@ -40,7 +41,7 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_markdown = MagicMock(spec=Markdown)
         mock_btn_analyze = MagicMock(spec=Button)
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#profile-script-input": mock_input_script,
             "#profile-args-input": mock_input_args,
             "#profile-table": mock_table,
@@ -56,7 +57,7 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_table.add_columns.assert_called_with("Function", "File:Line", "Calls", "Total Time", "Cum Time")
 
     @patch("shared.tui.OptimizationManager")
-    async def test_run_profile(self, MockOptimizationManager):
+    async def test_run_profile(self, MockOptimizationManager: MagicMock) -> None:
         """Test the run_profiler logic."""
         mock_manager = MockOptimizationManager.return_value
         mock_manager.run_profile.return_value = Path("stats_file")
@@ -74,16 +75,16 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_table = MagicMock(spec=DataTable)
         mock_btn_analyze = MagicMock(spec=Button)
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#profile-script-input": mock_input_script,
             "#profile-args-input": mock_input_args,
             "#profile-table": mock_table,
             "#btn-analyze-profile": mock_btn_analyze
         }.get(selector))
-        tab.notify = MagicMock()
+        tab.notify = MagicMock()  # type: ignore
 
         # Run
-        await tab.run_profiler()
+        await tab.run_profiler()  # type: ignore
 
         # Verify calls
         mock_manager.run_profile.assert_called_with(self.project_dir / "slow_script.py", [])
@@ -92,7 +93,7 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(mock_btn_analyze.disabled, False)
 
     @patch("shared.tui.OptimizationManager")
-    async def test_analyze_profile(self, MockOptimizationManager):
+    async def test_analyze_profile(self, MockOptimizationManager: MagicMock) -> None:
         """Test the analyze_profile logic."""
         mock_manager = MockOptimizationManager.return_value
         mock_manager.get_ai_suggestions = AsyncMock(return_value="AI Suggestion")
@@ -105,14 +106,14 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         mock_select.value = "gemini"
         mock_markdown = MagicMock(spec=Markdown)
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#profile-agent-select": mock_select,
             "#profile-ai-output": mock_markdown
         }.get(selector))
-        tab.notify = MagicMock()
+        tab.notify = MagicMock()  # type: ignore
 
         # Run
-        await tab.analyze_profile()
+        await tab.analyze_profile()  # type: ignore
 
         # Verify calls
         mock_manager.get_ai_suggestions.assert_called_with(Path("stats_file"), agent_type="gemini")

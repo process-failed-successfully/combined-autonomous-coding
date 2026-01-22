@@ -4194,7 +4194,7 @@ def run_help(args):
     sys.exit(0)
 
 
-def run_tui(args):
+def run_tui(args: argparse.Namespace) -> None:
     """Starts the Textual TUI."""
     try:
         from shared.tui import AgentTUI

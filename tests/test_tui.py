@@ -230,7 +230,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
 
         args = argparse.Namespace(project_dir=self.project_dir)
 
-        run_tui(args)  # type: ignore
+        run_tui(args)
 
         MockAgentTUI.assert_called_with(project_dir=self.project_dir)
         MockAgentTUI.return_value.run.assert_called_once()

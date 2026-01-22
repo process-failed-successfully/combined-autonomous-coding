@@ -10486,6 +10486,29 @@ def run_worktrees(args):
         sys.exit(0)
 
 
+def run_site(args):
+    """Generates and serves the documentation site."""
+    from shared.site_generator import SiteGenerator
+
+    project_dir = args.project_dir.resolve()
+    generator = SiteGenerator(project_dir)
+
+    if args.action == "generate":
+        output_dir = Path(args.output).resolve() if args.output else None
+        generator.generate(output_dir)
+    elif args.action == "serve":
+        # Ensure site is generated first? Or just serve.
+        # Let's check if output exists, if not generate.
+        output_dir = Path(args.output).resolve() if args.output else project_dir / "site"
+        if not output_dir.exists():
+            print("Site directory not found. Generating first...")
+            generator.generate(output_dir)
+
+        # Generator stores output_dir, update it if passed
+        generator.output_dir = output_dir
+        generator.serve(port=args.port)
+
+
 async def main():
     args = parse_args()
 
@@ -10904,27 +10927,9 @@ async def main():
         run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
         return
 
-def run_site(args):
-    """Generates and serves the documentation site."""
-    from shared.site_generator import SiteGenerator
-
-    project_dir = args.project_dir.resolve()
-    generator = SiteGenerator(project_dir)
-
-    if args.action == "generate":
-        output_dir = Path(args.output).resolve() if args.output else None
-        generator.generate(output_dir)
-    elif args.action == "serve":
-        # Ensure site is generated first? Or just serve.
-        # Let's check if output exists, if not generate.
-        output_dir = Path(args.output).resolve() if args.output else project_dir / "site"
-        if not output_dir.exists():
-            print("Site directory not found. Generating first...")
-            generator.generate(output_dir)
-
-        # Generator stores output_dir, update it if passed
-        generator.output_dir = output_dir
-        generator.serve(port=args.port)
+    if args.command in ["site", "docs"]:
+        run_site(args)
+        return
 
     if args.command == "debt":
         from shared.debt import run_debt_report

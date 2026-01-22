@@ -1,12 +1,12 @@
 import os
 import shutil
 import markdown  # type: ignore
-import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from shared.health import HealthCalculator
 from shared.dependencies import DependencyAnalyzer
+
 
 class SiteGenerator:
     """
@@ -41,7 +41,7 @@ class SiteGenerator:
             marker_file = self.output_dir / ".agent_site_root"
 
             if is_empty:
-                pass # Safe to use
+                pass  # Safe to use
             elif marker_file.exists():
                 # Safe to clean
                 shutil.rmtree(self.output_dir)
@@ -231,8 +231,10 @@ class SiteGenerator:
 
         def get_status_class(score, max_score):
             percentage = (score / max_score) * 100
-            if percentage >= 90: return "status-pass"
-            if percentage >= 70: return "status-warn"
+            if percentage >= 90:
+                return "status-pass"
+            if percentage >= 70:
+                return "status-warn"
             return "status-fail"
 
         html_content = f"""
@@ -245,19 +247,19 @@ class SiteGenerator:
             </div>
             <div class="card">
                 <h3>Tests</h3>
-                <div class="value {get_status_class(metrics.get('test_score',0), 30)}">
+                <div class="value {get_status_class(metrics.get('test_score', 0), 30)}">
                     {metrics.get('test_score', 0)}/30
                 </div>
             </div>
             <div class="card">
                 <h3>Linting</h3>
-                <div class="value {get_status_class(metrics.get('lint_score',0), 20)}">
+                <div class="value {get_status_class(metrics.get('lint_score', 0), 20)}">
                     {metrics.get('lint_score', 0)}/20
                 </div>
             </div>
              <div class="card">
                 <h3>Security</h3>
-                <div class="value {get_status_class(metrics.get('security_score',0), 20)}">
+                <div class="value {get_status_class(metrics.get('security_score', 0), 20)}">
                     {metrics.get('security_score', 0)}/20
                 </div>
             </div>
@@ -309,7 +311,8 @@ class SiteGenerator:
         groups: Dict[str, List[Dict[str, str]]] = {}
         for p in self.pages:
             g = p.get("group", "Other")
-            if g not in groups: groups[g] = []
+            if g not in groups:
+                groups[g] = []
             groups[g].append(p)
 
         for group, pages in groups.items():

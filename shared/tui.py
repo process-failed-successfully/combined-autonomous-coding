@@ -5,7 +5,7 @@ import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -518,115 +518,153 @@ class ProfileTab(Container):
         self.notify("Analysis complete.")
 
 class DependenciesTab(Container):
-    """Tab for managing dependencies."""
+    """Tab for managing dependencies with an interactive tree view."""
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.analyzer = DependencyAnalyzer(project_dir)
         self.updater = DependencyUpdater(project_dir)
+        self.cached_data = {}  # Store scan results
 
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("[bold]Project Dependencies[/bold]", classes="welcome-text")
-            yield DataTable(id="deps-table")
-            with Horizontal(classes="stat-box"):
-                yield Button("Refresh", id="btn-deps-refresh", variant="default")
-                yield Button("Check Updates", id="btn-deps-check", variant="primary")
+
+            with Horizontal(id="deps-main-container"):
+                # Left Pane: Tree
+                with Vertical(id="deps-tree-container", classes="stat-box"):
+                    yield Label("[bold]Structure[/bold]")
+                    yield Tree("Project", id="deps-tree")
+                    yield Button("Refresh", id="btn-deps-refresh", variant="default")
+                    yield Button("Check Updates", id="btn-deps-check", variant="primary")
+
+                # Right Pane: Details
+                with Vertical(id="deps-details-container", classes="stat-box"):
+                    yield Label("[bold]Dependency Details[/bold]", id="dep-details-header")
+                    yield RichLog(id="dep-details-log", wrap=True, highlight=True, markup=True)
+                    yield Button("Update Package", id="btn-dep-update", variant="success", disabled=True)
+
             yield Label("", id="deps-status")
 
     def on_mount(self) -> None:
-        table = self.query_one("#deps-table", DataTable)
-        table.cursor_type = "row"
-        table.add_columns("Language", "Package", "Version", "Type", "Latest", "Status")
         self.load_deps()
 
     def load_deps(self) -> None:
-        table = self.query_one("#deps-table", DataTable)
-        table.clear()
+        tree = self.query_one("#deps-tree", Tree)
+        tree.clear()
+        tree.root.expand()
 
         try:
-            data = self.analyzer.scan()
+            # If we have cached data (e.g. from update check), use it. Otherwise scan.
+            if not self.cached_data:
+                self.cached_data = self.analyzer.scan()
+
+            data = self.cached_data
+
+            # Helper to add node
+            def add_dep_node(parent_node, name, version, dep_info, file_source, lang):
+                # Node label
+                label = f"{name} ({version})"
+                if dep_info.get("outdated"):
+                    label = f"[red]{name}[/red] ({version} -> {dep_info.get('latest')})"
+                elif dep_info.get("type") == "dev":
+                    label = f"[dim]{name} (dev)[/dim]"
+
+                # Data payload
+                payload = {
+                    "name": name,
+                    "version": version,
+                    "latest": dep_info.get("latest"),
+                    "outdated": dep_info.get("outdated", False),
+                    "type": dep_info.get("type", "prod"),
+                    "source": file_source,
+                    "lang": lang,
+                    "info": dep_info
+                }
+
+                parent_node.add(label, data=payload)
 
             # Python
-            for file_info in data.get("python", []):
-                for dep in file_info.get("dependencies", []):
-                    table.add_row(
-                        "Python",
-                        dep["name"],
-                        dep.get("version", ""),
-                        "prod",
-                        dep.get("latest", "-"),
-                        "Outdated" if dep.get("outdated") else "OK"
-                    )
+            if data.get("python"):
+                py_node = tree.root.add("🐍 Python", expand=True)
+                for file_info in data["python"]:
+                    file_node = py_node.add(f"📄 {file_info['source']}", expand=True)
+                    for dep in file_info.get("dependencies", []):
+                        add_dep_node(file_node, dep["name"], dep.get("version", ""), dep, file_info["source"], "python")
 
             # Node
-            for file_info in data.get("node", []):
-                for dep in file_info.get("dependencies", []):
-                    table.add_row(
-                        "Node",
-                        dep["name"],
-                        dep.get("version", ""),
-                        dep.get("type", "prod"),
-                        dep.get("latest", "-"),
-                        "Outdated" if dep.get("outdated") else "OK"
-                    )
+            if data.get("node"):
+                node_node = tree.root.add("📦 Node.js", expand=True)
+                for file_info in data["node"]:
+                    file_node = node_node.add(f"📄 {file_info['source']}", expand=True)
+                    for dep in file_info.get("dependencies", []):
+                        add_dep_node(file_node, dep["name"], dep.get("version", ""), dep, file_info["source"], "node")
 
             self.query_one("#deps-status", Label).update("Dependencies loaded.")
         except Exception as e:
             self.notify(f"Error loading dependencies: {e}", severity="error")
 
+    @on(Tree.NodeSelected, "#deps-tree")
+    def on_dep_selected(self, event: Tree.NodeSelected) -> None:
+        details_log = self.query_one("#dep-details-log", RichLog)
+        details_log.clear()
+        update_btn = self.query_one("#btn-dep-update", Button)
+        update_btn.disabled = True
+
+        node_data = event.node.data
+        if not node_data:
+            details_log.write("Select a package to view details.")
+            return
+
+        # It's a dependency node
+        name = node_data["name"]
+        version = node_data["version"]
+        latest = node_data.get("latest", "Unknown")
+        is_outdated = node_data.get("outdated", False)
+
+        details_log.write(f"[bold]Package:[/bold] {name}")
+        details_log.write(f"[bold]Current Version:[/bold] {version}")
+        details_log.write(f"[bold]Source:[/bold] {node_data['source']}")
+        details_log.write(f"[bold]Type:[/bold] {node_data['type']}")
+
+        if is_outdated:
+             details_log.write(f"\n[bold red]⚠️ Outdated![/bold red]")
+             details_log.write(f"Latest available: [green]{latest}[/green]")
+             update_btn.disabled = False
+             # Store selected dep for update action
+             self.selected_dep = node_data
+        else:
+             details_log.write(f"\n[green]✅ Up to date[/green]")
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-deps-refresh":
+            self.cached_data = {} # Clear cache
             self.load_deps()
             self.notify("Dependencies refreshed.")
+
         elif event.button.id == "btn-deps-check":
             await self.check_updates()
+
+        elif event.button.id == "btn-dep-update":
+            if hasattr(self, "selected_dep") and self.selected_dep:
+                await self.update_package(self.selected_dep)
 
     async def check_updates(self):
         self.query_one("#deps-status", Label).update("Checking for updates... (this may take a while)")
         self.notify("Checking updates...", severity="information")
 
-        # Run potentially blocking check_updates in a thread
         import asyncio
 
         try:
-            # We need to re-scan and then check updates
             def do_check():
+                # Force fresh scan
                 data = self.analyzer.scan()
                 return self.analyzer.check_updates(data)
 
             data = await asyncio.to_thread(do_check)
-
-            # Update table with new data
-            table = self.query_one("#deps-table", DataTable)
-            table.clear()
-
-            # Python
-            for file_info in data.get("python", []):
-                for dep in file_info.get("dependencies", []):
-                    status = "[red]Outdated[/red]" if dep.get("outdated") else "[green]OK[/green]"
-                    table.add_row(
-                        "Python",
-                        dep["name"],
-                        dep.get("version", ""),
-                        "prod",
-                        dep.get("latest", "-"),
-                        status
-                    )
-
-            # Node
-            for file_info in data.get("node", []):
-                for dep in file_info.get("dependencies", []):
-                    status = "[red]Outdated[/red]" if dep.get("outdated") else "[green]OK[/green]"
-                    table.add_row(
-                        "Node",
-                        dep["name"],
-                        dep.get("version", ""),
-                        dep.get("type", "prod"),
-                        dep.get("latest", "-"),
-                        status
-                    )
+            self.cached_data = data
+            self.load_deps() # Re-render tree
 
             self.query_one("#deps-status", Label).update("Update check complete.")
             self.notify("Update check complete.")
@@ -634,6 +672,36 @@ class DependenciesTab(Container):
         except Exception as e:
             self.notify(f"Error checking updates: {e}", severity="error")
             self.query_one("#deps-status", Label).update("Error checking updates.")
+
+    async def update_package(self, dep_data: dict):
+        name = dep_data["name"]
+        latest = dep_data["latest"]
+        source_file = self.project_dir / dep_data["source"]
+        dep_type = dep_data["type"]
+
+        self.notify(f"Updating {name} to {latest}...", severity="information")
+        self.query_one("#deps-status", Label).update(f"Updating {name}...")
+
+        import asyncio
+
+        def do_update():
+            return self.updater.update_dependency(source_file, name, latest, dep_type)
+
+        success = await asyncio.to_thread(do_update)
+
+        if success:
+            self.notify(f"Successfully updated {name}.", severity="information")
+            self.query_one("#deps-status", Label).update(f"Updated {name}.")
+            # Refresh to reflect changes
+            self.cached_data = {}
+            self.load_deps()
+            # Disable button
+            self.query_one("#btn-dep-update", Button).disabled = True
+            # Clear details or update them?
+            self.query_one("#dep-details-log", RichLog).write(f"\n[bold green]Updated to {latest}[/bold green]")
+        else:
+            self.notify(f"Failed to update {name}.", severity="error")
+            self.query_one("#deps-status", Label).update(f"Failed to update {name}.")
 
 
 def collect_analytics_data(project_dir: Path) -> dict:

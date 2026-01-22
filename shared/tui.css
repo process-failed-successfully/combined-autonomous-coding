@@ -98,3 +98,26 @@ DataTable {
     border: none;
     padding: 0;
 }
+
+/* Dependencies Tab */
+#deps-main-container {
+    height: 100%;
+}
+
+#deps-tree-container {
+    width: 40%;
+    height: 100%;
+    border-right: solid $primary;
+}
+
+#deps-details-container {
+    width: 60%;
+    height: 100%;
+    padding-left: 1;
+}
+
+#dep-details-log {
+    height: 80%;
+    background: $surface;
+    border: solid $secondary;
+}

@@ -39,6 +39,7 @@ def get_git_contributors(project_dir: Path) -> List[Tuple[int, str]]:
     except subprocess.CalledProcessError:
         return []
 
+
 def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> List[Tuple[str, int]]:
     """Returns the most frequently modified files."""
     git_path = shutil.which("git")
@@ -59,6 +60,7 @@ def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> List[Tuple
         return counter.most_common(limit)
     except subprocess.CalledProcessError:
         return []
+
 
 def get_git_activity(project_dir: Path, days: int = 30) -> List[Tuple[str, int]]:
     """Returns commit counts per day for the last N days."""
@@ -83,6 +85,7 @@ def get_git_activity(project_dir: Path, days: int = 30) -> List[Tuple[str, int]]
     except subprocess.CalledProcessError:
         return []
 
+
 def _run_analytics_git_logic(project_dir: Path):
     """Orchestrates the git analytics display."""
     project_dir = project_dir.resolve()
@@ -96,7 +99,7 @@ def _run_analytics_git_logic(project_dir: Path):
     contributors = get_git_contributors(project_dir)
     print("[ Top Contributors ]")
     if contributors:
-        for count, name in contributors[:5]: # Show top 5
+        for count, name in contributors[:5]:  # Show top 5
             print(f"  {count:<5} {name}")
     else:
         print("  No contributors found.")
@@ -121,7 +124,8 @@ def _run_analytics_git_logic(project_dir: Path):
         max_commits = max(count for _, count in activity) if activity else 1
         for date, count in activity:
             bar = "█" * int((count / max_commits) * 20)
-            if not bar: bar = "▏" # At least show something for 1 commit if scaling makes it 0
+            if not bar:
+                bar = "▏"  # At least show something for 1 commit if scaling makes it 0
             print(f"  {date} : {count:<3} {bar}")
     else:
         print("  No recent activity.")

@@ -390,12 +390,19 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
+        except ConnectionRefusedError:
+            # Silence connection refused (common in tests/local without gateway)
+            pass
         except Exception as e:
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                try:
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except (ValueError, OSError):
+                    # Logging stream might be closed during shutdown
+                    pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):
@@ -404,6 +411,9 @@ class Telemetry:
         If sync=True, blocks until completion (used for shutdown).
         Otherwise, offloads to a thread pool to avoid blocking the main thread.
         """
+        if not ENABLE_METRICS:
+            return
+
         now = time.time()
         if not force and (now - self._last_push_time < self._push_interval):
             return

@@ -27,6 +27,9 @@ def verify_metrics():
     )
     t.record_gauge("integration_test_marker", marker, labels={"run_id": unique_label})
 
+    # Cleanup telemetry threads
+    t.close()
+
     # 2. Wait for Scrape (Prometheus scrapes every 5s in our config)
     print("Waiting 7 seconds for Prometheus scrape...")
     time.sleep(7)
@@ -72,6 +75,9 @@ def verify_logs():
 
     print(f"Emitting log message: '{marker_msg}'")
     t.log_info(marker_msg)
+
+    # Cleanup
+    t.close()
 
     # Promtail takes a moment to tail -> Loki ingest -> Index
     print("Waiting 10 seconds for Log Ingestion...")

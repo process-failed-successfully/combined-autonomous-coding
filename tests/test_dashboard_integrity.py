@@ -62,6 +62,7 @@ def emit_test_metrics():
     t.record_histogram("sprint_task_duration_seconds", 600, labels={"project": TEST_PROJECT, "status": "done"})
 
     print("Metrics pushed to Pushgateway.")
+    t.close()
 
 
 def get_dashboard_queries():

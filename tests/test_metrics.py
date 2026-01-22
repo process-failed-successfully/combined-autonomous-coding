@@ -21,6 +21,7 @@ class TestTelemetry(unittest.TestCase):
         self.mock_push = self.patcher.start()
 
     def tearDown(self):
+        self.telemetry.close()
         self.patcher.stop()
 
     def test_singleton(self):

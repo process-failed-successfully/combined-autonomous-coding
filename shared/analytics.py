@@ -103,7 +103,7 @@ def get_git_activity(project_dir: Path, days: int = 30) -> list[tuple[str, int]]
         return []
 
 
-def _run_analytics_git_logic(project_dir: Path):
+def _run_analytics_git_logic(project_dir: Path) -> None:
     """Orchestrates the git analytics display."""
     project_dir = project_dir.resolve()
     print(f"--- Git Analytics: {project_dir.name} ---\n")

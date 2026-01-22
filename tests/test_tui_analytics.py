@@ -1,4 +1,5 @@
 import sys
+from typing import Any
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -10,7 +11,7 @@ from shared.analytics import collect_analytics_data  # noqa: E402
 
 
 class TestTUIAnalyticsLogic(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.project_dir = Path("/tmp/test_project")
 
     @patch("shared.debt.scan_todos")
@@ -18,7 +19,7 @@ class TestTUIAnalyticsLogic(unittest.TestCase):
     @patch("shared.debt.find_duplicates")
     @patch("shared.debt.UnusedCodeDetector")
     @patch("shared.security.SecurityAuditor.scan_secrets")
-    def test_collect_analytics_data(self, mock_scan_secrets, MockUnused, mock_duplication, mock_complexity, mock_todos):
+    def test_collect_analytics_data(self, mock_scan_secrets: Any, MockUnused: Any, mock_duplication: Any, mock_complexity: Any, mock_todos: Any) -> None:
         # Mock Data for Debt
         mock_todos.return_value = [{"tag": "TODO", "text": "Fix"}]
         mock_complexity.return_value = [{"function": "f", "complexity": 5}]

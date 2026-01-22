@@ -1,5 +1,5 @@
 import logging
-import requests
+import requests # type: ignore
 from shared.config import Config
 
 logger = logging.getLogger(__name__)

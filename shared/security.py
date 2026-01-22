@@ -45,8 +45,8 @@ class SecurityAuditor:
     def _calculate_entropy(self, data: str) -> float:
         """Calculates the Shannon entropy of a string."""
         if not data:
-            return 0
-        entropy = 0
+            return 0.0
+        entropy = 0.0
         for x in range(256):
             p_x = float(data.count(chr(x))) / len(data)
             if p_x > 0:

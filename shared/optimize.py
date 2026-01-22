@@ -53,7 +53,7 @@ class OptimizationManager:
             p.sort_stats("tottime")
 
             all_funcs = []
-            for func, (cc, nc, tt, ct, callers) in p.stats.items():
+            for func, (cc, nc, tt, ct, callers) in p.stats.items(): # type: ignore
                 filename, line, name = func
                 all_funcs.append({
                     "filename": filename,
@@ -120,7 +120,7 @@ class OptimizationManager:
             logger.warning(f"Error reading source for {filename}: {e}")
             return None
 
-    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: str = None) -> str:
+    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: Optional[str] = None) -> str:
         """Analyzes profiling stats using AI and returns the suggestion text."""
         print("\nAnalyzing profiling data...")
         top_funcs = self.analyze_stats(stats_file)
@@ -177,7 +177,7 @@ class OptimizationManager:
         if not agent_class:
             return f"❌ Unknown agent type: {agent_type}"
 
-        agent = agent_class(config)
+        agent = agent_class(config) # type: ignore
 
         try:
             status, response, actions = await agent.run_agent_session(full_prompt)
@@ -185,7 +185,7 @@ class OptimizationManager:
         except Exception as e:
             return f"❌ Error querying agent: {e}"
 
-    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: str = None):
+    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: Optional[str] = None):
         """Main entry point."""
         script_full_path = self.project_dir / script_path
         if not script_full_path.exists():

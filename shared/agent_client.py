@@ -1,4 +1,4 @@
-import requests
+import requests # type: ignore
 import time
 import concurrent.futures
 import threading

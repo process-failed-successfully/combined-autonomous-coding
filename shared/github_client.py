@@ -1,5 +1,5 @@
 import os
-import requests
+import requests # type: ignore
 from urllib.parse import urlparse
 
 class GitHubClient:

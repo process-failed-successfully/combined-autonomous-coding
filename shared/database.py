@@ -22,7 +22,7 @@ def get_db():
     finally:
         db.close()
 
-def init_db(path: Path = None):
+def init_db(path: Path | None = None):
     global engine
     if path:
         db_url = f"sqlite:///{path}"

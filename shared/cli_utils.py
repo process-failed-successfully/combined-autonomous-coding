@@ -5,11 +5,11 @@ import shutil
 import subprocess
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import re
 from shared.charts import draw_ascii_bar_chart
 
-WORKFLOW_STAGES = {
+WORKFLOW_STAGES: Dict[str, Dict[str, Optional[str]]] = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
     "COMPLETED": {"name": "Completed", "file": "COMPLETED"},
     "QA_PASSED": {"name": "QA Passed", "file": "QA_PASSED"},
@@ -22,12 +22,18 @@ WORKFLOW_ORDER = ["IN_PROGRESS", "COMPLETED", "QA_PASSED", "SIGNED_OFF"]
 
 def get_workflow_stage(project_dir: Path):
     """Determines the current workflow stage by checking for marker files."""
-    if (project_dir / WORKFLOW_STAGES["SIGNED_OFF"]["file"]).exists():
+    s_off = WORKFLOW_STAGES["SIGNED_OFF"]["file"]
+    if s_off and (project_dir / s_off).exists():
         return "SIGNED_OFF"
-    if (project_dir / WORKFLOW_STAGES["QA_PASSED"]["file"]).exists():
+
+    qa = WORKFLOW_STAGES["QA_PASSED"]["file"]
+    if qa and (project_dir / qa).exists():
         return "QA_PASSED"
-    if (project_dir / WORKFLOW_STAGES["COMPLETED"]["file"]).exists():
+
+    comp = WORKFLOW_STAGES["COMPLETED"]["file"]
+    if comp and (project_dir / comp).exists():
         return "COMPLETED"
+
     return "IN_PROGRESS"
 
 
@@ -210,9 +216,9 @@ def _run_enhanced_status_logic(project_dir: Path) -> str:
     return "\n".join(lines)
 
 
-def _parse_metrics(metrics_file: Path) -> dict:
+def _parse_metrics(metrics_file: Path) -> Dict[str, Any]:
     """Parses a final_metrics.txt file into a dictionary (handles key:value and Prometheus formats)."""
-    metrics = {}
+    metrics: Dict[str, Any] = {}
     try:
         with open(metrics_file, 'r') as f:
             for line in f:
@@ -241,13 +247,14 @@ def _parse_metrics(metrics_file: Path) -> dict:
                         name, labels_str, value_str = match.groups()
 
                         # Parse value
+                        metric_value: Any
                         try:
                             if '.' in value_str or 'e+' in value_str:
-                                value = float(value_str)
+                                metric_value = float(value_str)
                             else:
-                                value = int(value_str)
+                                metric_value = int(value_str)
                         except ValueError:
-                            value = value_str
+                            metric_value = value_str
 
                         # Parse labels
                         labels = {}
@@ -259,15 +266,15 @@ def _parse_metrics(metrics_file: Path) -> dict:
                         # Map to friendly keys and aggregate where necessary
                         if name == "llm_tokens_total":
                             current_total = metrics.get("LLM Tokens Used", 0)
-                            if isinstance(current_total, (int, float)) and isinstance(value, (int, float)):
-                                metrics["LLM Tokens Used"] = current_total + value
+                            if isinstance(current_total, (int, float)) and isinstance(metric_value, (int, float)):
+                                metrics["LLM Tokens Used"] = current_total + metric_value
 
                             # Keep raw breakdown for cost calculation (store in a special key or separate dict?)
                             # For simplicity, we just store it in the metrics dict with a unique key
                             type_label = labels.get("type", "unknown")
                             model_label = labels.get("model", "unknown")
                             breakdown_key = f"llm_tokens_total__{model_label}__{type_label}"
-                            metrics[breakdown_key] = value
+                            metrics[breakdown_key] = metric_value
 
                             # Extract model if available
                             if "model" in labels:
@@ -275,15 +282,15 @@ def _parse_metrics(metrics_file: Path) -> dict:
 
                         elif name == "agent_errors_total":
                             current_errors = metrics.get("Total Errors", 0)
-                            if isinstance(current_errors, (int, float)) and isinstance(value, (int, float)):
-                                metrics["Total Errors"] = current_errors + value
+                            if isinstance(current_errors, (int, float)) and isinstance(metric_value, (int, float)):
+                                metrics["Total Errors"] = current_errors + metric_value
 
                         elif name == "agent_iterations_total":
                             # Assuming this is a counter, so the latest value is the total
-                            metrics["Total Iterations"] = value
+                            metrics["Total Iterations"] = metric_value
 
                         elif name == "agent_uptime_seconds":
-                             metrics["Total Execution Time (s)"] = value
+                             metrics["Total Execution Time (s)"] = metric_value
 
                         elif name == "iteration_duration_seconds":
                              # This is likely a gauge for the last iteration duration
@@ -323,11 +330,11 @@ def _has_uncommitted_changes(project_dir: Path) -> bool:
         return False
 
 
-def get_suggestions(project_dir: Path, limit: int = None) -> list[dict]:
+def get_suggestions(project_dir: Path, limit: Optional[int] = None) -> List[Dict[str, str]]:
     """
     Analyzes the project state and returns a list of suggested next commands.
     """
-    suggestions = []
+    suggestions: List[Dict[str, str]] = []
     stage = get_workflow_stage(project_dir)
     has_changes = _has_uncommitted_changes(project_dir)
 
@@ -533,7 +540,7 @@ def _run_tree_logic(project_dir: Path, depth: Optional[int], full: bool) -> str:
 
     def is_ignored(path: Path) -> bool:
         """Checks if a path is ignored by Git."""
-        if full or not is_git_repo:
+        if full or not is_git_repo or git_path is None:
             return False
         try:
             # Use relative path from the project root for check-ignore
@@ -865,7 +872,7 @@ def _run_context_show_logic(project_dir: Path) -> str:
 
     def is_git_ignored(path: Path) -> bool:
         """Checks if a path is ignored by Git."""
-        if not is_git_repo:
+        if not is_git_repo or git_path is None:
             return False
         try:
             relative_path = path.relative_to(project_dir)
@@ -947,7 +954,7 @@ def _run_context_analyze_logic(project_dir: Path) -> str:
         return f"{size_bytes / (1024 * 1024):.1f} MB"
 
     def is_git_ignored(path: Path) -> bool:
-        if not is_git_repo:
+        if not is_git_repo or git_path is None:
             return False
         try:
             relative_path = path.relative_to(project_dir)

@@ -67,7 +67,7 @@ async def run_ask_logic(
         logger.error(f"Unknown agent type: {agent_type}")
         return False
 
-    agent = agent_class(config)
+    agent = agent_class(config) # type: ignore
 
     # Prepare Context
     context_files_content = ""

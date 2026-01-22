@@ -3,6 +3,7 @@ mypy
 bandit
 types-requests
 types-PyYAML
+types-Markdown
 pytest
 pytest-cov
 textual==0.64.0

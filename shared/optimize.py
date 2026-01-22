@@ -53,7 +53,7 @@ class OptimizationManager:
             p.sort_stats("tottime")
 
             all_funcs = []
-            for func, (cc, nc, tt, ct, callers) in p.stats.items():
+            for func, (cc, nc, tt, ct, callers) in p.stats.items():  # type: ignore
                 filename, line, name = func
                 all_funcs.append({
                     "filename": filename,
@@ -165,8 +165,10 @@ class OptimizationManager:
         from agents.cursor import CursorAgent
         from agents.local import LocalAgent
         from agents.openrouter import OpenRouterAgent
+        from shared.base_agent import BaseAgent
+        from typing import Type
 
-        agent_map = {
+        agent_map: Dict[str, Type[BaseAgent]] = {
             "gemini": GeminiAgent,
             "cursor": CursorAgent,
             "local": LocalAgent,

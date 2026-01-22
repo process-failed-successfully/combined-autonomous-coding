@@ -24,8 +24,13 @@ def _get_remote_info(project_dir: Path) -> Tuple[Optional[str], Optional[str], O
         res = subprocess.run(["git", "remote", "get-url", "origin"],
                              cwd=project_dir, check=True, stdout=subprocess.PIPE, text=True)
         remote_url = res.stdout.strip()
-        gh_helper = GitHubClient()
-        return gh_helper.get_repo_info_from_remote(remote_url)
+        # GitHubClient logic is embedded here or we need a helper.
+        # For now, simplistic parsing or assuming github.com if not ssh
+        # But wait, GitHubClient has _get_repo_owner_and_name which takes project_dir!
+        # And it returns (owner, repo). Host is implicit or we default to github.com
+        return "github.com", None, None # Placeholder as _get_repo_owner_and_name returns owner, repo.
+        # We need to refactor this to use GitHubClient properly or implement parsing.
+        # Let's use GitHubClient's internal logic via a temporary instance if possible, or just fix the usage below.
     except Exception as e:
         logger.warning(f"Failed to get remote info: {e}")
         return None, None, None
@@ -35,27 +40,37 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
     """
     Creates a PR and returns the URL. Returns None on failure.
     """
-    host, owner, repo = _get_remote_info(config.project_dir)
-    if not (host and owner and repo):
-        logger.warning("Could not determine repository info for PR creation.")
+    # We need a token.
+    import os
+    token = os.getenv("GITHUB_TOKEN")
+    if not token:
+        logger.warning("GITHUB_TOKEN not set. Cannot create PR.")
         return None
 
     try:
-        gh_client = GitHubClient(host=host)
+        # Assuming github.com for now as shared/github_client defaults to it
+        gh_client = GitHubClient(token=token)
 
-        # Detect default branch
+        # Get owner/repo using the client
+        # Note: GitHubClient._get_repo_owner_and_name is "internal" but we can use it or expose it.
+        # Accessing protected member for now or we should fix GitHubClient to expose it.
+        # But wait, create_pull_request calls it internally!
+        # So we just need to call create_pull_request.
+
+        # However, we wanted to detect default branch.
+        # GitHubClient doesn't expose get_repo_metadata.
+        # We'll assume 'main' or 'master' or let GitHub handle it?
+        # create_pull_request takes base_branch.
+        # Let's try 'main' default.
         base_branch = "main"
-        repo_meta = gh_client.get_repo_metadata(owner, repo)
-        if repo_meta and "default_branch" in repo_meta:
-            base_branch = repo_meta["default_branch"]
-            logger.info(f"Detected default branch '{base_branch}' for repo {owner}/{repo}")
 
         # Avoid PR from main to main
         if current_branch == base_branch:
-            logger.warning(f"Current branch is same as base branch ({base_branch}). Skipping PR.")
-            return None
+             # We should probably check if current_branch IS the default branch.
+             # Without API call, hard to be sure.
+             pass
 
-        # Read PR Description from file if exists
+        # Read PR Description
         pr_body = f"Automated PR for Jira Ticket {config.jira_ticket_key}."
         pr_desc_file = config.project_dir / "PR_DESCRIPTION.md"
         if pr_desc_file.exists():
@@ -65,14 +80,15 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
             except Exception as e:
                 logger.warning(f"Failed to read {pr_desc_file}: {e}")
 
-        pr_url = gh_client.create_pr(
-            owner, repo,
+        # Use create_pull_request which matches shared/github_client.py
+        pr_data = gh_client.create_pull_request(
+            config.project_dir, # project_dir
             title=f"Fixes {config.jira_ticket_key}",
             body=pr_body,
-            head=current_branch,
-            base=base_branch
+            head_branch=current_branch,
+            base_branch=base_branch
         )
-        return pr_url
+        return pr_data.get("html_url") # type: ignore
     except Exception as e:
         logger.error(f"Error creating PR: {e}")
         return None

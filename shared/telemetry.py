@@ -91,9 +91,11 @@ class Telemetry:
 
         # Ensure final metrics are pushed on exit
         atexit.register(self._shutdown)
+        self._is_shutting_down = False
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
+        self._is_shutting_down = True
         self._push_metrics(force=True, sync=True)
         self._push_executor.shutdown(wait=True)
 
@@ -374,7 +376,7 @@ class Telemetry:
         self.logger.error(message)
         self.increment_counter("agent_errors_total", labels={"error_type": "log_error"})
 
-    def _push_metrics_sync(self):
+    def _push_metrics_sync(self, suppress_logging: bool = False):
         """Synchronous version of push metrics for background thread or final flush."""
         try:
             grouping_key = {
@@ -391,11 +393,25 @@ class Telemetry:
                 grouping_key=grouping_key,
             )
         except Exception as e:
+            if suppress_logging or getattr(self, "_is_shutting_down", False):
+                return
+
+            # Silence ConnectionRefusedError (common in tests/dev without gateway)
+            # This also avoids "I/O operation on closed file" errors during test teardown
+            if "Connection refused" in str(e):
+                return
+
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                try:
+                    # Avoid logging if handler is closed (common during shutdown)
+                    if self.file_handler and self.file_handler.stream and not self.file_handler.stream.closed:
+                        self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except Exception:
+                    # Final safety net for logging issues
+                    pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):
@@ -412,7 +428,7 @@ class Telemetry:
         self._last_push_time = now
 
         if sync or self.synchronous_mode:
-            self._push_metrics_sync()
+            self._push_metrics_sync(suppress_logging=sync)
         else:
             # Offload to thread pool
             self._push_executor.submit(self._push_metrics_sync)

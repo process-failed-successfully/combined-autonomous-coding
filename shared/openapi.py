@@ -1,10 +1,11 @@
 import logging
 import fnmatch
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Type
 
 from shared.config import Config
 from shared.dependencies import DependencyAnalyzer
+from agents.shared.base_agent import BaseAgent
 from agents.gemini import GeminiAgent
 from agents.cursor import CursorAgent
 from agents.local import LocalAgent
@@ -164,7 +165,7 @@ Source Code:
             stream_output=False,
         )
 
-        agent_class_map = {
+        agent_class_map: Dict[str, Type[BaseAgent]] = {
             "gemini": GeminiAgent,
             "cursor": CursorAgent,
             "local": LocalAgent,
@@ -175,7 +176,7 @@ Source Code:
         if not agent_class:
             raise ValueError(f"Unknown agent type: {agent_type}")
 
-        agent = agent_class(config)  # type: ignore
+        agent = agent_class(config)
 
         print("Generating OpenAPI spec (this may take a minute)...")
         try:

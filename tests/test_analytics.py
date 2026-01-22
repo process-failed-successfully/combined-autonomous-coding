@@ -1,19 +1,60 @@
 
 import unittest
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import patch
 import sys
 from pathlib import Path
 
 # Adjust the path to import from the root of the project
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from shared.analytics import get_git_contributors, get_git_hotspots, get_git_activity
+from shared.analytics import (  # noqa: E402
+    collect_analytics_data,
+    get_git_contributors,
+    get_git_hotspots,
+    get_git_activity
+)
+
 
 class TestAnalytics(unittest.TestCase):
 
+    @patch("shared.debt.scan_todos")
+    @patch("shared.debt.analyze_project_complexity")
+    @patch("shared.debt.find_duplicates")
+    @patch("shared.debt.UnusedCodeDetector")
+    @patch("shared.security.SecurityAuditor.scan_secrets")
+    def test_collect_analytics_data(self, mock_scan_secrets: Any, MockUnused: Any, mock_duplication: Any, mock_complexity: Any, mock_todos: Any) -> None:
+        """Test collecting overall analytics data."""
+        # Mock Data for Debt
+        mock_todos.return_value = [{"tag": "TODO", "text": "Fix"}]
+        mock_complexity.return_value = [{"function": "f", "complexity": 5}]
+        mock_duplication.return_value = []
+        MockUnused.return_value.get_unused_definitions.return_value = []
+
+        # Mock Data for Security
+        mock_scan_secrets.return_value = [
+            {"severity": "HIGH", "type": "secret", "file": "foo.py", "line": 1, "description": "AWS Key"}
+        ]
+
+        # Call the actual function
+        data = collect_analytics_data(Path("."))
+
+        # Assertions on structure
+        self.assertIn("debt", data)
+        self.assertIn("security", data)
+
+        # Debt assertions
+        self.assertEqual(data["debt"]["metrics"]["todos"]["count"], 1)
+        # 1 todo = 1 point -> A
+        self.assertEqual(data["debt"]["grade"], "A")
+
+        # Security assertions
+        self.assertEqual(len(data["security"]), 1)
+        self.assertEqual(data["security"][0]["severity"], "HIGH")
+
     @patch('shared.analytics.shutil.which')
     @patch('shared.analytics.subprocess.run')
-    def test_get_git_contributors(self, mock_run, mock_which):
+    def test_get_git_contributors(self, mock_run: Any, mock_which: Any) -> None:
         """Test getting git contributors."""
         mock_which.return_value = '/usr/bin/git'
 
@@ -30,7 +71,7 @@ class TestAnalytics(unittest.TestCase):
 
     @patch('shared.analytics.shutil.which')
     @patch('shared.analytics.subprocess.run')
-    def test_get_git_hotspots(self, mock_run, mock_which):
+    def test_get_git_hotspots(self, mock_run: Any, mock_which: Any) -> None:
         """Test getting git hotspots."""
         mock_which.return_value = '/usr/bin/git'
 
@@ -46,7 +87,7 @@ class TestAnalytics(unittest.TestCase):
 
     @patch('shared.analytics.shutil.which')
     @patch('shared.analytics.subprocess.run')
-    def test_get_git_activity(self, mock_run, mock_which):
+    def test_get_git_activity(self, mock_run: Any, mock_which: Any) -> None:
         """Test getting git activity."""
         mock_which.return_value = '/usr/bin/git'
 
@@ -63,13 +104,14 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(activity[2], ('2023-10-27', 1))
 
     @patch('shared.analytics.shutil.which')
-    def test_analytics_no_git(self, mock_which):
+    def test_analytics_no_git(self, mock_which: Any) -> None:
         """Test analytics when git is not available."""
         mock_which.return_value = None
 
         self.assertEqual(get_git_contributors(Path('.')), [])
         self.assertEqual(get_git_hotspots(Path('.')), [])
         self.assertEqual(get_git_activity(Path('.')), [])
+
 
 if __name__ == '__main__':
     unittest.main()

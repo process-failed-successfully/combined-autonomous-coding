@@ -2,17 +2,17 @@ import ast
 import os
 import re
 from pathlib import Path
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Any, Optional
 import fnmatch
 
 class UnusedCodeDetector:
-    def __init__(self, project_dir: Path, file_pattern: str = "*.py", ignore_patterns: List[str] = None):
+    def __init__(self, project_dir: Path, file_pattern: str = "*.py", ignore_patterns: Optional[List[str]] = None):
         self.project_dir = project_dir
         self.file_pattern = file_pattern
         self.ignore_patterns = ignore_patterns or []
 
         # storage
-        self.definitions: List[Dict] = [] # {name, type, file, lineno}
+        self.definitions: List[Dict[str, Any]] = [] # {name, type, file, lineno}
         self.usages: Set[str] = set()
 
         # Stats
@@ -60,7 +60,7 @@ class UnusedCodeDetector:
             # Skip files that can't be parsed
             pass
 
-    def get_unused_definitions(self) -> List[Dict]:
+    def get_unused_definitions(self) -> List[Dict[str, Any]]:
         """Returns a list of definitions that have no recorded usages."""
         unused = []
         for defn in self.definitions:
@@ -86,8 +86,8 @@ class SymbolVisitor(ast.NodeVisitor):
         except ValueError:
             self.rel_path = str(file_path)
 
-        self.definitions = []
-        self.usages = set()
+        self.definitions: List[Dict[str, Any]] = []
+        self.usages: Set[str] = set()
 
     def visit_FunctionDef(self, node):
         self.definitions.append({
@@ -137,7 +137,7 @@ class SymbolVisitor(ast.NodeVisitor):
             self.usages.update(parts)
         self.generic_visit(node)
 
-def _run_unused_logic(project_dir: Path, files: str = None, ignore: str = None):
+def _run_unused_logic(project_dir: Path, files: Optional[str] = None, ignore: Optional[str] = None):
     """
     Main entry point for CLI.
     """
@@ -165,7 +165,7 @@ def _run_unused_logic(project_dir: Path, files: str = None, ignore: str = None):
     print(f"\nFound {len(unused)} potentially unused definitions:")
 
     # Group by file
-    by_file = {}
+    by_file: Dict[str, List[Dict[str, Any]]] = {}
     for item in unused:
         f = item['file']
         if f not in by_file:

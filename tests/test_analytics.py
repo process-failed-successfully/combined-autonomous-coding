@@ -8,7 +8,8 @@ from shared.analytics import (
     collect_analytics_data,
     get_git_contributors,
     get_git_hotspots,
-    get_git_activity
+    get_git_activity,
+    _run_analytics_git_logic
 )
 
 
@@ -107,6 +108,31 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(get_git_contributors(Path('.')), [])
         self.assertEqual(get_git_hotspots(Path('.')), [])
         self.assertEqual(get_git_activity(Path('.')), [])
+
+    @patch('builtins.print')
+    @patch('shared.analytics.get_git_activity')
+    @patch('shared.analytics.get_git_hotspots')
+    @patch('shared.analytics.get_git_contributors')
+    @patch('pathlib.Path.is_dir')
+    def test_run_analytics_git_logic(self, mock_is_dir: Any, mock_contributors: Any, mock_hotspots: Any, mock_activity: Any, mock_print: Any) -> None:
+        """Test the orchestration function."""
+        # 1. Test not a git repo
+        mock_is_dir.return_value = False
+        _run_analytics_git_logic(Path("."))
+        mock_print.assert_any_call("❌ Error: Not a git repository.")
+
+        # 2. Test git repo
+        mock_is_dir.return_value = True
+        mock_contributors.return_value = [(10, "Alice")]
+        mock_hotspots.return_value = [("file.py", 5)]
+        mock_activity.return_value = [("2023-01-01", 5)]
+
+        _run_analytics_git_logic(Path("."))
+
+        # Verify calls
+        mock_contributors.assert_called()
+        mock_hotspots.assert_called()
+        mock_activity.assert_called()
 
 
 if __name__ == '__main__':

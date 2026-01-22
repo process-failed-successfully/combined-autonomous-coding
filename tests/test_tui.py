@@ -29,10 +29,29 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
         self.mock_ask = self.patcher_ask.start()
 
+        # Mock collect_analytics_data to avoid heavy/unsafe ops
+        self.patcher_analytics = patch("shared.tui.collect_analytics_data")
+        self.mock_analytics = self.patcher_analytics.start()
+        # Return a dummy dict structure
+        self.mock_analytics.return_value = {
+            "debt": {
+                "metrics": {
+                    "todos": {"count": 0},
+                    "complexity": {"high_risk_count": 0, "average": 0},
+                    "duplication": {"blocks": 0, "total_tokens": 0},
+                    "unused": {"count": 0}
+                },
+                "score": 0,
+                "grade": "A"
+            },
+            "security": []
+        }
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
+        self.patcher_analytics.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_app_startup(self):

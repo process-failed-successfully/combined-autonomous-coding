@@ -1,28 +1,23 @@
 import sys
 import io
 import contextlib
-import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree
+from textual.widgets import Header, Footer, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
-from textual.reactive import reactive
-from textual.screen import Screen
-from textual.binding import Binding
 from textual import on
 
-from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
+from shared.cli_utils import get_workflow_stage, get_all_log_files
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 from shared.optimize import OptimizationManager
 from shared.database import init_db
-from shared.github_client import GitHubClient
-from shared.config_loader import load_config_from_file
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
+
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -44,6 +39,7 @@ def get_git_info(project_dir: Path) -> dict:
         except Exception:
             pass
     return info
+
 
 class DashboardTab(Container):
     """The main dashboard tab."""
@@ -104,6 +100,7 @@ class DashboardTab(Container):
         else:
             history_log.write("No history found.")
 
+
 class FileExplorerTab(Container):
     """Tab for browsing files."""
 
@@ -133,6 +130,7 @@ class FileExplorerTab(Container):
                 preview.write(content)
         except Exception as e:
             preview.write(f"Error reading file: {e}")
+
 
 class LogsTab(Container):
     """Tab for viewing and filtering logs."""
@@ -230,6 +228,7 @@ class LogsTab(Container):
         except Exception as e:
             log_viewer.write(f"[bold red]Error reading log file:[/bold red] {e}")
 
+
 class InteractTab(Container):
     """Tab for interacting with the agent (Chat)."""
 
@@ -280,11 +279,12 @@ class InteractTab(Container):
 
         # Format response
         if success:
-             chat_log.write(f"[bold green]Agent:[/bold green]")
-             chat_log.write(response)
+            chat_log.write("[bold green]Agent:[/bold green]")
+            chat_log.write(response)
         else:
-             chat_log.write(f"[bold red]Agent Error:[/bold red]")
-             chat_log.write(response)
+            chat_log.write("[bold red]Agent Error:[/bold red]")
+            chat_log.write(response)
+
 
 class KnowledgeTab(Container):
     """Tab for managing knowledge."""
@@ -339,6 +339,7 @@ class KnowledgeTab(Container):
                     self.notify(f"Error adding knowledge: {e}", severity="error")
             else:
                 self.notify("Content cannot be empty.", severity="warning")
+
 
 class TasksTab(Container):
     """Tab for viewing Unified Tasks (GitHub, Jira, Sprint, TODOs)."""
@@ -418,6 +419,7 @@ class TasksTab(Container):
     @on(Input.Changed, "#input-task-filter")
     def filter_text(self):
         self._update_table(self.tasks_cache)
+
 
 class ProfileTab(Container):
     """Tab for performance profiling."""
@@ -516,6 +518,7 @@ class ProfileTab(Container):
         suggestion = await self.manager.get_ai_suggestions(self.stats_file, agent_type=agent_type)
         ai_output.update(suggestion)
         self.notify("Analysis complete.")
+
 
 class DependenciesTab(Container):
     """Tab for managing dependencies with an interactive tree view."""
@@ -629,17 +632,17 @@ class DependenciesTab(Container):
         details_log.write(f"[bold]Type:[/bold] {node_data['type']}")
 
         if is_outdated:
-             details_log.write(f"\n[bold red]⚠️ Outdated![/bold red]")
-             details_log.write(f"Latest available: [green]{latest}[/green]")
-             update_btn.disabled = False
-             # Store selected dep for update action
-             self.selected_dep = node_data
+            details_log.write("\n[bold red]⚠️ Outdated![/bold red]")
+            details_log.write(f"Latest available: [green]{latest}[/green]")
+            update_btn.disabled = False
+            # Store selected dep for update action
+            self.selected_dep = node_data
         else:
-             details_log.write(f"\n[green]✅ Up to date[/green]")
+            details_log.write("\n[green]✅ Up to date[/green]")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-deps-refresh":
-            self.cached_data = {} # Clear cache
+            self.cached_data = {}  # Clear cache
             self.load_deps()
             self.notify("Dependencies refreshed.")
 
@@ -664,7 +667,7 @@ class DependenciesTab(Container):
 
             data = await asyncio.to_thread(do_check)
             self.cached_data = data
-            self.load_deps() # Re-render tree
+            self.load_deps()  # Re-render tree
 
             self.query_one("#deps-status", Label).update("Update check complete.")
             self.notify("Update check complete.")
@@ -897,6 +900,7 @@ class AgentTUI(App):
                 self.notify("Lint started in background.")
             except Exception as e:
                 self.notify(f"Failed to start lint: {e}", severity="error")
+
 
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution

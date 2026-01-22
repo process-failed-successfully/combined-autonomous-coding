@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock
 
 # Ensure shared can be imported
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.tui import DependenciesTab
+from shared.tui import DependenciesTab  # noqa: E402
+
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -154,6 +155,7 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
 
         # Verify load_deps called (implied by tree usage)
         mock_tree.clear.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

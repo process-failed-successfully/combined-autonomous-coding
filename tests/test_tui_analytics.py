@@ -6,7 +6,7 @@ from unittest.mock import patch
 # Ensure shared can be imported
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.tui import collect_analytics_data  # noqa: E402
+from shared.analytics_utils import collect_analytics_data  # noqa: E402
 
 
 class TestTUIAnalyticsLogic(unittest.TestCase):

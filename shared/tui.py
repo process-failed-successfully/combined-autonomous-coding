@@ -16,8 +16,7 @@ from shared.optimize import OptimizationManager
 from shared.database import init_db
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
-from shared.debt import DebtCollector
-from shared.security import SecurityAuditor
+from shared.analytics_utils import collect_analytics_data
 
 
 # Helper to get Git info safely
@@ -644,24 +643,6 @@ class DependenciesTab(Container):
         except Exception as e:
             self.notify(f"Error checking updates: {e}", severity="error")
             self.query_one("#deps-status", Label).update("Error checking updates.")
-
-
-def collect_analytics_data(project_dir: Path) -> dict[str, Any]:
-    """Collects analytics data for the dashboard."""
-    debt_collector = DebtCollector(project_dir)
-    security_auditor = SecurityAuditor(project_dir)
-
-    # Debt
-    debt_metrics = debt_collector.collect()
-    debt_score, debt_grade = debt_collector.calculate_score(debt_metrics)
-
-    # Security
-    security_findings = security_auditor.scan_secrets()
-
-    return {
-        "debt": {"metrics": debt_metrics, "score": debt_score, "grade": debt_grade},
-        "security": security_findings
-    }
 
 
 class AnalyticsTab(Container):

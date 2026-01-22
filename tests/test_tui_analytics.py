@@ -1,12 +1,8 @@
-import sys
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-# Ensure shared can be imported
-sys.path.append(str(Path(__file__).parent.parent))
-
-from shared.tui import collect_analytics_data  # noqa: E402
+from shared.tui import collect_analytics_data
 
 
 class TestTUIAnalyticsLogic(unittest.TestCase):

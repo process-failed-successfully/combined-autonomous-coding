@@ -53,6 +53,8 @@ class TestGeminiClient(unittest.IsolatedAsyncioTestCase):
         process = AsyncMock()
         process.returncode = 0
         process.stdin = AsyncMock()
+        process.stdin.write = MagicMock()
+        process.stdin.close = MagicMock()
 
         # Simulate hang longer than 5s
         async def hang():
@@ -99,6 +101,8 @@ class TestGeminiClient(unittest.IsolatedAsyncioTestCase):
         process = AsyncMock()
         process.returncode = 1
         process.stdin = AsyncMock()
+        process.stdin.write = MagicMock()
+        process.stdin.close = MagicMock()
         process.stdout.readline.side_effect = [b""]
         process.stderr.readline.side_effect = [b"error\n", b""]
 

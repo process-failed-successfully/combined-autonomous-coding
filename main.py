@@ -11059,10 +11059,6 @@ async def main():
         run_visualize(args)
         return
 
-    if args.command in ["site", "docs"]:
-        run_site(args)
-        return
-
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id

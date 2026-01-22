@@ -7935,6 +7935,23 @@ def parse_args(argv=None):
         help="Output file path (optional)."
     )
 
+    # --- New 'debt' command ---
+    parser_debt = subparsers.add_parser(
+        "debt",
+        help="Generate a Technical Debt Report (Scorecard)."
+    )
+    parser_debt.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_debt.add_argument(
+        "--json",
+        action="store_true",
+        help="Output report in JSON format."
+    )
+
     # --- New 'check-links' command ---
     parser_check_links = subparsers.add_parser(
         "check-links",
@@ -10793,6 +10810,11 @@ async def main():
     # Handle `health` command
     if args.command == "health":
         run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
+        return
+
+    if args.command == "debt":
+        from shared.debt import run_debt_report
+        run_debt_report(args.project_dir, json_output=args.json)
         return
 
     if args.command == "check-links":

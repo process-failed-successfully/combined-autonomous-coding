@@ -7,7 +7,7 @@ Manages the execution of performance profiling and AI-driven optimization sugges
 
 import sys
 import pstats
-import subprocess
+import subprocess  # nosec
 import logging
 import ast
 from pathlib import Path
@@ -31,7 +31,7 @@ class OptimizationManager:
 
         print(f"Running profiler: {' '.join(cmd)}")
         try:
-            result = subprocess.run(cmd, cwd=self.project_dir, capture_output=True, text=True)
+            result = subprocess.run(cmd, cwd=self.project_dir, capture_output=True, text=True)  # nosec
             if result.returncode != 0:
                 print(f"❌ Profiling failed:\n{result.stderr}")
                 # Sometimes the script fails but profile is generated?

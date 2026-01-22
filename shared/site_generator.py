@@ -1,6 +1,6 @@
 import os
 import shutil
-import markdown
+import markdown  # type: ignore
 import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -276,7 +276,7 @@ class SiteGenerator:
 
         return html_content
 
-    def _build_deps_page(self, data: Dict) -> str:
+    def _build_deps_page(self, data: Dict[str, Any]) -> str:
         """Builds HTML content for the dependencies page."""
         html_content = "<h1>Project Dependencies</h1>"
 
@@ -306,7 +306,7 @@ class SiteGenerator:
         """
 
         # Group pages
-        groups = {}
+        groups: Dict[str, List[Dict[str, str]]] = {}
         for p in self.pages:
             g = p.get("group", "Other")
             if g not in groups: groups[g] = []

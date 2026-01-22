@@ -26,6 +26,7 @@ from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
 from shared.map import scan_project, CodeNode
 from shared.git import get_git_log, get_commit_details
+from shared.db_query import get_schema_info, generate_sql, execute_sqlite
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -921,6 +922,119 @@ class AnalyticsTab(Container):
             sec_table.add_row(sev, f["type"], f["description"], location)
 
 
+class DatabaseTab(Container):
+    """Tab for database management."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.db_path = None
+        self.schema = ""
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Database Manager[/bold]", classes="welcome-text")
+
+            with Horizontal(classes="stat-box"):
+                yield Button("Detect DB", id="btn-db-detect", variant="primary")
+                yield Label("No DB selected", id="lbl-db-status")
+
+            with Horizontal():
+                # Schema View
+                with Vertical(id="db-schema-container", classes="stat-box"):
+                    yield Label("[bold]Schema[/bold]")
+                    yield RichLog(id="db-schema-view", wrap=True, highlight=True)
+
+                # Query View
+                with Vertical(id="db-query-container"):
+                    with Horizontal(classes="stat-box"):
+                        yield Select.from_values(["SQL", "Natural Language"], id="select-query-mode", value="SQL")
+                        yield Select.from_values(["gemini", "cursor", "local"], id="select-db-agent", value="gemini")
+
+                    yield Input(placeholder="Enter SQL query...", id="input-db-query")
+                    yield Button("Execute", id="btn-db-execute", variant="success")
+
+                    yield DataTable(id="db-results-table")
+                    yield Label("", id="lbl-query-status")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-db-detect":
+            self.detect_db()
+        elif event.button.id == "btn-db-execute":
+            await self.execute_query()
+
+    def detect_db(self) -> None:
+        self.schema, self.db_path = get_schema_info(self.project_dir)
+        lbl = self.query_one("#lbl-db-status", Label)
+        schema_view = self.query_one("#db-schema-view", RichLog)
+        schema_view.clear()
+
+        if self.db_path:
+            lbl.update(f"Connected: {self.db_path.name}")
+            schema_view.write(self.schema)
+            self.notify("Database detected.")
+        else:
+            lbl.update("No SQLite DB found.")
+            schema_view.write("No schema available.")
+            self.notify("No database found.", severity="warning")
+
+    async def execute_query(self) -> None:
+        if not self.db_path:
+            self.notify("No database connected.", severity="error")
+            return
+
+        query = self.query_one("#input-db-query", Input).value
+        if not query:
+            return
+
+        mode = self.query_one("#select-query-mode", Select).value
+        status_lbl = self.query_one("#lbl-query-status", Label)
+        status_lbl.update("Executing...")
+
+        sql = query
+        if mode == "Natural Language":
+            status_lbl.update("Generating SQL...")
+            agent_type = self.query_one("#select-db-agent", Select).value
+            try:
+                sql = await generate_sql(query, self.schema, self.project_dir, agent_type=agent_type)
+                if sql.startswith("ERROR:"):
+                    status_lbl.update("Error generating SQL.")
+                    self.notify(sql, severity="error")
+                    return
+
+                # Update input with generated SQL and switch to SQL mode
+                self.query_one("#input-db-query", Input).value = sql
+                self.query_one("#select-query-mode", Select).value = "SQL"
+                self.notify(f"SQL generated. Review and execute.")
+                status_lbl.update("SQL Generated. Ready to execute.")
+                return  # Stop here, don't execute
+            except Exception as e:
+                status_lbl.update("AI Error.")
+                self.notify(f"AI Error: {e}", severity="error")
+                return
+
+        # Execute SQL
+        try:
+            status_lbl.update("Running SQL...")
+            # Run in thread to avoid blocking UI
+            import asyncio
+            columns, rows, rowcount = await asyncio.to_thread(execute_sqlite, self.db_path, sql)
+
+            table = self.query_one("#db-results-table", DataTable)
+            table.clear(columns=True)
+
+            if columns:
+                table.add_columns(*columns)
+                table.add_rows(rows)
+                status_lbl.update(f"Returned {len(rows)} rows.")
+            else:
+                status_lbl.update(f"Executed. Rows affected: {rowcount}")
+
+        except Exception as e:
+            status_lbl.update("Execution Error.")
+            self.notify(f"SQL Error: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -959,6 +1073,8 @@ class AgentTUI(App):
                 yield ProfileTab(self.project_dir)
             with TabPane("Logs", id="tab-logs"):
                 yield LogsTab()
+            with TabPane("Database", id="tab-database"):
+                yield DatabaseTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

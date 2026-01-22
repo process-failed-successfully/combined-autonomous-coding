@@ -10,7 +10,7 @@ import logging
 import sqlite3
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple, List, Any
 
 from shared.config import Config
 from agents.gemini import GeminiAgent
@@ -21,36 +21,26 @@ from shared.database_manager import DatabaseManager, DatabaseFramework
 
 logger = logging.getLogger(__name__)
 
-async def run_db_query_logic(
-    query: str,
-    project_dir: Path,
-    agent_type: str = "gemini",
-    model: Optional[str] = None,
-    yes: bool = False,
-    verbose: bool = False,
-) -> bool:
+def _get_sqlite_schema(db_path: Path) -> str:
+    """Extracts CREATE TABLE statements from a SQLite DB."""
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        schema = "\n".join([t[0] for t in tables if t[0]])
+        conn.close()
+        return schema
+    except Exception as e:
+        return f"Error reading schema: {e}"
+
+def get_schema_info(project_dir: Path) -> Tuple[str, Optional[Path]]:
     """
-    Executes the 'db query' logic.
-
-    Args:
-        query: The natural language query.
-        project_dir: The project root directory.
-        agent_type: The type of agent to use.
-        model: The model to use.
-        yes: Skip confirmation if True.
-        verbose: Enable verbose logging.
-
-    Returns:
-        True if successful, False otherwise.
+    Detects the database and retrieves schema information.
+    Returns (schema_string, db_path).
     """
-
-    # 1. Detect Database and Schema
     db_manager = DatabaseManager(project_dir)
     framework = db_manager.detect_framework()
-
-    # Introspect schema
-    # For now, we support SQLite directly, and for others we might need a dump or generic introspection
-    # Start with SQLite support as it's the agent's default
 
     schema_info = ""
     db_path = None
@@ -66,11 +56,19 @@ async def run_db_query_logic(
              # Could use 'python manage.py inspectdb'
              pass
 
-        if not schema_info:
-            print("❌ No SQLite database found and generic introspection not yet implemented for this framework.", file=sys.stderr)
-            return False
+    return schema_info, db_path
 
-    # 2. Setup Agent
+async def generate_sql(
+    query: str,
+    schema_info: str,
+    project_dir: Path,
+    agent_type: str = "gemini",
+    model: Optional[str] = None,
+    verbose: bool = False
+) -> str:
+    """
+    Uses the agent to translate natural language query to SQL.
+    """
     config = Config(
         project_dir=project_dir,
         agent_type=agent_type,
@@ -89,12 +87,10 @@ async def run_db_query_logic(
 
     agent_class = agent_class_map.get(agent_type)
     if not agent_class:
-        logger.error(f"Unknown agent type: {agent_type}")
-        return False
+        raise ValueError(f"Unknown agent type: {agent_type}")
 
     agent = agent_class(config)
 
-    # 3. Construct Prompt
     prompt = f"""
 You are an expert SQL assistant.
 Your task is to convert a natural language query into a valid SQL query based on the provided schema.
@@ -112,27 +108,69 @@ Your task is to convert a natural language query into a valid SQL query based on
 4. If the query cannot be answered by the schema, return "ERROR: Cannot answer".
 """
 
-    # 4. Get SQL from Agent
-    print(f"Analyzing schema and generating SQL for: '{query}'...")
     try:
-        # Using run_agent_session or equivalent to get text response
-        # Since run_agent_session returns (status, response, actions), we use response.
         status, response, actions = await agent.run_agent_session(prompt)
         sql_query = response.strip().replace("```sql", "").replace("```", "").strip()
-
-        if sql_query.startswith("ERROR:"):
-            print(f"❌ {sql_query}")
-            return False
-
+        return sql_query
     except Exception as e:
         logger.error(f"Error generating SQL: {e}")
+        return f"ERROR: {e}"
+
+def execute_sqlite(db_path: Path, sql: str) -> Tuple[List[str], List[Tuple], int]:
+    """
+    Executes SQL on a SQLite DB.
+    Returns (columns, rows, rowcount).
+    """
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(sql)
+
+        columns = []
+        rows = []
+        rowcount = cursor.rowcount
+
+        if cursor.description:
+            columns = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+        else:
+            conn.commit()
+
+        conn.close()
+        return columns, rows, rowcount
+    except Exception as e:
+        raise e
+
+async def run_db_query_logic(
+    query: str,
+    project_dir: Path,
+    agent_type: str = "gemini",
+    model: Optional[str] = None,
+    yes: bool = False,
+    verbose: bool = False,
+) -> bool:
+    """
+    Executes the 'db query' logic.
+    """
+    # 1. Detect Database and Schema
+    schema_info, db_path = get_schema_info(project_dir)
+
+    if not schema_info:
+        print("❌ No SQLite database found and generic introspection not yet implemented for this framework.", file=sys.stderr)
+        return False
+
+    # 2. Get SQL from Agent
+    print(f"Analyzing schema and generating SQL for: '{query}'...")
+    sql_query = await generate_sql(query, schema_info, project_dir, agent_type, model, verbose)
+
+    if sql_query.startswith("ERROR:"):
+        print(f"❌ {sql_query}")
         return False
 
     print(f"\nGenerated SQL: \033[1m{sql_query}\033[0m")
 
-    # 5. Confirm Execution (unless --yes or read-only safe?)
-    # Simple heuristic for read-only
-    is_read_only = sql_query.lower().startswith("select")
+    # 3. Confirm Execution
+    is_read_only = sql_query.lower().startswith("select") or sql_query.lower().startswith("pragma")
 
     if not is_read_only and not yes:
         print("⚠️  This query may modify data.")
@@ -141,43 +179,12 @@ Your task is to convert a natural language query into a valid SQL query based on
             print("Aborted.")
             return True
 
-    # 6. Execute SQL
+    # 4. Execute SQL
     if db_path:
-        _execute_sqlite(db_path, sql_query)
-    else:
-        print("❌ Database connection logic for non-SQLite not fully implemented in this prototype.")
-        return False
+        try:
+            columns, rows, rowcount = execute_sqlite(db_path, sql_query)
 
-    return True
-
-def _get_sqlite_schema(db_path: Path) -> str:
-    """Extracts CREATE TABLE statements from a SQLite DB."""
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table';")
-        tables = cursor.fetchall()
-        schema = "\n".join([t[0] for t in tables if t[0]])
-        conn.close()
-        return schema
-    except Exception as e:
-        return f"Error reading schema: {e}"
-
-def _execute_sqlite(db_path: Path, sql: str):
-    """Executes SQL on a SQLite DB and prints results."""
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute(sql)
-
-        if sql.lower().startswith("select"):
-            columns = [description[0] for description in cursor.description]
-            rows = cursor.fetchall()
-
-            # Simple table print
-            if not rows:
-                print("No results found.")
-            else:
+            if columns:
                 # Calculate widths
                 widths = [len(c) for c in columns]
                 for row in rows:
@@ -194,10 +201,14 @@ def _execute_sqlite(db_path: Path, sql: str):
                 for row in rows:
                     print(" | ".join(f"{str(val):<{w}}" for val, w in zip(row, widths)))
                 print(f"\n({len(rows)} rows)")
-        else:
-            conn.commit()
-            print(f"✅ Executed successfully. Rows affected: {cursor.rowcount}")
+            else:
+                print(f"✅ Executed successfully. Rows affected: {rowcount}")
 
-        conn.close()
-    except Exception as e:
-        print(f"❌ SQL Execution Error: {e}")
+        except Exception as e:
+             print(f"❌ SQL Execution Error: {e}")
+             return False
+    else:
+        print("❌ Database connection logic for non-SQLite not fully implemented in this prototype.")
+        return False
+
+    return True

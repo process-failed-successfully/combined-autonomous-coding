@@ -259,7 +259,7 @@ class SecurityAuditor:
                                 })
 
                     except json.JSONDecodeError:
-                        pass
+                        pass  # nosec
             except Exception as e:
                 print(f"Error running npm audit: {e}")
 

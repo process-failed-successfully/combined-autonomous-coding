@@ -65,6 +65,7 @@ class TestTelemetry(unittest.TestCase):
         # Verify logger is set up with JSON formatter
         handler = self.telemetry.logger.handlers[0]
         formatter = handler.formatter
+        assert formatter is not None  # Hint for MyPy
         record = logging.LogRecord(
             "test_agent", logging.INFO, "pathname", 1, "test message", {}, None
         )

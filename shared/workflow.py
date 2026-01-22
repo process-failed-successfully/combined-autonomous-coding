@@ -4,7 +4,7 @@ Unified Jira Workflow Utilities
 """
 
 import logging
-import subprocess
+import subprocess  # nosec
 from pathlib import Path
 from typing import Optional, Tuple, List, Any
 
@@ -21,16 +21,36 @@ def _get_remote_info(project_dir: Path) -> Tuple[Optional[str], Optional[str], O
     Extract (host, owner, repo) from git remote origin.
     """
     try:
-        # res = subprocess.run(["git", "remote", "get-url", "origin"],
-        #                      cwd=project_dir, check=True, stdout=subprocess.PIPE, text=True)
-        # remote_url = res.stdout.strip()
-        # GitHubClient logic is embedded here or we need a helper.
-        # For now, simplistic parsing or assuming github.com if not ssh
-        # But wait, GitHubClient has _get_repo_owner_and_name which takes project_dir!
-        # And it returns (owner, repo). Host is implicit or we default to github.com
-        return "github.com", None, None # Placeholder as _get_repo_owner_and_name returns owner, repo.
-        # We need to refactor this to use GitHubClient properly or implement parsing.
-        # Let's use GitHubClient's internal logic via a temporary instance if possible, or just fix the usage below.
+        res = subprocess.run(["git", "remote", "get-url", "origin"],
+                             cwd=str(project_dir), check=True, stdout=subprocess.PIPE, text=True)  # nosec
+        remote_url = res.stdout.strip()
+
+        host = "github.com"
+        owner = None
+        repo = None
+
+        if remote_url.startswith("git@"):
+            parts = remote_url.split(":")
+            if len(parts) > 1:
+                host_part = parts[0].split("@")[-1]
+                path_part = parts[1]
+                host = host_part
+                owner_repo = path_part.replace(".git", "").split("/")
+                if len(owner_repo) == 2:
+                    owner, repo = owner_repo
+        elif remote_url.startswith("https://") or remote_url.startswith("http://"):
+            from urllib.parse import urlparse
+            parsed = urlparse(remote_url)
+            host = parsed.netloc
+            path_parts = parsed.path.strip("/").replace(".git", "").split("/")
+            if len(path_parts) >= 2:
+                owner = path_parts[-2]
+                repo = path_parts[-1]
+
+        if owner and repo:
+            return host, owner, repo
+
+        return None, None, None
     except Exception as e:
         logger.warning(f"Failed to get remote info: {e}")
         return None, None, None
@@ -66,9 +86,8 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
 
         # Avoid PR from main to main
         if current_branch == base_branch:
-             # We should probably check if current_branch IS the default branch.
-             # Without API call, hard to be sure.
-             pass
+            logger.warning(f"Attempting to create PR from {current_branch} to {base_branch}. Skipping.")
+            return None
 
         # Read PR Description
         pr_body = f"Automated PR for Jira Ticket {config.jira_ticket_key}."
@@ -82,13 +101,13 @@ def _create_pr(config: Config, current_branch: str) -> Optional[str]:
 
         # Use create_pull_request which matches shared/github_client.py
         pr_data = gh_client.create_pull_request(
-            config.project_dir, # project_dir
+            config.project_dir,  # project_dir
             title=f"Fixes {config.jira_ticket_key}",
             body=pr_body,
             head_branch=current_branch,
             base_branch=base_branch
         )
-        return pr_data.get("html_url") # type: ignore
+        return pr_data.get("html_url")  # type: ignore
     except Exception as e:
         logger.error(f"Error creating PR: {e}")
         return None
@@ -112,7 +131,7 @@ async def complete_jira_ticket(config: Config) -> bool:
         # 1. Get Current Branch
         try:
             res = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                                 cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)
+                                 cwd=config.project_dir, check=True, stdout=subprocess.PIPE, text=True)  # nosec
             current_branch = res.stdout.strip()
         except subprocess.CalledProcessError:
             logger.error("Failed to determine current branch. Is this a git repo?")

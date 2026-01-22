@@ -30,13 +30,15 @@ class TestWorkflow(unittest.IsolatedAsyncioTestCase):
         host, owner, repo = _get_remote_info(Path("/tmp"))
         self.assertIsNone(host)
 
+    @patch("os.getenv")
     @patch("shared.workflow._get_remote_info")
     @patch("shared.workflow.GitHubClient")
-    def test_create_pr_success(self, mock_gh_client_cls, mock_get_remote):
+    def test_create_pr_success(self, mock_gh_client_cls, mock_get_remote, mock_getenv):
+        mock_getenv.return_value = "fake-token"
         mock_get_remote.return_value = ("github.com", "owner", "repo")
         mock_gh_client_instance = mock_gh_client_cls.return_value
         mock_gh_client_instance.get_repo_metadata.return_value = {"default_branch": "main"}
-        mock_gh_client_instance.create_pr.return_value = "http://pr-url"
+        mock_gh_client_instance.create_pull_request.return_value = {"html_url": "http://pr-url"}
 
         config = MagicMock(spec=Config)
         config.project_dir = Path("/tmp")

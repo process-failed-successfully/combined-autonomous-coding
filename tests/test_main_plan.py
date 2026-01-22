@@ -7,8 +7,8 @@ import json
 import asyncio
 
 from main import run_plan
-from shared.config import Config
 from agents.gemini.agent import GeminiAgent
+
 
 class TestMainPlan(unittest.TestCase):
 
@@ -75,7 +75,7 @@ class TestMainPlan(unittest.TestCase):
         # Simulate the feature file being created by the planning session
         def side_effect(*args, **kwargs):
             self.feature_file.write_text(json.dumps([{"feature": "Addition"}]))
-            return asyncio.sleep(0)
+            return True
 
         mock_agent_instance.run_planning_session.side_effect = side_effect
 
@@ -101,6 +101,7 @@ class TestMainPlan(unittest.TestCase):
         with open(self.feature_file, 'r') as f:
             data = json.load(f)
             self.assertEqual(data, [{"feature": "Addition"}])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -10,6 +10,10 @@ class TestTelemetry(unittest.TestCase):
         self.telemetry = Telemetry("test_agent", "test_job")
         self.telemetry.synchronous_mode = True
 
+    def tearDown(self):
+        if hasattr(self, 'telemetry'):
+            self.telemetry.close()
+
     @patch("shared.telemetry.push_to_gateway")
     def test_record_gauge(self, mock_push):
         # Enable metrics for test

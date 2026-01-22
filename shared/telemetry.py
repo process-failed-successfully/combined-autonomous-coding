@@ -94,12 +94,32 @@ class Telemetry:
         # Ensure final metrics are pushed on exit
         atexit.register(self._shutdown)
 
-    def _shutdown(self):
-        """Shutdown handler to ensure pending metrics are pushed."""
+    def close(self):
+        """Manually close the telemetry agent, cleaning up threads and executors."""
+        if getattr(self, "_is_shutting_down", False):
+            return
+
         self._is_shutting_down = True
         self.monitoring_active = False
-        self._push_metrics(force=True, sync=True)
-        self._push_executor.shutdown(wait=True)
+
+        # Unregister atexit if it's not the one calling this
+        try:
+            atexit.unregister(self._shutdown)
+        except Exception:
+            pass
+
+        # One final push (if possible)
+        try:
+            self._push_metrics(force=True, sync=True)
+        except Exception:
+            pass
+
+        # Shutdown executor
+        self._push_executor.shutdown(wait=False)
+
+    def _shutdown(self):
+        """Shutdown handler to ensure pending metrics are pushed."""
+        self.close()
 
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""

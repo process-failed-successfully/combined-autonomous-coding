@@ -21,9 +21,11 @@ from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
+from shared.debt import DebtCollector
+from shared.security import SecurityAuditor
 
 # Helper to get Git info safely
-def get_git_info(project_dir: Path) -> dict:
+def get_git_info(project_dir: Path) -> dict[str, str]:
     import shutil
     import subprocess
     git_path = shutil.which("git")
@@ -345,7 +347,7 @@ class TasksTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.task_manager = TaskManager(project_dir)
-        self.tasks_cache = []
+        self.tasks_cache: list[Task] = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -424,7 +426,7 @@ class ProfileTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = OptimizationManager(project_dir)
-        self.stats_file = None
+        self.stats_file: Path | None = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -633,6 +635,145 @@ class DependenciesTab(Container):
             self.notify(f"Error checking updates: {e}", severity="error")
             self.query_one("#deps-status", Label).update("Error checking updates.")
 
+
+from typing import Any
+
+def collect_analytics_data(project_dir: Path) -> dict[str, Any]:
+    """Collects analytics data for the dashboard."""
+    debt_collector = DebtCollector(project_dir)
+    security_auditor = SecurityAuditor(project_dir)
+
+    # Debt
+    debt_metrics = debt_collector.collect()
+    debt_score, debt_grade = debt_collector.calculate_score(debt_metrics)
+
+    # Security
+    security_findings = security_auditor.scan_secrets()
+
+    return {
+        "debt": {"metrics": debt_metrics, "score": debt_score, "grade": debt_grade},
+        "security": security_findings
+    }
+
+
+class AnalyticsTab(Container):
+    """Tab for project health and analytics."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll():
+            yield Label("[bold]Project Analytics & Health[/bold]", classes="welcome-text")
+
+            # Technical Debt Section
+            with Container(classes="stat-box"):
+                yield Label("[bold]Technical Debt[/bold]")
+                yield Label("Loading...", id="debt-summary")
+                yield DataTable(id="debt-table")
+
+            # Security Section
+            with Container(classes="stat-box"):
+                yield Label("[bold]Security Audit[/bold]")
+                yield Label("Loading...", id="security-summary")
+                yield DataTable(id="security-table")
+
+            # Actions
+            with Horizontal(classes="stat-box"):
+                yield Button("Refresh Analysis", id="btn-refresh-analytics", variant="primary")
+                yield Label("", id="analytics-status")
+
+    def on_mount(self) -> None:
+        # Debt Table
+        debt_table = self.query_one("#debt-table", DataTable)
+        debt_table.add_columns("Metric", "Count", "Details")
+
+        # Security Table
+        sec_table = self.query_one("#security-table", DataTable)
+        sec_table.add_columns("Severity", "Type", "Description", "Location")
+
+        # Trigger load
+        self.refresh_analytics()
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-refresh-analytics":
+            self.refresh_analytics()
+
+    def refresh_analytics(self) -> None:
+        self.query_one("#analytics-status", Label).update("Analyzing... (this may take a few seconds)")
+        self.notify("Starting analysis...")
+
+        # Run in thread
+        import asyncio
+        asyncio.create_task(self._run_analysis())
+
+    async def _run_analysis(self) -> None:
+        import asyncio
+
+        try:
+            # Run the extracted function in a thread
+            data = await asyncio.to_thread(collect_analytics_data, self.project_dir)
+            self._update_ui(data)
+            self.query_one("#analytics-status", Label).update("Analysis complete.")
+            self.notify("Analysis complete.")
+        except Exception as e:
+            self.query_one("#analytics-status", Label).update(f"Error: {e}")
+            self.notify(f"Analysis failed: {e}", severity="error")
+
+    def _update_ui(self, data: dict[str, Any]) -> None:
+        # Update Debt
+        debt = data["debt"]
+        metrics = debt["metrics"]
+        score = debt["score"]
+        grade = debt["grade"]
+
+        # Color for grade
+        grade_color = "green"
+        if grade in ["B", "C"]:
+            grade_color = "yellow"
+        if grade in ["D", "F"]:
+            grade_color = "red"
+
+        summary = f"Grade: [{grade_color}]{grade}[/{grade_color}] (Score: {int(score)})"
+        self.query_one("#debt-summary", Label).update(summary)
+
+        debt_table = self.query_one("#debt-table", DataTable)
+        debt_table.clear()
+        debt_table.add_row("TODOs", str(metrics["todos"]["count"]), "Pending tasks")
+        debt_table.add_row("Complexity Risks", str(metrics["complexity"]["high_risk_count"]), f"Avg: {metrics['complexity']['average']:.1f}")
+        debt_table.add_row("Duplication", f"{metrics['duplication']['blocks']} blocks", f"{metrics['duplication']['total_tokens']} tokens")
+        debt_table.add_row("Unused Code", str(metrics['unused']['count']), "Definitions")
+
+        # Update Security
+        findings = data["security"]
+        high_count = sum(1 for f in findings if f["severity"] == "HIGH")
+        medium_count = sum(1 for f in findings if f["severity"] == "MEDIUM")
+
+        sec_summary = f"Issues Found: [red]{high_count} High[/red], [yellow]{medium_count} Medium[/yellow], {len(findings) - high_count - medium_count} Low"
+        if not findings:
+            sec_summary = "[green]No secrets or dangerous patterns found.[/green]"
+
+        self.query_one("#security-summary", Label).update(sec_summary)
+
+        sec_table = self.query_one("#security-table", DataTable)
+        sec_table.clear()
+
+        # Sort by severity
+        severity_map = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+        findings.sort(key=lambda x: severity_map.get(x["severity"], 3))
+
+        for f in findings[:20]:  # Limit to top 20
+            sev = f["severity"]
+            if sev == "HIGH":
+                sev = f"[red]{sev}[/red]"
+            elif sev == "MEDIUM":
+                sev = f"[yellow]{sev}[/yellow]"
+
+            location = f"{f['file']}:{f['line']}"
+            sec_table.add_row(sev, f["type"], f["description"], location)
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -657,6 +798,8 @@ class AgentTUI(App):
                 yield TasksTab(self.project_dir)
             with TabPane("Dependencies", id="tab-deps"):
                 yield DependenciesTab(self.project_dir)
+            with TabPane("Analytics", id="tab-analytics"):
+                yield AnalyticsTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):

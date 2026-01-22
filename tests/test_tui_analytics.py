@@ -1,23 +1,17 @@
-import sys
-from pathlib import Path
 import unittest
 import tempfile
-import shutil
+from pathlib import Path
 from unittest.mock import patch
-
-# Ensure shared can be imported
-sys.path.append(str(Path(__file__).parent.parent))
-
-from shared.analytics import collect_analytics_data  # noqa: E402
+from shared.analytics import collect_analytics_data
 
 
 class TestTUIAnalyticsLogic(unittest.TestCase):
     def setUp(self):
-        self.test_dir = tempfile.mkdtemp()
-        self.project_dir = Path(self.test_dir)
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.project_dir = Path(self.temp_dir.name)
 
     def tearDown(self):
-        shutil.rmtree(self.test_dir)
+        self.temp_dir.cleanup()
 
     @patch("shared.debt.scan_todos")
     @patch("shared.debt.analyze_project_complexity")

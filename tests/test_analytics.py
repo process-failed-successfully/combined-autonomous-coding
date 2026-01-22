@@ -2,13 +2,9 @@
 import unittest
 from typing import Any
 from unittest.mock import patch
-import sys
 from pathlib import Path
 
-# Adjust the path to import from the root of the project
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from shared.analytics import (  # noqa: E402
+from shared.analytics import (
     collect_analytics_data,
     get_git_contributors,
     get_git_hotspots,

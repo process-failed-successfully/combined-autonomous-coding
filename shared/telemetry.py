@@ -55,6 +55,7 @@ class Telemetry:
         # Max workers = 1 to serialize pushes and avoid overwhelming the gateway
         self._push_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="MetricsPusher")
         self.synchronous_mode = False  # Set to True for testing
+        self._is_shutting_down = False
 
         # Ensure log directory exists
         os.makedirs(LOG_DIR, exist_ok=True)
@@ -94,6 +95,7 @@ class Telemetry:
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
+        self._is_shutting_down = True
         self._push_metrics(force=True, sync=True)
         self._push_executor.shutdown(wait=True)
 
@@ -395,7 +397,13 @@ class Telemetry:
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                try:
+                    # If shutting down, connection errors are expected and logging might fail
+                    if not self._is_shutting_down or not isinstance(e, ConnectionRefusedError):
+                        self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except Exception:
+                    # Logging failed (e.g. file closed during shutdown), ignore.
+                    pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):

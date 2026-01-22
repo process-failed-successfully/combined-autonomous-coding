@@ -9,8 +9,9 @@ import sys
 import asyncio
 import shlex
 from pathlib import Path
+from typing import Optional, List
 from agents.shared.prompts import get_debug_prompt
-from shared.agent_client import AgentClient
+from shared.ask import run_ask_logic
 
 
 async def _stream_output(stream, output_list, destination):
@@ -29,7 +30,7 @@ async def run_debug_logic(
     command_list: list[str],
     project_dir: Path,
     agent_type: str = "gemini",
-    model: str = None,
+    model: Optional[str] = None,
     verbose: bool = False
 ) -> bool:
     """
@@ -50,8 +51,8 @@ async def run_debug_logic(
             stderr=asyncio.subprocess.PIPE,
         )
 
-        stdout_output = []
-        stderr_output = []
+        stdout_output: List[str] = []
+        stderr_output: List[str] = []
 
         # Gather output concurrently to prevent deadlock
         await asyncio.gather(
@@ -72,9 +73,6 @@ async def run_debug_logic(
         stdout_str = "".join(stdout_output)
         stderr_str = "".join(stderr_output)
 
-        # Initialize Agent
-        client = AgentClient(agent_id="debugger")
-
         # Prepare Prompt
         prompt_template = get_debug_prompt()
         prompt = prompt_template.format(
@@ -84,17 +82,20 @@ async def run_debug_logic(
             stderr=stderr_str
         )
 
-        # Call Agent
-        response = await client.ask_agent(
-            prompt=prompt,
+        # Call Agent using shared ask logic
+        # We reuse run_ask_logic but pass the constructed debug prompt as the query
+        # Note: run_ask_logic prints the response, so we don't need to print it again here unless we capture it.
+        # But run_ask_logic returns bool.
+        # If we want the response content, we might need to modify run_ask_logic or use the agent directly.
+        # For now, let's assume run_ask_logic printing is sufficient for CLI debug.
+
+        await run_ask_logic(
+            query=prompt,
+            project_dir=project_dir,
             agent_type=agent_type,
             model=model,
-            project_dir=project_dir
+            verbose=verbose
         )
-
-        print("\n--- Agent Diagnosis & Fix ---")
-        print(response)
-        print("-----------------------------")
 
         return False
 

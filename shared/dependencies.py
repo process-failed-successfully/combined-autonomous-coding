@@ -264,7 +264,7 @@ class DependencyAnalyzer:
 
         return data
 
-    def check_licenses(self, data: Dict[str, Any], allow_list: List[str] = None, deny_list: List[str] = None) -> List[Dict[str, Any]]:
+    def check_licenses(self, data: Dict[str, Any], allow_list: Optional[List[str]] = None, deny_list: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
         Checks licenses for all found dependencies.
         Returns a list of violations (or all items if just listing).

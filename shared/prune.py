@@ -4,7 +4,7 @@ import ast
 import re
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Set, Any
+from typing import List, Dict, Set, Any, Optional
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.impact import ImpactAnalyzer, parse_imports
 
@@ -144,7 +144,7 @@ class PruneManager:
 
         return sorted(candidates)
 
-    def prune_interactive(self, dry_run: bool = False, yes: bool = False, types: List[str] = None):
+    def prune_interactive(self, dry_run: bool = False, yes: bool = False, types: Optional[List[str]] = None):
         """
         Interactive pruning process.
         """

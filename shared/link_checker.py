@@ -2,7 +2,7 @@ import re
 import requests
 import concurrent.futures
 from pathlib import Path
-from typing import List, Dict, Set, Any, Tuple
+from typing import List, Dict, Set, Any, Tuple, Optional
 import sys
 
 class LinkChecker:
@@ -10,7 +10,7 @@ class LinkChecker:
     Scans files for HTTP/HTTPS links and validates their reachability.
     """
 
-    def __init__(self, timeout: int = 5, ignore_patterns: List[str] = None):
+    def __init__(self, timeout: int = 5, ignore_patterns: Optional[List[str]] = None):
         self.timeout = timeout
         self.ignore_patterns = ignore_patterns or []
         # Simple but effective regex for extracting URLs from text
@@ -40,7 +40,7 @@ class LinkChecker:
             print(f"Error reading {file_path}: {e}", file=sys.stderr)
         return links
 
-    def check_url(self, url: str, session: requests.Session = None) -> Dict[str, Any]:
+    def check_url(self, url: str, session: Optional[requests.Session] = None) -> Dict[str, Any]:
         """
         Checks a single URL. Returns dict with status info.
         """
@@ -146,7 +146,7 @@ class LinkChecker:
             "details": report
         }
 
-def run_check_links(project_dir: Path, files_pattern: str = "**/*.md", ignore: str = None, timeout: int = 5, concurrency: int = 10):
+def run_check_links(project_dir: Path, files_pattern: str = "**/*.md", ignore: Optional[str] = None, timeout: int = 5, concurrency: int = 10):
     """
     CLI Handler for link checking.
     """

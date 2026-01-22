@@ -342,7 +342,7 @@ class HealthCalculator:
         return f"<div class=\"section\"><h2>Details</h2>{details if details else '<p>No detailed findings available.</p>'}</div>"
 
 
-def run_health_check(project_dir: Path, output_format: str = "text", output_file: str = None):
+def run_health_check(project_dir: Path, output_format: str = "text", output_file: Optional[str] = None):
     """Entry point for the health command."""
     calc = HealthCalculator(project_dir)
     calc.calculate()

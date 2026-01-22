@@ -8,11 +8,12 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
+from textual.widgets import Label, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView  # noqa: E402
+from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab  # noqa: E402
+
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_dir = Path(tempfile.mkdtemp())
         self.project_dir = self.test_dir / "project"
         self.project_dir.mkdir()
@@ -29,16 +30,16 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
         self.mock_ask = self.patcher_ask.start()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
         shutil.rmtree(self.test_dir)
 
-    async def test_app_startup(self):
+    async def test_app_startup(self) -> None:
         """Test that the app starts up and has the expected title and tabs."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Check if TabbedContent exists
             self.assertIsInstance(app.query_one(TabbedContent), TabbedContent)
             # Check if tabs are present by ID
@@ -49,10 +50,10 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#tab-interact"))
             self.assertTrue(app.query_one("#tab-knowledge"))
 
-    async def test_dashboard_content(self):
+    async def test_dashboard_content(self) -> None:
         """Test that the dashboard tab displays project info."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Switch to dashboard is default
             dashboard = app.query_one(DashboardTab)
             self.assertIsNotNone(dashboard)
@@ -60,7 +61,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check for labels
             labels = dashboard.query(Label)
             # We look for partial matches as content might vary
-            self.assertTrue(any("Project:" in str(l.render()) for l in labels))
+            self.assertTrue(any("Project:" in str(lbl.render()) for lbl in labels))
 
             # Check for buttons
             self.assertTrue(dashboard.query_one("#btn-test"))
@@ -69,7 +70,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check new history section
             self.assertTrue(dashboard.query_one("#history-log"))
 
-    async def test_file_explorer_tab(self):
+    async def test_file_explorer_tab(self) -> None:
         """Test the file explorer tab structure."""
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
@@ -86,7 +87,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(explorer.query_one(RichLog), RichLog)
 
     @patch("shared.tui.get_all_log_files")
-    async def test_logs_tab(self, mock_get_logs):
+    async def test_logs_tab(self, mock_get_logs: MagicMock) -> None:
         """Test log viewer updates with file list."""
         # Setup mock log files
         log1 = self.test_dir / "test1.log"
@@ -122,7 +123,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             await pilot.click("#btn-refresh-logs")
             mock_get_logs.assert_called()
 
-    async def test_interact_tab(self):
+    async def test_interact_tab(self) -> None:
         """Test InteractTab structure."""
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
@@ -137,7 +138,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(interact.query_one("#chat-input"), Input)
             self.assertIsInstance(interact.query_one("#agent-select"), Select)
 
-    async def test_knowledge_tab(self):
+    async def test_knowledge_tab(self) -> None:
         """Test KnowledgeTab structure and loading."""
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
@@ -161,16 +162,16 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
     """Unit tests for individual components logic."""
-    def setUp(self):
+    def setUp(self) -> None:
         self.test_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.test_dir)
         self.project_dir.mkdir(parents=True, exist_ok=True)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.test_dir)
 
     @patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
-    async def test_interact_tab_submit(self, mock_run_ask):
+    async def test_interact_tab_submit(self, mock_run_ask: MagicMock) -> None:
         """Test that submitting input in InteractTab calls the agent logic."""
         tab = InteractTab(self.project_dir)
 
@@ -180,7 +181,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_select = MagicMock(spec=Select)
         mock_select.value = "gemini"
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore
             "#chat-history": mock_log,
             "#chat-input": mock_input,
             "#agent-select": mock_select
@@ -199,7 +200,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
 
     @patch("shared.tui.KnowledgeManager")
     @patch("shared.tui.init_db")
-    def test_knowledge_tab_load(self, mock_init_db, MockKnowledgeManager):
+    def test_knowledge_tab_load(self, mock_init_db: MagicMock, MockKnowledgeManager: MagicMock) -> None:
         """Test that KnowledgeTab loads data on mount."""
         mock_manager = MockKnowledgeManager.return_value
         mock_item = MagicMock()
@@ -212,7 +213,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         tab = KnowledgeTab(self.project_dir)
 
         mock_table = MagicMock(spec=DataTable)
-        tab.query_one = MagicMock(return_value=mock_table)
+        tab.query_one = MagicMock(return_value=mock_table)  # type: ignore
 
         tab.on_mount()
 
@@ -222,18 +223,19 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
 
     @patch("main.sys.exit")
     @patch("shared.tui.AgentTUI")
-    def test_main_run_tui(self, MockAgentTUI, mock_exit):
+    def test_main_run_tui(self, MockAgentTUI: MagicMock, mock_exit: MagicMock) -> None:
         """Test that main.run_tui instantiates and runs the app."""
         from main import run_tui
         import argparse
 
         args = argparse.Namespace(project_dir=self.project_dir)
 
-        run_tui(args)
+        run_tui(args)  # type: ignore
 
         MockAgentTUI.assert_called_with(project_dir=self.project_dir)
         MockAgentTUI.return_value.run.assert_called_once()
         mock_exit.assert_called_with(0)
+
 
 if __name__ == "__main__":
     unittest.main()

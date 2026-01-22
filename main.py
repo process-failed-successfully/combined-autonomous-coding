@@ -61,6 +61,7 @@ from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
 from shared.polish import run_polish_logic
 from shared.health import run_health_check
+from shared.site_generator import run_site
 from shared.work_session import WorkSessionManager
 import json
 import yaml
@@ -7955,6 +7956,24 @@ def parse_args(argv=None):
         help="Output file path (optional)."
     )
 
+    # --- New 'site' command ---
+    parser_site = subparsers.add_parser(
+        "site",
+        aliases=["docs"],
+        help="Generate a static documentation site for the project."
+    )
+    parser_site.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_site.add_argument(
+        "-o", "--output",
+        type=str,
+        help="Output directory (default: _site).",
+    )
+
     # --- New 'debt' command ---
     parser_debt = subparsers.add_parser(
         "debt",
@@ -10874,6 +10893,11 @@ async def main():
     # Handle `health` command
     if args.command == "health":
         run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
+        return
+
+    # Handle `site` command
+    if args.command in ["site", "docs"]:
+        run_site(args)
         return
 
     if args.command == "debt":

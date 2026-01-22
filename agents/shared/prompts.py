@@ -116,6 +116,11 @@ def get_summarize_prompt() -> str:
     return load_prompt("summarize_prompt")
 
 
+def get_presentation_prompt() -> str:
+    """Load the presentation generation prompt."""
+    return load_prompt("presentation_prompt")
+
+
 def get_conflict_resolution_prompt() -> str:
     """Load the conflict resolution prompt."""
     return load_prompt("conflict_resolution_prompt")

@@ -9,7 +9,7 @@ import tempfile
 sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
+from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab, AnalyticsTab
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -48,6 +48,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check new tabs
             self.assertTrue(app.query_one("#tab-interact"))
             self.assertTrue(app.query_one("#tab-knowledge"))
+            self.assertTrue(app.query_one("#tab-analytics"))
 
     async def test_dashboard_content(self):
         """Test that the dashboard tab displays project info."""
@@ -158,6 +159,52 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Let's verify KM list_knowledge was called
             self.mock_km.return_value.list_knowledge.assert_called()
 
+    @patch("shared.tui.collect_analytics_data")
+    async def test_analytics_tab(self, mock_collect):
+        """Test AnalyticsTab structure and data loading."""
+        # Setup mock data
+        mock_collect.return_value = {
+            "debt": {
+                "metrics": {
+                    "todos": {"count": 5},
+                    "complexity": {"average": 2.5, "high_risk_count": 1},
+                    "duplication": {"blocks": 1, "total_tokens": 50},
+                    "unused": {"count": 2}
+                },
+                "score": 60.0,
+                "grade": "B"
+            },
+            "security": [
+                {"severity": "HIGH", "type": "secret", "description": "Key", "file": "x.py", "line": 1}
+            ]
+        }
+
+        app = AgentTUI(project_dir=self.project_dir)
+        async with app.run_test() as pilot:
+            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content.active = "tab-analytics"
+            await pilot.pause()
+
+            analytics = app.query_one(AnalyticsTab)
+            self.assertIsNotNone(analytics)
+
+            # Check for tables
+            self.assertTrue(analytics.query_one("#debt-table"))
+            self.assertTrue(analytics.query_one("#security-table"))
+
+            # Wait for async analysis (it runs in a thread)
+            await pilot.pause(0.5)
+
+            # Check if UI updated
+            summary = analytics.query_one("#debt-summary", Label)
+            # The render method returns a Renderable, cast to str to check content
+            self.assertIn("Grade:", str(summary.render()))
+            self.assertIn("B", str(summary.render()))
+
+            # Check table rows (indirectly via row count if possible, or just assume add_row called if no error)
+            debt_table = analytics.query_one("#debt-table", DataTable)
+            self.assertTrue(len(debt_table.rows) > 0)
+
 
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
     """Unit tests for individual components logic."""
@@ -176,17 +223,19 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_select = MagicMock(spec=Select)
         mock_select.value = "gemini"
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#chat-history": mock_log,
-            "#chat-input": mock_input,
-            "#agent-select": mock_select
-        }.get(selector))
+        def side_effect(selector, type=None):
+            return {
+                "#chat-history": mock_log,
+                "#chat-input": mock_input,
+                "#agent-select": mock_select
+            }.get(selector)
 
-        mock_event = MagicMock()
-        mock_event.value = "Hello agent"
-        mock_event.input = mock_input
+        with patch.object(tab, 'query_one', side_effect=side_effect):
+            mock_event = MagicMock()
+            mock_event.value = "Hello agent"
+            mock_event.input = mock_input
 
-        await tab.on_input_submitted(mock_event)
+            await tab.on_input_submitted(mock_event)
 
         mock_run_ask.assert_called_once()
         call_args = mock_run_ask.call_args[1]
@@ -208,13 +257,12 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         tab = KnowledgeTab(self.project_dir)
 
         mock_table = MagicMock(spec=DataTable)
-        tab.query_one = MagicMock(return_value=mock_table)
+        with patch.object(tab, 'query_one', return_value=mock_table):
+            tab.on_mount()
 
-        tab.on_mount()
-
-        mock_init_db.assert_called_once()
-        mock_manager.list_knowledge.assert_called_once()
-        mock_table.add_row.assert_called_with("1", "Test", "Content", "User")
+            mock_init_db.assert_called_once()
+            mock_manager.list_knowledge.assert_called_once()
+            mock_table.add_row.assert_called_with("1", "Test", "Content", "User")
 
     @patch("main.sys.exit")
     @patch("shared.tui.AgentTUI")

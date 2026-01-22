@@ -4,6 +4,7 @@ import os
 import socket
 import time
 import threading
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 import psutil
 from typing import Dict, Any, Optional, List, Tuple
@@ -55,6 +56,7 @@ class Telemetry:
         # Max workers = 1 to serialize pushes and avoid overwhelming the gateway
         self._push_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="MetricsPusher")
         self.synchronous_mode = False  # Set to True for testing
+        self._is_shutting_down = False
 
         # Ensure log directory exists
         os.makedirs(LOG_DIR, exist_ok=True)
@@ -94,6 +96,7 @@ class Telemetry:
 
     def _shutdown(self):
         """Shutdown handler to ensure pending metrics are pushed."""
+        self._is_shutting_down = True
         self._push_metrics(force=True, sync=True)
         self._push_executor.shutdown(wait=True)
 
@@ -390,9 +393,12 @@ class Telemetry:
                 registry=self.registry,
                 grouping_key=grouping_key,
             )
-        except Exception as e:
+        except (Exception, urllib.error.URLError) as e:
             # Don't crash the agent if metrics fail
             # Use throttled logging to avoid spamming
+            if self._is_shutting_down:
+                return
+
             try:
                 now = time.time()
                 if now - self._last_push_error_time > 60:  # Log once per minute

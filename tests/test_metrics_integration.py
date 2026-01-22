@@ -19,16 +19,13 @@ def verify_metrics():
 
     unique_label = f"test_run_{uuid.uuid4().hex[:6]}"
 
-    t = Telemetry("integration_tester", "test_job")
-    t.register_gauge("integration_test_marker", "Test Marker", ["run_id"])
+    with Telemetry("integration_tester", "test_job") as t:
+        t.register_gauge("integration_test_marker", "Test Marker", ["run_id"])
 
-    print(
-        f"Emitting metric: integration_test_marker = {marker} (label: {unique_label})"
-    )
-    t.record_gauge("integration_test_marker", marker, labels={"run_id": unique_label})
-
-    # Cleanup telemetry threads
-    t.close()
+        print(
+            f"Emitting metric: integration_test_marker = {marker} (label: {unique_label})"
+        )
+        t.record_gauge("integration_test_marker", marker, labels={"run_id": unique_label})
 
     # 2. Wait for Scrape (Prometheus scrapes every 5s in our config)
     print("Waiting 7 seconds for Prometheus scrape...")
@@ -71,13 +68,10 @@ def verify_logs():
     # Telemetry writes to ./agents/logs/integration_tester.log
 
     marker_msg = f"Integration Test Log {uuid.uuid4().hex}"
-    t = Telemetry("integration_tester")
 
-    print(f"Emitting log message: '{marker_msg}'")
-    t.log_info(marker_msg)
-
-    # Cleanup
-    t.close()
+    with Telemetry("integration_tester") as t:
+        print(f"Emitting log message: '{marker_msg}'")
+        t.log_info(marker_msg)
 
     # Promtail takes a moment to tail -> Loki ingest -> Index
     print("Waiting 10 seconds for Log Ingestion...")

@@ -121,6 +121,12 @@ class Telemetry:
         """Shutdown handler to ensure pending metrics are pushed."""
         self.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def capture_logs_from(self, logger_name: Optional[str] = None):
         """Attach the telemetry file handler to another logger to capture its output."""
         target_logger = logging.getLogger(logger_name)
@@ -506,6 +512,11 @@ def init_telemetry(
     logger_name: Optional[str] = None,
 ) -> Telemetry:
     global _telemetry
+    if _telemetry is not None:
+        try:
+            _telemetry.close()
+        except Exception:
+            pass
     _telemetry = Telemetry(
         service_name, agent_type=agent_type, project_name=project_name
     )

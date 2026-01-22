@@ -18,51 +18,49 @@ def emit_test_metrics():
     """Generates a comprehensive set of metrics to populate dashboards."""
     print(f"--- Emitting Test Metrics (Agent: {TEST_AGENT_ID}) ---")
 
-    t = Telemetry(TEST_AGENT_ID, agent_type="tester", project_name=TEST_PROJECT)
+    with Telemetry(TEST_AGENT_ID, agent_type="tester", project_name=TEST_PROJECT) as t:
+        # 1. Agent Health
+        t.record_gauge("agent_heartbeat_timestamp", time.time())
+        t.record_gauge("agent_online", 1)
+        t.record_gauge("agent_uptime_seconds", 3600)  # Simulating 1 hour uptime
+        t.increment_counter("agent_restart_total", 0, labels={"reason": "test"})
 
-    # 1. Agent Health
-    t.record_gauge("agent_heartbeat_timestamp", time.time())
-    t.record_gauge("agent_online", 1)
-    t.record_gauge("agent_uptime_seconds", 3600)  # Simulating 1 hour uptime
-    t.increment_counter("agent_restart_total", 0, labels={"reason": "test"})
+        # 2. Progress
+        t.record_gauge("feature_completion_pct", 75.5)
+        t.record_gauge("features_passing", 15)
+        t.record_gauge("features_total", 20)
+        t.record_gauge("agent_iteration", 5)
+        t.increment_counter("agent_iterations_total", 42)
+        t.record_gauge("iteration_duration_seconds", 120.5)
 
-    # 2. Progress
-    t.record_gauge("feature_completion_pct", 75.5)
-    t.record_gauge("features_passing", 15)
-    t.record_gauge("features_total", 20)
-    t.record_gauge("agent_iteration", 5)
-    t.increment_counter("agent_iterations_total", 42)
-    t.record_gauge("iteration_duration_seconds", 120.5)
+        # 3. LLM Performance
+        t.record_histogram("llm_latency_seconds", 5.2, labels={"model": "gpt-4", "operation": "chat", "role": "developer"})
+        t.increment_counter("llm_tokens_total", 1500, labels={"model": "gpt-4", "type": "prompt", "role": "developer"})
+        t.increment_counter("llm_tokens_total", 2500, labels={"model": "gpt-4", "type": "completion", "role": "developer"})
+        t.increment_counter("llm_errors_total", 0, labels={"model": "gpt-4", "error_type": "none"})
 
-    # 3. LLM Performance
-    t.record_histogram("llm_latency_seconds", 5.2, labels={"model": "gpt-4", "operation": "chat", "role": "developer"})
-    t.increment_counter("llm_tokens_total", 1500, labels={"model": "gpt-4", "type": "prompt", "role": "developer"})
-    t.increment_counter("llm_tokens_total", 2500, labels={"model": "gpt-4", "type": "completion", "role": "developer"})
-    t.increment_counter("llm_errors_total", 0, labels={"model": "gpt-4", "error_type": "none"})
+        # 4. Tool Execution
+        t.increment_counter("tool_execution_total", 10, labels={"tool_type": "bash"})
+        t.record_histogram("tool_execution_duration_seconds", 0.5, labels={"tool_type": "bash"})
+        t.increment_counter("tool_errors_total", 1, labels={"tool_type": "bash", "error_type": "exit_code_1"})
+        t.increment_counter("files_written_total", 5)
+        t.increment_counter("files_read_total", 12)
+        t.increment_counter("bash_commands_total", 8, labels={"status": "success"})
+        t.increment_counter("agent_errors_total", 0, labels={"error_type": "none"})
 
-    # 4. Tool Execution
-    t.increment_counter("tool_execution_total", 10, labels={"tool_type": "bash"})
-    t.record_histogram("tool_execution_duration_seconds", 0.5, labels={"tool_type": "bash"})
-    t.increment_counter("tool_errors_total", 1, labels={"tool_type": "bash", "error_type": "exit_code_1"})
-    t.increment_counter("files_written_total", 5)
-    t.increment_counter("files_read_total", 12)
-    t.increment_counter("bash_commands_total", 8, labels={"status": "success"})
-    t.increment_counter("agent_errors_total", 0, labels={"error_type": "none"})
+        # 5. Resource Usage
+        t.record_gauge("container_memory_usage_bytes", 256 * 1024 * 1024)
+        t.record_gauge("container_cpu_usage_pct", 12.5)
+        t.record_gauge("process_count", 4)
 
-    # 5. Resource Usage
-    t.record_gauge("container_memory_usage_bytes", 256 * 1024 * 1024)
-    t.record_gauge("container_cpu_usage_pct", 12.5)
-    t.record_gauge("process_count", 4)
+        # 6. Sprint Metrics
+        t.record_gauge("sprint_tasks_total", 10, labels={"project": TEST_PROJECT})
+        t.increment_counter("sprint_tasks_completed_total", 7, labels={"project": TEST_PROJECT})
+        t.increment_counter("sprint_tasks_failed_total", 1, labels={"project": TEST_PROJECT})
+        t.record_gauge("sprint_active_workers", 2, labels={"project": TEST_PROJECT})
+        t.record_histogram("sprint_task_duration_seconds", 600, labels={"project": TEST_PROJECT, "status": "done"})
 
-    # 6. Sprint Metrics
-    t.record_gauge("sprint_tasks_total", 10, labels={"project": TEST_PROJECT})
-    t.increment_counter("sprint_tasks_completed_total", 7, labels={"project": TEST_PROJECT})
-    t.increment_counter("sprint_tasks_failed_total", 1, labels={"project": TEST_PROJECT})
-    t.record_gauge("sprint_active_workers", 2, labels={"project": TEST_PROJECT})
-    t.record_histogram("sprint_task_duration_seconds", 600, labels={"project": TEST_PROJECT, "status": "done"})
-
-    print("Metrics pushed to Pushgateway.")
-    t.close()
+        print("Metrics pushed to Pushgateway.")
 
 
 def get_dashboard_queries():

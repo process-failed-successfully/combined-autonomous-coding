@@ -39,7 +39,8 @@ from shared.config_loader import load_config_from_file, ensure_config_exists
 try:
     from shared.jira_client import JiraClient
 except ImportError:
-    JiraClient = None
+    from typing import Any
+    JiraClient: Any = None  # type: ignore
 from shared.issues import _run_issues_logic
 from agents.gemini import run_autonomous_agent as run_gemini, GeminiAgent
 from agents.shared.sprint import run_sprint as run_sprint
@@ -5275,6 +5276,9 @@ def run_config(args):
             current_level = current_level[k]
 
         # Attempt to parse value as a number or boolean
+        from typing import Union
+        parsed_value: Union[bool, int, float, str]
+
         if value.lower() == 'true':
             parsed_value = True
         elif value.lower() == 'false':
@@ -9294,7 +9298,8 @@ def run_interact(args):
     print("Type a number to select a command, or 'q' to quit.")
 
     # A map of menu items to the function and args they will call
-    menu_items = {
+    from typing import Dict, Any, Callable
+    menu_items: Dict[str, Dict[str, Any]] = {
         "1": {"text": "Show project status", "func": run_status, "args": {"project_dir": project_dir}},
         "2": {"text": "Run tests", "func": run_test, "args": {"project_dir": project_dir, "test_args": []}},
         "3": {"text": "Run linter", "func": run_lint, "args": {"project_dir": project_dir, "fix": False, "lint_args": []}},
@@ -9334,7 +9339,9 @@ def run_interact(args):
                             print("Commit message cannot be empty. Aborting.")
                     else:
                         # Construct the args namespace for the command
-                        command_args = argparse.Namespace(**item["args"])
+                        from typing import Dict, Any
+                        args_dict: Dict[str, Any] = item["args"]  # type: ignore
+                        command_args = argparse.Namespace(**args_dict)
                         item["func"](command_args)
                 except SystemExit as e:
                     if e.code != 0:

@@ -120,7 +120,7 @@ class OptimizationManager:
             logger.warning(f"Error reading source for {filename}: {e}")
             return None
 
-    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: str = None) -> str:
+    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: Optional[str] = None) -> str:
         """Analyzes profiling stats using AI and returns the suggestion text."""
         print("\nAnalyzing profiling data...")
         top_funcs = self.analyze_stats(stats_file)
@@ -187,7 +187,7 @@ class OptimizationManager:
         except Exception as e:
             return f"❌ Error querying agent: {e}"
 
-    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: str = None):
+    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: Optional[str] = None):
         """Main entry point."""
         script_full_path = self.project_dir / script_path
         if not script_full_path.exists():

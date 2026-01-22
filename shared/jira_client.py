@@ -40,6 +40,17 @@ class JiraClient:
             logger.error(f"Failed to connect to Jira: {e}")
             raise
 
+    def check_connection(self) -> bool:
+        """Verifies the connection to Jira."""
+        try:
+            if not self._client:
+                self._connect()
+            else:
+                self._client.myself()
+            return True
+        except Exception:
+            return False
+
     def get_issue(self, issue_key: str) -> Optional[Any]:
         """Fetch a single issue by key (e.g., PROJ-123)."""
         if not self._client:

@@ -1,6 +1,7 @@
 
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -29,29 +30,13 @@ def test_sanitize_url():
     print("Verification Test Success: sanitize_url masks tokens.")
 
 
-def test_repo_parsing():
-    """Test robust repository parsing from URLs."""
-    gh = GitHubClient(token="mock")
-    tests = [
-        ("https://github.com/owner/repo.git", ("github.com", "owner", "repo")),
-        ("https://github.com/owner/repo", ("github.com", "owner", "repo")),
-        ("git@github.com:owner/repo.git", ("github.com", "owner", "repo")),
-        ("https://token@git.example.net/owner/repo.git", ("git.example.net", "owner", "repo")),
-        ("git@git.internal.com:owner/repo", ("git.internal.com", "owner", "repo")),
-    ]
-    for url, expected in tests:
-        res = gh.get_repo_info_from_remote(url)
-        assert res == expected
-    print("Verification Test Success: Robust repo parsing handles custom GHE domains.")
-
-
 def test_ghe_api_base():
     """Test that API base is correctly set for GHE."""
-    gh_com = GitHubClient(host="github.com")
-    assert gh_com.api_base == "https://api.github.com"
+    gh_com = GitHubClient(token="mock", host="github.com")
+    assert gh_com.api_base_url == "https://api.github.com"
 
-    gh_ghe = GitHubClient(host="git.example.net")
-    assert gh_ghe.api_base == "https://git.example.net/api/v3"
+    gh_ghe = GitHubClient(token="mock", host="git.example.net")
+    assert gh_ghe.api_base_url == "https://git.example.net/api/v3"
     print("Verification Test Success: GHE API base is correctly determined.")
 
 
@@ -71,16 +56,16 @@ async def test_complete_jira_ticket_success():
     with patch("subprocess.run") as mock_run, \
             patch("shared.workflow.push_branch") as mock_push, \
             patch("shared.workflow.JiraClient") as mock_jira_client, \
-            patch("shared.workflow.GitHubClient") as mock_gh_client:
+            patch("shared.workflow.GitHubClient") as mock_gh_client, \
+            patch.dict(os.environ, {"GITHUB_TOKEN": "mock_token"}):
 
         mock_push.return_value = True
 
         # Setup GitHub collaborator info
         mock_gh = MagicMock()
         mock_gh_client.return_value = mock_gh
-        mock_gh.get_repo_info_from_remote.return_value = ("github.com", "owner", "repo")
-        mock_gh.get_repo_metadata.return_value = {"default_branch": "master"}
-        mock_gh.create_pr.return_value = "https://github.com/PR-123"
+        # get_repo_info_from_remote and get_repo_metadata are removed/replaced
+        mock_gh.create_pull_request.return_value = {"html_url": "https://github.com/PR-123"}
 
         # Setup git remote/branch mocks
         mock_run_result = MagicMock()
@@ -97,7 +82,7 @@ async def test_complete_jira_ticket_success():
 
         assert success is True
         mock_push.assert_called_once()
-        mock_gh.create_pr.assert_called_once()
+        mock_gh.create_pull_request.assert_called_once()
         mock_jira.transition_issue.assert_called_once_with("PROJ-123", "Code Review")
         mock_jira.add_comment.assert_called_once()
         print("Verification Test Success: complete_jira_ticket flows correctly.")
@@ -105,6 +90,5 @@ async def test_complete_jira_ticket_success():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test_sanitize_url()
-    test_repo_parsing()
     test_ghe_api_base()
     asyncio.run(test_complete_jira_ticket_success())

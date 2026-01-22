@@ -24,8 +24,8 @@ try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
 except ImportError:
-    Observer = None
-    FileSystemEventHandler = None
+    Observer = None  # type: ignore
+    FileSystemEventHandler = None  # type: ignore
 
 
 from shared.config import Config
@@ -5177,7 +5177,9 @@ async def run_plan(args):
     logger.info(f"Using agent: {config.agent_type}, Model: {config.model or 'default'}")
 
     # Dispatch to the correct agent type
-    agent_class_map = {
+    from typing import Type
+    from shared.base_agent import BaseAgent
+    agent_class_map: dict[str, Type[BaseAgent]] = {
         "gemini": GeminiAgent,
         "cursor": CursorAgent,
         "local": LocalAgent,

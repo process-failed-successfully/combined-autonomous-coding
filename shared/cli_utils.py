@@ -5,11 +5,11 @@ import shutil
 import subprocess
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 import re
 from shared.charts import draw_ascii_bar_chart
 
-WORKFLOW_STAGES = {
+WORKFLOW_STAGES: Dict[str, Dict[str, Any]] = {
     "IN_PROGRESS": {"name": "In Progress", "file": None},
     "COMPLETED": {"name": "Completed", "file": "COMPLETED"},
     "QA_PASSED": {"name": "QA Passed", "file": "QA_PASSED"},

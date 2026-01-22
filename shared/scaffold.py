@@ -9,8 +9,9 @@ import os
 from pathlib import Path
 import subprocess
 import shutil
+from typing import Dict, Any
 
-TEMPLATES = {
+TEMPLATES: Dict[str, Dict[str, Any]] = {
     "python-basic": {
         "description": "A minimal Python project structure.",
         "files": {

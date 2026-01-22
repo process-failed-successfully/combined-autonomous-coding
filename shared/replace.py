@@ -48,7 +48,7 @@ def replace_in_codebase(
 
     unique_files = sorted(list(set(m['file'] for m in matches)))
 
-    stats = {
+    stats: Dict[str, Any] = {
         "files_matched": len(unique_files),
         "files_changed": 0,
         "replacements_count": 0,

@@ -712,9 +712,8 @@ class AnalyticsTab(Container):
         self.query_one("#analytics-status", Label).update("Analyzing... (this may take a few seconds)")
         self.notify("Starting analysis...")
 
-        # Run in thread
-        import asyncio
-        asyncio.create_task(self._run_analysis())
+        # Run in worker (managed by Textual)
+        self.run_worker(self._run_analysis())
 
     async def _run_analysis(self) -> None:
         import asyncio

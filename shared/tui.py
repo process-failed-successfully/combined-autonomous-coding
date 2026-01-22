@@ -20,6 +20,7 @@ from shared.database import init_db
 from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
+from shared.task_manager import TaskManager, Task
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -270,91 +271,84 @@ class KnowledgeTab(Container):
             else:
                 self.notify("Content cannot be empty.", severity="warning")
 
-class IssuesTab(Container):
-    """Tab for viewing GitHub Issues."""
+class TasksTab(Container):
+    """Tab for viewing Unified Tasks (GitHub, Jira, Sprint, TODOs)."""
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.issues_cache = []
+        self.task_manager = TaskManager(project_dir)
+        self.tasks_cache = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Label("[bold]GitHub Issues[/bold]", classes="welcome-text")
+            yield Label("[bold]Unified Task Board[/bold]", classes="welcome-text")
             with Horizontal(classes="stat-box"):
-                yield Button("Refresh", id="btn-issues-refresh", variant="primary")
-                yield Select.from_values(["open", "closed"], id="select-issue-state", value="open")
-                yield Input(placeholder="Filter by title...", id="input-issue-filter")
+                yield Button("Refresh", id="btn-tasks-refresh", variant="primary")
+                yield Select.from_values(["All", "GitHub", "Jira", "Sprint", "TODO"], id="select-task-source", value="All")
+                yield Input(placeholder="Filter by title...", id="input-task-filter")
 
-            yield DataTable(id="issues-table")
+            yield DataTable(id="tasks-table")
 
     def on_mount(self) -> None:
-        table = self.query_one("#issues-table", DataTable)
+        table = self.query_one("#tasks-table", DataTable)
         table.cursor_type = "row"
-        table.add_columns("Number", "Title", "Assignee", "Labels")
-        # Ensure we don't double load if Select triggers on_changed immediately
-        # But Textual 0.73 might behave differently.
-        # Let's rely on on_mount for initial load.
-        self.load_issues()
+        table.add_columns("Source", "ID", "Title", "Status", "Priority")
+        self.load_tasks()
 
-    def load_issues(self) -> None:
-        table = self.query_one("#issues-table", DataTable)
+    def load_tasks(self) -> None:
+        table = self.query_one("#tasks-table", DataTable)
         table.clear()
-
-        # Load config to get token
-        file_config = load_config_from_file()
-        github_token = file_config.get("github_token") or os.environ.get("GITHUB_TOKEN")
-        github_host = file_config.get("github_host", "github.com")
-
-        if not github_token:
-            self.notify("GitHub token not found. Please run 'configure'.", severity="error")
-            return
-
-        state_select = self.query_one("#select-issue-state", Select)
-        state = state_select.value or "open"
-
-        client = GitHubClient(token=github_token, host=github_host)
+        self.notify("Loading tasks...", timeout=1)
 
         try:
-            issues = client.get_issues(self.project_dir, state=state)
-            self.issues_cache = issues
-            self._update_table(issues)
-            self.notify(f"Loaded {len(issues)} issues.")
+            tasks = self.task_manager.fetch_all_tasks()
+            self.tasks_cache = tasks
+            self._update_table(tasks)
+            self.notify(f"Loaded {len(tasks)} tasks.")
         except Exception as e:
-            self.notify(f"Error fetching issues: {e}", severity="error")
+            self.notify(f"Error fetching tasks: {e}", severity="error")
 
-    def _update_table(self, issues: list) -> None:
-        table = self.query_one("#issues-table", DataTable)
+    def _update_table(self, tasks: list[Task]) -> None:
+        table = self.query_one("#tasks-table", DataTable)
         table.clear()
 
-        filter_text = self.query_one("#input-issue-filter", Input).value.lower()
+        source_filter = self.query_one("#select-task-source", Select).value or "All"
+        filter_text = self.query_one("#input-task-filter", Input).value.lower()
 
-        for issue in issues:
-            title = issue['title']
-            if filter_text and filter_text not in title.lower():
+        for task in tasks:
+            if source_filter != "All" and task.source.lower() != source_filter.lower():
                 continue
 
-            number = str(issue['number'])
+            if filter_text and filter_text not in task.title.lower():
+                continue
 
-            assignee = "Unassigned"
-            if issue.get('assignee'):
-                assignee = issue['assignee']['login']
+            # Color code status/priority?
+            # Textual DataTables use Rich Renderables.
 
-            labels = ", ".join([l['name'] for l in issue.get('labels', [])])
+            source_display = task.source.upper()
+            status_display = task.status
+            priority_display = task.priority
 
-            table.add_row(number, title, assignee, labels)
+            # Simple color formatting tags
+            if task.priority == "High":
+                priority_display = f"[red]{task.priority}[/red]"
+            elif task.priority == "Low":
+                priority_display = f"[green]{task.priority}[/green]"
 
-    @on(Button.Pressed, "#btn-issues-refresh")
-    def refresh_issues(self):
-        self.load_issues()
+            table.add_row(source_display, task.id, task.title, status_display, priority_display)
 
-    @on(Select.Changed, "#select-issue-state")
-    def filter_state(self):
-        self.load_issues()
+    @on(Button.Pressed, "#btn-tasks-refresh")
+    def refresh_tasks(self):
+        self.load_tasks()
 
-    @on(Input.Changed, "#input-issue-filter")
-    def filter_issues(self):
-        self._update_table(self.issues_cache)
+    @on(Select.Changed, "#select-task-source")
+    def filter_source(self):
+        self._update_table(self.tasks_cache)
+
+    @on(Input.Changed, "#input-task-filter")
+    def filter_text(self):
+        self._update_table(self.tasks_cache)
 
 class ProfileTab(Container):
     """Tab for performance profiling."""
@@ -592,8 +586,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
-            with TabPane("Issues", id="tab-issues"):
-                yield IssuesTab(self.project_dir)
+            with TabPane("Tasks", id="tab-tasks"):
+                yield TasksTab(self.project_dir)
             with TabPane("Dependencies", id="tab-deps"):
                 yield DependenciesTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):

@@ -20,3 +20,4 @@ watchdog
 jaraco.context>=6.1.0
 textual
 cryptography
+jira

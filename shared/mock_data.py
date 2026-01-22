@@ -114,6 +114,11 @@ class MockDataGenerator:
 
             statements = []
             for row in data:
+                # Validate column names
+                for col in row.keys():
+                    if not col.isidentifier():
+                        raise ValueError(f"Invalid column name: {col}")
+
                 columns = ", ".join(row.keys())
                 values = []
                 for v in row.values():

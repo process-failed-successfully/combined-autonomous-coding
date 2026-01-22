@@ -8363,6 +8363,34 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'site' command ---
+    parser_site = subparsers.add_parser(
+        "site",
+        aliases=["docs"],
+        help="Generate and serve a static documentation site."
+    )
+    parser_site.add_argument(
+        "action",
+        choices=["generate", "serve"],
+        help="Action to perform."
+    )
+    parser_site.add_argument(
+        "-o", "--output",
+        help="Output directory for the generated site."
+    )
+    parser_site.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_site.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to serve the site on (default: 8000)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -10876,6 +10904,28 @@ async def main():
         run_health_check(args.project_dir, output_format=args.format, output_file=args.output)
         return
 
+def run_site(args):
+    """Generates and serves the documentation site."""
+    from shared.site_generator import SiteGenerator
+
+    project_dir = args.project_dir.resolve()
+    generator = SiteGenerator(project_dir)
+
+    if args.action == "generate":
+        output_dir = Path(args.output).resolve() if args.output else None
+        generator.generate(output_dir)
+    elif args.action == "serve":
+        # Ensure site is generated first? Or just serve.
+        # Let's check if output exists, if not generate.
+        output_dir = Path(args.output).resolve() if args.output else project_dir / "site"
+        if not output_dir.exists():
+            print("Site directory not found. Generating first...")
+            generator.generate(output_dir)
+
+        # Generator stores output_dir, update it if passed
+        generator.output_dir = output_dir
+        generator.serve(port=args.port)
+
     if args.command == "debt":
         from shared.debt import run_debt_report
         run_debt_report(args.project_dir, json_output=args.json)
@@ -11002,6 +11052,10 @@ async def main():
     if args.command == "visualize":
         from shared.visualization import run_visualize
         run_visualize(args)
+        return
+
+    if args.command in ["site", "docs"]:
+        run_site(args)
         return
 
     # Initialize Agent Client

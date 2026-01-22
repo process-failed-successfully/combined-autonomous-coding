@@ -9,9 +9,16 @@ sys.path.append(str(Path(__file__).parent.parent))
 from shared.tui import collect_analytics_data  # noqa: E402
 
 
+import tempfile
+import shutil
+
 class TestTUIAnalyticsLogic(unittest.TestCase):
     def setUp(self):
-        self.project_dir = Path("/tmp/test_project")
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
 
     @patch("shared.debt.scan_todos")
     @patch("shared.debt.analyze_project_complexity")

@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from collections import defaultdict
 import fnmatch
+from typing import List, Dict, Any
 
 # Token types to ignore for duplication purposes
 IGNORED_TOKENS = {
@@ -178,7 +179,7 @@ def find_duplicates(project_dir: Path, file_patterns: list[str] = None, ignore_p
         merged_duplicates.append((current_start, current_start + offset, final_len))
 
     # 5. Format Results
-    results = []
+    results: List[Dict[str, Any]] = []
     for idx1, idx2, length in merged_duplicates:
         # Get file info
         file1, line1_start = token_map[idx1]

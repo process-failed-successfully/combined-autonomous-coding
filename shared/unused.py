@@ -2,7 +2,7 @@ import ast
 import os
 import re
 from pathlib import Path
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Any
 import fnmatch
 
 class UnusedCodeDetector:
@@ -86,8 +86,8 @@ class SymbolVisitor(ast.NodeVisitor):
         except ValueError:
             self.rel_path = str(file_path)
 
-        self.definitions = []
-        self.usages = set()
+        self.definitions: List[Dict[str, Any]] = []
+        self.usages: Set[str] = set()
 
     def visit_FunctionDef(self, node):
         self.definitions.append({

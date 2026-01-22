@@ -32,6 +32,7 @@ dependencies = [
     "jira",
     "textual",
     "watchdog",
+    "markdown",
     "argcomplete",
     "google-generativeai",
 ]

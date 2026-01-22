@@ -25,6 +25,7 @@ from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
 from shared.map import scan_project, CodeNode
+from shared.git import get_git_log, get_commit_details
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -514,6 +515,59 @@ class TasksTab(Container):
     def filter_text(self):
         self._update_table(self.tasks_cache)
 
+class GitTab(Container):
+    """Tab for viewing Git history."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            with Vertical(id="git-list-container", classes="stat-box"):
+                yield Label("[bold]Git History[/bold]")
+                yield DataTable(id="git-log-table")
+                yield Button("Refresh", id="btn-refresh-git", variant="default")
+
+            with Vertical(id="git-details-container"):
+                yield Label("[bold]Commit Details[/bold]")
+                yield RichLog(id="git-details-view", wrap=True, highlight=True, markup=False)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#git-log-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Hash", "Date", "Author", "Message")
+        self.load_history()
+
+    def load_history(self) -> None:
+        table = self.query_one("#git-log-table", DataTable)
+        table.clear()
+
+        logs = get_git_log(self.project_dir)
+        for log in logs:
+            table.add_row(
+                log["hash"],
+                log["date"],
+                log["author"],
+                log["message"]
+            )
+
+    @on(Button.Pressed, "#btn-refresh-git")
+    def on_refresh(self) -> None:
+        self.load_history()
+        self.notify("Git history refreshed.")
+
+    @on(DataTable.RowSelected, "#git-log-table")
+    def on_row_selected(self, event: DataTable.RowSelected) -> None:
+        table = self.query_one("#git-log-table", DataTable)
+        row_values = table.get_row(event.row_key)
+        commit_hash = row_values[0]
+
+        details = get_commit_details(self.project_dir, commit_hash)
+        viewer = self.query_one("#git-details-view", RichLog)
+        viewer.clear()
+        viewer.write(details)
+
 class ProfileTab(Container):
     """Tab for performance profiling."""
 
@@ -889,6 +943,8 @@ class AgentTUI(App):
                 yield InteractTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):
                 yield TasksTab(self.project_dir)
+            with TabPane("Git", id="tab-git"):
+                yield GitTab(self.project_dir)
             with TabPane("Dependencies", id="tab-deps"):
                 yield DependenciesTab(self.project_dir)
             with TabPane("Analytics", id="tab-analytics"):

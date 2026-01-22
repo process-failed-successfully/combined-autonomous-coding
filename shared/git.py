@@ -205,3 +205,53 @@ def get_current_branch(project_dir: Path) -> Optional[str]:
     except Exception as e:
         logger.error(f"An unexpected error occurred while getting the current branch: {e}")
         return None
+
+
+def get_git_log(project_dir: Path, limit: int = 50) -> list[dict]:
+    """
+    Fetches the git log.
+    Returns a list of dicts: {"hash", "author", "date", "message"}
+    """
+    try:
+        # %h: abbreviated hash, %an: author name, %ad: author date, %s: subject
+        cmd = ["git", "log", f"-n{limit}", "--pretty=format:%h|%an|%ad|%s", "--date=short"]
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        logs = []
+        for line in result.stdout.strip().split('\n'):
+            if not line:
+                continue
+            parts = line.split('|', 3)
+            if len(parts) == 4:
+                logs.append({
+                    "hash": parts[0],
+                    "author": parts[1],
+                    "date": parts[2],
+                    "message": parts[3]
+                })
+        return logs
+    except Exception as e:
+        logger.error(f"Error getting git log: {e}")
+        return []
+
+
+def get_commit_details(project_dir: Path, commit_hash: str) -> str:
+    """Fetches details for a specific commit."""
+    try:
+        cmd = ["git", "show", "--stat", commit_hash]
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except Exception as e:
+        logger.error(f"Error getting commit details: {e}")
+        return f"Error loading details for {commit_hash}"

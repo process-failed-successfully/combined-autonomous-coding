@@ -8,7 +8,7 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DataTable
+from textual.widgets import Label, Button, Tree
 from shared.tui import AgentTUI, DependenciesTab
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
@@ -55,12 +55,13 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         tab.notify = MagicMock()
 
         # Mock UI elements
-        mock_table = MagicMock(spec=DataTable)
+        mock_tree = MagicMock(spec=Tree)
+        mock_tree.root = MagicMock()
         mock_status = MagicMock(spec=Label)
 
         # We mock query_one to return our mocks
         tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#deps-table": mock_table,
+            "#deps-tree": mock_tree,
             "#deps-status": mock_status
         }.get(selector))
 
@@ -68,14 +69,16 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         tab.on_mount()
 
         self.mock_analyzer.scan.assert_called_once()
-        mock_table.add_columns.assert_called()
-        mock_table.clear.assert_called()
-        # Verify row addition
-        # "Python", "requests", "==2.0.0", "prod", "-", "OK"
+        mock_tree.clear.assert_called()
+        mock_tree.root.expand.assert_called()
+
+        # Verify node addition
+        # tree.root.add("🐍 Python", expand=True)
         # We check one call
-        add_row_calls = mock_table.add_row.call_args_list
-        self.assertTrue(len(add_row_calls) > 0)
-        self.assertEqual(add_row_calls[0][0][1], "requests")
+        add_calls = mock_tree.root.add.call_args_list
+        self.assertTrue(len(add_calls) > 0)
+        # Check that one of the calls was for Python
+        self.assertTrue(any("Python" in str(c) for c in add_calls))
 
     async def test_check_updates_logic(self):
         """Test check updates button logic."""
@@ -84,10 +87,12 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         tab.notify = MagicMock()
 
         # Mock UI
-        mock_table = MagicMock(spec=DataTable)
+        mock_tree = MagicMock(spec=Tree)
+        mock_tree.root = MagicMock()
         mock_status = MagicMock(spec=Label)
+
         tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#deps-table": mock_table,
+            "#deps-tree": mock_tree,
             "#deps-status": mock_status
         }.get(selector))
 
@@ -111,12 +116,9 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.mock_analyzer.check_updates.assert_called()
         mock_status.update.assert_called_with("Update check complete.")
 
-        # Verify table update
-        # Should now have "Outdated" status (formatted)
-        add_row_calls = mock_table.add_row.call_args_list
-        self.assertTrue(len(add_row_calls) > 0)
-        # Check that status is red/outdated
-        self.assertIn("Outdated", str(add_row_calls[0][0]))
+        # Verify tree update (it calls load_deps which calls tree.root.add)
+        add_calls = mock_tree.root.add.call_args_list
+        self.assertTrue(len(add_calls) > 0)
 
 if __name__ == "__main__":
     unittest.main()

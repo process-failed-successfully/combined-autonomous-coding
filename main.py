@@ -10951,6 +10951,11 @@ async def main():
         )
         return
 
+    if args.command == "visualize":
+        from shared.visualization import run_visualize
+        run_visualize(args)
+        return
+
     # Initialize Agent Client
     from shared.agent_client import AgentClient
     from shared.utils import generate_agent_id

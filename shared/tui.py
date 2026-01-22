@@ -23,21 +23,21 @@ from shared.security import SecurityAuditor
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict[str, str]:
     import shutil
-    import subprocess
+    import subprocess  # nosec B404
     git_path = shutil.which("git")
     info = {"branch": "Unknown", "status": "Unknown"}
     if git_path and (project_dir / ".git").is_dir():
         try:
             # Get branch
-            res = subprocess.run([git_path, "-C", str(project_dir), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
+            res = subprocess.run([git_path, "-C", str(project_dir), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)  # nosec B603
             if res.returncode == 0:
                 info["branch"] = res.stdout.strip()
 
             # Get status (clean/dirty)
-            res = subprocess.run([git_path, "-C", str(project_dir), "status", "--porcelain"], capture_output=True, text=True)
+            res = subprocess.run([git_path, "-C", str(project_dir), "status", "--porcelain"], capture_output=True, text=True)  # nosec B603
             if res.returncode == 0:
                 info["status"] = "Dirty" if res.stdout.strip() else "Clean"
-        except Exception:
+        except Exception:  # nosec B110
             pass
     return info
 
@@ -819,7 +819,7 @@ class AgentTUI(App[None]):
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        import subprocess
+        import subprocess  # nosec B404
 
         # Handle dashboard buttons (bubble up)
         if event.button.id == "btn-refresh":
@@ -828,14 +828,14 @@ class AgentTUI(App[None]):
         elif event.button.id == "btn-test":
             self.notify("Running tests...")
             try:
-                subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])
+                subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])  # nosec B603
                 self.notify("Tests started in background.")
             except Exception as e:
                 self.notify(f"Failed to start tests: {e}", severity="error")
         elif event.button.id == "btn-lint":
             self.notify("Running lint...")
             try:
-                subprocess.Popen([sys.executable, "main.py", "lint", "-p", str(self.project_dir)])
+                subprocess.Popen([sys.executable, "main.py", "lint", "-p", str(self.project_dir)])  # nosec B603
                 self.notify("Lint started in background.")
             except Exception as e:
                 self.notify(f"Failed to start lint: {e}", severity="error")

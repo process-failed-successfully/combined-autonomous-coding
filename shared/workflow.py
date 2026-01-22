@@ -21,9 +21,8 @@ def _get_remote_info(project_dir: Path) -> Tuple[Optional[str], Optional[str], O
     Extract (host, owner, repo) from git remote origin.
     """
     try:
-        res = subprocess.run(["git", "remote", "get-url", "origin"],
-                             cwd=project_dir, check=True, stdout=subprocess.PIPE, text=True)
-        remote_url = res.stdout.strip()
+        subprocess.run(["git", "remote", "get-url", "origin"],
+                       cwd=project_dir, check=True, stdout=subprocess.PIPE, text=True)
         # GitHubClient logic is embedded here or we need a helper.
         # For now, simplistic parsing or assuming github.com if not ssh
         # But wait, GitHubClient has _get_repo_owner_and_name which takes project_dir!

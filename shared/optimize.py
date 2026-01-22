@@ -18,6 +18,7 @@ from agents.shared.prompts import get_optimize_prompt
 
 logger = logging.getLogger(__name__)
 
+
 class OptimizationManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
@@ -36,7 +37,7 @@ class OptimizationManager:
                 # Sometimes the script fails but profile is generated?
                 # But if it fails, the profile might be incomplete or misleading.
                 if not stats_file.exists():
-                     return None
+                    return None
                 print("⚠️  Script failed but stats file exists. Proceeding with caution.")
             return stats_file
         except Exception as e:
@@ -79,8 +80,8 @@ class OptimizationManager:
         if file_path.is_absolute():
             try:
                 if not str(file_path).startswith(str(self.project_dir)):
-                     # External library file
-                     return None
+                    # External library file
+                    return None
             except ValueError:
                 return None
         else:
@@ -93,7 +94,7 @@ class OptimizationManager:
                     return None
 
         if not file_path.exists():
-             return None
+            return None
 
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -120,7 +121,7 @@ class OptimizationManager:
             logger.warning(f"Error reading source for {filename}: {e}")
             return None
 
-    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: str = None) -> str:
+    async def get_ai_suggestions(self, stats_file: Path, agent_type: str = "gemini", model: str = "") -> str:
         """Analyzes profiling stats using AI and returns the suggestion text."""
         print("\nAnalyzing profiling data...")
         top_funcs = self.analyze_stats(stats_file)
@@ -155,7 +156,7 @@ class OptimizationManager:
         config = Config(
             project_dir=self.project_dir,
             agent_type=agent_type,
-            model=model,
+            model=model or None,
             max_iterations=1,
             stream_output=True
         )
@@ -187,7 +188,7 @@ class OptimizationManager:
         except Exception as e:
             return f"❌ Error querying agent: {e}"
 
-    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: str = None):
+    async def optimize(self, script_path: Path, args: List[str], agent_type: str = "gemini", model: str = ""):
         """Main entry point."""
         script_full_path = self.project_dir / script_path
         if not script_full_path.exists():

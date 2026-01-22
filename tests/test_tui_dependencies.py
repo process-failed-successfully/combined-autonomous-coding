@@ -8,7 +8,7 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DataTable
+from textual.widgets import Label, Tree
 from shared.tui import AgentTUI, DependenciesTab
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
@@ -55,27 +55,43 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         tab.notify = MagicMock()
 
         # Mock UI elements
-        mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
+        mock_tree = MagicMock(spec=Tree)
+
+        # Setup tree mock to handle add calls
+        mock_root = MagicMock()
+        mock_tree.root = mock_root
+
+        # Mock return for add() calls to return new nodes
+        mock_py_node = MagicMock()
+        mock_file_node = MagicMock()
+        mock_root.add.return_value = mock_py_node
+        mock_py_node.add.return_value = mock_file_node
 
         # We mock query_one to return our mocks
         tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#deps-table": mock_table,
-            "#deps-status": mock_status
+            "#deps-status": mock_status,
+            "#deps-tree": mock_tree
         }.get(selector))
 
         # Test on_mount (load_deps)
         tab.on_mount()
 
         self.mock_analyzer.scan.assert_called_once()
-        mock_table.add_columns.assert_called()
-        mock_table.clear.assert_called()
-        # Verify row addition
-        # "Python", "requests", "==2.0.0", "prod", "-", "OK"
-        # We check one call
-        add_row_calls = mock_table.add_row.call_args_list
-        self.assertTrue(len(add_row_calls) > 0)
-        self.assertEqual(add_row_calls[0][0][1], "requests")
+        mock_tree.clear.assert_called()
+
+        # Verify Python node added
+        mock_root.add.assert_called()
+        args = mock_root.add.call_args[0]
+        self.assertIn("Python", args[0])
+
+        # Verify file node added
+        mock_py_node.add.assert_called()
+
+        # Verify dependency node added to file node
+        mock_file_node.add.assert_called()
+        dep_args = mock_file_node.add.call_args[0]
+        self.assertIn("requests", dep_args[0])
 
     async def test_check_updates_logic(self):
         """Test check updates button logic."""
@@ -84,11 +100,20 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         tab.notify = MagicMock()
 
         # Mock UI
-        mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
+        mock_tree = MagicMock(spec=Tree)
+        mock_root = MagicMock()
+        mock_tree.root = mock_root
+
+        # Mock node adding
+        mock_py_node = MagicMock()
+        mock_file_node = MagicMock()
+        mock_root.add.return_value = mock_py_node
+        mock_py_node.add.return_value = mock_file_node
+
         tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#deps-table": mock_table,
-            "#deps-status": mock_status
+            "#deps-status": mock_status,
+            "#deps-tree": mock_tree
         }.get(selector))
 
         # Mock analyzer
@@ -111,12 +136,17 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.mock_analyzer.check_updates.assert_called()
         mock_status.update.assert_called_with("Update check complete.")
 
-        # Verify table update
-        # Should now have "Outdated" status (formatted)
-        add_row_calls = mock_table.add_row.call_args_list
-        self.assertTrue(len(add_row_calls) > 0)
-        # Check that status is red/outdated
-        self.assertIn("Outdated", str(add_row_calls[0][0]))
+        # Verify tree was re-populated
+        # We expect root.add to be called for Python
+        mock_root.add.assert_called()
+
+        # We expect the file node to have the dependency added, and since it is outdated, it should look different or have data
+        # The logic in load_deps calls add_dep_node which calls parent_node.add(label, data=...)
+        mock_file_node.add.assert_called()
+        call_args = mock_file_node.add.call_args
+        label = call_args[0][0]
+        # Check for red color tag or similar indicating outdated
+        self.assertIn("red", label)
 
 if __name__ == "__main__":
     unittest.main()

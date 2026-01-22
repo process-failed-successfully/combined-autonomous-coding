@@ -168,7 +168,7 @@ def run_secrets(args):
 
     sys.exit(0)
 
-def run_db(args):
+async def run_db(args):
     """Manages database operations."""
     from shared.database_manager import DatabaseManager
     project_dir = args.project_dir.resolve()
@@ -182,6 +182,17 @@ def run_db(args):
         sys.exit(0 if manager.seed() else 1)
     elif args.action == "inspect":
         sys.exit(0 if manager.inspect() else 1)
+    elif args.action == "query":
+        from shared.db_query import run_db_query_logic
+        success = await run_db_query_logic(
+            query=args.query,
+            project_dir=project_dir,
+            agent_type=args.agent,
+            model=args.model,
+            yes=args.yes,
+            verbose=args.verbose
+        )
+        sys.exit(0 if success else 1)
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)
         sys.exit(1)
@@ -7270,7 +7281,7 @@ def parse_args(argv=None):
     parser_db = subparsers.add_parser(
         "db",
         aliases=["database"],
-        help="Manage application database (init, migrate, seed)."
+        help="Manage application database (init, migrate, seed, query)."
     )
     db_subparsers = parser_db.add_subparsers(
         dest="action",
@@ -7293,6 +7304,15 @@ def parse_args(argv=None):
     # db inspect
     parser_db_inspect = db_subparsers.add_parser("inspect", help="Inspect database schema.")
     parser_db_inspect.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # DB 'query'
+    parser_db_query = db_subparsers.add_parser("query", help="Query the database using natural language.")
+    parser_db_query.add_argument("query", help="The natural language query (e.g. 'Show me all users created yesterday').")
+    parser_db_query.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_db_query.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Which agent to use (default: gemini).")
+    parser_db_query.add_argument("-m", "--model", type=str, help="Model to use (overrides default).")
+    parser_db_query.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt for write operations.")
+    parser_db_query.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging.")
 
     # --- New 'playground' command ---
     parser_playground = subparsers.add_parser(
@@ -10464,7 +10484,7 @@ async def main():
 
     # Handle `db` command
     if args.command in ["db", "database"]:
-        run_db(args)
+        await run_db(args)
         return
 
     # Handle `playground` command

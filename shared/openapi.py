@@ -175,7 +175,7 @@ Source Code:
         if not agent_class:
             raise ValueError(f"Unknown agent type: {agent_type}")
 
-        agent = agent_class(config)
+        agent = agent_class(config)  # type: ignore
 
         print("Generating OpenAPI spec (this may take a minute)...")
         try:

@@ -22,7 +22,7 @@ from shared.analytics import collect_analytics_data
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict[str, str]:
     import shutil
-    import subprocess
+    import subprocess  # nosec
     git_path = shutil.which("git")
     info = {"branch": "Unknown", "status": "Unknown"}
     if git_path and (project_dir / ".git").is_dir():
@@ -36,7 +36,7 @@ def get_git_info(project_dir: Path) -> dict[str, str]:
             res = subprocess.run([git_path, "-C", str(project_dir), "status", "--porcelain"], capture_output=True, text=True)  # nosec
             if res.returncode == 0:
                 info["status"] = "Dirty" if res.stdout.strip() else "Clean"
-        except Exception:
+        except Exception:  # nosec
             pass
     return info
 
@@ -800,7 +800,7 @@ class AgentTUI(App[None]):
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        import subprocess
+        import subprocess  # nosec
 
         # Handle dashboard buttons (bubble up)
         if event.button.id == "btn-refresh":

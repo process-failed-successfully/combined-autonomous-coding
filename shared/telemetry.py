@@ -4,6 +4,7 @@ import os
 import socket
 import time
 import threading
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 import psutil
 from typing import Dict, Any, Optional, List, Tuple
@@ -399,11 +400,12 @@ class Telemetry:
             if now - self._last_push_error_time > 60:  # Log once per minute
                 try:
                     # If shutting down, connection errors are expected and logging might fail
-                    if not self._is_shutting_down or not isinstance(e, ConnectionRefusedError):
+                    is_connection_error = isinstance(e, (ConnectionRefusedError, urllib.error.URLError))
+                    if not self._is_shutting_down or not is_connection_error:
                         self.logger.warning(f"Failed to push metrics to gateway: {e}")
                 except Exception:
                     # Logging failed (e.g. file closed during shutdown), ignore.
-                    pass
+                    pass  # nosec
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):

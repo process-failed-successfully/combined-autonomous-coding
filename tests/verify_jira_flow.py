@@ -10,10 +10,11 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Mock dependencies before importing our code
-sys.modules['shared.telemetry'] = MagicMock()
-sys.modules['shared.notifications'] = MagicMock()
-sys.modules['jira'] = MagicMock()
-sys.modules['requests'] = MagicMock()
+if __name__ == "__main__":
+    sys.modules['shared.telemetry'] = MagicMock()
+    sys.modules['shared.notifications'] = MagicMock()
+    sys.modules['jira'] = MagicMock()
+    sys.modules['requests'] = MagicMock()
 
 from shared.config import Config, JiraConfig  # noqa: E402
 from shared.workflow import complete_jira_ticket  # noqa: E402
@@ -40,55 +41,60 @@ def test_ghe_api_base():
     print("Verification Test Success: GHE API base is correctly determined.")
 
 
-async def test_complete_jira_ticket_success():
-    """Test that completion flow handles git and jira calls correctly."""
-    project_dir = Path("./test_project_verify")
-    project_dir.mkdir(exist_ok=True)
+import unittest
 
-    jira_cfg = JiraConfig(url="http://test", email="test@test", token="token")
-    config = Config(
-        project_dir=project_dir,
-        jira=jira_cfg,
-        jira_ticket_key="PROJ-123"
-    )
+class TestVerifyJiraFlow(unittest.IsolatedAsyncioTestCase):
+    async def test_complete_jira_ticket_success(self):
+        """Test that completion flow handles git and jira calls correctly."""
+        project_dir = Path("./test_project_verify")
+        project_dir.mkdir(exist_ok=True)
 
-    # Mock subprocess.run for git calls
-    with patch("subprocess.run") as mock_run, \
-            patch("shared.workflow.push_branch") as mock_push, \
-            patch("shared.workflow.JiraClient") as mock_jira_client, \
-            patch("shared.workflow.GitHubClient") as mock_gh_client, \
-            patch.dict(os.environ, {"GITHUB_TOKEN": "mock_token"}):
+        jira_cfg = JiraConfig(url="http://test", email="test@test", token="token")
+        config = Config(
+            project_dir=project_dir,
+            jira=jira_cfg,
+            jira_ticket_key="PROJ-123"
+        )
 
-        mock_push.return_value = True
+        # Mock subprocess.run for git calls
+        with patch("subprocess.run") as mock_run, \
+                patch("shared.workflow.push_branch") as mock_push, \
+                patch("shared.workflow.JiraClient") as mock_jira_client, \
+                patch("shared.workflow.GitHubClient") as mock_gh_client, \
+                patch.dict(os.environ, {"GITHUB_TOKEN": "mock_token"}):
 
-        # Setup GitHub collaborator info
-        mock_gh = MagicMock()
-        mock_gh_client.return_value = mock_gh
-        # get_repo_info_from_remote and get_repo_metadata are removed/replaced
-        mock_gh.create_pull_request.return_value = {"html_url": "https://github.com/PR-123"}
+            mock_push.return_value = True
 
-        # Setup git remote/branch mocks
-        mock_run_result = MagicMock()
-        mock_run_result.stdout = "https://github.com/owner/repo.git\n"
-        mock_run_result_branch = MagicMock()
-        mock_run_result_branch.stdout = "agent/feature\n"
-        mock_run.side_effect = [mock_run_result, mock_run_result_branch]
+            # Setup GitHub collaborator info
+            mock_gh = MagicMock()
+            mock_gh_client.return_value = mock_gh
+            # get_repo_info_from_remote and get_repo_metadata are removed/replaced
+            mock_gh.create_pull_request.return_value = {"html_url": "https://github.com/PR-123"}
 
-        # Setup Jira client
-        mock_jira = MagicMock()
-        mock_jira_client.return_value = mock_jira
+            # Setup git remote/branch mocks
+            mock_run_result = MagicMock()
+            mock_run_result.stdout = "https://github.com/owner/repo.git\n"
+            mock_run_result_branch = MagicMock()
+            mock_run_result_branch.stdout = "agent/feature\n"
+            mock_run.side_effect = [mock_run_result, mock_run_result_branch]
 
-        success = await complete_jira_ticket(config)
+            # Setup Jira client
+            mock_jira = MagicMock()
+            mock_jira_client.return_value = mock_jira
 
-        assert success is True
-        mock_push.assert_called_once()
-        mock_gh.create_pull_request.assert_called_once()
-        mock_jira.transition_issue.assert_called_once_with("PROJ-123", "Code Review")
-        mock_jira.add_comment.assert_called_once()
-        print("Verification Test Success: complete_jira_ticket flows correctly.")
+            success = await complete_jira_ticket(config)
+
+            self.assertTrue(success)
+            mock_push.assert_called_once()
+            mock_gh.create_pull_request.assert_called_once()
+            mock_jira.transition_issue.assert_called_once_with("PROJ-123", "Code Review")
+            mock_jira.add_comment.assert_called_once()
+            print("Verification Test Success: complete_jira_ticket flows correctly.")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    # Run simple tests
     test_sanitize_url()
     test_ghe_api_base()
-    asyncio.run(test_complete_jira_ticket_success())
+    # Run unittest suite
+    unittest.main()

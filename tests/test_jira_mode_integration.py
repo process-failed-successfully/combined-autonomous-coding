@@ -9,7 +9,7 @@ import shutil
 import os
 
 # Mock prometheus_client regarding telemetry
-sys.modules["prometheus_client"] = MagicMock()
+# sys.modules["prometheus_client"] = MagicMock()
 
 # Add repo root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))

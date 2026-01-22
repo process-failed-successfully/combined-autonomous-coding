@@ -20,14 +20,24 @@ class MockJIRAError(Exception):
         self.status_code = status_code
 
 
-mock_jira_module.JIRAError = MockJIRAError
-sys.modules["jira"] = mock_jira_module
+# mock_jira_module.JIRAError = MockJIRAError
+# sys.modules["jira"] = mock_jira_module
 import shared.jira_client  # noqa: E402
 
 
 class TestJiraIntegration(unittest.TestCase):
 
     def setUp(self):
+        # Ensure we have a clean shared.jira_client (reload if necessary)
+        # Because other tests might have mocked 'jira' module
+        import sys
+        if 'jira' in sys.modules and isinstance(sys.modules['jira'], MagicMock):
+             del sys.modules['jira']
+
+        import importlib
+        import shared.jira_client
+        importlib.reload(shared.jira_client)
+
         self.config = JiraConfig(url="http://jira.local", email="user", token="token")
 
     @patch("shared.jira_client.JIRA")
@@ -47,7 +57,11 @@ class TestJiraIntegration(unittest.TestCase):
     @patch("shared.jira_client.JIRA")
     def test_get_issue(self, mock_jira_lib):
         """Test fetching a single issue."""
-        from shared.jira_client import JiraClient
+        from shared.jira_client import JiraClient, JIRAError
+
+        # Debug check
+        if not (isinstance(JIRAError, type) and issubclass(JIRAError, Exception)):
+             print(f"DEBUG: JIRAError is {type(JIRAError)}: {JIRAError}")
 
         mock_instance = MagicMock()
         mock_jira_lib.return_value = mock_instance

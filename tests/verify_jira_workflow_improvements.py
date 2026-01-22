@@ -9,17 +9,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Mock jira library BEFORE importing shared.workflow
-mock_jira_module = MagicMock()
+if __name__ == "__main__":
+    mock_jira_module = MagicMock()
 
+    class MockJIRAError(Exception):
+        def __init__(self, text=None, status_code=None, **kwargs):
+            super().__init__(text)
+            self.status_code = status_code
 
-class MockJIRAError(Exception):
-    def __init__(self, text=None, status_code=None, **kwargs):
-        super().__init__(text)
-        self.status_code = status_code
-
-
-mock_jira_module.JIRAError = MockJIRAError
-sys.modules["jira"] = mock_jira_module
+    mock_jira_module.JIRAError = MockJIRAError
+    sys.modules["jira"] = mock_jira_module
 
 from shared.workflow import complete_jira_ticket  # noqa: E402
 from shared.config import Config, JiraConfig  # noqa: E402

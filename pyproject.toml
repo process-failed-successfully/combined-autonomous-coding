@@ -34,7 +34,6 @@ dependencies = [
     "watchdog",
     "argcomplete",
     "google-generativeai",
-    "markdown",
 ]
 requires-python = ">=3.11"
 

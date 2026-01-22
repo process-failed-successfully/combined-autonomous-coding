@@ -77,5 +77,34 @@ def my_func():
         self.assertIn("test.py", result)
         self.assertEqual(result["test.py"].children[0].name, "foo")
 
+    def test_end_lineno_capture(self):
+        code = """
+def single_line(): pass
+
+def multi_line():
+    x = 1
+    return x
+"""
+        tree = ast.parse(code)
+        builder = PythonMapBuilder(Path("test.py"), Path("."))
+        builder.visit(tree)
+
+        module_node = builder.module_node
+        self.assertEqual(len(module_node.children), 2)
+
+        single = next(c for c in module_node.children if c.name == "single_line")
+        multi = next(c for c in module_node.children if c.name == "multi_line")
+
+        # Python < 3.8 might not have end_lineno, but assuming CI environment is modern
+        # If it's none, we assert it's None. If it's int, we check value.
+        if hasattr(tree.body[0], 'end_lineno'):
+             self.assertEqual(single.lineno, 2)
+             self.assertEqual(single.end_lineno, 2)
+
+             self.assertEqual(multi.lineno, 4)
+             self.assertEqual(multi.end_lineno, 6)
+        else:
+             print("Skipping end_lineno test due to old Python version")
+
 if __name__ == "__main__":
     unittest.main()

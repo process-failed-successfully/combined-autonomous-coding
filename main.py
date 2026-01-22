@@ -8036,6 +8036,34 @@ def parse_args(argv=None):
         help="Path to save the security report (JSON).",
     )
 
+    # --- New 'openapi' command ---
+    parser_openapi = subparsers.add_parser(
+        "openapi",
+        help="Generate an OpenAPI specification from the codebase."
+    )
+    parser_openapi.add_argument(
+        "-o", "--output",
+        default="openapi.yaml",
+        help="Output file path (default: openapi.yaml)."
+    )
+    parser_openapi.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_openapi.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_openapi.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     # --- New 'docstring' command ---
     parser_docstring = subparsers.add_parser(
         "docstring",
@@ -8845,6 +8873,22 @@ async def run_resolve_conflicts(args):
                 traceback.print_exc()
 
     sys.exit(0)
+
+
+async def run_openapi(args):
+    """Generates an OpenAPI specification."""
+    from shared.openapi import OpenAPIGenerator
+
+    project_dir = args.project_dir.resolve()
+    output_path = Path(args.output).resolve()
+
+    generator = OpenAPIGenerator(project_dir)
+    success = await generator.generate(
+        output_path=output_path,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sys.exit(0 if success else 1)
 
 
 async def run_docstring(args):
@@ -10910,6 +10954,10 @@ async def main():
 
     if args.command == "release":
         run_release(args)
+        return
+
+    if args.command == "openapi":
+        await run_openapi(args)
         return
 
     if args.command == "docstring":

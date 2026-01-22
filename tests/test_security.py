@@ -1,8 +1,8 @@
 import unittest
-import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from shared.security import SecurityAuditor
+
 
 class TestSecurityAuditor(unittest.TestCase):
     def setUp(self):
@@ -67,7 +67,7 @@ class TestSecurityAuditor(unittest.TestCase):
 
         # Mock existence of python files
         with patch("pathlib.Path.glob", return_value=[Path("main.py")]):
-             findings = self.auditor.run_sast()
+            findings = self.auditor.run_sast()
 
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["type"], "sast")
@@ -89,7 +89,7 @@ class TestSecurityAuditor(unittest.TestCase):
     @patch("subprocess.run")
     @patch("pathlib.Path.exists")
     def test_run_dependency_check_npm(self, mock_exists, mock_run, mock_which):
-        mock_exists.return_value = True # package.json exists
+        mock_exists.return_value = True  # package.json exists
         mock_which.return_value = "/usr/bin/npm"
 
         # Mock npm audit output (v7+ format)
@@ -111,6 +111,7 @@ class TestSecurityAuditor(unittest.TestCase):
         self.assertEqual(findings[0]["tool"], "npm audit")
         self.assertEqual(findings[0]["severity"], "HIGH")
         self.assertIn("lodash", findings[0]["description"])
+
 
 if __name__ == "__main__":
     unittest.main()

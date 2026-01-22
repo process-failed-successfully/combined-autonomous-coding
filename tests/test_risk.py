@@ -1,6 +1,7 @@
 
+from shared.risk_analysis import RiskAnalyzer, _run_risk_logic
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import io
@@ -8,7 +9,6 @@ import io
 # Ensure shared modules can be imported
 sys.path.append(str(Path.cwd()))
 
-from shared.risk_analysis import RiskAnalyzer, _run_risk_logic
 
 class TestRiskAnalyzer(unittest.TestCase):
     @patch('shared.risk_analysis.analyze_project_complexity')
@@ -27,7 +27,7 @@ class TestRiskAnalyzer(unittest.TestCase):
             ('a.py', 10),
             ('b.py', 5),
             ('c.py', 1),
-            ('d.py', 20), # No complexity data (non-python or simple)
+            ('d.py', 20),  # No complexity data (non-python or simple)
         ]
 
         analyzer = RiskAnalyzer(Path('.'))
@@ -68,7 +68,8 @@ class TestRiskAnalyzer(unittest.TestCase):
         output = captured_output.getvalue()
         self.assertIn("Risk Analysis (Hotspots)", output)
         self.assertIn("a.py", output)
-        self.assertIn("50", output) # Score 10*5
+        self.assertIn("50", output)  # Score 10*5
+
 
 if __name__ == '__main__':
     unittest.main()

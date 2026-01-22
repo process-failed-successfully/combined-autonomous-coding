@@ -1,6 +1,6 @@
+from main import run_clean
 import unittest
-from unittest.mock import patch, MagicMock
-import os
+from unittest.mock import patch
 import shutil
 from pathlib import Path
 import argparse
@@ -12,7 +12,6 @@ from contextlib import redirect_stdout
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from main import run_clean
 
 class TestMainClean(unittest.TestCase):
 
@@ -117,7 +116,6 @@ class TestMainClean(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         self.assertIn("No agent-generated artifacts found to clean", f.getvalue())
 
-
     @patch('builtins.input', return_value='y')
     def test_interactive_confirm_yes(self, mock_input):
         """Test interactive confirmation 'y' proceeds with cleaning."""
@@ -170,6 +168,7 @@ class TestMainClean(unittest.TestCase):
             # Verify log file was moved
             self.assertTrue((trash_dir / f"{run_id}.log").exists())
             self.assertFalse(log_file.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

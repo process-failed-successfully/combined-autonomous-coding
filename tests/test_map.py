@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from shared.map import CodeNode, PythonMapBuilder, generate_mermaid, scan_project
 
+
 class TestCodeMap(unittest.TestCase):
     def test_code_node_serialization(self):
         node = CodeNode("test_mod", "module", "test.py", 1)
@@ -51,7 +52,7 @@ def my_func():
 
     def test_generate_mermaid(self):
         node1 = CodeNode("a.py", "module", "a.py", 1)
-        node1.dependencies.add("b") # implies b.py
+        node1.dependencies.add("b")  # implies b.py
 
         node2 = CodeNode("b.py", "module", "b.py", 1)
 
@@ -76,6 +77,7 @@ def my_func():
 
         self.assertIn("test.py", result)
         self.assertEqual(result["test.py"].children[0].name, "foo")
+
 
 if __name__ == "__main__":
     unittest.main()

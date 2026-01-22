@@ -1,3 +1,5 @@
+from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
+from textual.widgets import Label, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
@@ -8,8 +10,6 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, LogsTab, InteractTab, KnowledgeTab
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -38,7 +38,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
     async def test_app_startup(self):
         """Test that the app starts up and has the expected title and tabs."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             # Check if TabbedContent exists
             self.assertIsInstance(app.query_one(TabbedContent), TabbedContent)
             # Check if tabs are present by ID
@@ -52,7 +52,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
     async def test_dashboard_content(self):
         """Test that the dashboard tab displays project info."""
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             # Switch to dashboard is default
             dashboard = app.query_one(DashboardTab)
             self.assertIsNotNone(dashboard)
@@ -161,6 +161,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
     """Unit tests for individual components logic."""
+
     def setUp(self):
         self.project_dir = Path("/tmp/test_project")
         self.project_dir.mkdir(parents=True, exist_ok=True)
@@ -230,6 +231,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         MockAgentTUI.assert_called_with(project_dir=self.project_dir)
         MockAgentTUI.return_value.run.assert_called_once()
         mock_exit.assert_called_with(0)
+
 
 if __name__ == "__main__":
     unittest.main()

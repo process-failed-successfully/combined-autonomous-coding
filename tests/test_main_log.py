@@ -1,3 +1,4 @@
+from main import _run_log_logic
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
@@ -12,7 +13,6 @@ from contextlib import redirect_stderr
 # Add the parent directory to the sys.path to allow for absolute imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import _run_log_logic
 
 class TestMainLog(unittest.TestCase):
     def setUp(self):
@@ -84,6 +84,7 @@ class TestMainLog(unittest.TestCase):
         self.assertIn("Not a git repository", output)
 
         shutil.rmtree(non_git_dir)
+
 
 if __name__ == '__main__':
     unittest.main()

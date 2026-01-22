@@ -1,3 +1,4 @@
+from shared.todos import scan_todos, get_todo_blame
 import unittest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -7,7 +8,6 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.todos import scan_todos, get_todo_blame
 
 class TestTodos(unittest.TestCase):
     def setUp(self):
@@ -85,6 +85,7 @@ class TestTodos(unittest.TestCase):
         self.assertEqual(info['commit'], "abc1234")
         # 1600000000 is approx 2020-09-13
         self.assertIn("2020", info['date'])
+
 
 if __name__ == '__main__':
     unittest.main()

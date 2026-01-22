@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from shared.unused import UnusedCodeDetector
 
+
 class TestUnusedCodeDetector(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path(tempfile.mkdtemp())
@@ -93,6 +94,7 @@ def _internal():
         unused = detector.get_unused_definitions()
         names = [x['name'] for x in unused]
         self.assertIn("_internal", names)
+
 
 if __name__ == '__main__':
     unittest.main()

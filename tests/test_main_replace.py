@@ -1,9 +1,10 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import io
 import main
+
 
 class Args:
     def __init__(self, pattern, replacement, files=None, case_sensitive=False, regex=False, dry_run=False, project_dir=Path(".")):
@@ -14,6 +15,7 @@ class Args:
         self.regex = regex
         self.dry_run = dry_run
         self.project_dir = project_dir
+
 
 class TestMainReplace(unittest.TestCase):
     def setUp(self):
@@ -94,6 +96,7 @@ class TestMainReplace(unittest.TestCase):
                 self.assertIn("Error during replace: Something went wrong", fake_stderr.getvalue())
 
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

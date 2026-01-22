@@ -4,11 +4,13 @@ from pathlib import Path
 import pytest
 from shared.work_session import WorkSessionManager
 
+
 @pytest.fixture
 def temp_project():
     temp_dir = Path(tempfile.mkdtemp())
     yield temp_dir
     shutil.rmtree(temp_dir)
+
 
 def test_create_session(temp_project):
     manager = WorkSessionManager(temp_project)
@@ -18,6 +20,7 @@ def test_create_session(temp_project):
     assert session.description == "Test Description"
     assert (temp_project / ".agent_sessions" / "test-session.json").exists()
     assert (temp_project / ".agent_sessions" / "active_session.txt").read_text() == "test-session"
+
 
 def test_load_session(temp_project):
     manager = WorkSessionManager(temp_project)
@@ -29,6 +32,7 @@ def test_load_session(temp_project):
 
     assert manager.load_session("non-existent") is None
 
+
 def test_list_sessions(temp_project):
     manager = WorkSessionManager(temp_project)
     manager.create("session1")
@@ -38,6 +42,7 @@ def test_list_sessions(temp_project):
     assert len(sessions) == 2
     names = sorted([s["name"] for s in sessions])
     assert names == ["session1", "session2"]
+
 
 def test_active_session_management(temp_project):
     manager = WorkSessionManager(temp_project)
@@ -52,6 +57,7 @@ def test_active_session_management(temp_project):
 
     manager.stop_session()
     assert manager.get_active_session() is None
+
 
 def test_file_management(temp_project):
     manager = WorkSessionManager(temp_project)
@@ -68,6 +74,7 @@ def test_file_management(temp_project):
     session = manager.load_session("s1")
     assert "file.py" not in session.files
 
+
 def test_note_management(temp_project):
     manager = WorkSessionManager(temp_project)
     manager.create("s1")
@@ -76,6 +83,7 @@ def test_note_management(temp_project):
     session = manager.load_session("s1")
     assert len(session.notes) == 1
     assert "This is a note" in session.notes[0]
+
 
 def test_delete_session(temp_project):
     manager = WorkSessionManager(temp_project)

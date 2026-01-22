@@ -9,6 +9,7 @@ import yaml
 
 from main import run_config
 
+
 class TestMainConfigCommand(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()

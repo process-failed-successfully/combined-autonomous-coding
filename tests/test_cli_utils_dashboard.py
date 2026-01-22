@@ -3,9 +3,9 @@ import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 import shutil
-import subprocess
 
 from shared.cli_utils import _run_dashboard_logic
+
 
 class TestCliUtilsDashboard(unittest.TestCase):
 
@@ -130,6 +130,7 @@ class TestCliUtilsDashboard(unittest.TestCase):
         self.assertIn("Execution Time: 2m 3.45s", output)
         self.assertIn("Iterations:     5", output)
         self.assertIn("Errors:         1", output)
+
 
 if __name__ == '__main__':
     unittest.main()

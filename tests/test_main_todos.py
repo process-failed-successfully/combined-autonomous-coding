@@ -1,5 +1,6 @@
+from main import run_todos
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import os
@@ -10,7 +11,6 @@ import io
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_todos
 
 class TestMainTodos(unittest.TestCase):
     def setUp(self):
@@ -79,6 +79,7 @@ class TestMainTodos(unittest.TestCase):
             data = json.loads(output)
             self.assertEqual(len(data), 1)
             self.assertEqual(data[0]['file'], 'test.py')
+
 
 if __name__ == '__main__':
     unittest.main()

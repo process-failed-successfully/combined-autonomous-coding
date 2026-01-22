@@ -1,10 +1,11 @@
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch
 import argparse
 from pathlib import Path
 
 # Assuming main.py is in the parent directory or PYTHONPATH is set correctly
 import main
+
 
 class TestInteractCommand(unittest.TestCase):
 
@@ -71,7 +72,7 @@ class TestInteractCommand(unittest.TestCase):
         # Should only be called once for the 'q'
         self.assertEqual(mock_input.call_count, 1)
 
-    @patch('builtins.input', side_effect=['9', 'q']) # Invalid choice, then quit
+    @patch('builtins.input', side_effect=['9', 'q'])  # Invalid choice, then quit
     @patch('main.run_status')
     @patch('main.run_test')
     @patch('main.run_commit')
@@ -87,6 +88,7 @@ class TestInteractCommand(unittest.TestCase):
         mock_run_status.assert_not_called()
         mock_run_test.assert_not_called()
         mock_run_commit.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

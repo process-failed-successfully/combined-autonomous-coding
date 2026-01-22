@@ -1,14 +1,13 @@
+from main import run_configure
 import unittest
 from unittest.mock import patch, mock_open
 from pathlib import Path
 import yaml
-import platformdirs
 import sys
 
 # Add project root to the Python path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from main import run_configure
 
 class TestConfigureCommand(unittest.TestCase):
 
@@ -75,6 +74,7 @@ class TestConfigureCommand(unittest.TestCase):
         }
 
         self.assertEqual(written_data, expected_data)
+
 
 if __name__ == '__main__':
     unittest.main()

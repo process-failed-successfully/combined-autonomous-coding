@@ -1,6 +1,7 @@
 
+import main
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import tempfile
 import shutil
@@ -10,7 +11,6 @@ import io
 # Adjust the path to import main
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import main
 
 class TestReviewCommand(unittest.TestCase):
 
@@ -53,7 +53,7 @@ class TestReviewCommand(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         self.assertFalse(self.qa_passed_file.exists())
-        self.assertFalse(self.completed_file.exists()) # Should be removed on rejection
+        self.assertFalse(self.completed_file.exists())  # Should be removed on rejection
         mock_run_test.assert_called_once()
         mock_run_diff.assert_called_once()
 
@@ -68,7 +68,7 @@ class TestReviewCommand(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         self.assertFalse(self.qa_passed_file.exists())
-        self.assertTrue(self.completed_file.exists()) # Should NOT be removed on test failure
+        self.assertTrue(self.completed_file.exists())  # Should NOT be removed on test failure
 
     def test_review_no_work_to_review(self):
         """Test the review command when the COMPLETED file doesn't exist."""

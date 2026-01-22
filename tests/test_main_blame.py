@@ -1,6 +1,6 @@
 
+from shared.cli_utils import _run_blame_logic
 import unittest
-from unittest.mock import patch
 import subprocess
 import tempfile
 import shutil
@@ -10,7 +10,6 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from shared.cli_utils import _run_blame_logic
 
 class TestMainBlame(unittest.TestCase):
 
@@ -56,7 +55,7 @@ class TestMainBlame(unittest.TestCase):
         # Assertions
         self.assertIn("Run ID: 20240101-120000-test-agent", blame_output)
         self.assertIn("line 2", blame_output)
-        self.assertIn("Author: Test User", blame_output) # The first line should still have the author
+        self.assertIn("Author: Test User", blame_output)  # The first line should still have the author
         self.assertIn("line 1", blame_output)
 
     def test_blame_without_run_id(self):

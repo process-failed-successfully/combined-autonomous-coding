@@ -1,5 +1,6 @@
+from main import _run_last_logic
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import tempfile
 import shutil
@@ -9,7 +10,7 @@ import contextlib
 # Make sure the main module can be imported
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from main import _run_last_logic, _find_metrics_file, _parse_metrics, _display_metrics_table
+
 
 class TestLastCommand(unittest.TestCase):
 
@@ -56,7 +57,7 @@ Total Errors: 1
         with contextlib.redirect_stdout(stdout_capture):
             # We need to patch the repo_root detection in the main module
             with patch('main.Path.parent', self.repo_root):
-                 result = _run_last_logic(self.project_dir)
+                result = _run_last_logic(self.project_dir)
 
         output = stdout_capture.getvalue()
 
@@ -67,7 +68,7 @@ Total Errors: 1
 
         # Check for metrics
         self.assertIn("--- Performance Metrics ---", output)
-        self.assertIn("Total Execution Time (s) : 2m 3.45s", output) # Check formatting
+        self.assertIn("Total Execution Time (s) : 2m 3.45s", output)  # Check formatting
         self.assertIn("Total Iterations         : 5", output)
         self.assertIn("Total Errors             : 1", output)
 
@@ -104,6 +105,7 @@ Total Errors: 1
         self.assertIn("No metrics file found for the last run", output)
         self.assertIn("No QA summary found for the last run", output)
         self.assertIn("Log file not found", output)
+
 
 if __name__ == '__main__':
     unittest.main()

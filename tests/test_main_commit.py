@@ -1,8 +1,9 @@
 import unittest
-from unittest.mock import patch, call, MagicMock
+from unittest.mock import patch, MagicMock
 from main import run_commit
 import argparse
 from pathlib import Path
+
 
 class TestCommitCommand(unittest.TestCase):
 
@@ -83,6 +84,7 @@ class TestCommitCommand(unittest.TestCase):
                 commit_call_found = True
                 break
         self.assertTrue(commit_call_found, "git commit command was not called")
+
 
 if __name__ == '__main__':
     unittest.main()

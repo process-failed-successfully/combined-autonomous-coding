@@ -1,5 +1,6 @@
+from main import run_empty_trash
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 import os
 from pathlib import Path
@@ -10,7 +11,6 @@ import argparse
 # Ensure the main module can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_empty_trash
 
 class TestEmptyTrash(unittest.TestCase):
 
@@ -81,14 +81,14 @@ class TestEmptyTrash(unittest.TestCase):
                 run_empty_trash(args)
 
         self.assertEqual(cm.exception.code, 0)
-        self.assertTrue(self.trash_dir.exists()) # Should still exist
+        self.assertTrue(self.trash_dir.exists())  # Should still exist
         output = self.stdout_capture.getvalue()
         self.assertIn("Are you sure you want to proceed? [y/N]:", output)
         self.assertIn("Aborted.", output)
 
     def test_empty_trash_when_no_trash_directory_exists(self):
         """Test the command when the trash directory does not exist."""
-        shutil.rmtree(self.trash_dir) # Remove it first
+        shutil.rmtree(self.trash_dir)  # Remove it first
         args = argparse.Namespace(project_dir=self.test_dir, yes=True)
 
         with self.assertRaises(SystemExit) as cm:

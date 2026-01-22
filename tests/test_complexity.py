@@ -1,6 +1,6 @@
 import unittest
-from shared.complexity import calculate_complexity, ComplexityVisitor, FunctionComplexityVisitor
-import ast
+from shared.complexity import calculate_complexity
+
 
 class TestComplexity(unittest.TestCase):
     def test_simple_function(self):
@@ -116,6 +116,7 @@ def safe():
         # Base(1) + 2 handlers = 3
         functions = calculate_complexity(code)
         self.assertEqual(functions[0]['complexity'], 3)
+
 
 if __name__ == '__main__':
     unittest.main()

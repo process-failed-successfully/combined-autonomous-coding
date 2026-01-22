@@ -1,8 +1,8 @@
+from shared.shell import InteractiveShell
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 import io
 import sys
-from pathlib import Path
 
 # Mock the main module and its functions that the shell will call
 mock_main = MagicMock()
@@ -16,7 +16,6 @@ mock_main._run_diff_summary_logic = MagicMock()
 # before the shell module is imported.
 sys.modules['__main__'] = mock_main
 
-from shared.shell import InteractiveShell
 
 class TestInteractiveShell(unittest.TestCase):
 
@@ -86,6 +85,7 @@ class TestInteractiveShell(unittest.TestCase):
         """Test the diff-summary command."""
         self.shell.onecmd("diff_summary")
         mock_main._run_diff_summary_logic.assert_called_once_with(project_dir='.')
+
 
 if __name__ == '__main__':
     unittest.main()

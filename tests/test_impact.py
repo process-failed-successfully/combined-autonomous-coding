@@ -1,7 +1,8 @@
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from shared.impact import ImpactAnalyzer, run_impact_logic
+from shared.impact import ImpactAnalyzer
+
 
 class TestImpactAnalyzer(unittest.TestCase):
     def setUp(self):
@@ -42,7 +43,7 @@ class TestImpactAnalyzer(unittest.TestCase):
         self.assertIn("file_b.py", impacted_source)
         self.assertIn("file_a.py", impacted_source)
         self.assertIn("tests/test_a.py", impacted_tests)
-        self.assertIn("file_c.py", impacted_source) # It impacts itself/dependents
+        self.assertIn("file_c.py", impacted_source)  # It impacts itself/dependents
 
     @patch("shared.impact.shutil.which")
     @patch("shared.impact.subprocess.run")
@@ -68,6 +69,7 @@ class TestImpactAnalyzer(unittest.TestCase):
         self.assertIn("shared/utils.py", changed)
         self.assertIn("main.py", changed)
         self.assertIn("new_file.py", changed)
+
 
 if __name__ == "__main__":
     unittest.main()

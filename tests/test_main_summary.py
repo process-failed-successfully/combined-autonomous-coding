@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import tempfile
 import shutil
 from pathlib import Path
@@ -10,6 +10,7 @@ import contextlib
 # It's better to add the project root to the path if necessary,
 # but for this structure, direct import should work if run with `run_tests.sh`.
 import main
+
 
 class TestMainSummary(unittest.TestCase):
 
@@ -103,7 +104,7 @@ class TestMainSummary(unittest.TestCase):
         output = self._run_summary_and_capture_output()
         self.assertIn("  Workflow Stage      : Signed Off", output)
 
-    @patch("main.shutil.which", return_value=None) # Mock git not being found
+    @patch("main.shutil.which", return_value=None)  # Mock git not being found
     def test_summary_not_a_git_repo(self, mock_which):
         """Test summary when the directory is not a git repository."""
         # Remove the .git dir created in setUp
@@ -132,6 +133,7 @@ class TestMainSummary(unittest.TestCase):
 
         output = self._run_summary_and_capture_output()
         self.assertIn("  Last Activity       : No runs in history.", output)
+
 
 if __name__ == '__main__':
     unittest.main()

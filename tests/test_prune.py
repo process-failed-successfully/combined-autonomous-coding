@@ -2,8 +2,8 @@ import unittest
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 from shared.prune import PruneManager
+
 
 class TestPruneManager(unittest.TestCase):
     def setUp(self):
@@ -37,7 +37,7 @@ class TestPruneManager(unittest.TestCase):
         unused_names = [d['name'] for d in unused]
         self.assertIn("unused-pkg", unused_names)
         self.assertNotIn("requests", unused_names)
-        self.assertNotIn("PyYAML", unused_names) # Should be mapped to 'yaml'
+        self.assertNotIn("PyYAML", unused_names)  # Should be mapped to 'yaml'
 
     def test_scan_unused_files(self):
         # Create structure
@@ -56,8 +56,8 @@ class TestPruneManager(unittest.TestCase):
         candidate_names = [f.name for f in candidates]
 
         self.assertIn("unused.py", candidate_names)
-        self.assertNotIn("main.py", candidate_names) # Entry point (if __name__) + explicitly ignored name
-        self.assertNotIn("utils.py", candidate_names) # Imported by main
+        self.assertNotIn("main.py", candidate_names)  # Entry point (if __name__) + explicitly ignored name
+        self.assertNotIn("utils.py", candidate_names)  # Imported by main
         # tests/test_main.py is in IGNORE_DIRS ("tests") so it shouldn't be returned as a candidate to delete
         self.assertNotIn("test_main.py", candidate_names)
 
@@ -77,6 +77,7 @@ class TestPruneManager(unittest.TestCase):
 
         self.manager._delete_files([f])
         self.assertFalse(f.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

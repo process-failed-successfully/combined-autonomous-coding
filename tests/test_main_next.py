@@ -1,3 +1,5 @@
+from shared.cli_utils import _run_next_logic
+from main import run_next
 import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -8,8 +10,6 @@ from io import StringIO
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_next
-from shared.cli_utils import _run_next_logic
 
 class TestNextCommand(unittest.TestCase):
 
@@ -80,6 +80,7 @@ class TestNextCommand(unittest.TestCase):
             result = _run_next_logic(project_dir=Path("/fake/dir"))
             self.assertFalse(result)
             self.assertIn("Command finished with an error", mock_stderr.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

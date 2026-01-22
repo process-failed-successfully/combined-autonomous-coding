@@ -1,3 +1,4 @@
+from main import run_worktrees
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
@@ -11,7 +12,6 @@ import io
 # Ensure the project root is in the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_worktrees
 
 class TestWorktreesDiff(unittest.TestCase):
 
@@ -49,7 +49,7 @@ class TestWorktreesDiff(unittest.TestCase):
             # Force remove the worktree from git's internal state first
             subprocess.run(["git", "worktree", "remove", "--force", self.worktree_name], cwd=self.project_dir, capture_output=True)
         except Exception:
-            pass # Ignore errors during cleanup
+            pass  # Ignore errors during cleanup
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_worktree_diff_with_changes(self):
@@ -118,6 +118,7 @@ class TestWorktreesDiff(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(f"❌ Error: Worktree '{non_existent_name}' not found", mock_stderr.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

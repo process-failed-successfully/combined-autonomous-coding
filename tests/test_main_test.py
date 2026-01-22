@@ -1,4 +1,5 @@
 
+from main import run_test
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
@@ -10,7 +11,6 @@ import argparse
 # It's necessary to add the project root to the path for the import to work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_test
 
 class TestMainTestSubcommand(unittest.TestCase):
 
@@ -113,6 +113,7 @@ class TestMainTestSubcommand(unittest.TestCase):
             run_test(args)
 
         mock_run.assert_called_once_with(['pytest', '-k', 'specific_test', '--verbose'], cwd=self.project_dir)
+
 
 if __name__ == '__main__':
     unittest.main()

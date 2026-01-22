@@ -1,7 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
-import os
-import sys
+from unittest.mock import patch, MagicMock
 import yaml
 from pathlib import Path
 import tempfile
@@ -9,6 +7,7 @@ import shutil
 from io import StringIO
 
 from main import run_profile
+
 
 class TestProfileCommand(unittest.TestCase):
     def setUp(self):
@@ -188,6 +187,7 @@ class TestProfileCommand(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("Profile 'existing' already exists.", mock_stderr.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

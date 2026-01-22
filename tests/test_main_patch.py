@@ -1,4 +1,3 @@
-import os
 import subprocess
 import tempfile
 import unittest
@@ -6,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from main import run_patch
+
 
 class TestPatchCommand(unittest.TestCase):
     def setUp(self):
@@ -62,6 +62,7 @@ class TestPatchCommand(unittest.TestCase):
             run_patch(args)
 
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

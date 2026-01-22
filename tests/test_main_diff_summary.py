@@ -1,3 +1,4 @@
+from main import run_diff_summary
 import unittest
 from unittest.mock import patch, MagicMock
 import io
@@ -11,7 +12,6 @@ import subprocess
 # Add the root directory to the Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from main import run_diff_summary
 
 class TestDiffSummary(unittest.TestCase):
     def setUp(self):
@@ -84,6 +84,7 @@ class TestDiffSummary(unittest.TestCase):
         self.assertIn("❌ Error: Not a git repository.", output)
 
         shutil.rmtree(non_git_dir)
+
 
 if __name__ == '__main__':
     unittest.main()

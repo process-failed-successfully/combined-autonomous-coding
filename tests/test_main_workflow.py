@@ -1,5 +1,6 @@
+import main as main_script
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import tempfile
 import shutil
@@ -9,7 +10,6 @@ from argparse import Namespace
 
 # Add project root to path to allow direct import of main
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import main as main_script
 
 
 class TestWorkflowCommand(unittest.TestCase):

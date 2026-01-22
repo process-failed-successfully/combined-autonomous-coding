@@ -1,3 +1,4 @@
+from main import run_git, parse_args
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
@@ -12,7 +13,6 @@ import contextlib
 # Add the parent directory to the sys.path to allow imports from the 'shared' module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_git, parse_args
 
 class TestGitProxyCommand(unittest.TestCase):
 
@@ -131,6 +131,7 @@ class TestGitProxyCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         output = stdout_catcher.getvalue().strip()
         self.assertEqual(output, "?? new_file.txt")
+
 
 if __name__ == "__main__":
     unittest.main()

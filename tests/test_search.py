@@ -6,9 +6,10 @@ import os
 import shutil
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # noqa: E402
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))  # noqa: E402
 
 from shared.search import search_codebase, _parse_git_grep_output
+
 
 class TestSearch(unittest.TestCase):
     def setUp(self):
@@ -114,6 +115,7 @@ class TestSearch(unittest.TestCase):
 
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['content'], "123")
+
 
 if __name__ == '__main__':
     unittest.main()

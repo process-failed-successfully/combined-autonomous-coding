@@ -9,6 +9,7 @@ from pathlib import Path
 # Adjust the path to import from the root of the project
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+
 class TestMainDuplication(unittest.TestCase):
 
     def setUp(self):
@@ -78,6 +79,7 @@ class TestMainDuplication(unittest.TestCase):
         # Run with ignore
         result2 = self.run_cli(["duplication", "--min-tokens", "50", "--ignore", "ignored.py", "-p", str(self.project_dir)])
         self.assertIn("No duplicates found", result2.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

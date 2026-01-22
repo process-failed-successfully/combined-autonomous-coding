@@ -58,7 +58,6 @@ class TestBaseAgent(unittest.TestCase):
         self.assertEqual(prompt, "init prompt")
         self.assertFalse(using_manager)
 
-
     @patch("agents.shared.prompts.get_manager_prompt")
     @patch("agents.shared.prompts.get_coding_prompt")
     def test_select_prompt_manager_iterative(self, mock_coding, mock_manager):

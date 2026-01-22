@@ -10,6 +10,7 @@ from pathlib import Path
 # Adjust the path to import from the root of the project
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+
 class TestMainAnalytics(unittest.TestCase):
 
     def setUp(self):
@@ -79,6 +80,7 @@ class TestMainAnalytics(unittest.TestCase):
         self.assertIn("Agent Context Analysis by File Type", result.stdout)
         self.assertIn(".py", result.stdout)
         self.assertIn(".md", result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,11 +1,10 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
-import subprocess
+from unittest.mock import patch, MagicMock
 from pathlib import Path
-import os
 import argparse
 
 from main import run_pr
+
 
 class TestMainPR(unittest.TestCase):
 
@@ -113,6 +112,7 @@ class TestMainPR(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             run_pr(args)
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,7 @@
+from main import parse_args, run_rewind
+import io
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch
 import subprocess
 import tempfile
 import shutil
@@ -10,8 +12,6 @@ import sys
 # Add the parent directory to the sys.path to allow imports from the 'shared' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import io
-from main import parse_args, run_rewind
 
 class TestRewindCommand(unittest.TestCase):
     def setUp(self):
@@ -87,7 +87,7 @@ class TestRewindCommand(unittest.TestCase):
 
         stderr_capture = io.StringIO()
         with self.assertRaises(SystemExit) as cm, \
-             unittest.mock.patch('sys.stderr', stderr_capture):
+                unittest.mock.patch('sys.stderr', stderr_capture):
             args = parse_args(["rewind", self.initial_commit_hash, "--project-dir", str(self.project_dir), "--yes"])
             run_rewind(args)
 
@@ -154,6 +154,7 @@ class TestRewindCommand(unittest.TestCase):
         # Check the file state
         self.assertTrue((self.project_dir / "file3.txt").exists())
         self.assertFalse((self.project_dir / "file4.txt").exists())
+
 
 if __name__ == '__main__':
     unittest.main()

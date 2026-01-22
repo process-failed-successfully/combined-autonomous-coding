@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import shutil
@@ -7,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, AsyncMock, patch
 
-from agents.shared.sprint import SprintManager, run_single_sprint, Task, SprintPlan
+from agents.shared.sprint import SprintManager, Task, SprintPlan
 from shared.config import Config
 from agents.shared.prompts import get_sprint_coding_prompt
 
@@ -25,7 +24,7 @@ class TestSprintExtended(unittest.IsolatedAsyncioTestCase):
             sprint_mode=True,
         )
         self.config.sprint_mode = True  # Explicitly enable sprint mode in case init doesn't
-        
+
         # Create dummy feature list
         self.config.feature_list_path.write_text(
             json.dumps([
@@ -46,7 +45,7 @@ class TestSprintExtended(unittest.IsolatedAsyncioTestCase):
     async def test_update_feature_list_strict(self):
         """Verify strict feature list update logic."""
         manager = SprintManager(self.config)
-        
+
         # Case 1: Plan has 2 tasks for "Feature A". ALL are completed.
         manager.plan = SprintPlan(
             sprint_goal="Test",
@@ -56,7 +55,7 @@ class TestSprintExtended(unittest.IsolatedAsyncioTestCase):
             ]
         )
         manager.update_feature_list()
-        
+
         features = json.loads(self.config.feature_list_path.read_text())
         feature_a = next(f for f in features if f["name"] == "Feature A")
         self.assertEqual(feature_a.get("status"), "completed")
@@ -71,12 +70,12 @@ class TestSprintExtended(unittest.IsolatedAsyncioTestCase):
         )
         # Reset file
         self.config.feature_list_path.write_text(
-             json.dumps([
-                {"name": "Feature A", "status": "completed"}, 
+            json.dumps([
+                {"name": "Feature A", "status": "completed"},
                 {"name": "Feature B", "status": "pending"}
             ])
         )
-        
+
         manager.update_feature_list()
         features = json.loads(self.config.feature_list_path.read_text())
         feature_b = next(f for f in features if f["name"] == "Feature B")
@@ -84,11 +83,11 @@ class TestSprintExtended(unittest.IsolatedAsyncioTestCase):
 
     @patch("agents.shared.sprint.SprintManager.run_planning_phase")
     @patch("agents.shared.sprint.SprintManager.execute_sprint")
-    @patch("agents.shared.sprint.SprintManager._get_agent_runner") 
+    @patch("agents.shared.sprint.SprintManager._get_agent_runner")
     async def test_post_sprint_checks(self, mock_get_runner, mock_execute, mock_plan):
         """Verify that run_single_sprint triggers post-sprint checks."""
         mock_plan.return_value = True
-        
+
         # Mock Manager Instance
         mock_client = MagicMock()
         mock_runner = AsyncMock()
@@ -98,16 +97,17 @@ class TestSprintExtended(unittest.IsolatedAsyncioTestCase):
         # We need to mock the internal state of manager after planning
         # But run_single_sprint instantiates a NEW manager.
         # So we should patch SprintManager class? Or just trust that run_single_sprint calls the methods.
-        
+
         # Let's run `manager.run_post_sprint_checks` directly to verify it calls the runner.
         manager = SprintManager(self.config)
         await manager.run_post_sprint_checks()
-        
+
         # Should have called runner with manager prompt
         mock_runner.assert_called()
         args, _ = mock_runner.call_args
         prompt_sent = args[1]
         self.assertIn("YOUR ROLE - PROJECT MANAGER", prompt_sent)
+
 
 if __name__ == "__main__":
     unittest.main()

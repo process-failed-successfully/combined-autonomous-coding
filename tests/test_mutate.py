@@ -1,6 +1,7 @@
 import unittest
 import ast
-from shared.mutate import MutationVisitor, Mutation
+from shared.mutate import MutationVisitor
+
 
 class TestMutationVisitor(unittest.TestCase):
     def test_binop(self):
@@ -29,6 +30,7 @@ class TestMutationVisitor(unittest.TestCase):
         visitor.visit(tree)
         self.assertEqual(len(visitor.mutations), 1)
         self.assertEqual(visitor.mutations[0].description, "Change True to False")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,7 +2,8 @@ import unittest
 from pathlib import Path
 import tempfile
 import shutil
-from shared.a11y import AccessibilityScanner, A11yViolation
+from shared.a11y import AccessibilityScanner
+
 
 class TestAccessibilityScanner(unittest.TestCase):
     def setUp(self):
@@ -124,6 +125,7 @@ class TestAccessibilityScanner(unittest.TestCase):
         # But we check if scan_file was called.
         # Checking violations count: test.html has 1 violation (missing lang, missing alt)
         self.assertTrue(len(scanner.violations) > 0)
+
 
 if __name__ == '__main__':
     unittest.main()

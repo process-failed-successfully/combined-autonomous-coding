@@ -1,6 +1,6 @@
 import pytest
-from pathlib import Path
 from shared.dependencies import DependencyAnalyzer
+
 
 @pytest.fixture
 def temp_project(tmp_path):
@@ -33,12 +33,13 @@ fastapi = "^0.68.0"
 
     return tmp_path
 
+
 def test_scan_python(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
     result = analyzer.scan()
 
     python_deps = result["python"]
-    assert len(python_deps) >= 2 # requirements.txt and pyproject.toml
+    assert len(python_deps) >= 2  # requirements.txt and pyproject.toml
 
     # Check requirements.txt parsing
     req_file = next(d for d in python_deps if d["source"] == "requirements.txt")
@@ -62,6 +63,7 @@ def test_scan_python(temp_project):
     assert {"name": "django", "version": ">=3.2"} in toml_deps
     assert {"name": "gunicorn", "version": ""} in toml_deps
 
+
 def test_scan_node(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
     result = analyzer.scan()
@@ -76,6 +78,7 @@ def test_scan_node(temp_project):
     assert {"name": "react", "version": "^17.0.2", "type": "prod"} in deps
     assert {"name": "jest", "version": "^27.0.0", "type": "dev"} in deps
 
+
 def test_generate_tree(temp_project):
     analyzer = DependencyAnalyzer(temp_project)
     data = analyzer.scan()
@@ -85,6 +88,7 @@ def test_generate_tree(temp_project):
     assert "flask ==2.0.1" in tree
     assert "📦 Node" in tree
     assert "react ^17.0.2 (prod)" in tree
+
 
 def test_generate_mermaid(temp_project):
     analyzer = DependencyAnalyzer(temp_project)

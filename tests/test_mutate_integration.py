@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import patch
 from shared.mutate import MutationTester
 from pathlib import Path
+
 
 class TestMutationIntegration(unittest.TestCase):
     @patch("shared.mutate.subprocess.run")
@@ -9,7 +10,7 @@ class TestMutationIntegration(unittest.TestCase):
     @patch("pathlib.Path.write_text")
     def test_run_mutation(self, mock_write, mock_read, mock_run):
         mock_read.return_value = "x = a + b"
-        mock_run.return_value.returncode = 0 # Tests pass
+        mock_run.return_value.returncode = 0  # Tests pass
 
         tester = MutationTester(Path("."), Path("test.py"))
 
@@ -35,6 +36,7 @@ class TestMutationIntegration(unittest.TestCase):
         # 1. Baseline
         # 2. Mutation
         self.assertEqual(mock_run.call_count, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

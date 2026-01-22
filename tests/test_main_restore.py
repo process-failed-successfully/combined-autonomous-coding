@@ -1,3 +1,4 @@
+from main import run_clean, run_restore
 import unittest
 from unittest.mock import patch
 import sys
@@ -6,13 +7,10 @@ from pathlib import Path
 import shutil
 import tempfile
 import argparse
-import io
-from contextlib import redirect_stdout
 
 # Ensure the main script can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_clean, run_restore
 
 class TestMainRestoreCommand(unittest.TestCase):
 
@@ -71,7 +69,6 @@ class TestMainRestoreCommand(unittest.TestCase):
         trash_dir = self.project_path / ".agent_trash"
         self.assertFalse(any(trash_dir.iterdir()), ".agent_trash should be empty")
 
-
     def test_restore_aborts_if_conflicting_files_exist(self):
         """Verify that restore aborts if a file to be restored already exists."""
         self._run_clean()
@@ -81,7 +78,7 @@ class TestMainRestoreCommand(unittest.TestCase):
 
         args = argparse.Namespace(project_dir=self.project_path, yes=True)
         with self.assertRaises(SystemExit) as cm:
-             with patch('sys.stderr'):
+            with patch('sys.stderr'):
                 run_restore(args)
         self.assertEqual(cm.exception.code, 1)
 
@@ -98,6 +95,7 @@ class TestMainRestoreCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         mock_input.assert_called_once()
         self.assertFalse((self.project_path / "COMPLETED").exists(), "File should NOT be restored after 'n' confirmation")
+
 
 if __name__ == '__main__':
     unittest.main()

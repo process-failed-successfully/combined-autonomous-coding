@@ -1,6 +1,6 @@
+from main import run_format
 import unittest
 from unittest.mock import patch, MagicMock
-import subprocess
 from pathlib import Path
 import tempfile
 import shutil
@@ -9,7 +9,7 @@ from argparse import Namespace
 
 # Make sure the main script can be imported
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from main import run_format
+
 
 class TestFormatCommand(unittest.TestCase):
     def setUp(self):
@@ -138,6 +138,7 @@ class TestFormatCommand(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         mock_subprocess_run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

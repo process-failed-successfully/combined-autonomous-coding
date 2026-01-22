@@ -1,4 +1,5 @@
 
+from main import run_snapshot
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
@@ -13,7 +14,6 @@ from datetime import datetime
 # Ensure the script can find the main module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_snapshot
 
 class TestSnapshotCommand(unittest.TestCase):
 

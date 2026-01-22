@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import io
-import sys
 
 from main import run_completion
+
 
 class TestMainCompletion(unittest.TestCase):
     @patch('main.argcomplete')
@@ -31,6 +31,7 @@ class TestMainCompletion(unittest.TestCase):
         # Assert
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("argcomplete is not installed", mock_stderr.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

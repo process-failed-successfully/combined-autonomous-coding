@@ -1,17 +1,16 @@
+from shared.database_manager import DatabaseFramework
+from shared.db_query import _get_sqlite_schema, run_db_query_logic, _execute_sqlite
 import unittest
 import sqlite3
 import tempfile
-import asyncio
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 import sys
 import os
 
 # Adjust path to include project root
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.db_query import _get_sqlite_schema, run_db_query_logic, _execute_sqlite
-from shared.database_manager import DatabaseFramework
 
 class TestDBQuery(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -60,7 +59,7 @@ class TestDBQuery(unittest.IsolatedAsyncioTestCase):
     async def test_run_db_query_logic(self, MockAgent, MockDBManager):
         # Setup Mocks
         mock_db_manager = MockDBManager.return_value
-        mock_db_manager.detect_framework.return_value = DatabaseFramework.UNKNOWN # We use sqlite file detection
+        mock_db_manager.detect_framework.return_value = DatabaseFramework.UNKNOWN  # We use sqlite file detection
 
         mock_agent_instance = MockAgent.return_value
         mock_agent_instance.run_agent_session = AsyncMock(return_value=(True, "SELECT * FROM users WHERE name = 'Alice'", []))
@@ -80,6 +79,7 @@ class TestDBQuery(unittest.IsolatedAsyncioTestCase):
         prompt = args[0]
         self.assertIn("CREATE TABLE users", prompt)
         self.assertIn("Find user Alice", prompt)
+
 
 if __name__ == '__main__':
     unittest.main()

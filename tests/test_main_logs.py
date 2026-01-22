@@ -1,5 +1,6 @@
+from main import _run_logs_logic
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 import io
 from pathlib import Path
@@ -9,7 +10,6 @@ import time
 # Add the parent directory to the sys.path to allow for absolute imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from main import _run_logs_logic
 
 class TestLogsCommand(unittest.TestCase):
 
@@ -32,7 +32,7 @@ class TestLogsCommand(unittest.TestCase):
         self.log_file_1 = self.logs_dir / "run_123.log"
         self.log_file_1.write_text("".join(self.log_content_1))
 
-        time.sleep(0.01) # Ensure timestamps are different
+        time.sleep(0.01)  # Ensure timestamps are different
 
         self.log_content_2 = [
             "INFO - Application started\n",
@@ -40,7 +40,7 @@ class TestLogsCommand(unittest.TestCase):
             "INFO - All systems nominal\n",
             "DEBUG - Checking for updates\n",
         ]
-        self.log_file_2 = self.logs_dir / "run_456.log" # This one is newer
+        self.log_file_2 = self.logs_dir / "run_456.log"  # This one is newer
         self.log_file_2.write_text("".join(self.log_content_2))
 
     def tearDown(self):
@@ -125,7 +125,7 @@ class TestLogsCommand(unittest.TestCase):
 
         captured_output = io.StringIO()
         with patch('sys.stdout', captured_output):
-             result = _run_logs_logic(run_id="run_123", lines=4, grep="INFO")
+            result = _run_logs_logic(run_id="run_123", lines=4, grep="INFO")
 
         self.assertTrue(result)
         output = captured_output.getvalue()
@@ -181,6 +181,7 @@ class TestLogsCommand(unittest.TestCase):
         self.assertIn("ERROR - Connection failed", output)
         # Check that it printed the exit message
         self.assertIn("--- Stopped following log ---", output)
+
 
 if __name__ == '__main__':
     unittest.main()

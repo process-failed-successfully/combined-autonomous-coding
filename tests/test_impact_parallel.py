@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from shared.impact import ImpactAnalyzer
 
+
 class TestImpactAnalyzerParallel(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -66,6 +67,7 @@ class TestImpactAnalyzerParallel(unittest.TestCase):
         # Check dependencies
         expected_dep = "file_1.py"
         self.assertIn(expected_dep, analyzer.dependencies["file_0.py"])
+
 
 if __name__ == "__main__":
     unittest.main()

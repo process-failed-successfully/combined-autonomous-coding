@@ -2,11 +2,11 @@ import unittest
 import shutil
 import tempfile
 import stat
-import sys
 import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from shared.hooks import install_pre_commit_hook, uninstall_pre_commit_hook, run_hooks_logic
+
 
 class TestHooks(unittest.TestCase):
     def setUp(self):
@@ -91,7 +91,7 @@ class TestHooks(unittest.TestCase):
             result = run_hooks_logic(self.test_dir)
 
         self.assertTrue(result)
-        self.assertEqual(mock_run.call_count, 2) # lint and test
+        self.assertEqual(mock_run.call_count, 2)  # lint and test
 
         # Verify calls
         args_list = mock_run.call_args_list

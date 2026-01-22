@@ -1,6 +1,7 @@
 import unittest
 from shared.charts import draw_ascii_bar_chart
 
+
 class TestCharts(unittest.TestCase):
     def test_draw_ascii_bar_chart_basic(self):
         data = {"Run 1": 10, "Run 2": 20, "Run 3": 5}
@@ -35,7 +36,8 @@ class TestCharts(unittest.TestCase):
     def test_draw_ascii_bar_chart_zeros(self):
         data = {"A": 0, "B": 0}
         chart = draw_ascii_bar_chart(data, "Zeros")
-        self.assertIn("A |  0", chart) # Should have empty bar
+        self.assertIn("A |  0", chart)  # Should have empty bar
+
 
 if __name__ == '__main__':
     unittest.main()

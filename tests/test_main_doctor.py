@@ -1,3 +1,4 @@
+from main import run_doctor
 import unittest
 from unittest.mock import patch, MagicMock
 import argparse
@@ -9,7 +10,6 @@ import yaml
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_doctor
 
 class TestDoctorCommand(unittest.TestCase):
 
@@ -194,8 +194,8 @@ class TestDoctorCommand(unittest.TestCase):
 
     @patch('shared.config_loader.get_config_path')
     @patch('shared.config_loader.load_config_from_file')
-    @patch('shutil.which', return_value=None) # First failure
-    @patch('os.access', return_value=False) # Second failure
+    @patch('shutil.which', return_value=None)  # First failure
+    @patch('os.access', return_value=False)  # Second failure
     def test_doctor_multiple_failures(self, mock_os_access, mock_shutil_which, mock_load_config, mock_get_config_path):
         """Test the doctor command with multiple simultaneous failures."""
         # Arrange
@@ -204,13 +204,14 @@ class TestDoctorCommand(unittest.TestCase):
         mock_get_config_path.return_value = config_path
         # Also, an invalid Jira config to add a third failure
         mock_load_config.return_value = {
-            'jira': { 'url': 'https://test.atlassian.net' }
+            'jira': {'url': 'https://test.atlassian.net'}
         }
 
         # Act & Assert
         with self.assertRaises(SystemExit) as cm:
             run_doctor(self.args)
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

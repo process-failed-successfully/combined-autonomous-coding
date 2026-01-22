@@ -1,14 +1,13 @@
+from shared.config import Config
+from shared.ask import run_ask_logic
 import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 import sys
-import asyncio
 
 # Adjust path to include the project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from shared.ask import run_ask_logic
-from shared.config import Config
 
 class TestAskLogic(unittest.IsolatedAsyncioTestCase):
 
@@ -81,6 +80,7 @@ class TestAskLogic(unittest.IsolatedAsyncioTestCase):
         result = await run_ask_logic("Query", Path("/tmp"))
 
         self.assertFalse(result)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,6 +5,7 @@ from shared.knowledge import KnowledgeManager
 from shared.database import init_db
 from shared.knowledge_graph import generate_knowledge_graph
 
+
 class TestKnowledgeGraph(unittest.TestCase):
 
     def setUp(self):
@@ -45,6 +46,7 @@ class TestKnowledgeGraph(unittest.TestCase):
         # Cleanup
         if output_file.exists():
             output_file.unlink()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from shared.env_manager import EnvManager
 
+
 class TestEnvManager(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path(tempfile.mkdtemp())
@@ -102,6 +103,7 @@ class TestEnvManager(unittest.TestCase):
 
         env_content = (self.test_dir / ".env").read_text()
         self.assertIn("KEY1=VAL1\nKEY2=", env_content)
+
 
 if __name__ == "__main__":
     unittest.main()

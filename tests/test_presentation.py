@@ -2,8 +2,9 @@ import unittest
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from shared.presentation import PresentationGenerator
+
 
 class TestPresentationGenerator(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -19,7 +20,7 @@ class TestPresentationGenerator(unittest.IsolatedAsyncioTestCase):
         # Mock git (since we are in a temp dir)
         self.git_patcher = patch("shutil.which")
         self.mock_git = self.git_patcher.start()
-        self.mock_git.return_value = None # Simulate no git to simplify tests
+        self.mock_git.return_value = None  # Simulate no git to simplify tests
 
     def tearDown(self):
         self.git_patcher.stop()
@@ -53,6 +54,7 @@ class TestPresentationGenerator(unittest.IsolatedAsyncioTestCase):
         prompt = args[0]
         self.assertIn("Build a cool app", prompt)
         self.assertIn("Login", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

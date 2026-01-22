@@ -2,12 +2,11 @@ import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 import tempfile
-import sys
 import cProfile
 from shared.optimize import OptimizationManager
 
 # Ensure agents.gemini is imported so patch finds it
-import agents.gemini
+
 
 class TestOptimizationManager(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -95,7 +94,7 @@ class TestOptimizationManager(unittest.IsolatedAsyncioTestCase):
 
                     call_args = mock_agent.run_agent_session.call_args[0][0]
                     # Verify real prompt loaded
-                    self.assertIn("expert Python Performance Engineer", call_args) # From actual prompt file
+                    self.assertIn("expert Python Performance Engineer", call_args)  # From actual prompt file
                     self.assertIn("slow_func", call_args)
 
     def test_get_source_code(self):

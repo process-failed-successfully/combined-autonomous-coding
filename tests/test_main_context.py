@@ -1,3 +1,4 @@
+from shared.cli_utils import _run_context_show_logic, _run_context_analyze_logic
 import unittest
 from unittest.mock import patch
 import subprocess
@@ -10,8 +11,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import parse_args
-from shared.cli_utils import _run_context_show_logic, _run_context_analyze_logic
 
 class TestContextCommand(unittest.TestCase):
 
@@ -22,11 +21,11 @@ class TestContextCommand(unittest.TestCase):
 
         # Create a mock file structure
         (self.project_dir / "src").mkdir()
-        (self.project_dir / "src" / "main.py").write_text("print('hello')") # 14 bytes in some envs
-        (self.project_dir / "src" / "utils.py").write_text("def helper(): pass") # 18 bytes
+        (self.project_dir / "src" / "main.py").write_text("print('hello')")  # 14 bytes in some envs
+        (self.project_dir / "src" / "utils.py").write_text("def helper(): pass")  # 18 bytes
         (self.project_dir / "docs").mkdir()
-        (self.project_dir / "docs" / "guide.md").write_text("# Guide") # 7 bytes
-        (self.project_dir / "ignored_file.log").write_text("log data") # 8 bytes
+        (self.project_dir / "docs" / "guide.md").write_text("# Guide")  # 7 bytes
+        (self.project_dir / "ignored_file.log").write_text("log data")  # 8 bytes
         (self.project_dir / "node_modules").mkdir()
         (self.project_dir / "node_modules" / "some_lib.js").write_text("lib code")
 
@@ -61,11 +60,10 @@ class TestContextCommand(unittest.TestCase):
 
         # Check the summary
         self.assertIn("--- Context Summary ---", output)
-        self.assertIn("Total Files:      4", output) # .gitignore, main.py, utils.py, guide.md
+        self.assertIn("Total Files:      4", output)  # .gitignore, main.py, utils.py, guide.md
 
         total_size = 14 + 18 + 7 + (self.project_dir / ".gitignore").stat().st_size
         self.assertIn(f"Total Size:       {total_size} B", output)
-
 
     @patch('shutil.which', return_value='git')
     def test_context_analyze_logic(self, mock_which):
@@ -81,15 +79,15 @@ class TestContextCommand(unittest.TestCase):
         # Check for specific file types
         self.assertIn(".py", output)
         self.assertIn(".md", output)
-        self.assertIn("(no extension)", output) # for .gitignore
+        self.assertIn("(no extension)", output)  # for .gitignore
 
         # Check stats for .py files (14 + 18 = 32)
-        self.assertIn(f" 2 ", output) # Count for .py
-        self.assertIn(f" 32 B", output) # Size for .py
+        self.assertIn(f" 2 ", output)  # Count for .py
+        self.assertIn(f" 32 B", output)  # Size for .py
 
         # Check totals
         self.assertIn("TOTAL", output)
-        self.assertIn(f" 4 ", output) # Total count
+        self.assertIn(f" 4 ", output)  # Total count
 
 
 if __name__ == '__main__':

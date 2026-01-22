@@ -1,8 +1,8 @@
-import sys
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 from shared.database_manager import DatabaseManager, DatabaseFramework
+
 
 class TestDatabaseManager:
     @pytest.fixture

@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, AsyncMock
 from shared.conflict_resolver import ConflictResolver
-from shared.config import Config
+
 
 class TestConflictResolver(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -76,6 +76,7 @@ print("Hello Universe")
         self.resolver.apply_resolution(target_file, new_content)
 
         self.assertEqual(target_file.read_text(), new_content)
+
 
 if __name__ == '__main__':
     unittest.main()

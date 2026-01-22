@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from shared.utils import execute_read_block, execute_write_block
 
+
 class TestUtilsSecurity(unittest.TestCase):
 
     def setUp(self):
@@ -73,6 +74,7 @@ class TestUtilsSecurity(unittest.TestCase):
 
         with open(self.project_dir / filename, "r") as f:
             self.assertEqual(f.read(), content)
+
 
 if __name__ == "__main__":
     unittest.main()

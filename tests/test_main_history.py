@@ -9,6 +9,7 @@ from unittest.mock import patch
 # Import the main module to be tested
 import main
 
+
 class TestMainHistory(unittest.TestCase):
 
     def setUp(self):
@@ -79,6 +80,7 @@ class TestMainHistory(unittest.TestCase):
             self.assertIn("[1] Run ID: run-001", output)
             self.assertIn("Timestamp: 2024-01-01 10:00:00,000", output)
             self.assertIn("...run 1 complete", output)
+
 
 if __name__ == "__main__":
     unittest.main()

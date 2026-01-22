@@ -3,8 +3,8 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 import tempfile
 import os
-from typing import Any
 from shared.link_checker import LinkChecker
+
 
 class TestLinkChecker(unittest.TestCase):
     def test_extract_links(self) -> None:

@@ -1,13 +1,13 @@
 
+from shared.analytics import get_git_contributors, get_git_hotspots, get_git_activity
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import sys
 from pathlib import Path
 
 # Adjust the path to import from the root of the project
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from shared.analytics import get_git_contributors, get_git_hotspots, get_git_activity
 
 class TestAnalytics(unittest.TestCase):
 
@@ -70,6 +70,7 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(get_git_contributors(Path('.')), [])
         self.assertEqual(get_git_hotspots(Path('.')), [])
         self.assertEqual(get_git_activity(Path('.')), [])
+
 
 if __name__ == '__main__':
     unittest.main()

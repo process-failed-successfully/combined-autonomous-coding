@@ -1,9 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 import argparse
 from pathlib import Path
 from main import run_refactor
-import sys
+
 
 class TestMainRefactor(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -35,7 +35,7 @@ class TestMainRefactor(unittest.IsolatedAsyncioTestCase):
             agent="gemini",
             model=None,
             diff_only=False,
-            yes=True # Skip confirmation
+            yes=True  # Skip confirmation
         )
 
         # Expect SystemExit(0)
@@ -96,6 +96,7 @@ class TestMainRefactor(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(cm.exception.code, 0)
 
         mock_instance.apply_changes.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

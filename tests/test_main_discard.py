@@ -1,3 +1,4 @@
+import main
 import unittest
 from unittest.mock import patch
 import subprocess
@@ -10,7 +11,6 @@ import io
 # Add the root of the project to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import main
 
 class TestMainDiscard(unittest.TestCase):
     def setUp(self):
@@ -45,7 +45,7 @@ class TestMainDiscard(unittest.TestCase):
         argv = ['discard'] + args_list + ['--project-dir', str(self.project_dir)]
         args = main.parse_args(argv)
         with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout, \
-             patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
+                patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
             with self.assertRaises(SystemExit) as cm:
                 main.run_discard(args)
             return cm.exception.code, mock_stdout.getvalue(), mock_stderr.getvalue()
@@ -148,6 +148,7 @@ class TestMainDiscard(unittest.TestCase):
         exit_code, output, stderr = self._run_discard(['--interactive', 'some_file.txt'])
         self.assertEqual(exit_code, 1)
         self.assertIn("Error: Cannot use --interactive mode when specifying individual files.", stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

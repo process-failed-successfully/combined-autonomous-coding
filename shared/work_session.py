@@ -61,6 +61,9 @@ class WorkSessionManager:
         try:
             with open(path, 'r') as f:
                 data = json.load(f)
+            # Handle potential None for env_vars in legacy files
+            if data.get("env_vars") is None:
+                data["env_vars"] = {}
             return Session(**data)
         except Exception as e:
             print(f"Error loading session {name}: {e}", file=sys.stderr)

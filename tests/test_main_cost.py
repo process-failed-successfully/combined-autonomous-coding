@@ -1,15 +1,18 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import io
 import main
 
 # Helper to create a dummy args object
+
+
 class Args:
     def __init__(self, run_id=None, project_dir=Path(".")):
         self.run_id = run_id
         self.project_dir = project_dir
+
 
 class TestMainCost(unittest.TestCase):
     def setUp(self):
@@ -48,7 +51,7 @@ class TestMainCost(unittest.TestCase):
         # Input: 1000/1M * 3.50 = 0.0035
         # Output: 500/1M * 10.50 = 0.00525
         # Total: 0.00875
-        self.assertIn("Total:  $0.0088", output) # Formatted to .4f
+        self.assertIn("Total:  $0.0088", output)  # Formatted to .4f
 
     @patch("main._find_metrics_file")
     @patch("main._parse_metrics")
@@ -88,6 +91,7 @@ class TestMainCost(unittest.TestCase):
                 main.run_cost(args)
 
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

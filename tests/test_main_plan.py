@@ -7,8 +7,8 @@ import json
 import asyncio
 
 from main import run_plan
-from shared.config import Config
 from agents.gemini.agent import GeminiAgent
+
 
 class TestMainPlan(unittest.TestCase):
 
@@ -101,6 +101,7 @@ class TestMainPlan(unittest.TestCase):
         with open(self.feature_file, 'r') as f:
             data = json.load(f)
             self.assertEqual(data, [{"feature": "Addition"}])
+
 
 if __name__ == '__main__':
     unittest.main()

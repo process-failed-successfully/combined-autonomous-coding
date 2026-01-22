@@ -1,8 +1,9 @@
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
-from shared.verify import run_verify_logic, check_dependencies
+from shared.verify import run_verify_logic
+
 
 class TestVerify(unittest.TestCase):
     def setUp(self):
@@ -66,6 +67,7 @@ class TestVerify(unittest.TestCase):
         self.assertTrue(success)
         mock_formatter.assert_called_once()
         mock_lint.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,9 +1,9 @@
 import unittest
-from unittest.mock import patch
 import io
 import sys
 from main import run_help
 import argparse
+
 
 class TestMainHelp(unittest.TestCase):
     def test_run_help_prints_expected_sections(self):
@@ -44,6 +44,7 @@ class TestMainHelp(unittest.TestCase):
         self.assertIn("commit", output)
         self.assertIn("artifacts", output)
         self.assertIn("why", output)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,4 @@
+from main import run_archive
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
@@ -9,7 +10,6 @@ import io
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from main import run_archive
 
 class TestMainArchive(unittest.TestCase):
 
@@ -31,7 +31,7 @@ class TestMainArchive(unittest.TestCase):
             path = self.test_dir / artifact
             if artifact.endswith('/'):
                 path.mkdir(exist_ok=True)
-                (path / "dummy.txt").touch() # ensure it's not empty
+                (path / "dummy.txt").touch()  # ensure it's not empty
             else:
                 path.touch()
 
@@ -106,6 +106,7 @@ class TestMainArchive(unittest.TestCase):
 
         # Verify the output message
         self.assertIn("No agent-generated artifacts found to archive.", mock_stdout.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,5 @@
+from shared.tui import ProfileTab
+from textual.widgets import Input, DataTable, Markdown, Button, Select
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
@@ -8,8 +10,6 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Input, DataTable, Markdown, Button, Select
-from shared.tui import ProfileTab
 
 class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -117,6 +117,7 @@ class TestTUIProfile(unittest.IsolatedAsyncioTestCase):
         # Verify calls
         mock_manager.get_ai_suggestions.assert_called_with(Path("stats_file"), agent_type="gemini")
         mock_markdown.update.assert_called_with("AI Suggestion")
+
 
 if __name__ == "__main__":
     unittest.main()

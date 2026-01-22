@@ -2,9 +2,10 @@ import unittest
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from shared.site_generator import SiteGenerator
+
 
 class TestSiteGenerator(unittest.TestCase):
     def setUp(self):
@@ -58,6 +59,7 @@ class TestSiteGenerator(unittest.TestCase):
         html = generator._render_markdown(md)
         self.assertIn("<h1>Hello</h1>", html)
         self.assertIn("<li>List item</li>", html)
+
 
 if __name__ == "__main__":
     unittest.main()

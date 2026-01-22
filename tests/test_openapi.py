@@ -1,14 +1,14 @@
+from shared.openapi import OpenAPIGenerator
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 import sys
 from pathlib import Path
 
 # Add root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.openapi import OpenAPIGenerator
 
-class TestOpenAPIGenerator(unittest.TestCase): # type: ignore
+class TestOpenAPIGenerator(unittest.TestCase):  # type: ignore
     def setUp(self) -> None:
         self.project_dir = Path("/tmp/test_project")
         self.generator = OpenAPIGenerator(self.project_dir)
@@ -22,7 +22,7 @@ class TestOpenAPIGenerator(unittest.TestCase): # type: ignore
         }
         # Re-init to use mock
         self.generator = OpenAPIGenerator(self.project_dir)
-        self.generator.analyzer = mock_instance # Force inject
+        self.generator.analyzer = mock_instance  # Force inject
 
         self.assertEqual(self.generator.detect_framework(), "flask")
 
@@ -90,6 +90,7 @@ class TestOpenAPIGenerator(unittest.TestCase): # type: ignore
 
         routes = self.generator.scan_routes("fastapi")
         self.assertEqual(len(routes), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

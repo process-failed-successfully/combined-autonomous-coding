@@ -1,8 +1,8 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from shared.architecture import check_architecture
-from shared.impact import ImpactAnalyzer
+
 
 class TestArchitecture(unittest.TestCase):
     def setUp(self):
@@ -29,7 +29,7 @@ class TestArchitecture(unittest.TestCase):
     def test_check_architecture_violation(self, MockAnalyzer):
         analyzer_instance = MockAnalyzer.return_value
         analyzer_instance.dependencies = {
-            "shared/utils.py": {"agents/gemini.py"}, # Violation!
+            "shared/utils.py": {"agents/gemini.py"},  # Violation!
             "agents/gemini.py": {"shared/utils.py"}
         }
 
@@ -46,8 +46,8 @@ class TestArchitecture(unittest.TestCase):
     def test_check_architecture_multiple_violations(self, MockAnalyzer):
         analyzer_instance = MockAnalyzer.return_value
         analyzer_instance.dependencies = {
-            "shared/utils.py": {"agents/gemini.py"}, # Violation
-            "ui/tui.py": {"agents/local.py"} # Violation (ui shouldn't import agents)
+            "shared/utils.py": {"agents/gemini.py"},  # Violation
+            "ui/tui.py": {"agents/local.py"}  # Violation (ui shouldn't import agents)
         }
 
         rules = [
@@ -76,6 +76,7 @@ class TestArchitecture(unittest.TestCase):
 
         violations = check_architecture(self.project_dir, rules)
         self.assertEqual(len(violations), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 
 import main as main_script
 
+
 class TestMainTrashCommand(unittest.TestCase):
     def setUp(self):
         """Set up a temporary directory with a simulated project and trash."""
@@ -48,7 +49,7 @@ class TestMainTrashCommand(unittest.TestCase):
             archive_name=archive_name,
             file_name=file_name,
             project_dir=self.project_dir,
-            yes=True, # Default to yes to avoid interactive prompts
+            yes=True,  # Default to yes to avoid interactive prompts
             all='--all' in (extra_args or []),
             dry_run='--dry-run' in (extra_args or [])
         )

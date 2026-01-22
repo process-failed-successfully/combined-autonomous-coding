@@ -2,14 +2,13 @@ import unittest
 from pathlib import Path
 import tempfile
 import json
-import shutil
-import os
 from shared.release import (
     determine_next_version,
     generate_changelog,
     bump_version_file,
     parse_current_version
 )
+
 
 class TestRelease(unittest.TestCase):
 
@@ -104,6 +103,7 @@ class TestRelease(unittest.TestCase):
 
             version = parse_current_version(project_dir)
             self.assertEqual(version, "1.2.3")
+
 
 if __name__ == '__main__':
     unittest.main()

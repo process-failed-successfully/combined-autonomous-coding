@@ -1,5 +1,6 @@
+from shared.bisect import run_bisect_logic
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 import subprocess
 from pathlib import Path
 import shutil
@@ -9,7 +10,6 @@ import sys
 # Add the root of the project to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.bisect import run_bisect_logic, analyze_commit
 
 class TestBisect(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -72,8 +72,8 @@ fi
 """)
         test_script.chmod(0o755)
 
-        good_commit = self.commits[1] # v2
-        bad_commit = self.commits[3] # v4
+        good_commit = self.commits[1]  # v2
+        bad_commit = self.commits[3]  # v4
 
         # Run bisect
         # We need absolute path for run command probably, or relative to project root
@@ -97,6 +97,7 @@ fi
         self.assertIn(bad_hash, call_args)
         # And the commit message
         self.assertIn("v3_bug", call_args)
+
 
 if __name__ == '__main__':
     unittest.main()

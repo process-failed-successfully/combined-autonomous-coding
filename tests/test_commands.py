@@ -1,3 +1,4 @@
+from shared.commands import run_why
 import unittest
 from unittest.mock import patch
 import io
@@ -7,7 +8,6 @@ from argparse import Namespace
 # Add the project root to the path to allow imports from shared
 sys.path.insert(0, sys.path[0] + "/..")
 
-from shared.commands import run_why
 
 class TestWhyCommand(unittest.TestCase):
 
@@ -42,6 +42,7 @@ class TestWhyCommand(unittest.TestCase):
         self.assertIn("--- Available Commands ---", output)
         self.assertIn("status", output)
         self.assertIn("discard", output)
+
 
 if __name__ == '__main__':
     unittest.main()

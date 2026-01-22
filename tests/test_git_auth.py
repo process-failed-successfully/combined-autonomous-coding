@@ -74,7 +74,7 @@ class TestGitAuth(unittest.TestCase):
 
         # Check all calls to logger.error for the token
         for call_args in mock_logger.error.call_args_list:
-            log_msg = call_args[0][0] # First arg is the message
+            log_msg = call_args[0][0]  # First arg is the message
             self.assertNotIn(token, log_msg, "Token leaked in log message!")
 
 

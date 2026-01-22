@@ -4,10 +4,10 @@ import sys
 import argparse
 from pathlib import Path
 import subprocess
-import os
 import shutil
 
 from main import run_worktrees
+
 
 class TestWorktreesCreateCommand(unittest.TestCase):
 

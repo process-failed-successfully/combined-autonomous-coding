@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 from pathlib import Path
 from shared.refactor import RefactorManager
+
 
 class TestRefactorManager(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -77,6 +78,7 @@ class TestRefactorManager(unittest.IsolatedAsyncioTestCase):
         new_content = "def foo():\n    print('applied')\n"
         self.manager.apply_changes(self.target_file, new_content)
         self.assertEqual(self.target_file.read_text(), new_content)
+
 
 if __name__ == "__main__":
     unittest.main()

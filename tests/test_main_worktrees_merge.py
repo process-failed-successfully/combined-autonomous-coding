@@ -4,9 +4,9 @@ from pathlib import Path
 import tempfile
 import shutil
 import os
-import sys
 
 from main import run_worktrees
+
 
 class TestWorktreeMerge(unittest.TestCase):
     def setUp(self):
@@ -123,6 +123,7 @@ class TestWorktreeMerge(unittest.TestCase):
             env=self.env
         ).stdout
         self.assertNotIn(self.worktree_name, branch_output)
+
 
 if __name__ == "__main__":
     unittest.main()

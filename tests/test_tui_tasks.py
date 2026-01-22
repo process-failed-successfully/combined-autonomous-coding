@@ -1,6 +1,9 @@
+from shared.task_manager import Task
+from shared.tui import AgentTUI, TasksTab
+from textual.widgets import DataTable, Input, Select, Button
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 import sys
 import shutil
 import tempfile
@@ -8,9 +11,6 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import DataTable, Input, Select, Button
-from shared.tui import AgentTUI, TasksTab
-from shared.task_manager import Task
 
 class TestTUITasks(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -117,11 +117,12 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
             # Should filter to 1
             if table.row_count == 2:
-                 input_widget = tasks_tab.query_one("#input-task-filter", Input)
-                 input_widget.value = "Alp"
-                 await pilot.pause()
+                input_widget = tasks_tab.query_one("#input-task-filter", Input)
+                input_widget.value = "Alp"
+                await pilot.pause()
 
             self.assertLess(table.row_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

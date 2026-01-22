@@ -1,10 +1,9 @@
 import unittest
 import shutil
 import tempfile
-import sys
 from pathlib import Path
-from unittest.mock import patch
 from shared.cli_utils import _run_history_graph_logic
+
 
 class TestHistoryGraph(unittest.TestCase):
     def setUp(self):
@@ -33,7 +32,7 @@ class TestHistoryGraph(unittest.TestCase):
 
         output = _run_history_graph_logic(self.test_dir, metric="tokens")
         self.assertIn("History: LLM Tokens Used", output)
-        self.assertIn("run-1", output) # Label based on last 6 chars
+        self.assertIn("run-1", output)  # Label based on last 6 chars
         self.assertIn("1000.0", output)
 
     def test_multiple_runs_duration(self):
@@ -58,6 +57,7 @@ class TestHistoryGraph(unittest.TestCase):
         self.assertIn("120.0", output)
         self.assertIn("run-1", output)
         self.assertIn("run-2", output)
+
 
 if __name__ == '__main__':
     unittest.main()

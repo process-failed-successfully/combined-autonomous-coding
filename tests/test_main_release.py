@@ -10,6 +10,7 @@ from pathlib import Path
 # Adjust the path to import from the root of the project
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+
 class TestMainRelease(unittest.TestCase):
 
     def setUp(self):
@@ -104,6 +105,7 @@ class TestMainRelease(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0)
         self.assertIn("Next version (forced): 2.0.0", result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

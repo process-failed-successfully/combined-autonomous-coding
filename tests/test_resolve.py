@@ -1,5 +1,6 @@
+from shared.resolve import run_resolve_logic
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
 import sys
 import os
@@ -8,7 +9,6 @@ import io
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.resolve import run_resolve_logic
 
 class TestResolve(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -53,7 +53,7 @@ class TestResolve(unittest.IsolatedAsyncioTestCase):
 
         # Verify interactions
         mock_scan.assert_called_once()
-        mock_input.assert_called() # At least once
+        mock_input.assert_called()  # At least once
 
         # Verify instruction passed to agent
         call_args = mock_manager_instance.refactor_file.call_args
@@ -78,10 +78,11 @@ class TestResolve(unittest.IsolatedAsyncioTestCase):
         mock_input.side_effect = [""]
 
         result = await run_resolve_logic(self.project_dir, interactive=True)
-        self.assertTrue(result) # Abort is considered a "successful exit" of logic usually
+        self.assertTrue(result)  # Abort is considered a "successful exit" of logic usually
 
         # Manager should not be instantiated or called
         MockRefactorManager.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

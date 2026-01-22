@@ -1,11 +1,11 @@
 import unittest
 import shutil
 import tempfile
-import sys
 from pathlib import Path
 from unittest.mock import patch
 from main import run_hooks
 import argparse
+
 
 class TestMainHooks(unittest.TestCase):
     def setUp(self):

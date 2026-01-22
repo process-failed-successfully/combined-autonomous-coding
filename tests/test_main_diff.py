@@ -1,3 +1,4 @@
+from main import parse_args, run_diff
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
@@ -9,7 +10,6 @@ import sys
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import parse_args, run_diff
 
 class TestDiffCommand(unittest.TestCase):
     def setUp(self):
@@ -23,7 +23,6 @@ class TestDiffCommand(unittest.TestCase):
         subprocess.run([self.git_path, "init", "-b", "main"], cwd=self.project_dir, capture_output=True)
         subprocess.run([self.git_path, "config", "user.name", "Test User"], cwd=self.project_dir)
         subprocess.run([self.git_path, "config", "user.email", "test@example.com"], cwd=self.project_dir)
-
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
@@ -123,6 +122,7 @@ class TestDiffCommand(unittest.TestCase):
         # Assert
         self.assertEqual(cm.exception.code, 1)
         mock_find_commit.assert_called_once_with(self.project_dir, self.git_path, invalid_target)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,7 +2,8 @@ import unittest
 from pathlib import Path
 from shared.knowledge import KnowledgeManager
 from shared.database import init_db, SessionLocal
-from shared.models import AgentKnowledge, AgentQuestion
+from shared.models import AgentQuestion
+
 
 class TestKnowledgeManager(unittest.TestCase):
 
@@ -74,6 +75,7 @@ class TestKnowledgeManager(unittest.TestCase):
             self.assertEqual(q_updated.answer, "It is a test.")
         finally:
             db.close()
+
 
 if __name__ == '__main__':
     unittest.main()

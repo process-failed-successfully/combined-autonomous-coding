@@ -1,9 +1,9 @@
 import unittest
 import shutil
-import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from shared.playground import PlaygroundManager
+
 
 class TestPlaygroundManager(unittest.TestCase):
     def setUp(self):
@@ -83,6 +83,7 @@ class TestPlaygroundManager(unittest.TestCase):
         args, kwargs = mock_run.call_args
         self.assertEqual(args[0][1], str(file_path))
         self.assertIn("PYTHONPATH", kwargs["env"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,7 @@ from contextlib import redirect_stdout, redirect_stderr
 
 from main import parse_args
 
+
 class TestWorktreesCommand(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
@@ -190,6 +191,7 @@ class TestWorktreesCommand(unittest.TestCase):
             run_worktrees(args)
             mock_exit.assert_called_once_with(0)
             mock_print.assert_any_call("  ?? new_file.txt")
+
 
 if __name__ == "__main__":
     unittest.main()

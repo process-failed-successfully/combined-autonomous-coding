@@ -1,9 +1,9 @@
 import unittest
 import tempfile
 import shutil
-import os
 from pathlib import Path
 from shared.duplication import tokenize_file, find_duplicates
+
 
 class TestDuplicationDetector(unittest.TestCase):
     def setUp(self):
@@ -100,9 +100,10 @@ class TestDuplicationDetector(unittest.TestCase):
         dups_ignored = find_duplicates(self.test_dir, ignore_patterns=["ignored/*"], min_tokens=30)
 
         if len(dups_ignored) > 0:
-             print(f"DEBUG: Ignored failed. Found: {dups_ignored}")
+            print(f"DEBUG: Ignored failed. Found: {dups_ignored}")
 
         self.assertEqual(len(dups_ignored), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

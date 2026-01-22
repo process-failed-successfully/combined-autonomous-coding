@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 from shared.test_generator import TestGenerator
-from shared.config import Config
+
 
 class TestTestGenerator(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -71,6 +71,7 @@ class TestTestGenerator(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         output_file.write_text.assert_called_once_with("def test_something(): pass", encoding="utf-8")
+
 
 if __name__ == "__main__":
     unittest.main()

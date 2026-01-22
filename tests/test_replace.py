@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from shared.replace import replace_in_codebase
 
+
 class TestReplace(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -67,7 +68,7 @@ class TestReplace(unittest.TestCase):
             is_regex=True
         )
 
-        self.assertEqual(stats["files_changed"], 2) # file1 and file2
+        self.assertEqual(stats["files_changed"], 2)  # file1 and file2
         self.assertIn("Metasyntactic Bar", (self.root / "file1.txt").read_text())
         self.assertIn("Metasyntactic Qux", (self.root / "file2.txt").read_text())
 
@@ -80,7 +81,7 @@ class TestReplace(unittest.TestCase):
             is_regex=True
         )
 
-        self.assertEqual(stats["files_changed"], 1) # file2
+        self.assertEqual(stats["files_changed"], 1)  # file2
         self.assertIn("Qux Baz", (self.root / "file2.txt").read_text())
 
     def test_file_filter(self):
@@ -122,6 +123,7 @@ class TestReplace(unittest.TestCase):
         )
         self.assertEqual(stats["files_changed"], 0)
         self.assertEqual(stats["replacements_count"], 0)
+
 
 if __name__ == '__main__':
     unittest.main()

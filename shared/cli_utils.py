@@ -591,7 +591,7 @@ def _run_dashboard_logic(project_dir: Path) -> str:
     lines.append("[ Workflow ]")
     stage_key = get_workflow_stage(project_dir)
     stage_info = WORKFLOW_STAGES.get(stage_key, {})
-    stage_name = stage_info.get("name", "Unknown")
+    stage_name = stage_info.get("name", "Unknown")  # type: ignore
     lines.append(f"  Status: {stage_name}")
 
     current_index = WORKFLOW_ORDER.index(stage_key)
@@ -780,7 +780,7 @@ def _run_blame_logic(project_dir: Path, filepath: Path) -> str:
 
     # --- Process blame output ---
     output = []
-    commit_info_cache = {} # Cache for storing Run ID or author for a given commit hash
+    commit_info_cache: Dict[str, str] = {} # Cache for storing Run ID or author for a given commit hash
 
     # First pass: Parse porcelain output to gather commit data for each line
     line_blame_info = []

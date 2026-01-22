@@ -1,3 +1,4 @@
+from main import run_branch
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
@@ -9,7 +10,7 @@ import sys
 
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from main import run_branch
+
 
 class TestMainBranch(unittest.TestCase):
     def setUp(self):

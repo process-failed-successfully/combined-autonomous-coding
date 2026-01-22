@@ -1,3 +1,4 @@
+from main import run_pull
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
@@ -10,7 +11,6 @@ import sys
 # Add the parent directory to the sys.path to allow imports from the 'shared' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import run_pull
 
 class TestPullCommand(unittest.TestCase):
     def setUp(self):
@@ -62,7 +62,6 @@ class TestPullCommand(unittest.TestCase):
         # Check the git pull command
         expected_pull_cmd = [self.git_path, "-C", str(self.project_dir), "pull"]
         mock_run.assert_called_with(expected_pull_cmd, text=True)
-
 
     @patch('subprocess.run')
     @patch('shutil.which')
@@ -125,6 +124,7 @@ class TestPullCommand(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 128)
         self.assertEqual(mock_run.call_count, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

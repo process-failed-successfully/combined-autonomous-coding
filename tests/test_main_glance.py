@@ -1,6 +1,6 @@
 
 import unittest
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 import tempfile
 import argparse
@@ -8,6 +8,7 @@ import io
 from contextlib import redirect_stdout
 
 from main import run_glance
+
 
 class TestMainGlance(unittest.TestCase):
 
@@ -99,7 +100,7 @@ class TestMainGlance(unittest.TestCase):
 
     @patch('main.get_suggestions')
     @patch('subprocess.run')
-    @patch('shutil.which', return_value=None) # Git not found
+    @patch('shutil.which', return_value=None)  # Git not found
     @patch('main.get_workflow_stage', return_value='QA_PASSED')
     def test_glance_no_git(self, mock_get_stage, mock_which, mock_run, mock_get_suggestions):
         # Arrange
@@ -119,7 +120,8 @@ class TestMainGlance(unittest.TestCase):
         self.assertIn("Git not found", output)
         self.assertIn("Next Step", output)
         self.assertIn("`main.py workflow advance`", output)
-        mock_run.assert_not_called() # subprocess.run should not be called if git is not found
+        mock_run.assert_not_called()  # subprocess.run should not be called if git is not found
+
 
 if __name__ == '__main__':
     unittest.main()

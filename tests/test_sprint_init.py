@@ -1,5 +1,3 @@
-import asyncio
-import json
 import logging
 import shutil
 import tempfile
@@ -12,6 +10,7 @@ from shared.config import Config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("test_sprint_init")
+
 
 class TestSprintInit(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -34,17 +33,17 @@ class TestSprintInit(unittest.IsolatedAsyncioTestCase):
         mock_client = MagicMock()
         mock_runner = AsyncMock()
         mock_get_runner.return_value = (mock_client, mock_runner)
-        
+
         async def fake_runner(client, prompt, history=None, status_callback=None):
             # Simulate agent writing the file
             self.config.feature_list_path.write_text('[{"name": "Init Feature"}]')
             return "done", "Initialized", []
-            
+
         mock_runner.side_effect = fake_runner
 
         manager = SprintManager(self.config)
         await manager.ensure_project_initialized()
-        
+
         mock_runner.assert_called()
         self.assertTrue(self.config.feature_list_path.exists())
         self.assertIn("Init Feature", self.config.feature_list_path.read_text())
@@ -52,23 +51,24 @@ class TestSprintInit(unittest.IsolatedAsyncioTestCase):
     @patch("agents.shared.sprint.SprintManager._get_agent_runner")
     async def test_ensure_initialized_empty(self, mock_get_runner):
         """Test initialization when file is empty."""
-        self.config.feature_list_path.write_text("") # Empty file
-        
+        self.config.feature_list_path.write_text("")  # Empty file
+
         mock_client = MagicMock()
         mock_runner = AsyncMock()
         mock_get_runner.return_value = (mock_client, mock_runner)
-        
+
         async def fake_runner(client, prompt, history=None, status_callback=None):
             self.config.feature_list_path.write_text('[{"name": "Init Feature 2"}]')
             return "done", "Initialized", []
-            
+
         mock_runner.side_effect = fake_runner
 
         manager = SprintManager(self.config)
         await manager.ensure_project_initialized()
-        
+
         mock_runner.assert_called()
         self.assertIn("Init Feature 2", self.config.feature_list_path.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

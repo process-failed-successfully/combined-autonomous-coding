@@ -32,7 +32,7 @@ class TestConfigLoader(unittest.TestCase):
         mock_content = yaml.dump(config_data)
 
         with patch("builtins.open", mock_open(read_data=mock_content)), \
-             patch("pathlib.Path.exists", return_value=True):
+                patch("pathlib.Path.exists", return_value=True):
 
             config = load_config_from_file(config_path=Path("dummy/path"), profile="test_profile")
 
@@ -54,7 +54,7 @@ class TestConfigLoader(unittest.TestCase):
         mock_content = yaml.dump(config_data)
 
         with patch("builtins.open", mock_open(read_data=mock_content)), \
-             patch("pathlib.Path.exists", return_value=True):
+                patch("pathlib.Path.exists", return_value=True):
 
             config = load_config_from_file(config_path=Path("dummy/path"), profile="non_existent_profile")
 
@@ -74,7 +74,7 @@ class TestConfigLoader(unittest.TestCase):
         mock_content = yaml.dump(config_data)
 
         with patch("builtins.open", mock_open(read_data=mock_content)), \
-             patch("pathlib.Path.exists", return_value=True):
+                patch("pathlib.Path.exists", return_value=True):
 
             config = load_config_from_file(config_path=Path("dummy/path"))
 
@@ -89,7 +89,7 @@ class TestConfigLoader(unittest.TestCase):
         mock_content = yaml.dump(config_data)
 
         with patch("builtins.open", mock_open(read_data=mock_content)), \
-             patch("pathlib.Path.exists", return_value=True):
+                patch("pathlib.Path.exists", return_value=True):
 
             config = load_config_from_file(config_path=Path("dummy/path"), profile="test_profile")
 
@@ -106,7 +106,7 @@ class TestConfigLoader(unittest.TestCase):
         mock_content = yaml.dump(config_data)
 
         with patch("builtins.open", mock_open(read_data=mock_content)), \
-             patch("pathlib.Path.exists", return_value=True):
+                patch("pathlib.Path.exists", return_value=True):
 
             config = load_config_from_file(config_path=Path("dummy/path"), profile="test_profile")
 

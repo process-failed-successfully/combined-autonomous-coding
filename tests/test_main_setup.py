@@ -1,3 +1,4 @@
+from main import run_setup
 import unittest
 from unittest.mock import patch, call
 import sys
@@ -10,7 +11,6 @@ from io import StringIO
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_setup
 
 class TestSetupCommand(unittest.TestCase):
 
@@ -125,6 +125,7 @@ class TestSetupCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("Could not detect a recognizable project type", mock_stderr.getvalue())
         mock_run.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

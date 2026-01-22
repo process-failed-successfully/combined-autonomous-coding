@@ -1,8 +1,8 @@
 import unittest
-import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from shared.smart_search import SmartSearchEngine, STOPWORDS, CODE_STOPWORDS
+from shared.smart_search import SmartSearchEngine
+
 
 class TestSmartSearchEngine(unittest.TestCase):
     def setUp(self):
@@ -34,7 +34,7 @@ class TestSmartSearchEngine(unittest.TestCase):
         # Create some dummy files
         (self.project_dir / "file1.txt").write_text("apple banana cherry")
         (self.project_dir / "file2.txt").write_text("banana date elderberry")
-        (self.project_dir / "file3.txt").write_text("apple apple apple") # High frequency of apple
+        (self.project_dir / "file3.txt").write_text("apple apple apple")  # High frequency of apple
 
         self.engine.index()
 
@@ -82,6 +82,7 @@ class TestSmartSearchEngine(unittest.TestCase):
         # Should not index .png
         found = any(doc['path'] == "image.png" for doc in self.engine.documents)
         self.assertFalse(found)
+
 
 if __name__ == "__main__":
     unittest.main()

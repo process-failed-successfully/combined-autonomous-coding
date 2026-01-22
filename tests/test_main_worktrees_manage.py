@@ -1,5 +1,6 @@
+from main import run_worktrees
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch
 import subprocess
 from pathlib import Path
 import tempfile
@@ -11,7 +12,6 @@ import io
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from main import run_worktrees
 
 class TestWorktreesManageAction(unittest.TestCase):
     def setUp(self):
@@ -124,6 +124,7 @@ class TestWorktreesManageAction(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("--- Executing 'CLEAN' on 'test-worktree' ---", output)
         self.assertIn("✅ Removed worktree: test-worktree", output)
+
 
 if __name__ == '__main__':
     unittest.main()

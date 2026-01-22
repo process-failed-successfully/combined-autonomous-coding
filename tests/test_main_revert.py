@@ -1,5 +1,6 @@
+import main
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import subprocess
 import tempfile
 import shutil
@@ -11,7 +12,6 @@ import io
 # This is necessary for the test runner to find the 'main' module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import main
 
 class TestMainRevert(unittest.TestCase):
     def setUp(self):
@@ -53,7 +53,7 @@ class TestMainRevert(unittest.TestCase):
         argv = ['revert'] + args_list + ['--project-dir', str(self.project_dir)]
         args = main.parse_args(argv)
         with patch('sys.stdout', new_callable=io.StringIO) as mock_stdout, \
-             patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
+                patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
             with self.assertRaises(SystemExit) as cm:
                 main.run_revert(args)
             return cm.exception.code, mock_stdout.getvalue(), mock_stderr.getvalue()
@@ -87,8 +87,8 @@ class TestMainRevert(unittest.TestCase):
         self.assertEqual((self.project_dir / "modified_file.txt").read_text(), "original content")
         self.assertFalse((self.project_dir / "untracked_file.txt").exists())
 
-
     # --- Tests for Interactive Mode ---
+
     @patch('builtins.input', side_effect=['1', 'y'])
     def test_revert_interactive_select_modified(self, mock_input):
         """Test reverting a single modified file in interactive mode."""
@@ -163,6 +163,7 @@ class TestMainRevert(unittest.TestCase):
         exit_code, output, stderr = self._run_revert(['--interactive', 'some_file.txt'])
         self.assertEqual(exit_code, 1)
         self.assertIn("Error: Cannot use --interactive mode when specifying individual files.", stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

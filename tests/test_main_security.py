@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import sys
 import main
 from pathlib import Path
+
 
 class TestMainSecurity(unittest.TestCase):
 
@@ -75,7 +75,8 @@ class TestMainSecurity(unittest.TestCase):
 
         # Verify output file creation
         self.assertTrue(output_file.exists())
-        output_file.unlink() # Cleanup
+        output_file.unlink()  # Cleanup
+
 
 if __name__ == "__main__":
     unittest.main()

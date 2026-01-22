@@ -1,5 +1,6 @@
+from main import run_artifacts
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 import io
 from pathlib import Path
@@ -9,7 +10,7 @@ import argparse
 
 # Ensure the main script can be imported
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from main import run_artifacts
+
 
 class TestArtifactsCLI(unittest.TestCase):
     def setUp(self):
@@ -83,7 +84,7 @@ class TestArtifactsCLI(unittest.TestCase):
 
     def test_restore_from_trash(self):
         """Test restoring from trash (should move files)."""
-        (self.project_dir / "shared.txt").unlink() # Remove conflict
+        (self.project_dir / "shared.txt").unlink()  # Remove conflict
         exit_code, output, _ = self.run_artifacts_command('trash', 'restore', archive_name="trash-2023-01-02_12-00-00")
         self.assertEqual(exit_code, 0)
         self.assertIn("✅ Restore complete.", output)
@@ -94,7 +95,7 @@ class TestArtifactsCLI(unittest.TestCase):
 
     def test_restore_from_archive(self):
         """Test restoring from archives (should copy files)."""
-        (self.project_dir / "shared.txt").unlink() # Remove conflict
+        (self.project_dir / "shared.txt").unlink()  # Remove conflict
         exit_code, output, _ = self.run_artifacts_command('archive', 'restore', archive_name="archive-2023-01-03_14-00-00")
         self.assertEqual(exit_code, 0)
         self.assertIn("✅ Restore complete. Original archive remains untouched.", output)
@@ -166,6 +167,7 @@ class TestArtifactsCLI(unittest.TestCase):
         exit_code, output, _ = self.run_artifacts_command('archive', 'diff', archive_name="archive-2023-01-03_14-00-00", file_name="file3.txt")
         self.assertEqual(exit_code, 0)
         self.assertIn("✅ No differences found", output)
+
 
 if __name__ == '__main__':
     unittest.main()

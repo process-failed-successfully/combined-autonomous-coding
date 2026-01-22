@@ -1,11 +1,11 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 import io
-import sys
 from contextlib import redirect_stdout, redirect_stderr
 
 # It's better to import the module or specific functions you need to test
 import main
+
 
 class TestMainModelsCommand(unittest.TestCase):
 
@@ -74,6 +74,7 @@ class TestMainModelsCommand(unittest.TestCase):
         # Check for the correct error message
         error_output = f_err.getvalue()
         self.assertIn("Error: Agent 'invalid_agent' not found.", error_output)
+
 
 if __name__ == '__main__':
     unittest.main()

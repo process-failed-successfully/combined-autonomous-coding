@@ -2,8 +2,9 @@
 Tests for the CLI command generation feature ('do' command).
 """
 
+from shared.cli import run_do_logic
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
 import sys
 import io
@@ -11,7 +12,6 @@ import io
 # Ensure the shared module can be imported
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.cli import run_do_logic
 
 class TestCliFeature(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -19,7 +19,7 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
         self.instruction = "list all python files"
 
     @patch("shared.cli.GeminiAgent")
-    @patch("builtins.input", return_value="n") # Default to no
+    @patch("builtins.input", return_value="n")  # Default to no
     async def test_run_do_logic_basic(self, mock_input, MockAgent):
         """Test basic flow where agent returns a command."""
         mock_agent_instance = MockAgent.return_value
@@ -36,7 +36,7 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
 
             output = fake_out.getvalue()
             self.assertIn("find . -name '*.py'", output)
-            self.assertTrue(success) # Should return True because we gracefully aborted
+            self.assertTrue(success)  # Should return True because we gracefully aborted
 
     @patch("shared.cli.GeminiAgent")
     @patch("subprocess.run")
@@ -95,7 +95,7 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
             )
 
             output = fake_out.getvalue()
-            self.assertIn("Run this command? [y/N]:", str(mock_input.call_args)) # Can't check stdout for input prompt easily
+            self.assertIn("Run this command? [y/N]:", str(mock_input.call_args))  # Can't check stdout for input prompt easily
             self.assertIn("Running: ls -la", output)
             self.assertTrue(success)
 
@@ -120,6 +120,7 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
             # Should not contain backticks
             self.assertIn("echo 'hello'", output)
             self.assertNotIn("```", output)
+
 
 if __name__ == "__main__":
     unittest.main()

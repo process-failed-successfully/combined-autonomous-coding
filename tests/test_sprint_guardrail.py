@@ -9,6 +9,7 @@ import tempfile
 import shutil
 import os
 
+
 class TestSprintGuardrail(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp(prefix="test_sprint_guardrail_")
@@ -20,7 +21,7 @@ class TestSprintGuardrail(unittest.TestCase):
         with patch("agents.shared.sprint.WorktreeManager") as MockWT:
             self.manager = SprintManager(self.config)
             self.manager.worktree_manager = MockWT.return_value
-            self.manager.worktree_manager.create_worktree.return_value = self.project_dir # Mock returning project dir as worktree path
+            self.manager.worktree_manager.create_worktree.return_value = self.project_dir  # Mock returning project dir as worktree path
 
     def tearDown(self):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
@@ -67,7 +68,7 @@ class TestSprintGuardrail(unittest.TestCase):
         self.assertIn("t1", self.manager.failed_tasks)
         # Verify mocked runner was called 4 times
         self.assertEqual(mock_runner.call_count, 4)
-        
+
         # Verify Context Copy (feature_list.json was created in setUp)
         self.assertTrue(mock_copy.called)
 
@@ -105,16 +106,16 @@ class TestSprintGuardrail(unittest.TestCase):
         mock_runner = AsyncMock()
         mock_get_runner.return_value = (mock_client, mock_runner)
         mock_prompt.return_value = "prompt"
-        
+
         # Runaway output: "foo" repeated 30 times
         runaway_text = "foo " * 30
         mock_runner.return_value = ("continue", runaway_text, [])
-        
+
         task = Task(id="t_runaway", title="Runaway Task", description="desc")
         self.manager.running_tasks.add(task.id)
-        
+
         asyncio.run(self.manager.run_worker(task))
-        
+
         self.assertEqual(task.status, "FAILED")
         self.assertIn("t_runaway", self.manager.failed_tasks)
         # Should detect immediately
@@ -128,23 +129,24 @@ class TestSprintGuardrail(unittest.TestCase):
         mock_runner = AsyncMock()
         mock_get_runner.return_value = (mock_client, mock_runner)
         mock_prompt.return_value = "prompt"
-        
+
         # Repetitive text with no actions
         # 4 identical calls
         mock_runner.return_value = ("continue", "I am thinking.", [])
-        
+
         task = Task(id="t_text_loop", title="Text Loop Task", description="desc")
         self.manager.running_tasks.add(task.id)
-        
+
         asyncio.run(self.manager.run_worker(task))
-        
+
         self.assertEqual(task.status, "FAILED")
         self.assertIn("t_text_loop", self.manager.failed_tasks)
-        self.assertEqual(mock_runner.call_count, 4) # 3 repetitions + initial = 4 calls? Actually logic:
+        self.assertEqual(mock_runner.call_count, 4)  # 3 repetitions + initial = 4 calls? Actually logic:
         # Turn 1: rep=0. last="I am thinking."
         # Turn 2: rep=1.
         # Turn 3: rep=2.
         # Turn 4: rep=3 -> Break.
-        
+
+
 if __name__ == "__main__":
     unittest.main()

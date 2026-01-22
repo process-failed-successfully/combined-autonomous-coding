@@ -1,10 +1,10 @@
 
+from main import run_stash
 import unittest
 from unittest.mock import patch, MagicMock
 import subprocess
 import tempfile
 import shutil
-import os
 from pathlib import Path
 import sys
 import io
@@ -13,7 +13,6 @@ import io
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from main import run_stash
 
 class TestStashCommand(unittest.TestCase):
     def setUp(self):
@@ -88,6 +87,7 @@ class TestStashCommand(unittest.TestCase):
 
         result = subprocess.run(["git", "stash", "list"], cwd=self.project_dir, capture_output=True, text=True)
         self.assertEqual(result.stdout.strip(), "")
+
 
 if __name__ == '__main__':
     unittest.main()

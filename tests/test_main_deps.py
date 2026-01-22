@@ -10,6 +10,7 @@ from pathlib import Path
 # Adjust the path to import from the root of the project
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+
 class TestMainDeps(unittest.TestCase):
 
     def setUp(self):
@@ -63,6 +64,7 @@ class TestMainDeps(unittest.TestCase):
         self.assertIn('"source": "requirements.txt"', result.stdout)
         self.assertIn('"flask"', result.stdout)
         self.assertIn('"express"', result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

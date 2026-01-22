@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch
 import argparse
 from pathlib import Path
 import tempfile
@@ -8,6 +8,7 @@ import subprocess
 import os
 
 from main import run_feature
+
 
 class TestMainFeature(unittest.TestCase):
 
@@ -37,7 +38,7 @@ class TestMainFeature(unittest.TestCase):
         # Arrange
         mock_input.side_effect = [
             "test-feature-branch",  # Branch name
-            "Implement test feature", # Commit message
+            "Implement test feature",  # Commit message
             "y",                      # Confirm push
             "y",                      # Confirm PR
             "Test Feature PR Title",  # PR Title
@@ -54,7 +55,7 @@ class TestMainFeature(unittest.TestCase):
             run_feature(args)
 
         # Assert
-        self.assertEqual(cm.exception.code, 0) # Successful exit
+        self.assertEqual(cm.exception.code, 0)  # Successful exit
 
         # Verify calls
         mock_branch.assert_called_once()
@@ -198,6 +199,7 @@ class TestMainFeature(unittest.TestCase):
             run_feature(args)
         self.assertEqual(cm.exception.code, 1)
         mock_run_branch.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()

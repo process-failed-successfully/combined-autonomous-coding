@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import os
@@ -8,9 +8,10 @@ import io
 import re
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # noqa: E402
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))  # noqa: E402
 
 from main import run_search
+
 
 class TestMainSearch(unittest.TestCase):
     def setUp(self):
@@ -79,6 +80,7 @@ class TestMainSearch(unittest.TestCase):
             output = self.strip_ansi(fake_out.getvalue())
             self.assertIn("9: prev", output)
             self.assertIn("11: next", output)
+
 
 if __name__ == '__main__':
     unittest.main()

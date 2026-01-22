@@ -1,13 +1,13 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-import sys
+from unittest.mock import patch
 import yaml
 import tempfile
 import shutil
 import os
 
 from shared.recipes import RecipeManager
+
 
 class TestRecipeManager(unittest.TestCase):
     def setUp(self):
@@ -90,7 +90,7 @@ class TestRecipeManager(unittest.TestCase):
     @patch("subprocess.run")
     def test_run_recipe_recursion_limit(self, mock_run):
         manager = RecipeManager(self.project_dir)
-        manager.add_recipe("loop", ["loop"]) # Infinite recursion
+        manager.add_recipe("loop", ["loop"])  # Infinite recursion
 
         # We need to mock the environment variable retrieval/setting to simulate depth
         # Since we use os.environ directly in the code, we can patch os.environ.get
@@ -100,6 +100,7 @@ class TestRecipeManager(unittest.TestCase):
             success = manager.run_recipe("loop")
             self.assertFalse(success)
             mock_run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

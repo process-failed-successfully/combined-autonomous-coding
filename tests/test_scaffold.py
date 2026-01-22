@@ -1,3 +1,4 @@
+from shared.scaffold import ScaffoldManager, TEMPLATES
 import unittest
 import shutil
 import tempfile
@@ -8,7 +9,6 @@ from pathlib import Path
 # Add repo root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.scaffold import ScaffoldManager, TEMPLATES
 
 class TestScaffoldManager(unittest.TestCase):
     def setUp(self):
@@ -71,6 +71,7 @@ class TestScaffoldManager(unittest.TestCase):
         success = self.manager.scaffold("python-basic")
         self.assertTrue(success)
         self.assertTrue((self.test_dir / ".git").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

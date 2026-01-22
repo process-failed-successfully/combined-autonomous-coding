@@ -1,5 +1,6 @@
+from main import run_init
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 import tempfile
 import shutil
@@ -11,7 +12,6 @@ import sys
 # Add the parent directory to the path to allow imports from 'shared'
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import run_init
 
 class TestMainInit(unittest.TestCase):
 
@@ -23,7 +23,6 @@ class TestMainInit(unittest.TestCase):
         # Mock sys.argv
         self.argv_patch = patch('sys.argv', [str(self.project_dir / "main.py")])
         self.argv_patch.start()
-
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -158,16 +157,17 @@ class TestMainInit(unittest.TestCase):
     @patch('subprocess.run', side_effect=subprocess.CalledProcessError(1, 'git init', stderr=b'fatal error'))
     def test_run_init_git_init_fails(self, mock_subprocess_run, mock_which):
         """Tests that a git init failure is handled gracefully."""
-        args = MagicMock(project_dir=self.project_dir, yes=True) # Use yes to skip input
+        args = MagicMock(project_dir=self.project_dir, yes=True)  # Use yes to skip input
         output = StringIO()
 
-        with patch('builtins.input', side_effect=['', '']): # Skip spec
+        with patch('builtins.input', side_effect=['', '']):  # Skip spec
             with contextlib.redirect_stdout(output):
                 with self.assertRaises(SystemExit):
                     run_init(args)
 
         stdout = output.getvalue()
         self.assertIn("Error initializing Git repository: fatal error", stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

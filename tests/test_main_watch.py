@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import patch, MagicMock
 import argparse
 from pathlib import Path
-import time
 import os
 
 from main import run_watch
 
 from main import run_watch, CommandEventHandler
+
 
 class TestWatchCommand(unittest.TestCase):
     def setUp(self):
@@ -70,6 +70,7 @@ class TestWatchCommand(unittest.TestCase):
 
         # Assert
         mock_subprocess_run.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

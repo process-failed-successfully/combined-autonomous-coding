@@ -1,6 +1,7 @@
 
+from main import run_validate
 import unittest
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, MagicMock
 import sys
 from pathlib import Path
 import tempfile
@@ -9,7 +10,6 @@ import yaml
 # Add project root to sys.path to allow imports from shared
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from main import run_validate
 
 class TestConfigValidation(unittest.TestCase):
 
@@ -71,7 +71,7 @@ class TestConfigValidation(unittest.TestCase):
         """Test with a syntactically incorrect YAML file."""
         config_path = self.temp_path / "agent_config.yaml"
         with open(config_path, 'w') as f:
-            f.write("jira: { url: 'test',") # Invalid YAML
+            f.write("jira: { url: 'test',")  # Invalid YAML
 
         mock_get_config_path.return_value = config_path
         mock_load_config.side_effect = yaml.YAMLError("YAML parsing failed")
@@ -137,7 +137,7 @@ class TestConfigValidation(unittest.TestCase):
     @patch('shared.config_loader.get_config_path')
     def test_incorrect_data_type(self, mock_get_config_path, mock_load_config, mock_stdout):
         """Test a key with an incorrect data type."""
-        invalid_data = {'max_iterations': 'fifty'} # Should be int
+        invalid_data = {'max_iterations': 'fifty'}  # Should be int
         config_path = self.write_config(invalid_data)
         mock_get_config_path.return_value = config_path
         mock_load_config.return_value = invalid_data
@@ -146,6 +146,7 @@ class TestConfigValidation(unittest.TestCase):
             run_validate()
 
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

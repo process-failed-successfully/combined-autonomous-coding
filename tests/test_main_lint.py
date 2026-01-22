@@ -1,16 +1,15 @@
+from main import run_lint
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import argparse
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
-import shutil
 
 # Add the parent directory to the sys.path to allow imports from the 'shared' module
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from main import run_lint
 
 class TestMainLint(unittest.TestCase):
 
@@ -224,6 +223,7 @@ class TestMainLint(unittest.TestCase):
 
             # Assert
             self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

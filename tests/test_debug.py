@@ -1,9 +1,9 @@
 
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
-import asyncio
 from shared.debug import run_debug_logic
+
 
 class TestDebugLogic(unittest.IsolatedAsyncioTestCase):
     @patch('shared.debug.asyncio.create_subprocess_exec')

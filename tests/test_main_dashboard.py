@@ -7,6 +7,7 @@ from pathlib import Path
 
 import main
 
+
 class TestMainDashboard(unittest.TestCase):
     @patch('main._run_dashboard_logic')
     def test_run_dashboard(self, mock_dashboard_logic):
@@ -29,6 +30,7 @@ class TestMainDashboard(unittest.TestCase):
 
         # Assert that the output was printed to the console
         self.assertIn("Mocked Dashboard Output", output_buffer.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,4 @@
+import main
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
@@ -9,7 +10,7 @@ import argparse
 
 # Add project root to path to allow importing main
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import main
+
 
 class TestMainStatus(unittest.TestCase):
     def setUp(self):
@@ -98,6 +99,7 @@ class TestMainStatus(unittest.TestCase):
         output = self.run_status()
         self.assertIn("[ Workflow: Completed ]", output)
         self.assertIn("`main.py workflow advance`", output)
+
 
 if __name__ == '__main__':
     unittest.main()

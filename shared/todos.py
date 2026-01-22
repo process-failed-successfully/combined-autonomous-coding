@@ -40,7 +40,7 @@ def scan_todos(
     # We rely on the caller/grep to find the line, this regex parses the line content
     line_parser = re.compile(rf"(?P<tag>{tags_pattern})[:\s]+(?P<text>.*)", re.IGNORECASE)
 
-    results = []
+    results: List[Dict[str, Any]] = []
 
     git_path = shutil.which("git")
     is_git_repo = (project_dir / ".git").is_dir()

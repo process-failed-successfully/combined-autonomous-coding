@@ -1,6 +1,6 @@
 import logging
 from collections import deque
-from typing import Deque
+from typing import Deque, List
 
 class MemoryLogHandler(logging.Handler):
     def __init__(self, capacity: int = 50):
@@ -10,5 +10,5 @@ class MemoryLogHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         self.log_deque.append(self.format(record))
 
-    def get_logs(self) -> list[str]:
+    def get_logs(self) -> List[str]:
         return list(self.log_deque)

@@ -1,3 +1,4 @@
+import main
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
@@ -5,11 +6,10 @@ import io
 from pathlib import Path
 import tempfile
 import shutil
-import subprocess
 import argparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import main
+
 
 class TestMainTree(unittest.TestCase):
     def setUp(self):
@@ -108,6 +108,7 @@ class TestMainTree(unittest.TestCase):
         output = self.run_tree(full=True)
         self.assertIn("ignored_file.txt", output)
         self.assertIn("ignored_in_dir.log", output)
+
 
 if __name__ == '__main__':
     unittest.main()

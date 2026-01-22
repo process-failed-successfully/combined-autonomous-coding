@@ -1,5 +1,5 @@
+import main
 import unittest
-from unittest.mock import patch
 from pathlib import Path
 import tempfile
 import argparse
@@ -9,7 +9,7 @@ from contextlib import redirect_stdout, redirect_stderr
 # Add project root to path to allow direct import of main
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import main
+
 
 class TestLastRunId(unittest.TestCase):
 
@@ -61,6 +61,7 @@ class TestLastRunId(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("No agent run history found", f_err.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

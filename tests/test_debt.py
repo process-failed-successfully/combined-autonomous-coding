@@ -1,12 +1,12 @@
+from shared.debt import DebtCollector
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 
 # Ensure shared can be imported
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.debt import DebtCollector
 
 class TestDebtCollector(unittest.TestCase):
     def setUp(self):
@@ -26,7 +26,7 @@ class TestDebtCollector(unittest.TestCase):
 
         mock_complexity.return_value = [
             {"function": "func1", "complexity": 5},
-            {"function": "func2", "complexity": 15}, # High complexity (excess 5)
+            {"function": "func2", "complexity": 15},  # High complexity (excess 5)
             {"function": "func3", "complexity": 20}  # High complexity (excess 10)
         ]
 
@@ -53,7 +53,7 @@ class TestDebtCollector(unittest.TestCase):
         # Verify results
         self.assertEqual(metrics["todos"]["count"], 2)
 
-        self.assertEqual(metrics["complexity"]["high_risk_count"], 2) # func2, func3
+        self.assertEqual(metrics["complexity"]["high_risk_count"], 2)  # func2, func3
         # func2 (15): excess 5
         # func3 (20): excess 10
         # total excess: 15
@@ -82,7 +82,7 @@ class TestDebtCollector(unittest.TestCase):
             # 4 * 5 = 20 pts
         }
 
-        expected_score = 10 + 45 + 20 + 20 # = 95
+        expected_score = 10 + 45 + 20 + 20  # = 95
 
         score, grade = self.collector.calculate_score(metrics)
 
@@ -104,7 +104,7 @@ class TestDebtCollector(unittest.TestCase):
 
         # Test F (> 500)
         metrics_f = {
-            "todos": {"count": 600}, # 600 pts
+            "todos": {"count": 600},  # 600 pts
             "complexity": {"high_risk_count": 0, "total_excess": 0},
             "duplication": {"total_tokens": 0},
             "unused": {"count": 0}
@@ -112,6 +112,7 @@ class TestDebtCollector(unittest.TestCase):
         score, grade = self.collector.calculate_score(metrics_f)
         self.assertEqual(score, 600)
         self.assertEqual(grade, "F")
+
 
 if __name__ == "__main__":
     unittest.main()

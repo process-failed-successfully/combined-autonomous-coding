@@ -1,9 +1,9 @@
 import unittest
 import json
 import tempfile
-import os
 from pathlib import Path
 from shared.visualization import DataLoader, BrailleChart
+
 
 class TestVisualization(unittest.TestCase):
     def setUp(self):
@@ -63,6 +63,7 @@ class TestVisualization(unittest.TestCase):
         self.assertIn("Single", output)
         has_braille = any(0x2800 <= ord(c) <= 0x28FF for c in output)
         self.assertTrue(has_braille)
+
 
 if __name__ == '__main__':
     unittest.main()

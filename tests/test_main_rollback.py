@@ -1,3 +1,4 @@
+from main import parse_args, run_rollback
 import unittest
 from unittest.mock import patch
 import subprocess
@@ -11,7 +12,6 @@ import io
 # Add the parent directory to the sys.path to allow imports from the 'shared' module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import parse_args, run_rollback
 
 class TestRollbackCommand(unittest.TestCase):
     def setUp(self):
@@ -102,12 +102,13 @@ class TestRollbackCommand(unittest.TestCase):
 
         stderr_capture = io.StringIO()
         with self.assertRaises(SystemExit) as cm, \
-             patch('sys.stderr', stderr_capture):
+                patch('sys.stderr', stderr_capture):
             args = parse_args(["rollback", run_id, "--project-dir", str(self.project_dir), "--yes"])
             run_rollback(args)
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("uncommitted changes", stderr_capture.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,12 +1,8 @@
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
-import sys
 import shutil
 import tempfile
-
-# Ensure shared module is available
-sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, DataTable
 from shared.tui import AgentTUI, DependenciesTab

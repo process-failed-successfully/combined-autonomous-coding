@@ -5,7 +5,7 @@ import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -27,6 +27,7 @@ from shared.security import SecurityAuditor
 from shared.map import scan_project, CodeNode
 from shared.git import get_git_log, get_commit_details
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite
+from shared.search import search_codebase
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1035,6 +1036,112 @@ class DatabaseTab(Container):
             self.notify(f"SQL Error: {e}", severity="error")
 
 
+class SearchTab(Container):
+    """Tab for searching code (Grep)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with Horizontal(classes="stat-box"):
+            yield Input(placeholder="Search pattern...", id="search-input")
+            yield Button("Search", id="btn-search", variant="primary")
+
+        with Horizontal(classes="stat-box"):
+            yield Checkbox("Case Sensitive", id="chk-case")
+            yield Checkbox("Regex", id="chk-regex")
+            yield Input(placeholder="File pattern (e.g. *.py)", id="file-pattern-input")
+
+        with Horizontal():
+            with Vertical(id="search-results-pane"):
+                yield DataTable(id="search-results-table")
+            with VerticalScroll(id="search-preview-pane"):
+                yield RichLog(id="search-preview", markup=True)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#search-results-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("File", "Line", "Content")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-search":
+            await self.perform_search()
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "search-input":
+            await self.perform_search()
+
+    async def perform_search(self) -> None:
+        query = self.query_one("#search-input", Input).value
+        if not query:
+            return
+
+        case_sensitive = self.query_one("#chk-case", Checkbox).value
+        is_regex = self.query_one("#chk-regex", Checkbox).value
+        file_pattern = self.query_one("#file-pattern-input", Input).value
+
+        table = self.query_one("#search-results-table", DataTable)
+        table.clear()
+        self.notify("Searching...")
+
+        import asyncio
+        try:
+            # Run in thread
+            results = await asyncio.to_thread(
+                search_codebase,
+                self.project_dir,
+                query,
+                file_pattern=file_pattern if file_pattern else None,
+                case_sensitive=case_sensitive,
+                is_regex=is_regex,
+                context_lines=2
+            )
+
+            self.results_cache = results
+
+            if not results:
+                self.notify("No matches found.")
+                return
+
+            self.notify(f"Found {len(results)} matches.")
+            for i, res in enumerate(results):
+                table.add_row(
+                    res["file"],
+                    str(res["line"]),
+                    res["content"],
+                    key=str(i) # Store index as key
+                )
+        except Exception as e:
+            self.notify(f"Search error: {e}", severity="error")
+
+    @on(DataTable.RowSelected, "#search-results-table")
+    def on_result_selected(self, event: DataTable.RowSelected) -> None:
+        if not hasattr(self, "results_cache"):
+            return
+
+        try:
+            index = int(event.row_key.value)
+            result = self.results_cache[index]
+
+            preview = self.query_one("#search-preview", RichLog)
+            preview.clear()
+
+            preview.write(f"[bold]{result['file']}:{result['line']}[/bold]")
+
+            # Show context
+            for line in result.get("context_before", []):
+                preview.write(f"[dim]{line}[/dim]")
+
+            preview.write(f"[bold yellow]{result['line']}: {result['content']}[/bold yellow]")
+
+            for line in result.get("context_after", []):
+                preview.write(f"[dim]{line}[/dim]")
+
+        except Exception as e:
+             self.notify(f"Preview error: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1055,6 +1162,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
+            with TabPane("Search", id="tab-search"):
+                yield SearchTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):
                 yield TasksTab(self.project_dir)
             with TabPane("Git", id="tab-git"):

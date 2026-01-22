@@ -1,4 +1,6 @@
 import sys
+import shutil
+import tempfile
 from typing import Any
 from pathlib import Path
 import unittest
@@ -12,7 +14,11 @@ from shared.analytics import collect_analytics_data  # noqa: E402
 
 class TestTUIAnalyticsLogic(unittest.TestCase):
     def setUp(self) -> None:
-        self.project_dir = Path("/tmp/test_project")
+        self.test_dir = tempfile.mkdtemp()
+        self.project_dir = Path(self.test_dir)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.test_dir)
 
     @patch("shared.debt.scan_todos")
     @patch("shared.debt.analyze_project_complexity")

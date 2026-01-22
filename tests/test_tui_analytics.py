@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from shared.tui import collect_analytics_data
+from shared.analytics import collect_analytics_data
 
 
 class TestTUIAnalyticsLogic(unittest.TestCase):

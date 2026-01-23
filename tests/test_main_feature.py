@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, call, AsyncMock
 import argparse
 from pathlib import Path
 import tempfile
@@ -9,7 +9,7 @@ import os
 
 from main import run_feature
 
-class TestMainFeature(unittest.TestCase):
+class TestMainFeature(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -29,11 +29,11 @@ class TestMainFeature(unittest.TestCase):
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    @patch('main.run_commit')
+    @patch('main.run_commit', new_callable=AsyncMock)
     @patch('main.run_push')
     @patch('main._pr_create')
     @patch('main.load_config_from_file')
-    def test_feature_workflow_full_success(self, mock_load_config, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
+    async def test_feature_workflow_full_success(self, mock_load_config, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
         # Arrange
         mock_input.side_effect = [
             "test-feature-branch",  # Branch name
@@ -51,7 +51,7 @@ class TestMainFeature(unittest.TestCase):
 
         # Act
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         # Assert
         self.assertEqual(cm.exception.code, 0) # Successful exit
@@ -69,10 +69,10 @@ class TestMainFeature(unittest.TestCase):
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    @patch('main.run_commit')
+    @patch('main.run_commit', new_callable=AsyncMock)
     @patch('main.run_push')
     @patch('main._pr_create')
-    def test_feature_workflow_abort_at_push(self, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
+    async def test_feature_workflow_abort_at_push(self, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
         # Arrange
         mock_input.side_effect = [
             "test-feature-branch",
@@ -83,7 +83,7 @@ class TestMainFeature(unittest.TestCase):
 
         # Act
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         # Assert
         self.assertEqual(cm.exception.code, 0)
@@ -94,10 +94,10 @@ class TestMainFeature(unittest.TestCase):
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    @patch('main.run_commit')
+    @patch('main.run_commit', new_callable=AsyncMock)
     @patch('main.run_push')
     @patch('main._pr_create')
-    def test_feature_workflow_abort_at_pr(self, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
+    async def test_feature_workflow_abort_at_pr(self, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
         # Arrange
         mock_input.side_effect = [
             "test-feature-branch",
@@ -109,7 +109,7 @@ class TestMainFeature(unittest.TestCase):
 
         # Act
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         # Assert
         self.assertEqual(cm.exception.code, 0)
@@ -120,25 +120,25 @@ class TestMainFeature(unittest.TestCase):
 
     @patch('builtins.input')
     @patch('main.run_branch', side_effect=SystemExit(1))
-    def test_branch_creation_fails(self, mock_run_branch, mock_input):
+    async def test_branch_creation_fails(self, mock_run_branch, mock_input):
         mock_input.side_effect = ["bad-branch"]
         args = argparse.Namespace(project_dir=self.project_dir)
 
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         self.assertEqual(cm.exception.code, 1)
         mock_run_branch.assert_called_once()
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    @patch('main.run_commit', side_effect=SystemExit(1))
-    def test_commit_fails(self, mock_run_commit, mock_run_branch, mock_input):
+    @patch('main.run_commit', new_callable=AsyncMock, side_effect=SystemExit(1))
+    async def test_commit_fails(self, mock_run_commit, mock_run_branch, mock_input):
         mock_input.side_effect = ["a-branch", "a-commit"]
         args = argparse.Namespace(project_dir=self.project_dir)
 
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         self.assertEqual(cm.exception.code, 1)
         mock_run_branch.assert_called_once()
@@ -146,14 +146,14 @@ class TestMainFeature(unittest.TestCase):
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    @patch('main.run_commit')
+    @patch('main.run_commit', new_callable=AsyncMock)
     @patch('main.run_push', side_effect=SystemExit(1))
-    def test_push_fails(self, mock_run_push, mock_run_commit, mock_run_branch, mock_input):
+    async def test_push_fails(self, mock_run_push, mock_run_commit, mock_run_branch, mock_input):
         mock_input.side_effect = ["a-branch", "a-commit", "y"]
         args = argparse.Namespace(project_dir=self.project_dir)
 
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         self.assertEqual(cm.exception.code, 1)
         mock_run_branch.assert_called_once()
@@ -162,18 +162,18 @@ class TestMainFeature(unittest.TestCase):
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    @patch('main.run_commit')
+    @patch('main.run_commit', new_callable=AsyncMock)
     @patch('main.run_push')
     @patch('main._pr_create', side_effect=SystemExit(1))
     @patch('main.load_config_from_file')
-    def test_pr_creation_fails(self, mock_load_config, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
+    async def test_pr_creation_fails(self, mock_load_config, mock_pr_create, mock_push, mock_commit, mock_branch, mock_input):
         mock_input.side_effect = ["a-branch", "a-commit", "y", "y", "title", "body", "main"]
         mock_load_config.return_value = {"github_token": "test_token"}
         os.environ["GITHUB_TOKEN"] = "test_token"
         args = argparse.Namespace(project_dir=self.project_dir, profile=None)
 
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
 
         self.assertEqual(cm.exception.code, 1)
         mock_branch.assert_called_once()
@@ -182,20 +182,20 @@ class TestMainFeature(unittest.TestCase):
         mock_pr_create.assert_called_once()
 
     @patch('builtins.input')
-    def test_empty_branch_name_exits(self, mock_input):
+    async def test_empty_branch_name_exits(self, mock_input):
         mock_input.side_effect = [""]
         args = argparse.Namespace(project_dir=self.project_dir)
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
         self.assertEqual(cm.exception.code, 1)
 
     @patch('builtins.input')
     @patch('main.run_branch')
-    def test_empty_commit_message_exits(self, mock_run_branch, mock_input):
+    async def test_empty_commit_message_exits(self, mock_run_branch, mock_input):
         mock_input.side_effect = ["my-branch", ""]
         args = argparse.Namespace(project_dir=self.project_dir)
         with self.assertRaises(SystemExit) as cm:
-            run_feature(args)
+            await run_feature(args)
         self.assertEqual(cm.exception.code, 1)
         mock_run_branch.assert_called_once()
 

@@ -41,6 +41,7 @@ try:
 except ImportError:
     JiraClient = None
 from shared.issues import _run_issues_logic
+from shared.ai_git import generate_commit_message_logic
 from agents.gemini import run_autonomous_agent as run_gemini, GeminiAgent
 from agents.shared.sprint import run_sprint as run_sprint
 from agents.cursor import run_autonomous_agent as run_cursor, CursorAgent
@@ -6593,6 +6594,27 @@ def parse_args(argv=None):
         help="The commit message. If not provided, an interactive prompt will be shown."
     )
     parser_commit.add_argument(
+        "-g", "--generate",
+        action="store_true",
+        help="Generate a commit message using AI based on the staged changes."
+    )
+    parser_commit.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation for AI-generated message."
+    )
+    parser_commit.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for message generation (default: gemini)."
+    )
+    parser_commit.add_argument(
+        "--model",
+        type=str,
+        help="Model to use for generation (overrides default)."
+    )
+    parser_commit.add_argument(
         "--run-tests",
         action="store_true",
         help="Run project tests before committing. If tests fail, the commit is aborted."
@@ -8527,7 +8549,7 @@ def run_watch(args):
     sys.exit(0)
 
 
-def run_feature(args):
+async def run_feature(args):
     """Runs a guided workflow for creating a feature branch, committing, pushing, and creating a PR."""
     project_dir = args.project_dir.resolve()
     print("--- Guided Feature Workflow ---")
@@ -8568,13 +8590,15 @@ def run_feature(args):
             print("Commit message cannot be empty. Aborting.")
             sys.exit(1)
 
+        # Note: interactive commit message generation is not enabled here as we ask for it above.
         commit_args = argparse.Namespace(
             message=commit_message,
             run_tests=False, # For simplicity, don't run tests in this guided flow
-            project_dir=project_dir
+            project_dir=project_dir,
+            generate=False # Disable generation in guided flow
         )
         try:
-            run_commit(commit_args)
+            await run_commit(commit_args)
         except SystemExit as e:
             if e.code != 0:
                 print("❌ Commit failed. Aborting workflow.", file=sys.stderr)
@@ -9257,8 +9281,9 @@ def run_scaffold(args):
         sys.exit(0 if success else 1)
 
 
-def run_interact(args):
+async def run_interact(args):
     """Starts an interactive session to guide the user through common commands."""
+    import inspect
     project_dir = args.project_dir.resolve()
     print("--- Interactive Session ---")
     print(f"Project Directory: {project_dir}")
@@ -9298,15 +9323,19 @@ def run_interact(args):
                             commit_args = argparse.Namespace(
                                 message=message,
                                 run_tests=False,
-                                project_dir=project_dir
+                                project_dir=project_dir,
+                                generate=False
                             )
-                            run_commit(commit_args)
+                            await run_commit(commit_args)
                         else:
                             print("Commit message cannot be empty. Aborting.")
                     else:
                         # Construct the args namespace for the command
                         command_args = argparse.Namespace(**item["args"])
-                        item["func"](command_args)
+                        if inspect.iscoroutinefunction(item["func"]):
+                            await item["func"](command_args)
+                        else:
+                            item["func"](command_args)
                 except SystemExit as e:
                     if e.code != 0:
                         print(f"--- Command finished with an error (exit code: {e.code}) ---", file=sys.stderr)
@@ -9627,7 +9656,7 @@ def run_mock(args):
     sys.exit(0)
 
 
-def run_commit(args):
+async def run_commit(args):
     """Handles the git commit command with safety checks."""
     import shutil
     import subprocess
@@ -9671,6 +9700,28 @@ def run_commit(args):
     if check_staged_result.returncode == 0:
         print("✅ No changes staged for commit.")
         sys.exit(0)
+
+    # --- AI Commit Message Generation ---
+    if args.generate and not commit_message:
+        print("--- Generating Commit Message with AI ---")
+        commit_message = await generate_commit_message_logic(
+            project_dir,
+            agent_type=args.agent if hasattr(args, 'agent') else "gemini",
+            model=args.model if hasattr(args, 'model') else None
+        )
+        if not commit_message:
+            print("❌ Failed to generate commit message.")
+            if args.yes:
+                sys.exit(1)
+        else:
+            print("\n--- Generated Commit Message ---")
+            print(commit_message)
+            print("------------------------------")
+            if not args.yes:
+                confirm = input("Use this message? [Y/n]: ").strip().lower()
+                if confirm not in ['y', '']:
+                    print("Aborted. Falling back to interactive mode.")
+                    commit_message = None # Fallback
 
     # --- Interactive Commit Message Generation ---
     if not commit_message:
@@ -10533,15 +10584,15 @@ async def main():
         return
 
     if args.command == "commit":
-        run_commit(args)
+        await run_commit(args)
         return
 
     if args.command == "feature":
-        run_feature(args)
+        await run_feature(args)
         return
 
     if args.command == "interact":
-        run_interact(args)
+        await run_interact(args)
         return
 
     if args.command == "profile":

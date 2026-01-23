@@ -4,7 +4,7 @@ from main import run_commit
 import argparse
 from pathlib import Path
 
-class TestCommitCommand(unittest.TestCase):
+class TestCommitCommand(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         # This mock will be active for all tests in this class
@@ -27,18 +27,19 @@ class TestCommitCommand(unittest.TestCase):
     @patch('builtins.input')
     @patch('shutil.which', return_value='/usr/bin/git')
     @patch('pathlib.Path.exists', return_value=True)
-    def test_interactive_commit_basic(self, mock_path_exists, mock_which, mock_input):
+    async def test_interactive_commit_basic(self, mock_path_exists, mock_which, mock_input):
         # Arrange
         mock_input.side_effect = ['feat', 'cli', 'Add new commit command', '', 'n', 'y']
         args = argparse.Namespace(
             message=None,
             run_tests=False,
-            project_dir=Path('.')
+            project_dir=Path('.'),
+            generate=False
         )
 
         # Act
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
 
         # Assert
         self.assertEqual(cm.exception.code, 0)
@@ -57,18 +58,19 @@ class TestCommitCommand(unittest.TestCase):
     @patch('builtins.input')
     @patch('shutil.which', return_value='/usr/bin/git')
     @patch('pathlib.Path.exists', return_value=True)
-    def test_non_interactive_commit(self, mock_path_exists, mock_which, mock_input):
+    async def test_non_interactive_commit(self, mock_path_exists, mock_which, mock_input):
         # Arrange
         commit_message = "feat: a regular commit"
         args = argparse.Namespace(
             message=commit_message,
             run_tests=False,
-            project_dir=Path('.')
+            project_dir=Path('.'),
+            generate=False
         )
 
         # Act
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
 
         # Assert
         self.assertEqual(cm.exception.code, 0)

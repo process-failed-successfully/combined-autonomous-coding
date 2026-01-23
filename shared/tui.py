@@ -28,6 +28,7 @@ from shared.map import scan_project, CodeNode
 from shared.git import get_git_log, get_commit_details
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite
 from shared.search import search_codebase
+from shared.work_session import WorkSessionManager, Session
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1142,6 +1143,183 @@ class SearchTab(Container):
              self.notify(f"Preview error: {e}", severity="error")
 
 
+class SessionTab(Container):
+    """Tab for managing work sessions."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = WorkSessionManager(project_dir)
+        self.current_session_name = None
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: Session List
+            with Vertical(id="session-list-container", classes="stat-box"):
+                yield Label("[bold]Sessions[/bold]")
+                yield DataTable(id="session-table")
+                with Horizontal():
+                    yield Input(placeholder="New session name...", id="new-session-input")
+                    yield Button("Create", id="btn-create-session", variant="primary")
+                yield Button("Refresh", id="btn-refresh-sessions", variant="default")
+
+            # Right Pane: Session Details
+            with Vertical(id="session-details-container"):
+                yield Label("[bold]Session Details[/bold]")
+                yield Label("Select a session to view details.", id="session-header")
+
+                with TabbedContent():
+                    with TabPane("Files"):
+                        with Horizontal():
+                            yield Input(placeholder="Add file path...", id="add-file-input")
+                            yield Button("Add File", id="btn-add-file", variant="success")
+                        yield ListView(id="session-files-list")
+                        yield Button("Remove Selected File", id="btn-remove-file", variant="error")
+
+                    with TabPane("Notes"):
+                        with Horizontal():
+                            yield Input(placeholder="Add note...", id="add-note-input")
+                            yield Button("Add Note", id="btn-add-note", variant="success")
+                        yield RichLog(id="session-notes-log", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#session-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Name", "Updated", "Description")
+        self.load_sessions()
+
+    def load_sessions(self) -> None:
+        table = self.query_one("#session-table", DataTable)
+        table.clear()
+
+        sessions = self.manager.list_sessions()
+        active = self.manager.get_active_session()
+        active_name = active.name if active else None
+
+        for s in sessions:
+            name = s["name"]
+            if name == active_name:
+                name_display = f"[green]● {name}[/green]"
+            else:
+                name_display = name
+
+            table.add_row(
+                name_display,
+                s["updated_at"],
+                s.get("description", ""),
+                key=name # Store raw name as key
+            )
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-refresh-sessions":
+            self.load_sessions()
+        elif event.button.id == "btn-create-session":
+            await self.create_session()
+        elif event.button.id == "btn-add-file":
+            await self.add_file()
+        elif event.button.id == "btn-add-note":
+            await self.add_note()
+        elif event.button.id == "btn-remove-file":
+            await self.remove_file()
+
+    async def create_session(self) -> None:
+        inp = self.query_one("#new-session-input", Input)
+        name = inp.value
+        if not name:
+            self.notify("Session name required.", severity="error")
+            return
+
+        try:
+            self.manager.create(name)
+            self.notify(f"Session '{name}' created.")
+            inp.value = ""
+            self.load_sessions()
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    @on(DataTable.RowSelected, "#session-table")
+    def on_session_selected(self, event: DataTable.RowSelected) -> None:
+        # Key was stored as raw name
+        name = event.row_key.value
+        self.load_session_details(name)
+
+    def load_session_details(self, name: str) -> None:
+        self.current_session_name = name
+        session = self.manager.load_session(name)
+        if not session:
+            self.notify("Session not found.", severity="error")
+            return
+
+        header = self.query_one("#session-header", Label)
+        header.update(f"[bold]{session.name}[/bold] (Created: {session.created_at})")
+
+        # Files
+        files_list = self.query_one("#session-files-list", ListView)
+        files_list.clear()
+        for f in session.files:
+            files_list.append(ListItem(Label(f)))
+
+        # Notes
+        notes_log = self.query_one("#session-notes-log", RichLog)
+        notes_log.clear()
+        for n in session.notes:
+            notes_log.write(n)
+
+    async def add_file(self) -> None:
+        if not self.current_session_name:
+            self.notify("No session selected.", severity="warning")
+            return
+
+        inp = self.query_one("#add-file-input", Input)
+        path = inp.value
+        if not path:
+            return
+
+        try:
+            self.manager.add_file(self.current_session_name, path)
+            self.notify("File added.")
+            inp.value = ""
+            self.load_session_details(self.current_session_name)
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    async def add_note(self) -> None:
+        if not self.current_session_name:
+            self.notify("No session selected.", severity="warning")
+            return
+
+        inp = self.query_one("#add-note-input", Input)
+        note = inp.value
+        if not note:
+            return
+
+        try:
+            self.manager.add_note(self.current_session_name, note)
+            self.notify("Note added.")
+            inp.value = ""
+            self.load_session_details(self.current_session_name)
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    async def remove_file(self) -> None:
+         if not self.current_session_name:
+            return
+
+         files_list = self.query_one("#session-files-list", ListView)
+         if files_list.index is not None:
+             item = files_list.children[files_list.index]
+             # Extract text from Label inside ListItem
+             label = item.query_one(Label)
+             path = str(label.renderable)
+
+             try:
+                 self.manager.remove_file(self.current_session_name, path)
+                 self.notify(f"Removed {path}")
+                 self.load_session_details(self.current_session_name)
+             except Exception as e:
+                 self.notify(f"Error: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1157,7 +1335,7 @@ class AgentTUI(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with TabbedContent():
+        with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
@@ -1180,6 +1358,8 @@ class AgentTUI(App):
                 yield CodeMapTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):
                 yield ProfileTab(self.project_dir)
+            with TabPane("Sessions", id="tab-sessions"):
+                yield SessionTab(self.project_dir)
             with TabPane("Logs", id="tab-logs"):
                 yield LogsTab()
             with TabPane("Database", id="tab-database"):

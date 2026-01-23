@@ -30,7 +30,7 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test(size=(120, 40)) as pilot:
             # Switch to database tab
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-database"
             await pilot.pause()
 
@@ -58,7 +58,7 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test(size=(120, 40)) as pilot:
             # Switch to database tab
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-database"
             await pilot.pause()
 
@@ -82,7 +82,7 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test(size=(120, 40)) as pilot:
             # Switch to database tab
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-database"
             await pilot.pause()
 
@@ -119,7 +119,7 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test(size=(120, 40)) as pilot:
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-database"
             await pilot.pause()
 

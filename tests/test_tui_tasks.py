@@ -47,7 +47,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#tab-tasks"))
 
             # Switch to tasks tab
-            app.query_one("TabbedContent").active = "tab-tasks"
+            app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
             tasks_tab = app.query_one(TasksTab)
@@ -68,7 +68,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-tasks"
+            app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
             tasks_tab = app.query_one(TasksTab)
@@ -83,7 +83,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-tasks"
+            app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
             initial_count = self.mock_tm.fetch_all_tasks.call_count
@@ -103,7 +103,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("TabbedContent").active = "tab-tasks"
+            app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
             tasks_tab = app.query_one(TasksTab)

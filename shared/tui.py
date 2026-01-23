@@ -5,7 +5,7 @@ import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -16,6 +16,7 @@ from rich.syntax import Syntax
 from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
+from shared.plan import run_plan_logic
 from shared.optimize import OptimizationManager
 from shared.database import init_db
 from shared.github_client import GitHubClient
@@ -1952,6 +1953,94 @@ class ApiLabTab(Container):
             log.write(result['body'])
 
 
+class PlanTab(Container):
+    """Tab for interactive planning (Spec & Plan)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.spec_file = project_dir / "app_spec.txt"
+        self.feature_file = project_dir / "feature_list.json"
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: Spec Editor
+            with Vertical(id="plan-spec-container", classes="stat-box"):
+                yield Label("[bold]Application Specification (app_spec.txt)[/bold]")
+                yield TextArea(id="spec-editor", language="text")
+                with Horizontal():
+                    yield Button("Save Spec", id="btn-save-spec", variant="primary")
+                    yield Select.from_values(["gemini", "cursor", "local"], id="plan-agent-select", value="gemini")
+                    yield Button("Generate Plan", id="btn-generate-plan", variant="warning")
+
+            # Right Pane: Plan Preview
+            with Vertical(id="plan-preview-container", classes="stat-box"):
+                yield Label("[bold]Generated Plan (feature_list.json)[/bold]")
+                yield RichLog(id="plan-log", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        self.load_spec()
+        self.load_plan()
+
+    def load_spec(self) -> None:
+        editor = self.query_one("#spec-editor", TextArea)
+        if self.spec_file.exists():
+            editor.load_text(self.spec_file.read_text())
+        else:
+            editor.load_text("")
+
+    def load_plan(self) -> None:
+        log = self.query_one("#plan-log", RichLog)
+        log.clear()
+        if self.feature_file.exists():
+            content = self.feature_file.read_text()
+            log.write(Syntax(content, "json", theme="monokai"))
+        else:
+            log.write("No plan generated yet.")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-save-spec":
+            self.save_spec()
+        elif event.button.id == "btn-generate-plan":
+            await self.generate_plan()
+
+    def save_spec(self) -> None:
+        editor = self.query_one("#spec-editor", TextArea)
+        content = editor.text
+        try:
+            self.spec_file.write_text(content)
+            self.notify("Spec saved successfully.")
+        except Exception as e:
+            self.notify(f"Error saving spec: {e}", severity="error")
+
+    async def generate_plan(self) -> None:
+        self.save_spec()
+        log = self.query_one("#plan-log", RichLog)
+        log.clear()
+        log.write("[italic]Generating plan... this may take a moment.[/italic]")
+
+        agent_type = self.query_one("#plan-agent-select", Select).value or "gemini"
+        self.notify(f"Generating plan with {agent_type}...")
+
+        try:
+            success, output = await run_plan_logic(
+                project_dir=self.project_dir,
+                spec_file=self.spec_file,
+                agent_type=agent_type,
+                capture_output=True
+            )
+            log.clear()
+            log.write(output)
+            if success:
+                self.notify("Plan generated!")
+                self.load_plan()
+            else:
+                self.notify("Plan generation failed.", severity="error")
+        except Exception as e:
+            log.write(f"[bold red]Error:[/bold red] {e}")
+            self.notify(f"Error: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1970,6 +2059,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Plan", id="tab-plan"):
+                yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
             with TabPane("Recipes", id="tab-recipes"):

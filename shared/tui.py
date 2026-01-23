@@ -5,7 +5,7 @@ import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -16,6 +16,7 @@ from rich.syntax import Syntax
 from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
+from shared.plan import run_plan_logic
 from shared.optimize import OptimizationManager
 from shared.database import init_db
 from shared.github_client import GitHubClient
@@ -54,6 +55,105 @@ def get_git_info(project_dir: Path) -> dict:
         except Exception:
             pass
     return info
+
+class PlanTab(Container):
+    """Tab for planning the project (spec -> plan)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Project Plan Manager[/bold]", classes="welcome-text")
+
+            with Horizontal(classes="stat-box"):
+                yield Button("Save Spec", id="btn-save-spec", variant="success")
+                yield Button("Generate Plan (AI)", id="btn-generate-plan", variant="primary")
+                yield Button("Save Plan", id="btn-save-plan", variant="success")
+                yield Select.from_values(["gemini", "cursor", "local"], id="plan-agent-select", value="gemini")
+
+            with Horizontal():
+                # Spec Pane
+                with Vertical(classes="stat-box", id="spec-pane"):
+                    yield Label("[bold]Application Spec (app_spec.txt)[/bold]")
+                    yield TextArea("", language="markdown", id="spec-editor")
+
+                # Plan Pane
+                with Vertical(classes="stat-box", id="plan-pane"):
+                    yield Label("[bold]Feature List (feature_list.json)[/bold]")
+                    yield TextArea("", language="json", id="plan-editor")
+
+    def on_mount(self) -> None:
+        self.load_files()
+
+    def load_files(self) -> None:
+        # Load Spec
+        spec_path = self.project_dir / "app_spec.txt"
+        spec_editor = self.query_one("#spec-editor", TextArea)
+        if spec_path.exists():
+            spec_editor.text = spec_path.read_text(encoding="utf-8", errors="replace")
+        else:
+            spec_editor.text = "# Application Specification\n\nDescribe your app here..."
+
+        # Load Plan
+        plan_path = self.project_dir / "feature_list.json"
+        plan_editor = self.query_one("#plan-editor", TextArea)
+        if plan_path.exists():
+            plan_editor.text = plan_path.read_text(encoding="utf-8", errors="replace")
+        else:
+            plan_editor.text = "[]"
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-save-spec":
+            self.save_spec()
+        elif event.button.id == "btn-save-plan":
+            self.save_plan()
+        elif event.button.id == "btn-generate-plan":
+            await self.generate_plan()
+
+    def save_spec(self) -> None:
+        content = self.query_one("#spec-editor", TextArea).text
+        path = self.project_dir / "app_spec.txt"
+        try:
+            path.write_text(content, encoding="utf-8")
+            self.notify("Spec saved.")
+        except Exception as e:
+            self.notify(f"Error saving spec: {e}", severity="error")
+
+    def save_plan(self) -> None:
+        content = self.query_one("#plan-editor", TextArea).text
+        path = self.project_dir / "feature_list.json"
+        try:
+            path.write_text(content, encoding="utf-8")
+            self.notify("Plan saved.")
+        except Exception as e:
+            self.notify(f"Error saving plan: {e}", severity="error")
+
+    async def generate_plan(self) -> None:
+        # Save spec first
+        self.save_spec()
+
+        agent_type = self.query_one("#plan-agent-select", Select).value or "gemini"
+
+        self.notify(f"Generating plan with {agent_type}...", severity="information", timeout=5)
+
+        # Call logic
+        try:
+            success, message = await run_plan_logic(
+                self.project_dir,
+                agent_type=agent_type,
+                capture_output=True
+            )
+
+            if success:
+                self.notify("Plan generated successfully.")
+                self.load_files() # Reload to show new plan
+            else:
+                self.notify(f"Plan generation failed: {message}", severity="error", timeout=10)
+        except Exception as e:
+             self.notify(f"Critical Error: {e}", severity="error")
+
 
 class DashboardTab(Container):
     """The main dashboard tab."""
@@ -1970,6 +2070,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Plan", id="tab-plan"):
+                yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
             with TabPane("Recipes", id="tab-recipes"):

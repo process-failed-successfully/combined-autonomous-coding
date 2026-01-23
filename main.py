@@ -62,6 +62,7 @@ from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
 from shared.polish import run_polish_logic
+from shared.troubleshoot import run_troubleshoot_logic
 from shared.health import run_health_check
 from shared.work_session import WorkSessionManager
 import json
@@ -2944,6 +2945,21 @@ async def run_optimize(args):
         args=args.args,
         agent_type=args.agent,
         model=args.model
+    )
+    sys.exit(0 if success else 1)
+
+
+async def run_troubleshoot(args):
+    """Runs the interactive troubleshooting session."""
+    # Setup logging
+    logger, _ = setup_logger(name="troubleshoot_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_troubleshoot_logic(
+        project_dir=args.project_dir,
+        issue=args.issue,
+        agent_type=args.agent,
+        model=args.model,
+        yes=args.yes
     )
     sys.exit(0 if success else 1)
 
@@ -8019,6 +8035,43 @@ def parse_args(argv=None):
         help="Output format (default: text).",
     )
 
+    # --- New 'troubleshoot' command ---
+    parser_troubleshoot = subparsers.add_parser(
+        "troubleshoot",
+        help="Interactive troubleshooting assistant (Detect, Diagnose, Fix, Learn)."
+    )
+    parser_troubleshoot.add_argument(
+        "--issue",
+        help="Description of the issue (optional, otherwise detects automatically)."
+    )
+    parser_troubleshoot.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_troubleshoot.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_troubleshoot.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_troubleshoot.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts."
+    )
+    parser_troubleshoot.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+
     # --- New 'health' command ---
     parser_health = subparsers.add_parser(
         "health",
@@ -10747,6 +10800,10 @@ async def main():
 
     if args.command == "verify":
         run_verify(args)
+        return
+
+    if args.command == "troubleshoot":
+        await run_troubleshoot(args)
         return
 
     # Handle `health` command

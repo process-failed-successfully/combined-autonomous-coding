@@ -34,6 +34,13 @@ def _get_sqlite_schema(db_path: Path) -> str:
     except Exception as e:
         return f"Error reading schema: {e}"
 
+def is_read_only_query(sql: str) -> bool:
+    """Checks if a SQL query is read-only (SELECT, PRAGMA, EXPLAIN)."""
+    sql = sql.strip().lower()
+    # Note: 'WITH' is excluded because CTEs can be used with DELETE/UPDATE/INSERT
+    return sql.startswith(("select", "pragma", "explain"))
+
+
 def get_schema_info(project_dir: Path) -> Tuple[str, Optional[Path]]:
     """
     Detects the database and retrieves schema information.
@@ -170,9 +177,7 @@ async def run_db_query_logic(
     print(f"\nGenerated SQL: \033[1m{sql_query}\033[0m")
 
     # 3. Confirm Execution
-    is_read_only = sql_query.lower().startswith("select") or sql_query.lower().startswith("pragma")
-
-    if not is_read_only and not yes:
+    if not is_read_only_query(sql_query) and not yes:
         print("⚠️  This query may modify data.")
         confirm = input("Execute this query? [y/N]: ").strip().lower()
         if confirm != 'y':

@@ -40,7 +40,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Check if TabbedContent exists
-            self.assertIsInstance(app.query_one(TabbedContent), TabbedContent)
+            self.assertIsInstance(app.query_one("#main-tabs"), TabbedContent)
             # Check if tabs are present by ID
             self.assertTrue(app.query_one("#tab-dashboard"))
             self.assertTrue(app.query_one("#tab-explorer"))
@@ -74,7 +74,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to explorer tab
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-explorer"
             await pilot.pause()
 
@@ -99,7 +99,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to logs tab
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-logs"
             await pilot.pause()
 
@@ -126,7 +126,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         """Test InteractTab structure."""
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-interact"
             await pilot.pause()
 
@@ -141,7 +141,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         """Test KnowledgeTab structure and loading."""
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            tabbed_content = app.query_one(TabbedContent)
+            tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-knowledge"
             await pilot.pause()
 

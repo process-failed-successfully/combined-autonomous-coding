@@ -31,6 +31,7 @@ from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
 from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
+from shared.secrets import SecretsManager
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -926,6 +927,146 @@ class AnalyticsTab(Container):
             sec_table.add_row(sev, f["type"], f["description"], location)
 
 
+class SecretsTab(Container):
+    """Tab for managing encrypted secrets."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = SecretsManager(project_dir)
+        self.key_exists = False
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Secrets Manager[/bold]", classes="welcome-text")
+
+            # Initialization Status
+            with Horizontal(id="secret-init-container", classes="stat-box"):
+                yield Label("Status: ", id="lbl-secret-status")
+                yield Button("Initialize Key", id="btn-secret-init", variant="warning", disabled=True)
+
+            with Horizontal():
+                # Left Pane: Secrets List
+                with Vertical(id="secrets-list-container", classes="stat-box"):
+                    yield Label("[bold]Secrets[/bold]")
+                    yield ListView(id="secrets-list")
+                    yield Button("Refresh", id="btn-secret-refresh", variant="default")
+
+                # Right Pane: Actions
+                with Vertical(id="secret-actions-container"):
+                    yield Label("[bold]Manage Secrets[/bold]")
+
+                    with Container(classes="stat-box"):
+                        yield Label("Add / Update Secret")
+                        yield Input(placeholder="Name (e.g. API_KEY)...", id="secret-name-input")
+                        yield Input(placeholder="Value...", id="secret-value-input", password=True)
+                        yield Checkbox("Show Value", id="chk-show-secret")
+                        yield Button("Set Secret", id="btn-secret-add", variant="primary")
+
+                    with Container(classes="stat-box"):
+                        yield Label("Actions on Selected Secret")
+                        yield Button("Delete Selected", id="btn-secret-delete", variant="error", disabled=True)
+
+    def on_mount(self) -> None:
+        self.check_key()
+
+    def check_key(self) -> None:
+        self.key_exists = self.manager.key_path.exists()
+        lbl = self.query_one("#lbl-secret-status", Label)
+        btn = self.query_one("#btn-secret-init", Button)
+
+        if self.key_exists:
+            lbl.update("[green]Encryption Key Active[/green]")
+            btn.disabled = True
+            self.load_secrets()
+        else:
+            lbl.update("[red]No Encryption Key Found[/red]")
+            btn.disabled = False
+            self.query_one("#secrets-list", ListView).clear()
+
+    def load_secrets(self) -> None:
+        if not self.key_exists:
+            return
+
+        secrets_list = self.query_one("#secrets-list", ListView)
+        secrets_list.clear()
+
+        try:
+            names = self.manager.list_secrets()
+            for name in names:
+                secrets_list.append(ListItem(Label(name)))
+        except Exception as e:
+            self.notify(f"Error loading secrets: {e}", severity="error")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-secret-init":
+            self.init_key()
+        elif event.button.id == "btn-secret-refresh":
+            self.check_key()
+        elif event.button.id == "btn-secret-add":
+            self.add_secret()
+        elif event.button.id == "btn-secret-delete":
+            self.delete_secret()
+
+    def init_key(self) -> None:
+        try:
+            if self.manager.generate_key():
+                self.notify("Encryption key generated.")
+                self.check_key()
+            else:
+                self.notify("Key already exists.", severity="warning")
+        except Exception as e:
+             self.notify(f"Error generating key: {e}", severity="error")
+
+    def add_secret(self) -> None:
+        if not self.key_exists:
+            self.notify("Initialize key first.", severity="error")
+            return
+
+        name = self.query_one("#secret-name-input", Input).value
+        value = self.query_one("#secret-value-input", Input).value
+
+        if not name or not value:
+            self.notify("Name and value required.", severity="error")
+            return
+
+        try:
+            self.manager.set_secret(name, value)
+            self.notify(f"Secret '{name}' set.")
+            self.query_one("#secret-name-input", Input).value = ""
+            self.query_one("#secret-value-input", Input).value = ""
+            self.load_secrets()
+        except Exception as e:
+            self.notify(f"Error setting secret: {e}", severity="error")
+
+    def delete_secret(self) -> None:
+        secrets_list = self.query_one("#secrets-list", ListView)
+        if secrets_list.index is None:
+            return
+
+        item = secrets_list.children[secrets_list.index]
+        label = item.query_one(Label)
+        name = str(label.renderable)
+
+        try:
+            if self.manager.delete_secret(name):
+                self.notify(f"Deleted secret '{name}'")
+                self.load_secrets()
+            else:
+                self.notify(f"Secret '{name}' not found.", severity="error")
+        except Exception as e:
+            self.notify(f"Error deleting secret: {e}", severity="error")
+
+    @on(ListView.Selected, "#secrets-list")
+    def on_secret_selected(self) -> None:
+        self.query_one("#btn-secret-delete").disabled = False
+
+    @on(Checkbox.Changed, "#chk-show-secret")
+    def on_show_secret_changed(self, event: Checkbox.Changed) -> None:
+        inp = self.query_one("#secret-value-input", Input)
+        inp.password = not event.value
+
+
 class DatabaseTab(Container):
     """Tab for database management."""
 
@@ -1704,6 +1845,8 @@ class AgentTUI(App):
                 yield LogsTab()
             with TabPane("Database", id="tab-database"):
                 yield DatabaseTab(self.project_dir)
+            with TabPane("Secrets", id="tab-secrets"):
+                yield SecretsTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

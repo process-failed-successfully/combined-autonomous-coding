@@ -2499,6 +2499,108 @@ class ReleaseTab(Container):
             self.notify(f"Error: {e}", severity="error")
 
 
+class TestGenTab(Container):
+    """Tab for generating unit tests."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.selected_file = None
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: Source File Tree
+            with Vertical(id="testgen-list-container", classes="stat-box"):
+                yield Label("[bold]Source Files[/bold]")
+                yield DirectoryTree(str(self.project_dir), id="testgen-tree")
+
+            # Right Pane: Configuration & Preview
+            with Vertical(id="testgen-details-container"):
+                yield Label("[bold]Configuration[/bold]")
+
+                with Horizontal(classes="stat-box"):
+                    yield Label("Framework:", classes="label")
+                    yield Select.from_values(["pytest", "unittest"], id="testgen-framework", value="pytest")
+                    yield Label("Agent:", classes="label")
+                    yield Select.from_values(["gemini", "cursor", "local"], id="testgen-agent", value="gemini")
+
+                with Horizontal(classes="stat-box"):
+                     yield Button("Generate Tests", id="btn-testgen-generate", variant="primary", disabled=True)
+                     yield Button("Save Tests", id="btn-testgen-save", variant="success", disabled=True)
+
+                yield Label("[bold]Preview[/bold]")
+                yield TextArea(id="testgen-preview", language="python", read_only=False)
+
+    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
+        path = event.path
+        if path.is_file():
+            self.selected_file = path
+            self.query_one("#btn-testgen-generate").disabled = False
+            self.notify(f"Selected {path.name}")
+        else:
+            self.selected_file = None
+            self.query_one("#btn-testgen-generate").disabled = True
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-testgen-generate":
+            await self.generate_tests()
+        elif event.button.id == "btn-testgen-save":
+            await self.save_tests()
+
+    async def generate_tests(self) -> None:
+        if not self.selected_file:
+            return
+
+        framework = self.query_one("#testgen-framework", Select).value or "pytest"
+        agent_type = self.query_one("#testgen-agent", Select).value or "gemini"
+
+        preview = self.query_one("#testgen-preview", TextArea)
+        preview.text = f"# Generating {framework} tests for {self.selected_file.name}...\n# Please wait."
+
+        self.notify(f"Generating tests with {agent_type}...", severity="information")
+
+        from shared.test_generator import TestGenerator
+
+        generator = TestGenerator(self.project_dir)
+
+        try:
+            success, content = await generator.generate_test_code(
+                self.selected_file,
+                framework=framework,
+                agent_type=agent_type
+            )
+
+            if success:
+                preview.text = content
+                self.query_one("#btn-testgen-save").disabled = False
+                self.notify("Tests generated.")
+            else:
+                preview.text = f"# Error generating tests:\n{content}"
+                self.notify("Generation failed.", severity="error")
+
+        except Exception as e:
+            preview.text = f"# Critical Error:\n{e}"
+            self.notify(f"Error: {e}", severity="error")
+
+    async def save_tests(self) -> None:
+        if not self.selected_file:
+            return
+
+        preview = self.query_one("#testgen-preview", TextArea)
+        content = preview.text
+
+        tests_dir = self.project_dir / "tests"
+        tests_dir.mkdir(exist_ok=True)
+        test_filename = f"test_{self.selected_file.stem}.py"
+        output_path = tests_dir / test_filename
+
+        try:
+            output_path.write_text(content, encoding="utf-8")
+            self.notify(f"Saved to {output_path.name}")
+        except Exception as e:
+            self.notify(f"Error saving file: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2517,6 +2619,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Test Gen", id="tab-test-gen"):
+                yield TestGenTab(self.project_dir)
             with TabPane("Plan", id="tab-plan"):
                 yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):

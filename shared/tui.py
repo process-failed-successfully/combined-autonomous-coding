@@ -2,10 +2,11 @@ import sys
 import io
 import contextlib
 import os
+import json
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -33,6 +34,7 @@ from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
 from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
+from shared.plan import run_plan_logic
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1952,6 +1954,159 @@ class ApiLabTab(Container):
             log.write(result['body'])
 
 
+class PlanTab(Container):
+    """Tab for Project Planning (Spec & Feature List)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.feature_list_path = project_dir / "feature_list.json"
+        self.spec_path = project_dir / "app_spec.txt"
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: App Spec
+            with Vertical(id="plan-spec-container", classes="stat-box"):
+                yield Label("[bold]Application Specification[/bold]")
+                yield TextArea(language="text", id="spec-editor")
+                with Horizontal():
+                    yield Button("Save Spec", id="btn-save-spec", variant="primary")
+                    yield Button("Generate Plan", id="btn-generate-plan", variant="warning")
+
+            # Right Pane: Feature List
+            with Vertical(id="plan-features-container", classes="stat-box"):
+                yield Label("[bold]Feature Plan[/bold]")
+                yield DataTable(id="features-table")
+
+                with Horizontal():
+                    yield Input(placeholder="Feature Name...", id="feature-name-input")
+                    yield Button("Add Feature", id="btn-add-feature", variant="success")
+
+                yield Button("Refresh", id="btn-refresh-plan", variant="default")
+                yield Label("", id="plan-status")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#features-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Name", "Status", "Description")
+        self.load_data()
+
+    def load_data(self) -> None:
+        # Load Spec
+        if self.spec_path.exists():
+            try:
+                content = self.spec_path.read_text()
+                self.query_one("#spec-editor", TextArea).text = content
+            except Exception as e:
+                self.notify(f"Error reading spec: {e}", severity="error")
+        else:
+            self.query_one("#spec-editor", TextArea).text = ""
+
+        # Load Features
+        self.load_features()
+
+    def load_features(self) -> None:
+        table = self.query_one("#features-table", DataTable)
+        table.clear()
+
+        if self.feature_list_path.exists():
+            try:
+                features = json.loads(self.feature_list_path.read_text())
+                for f in features:
+                    name = f.get("name", "Unknown")
+                    status = f.get("status", "pending")
+                    desc = f.get("description", "")
+
+                    status_fmt = f"[green]{status}[/green]" if status == "completed" else status
+                    table.add_row(name, status_fmt, desc)
+            except Exception as e:
+                self.notify(f"Error reading feature list: {e}", severity="error")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-save-spec":
+            self.save_spec()
+        elif event.button.id == "btn-generate-plan":
+            await self.generate_plan()
+        elif event.button.id == "btn-add-feature":
+            self.add_feature()
+        elif event.button.id == "btn-refresh-plan":
+            self.load_data()
+            self.notify("Plan refreshed.")
+
+    def save_spec(self) -> None:
+        content = self.query_one("#spec-editor", TextArea).text
+        try:
+            self.spec_path.write_text(content)
+            self.notify("Application spec saved.")
+        except Exception as e:
+            self.notify(f"Error saving spec: {e}", severity="error")
+
+    async def generate_plan(self) -> None:
+        self.save_spec() # Save first
+        self.notify("Generating plan... (this may take a minute)")
+        self.query_one("#plan-status", Label).update("Generating Plan with AI...")
+
+        # Disable button
+        self.query_one("#btn-generate-plan", Button).disabled = True
+
+        import asyncio
+
+        try:
+            # We assume default agent 'gemini' for now, or could add a selector
+            success = await run_plan_logic(
+                self.project_dir,
+                spec_file=self.spec_path,
+                agent_type="gemini"
+            )
+
+            if success:
+                self.notify("Plan generated successfully!")
+                self.query_one("#plan-status", Label).update("Plan Generated.")
+                self.load_features()
+            else:
+                self.notify("Plan generation failed.", severity="error")
+                self.query_one("#plan-status", Label).update("Generation Failed.")
+
+        except Exception as e:
+            self.notify(f"Error generating plan: {e}", severity="error")
+            self.query_one("#plan-status", Label).update("Error.")
+        finally:
+            self.query_one("#btn-generate-plan", Button).disabled = False
+
+    def add_feature(self) -> None:
+        inp = self.query_one("#feature-name-input", Input)
+        name = inp.value
+        if not name:
+            self.notify("Feature name required.", severity="error")
+            return
+
+        features = []
+        if self.feature_list_path.exists():
+            try:
+                features = json.loads(self.feature_list_path.read_text())
+            except Exception:
+                pass
+
+        # Check duplicate
+        if any(f.get("name") == name for f in features):
+            self.notify("Feature already exists.", severity="warning")
+            return
+
+        features.append({
+            "name": name,
+            "description": "Added via TUI",
+            "status": "pending"
+        })
+
+        try:
+            self.feature_list_path.write_text(json.dumps(features, indent=2))
+            self.notify(f"Feature '{name}' added.")
+            inp.value = ""
+            self.load_features()
+        except Exception as e:
+            self.notify(f"Error saving feature list: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1970,6 +2125,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Plan", id="tab-plan"):
+                yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
             with TabPane("Recipes", id="tab-recipes"):

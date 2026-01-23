@@ -32,6 +32,7 @@ from shared.work_session import WorkSessionManager, Session
 from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
 from shared.secrets import SecretsManager
+from shared.api_lab import ApiLabManager
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1797,6 +1798,160 @@ class WorktreesTab(Container):
             self.notify(f"Error removing worktree: {e}", severity="error")
 
 
+class ApiLabTab(Container):
+    """Tab for API experimentation."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = ApiLabManager(project_dir)
+        self.selected_endpoint = None
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: Endpoint List
+            with Vertical(id="api-list-container", classes="stat-box"):
+                yield Label("[bold]Endpoints[/bold]")
+                yield ListView(id="api-endpoint-list")
+                with Horizontal():
+                    yield Button("Load Spec", id="btn-api-load", variant="primary")
+                    yield Button("Generate", id="btn-api-generate", variant="warning")
+
+            # Right Pane: Request/Response
+            with Vertical(id="api-details-container"):
+                yield Label("[bold]Request Builder[/bold]")
+
+                # Request Line
+                with Horizontal(classes="stat-box"):
+                    yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH"], id="api-method", value="GET")
+                    yield Input(placeholder="URL...", id="api-url")
+                    yield Button("Send", id="btn-api-send", variant="success")
+
+                # Body
+                with Vertical(classes="stat-box"):
+                    yield Label("Request Body (JSON):")
+                    yield Input(placeholder="{ ... }", id="api-body")
+
+                # Response
+                yield Label("[bold]Response[/bold]")
+                yield RichLog(id="api-response-log", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        self.load_spec()
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-api-load":
+            self.load_spec(force_reload=True)
+        elif event.button.id == "btn-api-generate":
+            await self.generate_spec()
+        elif event.button.id == "btn-api-send":
+            await self.send_request()
+
+    def load_spec(self, force_reload: bool = False) -> None:
+        if not self.manager.spec_data or force_reload:
+            if self.manager.load_spec():
+                self.notify("OpenAPI spec loaded.")
+            else:
+                self.notify("No OpenAPI spec found.", severity="warning")
+                return
+
+        endpoints = self.manager.list_endpoints()
+        list_view = self.query_one("#api-endpoint-list", ListView)
+        list_view.clear()
+
+        for ep in endpoints:
+            method = ep['method']
+            path = ep['path']
+            # Color code method
+            if method == "GET": method_fmt = f"[blue]{method}[/blue]"
+            elif method == "POST": method_fmt = f"[green]{method}[/green]"
+            elif method == "DELETE": method_fmt = f"[red]{method}[/red]"
+            else: method_fmt = f"[yellow]{method}[/yellow]"
+
+            label = f"{method_fmt} {path}"
+            item = ListItem(Label(label, markup=True))
+            # Store data in item (monkey patch for simplicity as ListItem data is strictly renderable)
+            item.endpoint_data = ep
+            list_view.append(item)
+
+        # Set Base URL if empty
+        url_input = self.query_one("#api-url", Input)
+        if not url_input.value:
+            base = self.manager.get_server_url()
+            url_input.value = base
+
+    async def generate_spec(self) -> None:
+        self.notify("Generating OpenAPI spec... (this takes time)")
+        from shared.openapi import OpenAPIGenerator
+        import asyncio
+
+        generator = OpenAPIGenerator(self.project_dir)
+        output_path = self.project_dir / "openapi.yaml"
+
+        success = await generator.generate(output_path)
+        if success:
+            self.notify("Spec generated.")
+            self.load_spec(force_reload=True)
+        else:
+            self.notify("Failed to generate spec.", severity="error")
+
+    @on(ListView.Selected, "#api-endpoint-list")
+    def on_endpoint_selected(self, event: ListView.Selected) -> None:
+        if hasattr(event.item, "endpoint_data"):
+            data = event.item.endpoint_data
+
+            # Update Method
+            self.query_one("#api-method", Select).value = data['method']
+
+            # Update URL (append path to base)
+            base = self.manager.get_server_url()
+            path = data['path']
+            # Simple join
+            if base.endswith("/") and path.startswith("/"):
+                full_url = base + path[1:]
+            elif not base.endswith("/") and not path.startswith("/"):
+                full_url = base + "/" + path
+            else:
+                full_url = base + path
+
+            self.query_one("#api-url", Input).value = full_url
+
+    async def send_request(self) -> None:
+        method = self.query_one("#api-method", Select).value
+        url = self.query_one("#api-url", Input).value
+        body = self.query_one("#api-body", Input).value
+
+        if not url:
+            self.notify("URL required.", severity="error")
+            return
+
+        log = self.query_one("#api-response-log", RichLog)
+        log.clear()
+        log.write(f"Sending {method} {url}...")
+
+        import asyncio
+        # Run in thread
+        result = await asyncio.to_thread(self.manager.execute_request, method, url, body=body)
+
+        status = result['status_code']
+        color = "green" if result['success'] else "red"
+
+        log.write(f"Status: [{color}]{status}[/{color}]")
+        log.write("[bold]Headers:[/bold]")
+        for k, v in result['headers'].items():
+            log.write(f"  {k}: {v}")
+
+        log.write("\n[bold]Body:[/bold]")
+        try:
+            # Attempt to highlight JSON
+            if result['body'].strip().startswith("{") or result['body'].strip().startswith("["):
+                log.write(Syntax(result['body'], "json", theme="monokai"))
+            else:
+                log.write(result['body'])
+        except Exception:
+            log.write(result['body'])
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1847,6 +2002,8 @@ class AgentTUI(App):
                 yield DatabaseTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):
                 yield SecretsTab(self.project_dir)
+            with TabPane("API Lab", id="tab-api-lab"):
+                yield ApiLabTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

@@ -1,0 +1,130 @@
+import yaml
+import json
+import requests
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+
+class ApiLabManager:
+    """
+    Manages API Lab state, including loading specs and executing requests.
+    """
+
+    def __init__(self, project_dir: Path):
+        self.project_dir = project_dir
+        self.spec_data: Dict[str, Any] = {}
+        self.history: List[Dict[str, Any]] = []
+
+    def load_spec(self, path: Optional[Path] = None) -> bool:
+        """
+        Loads an OpenAPI specification from a file.
+        If no path is provided, looks for 'openapi.yaml' or 'openapi.json' in the project root.
+        """
+        if path:
+            target_path = path
+        else:
+            # Try default locations
+            yaml_path = self.project_dir / "openapi.yaml"
+            json_path = self.project_dir / "openapi.json"
+            if yaml_path.exists():
+                target_path = yaml_path
+            elif json_path.exists():
+                target_path = json_path
+            else:
+                return False
+
+        try:
+            with open(target_path, 'r') as f:
+                if target_path.suffix == '.json':
+                    self.spec_data = json.load(f)
+                else:
+                    self.spec_data = yaml.safe_load(f)
+            return True
+        except Exception as e:
+            print(f"Error loading spec: {e}")
+            return False
+
+    def list_endpoints(self) -> List[Dict[str, str]]:
+        """
+        Returns a list of available endpoints from the loaded spec.
+        """
+        endpoints = []
+        if not self.spec_data or 'paths' not in self.spec_data:
+            return endpoints
+
+        for path, methods in self.spec_data['paths'].items():
+            for method, details in methods.items():
+                if method.lower() in ['get', 'post', 'put', 'delete', 'patch', 'options', 'head']:
+                    endpoints.append({
+                        'method': method.upper(),
+                        'path': path,
+                        'summary': details.get('summary', '')
+                    })
+        return endpoints
+
+    def get_server_url(self) -> str:
+        """
+        Attempts to determine the base URL from the spec.
+        """
+        if not self.spec_data:
+            return "http://localhost:8000"
+
+        if 'servers' in self.spec_data and self.spec_data['servers']:
+            return self.spec_data['servers'][0].get('url', "http://localhost:8000")
+
+        return "http://localhost:8000"
+
+    def execute_request(self, method: str, url: str, headers: Dict[str, str] = None, params: Dict[str, str] = None, body: str = None) -> Dict[str, Any]:
+        """
+        Executes an HTTP request.
+        """
+        try:
+            # Parse body if it looks like JSON
+            json_body = None
+            data_body = None
+
+            if body:
+                try:
+                    json_body = json.loads(body)
+                except json.JSONDecodeError:
+                    data_body = body
+
+            response = requests.request(
+                method=method,
+                url=url,
+                headers=headers,
+                params=params,
+                json=json_body,
+                data=data_body,
+                timeout=10
+            )
+
+            result = {
+                'status_code': response.status_code,
+                'headers': dict(response.headers),
+                'body': response.text,
+                'success': response.ok
+            }
+
+            # Try to format JSON body for display
+            try:
+                if result['body']:
+                    parsed = response.json()
+                    result['body'] = json.dumps(parsed, indent=2)
+            except ValueError:
+                pass
+
+            self.history.append({
+                'method': method,
+                'url': url,
+                'status': response.status_code
+            })
+
+            return result
+
+        except requests.RequestException as e:
+            return {
+                'status_code': 0,
+                'headers': {},
+                'body': f"Request Error: {str(e)}",
+                'success': False
+            }

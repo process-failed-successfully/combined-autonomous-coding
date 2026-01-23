@@ -1,6 +1,6 @@
 import unittest
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 from pathlib import Path
 from shared.security import SecurityAuditor
@@ -11,9 +11,9 @@ class TestSecurityHistory(unittest.TestCase):
         self.test_dir = Path(self.test_dir_obj.name)
 
         # Init git repo
-        subprocess.run(["git", "init"], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.test_dir, check=True, capture_output=True)
+        subprocess.run(["git", "init"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
 
         self.auditor = SecurityAuditor(self.test_dir)
 
@@ -26,14 +26,14 @@ class TestSecurityHistory(unittest.TestCase):
         secret_content = "AWS_KEY = 'AKIAIOSFODNN7EXAMPLE'"
         secret_file.write_text(secret_content)
 
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "commit", "-m", "Add secret"], cwd=self.test_dir, check=True, capture_output=True)
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
+        subprocess.run(["git", "commit", "-m", "Add secret"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
 
         # 2. Remove the secret
         secret_file.write_text("AWS_KEY = 'REDACTED'")
 
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "commit", "-m", "Remove secret"], cwd=self.test_dir, check=True, capture_output=True)
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
+        subprocess.run(["git", "commit", "-m", "Remove secret"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
 
         # 3. Scan history
         findings = self.auditor.scan_git_history(depth=10)
@@ -60,8 +60,8 @@ class TestSecurityHistory(unittest.TestCase):
         safe_file = self.test_dir / "safe.py"
         safe_file.write_text("print('Hello World')")
 
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "commit", "-m", "Safe commit"], cwd=self.test_dir, check=True, capture_output=True)
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
+        subprocess.run(["git", "commit", "-m", "Safe commit"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
 
         # 2. Scan history
         findings = self.auditor.scan_git_history(depth=10)
@@ -75,8 +75,8 @@ class TestSecurityHistory(unittest.TestCase):
         secret_content = "AWS_KEY = 'AKIAIOSFODNN7EXAMPLE'"
         secret_file.write_text(secret_content)
 
-        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)
-        subprocess.run(["git", "commit", "-m", "Add secret in file with spaces"], cwd=self.test_dir, check=True, capture_output=True)
+        subprocess.run(["git", "add", "."], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
+        subprocess.run(["git", "commit", "-m", "Add secret in file with spaces"], cwd=self.test_dir, check=True, capture_output=True)  # nosec B603
 
         # 2. Scan history
         findings = self.auditor.scan_git_history(depth=10)

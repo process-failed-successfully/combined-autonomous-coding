@@ -84,5 +84,29 @@ class TestPlaygroundManager(unittest.TestCase):
         self.assertEqual(args[0][1], str(file_path))
         self.assertIn("PYTHONPATH", kwargs["env"])
 
+    @patch("shared.playground.subprocess.run")
+    def test_run_capture_output(self, mock_run):
+        self.manager.ensure_setup()
+        file_path = self.manager.playground_dir / "capture_test.py"
+        file_path.touch()
+
+        # Mock successful run with output
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "Hello World"
+        mock_run.return_value.stderr = ""
+
+        success, output = self.manager.run("capture_test.py", capture_output=True)
+        self.assertTrue(success)
+        self.assertEqual(output, "Hello World")
+
+        # Mock failed run with stderr
+        mock_run.return_value.returncode = 1
+        mock_run.return_value.stdout = ""
+        mock_run.return_value.stderr = "Error occurred"
+
+        success, output = self.manager.run("capture_test.py", capture_output=True)
+        self.assertFalse(success)
+        self.assertIn("Error occurred", output)
+
 if __name__ == "__main__":
     unittest.main()

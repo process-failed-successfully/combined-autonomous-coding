@@ -114,29 +114,59 @@ if __name__ == "__main__":
             return []
         return sorted([f for f in self.playground_dir.iterdir() if f.is_file()])
 
-    def run(self, name: str) -> bool:
-        """Runs a playground file."""
+    def run(self, name: str, capture_output: bool = False):
+        """Runs a playground file.
+
+        Args:
+            name: The name of the file to run.
+            capture_output: If True, returns (success, output). If False, returns success boolean.
+        """
         if not name.endswith(".py"):
             name += ".py"
 
         file_path = self.playground_dir / name
         if not file_path.exists():
-            print(f"❌ File '{name}' not found in playground.")
+            msg = f"❌ File '{name}' not found in playground."
+            if capture_output:
+                return False, msg
+            print(msg)
             return False
 
-        print(f"--- Running {name} ---")
+        if not capture_output:
+            print(f"--- Running {name} ---")
+
         try:
             # Run with project root as PYTHONPATH so imports work
             env = os.environ.copy()
             env["PYTHONPATH"] = str(self.project_dir) + os.pathsep + env.get("PYTHONPATH", "")
 
-            subprocess.run([sys.executable, str(file_path)], env=env, check=True)
-            return True
+            if capture_output:
+                result = subprocess.run(
+                    [sys.executable, str(file_path)],
+                    env=env,
+                    capture_output=True,
+                    text=True
+                )
+                output = result.stdout
+                if result.stderr:
+                    output += "\n" + result.stderr
+                return (result.returncode == 0, output)
+            else:
+                subprocess.run([sys.executable, str(file_path)], env=env, check=True)
+                return True
+
         except subprocess.CalledProcessError as e:
+            if capture_output:
+                # Should not reach here with capture_output=True unless check=True
+                # But we didn't set check=True for capture_output case above.
+                pass
             print(f"\n❌ Script failed with exit code {e.returncode}")
             return False
         except Exception as e:
-            print(f"❌ Error running script: {e}")
+            msg = f"❌ Error running script: {e}"
+            if capture_output:
+                return False, msg
+            print(msg)
             return False
 
     def delete(self, name: str) -> bool:

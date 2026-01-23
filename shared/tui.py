@@ -37,6 +37,7 @@ from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
 from shared.playground import PlaygroundManager
 from shared.release import get_latest_tag, get_commits_since_tag, determine_next_version, generate_changelog, perform_release, parse_current_version
+from shared.timeline import TimelineCollector, TimelineRenderer
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -339,6 +340,60 @@ class CodeMapTab(Container):
 
         except Exception as e:
             preview.write(f"Error reading code: {e}")
+
+class TimelineTab(Container):
+    """Tab for viewing the project timeline."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.collector = TimelineCollector(project_dir)
+        self.renderer = TimelineRenderer()
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Project Timeline[/bold]", classes="welcome-text")
+
+            with Horizontal(classes="stat-box"):
+                yield Button("Refresh", id="btn-timeline-refresh", variant="primary")
+                yield Button("Export HTML", id="btn-timeline-html", variant="success")
+
+            yield RichLog(id="timeline-log", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        self.load_timeline()
+
+    def load_timeline(self) -> None:
+        log_view = self.query_one("#timeline-log", RichLog)
+        log_view.clear()
+
+        events = self.collector.get_timeline(limit=50)
+
+        if not events:
+            log_view.write("No events found.")
+            return
+
+        # Use the Rich Table object directly
+        table = self.renderer.get_rich_table(events)
+        log_view.write(table)
+
+    @on(Button.Pressed, "#btn-timeline-refresh")
+    def on_refresh(self) -> None:
+        self.load_timeline()
+        self.notify("Timeline refreshed.")
+
+    @on(Button.Pressed, "#btn-timeline-html")
+    def on_export_html(self) -> None:
+        events = self.collector.get_timeline(limit=100)
+        html_content = self.renderer.render_html(events)
+
+        output_path = self.project_dir / "timeline.html"
+        try:
+            output_path.write_text(html_content, encoding="utf-8")
+            self.notify(f"Timeline exported to {output_path.name}")
+        except Exception as e:
+            self.notify(f"Error exporting timeline: {e}", severity="error")
+
 
 class LogsTab(Container):
     """Tab for viewing and filtering logs."""
@@ -2494,6 +2549,8 @@ class AgentTUI(App):
                 yield ProfileTab(self.project_dir)
             with TabPane("Sessions", id="tab-sessions"):
                 yield SessionTab(self.project_dir)
+            with TabPane("Timeline", id="tab-timeline"):
+                yield TimelineTab(self.project_dir)
             with TabPane("Logs", id="tab-logs"):
                 yield LogsTab()
             with TabPane("Database", id="tab-database"):

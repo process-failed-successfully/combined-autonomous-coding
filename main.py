@@ -5131,89 +5131,20 @@ def run_sprint_command(args):
 
 async def run_plan(args):
     """Generates a feature plan from a spec file without executing it."""
-    # This is a stripped down version of the main() function's setup
-    logger, _ = setup_logger(name="plan_logger", log_file=None, verbose=args.verbose, console_output=True)
+    from shared.plan import run_plan_logic
 
-    logger.info("--- Generating Agent Plan ---")
-
-    # Basic validation
-    if not args.spec or not Path(args.spec).exists():
-        logger.error("❌ Error: A valid --spec file is required for the 'plan' command.")
-        sys.exit(1)
-
-    # Load config from file to respect profiles and base settings
-    ensure_config_exists()
-    file_config = load_config_from_file(profile=args.profile)
-
-    def resolve(cli_arg, config_key, default_val):
-        if cli_arg is not None:
-            return cli_arg
-        if config_key in file_config:
-            return file_config[config_key]
-        return default_val
-
-    # Create a minimal config for planning
-    config = Config(
+    success, message = await run_plan_logic(
         project_dir=args.project_dir,
-        agent_type=args.agent,
-        model=resolve(args.model, "model", None),
         spec_file=args.spec,
+        agent_type=args.agent,
+        model=args.model,
         verbose=args.verbose,
-        # Force settings for planning mode
-        max_iterations=1,
-        stream_output=False,
+        profile=getattr(args, 'profile', None),
+        capture_output=False
     )
 
-    project_name = os.environ.get("PROJECT_NAME", config.project_dir.resolve().name)
-
-    from shared.utils import generate_agent_id
-    try:
-        spec_content = config.spec_file.read_text()
-        agent_id = generate_agent_id(project_name, spec_content, args.agent)
-        config.agent_id = agent_id
-    except Exception as e:
-        logger.warning(f"Could not generate agent ID: {e}")
-        config.agent_id = generate_agent_id(project_name, "", args.agent)
-
-    logger.info(f"Generating plan for spec: {config.spec_file}")
-    logger.info(f"Using agent: {config.agent_type}, Model: {config.model or 'default'}")
-
-    # Dispatch to the correct agent type
-    agent_class_map = {
-        "gemini": GeminiAgent,
-        "cursor": CursorAgent,
-        "local": LocalAgent,
-        "openrouter": OpenRouterAgent,
-    }
-    agent_class = agent_class_map.get(config.agent_type)
-
-    if not agent_class:
-        logger.error(f"Unknown agent type: {config.agent_type}")
+    if not success:
         sys.exit(1)
-
-    agent = agent_class(config)
-
-    try:
-        # This method will be created in the next step
-        plan_generated = await agent.run_planning_session()
-
-        if plan_generated:
-            feature_file = config.project_dir / "feature_list.json"
-            if feature_file.exists():
-                logger.info("\n--- Generated Plan (feature_list.json) ---")
-                # Use print to avoid logger formatting for the JSON output
-                print(feature_file.read_text())
-                logger.info("------------------------------------")
-                logger.info("✅ Plan generated successfully.")
-            else:
-                logger.error("\n❌ Agent finished but did not produce a plan (feature_list.json).")
-        else:
-            logger.error("\n❌ Agent failed to generate a plan.")
-
-    except Exception as e:
-        logger.error(f"An error occurred during planning: {e}", exc_info=True)
-        sys.exit(1)
-
     sys.exit(0)
 
 

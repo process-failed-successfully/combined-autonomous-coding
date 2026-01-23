@@ -4782,7 +4782,7 @@ def run_branch(args):
     sys.exit(0)
 
 
-def run_recipes(args):
+async def run_recipes(args):
     """Manages and runs agent recipes."""
     from shared.recipes import RecipeManager
 
@@ -4830,6 +4830,17 @@ def run_recipes(args):
         else:
              print(f"Recipe '{args.name}' not found.", file=sys.stderr)
              sys.exit(1)
+
+    elif args.action == "learn":
+        from shared.recipe_learner import RecipeLearner
+        learner = RecipeLearner(project_dir)
+        success = await learner.learn_from_run(
+            run_id=args.run_id,
+            recipe_name=args.name,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0 if success else 1)
 
     elif args.action == "create":
         print("--- Create New Recipe ---")
@@ -6487,6 +6498,13 @@ def parse_args(argv=None):
     parser_recipes_run = recipes_subparsers.add_parser("run", help="Execute a recipe.")
     parser_recipes_run.add_argument("name", help="Name of the recipe.")
     parser_recipes_run.add_argument("--dry-run", action="store_true", help="Print commands without executing.")
+
+    # Recipes 'learn'
+    parser_recipes_learn = recipes_subparsers.add_parser("learn", help="Learn a recipe from a previous agent run.")
+    parser_recipes_learn.add_argument("name", help="Name for the new recipe.")
+    parser_recipes_learn.add_argument("--run-id", help="The Run ID to learn from (defaults to latest).")
+    parser_recipes_learn.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use for analysis.")
+    parser_recipes_learn.add_argument("-m", "--model", type=str, help="Model to use.")
 
     # Recipes 'create'
     parser_recipes_create = recipes_subparsers.add_parser("create", help="Create a new recipe interactively.")
@@ -10679,7 +10697,7 @@ async def main():
         return
 
     if args.command in ["recipes", "macro"]:
-        run_recipes(args)
+        await run_recipes(args)
         return
 
     if args.command == "git":

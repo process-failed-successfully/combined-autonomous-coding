@@ -82,14 +82,31 @@ class RecipeManager:
             return self._save_config()
         return False
 
-    def run_recipe(self, name: str, dry_run: bool = False) -> bool:
-        """Executes a recipe."""
-        steps = self.get_recipe(name)
-        if not steps:
-            print(f"❌ Error: Recipe '{name}' not found.", file=sys.stderr)
-            return False
+    def run_recipe(self, name: str, dry_run: bool = False, capture_output: bool = False) -> bool | tuple[bool, str]:
+        """
+        Executes a recipe.
 
-        print(f"--- Running Recipe: {name} ---")
+        Args:
+            name: The name of the recipe to run.
+            dry_run: If True, only prints the steps without executing.
+            capture_output: If True, returns a tuple (success, output_log).
+                            If False, prints to stdout and returns success (bool).
+        """
+        steps = self.get_recipe(name)
+        output_log = []
+
+        def log(msg: str, is_error: bool = False):
+            if capture_output:
+                output_log.append(msg)
+            else:
+                file = sys.stderr if is_error else sys.stdout
+                print(msg, file=file)
+
+        if not steps:
+            log(f"❌ Error: Recipe '{name}' not found.", is_error=True)
+            return (False, "\n".join(output_log)) if capture_output else False
+
+        log(f"--- Running Recipe: {name} ---")
 
         # Prevent infinite recursion (basic check)
         # We check if 'recipes run <name>' is in the steps, but aliases make this hard.
@@ -97,8 +114,8 @@ class RecipeManager:
         import os
         depth = int(os.environ.get("AGENT_RECIPE_DEPTH", "0"))
         if depth > 5:
-            print("❌ Error: Maximum recipe recursion depth exceeded.", file=sys.stderr)
-            return False
+            log("❌ Error: Maximum recipe recursion depth exceeded.", is_error=True)
+            return (False, "\n".join(output_log)) if capture_output else False
 
         env = os.environ.copy()
         env["AGENT_RECIPE_DEPTH"] = str(depth + 1)
@@ -107,8 +124,9 @@ class RecipeManager:
         # Resolve script path to absolute to handle cwd changes properly
         script = str(Path(sys.argv[0]).resolve())
 
+        success = True
         for i, step in enumerate(steps):
-            print(f"\n[Step {i+1}/{len(steps)}] {step}")
+            log(f"\n[Step {i+1}/{len(steps)}] {step}")
 
             if dry_run:
                 continue
@@ -140,15 +158,36 @@ class RecipeManager:
                 # OR automatically append -p if it looks like a standard command.
                 # Actually, passing the CWD to subprocess is cleaner.
 
-                result = subprocess.run(cmd, cwd=self.project_dir, env=env)
+                kwargs = {
+                    "cwd": self.project_dir,
+                    "env": env,
+                    "text": True
+                }
+
+                if capture_output:
+                    kwargs["capture_output"] = True
+
+                result = subprocess.run(cmd, **kwargs)
+
+                if capture_output:
+                    if result.stdout:
+                        output_log.append(result.stdout)
+                    if result.stderr:
+                        output_log.append(result.stderr)
 
                 if result.returncode != 0:
-                    print(f"❌ Step failed with exit code {result.returncode}. Aborting recipe.", file=sys.stderr)
-                    return False
+                    log(f"❌ Step failed with exit code {result.returncode}. Aborting recipe.", is_error=True)
+                    success = False
+                    break
 
             except Exception as e:
-                print(f"❌ Error executing step '{step}': {e}", file=sys.stderr)
-                return False
+                log(f"❌ Error executing step '{step}': {e}", is_error=True)
+                success = False
+                break
 
-        print(f"\n✅ Recipe '{name}' completed successfully.")
-        return True
+        if success:
+            log(f"\n✅ Recipe '{name}' completed successfully.")
+
+        if capture_output:
+            return success, "\n".join(output_log)
+        return success

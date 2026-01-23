@@ -30,6 +30,7 @@ from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_re
 from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
 from shared.worktree import WorktreeManager
+from shared.recipes import RecipeManager
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1331,6 +1332,172 @@ class SessionTab(Container):
                  self.notify(f"Error: {e}", severity="error")
 
 
+class RecipesTab(Container):
+    """Tab for managing recipes (macros)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = RecipeManager(project_dir)
+        self.selected_recipe = None
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: List and Create
+            with Vertical(id="recipe-list-container", classes="stat-box"):
+                yield Label("[bold]Recipes[/bold]")
+                yield DataTable(id="recipe-table")
+
+                with Horizontal():
+                    yield Input(placeholder="Name...", id="recipe-new-name")
+                    yield Input(placeholder="Steps (comma-separated)...", id="recipe-new-steps")
+                yield Button("Create Recipe", id="btn-recipe-create", variant="primary")
+
+                yield Button("Refresh", id="btn-recipe-refresh", variant="default")
+
+            # Right Pane: Details and Actions
+            with Vertical(id="recipe-details-container"):
+                yield Label("[bold]Recipe Details[/bold]")
+                yield Label("Select a recipe to view details.", id="recipe-header")
+
+                yield RichLog(id="recipe-log", wrap=True, highlight=True, markup=True)
+
+                with Horizontal(id="recipe-actions"):
+                    yield Button("Run", id="btn-recipe-run", variant="success", disabled=True)
+                    yield Button("Delete", id="btn-recipe-delete", variant="error", disabled=True)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#recipe-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Name", "Steps")
+        self.load_recipes()
+
+    def load_recipes(self) -> None:
+        table = self.query_one("#recipe-table", DataTable)
+        table.clear()
+
+        recipes = self.manager.list_recipes()
+        for name, steps in recipes.items():
+            steps_preview = ", ".join(steps)
+            if len(steps_preview) > 30:
+                steps_preview = steps_preview[:27] + "..."
+            table.add_row(name, steps_preview, key=name)
+
+    @on(DataTable.RowSelected, "#recipe-table")
+    def on_recipe_selected(self, event: DataTable.RowSelected) -> None:
+        name = event.row_key.value
+        self.selected_recipe = name
+        self.update_details(name)
+
+        # Enable buttons
+        self.query_one("#btn-recipe-run").disabled = False
+        self.query_one("#btn-recipe-delete").disabled = False
+
+    def update_details(self, name: str) -> None:
+        header = self.query_one("#recipe-header", Label)
+        header.update(f"[bold]{name}[/bold]")
+
+        log = self.query_one("#recipe-log", RichLog)
+        log.clear()
+
+        steps = self.manager.get_recipe(name)
+        if steps:
+            log.write("[bold]Steps:[/bold]")
+            for i, step in enumerate(steps):
+                log.write(f"  {i+1}. {step}")
+        else:
+             log.write("Recipe not found.")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-recipe-refresh":
+            self.load_recipes()
+            self.notify("Recipes refreshed.")
+
+        elif event.button.id == "btn-recipe-create":
+            await self.create_recipe()
+
+        elif event.button.id == "btn-recipe-run":
+            await self.run_recipe()
+
+        elif event.button.id == "btn-recipe-delete":
+            await self.delete_recipe()
+
+    async def create_recipe(self) -> None:
+        name_inp = self.query_one("#recipe-new-name", Input)
+        steps_inp = self.query_one("#recipe-new-steps", Input)
+
+        name = name_inp.value
+        steps_str = steps_inp.value
+
+        if not name or not steps_str:
+            self.notify("Name and steps required.", severity="error")
+            return
+
+        steps = [s.strip() for s in steps_str.split(",") if s.strip()]
+
+        if not steps:
+             self.notify("At least one step required.", severity="error")
+             return
+
+        try:
+            self.manager.add_recipe(name, steps)
+            self.notify(f"Recipe '{name}' created.")
+            name_inp.value = ""
+            steps_inp.value = ""
+            self.load_recipes()
+        except Exception as e:
+            self.notify(f"Error creating recipe: {e}", severity="error")
+
+    async def run_recipe(self) -> None:
+        if not self.selected_recipe:
+            return
+
+        log = self.query_one("#recipe-log", RichLog)
+        log.write(f"\\n[bold green]Running '{self.selected_recipe}'...[/bold green]")
+        self.notify(f"Running recipe '{self.selected_recipe}'...")
+
+        import asyncio
+
+        success = False
+        output = ""
+
+        def run_in_thread():
+             return self.manager.run_recipe(self.selected_recipe, capture_output=True)
+
+        try:
+             success, output = await asyncio.to_thread(run_in_thread)
+        except Exception as e:
+             log.write(f"[bold red]Execution Error:[/bold red] {e}")
+
+        log.write(output)
+
+        if success:
+             log.write(f"[bold green]Recipe '{self.selected_recipe}' completed.[/bold green]")
+             self.notify("Recipe completed.")
+        else:
+             log.write(f"[bold red]Recipe '{self.selected_recipe}' failed.[/bold red]")
+             self.notify("Recipe failed.", severity="error")
+
+    async def delete_recipe(self) -> None:
+        if not self.selected_recipe:
+            return
+
+        try:
+            self.manager.delete_recipe(self.selected_recipe)
+            self.notify(f"Recipe '{self.selected_recipe}' deleted.")
+            self.selected_recipe = None
+            self.load_recipes()
+
+            # Reset UI
+            self.query_one("#recipe-header", Label).update("Select a recipe to view details.")
+            self.query_one("#recipe-log", RichLog).clear()
+            self.query_one("#btn-recipe-run").disabled = True
+            self.query_one("#btn-recipe-delete").disabled = True
+
+        except Exception as e:
+            self.notify(f"Error removing recipe: {e}", severity="error")
+
+
 class WorktreesTab(Container):
     """Tab for managing git worktrees."""
 
@@ -1509,6 +1676,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
+            with TabPane("Recipes", id="tab-recipes"):
+                yield RecipesTab(self.project_dir)
             with TabPane("Search", id="tab-search"):
                 yield SearchTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):

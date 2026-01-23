@@ -101,5 +101,19 @@ class TestRecipeManager(unittest.TestCase):
             self.assertFalse(success)
             mock_run.assert_not_called()
 
+    @patch("subprocess.run")
+    def test_run_recipe_capture_output(self, mock_run):
+        manager = RecipeManager(self.project_dir)
+        manager.add_recipe("build", ["make"])
+
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "Building..."
+        mock_run.return_value.stderr = ""
+
+        success, output = manager.run_recipe("build", capture_output=True)
+        self.assertTrue(success)
+        self.assertIn("Building...", output)
+        self.assertIn("--- Running Recipe: build ---", output)
+
 if __name__ == "__main__":
     unittest.main()

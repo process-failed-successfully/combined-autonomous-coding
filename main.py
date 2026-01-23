@@ -8054,6 +8054,17 @@ def parse_args(argv=None):
         help="Minimum severity level to report (default: low).",
     )
     parser_security.add_argument(
+        "--scan-history",
+        action="store_true",
+        help="Also scan git history for secrets.",
+    )
+    parser_security.add_argument(
+        "--depth",
+        type=int,
+        default=100,
+        help="Depth of git history to scan (default: 100 commits).",
+    )
+    parser_security.add_argument(
         "-o", "--output",
         type=str,
         help="Path to save the security report (JSON).",
@@ -8983,6 +8994,11 @@ def run_security(args):
     auditor = SecurityAuditor(project_dir)
     findings = auditor.run_all(scan_type=args.scan_type, severity=args.severity)
 
+    if args.scan_history:
+        print(f"Scanning git history (depth: {args.depth})...")
+        history_findings = auditor.scan_git_history(depth=args.depth)
+        findings.extend(history_findings)
+
     if args.output:
         output_path = Path(args.output)
         try:
@@ -9021,6 +9037,8 @@ def run_security(args):
 
         print(f"\n[{i+1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
         print(f"    File: {file_path}:{line}")
+        if finding.get('commit'):
+            print(f"    Commit: {finding['commit']} ({finding.get('author', 'unknown')}, {finding.get('date', 'unknown')})")
         if finding.get('snippet'):
             print(f"    Snippet: {finding['snippet'].strip()}")
 

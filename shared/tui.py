@@ -5,7 +5,7 @@ import os
 import shlex
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox
+from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
@@ -33,6 +33,7 @@ from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
 from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
+from shared.plan import run_plan_logic
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1952,6 +1953,122 @@ class ApiLabTab(Container):
             log.write(result['body'])
 
 
+class PlanTab(Container):
+    """Tab for planning (Spec editing and Plan generation)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: Spec Editor
+            with Vertical(id="plan-spec-container", classes="stat-box"):
+                yield Label("[bold]Application Specification (app_spec.txt)[/bold]")
+                yield TextArea(id="spec-editor", language="markdown", show_line_numbers=True)
+                with Horizontal():
+                    yield Button("Save Spec", id="btn-save-spec", variant="primary")
+                    yield Button("Reload Spec", id="btn-reload-spec", variant="default")
+
+            # Right Pane: Plan Viewer
+            with Vertical(id="plan-view-container", classes="stat-box"):
+                yield Label("[bold]Generated Plan (feature_list.json)[/bold]")
+                # We use TextArea for read-only JSON viewing for now
+                yield TextArea(id="plan-viewer", language="json", read_only=True, show_line_numbers=True)
+
+                with Horizontal():
+                    yield Select.from_values(["gemini", "cursor", "local", "openrouter"], id="select-plan-agent", value="gemini")
+                    yield Button("Generate Plan", id="btn-generate-plan", variant="warning")
+
+                yield Label("", id="plan-status")
+
+    def on_mount(self) -> None:
+        self.load_spec()
+        self.load_plan()
+
+    def load_spec(self) -> None:
+        spec_path = self.project_dir / "app_spec.txt"
+        editor = self.query_one("#spec-editor", TextArea)
+        if spec_path.exists():
+            try:
+                content = spec_path.read_text(encoding="utf-8")
+                editor.text = content
+            except Exception as e:
+                self.notify(f"Error reading spec: {e}", severity="error")
+        else:
+            editor.text = ""
+
+    def load_plan(self) -> None:
+        plan_path = self.project_dir / "feature_list.json"
+        viewer = self.query_one("#plan-viewer", TextArea)
+        if plan_path.exists():
+            try:
+                content = plan_path.read_text(encoding="utf-8")
+                viewer.text = content
+            except Exception as e:
+                self.notify(f"Error reading plan: {e}", severity="error")
+        else:
+            viewer.text = "{}"
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-save-spec":
+            self.save_spec()
+        elif event.button.id == "btn-reload-spec":
+            self.load_spec()
+            self.notify("Spec reloaded.")
+        elif event.button.id == "btn-generate-plan":
+            await self.generate_plan()
+
+    def save_spec(self) -> None:
+        spec_path = self.project_dir / "app_spec.txt"
+        editor = self.query_one("#spec-editor", TextArea)
+        try:
+            spec_path.write_text(editor.text, encoding="utf-8")
+            self.notify("Spec saved.")
+        except Exception as e:
+            self.notify(f"Error saving spec: {e}", severity="error")
+
+    async def generate_plan(self) -> None:
+        # Save spec first
+        self.save_spec()
+
+        agent_type = self.query_one("#select-plan-agent", Select).value
+        status_lbl = self.query_one("#plan-status", Label)
+
+        status_lbl.update("Generating plan... (this may take a minute)")
+        self.notify("Generating plan...", severity="information")
+
+        import asyncio
+
+        success = False
+        message = ""
+
+        try:
+            success, message = await run_plan_logic(
+                project_dir=self.project_dir,
+                agent_type=agent_type,
+                model=None, # Default model
+                spec_file=self.project_dir / "app_spec.txt",
+                verbose=False,
+                capture_output=True
+            )
+        except Exception as e:
+            success = False
+            message = str(e)
+
+        if success:
+            status_lbl.update("Plan generated successfully.")
+            self.notify("Plan generated.")
+            self.load_plan()
+        else:
+            status_lbl.update("Generation failed.")
+            self.notify(f"Generation failed: {message}", severity="error")
+            # Show output in a modal or log?
+            # For now, maybe append to plan viewer or log?
+            # Let's show in the viewer temporarily or just rely on notify/status
+            pass
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1972,6 +2089,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
+            with TabPane("Plan", id="tab-plan"):
+                yield PlanTab(self.project_dir)
             with TabPane("Recipes", id="tab-recipes"):
                 yield RecipesTab(self.project_dir)
             with TabPane("Search", id="tab-search"):

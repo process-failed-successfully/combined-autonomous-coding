@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from main import run_commit
 
-class TestCommitCommand(unittest.TestCase):
+class TestCommitCommand(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         """Set up a temporary directory and initialize a git repository."""
@@ -37,12 +37,13 @@ class TestCommitCommand(unittest.TestCase):
 
     @patch('main.shutil.which', return_value='git')
     @patch('main.subprocess.run')
-    def test_commit_basic(self, mock_run, mock_which):
+    async def test_commit_basic(self, mock_run, mock_which):
         """Test basic commit functionality."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Test commit",
-            run_tests=False
+            run_tests=False,
+            generate=False
         )
 
         # Mock the git commands. `git diff --cached --quiet` returns 1 if there are changes.
@@ -56,7 +57,7 @@ class TestCommitCommand(unittest.TestCase):
         (Path.cwd() / "new_file.txt").write_text("new content")
 
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
         self.assertEqual(cm.exception.code, 0)
 
         # Since we're in a temporary directory, we can't hardcode the path
@@ -70,12 +71,13 @@ class TestCommitCommand(unittest.TestCase):
     @patch('main.shutil.which', return_value='git')
     @patch('main.run_test')
     @patch('main.subprocess.run')
-    def test_commit_with_tests_success(self, mock_subprocess_run, mock_run_test, mock_which):
+    async def test_commit_with_tests_success(self, mock_subprocess_run, mock_run_test, mock_which):
         """Test commit with successful tests."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Test commit with tests",
-            run_tests=True
+            run_tests=True,
+            generate=False
         )
         mock_run_test.return_value = None # Simulate successful test run
 
@@ -90,7 +92,7 @@ class TestCommitCommand(unittest.TestCase):
         (Path.cwd() / "new_file.txt").write_text("some content")
 
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
 
         self.assertEqual(cm.exception.code, 0)
         mock_run_test.assert_called_once()
@@ -100,12 +102,13 @@ class TestCommitCommand(unittest.TestCase):
     @patch('main.shutil.which', return_value='git')
     @patch('main.run_test')
     @patch('main.subprocess.run')
-    def test_commit_with_tests_failure(self, mock_subprocess_run, mock_run_test, mock_which):
+    async def test_commit_with_tests_failure(self, mock_subprocess_run, mock_run_test, mock_which):
         """Test that commit is aborted when tests fail."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="This should not be committed",
-            run_tests=True
+            run_tests=True,
+            generate=False
         )
         # Simulate a test failure by raising SystemExit with a non-zero code
         mock_run_test.side_effect = SystemExit(1)
@@ -113,7 +116,7 @@ class TestCommitCommand(unittest.TestCase):
         (Path.cwd() / "new_file.txt").write_text("some content")
 
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
 
         self.assertEqual(cm.exception.code, 1)
         mock_run_test.assert_called_once()
@@ -124,12 +127,13 @@ class TestCommitCommand(unittest.TestCase):
 
     @patch('main.shutil.which', return_value='git')
     @patch('main.subprocess.run')
-    def test_commit_no_changes(self, mock_run, mock_which):
+    async def test_commit_no_changes(self, mock_run, mock_which):
         """Test that commit does nothing if there are no changes."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="No changes",
-            run_tests=False
+            run_tests=False,
+            generate=False
         )
 
         # Mock git diff to return 0 (no changes)
@@ -140,7 +144,7 @@ class TestCommitCommand(unittest.TestCase):
 
 
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
         self.assertEqual(cm.exception.code, 0)
 
         # Verify that `git commit` was not called
@@ -150,12 +154,13 @@ class TestCommitCommand(unittest.TestCase):
 
     @patch('main.shutil.which', return_value='git')
     @patch('main.subprocess.run')
-    def test_commit_deletion(self, mock_run, mock_which):
+    async def test_commit_deletion(self, mock_run, mock_which):
         """Test that deleting a file is correctly staged and committed."""
         args = argparse.Namespace(
             project_dir=Path("."),
             message="Delete file",
-            run_tests=False
+            run_tests=False,
+            generate=False
         )
 
         # Mock the git commands
@@ -170,7 +175,7 @@ class TestCommitCommand(unittest.TestCase):
         (Path.cwd() / "initial_file.txt").unlink()
 
         with self.assertRaises(SystemExit) as cm:
-            run_commit(args)
+            await run_commit(args)
         self.assertEqual(cm.exception.code, 0)
 
         # Check that 'git add -A' was called

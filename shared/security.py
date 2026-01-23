@@ -268,6 +268,117 @@ class SecurityAuditor:
 
         return findings
 
+    def scan_git_history(self, depth: int = 100) -> List[Dict[str, Any]]:
+        """Scans the git history for secrets."""
+        findings = []
+
+        if not shutil.which("git"):
+            return []
+
+        if not (self.project_dir / ".git").exists():
+            return []
+
+        try:
+            # -p: generate diffs
+            # -n {depth}: limit number of commits
+            # --unified=0: 0 lines of context to reduce output size
+            cmd = ["git", "log", "-p", f"-n{depth}", "--unified=0"]
+
+            # Using errors='ignore' to handle potential binary data or encoding issues in history
+            result = subprocess.run(
+                cmd,
+                cwd=self.project_dir,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='ignore'
+            )
+
+            current_commit = None
+            current_author = None
+            current_date = None
+            current_file = None
+
+            for line in result.stdout.splitlines():
+                if line.startswith("commit "):
+                    current_commit = line.split(" ")[1]
+                    current_author = None  # Reset
+                    current_date = None  # Reset
+                    current_file = None  # Reset
+                elif line.startswith("Author:"):
+                    current_author = line.split(":", 1)[1].strip()
+                elif line.startswith("Date:"):
+                    current_date = line.split(":", 1)[1].strip()
+                elif line.startswith("diff --git"):
+                    # Attempt to extract filename from diff header
+                    # Robust parsing is hard with just string splitting due to spaces
+                    # A regex approach is safer: diff --git a/(.*) b/(.*)
+                    match = re.search(r"^diff --git a/(.*) b/(.*)$", line)
+                    if match:
+                        current_file = match.group(2).strip()
+                    else:
+                        # Fallback: try to parse last part if regex fails
+                        parts = line.split(" ")
+                        if len(parts) >= 4:
+                            current_file = parts[-1].lstrip("b/").strip()
+
+                elif line.startswith("+++ b/"):
+                    # Verify/update filename from the +++ line which is often present
+                    current_file = line[6:].strip()
+
+                # Check for added lines
+                elif line.startswith("+") and not line.startswith("+++"):
+                    if not current_commit or not current_file:
+                        continue
+
+                    # Ignore checks
+                    file_path = Path(current_file)
+                    if file_path.suffix in self.IGNORE_EXTENSIONS:
+                        continue
+
+                    # Check path components to avoid partial substring matches
+                    # e.g. avoid ignoring "builder.py" just because "build" is ignored
+                    if any(ignored in file_path.parts for ignored in self.IGNORE_DIRS):
+                        continue
+
+                    content = line[1:]  # strip the +
+
+                    for name, pattern in self.SECRET_PATTERNS.items():
+                        matches = re.finditer(pattern, content)
+                        for match in matches:
+                            # Context extraction not really needed as we have the line
+                            match_str = match.group(0)
+
+                            # Entropy check for API keys
+                            if name == "Generic API Key":
+                                parts = re.split(r"[:=]\s*", match_str, 1)
+                                if len(parts) > 1:
+                                    value = parts[1].strip("'\"")
+                                    if value.isupper() or "{" in value or "YOUR_" in value or "mock" in value.lower():
+                                        continue
+                                    if self._calculate_entropy(value) < 3.0:
+                                        continue
+
+                            masked_match = match_str[:4] + "***" + match_str[-4:] if len(match_str) > 8 else "***"
+                            snippet = content.replace(match_str, masked_match)
+
+                            findings.append({
+                                "type": "secret_history",
+                                "severity": "HIGH",
+                                "description": f"Potential {name} in git history",
+                                "file": current_file,
+                                "line": 0,  # Line number hard to track in unified=0 diff without counting
+                                "snippet": snippet.strip(),
+                                "commit": current_commit,
+                                "author": current_author,
+                                "date": current_date
+                            })
+
+        except Exception as e:
+            print(f"Error scanning git history: {e}")
+
+        return findings
+
     def run_all(self, scan_type: str = "all", severity: str = "low") -> List[Dict[str, Any]]:
         all_findings = []
 

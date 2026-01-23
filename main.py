@@ -16,7 +16,7 @@ except ImportError:
 import sys
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 import time
 from collections import deque

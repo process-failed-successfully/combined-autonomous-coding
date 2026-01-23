@@ -53,10 +53,10 @@ class TestMainPlan(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 1)
 
-    @patch('main.GeminiAgent')
-    @patch('main.CursorAgent')
-    @patch('main.LocalAgent')
-    @patch('main.OpenRouterAgent')
+    @patch('shared.plan.GeminiAgent')
+    @patch('shared.plan.CursorAgent')
+    @patch('shared.plan.LocalAgent')
+    @patch('shared.plan.OpenRouterAgent')
     @patch('main.setup_logger')
     @patch('main.ensure_config_exists')
     @patch('main.load_config_from_file')

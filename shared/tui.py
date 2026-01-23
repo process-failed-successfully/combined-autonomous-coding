@@ -34,6 +34,7 @@ from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
 from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
+from shared.playground import PlaygroundManager
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -2052,6 +2053,163 @@ class ApiLabTab(Container):
             log.write(result['body'])
 
 
+class PlaygroundTab(Container):
+    """Tab for experimenting with code snippets."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = PlaygroundManager(project_dir)
+        self.current_file = None
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: File List
+            with Vertical(id="playground-list-container", classes="stat-box"):
+                yield Label("[bold]Scripts[/bold]")
+                yield ListView(id="playground-list")
+                with Horizontal():
+                    yield Input(placeholder="New script name...", id="playground-new-name")
+                    yield Button("Create", id="btn-playground-create", variant="primary")
+                yield Button("Refresh", id="btn-playground-refresh", variant="default")
+
+            # Right Pane: Editor & Output
+            with Vertical(id="playground-editor-container"):
+                yield Label("[bold]Editor[/bold]")
+                yield TextArea(id="playground-editor", language="python")
+
+                with Horizontal(id="playground-actions"):
+                    yield Button("Save", id="btn-playground-save", variant="success")
+                    yield Button("Run", id="btn-playground-run", variant="warning")
+                    yield Button("Delete", id="btn-playground-delete", variant="error")
+
+                yield Label("[bold]Output[/bold]")
+                yield RichLog(id="playground-output", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        self.load_files()
+
+    def load_files(self) -> None:
+        list_view = self.query_one("#playground-list", ListView)
+        list_view.clear()
+
+        files = self.manager.list_files()
+        if not files:
+            list_view.append(ListItem(Label("No scripts found")))
+            return
+
+        for f in files:
+            list_view.append(ListItem(Label(f.name), name=f.name))
+
+    @on(ListView.Selected, "#playground-list")
+    def on_file_selected(self, event: ListView.Selected) -> None:
+        # Get filename from ListItem name if possible, or Label
+        # Textual ListItems don't inherently store data easily unless subclassed or monkey-patched.
+        # But we set name=f.name in load_files.
+        if event.item and event.item.name:
+            self.load_file_content(event.item.name)
+
+    def load_file_content(self, filename: str) -> None:
+        self.current_file = filename
+        editor = self.query_one("#playground-editor", TextArea)
+        path = self.manager.playground_dir / filename
+
+        try:
+            content = path.read_text(encoding="utf-8")
+            editor.text = content
+            # Update header or notify
+            self.notify(f"Loaded {filename}")
+        except Exception as e:
+            self.notify(f"Error loading file: {e}", severity="error")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-playground-refresh":
+            self.load_files()
+        elif event.button.id == "btn-playground-create":
+            await self.create_file()
+        elif event.button.id == "btn-playground-save":
+            await self.save_file()
+        elif event.button.id == "btn-playground-run":
+            await self.run_file()
+        elif event.button.id == "btn-playground-delete":
+            await self.delete_file()
+
+    async def create_file(self) -> None:
+        inp = self.query_one("#playground-new-name", Input)
+        name = inp.value
+        if not name:
+            self.notify("Name required.", severity="error")
+            return
+
+        try:
+            path = self.manager.create(name)
+            self.notify(f"Created {path.name}")
+            inp.value = ""
+            self.load_files()
+            self.load_file_content(path.name)
+        except Exception as e:
+            self.notify(f"Error creating file: {e}", severity="error")
+
+    async def save_file(self) -> None:
+        if not self.current_file:
+            self.notify("No file selected.", severity="warning")
+            return
+
+        editor = self.query_one("#playground-editor", TextArea)
+        path = self.manager.playground_dir / self.current_file
+        try:
+            path.write_text(editor.text, encoding="utf-8")
+            self.notify("File saved.")
+        except Exception as e:
+            self.notify(f"Error saving file: {e}", severity="error")
+
+    async def run_file(self) -> None:
+        if not self.current_file:
+            self.notify("No file selected.", severity="warning")
+            return
+
+        # Auto-save before running
+        await self.save_file()
+
+        output_log = self.query_one("#playground-output", RichLog)
+        output_log.clear()
+        output_log.write(f"Running {self.current_file}...")
+
+        import asyncio
+        # Run in thread
+        try:
+            # We updated manager.run to return (success, output) when capture_output=True
+            def run_in_thread():
+                return self.manager.run(self.current_file, capture_output=True)
+
+            success, output = await asyncio.to_thread(run_in_thread)
+
+            if success:
+                output_log.write("[bold green]Success[/bold green]")
+            else:
+                output_log.write("[bold red]Failed[/bold red]")
+
+            output_log.write(output)
+
+        except Exception as e:
+            output_log.write(f"[bold red]Execution Error:[/bold red] {e}")
+
+    async def delete_file(self) -> None:
+        if not self.current_file:
+            return
+
+        try:
+            if self.manager.delete(self.current_file):
+                self.notify(f"Deleted {self.current_file}")
+                self.current_file = None
+                self.query_one("#playground-editor", TextArea).text = ""
+                self.load_files()
+            else:
+                self.notify("File not found.", severity="error")
+        except Exception as e:
+            self.notify(f"Error deleting file: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2106,6 +2264,8 @@ class AgentTUI(App):
                 yield SecretsTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("Playground", id="tab-playground"):
+                yield PlaygroundTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

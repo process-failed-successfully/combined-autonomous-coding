@@ -25,6 +25,7 @@ from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
+from shared.code_review import run_code_review_logic
 from shared.map import scan_project, CodeNode
 from shared.git import get_git_log, get_commit_details
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
@@ -2210,6 +2211,126 @@ class PlaygroundTab(Container):
             self.notify(f"Error deleting file: {e}", severity="error")
 
 
+class CodeReviewTab(Container):
+    """Tab for AI Code Review."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]AI Code Review[/bold]", classes="welcome-text")
+
+            with Horizontal():
+                # Left Pane: Controls & Files
+                with Vertical(id="review-controls-container", classes="stat-box"):
+                    yield Label("[bold]Modified Files[/bold]")
+                    yield ListView(id="review-file-list")
+
+                    with Horizontal():
+                        yield Button("Refresh", id="btn-review-refresh", variant="default")
+                        yield Select.from_values(["gemini", "cursor", "local"], id="review-agent-select", value="gemini")
+
+                    yield Button("Review Selected", id="btn-review-selected", variant="primary")
+                    yield Button("Review All (Diff)", id="btn-review-all", variant="warning")
+
+                # Right Pane: Report
+                with VerticalScroll(id="review-report-container"):
+                    yield Label("[bold]Review Report[/bold]")
+                    yield Markdown("", id="review-markdown")
+
+    def on_mount(self) -> None:
+        self.load_files()
+
+    def load_files(self) -> None:
+        list_view = self.query_one("#review-file-list", ListView)
+        list_view.clear()
+
+        # Get git status
+        import subprocess
+        try:
+            res = subprocess.run(
+                ["git", "-C", str(self.project_dir), "status", "--porcelain"],
+                capture_output=True,
+                text=True
+            )
+            if res.returncode != 0:
+                list_view.append(ListItem(Label("Error getting git status")))
+                return
+
+            lines = res.stdout.strip().split('\n')
+            if not lines or not lines[0]:
+                list_view.append(ListItem(Label("No modified files")))
+                return
+
+            for line in lines:
+                if not line.strip(): continue
+                # format: XY path
+                status = line[:2]
+                path = line[3:]
+                # We use Checkbox for selection
+                cb = Checkbox(f"[{status}] {path}", value=True)
+                cb.file_path = path
+                list_view.append(ListItem(cb))
+
+        except Exception as e:
+            list_view.append(ListItem(Label(f"Error: {e}")))
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-review-refresh":
+            self.load_files()
+            self.notify("File list refreshed.")
+        elif event.button.id == "btn-review-selected":
+            await self.run_review(selected_only=True)
+        elif event.button.id == "btn-review-all":
+            await self.run_review(selected_only=False)
+
+    async def run_review(self, selected_only: bool) -> None:
+        agent_type = self.query_one("#review-agent-select", Select).value or "gemini"
+
+        files_to_review = []
+        if selected_only:
+            list_view = self.query_one("#review-file-list", ListView)
+            for item in list_view.children:
+                cb = item.query_one(Checkbox)
+                if cb and cb.value:
+                    if hasattr(cb, "file_path"):
+                        files_to_review.append(cb.file_path)
+
+            if not files_to_review:
+                self.notify("No files selected.", severity="warning")
+                return
+
+        self.notify(f"Starting review with {agent_type}...", severity="information")
+        report_view = self.query_one("#review-markdown", Markdown)
+        report_view.update("Running review... please wait.")
+
+        # Run logic and capture output
+        output_capture = io.StringIO()
+        success = False
+
+        try:
+            with contextlib.redirect_stdout(output_capture):
+                success = await run_code_review_logic(
+                    project_dir=self.project_dir,
+                    files=files_to_review if selected_only else None,
+                    diff=not selected_only,
+                    agent_type=agent_type,
+                    verbose=False
+                )
+        except Exception as e:
+            output_capture.write(f"\nError: {e}")
+
+        result = output_capture.getvalue()
+        report_view.update(result)
+
+        if success:
+            self.notify("Review complete.")
+        else:
+            self.notify("Review failed.", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2234,6 +2355,8 @@ class AgentTUI(App):
                 yield InteractTab(self.project_dir)
             with TabPane("Recipes", id="tab-recipes"):
                 yield RecipesTab(self.project_dir)
+            with TabPane("Code Review", id="tab-code-review"):
+                yield CodeReviewTab(self.project_dir)
             with TabPane("Search", id="tab-search"):
                 yield SearchTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):

@@ -26,7 +26,7 @@ from shared.debt import DebtCollector
 from shared.security import SecurityAuditor
 from shared.map import scan_project, CodeNode
 from shared.git import get_git_log, get_commit_details
-from shared.db_query import get_schema_info, generate_sql, execute_sqlite
+from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
 
@@ -953,6 +953,7 @@ class DatabaseTab(Container):
                         yield Select.from_values(["SQL", "Natural Language"], id="select-query-mode", value="SQL")
                         yield Select.from_values(["gemini", "cursor", "local"], id="select-db-agent", value="gemini")
 
+                    yield Checkbox("Allow Write Operations", id="chk-db-write", value=False)
                     yield Input(placeholder="Enter SQL query...", id="input-db-query")
                     yield Button("Execute", id="btn-db-execute", variant="success")
 
@@ -1014,6 +1015,15 @@ class DatabaseTab(Container):
                 status_lbl.update("AI Error.")
                 self.notify(f"AI Error: {e}", severity="error")
                 return
+
+        # Safety Check
+        is_safe = is_read_only_query(sql)
+        allow_write = self.query_one("#chk-db-write", Checkbox).value
+
+        if not is_safe and not allow_write:
+            status_lbl.update("Operation blocked.")
+            self.notify("Write operation blocked! Enable 'Allow Write Operations' to proceed.", severity="error", timeout=5)
+            return
 
         # Execute SQL
         try:

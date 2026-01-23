@@ -3499,6 +3499,41 @@ def _stash_drop(args, git_path, project_dir):
         sys.exit(0)
 
 
+def run_timeline(args):
+    """Generates a project timeline."""
+    from shared.timeline import TimelineCollector, TimelineRenderer
+
+    project_dir = args.project_dir.resolve()
+    collector = TimelineCollector(project_dir)
+    renderer = TimelineRenderer()
+
+    if not args.output and args.format == "text":
+        print(f"--- Collecting timeline events for {project_dir.name} ---")
+
+    events = collector.get_timeline(limit=args.limit)
+
+    output = ""
+    if args.format == "text":
+        output = renderer.render_text(events)
+    elif args.format == "json":
+        output = renderer.render_json(events)
+    elif args.format == "html":
+        output = renderer.render_html(events)
+
+    if args.output:
+        try:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(output)
+            print(f"✅ Timeline saved to {args.output}")
+        except Exception as e:
+            print(f"❌ Error saving timeline: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(output)
+
+    sys.exit(0)
+
+
 def run_report(args):
     """Generates a summary report for a specific agent run."""
     success = _run_report_logic(
@@ -7409,6 +7444,35 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'timeline' command ---
+    parser_timeline = subparsers.add_parser(
+        "timeline",
+        help="Generate a chronological timeline of project events."
+    )
+    parser_timeline.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_timeline.add_argument(
+        "--format",
+        choices=["text", "json", "html"],
+        default="text",
+        help="Output format (default: text)."
+    )
+    parser_timeline.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=50,
+        help="Number of events to show (default: 50)."
+    )
+    parser_timeline.add_argument(
+        "-o", "--output",
+        type=str,
+        help="Output file path (optional)."
+    )
+
     # --- New 'analytics' command ---
     parser_analytics = subparsers.add_parser(
         "analytics",
@@ -10720,6 +10784,10 @@ async def main():
 
     if args.command == "rollback":
         run_rollback(args)
+        return
+
+    if args.command == "timeline":
+        run_timeline(args)
         return
 
     if args.command == "analytics":

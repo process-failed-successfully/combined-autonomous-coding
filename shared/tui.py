@@ -36,6 +36,7 @@ from shared.recipes import RecipeManager
 from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
 from shared.playground import PlaygroundManager
+from shared.release import get_latest_tag, get_commits_since_tag, determine_next_version, generate_changelog, perform_release, parse_current_version
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -2331,6 +2332,118 @@ class CodeReviewTab(Container):
             self.notify("Review failed.", severity="error")
 
 
+class ReleaseTab(Container):
+    """Tab for managing releases."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.commits = []
+        self.changelog = ""
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Release Manager[/bold]", classes="welcome-text")
+
+            # Status Section
+            with Container(classes="stat-box"):
+                yield Label("[bold]Current Status[/bold]")
+                yield Label("Loading...", id="release-status-lbl")
+
+            # Action Section
+            with Container(classes="stat-box"):
+                yield Label("Next Version:")
+                with Horizontal():
+                    yield Input(placeholder="0.0.0", id="release-version-input")
+                    yield Button("Generate Changelog", id="btn-release-gen", variant="primary")
+
+            # Preview Section
+            with VerticalScroll(id="release-preview-container"):
+                yield Label("[bold]Changelog Preview[/bold]")
+                yield TextArea(id="release-changelog-editor")
+
+            # Execute Section
+            with Horizontal(classes="stat-box"):
+                yield Button("Perform Release", id="btn-release-exec", variant="success", disabled=True)
+                yield Checkbox("Dry Run", id="chk-release-dry", value=False)
+                yield Label("", id="release-result-lbl")
+
+    def on_mount(self) -> None:
+        self.load_status()
+
+    def load_status(self) -> None:
+        tag = get_latest_tag(self.project_dir)
+        commits = get_commits_since_tag(self.project_dir, tag)
+        self.commits = commits
+
+        current_ver = parse_current_version(self.project_dir)
+        # fallback to tag if file version not found
+        if not current_ver and tag:
+            current_ver = tag.lstrip("v")
+
+        display_ver = current_ver or "0.0.0"
+
+        status_text = f"Latest Tag: {tag or 'None'} | Commits since tag: {len(commits)} | Current Version: {display_ver}"
+        self.query_one("#release-status-lbl", Label).update(status_text)
+
+        # Suggest next version
+        next_ver = determine_next_version(display_ver, commits)
+        self.query_one("#release-version-input", Input).value = next_ver
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-release-gen":
+            self.generate_preview()
+        elif event.button.id == "btn-release-exec":
+            await self.execute_release()
+
+    def generate_preview(self) -> None:
+        new_version = self.query_one("#release-version-input", Input).value
+        if not new_version:
+            self.notify("Version required.", severity="error")
+            return
+
+        self.changelog = generate_changelog(self.commits, new_version)
+        editor = self.query_one("#release-changelog-editor", TextArea)
+        editor.text = self.changelog
+
+        self.query_one("#btn-release-exec").disabled = False
+        self.notify("Changelog generated.")
+
+    async def execute_release(self) -> None:
+        new_version = self.query_one("#release-version-input", Input).value
+        changelog = self.query_one("#release-changelog-editor", TextArea).text
+        dry_run = self.query_one("#chk-release-dry", Checkbox).value
+
+        if not new_version:
+            return
+
+        self.notify("Releasing...")
+        lbl = self.query_one("#release-result-lbl", Label)
+        lbl.update("Releasing...")
+
+        import asyncio
+        try:
+            success, msg = await asyncio.to_thread(
+                perform_release,
+                self.project_dir,
+                new_version,
+                changelog,
+                dry_run=dry_run
+            )
+
+            if success:
+                lbl.update(f"[green]{msg}[/green]")
+                self.notify("Release successful!")
+                self.load_status() # Refresh
+            else:
+                lbl.update(f"[red]{msg}[/red]")
+                self.notify("Release failed.", severity="error")
+
+        except Exception as e:
+            lbl.update(f"[red]Error: {e}[/red]")
+            self.notify(f"Error: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2363,6 +2476,8 @@ class AgentTUI(App):
                 yield TasksTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
+            with TabPane("Release", id="tab-release"):
+                yield ReleaseTab(self.project_dir)
             with TabPane("Worktrees", id="tab-worktrees"):
                 yield WorktreesTab(self.project_dir)
             with TabPane("Dependencies", id="tab-deps"):

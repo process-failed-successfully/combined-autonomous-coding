@@ -56,6 +56,7 @@ from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.summarize import run_summarize_logic
+from shared.worktree import WorktreeManager
 from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
 from shared.verify import run_verify_logic
@@ -9742,77 +9743,21 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         sys.exit(1)
 
     worktree_name = args.worktree_name
-    worktree_path = worktrees_base_dir / worktree_name
-    if not worktree_path.is_dir():
-        print(f"❌ Error: Worktree '{worktree_name}' not found at '{worktree_path}'.", file=sys.stderr)
+    manager = WorktreeManager(project_dir)
+
+    worktrees = manager.list_worktrees()
+    target = next((w for w in worktrees if w.get("name") == worktree_name), None)
+    if not target:
+        print(f"❌ Error: Worktree '{worktree_name}' not found.", file=sys.stderr)
         sys.exit(1)
+
+    branch_ref = target.get("branch", "")
+    branch_name = branch_ref.replace("refs/heads/", "")
 
     print(f"--- Merging worktree: {worktree_name} ---")
+    print(f"  - Found worktree branch: {branch_name}")
 
-    # 1. Get the branch name associated with the worktree
-    branch_name = None
-    try:
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
-            capture_output=True, text=True, check=True
-        )
-        current_worktree: dict = {}
-        for line in result.stdout.strip().split('\n'):
-            if not line.strip():
-                if current_worktree:
-                    path = Path(current_worktree.get("worktree", ""))
-                    if path.resolve() == worktree_path.resolve():
-                        branch_ref = current_worktree.get("branch", "")
-                        branch_name = branch_ref.split('/')[-1]
-                        break
-                current_worktree = {}
-            else:
-                key, value = line.split(" ", 1)
-                current_worktree[key] = value
-        if not branch_name and current_worktree: # Check last block
-             path = Path(current_worktree.get("worktree", ""))
-             if path.resolve() == worktree_path.resolve():
-                 branch_ref = current_worktree.get("branch", "")
-                 branch_name = branch_ref.split('/')[-1]
-
-        if not branch_name:
-            print(f"❌ Error: Could not determine branch for worktree '{worktree_name}'.", file=sys.stderr)
-            sys.exit(1)
-        print(f"  - Found worktree branch: {branch_name}")
-
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error getting worktree branch: {e.stderr}", file=sys.stderr)
-        sys.exit(1)
-
-    # 2. Check for and commit uncommitted changes in the worktree
-    try:
-        status_result = subprocess.run(
-            [git_path, "-C", str(worktree_path), "status", "--porcelain"],
-            capture_output=True, text=True, check=True
-        )
-        if status_result.stdout.strip():
-            print("  - Uncommitted changes detected. Staging and committing...")
-            # Add all changes
-            subprocess.run(
-                [git_path, "-C", str(worktree_path), "add", "."],
-                check=True, capture_output=True
-            )
-            # Commit changes
-            commit_message = f"Autocommit: Worktree merge for {worktree_name}"
-            subprocess.run(
-                [git_path, "-C", str(worktree_path), "commit", "-m", commit_message],
-                check=True, capture_output=True
-            )
-            print(f"  - Created commit on branch '{branch_name}'.")
-        else:
-            print("  - No uncommitted changes in worktree.")
-    except subprocess.CalledProcessError as e:
-        stderr = e.stderr.decode().strip() if e.stderr else str(e)
-        print(f"❌ Error committing changes in worktree: {stderr}", file=sys.stderr)
-        sys.exit(1)
-
-    # 3. Checkout main branch and merge
-    # For simplicity, assuming 'main'. A more robust solution might detect the default branch.
+    # Checkout main branch
     main_branch = "main"
     print(f"  - Checking out '{main_branch}' branch in main repository...")
     try:
@@ -9838,24 +9783,15 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
              print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
              sys.exit(1)
 
-
     print(f"  - Merging branch '{branch_name}' into '{main_branch}'...")
     try:
-        merge_result = subprocess.run(
-            [git_path, "-C", str(project_dir), "merge", "--no-ff", branch_name],
-            check=True, capture_output=True, text=True
-        )
+        output = manager.merge(worktree_name)
         print("  - Merge successful.")
         print("\n--- Merge Output ---")
-        print(merge_result.stdout.strip())
+        print(output.strip())
         print("--------------------")
-
-    except subprocess.CalledProcessError as e:
-        stderr = e.stderr.strip()
-        print(f"❌ Error merging branch: {stderr}", file=sys.stderr)
-        print("  - Merge conflict detected or another error occurred. Aborting merge.")
-        # Attempt to abort the merge to leave the repo in a clean state
-        subprocess.run([git_path, "-C", str(project_dir), "merge", "--abort"])
+    except Exception as e:
+        print(f"❌ Error merging branch: {e}", file=sys.stderr)
         sys.exit(1)
 
     # 4. Optionally clean up the worktree and branch
@@ -9871,15 +9807,10 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         # Remove worktree
         try:
             print(f"  - Removing worktree '{worktree_name}'...")
-            subprocess.run(
-                [git_path, "-C", str(project_dir), "worktree", "remove", worktree_name],
-                check=True, capture_output=True, text=True
-            )
+            manager.remove(worktree_name)
             print(f"  - Successfully removed worktree.")
-        except subprocess.CalledProcessError as e:
-            stderr = e.stderr.strip()
-            print(f"❌ Error removing worktree: {stderr}", file=sys.stderr)
-            # Don't exit, still try to delete branch
+        except Exception as e:
+            print(f"❌ Error removing worktree: {e}", file=sys.stderr)
 
         # Delete branch
         try:
@@ -9903,50 +9834,36 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
 
 def _worktree_diff(args, git_path, worktrees_base_dir):
     """Helper function to show a diff of the worktree against the main repo's HEAD."""
-    import subprocess
-
     if not args.worktree_name:
         print("❌ Error: 'diff' action requires a worktree name.", file=sys.stderr)
         sys.exit(1)
 
+    project_dir = args.project_dir.resolve()
+    manager = WorktreeManager(project_dir)
+
     worktree_name = args.worktree_name
-    worktree_path = worktrees_base_dir / worktree_name
-    if not worktree_path.is_dir():
-        print(f"❌ Error: Worktree '{worktree_name}' not found at '{worktree_path}'.", file=sys.stderr)
+    path = manager.worktrees_dir / worktree_name
+    if not path.is_dir():
+        print(f"❌ Error: Worktree '{worktree_name}' not found at '{path}'.", file=sys.stderr)
         sys.exit(1)
 
     print(f"--- Diff for worktree: {worktree_name} (compared to main repo HEAD) ---")
 
-    try:
-        # We run 'diff' from within the worktree's directory.
-        # This automatically compares the worktree's state against the main repo's HEAD.
-        result = subprocess.run(
-            [git_path, "-C", str(worktree_path), "diff", "HEAD"],
-            capture_output=True, text=True
-        )
-
-        if result.returncode != 0:
-            # This could happen if git itself fails, which is unlikely here.
-            print(f"❌ Error running git diff: {result.stderr}", file=sys.stderr)
-            sys.exit(1)
-
-        if not result.stdout.strip():
-            print("✅ No changes detected. Worktree is in sync with HEAD.")
-        else:
-            # Print the diff output directly
-            print(result.stdout)
-
-    except subprocess.CalledProcessError as e:
-        stderr = e.stderr.decode().strip() if e.stderr else str(e)
-        print(f"❌ Error getting diff for worktree: {stderr}", file=sys.stderr)
+    diff_output = manager.diff(worktree_name)
+    if diff_output.startswith("Error"):
+        print(f"❌ {diff_output}", file=sys.stderr)
         sys.exit(1)
+
+    if not diff_output.strip():
+        print("✅ No changes detected. Worktree is in sync with HEAD.")
+    else:
+        print(diff_output)
 
     sys.exit(0)
 
 
 def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
     """Helper function to show a comprehensive dashboard for a worktree."""
-    import subprocess
     import json
 
     if not args.worktree_name:
@@ -9954,43 +9871,22 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
         return False
 
     worktree_name = args.worktree_name
+    manager = WorktreeManager(project_dir)
     worktree_path = (worktrees_base_dir / worktree_name).resolve()
+
     if not worktree_path.is_dir():
         print(f"❌ Error: Worktree '{worktree_name}' not found at '{worktree_path}'.", file=sys.stderr)
         return False
 
     print(f"--- Dashboard for Worktree: {worktree_name} ---")
 
-    # 1. Get Core Information (Path, Branch)
+    # 1. Get Core Information
     branch_name = "N/A"
-    try:
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
-            capture_output=True, text=True, check=True
-        )
-        current_worktree: dict = {}
-        for line in result.stdout.strip().split('\n'):
-            if not line.strip():
-                if current_worktree:
-                    path = Path(current_worktree.get("worktree", ""))
-                    if path.resolve() == worktree_path.resolve():
-                        branch_ref = current_worktree.get("branch", "")
-                        if branch_ref:
-                             branch_name = branch_ref.replace("refs/heads/", "")
-                        break
-                current_worktree = {}
-            else:
-                key, value = line.split(" ", 1)
-                current_worktree[key] = value
-        if branch_name == "N/A" and current_worktree: # Check last block
-             path = Path(current_worktree.get("worktree", ""))
-             if path.resolve() == worktree_path.resolve():
-                 branch_ref = current_worktree.get("branch", "")
-                 if branch_ref:
-                     branch_name = branch_ref.replace("refs/heads/", "")
-
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Warning: Could not determine branch for worktree: {e.stderr}", file=sys.stderr)
+    worktrees = manager.list_worktrees()
+    target = next((w for w in worktrees if w.get("name") == worktree_name), None)
+    if target:
+        branch_ref = target.get("branch", "")
+        branch_name = branch_ref.replace("refs/heads/", "")
 
     print(f"  Path:   {worktree_path}")
     print(f"  Branch: {branch_name}")
@@ -10015,38 +9911,26 @@ def _worktree_show_logic(args, git_path, project_dir, worktrees_base_dir):
 
     # 3. Get Git Status
     print("\n--- Git Status ---")
-    try:
-        result = subprocess.run(
-            [git_path, "-C", str(worktree_path), "status", "--porcelain"],
-            capture_output=True, text=True, check=True
-        )
-        if result.stdout.strip():
-            print("  Uncommitted changes:")
-            for line in result.stdout.strip().split('\n'):
-                # Don't strip leading whitespace as it breaks alignment
-                print(f"    {line}")
-        else:
-            print("  ✅ Worktree is clean (no uncommitted changes).")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
+    status = manager.get_status(worktree_name)
+    if status.strip():
+        print("  Uncommitted changes:")
+        for line in status.strip().split('\n'):
+            print(f"    {line}")
+    else:
+        print("  ✅ Worktree is clean (no uncommitted changes).")
 
     # 4. Get Diff Summary
     print("\n--- Diff Summary (vs HEAD) ---")
     try:
-        result = subprocess.run(
-            [git_path, "-C", str(worktree_path), "diff", "--stat", "HEAD"],
-            capture_output=True, text=True
-        )
-        if result.returncode != 0:
-            print(f"❌ Error running git diff: {result.stderr}", file=sys.stderr)
-        elif not result.stdout.strip():
+        # Use private method for flexibility to get stat
+        res = manager._run_git(["diff", "--stat", "HEAD"], cwd=worktree_path)
+        if not res.stdout.strip():
             print("  ✅ No differences with HEAD.")
         else:
-            # Indent the output for better readability
-            for line in result.stdout.strip().split('\n'):
+            for line in res.stdout.strip().split('\n'):
                 print(f"  {line.strip()}")
     except Exception as e:
-        print(f"❌ An unexpected error occurred during diff: {e}", file=sys.stderr)
+        print(f"❌ Error getting diff: {e}")
 
     return True
 
@@ -10059,46 +9943,20 @@ def _worktree_show(args, git_path, project_dir, worktrees_base_dir):
 
 def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     """Helper function for interactive worktree management."""
-    import subprocess
+    manager = WorktreeManager(project_dir)
 
     # 1. Get the list of worktrees
-    try:
-        result = subprocess.run(
-            [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
-            capture_output=True, text=True, check=True
-        )
-        worktrees = []
-        current_worktree: dict = {}
-        for line in result.stdout.strip().split('\n'):
-            if not line.strip():
-                if current_worktree:
-                    worktree_path = Path(current_worktree.get("worktree", ""))
-                    if worktrees_base_dir in worktree_path.parents:
-                        worktrees.append(current_worktree)
-                current_worktree = {}
-            else:
-                key, value = line.split(" ", 1)
-                current_worktree[key] = value
-        if current_worktree:
-            worktree_path = Path(current_worktree.get("worktree", ""))
-            if worktrees_base_dir in worktree_path.parents:
-                worktrees.append(current_worktree)
-
-        if not worktrees:
-            print("No active agent worktrees found to manage.")
-            sys.exit(0)
-
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error listing worktrees: {e.stderr}", file=sys.stderr)
-        sys.exit(1)
+    worktrees = manager.list_worktrees()
+    if not worktrees:
+        print("No active agent worktrees found to manage.")
+        sys.exit(0)
 
     # 2. Prompt user to select a worktree
     print("--- Interactive Worktree Management ---")
     print("Please select a worktree to manage:")
     for i, wt in enumerate(worktrees):
-        path = Path(wt['worktree'])
         branch = wt.get('branch', 'detached HEAD').split('/')[-1]
-        print(f"  [{i+1}] {path.name} (branch: {branch})")
+        print(f"  [{i+1}] {wt['name']} (branch: {branch})")
 
     selected_worktree = None
     while True:
@@ -10109,8 +9967,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
                 sys.exit(0)
             choice_index = int(selection) - 1
             if 0 <= choice_index < len(worktrees):
-                selected_worktree_path = Path(worktrees[choice_index]['worktree'])
-                selected_worktree = selected_worktree_path.name
+                selected_worktree = worktrees[choice_index]['name']
                 break
             else:
                 print("Invalid selection. Please try again.")
@@ -10158,20 +10015,13 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     print(f"\n--- Executing '{selected_action.upper()}' on '{selected_worktree}' ---")
 
     if selected_action == "show":
-        worktree_path = worktrees_base_dir / selected_worktree
-        try:
-            result = subprocess.run(
-                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            if result.stdout.strip():
-                print("Uncommitted changes:")
-                for line in result.stdout.strip().split('\n'):
-                    print(f"  {line}")
-            else:
-                print("✅ Worktree is clean.")
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Error getting worktree status: {e.stderr}", file=sys.stderr)
+        status = manager.get_status(selected_worktree)
+        if status.strip():
+            print("Uncommitted changes:")
+            for line in status.strip().split('\n'):
+                print(f"  {line}")
+        else:
+            print("✅ Worktree is clean.")
 
     elif selected_action == "diff":
         _worktree_diff(mock_args, git_path, worktrees_base_dir)
@@ -10183,36 +10033,24 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
         _worktree_merge(mock_args, git_path, project_dir, worktrees_base_dir)
 
     elif selected_action == "revert":
-        worktree_path = worktrees_base_dir / selected_worktree
-        try:
-            status_result = subprocess.run(
-                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            if not status_result.stdout.strip():
-                print("✅ No uncommitted changes to revert.")
-            else:
-                print("\nUncommitted changes (will be discarded):")
-                for line in status_result.stdout.strip().split('\n'):
-                    print(f"  {line}")
+        status = manager.get_status(selected_worktree)
+        if not status.strip():
+            print("✅ No uncommitted changes to revert.")
+        else:
+            print("\nUncommitted changes (will be discarded):")
+            for line in status.strip().split('\n'):
+                print(f"  {line}")
 
-                confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
-                if confirm == 'y':
-                     print("\nReverting changes...")
-                     subprocess.run(
-                         [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
-                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                     )
-                     subprocess.run(
-                         [git_path, "-C", str(worktree_path), "clean", "-fd"],
-                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                     )
+            confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
+            if confirm == 'y':
+                 print("\nReverting changes...")
+                 try:
+                     manager.revert(selected_worktree)
                      print("✅ Revert complete. Worktree is now clean.")
-                else:
-                    print("Aborted.")
-        except subprocess.CalledProcessError as e:
-            stderr = e.stderr.decode().strip() if e.stderr else str(e)
-            print(f"❌ Error during revert: {stderr}", file=sys.stderr)
+                 except Exception as e:
+                     print(f"❌ Error during revert: {e}", file=sys.stderr)
+            else:
+                print("Aborted.")
 
     elif selected_action == "clean":
         print("This will remove the worktree. This can be forced if there are uncommitted changes.")
@@ -10221,16 +10059,10 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
         confirm = input(f"Are you sure you want to remove the worktree '{selected_worktree}'? [y/N]: ").strip().lower()
         if confirm == 'y':
             try:
-                cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
-                if mock_args.force:
-                    cmd.append("--force")
-                cmd.append(selected_worktree)
-
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                manager.remove(selected_worktree, force=mock_args.force)
                 print(f"✅ Removed worktree: {selected_worktree}")
-            except subprocess.CalledProcessError as e:
-                 stderr = e.stderr.strip()
-                 print(f"❌ Error removing worktree '{selected_worktree}': {stderr}", file=sys.stderr)
+            except Exception as e:
+                 print(f"❌ Error removing worktree '{selected_worktree}': {e}", file=sys.stderr)
         else:
             print("Aborted.")
 
@@ -10242,16 +10074,17 @@ def run_worktrees(args):
     project_dir = args.project_dir.resolve()
     worktrees_base_dir = project_dir / "worktrees"
 
-    # --- Pre-flight Checks ---
+    # Pre-flight checks are somewhat handled by WorktreeManager or shared.git, but keeping for safety.
     git_path = shutil.which("git")
     if not git_path:
-        print("❌ Error: 'git' command not found. Please ensure Git is installed and in your PATH.", file=sys.stderr)
+        print("❌ Error: 'git' command not found.", file=sys.stderr)
         sys.exit(1)
 
-    git_dir = project_dir / ".git"
-    if not git_dir.exists() or not git_dir.is_dir():
+    if not (project_dir / ".git").exists():
         print("❌ Error: Not a git repository. Cannot manage worktrees.", file=sys.stderr)
         sys.exit(1)
+
+    manager = WorktreeManager(project_dir)
 
     # --- Action: create ---
     if args.action == "create":
@@ -10259,124 +10092,66 @@ def run_worktrees(args):
             print("❌ Error: 'create' action requires a worktree name.", file=sys.stderr)
             sys.exit(1)
 
-        worktree_path = worktrees_base_dir / args.worktree_name
-        if worktree_path.exists():
-            print(f"❌ Error: Worktree path '{worktree_path}' already exists.", file=sys.stderr)
-            sys.exit(1)
-
         # If branch is not specified, it defaults to the worktree name
         branch_name = args.branch if args.branch else args.worktree_name
 
-        # Ensure the base directory for worktrees exists
-        worktrees_base_dir.mkdir(parents=True, exist_ok=True)
-
         print(f"--- Creating new worktree: {args.worktree_name} ---")
-        print(f"  Directory: ./{worktree_path.relative_to(project_dir)}")
         print(f"  Branch:    {branch_name}")
 
         try:
-            cmd = [git_path, "-C", str(project_dir), "worktree", "add", "-b", branch_name, str(worktree_path), "HEAD"]
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            manager.create(args.worktree_name, branch=branch_name)
             print(f"\n✅ Successfully created worktree '{args.worktree_name}' on branch '{branch_name}'.")
-
-        except subprocess.CalledProcessError as e:
-            stderr = e.stderr.strip()
-            print(f"❌ Error creating worktree: {stderr}", file=sys.stderr)
-            # Clean up partial directory if git failed
-            if worktree_path.exists():
-                shutil.rmtree(worktree_path)
+        except Exception as e:
+            print(f"❌ Error creating worktree: {e}", file=sys.stderr)
             sys.exit(1)
         sys.exit(0)
 
     # --- Action: list ---
     elif args.action == "list":
         print(f"--- Listing Agent Worktrees in: {worktrees_base_dir} ---")
-        try:
-            result = subprocess.run(
-                [git_path, "-C", str(project_dir), "worktree", "list", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            worktrees = []
-            current_worktree: dict = {}
-            for line in result.stdout.strip().split('\n'):
-                if not line.strip():  # End of a block
-                    if current_worktree:
-                        # Only list worktrees inside the agent's 'worktrees/' directory
-                        worktree_path = Path(current_worktree.get("worktree", ""))
-                        if worktrees_base_dir in worktree_path.parents:
-                            worktrees.append(current_worktree)
-                    current_worktree = {}
-                else:
-                    key, value = line.split(" ", 1)
-                    current_worktree[key] = value
+        worktrees = manager.list_worktrees()
 
-            # Append the last worktree if it exists
-            if current_worktree:
-                worktree_path = Path(current_worktree.get("worktree", ""))
-                if worktrees_base_dir in worktree_path.parents:
-                    worktrees.append(current_worktree)
+        if not worktrees:
+            print("No active agent worktrees found.")
+            sys.exit(0)
 
-            if not worktrees:
-                print("No active agent worktrees found.")
-                sys.exit(0)
-
-            for wt in worktrees:
-                path = Path(wt['worktree'])
-                branch = wt.get('branch', 'detached HEAD').split('/')[-1]
-                print(f"  - {path.name} (branch: {branch})")
-
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Error listing worktrees: {e.stderr}", file=sys.stderr)
-            sys.exit(1)
+        for wt in worktrees:
+            branch = wt.get('branch', 'detached HEAD').split('/')[-1]
+            print(f"  - {wt['name']} (branch: {branch})")
         sys.exit(0)
 
     # --- Action: show ---
     elif args.action == "show":
-        _worktree_show(args, git_path, project_dir, worktrees_base_dir)
+        _worktree_show(args, None, project_dir, worktrees_base_dir)
 
     # --- Action: revert ---
     elif args.action == "revert":
         if not args.worktree_name:
             print("❌ Error: 'revert' action requires a worktree name.", file=sys.stderr)
             sys.exit(1)
-        worktree_path = worktrees_base_dir / args.worktree_name
-        if not worktree_path.is_dir():
-            print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
-            sys.exit(1)
 
         print(f"--- Reverting uncommitted changes in worktree: {args.worktree_name} ---")
-        try:
-            status_result = subprocess.run(
-                [git_path, "-C", str(worktree_path), "status", "--porcelain"],
-                capture_output=True, text=True, check=True
-            )
-            if not status_result.stdout.strip():
-                print("✅ No uncommitted changes to revert.")
+        status = manager.get_status(args.worktree_name)
+        if not status.strip():
+            print("✅ No uncommitted changes to revert.")
+            sys.exit(0)
+
+        print("\nUncommitted changes (will be discarded):")
+        for line in status.strip().split('\n'):
+            print(f"  {line}")
+
+        if not args.yes:
+            confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
+            if confirm != 'y':
+                print("Aborted.")
                 sys.exit(0)
 
-            print("\nUncommitted changes (will be discarded):")
-            for line in status_result.stdout.strip().split('\n'):
-                print(f"  {line}")
-
-            if not args.yes:
-                confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
-                if confirm != 'y':
-                    print("Aborted.")
-                    sys.exit(0)
-
-            print("\nReverting changes...")
-            subprocess.run(
-                [git_path, "-C", str(worktree_path), "reset", "--hard", "HEAD"],
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-            subprocess.run(
-                [git_path, "-C", str(worktree_path), "clean", "-fd"],
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+        print("\nReverting changes...")
+        try:
+            manager.revert(args.worktree_name)
             print("✅ Revert complete. Worktree is now clean.")
-        except subprocess.CalledProcessError as e:
-            stderr = e.stderr.decode().strip() if e.stderr else str(e)
-            print(f"❌ Error during revert: {stderr}", file=sys.stderr)
+        except Exception as e:
+            print(f"❌ Error during revert: {e}", file=sys.stderr)
             sys.exit(1)
         sys.exit(0)
 
@@ -10396,16 +10171,13 @@ def run_worktrees(args):
     elif args.action == "clean":
         worktrees_to_clean = []
         if args.worktree_name:
-            # Clean a specific worktree
-            path = worktrees_base_dir / args.worktree_name
-            if not path.is_dir():
-                print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
-                sys.exit(1)
+            if not (worktrees_base_dir / args.worktree_name).exists():
+                 print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
+                 sys.exit(1)
             worktrees_to_clean.append(args.worktree_name)
         else:
-            # Clean all agent worktrees
-            if worktrees_base_dir.is_dir():
-                worktrees_to_clean = [d.name for d in worktrees_base_dir.iterdir() if d.is_dir()]
+            worktrees = manager.list_worktrees()
+            worktrees_to_clean = [w['name'] for w in worktrees]
 
         if not worktrees_to_clean:
             print("No agent worktrees found to clean.")
@@ -10424,37 +10196,10 @@ def run_worktrees(args):
         print("\nCleaning worktrees...")
         for name in worktrees_to_clean:
             try:
-                cmd = [git_path, "-C", str(project_dir), "worktree", "remove"]
-                if args.force:
-                    cmd.append("--force")
-                cmd.append(name) # Can just be the name if it's in worktrees/ dir
-
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                manager.remove(name, force=args.force)
                 print(f"✅ Removed worktree: {name}")
-
-                # After successful removal via git, ensure the directory is gone
-                worktree_dir = worktrees_base_dir / name
-                if worktree_dir.exists():
-                     print(f"Warning: Git removed worktree but directory '{worktree_dir}' still exists.", file=sys.stderr)
-
-            except subprocess.CalledProcessError as e:
-                # Try to parse the error
-                stderr = e.stderr.strip()
-                if "is not a working tree" in stderr:
-                     # Git doesn't know about it, maybe it was partially deleted.
-                     # Let's try to clean up the directory.
-                    print(f"Git worktree '{name}' is in an inconsistent state. Attempting to clean up directory...")
-                    worktree_dir = worktrees_base_dir / name
-                    if worktree_dir.exists():
-                         try:
-                            shutil.rmtree(worktree_dir)
-                            print(f"✅ Forcefully removed directory: {worktree_dir}")
-                         except OSError as rm_e:
-                            print(f"❌ Failed to remove directory {worktree_dir}: {rm_e}", file=sys.stderr)
-                    else:
-                         print(f"Directory for '{name}' not found, already clean.")
-                else:
-                    print(f"❌ Error removing worktree '{name}': {stderr}", file=sys.stderr)
+            except Exception as e:
+                print(f"❌ Error removing worktree '{name}': {e}", file=sys.stderr)
         sys.exit(0)
 
 

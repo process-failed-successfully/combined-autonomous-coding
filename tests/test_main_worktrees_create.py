@@ -3,8 +3,6 @@ from unittest.mock import patch, MagicMock
 import sys
 import argparse
 from pathlib import Path
-import subprocess
-import os
 import shutil
 
 from main import run_worktrees
@@ -12,12 +10,11 @@ from main import run_worktrees
 class TestWorktreesCreateCommand(unittest.TestCase):
 
     def setUp(self):
-        # Create a temporary directory for the project relative to the test file
-        self.test_dir = Path(__file__).parent
-        self.project_dir = self.test_dir / "test_project_worktree"
-        self.project_dir.mkdir(exist_ok=True)
+        self.project_dir = Path("/tmp/test_project_worktree")
+        # Ensure dir exists for main.py checks
+        self.project_dir.mkdir(parents=True, exist_ok=True)
         (self.project_dir / ".git").mkdir(exist_ok=True)
-        self.worktrees_dir = self.project_dir / "worktrees"
+
         self.args = argparse.Namespace(
             action='create',
             worktree_name='test-worktree',
@@ -31,44 +28,33 @@ class TestWorktreesCreateCommand(unittest.TestCase):
         if self.project_dir.exists():
             shutil.rmtree(self.project_dir)
 
+    @patch('main.WorktreeManager')
     @patch('main.shutil.which', return_value='/usr/bin/git')
-    @patch('main.subprocess.run')
-    def test_create_success_with_branch(self, mock_subprocess_run, mock_shutil_which):
+    def test_create_success_with_branch(self, mock_shutil_which, MockWorktreeManager):
         """Test successful worktree creation with a specific branch."""
-        mock_subprocess_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        instance = MockWorktreeManager.return_value
 
         with self.assertRaises(SystemExit) as cm:
             run_worktrees(self.args)
 
         self.assertEqual(cm.exception.code, 0)
 
-        expected_worktree_path = self.worktrees_dir / "test-worktree"
-        mock_subprocess_run.assert_called_once_with(
-            ['/usr/bin/git', '-C', str(self.project_dir), 'worktree', 'add', '-b', 'test-branch', str(expected_worktree_path), 'HEAD'],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        MockWorktreeManager.assert_called_with(self.project_dir.resolve())
+        instance.create.assert_called_once_with('test-worktree', branch='test-branch')
 
+    @patch('main.WorktreeManager')
     @patch('main.shutil.which', return_value='/usr/bin/git')
-    @patch('main.subprocess.run')
-    def test_create_success_default_branch(self, mock_subprocess_run, mock_shutil_which):
+    def test_create_success_default_branch(self, mock_shutil_which, MockWorktreeManager):
         """Test successful worktree creation using worktree name as default branch."""
         self.args.branch = None
-        mock_subprocess_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        instance = MockWorktreeManager.return_value
 
         with self.assertRaises(SystemExit) as cm:
             run_worktrees(self.args)
 
         self.assertEqual(cm.exception.code, 0)
 
-        expected_worktree_path = self.worktrees_dir / "test-worktree"
-        mock_subprocess_run.assert_called_once_with(
-            ['/usr/bin/git', '-C', str(self.project_dir), 'worktree', 'add', '-b', 'test-worktree', str(expected_worktree_path), 'HEAD'],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        instance.create.assert_called_once_with('test-worktree', branch='test-worktree')
 
     @patch('main.shutil.which', return_value='/usr/bin/git')
     @patch('builtins.print')
@@ -80,33 +66,37 @@ class TestWorktreesCreateCommand(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
         mock_print.assert_any_call("❌ Error: 'create' action requires a worktree name.", file=sys.stderr)
 
+    @patch('main.WorktreeManager')
     @patch('main.shutil.which', return_value='/usr/bin/git')
     @patch('builtins.print')
-    def test_create_directory_exists(self, mock_print, mock_shutil_which):
+    def test_create_directory_exists(self, mock_print, mock_shutil_which, MockWorktreeManager):
         """Test that create fails if the worktree directory already exists."""
-        (self.worktrees_dir / "test-worktree").mkdir(parents=True)
+        instance = MockWorktreeManager.return_value
+        instance.create.side_effect = FileExistsError("Worktree path ... already exists.")
+
         with self.assertRaises(SystemExit) as cm:
             run_worktrees(self.args)
-        self.assertEqual(cm.exception.code, 1)
-        expected_path = self.worktrees_dir / "test-worktree"
-        mock_print.assert_any_call(f"❌ Error: Worktree path '{expected_path}' already exists.", file=sys.stderr)
 
+        self.assertEqual(cm.exception.code, 1)
+        # Verify it printed the error
+        # Note: main.py prints "❌ Error creating worktree: {e}"
+        # So we check if print was called with something containing the error message
+        args, _ = mock_print.call_args
+        self.assertIn("Error creating worktree", args[0])
+        self.assertIn("already exists", args[0])
+
+    @patch('main.WorktreeManager')
     @patch('main.shutil.which', return_value='/usr/bin/git')
-    @patch('main.subprocess.run')
-    @patch('main.shutil.rmtree')
-    def test_create_git_failure_cleans_up_dir(self, mock_rmtree, mock_subprocess_run, mock_shutil_which):
-        """Test that a failed git command cleans up a partially created directory."""
-        expected_worktree_path = self.worktrees_dir / "test-worktree"
-
-        def git_fail_side_effect(*args, **kwargs):
-            # Simulate git creating the directory before it fails
-            expected_worktree_path.mkdir(parents=True, exist_ok=True)
-            raise subprocess.CalledProcessError(1, "git", stderr="fatal: some git error")
-
-        mock_subprocess_run.side_effect = git_fail_side_effect
+    @patch('builtins.print')
+    def test_create_git_failure(self, mock_print, mock_shutil_which, MockWorktreeManager):
+        """Test that a failed git command raises error."""
+        instance = MockWorktreeManager.return_value
+        instance.create.side_effect = Exception("git error")
 
         with self.assertRaises(SystemExit) as cm:
             run_worktrees(self.args)
 
         self.assertEqual(cm.exception.code, 1)
-        mock_rmtree.assert_called_once_with(expected_worktree_path)
+        args, _ = mock_print.call_args
+        self.assertIn("Error creating worktree", args[0])
+        self.assertIn("git error", args[0])

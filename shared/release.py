@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import re
 import json
+import os
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 from datetime import datetime
@@ -231,3 +232,48 @@ def parse_current_version(project_dir: Path) -> Optional[str]:
             pass
 
     return None
+
+def perform_release(project_dir: Path, new_version: str, changelog: str, dry_run: bool = False) -> Tuple[bool, str]:
+    """
+    Executes the release process:
+    1. Bumps version in files.
+    2. Commits changes.
+    3. Creates a git tag using the changelog as the message.
+    """
+    git_path = shutil.which("git")
+    if not git_path:
+        return False, "Git executable not found."
+
+    if dry_run:
+        return True, f"[Dry Run] Would release v{new_version}."
+
+    # 1. Bump files
+    modified_files = bump_version_file(project_dir, new_version)
+
+    # 2. Commit
+    if modified_files:
+        try:
+            subprocess.run([git_path, "-C", str(project_dir), "add"] + modified_files, check=True, capture_output=True)
+            subprocess.run([git_path, "-C", str(project_dir), "commit", "-m", f"chore: bump version to {new_version}"], check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            return False, f"Git commit failed: {e}"
+
+    # 3. Create Tag
+    tag_name = f"v{new_version}"
+    try:
+        # Use a temporary file for the tag message to avoid shell escaping issues
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tf:
+            tf.write(changelog)
+            tf_path = tf.name
+
+        try:
+            subprocess.run([git_path, "-C", str(project_dir), "tag", "-a", tag_name, "-F", tf_path], check=True, capture_output=True)
+        finally:
+            os.unlink(tf_path)
+
+        return True, f"Release {tag_name} created successfully."
+    except subprocess.CalledProcessError as e:
+        # Attempt to rollback commit if tag fails?
+        # For simplicity, we just report error. The commit remains.
+        return False, f"Git tag failed: {e}"

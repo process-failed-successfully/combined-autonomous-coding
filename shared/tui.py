@@ -24,6 +24,7 @@ from shared.config_loader import load_config_from_file
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
+from shared.health import HealthCalculator
 from shared.security import SecurityAuditor
 from shared.code_review import run_code_review_logic
 from shared.map import scan_project, CodeNode
@@ -2601,6 +2602,129 @@ class TestGenTab(Container):
             self.notify(f"Error saving file: {e}", severity="error")
 
 
+class HealthTab(Container):
+    """Tab for project health scorecard."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll():
+            yield Label("[bold]Project Health Scorecard[/bold]", classes="welcome-text")
+
+            # Score Header
+            with Container(classes="stat-box", id="health-score-container"):
+                yield Label("Grade: [bold]?[/bold]", id="health-grade-lbl")
+                yield Label("Score: ? / 100", id="health-score-lbl")
+
+            # Breakdown
+            with Container(classes="stat-box"):
+                yield Label("[bold]Breakdown[/bold]")
+                yield DataTable(id="health-breakdown-table")
+
+            # Issues
+            with Container(classes="stat-box"):
+                yield Label("[bold]Key Issues[/bold]")
+                yield ListView(id="health-issues-list")
+
+            # Recommendations
+            with Container(classes="stat-box"):
+                yield Label("[bold]Recommendations[/bold]")
+                yield RichLog(id="health-recommendations-log", wrap=True, highlight=True, markup=True)
+
+            # Actions
+            with Horizontal(classes="stat-box"):
+                yield Button("Run Health Check", id="btn-run-health", variant="primary")
+                yield Label("", id="health-status-lbl")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#health-breakdown-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Category", "Score", "Max")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-run-health":
+            await self.run_health_check()
+
+    async def run_health_check(self) -> None:
+        self.query_one("#health-status-lbl").update("Running health check... (this may take a while)")
+        self.notify("Running health check...")
+
+        # Disable button
+        self.query_one("#btn-run-health").disabled = True
+
+        import asyncio
+        import io
+        import contextlib
+
+        def do_calc():
+            # Capture stdout to prevent TUI corruption
+            f = io.StringIO()
+            with contextlib.redirect_stdout(f):
+                calc = HealthCalculator(self.project_dir)
+                calc.calculate()
+            return calc
+
+        try:
+            calc = await asyncio.to_thread(do_calc)
+            self._update_ui(calc)
+            self.query_one("#health-status-lbl").update("Health check complete.")
+            self.notify("Health check complete.")
+        except Exception as e:
+            self.query_one("#health-status-lbl").update(f"Error: {e}")
+            self.notify(f"Health check failed: {e}", severity="error")
+        finally:
+            self.query_one("#btn-run-health").disabled = False
+
+    def _update_ui(self, calc: HealthCalculator) -> None:
+        # Grade
+        grade_color = "red"
+        if calc.grade == "A": grade_color = "green"
+        elif calc.grade == "B": grade_color = "cyan"
+        elif calc.grade == "C": grade_color = "yellow"
+        elif calc.grade == "D": grade_color = "orange"
+
+        self.query_one("#health-grade-lbl").update(f"Grade: [bold {grade_color}]{calc.grade}[/]")
+        self.query_one("#health-score-lbl").update(f"Score: {calc.score:.0f} / 100")
+
+        # Breakdown
+        table = self.query_one("#health-breakdown-table", DataTable)
+        table.clear()
+        table.add_row("Tests", str(calc.metrics['test_score']), "30")
+        table.add_row("Linting", str(calc.metrics['lint_score']), "20")
+        table.add_row("Complexity", str(calc.metrics['complexity_score']), "20")
+        table.add_row("Security", str(calc.metrics['security_score']), "20")
+        table.add_row("Dependencies", str(calc.metrics['dependency_score']), "10")
+
+        # Issues
+        issues_list = self.query_one("#health-issues-list", ListView)
+        issues_list.clear()
+        if calc.issues:
+            for issue in calc.issues:
+                issues_list.append(ListItem(Label(f"⚠️ {issue}")))
+        else:
+            issues_list.append(ListItem(Label("[green]No significant issues found.[/green]")))
+
+        # Recommendations
+        rec_log = self.query_one("#health-recommendations-log", RichLog)
+        rec_log.clear()
+
+        if calc.metrics['test_score'] < 30:
+            rec_log.write("- Fix failing tests or add more test coverage.")
+        if calc.metrics['lint_score'] < 20:
+            rec_log.write("- Run 'verify --fix' to resolve linting issues.")
+        if calc.metrics['complexity_score'] < 20:
+            rec_log.write("- Refactor complex functions (use 'polish' command).")
+        if calc.metrics['security_score'] < 20:
+            rec_log.write("- Address security vulnerabilities (use 'security' command).")
+        if calc.metrics['dependency_score'] < 10:
+            rec_log.write("- Update dependencies (use 'deps --update').")
+
+        if calc.score == 100:
+            rec_log.write("[bold green]Great job! Keep it up.[/bold green]")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2643,6 +2767,8 @@ class AgentTUI(App):
                 yield DependenciesTab(self.project_dir)
             with TabPane("Analytics", id="tab-analytics"):
                 yield AnalyticsTab(self.project_dir)
+            with TabPane("Health", id="tab-health"):
+                yield HealthTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):

@@ -29,6 +29,7 @@ from shared.git import get_git_log, get_commit_details
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
+from shared.worktree import WorktreeManager
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -1330,6 +1331,164 @@ class SessionTab(Container):
                  self.notify(f"Error: {e}", severity="error")
 
 
+class WorktreesTab(Container):
+    """Tab for managing git worktrees."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = WorktreeManager(project_dir)
+        self.selected_worktree = None
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: List and Create
+            with Vertical(id="worktree-list-container", classes="stat-box"):
+                yield Label("[bold]Worktrees[/bold]")
+                yield DataTable(id="worktree-table")
+
+                with Horizontal():
+                    yield Input(placeholder="New worktree name...", id="worktree-new-name")
+                    yield Button("Create", id="btn-worktree-create", variant="primary")
+
+                yield Button("Refresh", id="btn-worktree-refresh", variant="default")
+
+            # Right Pane: Details and Actions
+            with Vertical(id="worktree-details-container"):
+                yield Label("[bold]Worktree Details[/bold]")
+                yield Label("Select a worktree to view details.", id="worktree-header")
+
+                yield RichLog(id="worktree-log", wrap=True, highlight=True, markup=True)
+
+                with Horizontal(id="worktree-actions"):
+                    yield Button("Status", id="btn-worktree-status", disabled=True)
+                    yield Button("Diff (vs HEAD)", id="btn-worktree-diff", disabled=True)
+                    yield Button("Remove", id="btn-worktree-remove", variant="error", disabled=True)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#worktree-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Name", "Branch")
+        self.load_worktrees()
+
+    def load_worktrees(self) -> None:
+        table = self.query_one("#worktree-table", DataTable)
+        table.clear()
+
+        worktrees = self.manager.list_worktrees()
+        for wt in worktrees:
+            name = wt.get("name", "Unknown")
+            branch = wt.get("branch", "detached").replace("refs/heads/", "")
+            table.add_row(name, branch, key=name)
+
+    @on(DataTable.RowSelected, "#worktree-table")
+    def on_worktree_selected(self, event: DataTable.RowSelected) -> None:
+        name = event.row_key.value
+        self.selected_worktree = name
+        self.update_details(name)
+
+        # Enable buttons
+        self.query_one("#btn-worktree-status").disabled = False
+        self.query_one("#btn-worktree-diff").disabled = False
+        self.query_one("#btn-worktree-remove").disabled = False
+
+    def update_details(self, name: str) -> None:
+        header = self.query_one("#worktree-header", Label)
+        header.update(f"[bold]{name}[/bold]")
+
+        log = self.query_one("#worktree-log", RichLog)
+        log.clear()
+        log.write(f"Selected worktree: {name}")
+        log.write("Click buttons below to perform actions.")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-worktree-refresh":
+            self.load_worktrees()
+            self.notify("Worktrees refreshed.")
+
+        elif event.button.id == "btn-worktree-create":
+            await self.create_worktree()
+
+        elif event.button.id == "btn-worktree-status":
+            await self.show_status()
+
+        elif event.button.id == "btn-worktree-diff":
+            await self.show_diff()
+
+        elif event.button.id == "btn-worktree-remove":
+            await self.remove_worktree()
+
+    async def create_worktree(self) -> None:
+        inp = self.query_one("#worktree-new-name", Input)
+        name = inp.value
+        if not name:
+            self.notify("Name required.", severity="error")
+            return
+
+        self.notify(f"Creating worktree '{name}'...")
+        try:
+            import asyncio
+            await asyncio.to_thread(self.manager.create, name)
+            self.notify(f"Worktree '{name}' created.")
+            inp.value = ""
+            self.load_worktrees()
+        except Exception as e:
+            self.notify(f"Error creating worktree: {e}", severity="error")
+
+    async def show_status(self) -> None:
+        if not self.selected_worktree:
+            return
+
+        log = self.query_one("#worktree-log", RichLog)
+        log.clear()
+        log.write("Fetching status...")
+
+        import asyncio
+        status = await asyncio.to_thread(self.manager.get_status, self.selected_worktree)
+        log.clear()
+        if status.strip():
+            log.write("[bold red]Uncommitted Changes:[/bold red]")
+            log.write(status)
+        else:
+            log.write("[green]Clean working directory.[/green]")
+
+    async def show_diff(self) -> None:
+        if not self.selected_worktree:
+            return
+
+        log = self.query_one("#worktree-log", RichLog)
+        log.clear()
+        log.write("Fetching diff...")
+
+        import asyncio
+        diff = await asyncio.to_thread(self.manager.diff, self.selected_worktree)
+        log.clear()
+        if diff.strip():
+            log.write(Syntax(diff, "diff", theme="monokai"))
+        else:
+            log.write("[green]No differences with HEAD.[/green]")
+
+    async def remove_worktree(self) -> None:
+        if not self.selected_worktree:
+            return
+
+        try:
+            self.manager.remove(self.selected_worktree, force=True)
+            self.notify(f"Worktree '{self.selected_worktree}' removed.")
+            self.selected_worktree = None
+            self.load_worktrees()
+
+            # Reset UI
+            self.query_one("#worktree-header", Label).update("Select a worktree to view details.")
+            self.query_one("#worktree-log", RichLog).clear()
+            self.query_one("#btn-worktree-status").disabled = True
+            self.query_one("#btn-worktree-diff").disabled = True
+            self.query_one("#btn-worktree-remove").disabled = True
+
+        except Exception as e:
+            self.notify(f"Error removing worktree: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -1356,6 +1515,8 @@ class AgentTUI(App):
                 yield TasksTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
+            with TabPane("Worktrees", id="tab-worktrees"):
+                yield WorktreesTab(self.project_dir)
             with TabPane("Dependencies", id="tab-deps"):
                 yield DependenciesTab(self.project_dir)
             with TabPane("Analytics", id="tab-analytics"):

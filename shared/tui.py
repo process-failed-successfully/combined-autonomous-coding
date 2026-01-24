@@ -3,6 +3,7 @@ import io
 import contextlib
 import os
 import shlex
+import yaml
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
@@ -3104,6 +3105,167 @@ class DocumentationTab(Container):
             self.notify(f"Error saving spec: {e}", severity="error")
 
 
+class ConfigTab(Container):
+    """Tab for managing agent configuration."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.config_path = self.project_dir / "agent_config.yaml"
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll():
+            yield Label("[bold]Agent Configuration[/bold]", classes="welcome-text")
+
+            # General Settings
+            with Container(classes="stat-box"):
+                yield Label("[bold]General Settings[/bold]")
+                yield Label("Agent Type:")
+                yield Select.from_values(["gemini", "cursor", "local", "openrouter"], id="cfg-agent-type", value="gemini")
+                yield Label("Model:")
+                yield Input(placeholder="e.g. gemini-1.5-pro", id="cfg-model")
+                yield Label("Max Iterations (optional):")
+                yield Input(placeholder="e.g. 50", id="cfg-max-iterations", type="integer")
+                yield Label("Manager Frequency (iterations):")
+                yield Input(placeholder="e.g. 10", id="cfg-manager-freq", type="integer")
+
+            # Notifications
+            with Container(classes="stat-box"):
+                yield Label("[bold]Notifications[/bold]")
+                yield Label("Slack Webhook URL:")
+                yield Input(placeholder="https://hooks.slack.com/...", id="cfg-slack")
+                yield Label("Discord Webhook URL:")
+                yield Input(placeholder="https://discord.com/api/...", id="cfg-discord")
+
+                yield Label("Events:")
+                with Vertical():
+                    yield Checkbox("Iteration Summary", id="cfg-notify-iteration")
+                    yield Checkbox("Manager Updates", id="cfg-notify-manager")
+                    yield Checkbox("Human in Loop", id="cfg-notify-human")
+                    yield Checkbox("Project Completion", id="cfg-notify-completion")
+                    yield Checkbox("Errors", id="cfg-notify-error")
+
+            # Jira Integration
+            with Container(classes="stat-box"):
+                yield Label("[bold]Jira Integration[/bold]")
+                yield Label("Jira URL:")
+                yield Input(placeholder="https://your-domain.atlassian.net", id="cfg-jira-url")
+                yield Label("Email:")
+                yield Input(placeholder="user@example.com", id="cfg-jira-email")
+                yield Label("API Token:")
+                yield Input(placeholder="Token...", id="cfg-jira-token", password=True)
+
+            # Actions
+            with Horizontal(classes="stat-box"):
+                yield Button("Save Configuration", id="btn-cfg-save", variant="primary")
+                yield Button("Reload", id="btn-cfg-reload", variant="default")
+
+    def on_mount(self) -> None:
+        self.load_config()
+
+    def load_config(self) -> None:
+        # We can use load_config_from_file without arguments to search
+        # It will resolve project dir if we run from it, or XDG
+        # But we want to prioritize what's actually being used.
+        # Ideally we load from self.config_path if exists, else fallback.
+
+        config = {}
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, "r") as f:
+                    config = yaml.safe_load(f) or {}
+            except Exception:
+                pass
+
+        if not config:
+             config = load_config_from_file()
+
+        # Populate fields
+        self.query_one("#cfg-agent-type", Select).value = config.get("agent_type", "gemini")
+        self.query_one("#cfg-model", Input).value = config.get("model") or ""
+        self.query_one("#cfg-max-iterations", Input).value = str(config.get("max_iterations") or "")
+        self.query_one("#cfg-manager-freq", Input).value = str(config.get("manager_frequency") or 10)
+
+        self.query_one("#cfg-slack", Input).value = config.get("slack_webhook_url") or ""
+        self.query_one("#cfg-discord", Input).value = config.get("discord_webhook_url") or ""
+
+        notif = config.get("notification_settings", {}) or {}
+        self.query_one("#cfg-notify-iteration", Checkbox).value = notif.get("iteration", False)
+        self.query_one("#cfg-notify-manager", Checkbox).value = notif.get("manager", True)
+        self.query_one("#cfg-notify-human", Checkbox).value = notif.get("human_in_loop", True)
+        self.query_one("#cfg-notify-completion", Checkbox).value = notif.get("project_completion", True)
+        self.query_one("#cfg-notify-error", Checkbox).value = notif.get("error", True)
+
+        jira = config.get("jira", {}) or {}
+        self.query_one("#cfg-jira-url", Input).value = jira.get("url") or ""
+        self.query_one("#cfg-jira-email", Input).value = jira.get("email") or ""
+        self.query_one("#cfg-jira-token", Input).value = jira.get("token") or ""
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-cfg-save":
+            self.save_config()
+        elif event.button.id == "btn-cfg-reload":
+            self.load_config()
+            self.notify("Configuration reloaded.")
+
+    def save_config(self) -> None:
+        # Load existing config to preserve other keys
+        config = {}
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, "r") as f:
+                    config = yaml.safe_load(f) or {}
+            except Exception:
+                pass
+
+        # Update with widget values
+        config["agent_type"] = self.query_one("#cfg-agent-type", Select).value
+
+        model = self.query_one("#cfg-model", Input).value
+        if model: config["model"] = model
+
+        max_iter = self.query_one("#cfg-max-iterations", Input).value
+        if max_iter and max_iter.isdigit(): config["max_iterations"] = int(max_iter)
+
+        mgr_freq = self.query_one("#cfg-manager-freq", Input).value
+        if mgr_freq and mgr_freq.isdigit(): config["manager_frequency"] = int(mgr_freq)
+
+        slack = self.query_one("#cfg-slack", Input).value
+        if slack: config["slack_webhook_url"] = slack
+
+        discord = self.query_one("#cfg-discord", Input).value
+        if discord: config["discord_webhook_url"] = discord
+
+        notif = {
+            "iteration": self.query_one("#cfg-notify-iteration", Checkbox).value,
+            "manager": self.query_one("#cfg-notify-manager", Checkbox).value,
+            "human_in_loop": self.query_one("#cfg-notify-human", Checkbox).value,
+            "project_completion": self.query_one("#cfg-notify-completion", Checkbox).value,
+            "error": self.query_one("#cfg-notify-error", Checkbox).value,
+        }
+        config["notification_settings"] = notif
+
+        jira_url = self.query_one("#cfg-jira-url", Input).value
+        jira_email = self.query_one("#cfg-jira-email", Input).value
+        jira_token = self.query_one("#cfg-jira-token", Input).value
+
+        if jira_url:
+            config["jira"] = {
+                "url": jira_url,
+                "email": jira_email,
+                "token": jira_token
+            }
+
+        try:
+            with open(self.config_path, "w") as f:
+                yaml.dump(config, f, sort_keys=False, indent=2)
+            # Set permissions
+            os.chmod(self.config_path, 0o600)
+            self.notify(f"Configuration saved to {self.config_path}")
+        except Exception as e:
+            self.notify(f"Error saving configuration: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -3122,6 +3284,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Config", id="tab-config"):
+                yield ConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):
                 yield DocumentationTab(self.project_dir)
             with TabPane("Test Gen", id="tab-test-gen"):

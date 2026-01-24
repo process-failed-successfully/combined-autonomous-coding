@@ -98,3 +98,17 @@ DataTable {
     border: none;
     padding: 0;
 }
+
+/* Helper Classes */
+.input-small {
+    width: 20%;
+}
+
+.input-large {
+    width: 50%;
+}
+
+.btn-auto {
+    width: auto;
+    min-width: 15;
+}

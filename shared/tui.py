@@ -760,7 +760,7 @@ class KnowledgeTab(Container):
                 self.notify("Content cannot be empty.", severity="warning")
 
 class TasksTab(Container):
-    """Tab for viewing Unified Tasks (GitHub, Jira, Sprint, TODOs)."""
+    """Tab for viewing Unified Tasks (GitHub, Jira, Sprint, TODOs, Features)."""
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -771,12 +771,27 @@ class TasksTab(Container):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("[bold]Unified Task Board[/bold]", classes="welcome-text")
+
+            # Creation Section (For Features)
+            with Container(classes="stat-box", id="task-creation-container"):
+                yield Label("[bold]Create New Feature[/bold]")
+                with Horizontal():
+                    yield Input(placeholder="Title...", id="task-input-title", classes="input-small")
+                    yield Input(placeholder="Description...", id="task-input-desc", classes="input-large")
+                    yield Button("Add Feature", id="btn-task-add", variant="success", classes="btn-auto")
+
             with Horizontal(classes="stat-box"):
                 yield Button("Refresh", id="btn-tasks-refresh", variant="primary")
-                yield Select.from_values(["All", "GitHub", "Jira", "Sprint", "TODO"], id="select-task-source", value="All")
+                yield Select.from_values(["All", "Feature", "GitHub", "Jira", "Sprint", "TODO"], id="select-task-source", value="All")
                 yield Input(placeholder="Filter by title...", id="input-task-filter")
 
             yield DataTable(id="tasks-table")
+
+            # Actions
+            with Horizontal(classes="stat-box", id="task-actions"):
+                yield Button("Mark Done", id="btn-task-done", disabled=True, variant="success")
+                yield Button("Mark Pending", id="btn-task-pending", disabled=True, variant="warning")
+                yield Button("Delete", id="btn-task-delete", disabled=True, variant="error")
 
     def on_mount(self) -> None:
         table = self.query_one("#tasks-table", DataTable)
@@ -829,6 +844,75 @@ class TasksTab(Container):
     @on(Button.Pressed, "#btn-tasks-refresh")
     def refresh_tasks(self):
         self.load_tasks()
+
+    @on(Button.Pressed, "#btn-task-add")
+    def add_feature(self):
+        title_inp = self.query_one("#task-input-title", Input)
+        desc_inp = self.query_one("#task-input-desc", Input)
+
+        title = title_inp.value
+        desc = desc_inp.value
+
+        if not title:
+            self.notify("Title required.", severity="error")
+            return
+
+        if self.task_manager.add_feature(title, desc):
+            self.notify("Feature added.")
+            title_inp.value = ""
+            desc_inp.value = ""
+            self.load_tasks()
+        else:
+            self.notify("Failed to add feature.", severity="error")
+
+    @on(Button.Pressed, "#btn-task-done")
+    def mark_done(self):
+        if self.selected_task_id and self.selected_task_source == "FEATURE":
+            if self.task_manager.update_feature_status(self.selected_task_id, "Done"):
+                self.notify("Feature marked as Done.")
+                self.load_tasks()
+            else:
+                self.notify("Failed to update feature.", severity="error")
+
+    @on(Button.Pressed, "#btn-task-pending")
+    def mark_pending(self):
+        if self.selected_task_id and self.selected_task_source == "FEATURE":
+            if self.task_manager.update_feature_status(self.selected_task_id, "Pending"):
+                self.notify("Feature marked as Pending.")
+                self.load_tasks()
+            else:
+                self.notify("Failed to update feature.", severity="error")
+
+    @on(Button.Pressed, "#btn-task-delete")
+    def delete_feature(self):
+        if self.selected_task_id and self.selected_task_source == "FEATURE":
+            if self.task_manager.delete_feature(self.selected_task_id):
+                self.notify("Feature deleted.")
+                self.load_tasks()
+                # Disable buttons
+                self.selected_task_id = None
+                self.query_one("#btn-task-done").disabled = True
+                self.query_one("#btn-task-pending").disabled = True
+                self.query_one("#btn-task-delete").disabled = True
+            else:
+                self.notify("Failed to delete feature.", severity="error")
+
+    @on(DataTable.RowSelected, "#tasks-table")
+    def on_row_selected(self, event: DataTable.RowSelected) -> None:
+        table = self.query_one("#tasks-table", DataTable)
+        row = table.get_row(event.row_key)
+        # Columns: Source, ID, Title, Status, Priority
+        source = row[0].plain if hasattr(row[0], "plain") else str(row[0])
+        task_id = row[1].plain if hasattr(row[1], "plain") else str(row[1])
+
+        self.selected_task_source = source.upper() # Source is already upper in display?
+        self.selected_task_id = task_id
+
+        # Enable buttons only if it's a Feature
+        is_feature = (self.selected_task_source == "FEATURE")
+        self.query_one("#btn-task-done").disabled = not is_feature
+        self.query_one("#btn-task-pending").disabled = not is_feature
+        self.query_one("#btn-task-delete").disabled = not is_feature
 
     @on(Select.Changed, "#select-task-source")
     def filter_source(self):

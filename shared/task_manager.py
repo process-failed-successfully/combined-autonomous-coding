@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -36,11 +37,125 @@ class TaskManager:
     def fetch_all_tasks(self) -> List[Task]:
         """Fetches all tasks from all configured sources."""
         tasks = []
+        tasks.extend(self.fetch_features())
         tasks.extend(self.fetch_github_issues())
         tasks.extend(self.fetch_jira_tickets())
         tasks.extend(self.fetch_sprint_tasks())
         tasks.extend(self.fetch_todos())
         return tasks
+
+    def fetch_features(self) -> List[Task]:
+        """Fetches features from feature_list.json."""
+        feature_file = self.project_dir / "feature_list.json"
+        if not feature_file.exists():
+            return []
+
+        try:
+            content = feature_file.read_text()
+            if not content.strip():
+                return []
+
+            data = json.loads(content)
+            tasks = []
+            for feat in data.get("features", []):
+                status = "Done" if feat.get("passes") else "Pending"
+                tasks.append(Task(
+                    id=feat.get("id", str(uuid.uuid4())[:8]),
+                    source="feature",
+                    title=feat.get("title", "Untitled Feature"),
+                    status=status,
+                    priority="High",  # Features are high level goals
+                    metadata={"description": feat.get("description", "")}
+                ))
+            return tasks
+        except Exception:
+            return []
+
+    def add_feature(self, title: str, description: str) -> bool:
+        """Adds a new feature to feature_list.json."""
+        feature_file = self.project_dir / "feature_list.json"
+
+        try:
+            if feature_file.exists() and feature_file.stat().st_size > 0:
+                data = json.loads(feature_file.read_text())
+            else:
+                data = {"features": []}
+
+            if "features" not in data:
+                data["features"] = []
+
+            # Generate simple ID if title is simple, else UUID
+            import re
+            slug = re.sub(r'[^a-z0-9]+', '_', title.lower()).strip('_')
+            if not slug:
+                slug = str(uuid.uuid4())[:8]
+
+            # Ensure unique ID
+            existing_ids = {f.get("id") for f in data["features"]}
+            if slug in existing_ids:
+                slug = f"{slug}_{str(uuid.uuid4())[:4]}"
+
+            new_feature = {
+                "id": slug,
+                "title": title,
+                "description": description,
+                "passes": False
+            }
+
+            data["features"].append(new_feature)
+            feature_file.write_text(json.dumps(data, indent=2))
+            return True
+        except Exception as e:
+            print(f"Error adding feature: {e}")
+            return False
+
+    def update_feature_status(self, feature_id: str, status: str) -> bool:
+        """Updates the status of a feature (passes: true/false)."""
+        feature_file = self.project_dir / "feature_list.json"
+        if not feature_file.exists():
+            return False
+
+        try:
+            data = json.loads(feature_file.read_text())
+            features = data.get("features", [])
+
+            found = False
+            for feat in features:
+                if feat.get("id") == feature_id:
+                    # Map status to passes boolean
+                    if status.lower() in ["done", "passed", "true", "completed"]:
+                        feat["passes"] = True
+                    else:
+                        feat["passes"] = False
+                    found = True
+                    break
+
+            if found:
+                feature_file.write_text(json.dumps(data, indent=2))
+                return True
+            return False
+        except Exception:
+            return False
+
+    def delete_feature(self, feature_id: str) -> bool:
+        """Deletes a feature from feature_list.json."""
+        feature_file = self.project_dir / "feature_list.json"
+        if not feature_file.exists():
+            return False
+
+        try:
+            data = json.loads(feature_file.read_text())
+            features = data.get("features", [])
+
+            new_features = [f for f in features if f.get("id") != feature_id]
+
+            if len(new_features) < len(features):
+                data["features"] = new_features
+                feature_file.write_text(json.dumps(data, indent=2))
+                return True
+            return False
+        except Exception:
+            return False
 
     def fetch_github_issues(self) -> List[Task]:
         """Fetches open issues from GitHub."""

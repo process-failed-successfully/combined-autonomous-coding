@@ -59,6 +59,7 @@ from shared.debug import run_debug_logic
 from shared.mutate import run_mutate
 from shared.code_review import run_code_review_logic
 from shared.summarize import run_summarize_logic
+from shared.explain import run_explain_logic
 from shared.worktree import WorktreeManager
 from shared.security import SecurityAuditor
 from shared.dockerizer import Dockerizer
@@ -3149,6 +3150,15 @@ async def run_code_review(args):
         model=args.model,
         verbose=args.verbose
     )
+    sys.exit(0 if success else 1)
+
+
+async def run_explain(args):
+    """Explains source code using AI."""
+    # Setup logging
+    logger, _ = setup_logger(name="explain_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_explain_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -7083,7 +7093,6 @@ def parse_args(argv=None):
     # --- New 'summarize' command ---
     parser_summarize = subparsers.add_parser(
         "summarize",
-        aliases=["explain"],
         help="Summarize git changes using AI."
     )
     parser_summarize.add_argument(
@@ -7103,6 +7112,50 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
     parser_summarize.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+
+    # --- New 'explain' command ---
+    parser_explain = subparsers.add_parser(
+        "explain",
+        help="Explain source code files using AI."
+    )
+    parser_explain.add_argument(
+        "file",
+        nargs="+",
+        help="The file(s) to explain."
+    )
+    parser_explain.add_argument(
+        "--detail",
+        choices=["high", "low"],
+        default="high",
+        help="Level of detail for the explanation (default: high)."
+    )
+    parser_explain.add_argument(
+        "--diagram",
+        action="store_true",
+        help="Generate a Mermaid diagram."
+    )
+    parser_explain.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_explain.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_explain.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_explain.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="Enable verbose logging."
@@ -10735,8 +10788,13 @@ async def main():
         return
 
     # Handle `summarize` command
-    if args.command in ["summarize", "explain"]:
+    if args.command == "summarize":
         await run_summarize(args)
+        return
+
+    # Handle `explain` command
+    if args.command == "explain":
+        await run_explain(args)
         return
 
     # Handle `init` command

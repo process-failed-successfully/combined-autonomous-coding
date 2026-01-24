@@ -2,10 +2,14 @@ import sys
 import subprocess
 import json
 import shutil
+import concurrent.futures
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
-def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> subprocess.CompletedProcess:
+
+def run_command(
+    command: List[str], cwd: Path, capture_output: bool = True
+) -> subprocess.CompletedProcess:
     """Runs a shell command and returns the result."""
     try:
         return subprocess.run(
@@ -13,16 +17,14 @@ def run_command(command: List[str], cwd: Path, capture_output: bool = True) -> s
             cwd=str(cwd),
             capture_output=capture_output,
             text=True,
-            check=False  # We handle return codes manually
+            check=False,  # We handle return codes manually
         )
     except Exception as e:
         # Create a dummy CompletedProcess to represent the failure
         return subprocess.CompletedProcess(
-            args=command,
-            returncode=1,
-            stdout="",
-            stderr=str(e)
+            args=command, returncode=1, stdout="", stderr=str(e)
         )
+
 
 def check_dependencies() -> List[str]:
     """Checks if required tools are installed."""
@@ -31,6 +33,7 @@ def check_dependencies() -> List[str]:
         if not shutil.which(tool):
             missing.append(tool)
     return missing
+
 
 def run_formatter(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs a code formatter (black or autopep8)."""
@@ -45,7 +48,7 @@ def run_formatter(project_dir: Path, output_format: str = "text") -> Dict[str, A
             "check": "format",
             "success": False,
             "stdout": "",
-            "stderr": "No formatter found (black or autopep8)."
+            "stderr": "No formatter found (black or autopep8).",
         }
 
     result = run_command(cmd, project_dir)
@@ -54,18 +57,36 @@ def run_formatter(project_dir: Path, output_format: str = "text") -> Dict[str, A
         "check": "format",
         "success": success,
         "stdout": result.stdout,
-        "stderr": result.stderr
+        "stderr": result.stderr,
     }
+
 
 def run_lint(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs flake8 linting."""
     print("Running Lint (Flake8)...")
-    cmd = ["flake8", ".", "--count", "--select=E9,F63,F7,F82", "--show-source", "--statistics", "--exclude=.venv,venv,build,dist"]
+    cmd = [
+        "flake8",
+        ".",
+        "--count",
+        "--select=E9,F63,F7,F82",
+        "--show-source",
+        "--statistics",
+        "--exclude=.venv,venv,build,dist",
+    ]
 
     result = run_command(cmd, project_dir)
 
     # Second pass for warnings (non-blocking in script but we capture it)
-    cmd_warnings = ["flake8", ".", "--count", "--exit-zero", "--max-complexity=35", "--max-line-length=160", "--statistics", "--exclude=.venv,venv,build,dist"]
+    cmd_warnings = [
+        "flake8",
+        ".",
+        "--count",
+        "--exit-zero",
+        "--max-complexity=35",
+        "--max-line-length=160",
+        "--statistics",
+        "--exclude=.venv,venv,build,dist",
+    ]
     result_warnings = run_command(cmd_warnings, project_dir)
 
     success = result.returncode == 0
@@ -73,8 +94,9 @@ def run_lint(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
         "check": "lint",
         "success": success,
         "stdout": result.stdout + "\n" + result_warnings.stdout,
-        "stderr": result.stderr
+        "stderr": result.stderr,
     }
+
 
 def run_type_check(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs mypy type checking."""
@@ -88,8 +110,9 @@ def run_type_check(project_dir: Path, output_format: str = "text") -> Dict[str, 
         "check": "type_check",
         "success": success,
         "stdout": result.stdout,
-        "stderr": result.stderr
+        "stderr": result.stderr,
     }
+
 
 def run_security_scan(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs bandit security scan."""
@@ -108,8 +131,9 @@ def run_security_scan(project_dir: Path, output_format: str = "text") -> Dict[st
         "check": "security",
         "success": success,
         "stdout": result.stdout,
-        "stderr": result.stderr
+        "stderr": result.stderr,
     }
+
 
 def run_tests(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     """Runs pytest."""
@@ -117,18 +141,26 @@ def run_tests(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
     cmd = ["pytest", "--cov=.", "--cov-report=term-missing", "tests/"]
 
     # Adjust python path to include project dir
-    env = None # Inherit env by default
+    env = None  # Inherit env by default
 
     if shutil.which("pytest"):
         # We can run directly
         pass
     else:
         # Try running as module
-        cmd = [sys.executable, "-m", "pytest", "--cov=.", "--cov-report=term-missing", "tests/"]
+        cmd = [
+            sys.executable,
+            "-m",
+            "pytest",
+            "--cov=.",
+            "--cov-report=term-missing",
+            "tests/",
+        ]
 
     # We need to set PYTHONPATH to include the current directory
     # subprocess.run handles env inheritance, but we need to modify PYTHONPATH
     import os
+
     env = os.environ.copy()
     env["PYTHONPATH"] = f"{env.get('PYTHONPATH', '')}:{project_dir.resolve()}"
 
@@ -139,29 +171,25 @@ def run_tests(project_dir: Path, output_format: str = "text") -> Dict[str, Any]:
             capture_output=True,
             text=True,
             check=False,
-            env=env
+            env=env,
         )
     except Exception as e:
-        return {
-            "check": "test",
-            "success": False,
-            "stdout": "",
-            "stderr": str(e)
-        }
+        return {"check": "test", "success": False, "stdout": "", "stderr": str(e)}
 
     success = result.returncode == 0
     return {
         "check": "test",
         "success": success,
         "stdout": result.stdout,
-        "stderr": result.stderr
+        "stderr": result.stderr,
     }
+
 
 def run_verify_logic(
     project_dir: Path,
     checks: List[str] = None,
     fix: bool = False,
-    output_format: str = "text"
+    output_format: str = "text",
 ) -> bool:
     """
     Runs the verification checks.
@@ -195,20 +223,30 @@ def run_verify_logic(
         results.append(format_result)
         # If formatter fails (e.g. not found), we might want to warn but continue
         if not format_result["success"] and format_result["stderr"]:
-             # Just append to output, will be shown in summary
-             pass
+            # Just append to output, will be shown in summary
+            pass
 
-    if "lint" in checks:
-        results.append(run_lint(project_dir, output_format))
+    # Run checks in parallel
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
 
-    if "type" in checks:
-        results.append(run_type_check(project_dir, output_format))
+        if "lint" in checks:
+            futures.append(executor.submit(run_lint, project_dir, output_format))
 
-    if "security" in checks:
-        results.append(run_security_scan(project_dir, output_format))
+        if "type" in checks:
+            futures.append(executor.submit(run_type_check, project_dir, output_format))
 
-    if "test" in checks:
-        results.append(run_tests(project_dir, output_format))
+        if "security" in checks:
+            futures.append(
+                executor.submit(run_security_scan, project_dir, output_format)
+            )
+
+        if "test" in checks:
+            futures.append(executor.submit(run_tests, project_dir, output_format))
+
+        # Collect results (this blocks until all are complete)
+        for future in futures:
+            results.append(future.result())
 
     # Output generation
     if output_format == "json":
@@ -229,15 +267,17 @@ def run_verify_logic(
 
         print(f"[{status}] {check_name}")
 
-        if not res["success"] or (res["stdout"] and check_name != "TEST"): # Always show output on fail, or if there is output
-             # Indent output
-             print("-" * 20)
-             if res["stdout"].strip():
-                 print(res["stdout"].strip())
-             if res["stderr"].strip():
-                 print(res["stderr"].strip())
-             print("-" * 20)
-             print()
+        if not res["success"] or (
+            res["stdout"] and check_name != "TEST"
+        ):  # Always show output on fail, or if there is output
+            # Indent output
+            print("-" * 20)
+            if res["stdout"].strip():
+                print(res["stdout"].strip())
+            if res["stderr"].strip():
+                print(res["stderr"].strip())
+            print("-" * 20)
+            print()
 
     if all_passed:
         print("\n\033[0;32mAll Checks Passed Successfully!\033[0m")

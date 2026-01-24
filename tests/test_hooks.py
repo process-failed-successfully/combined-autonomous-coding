@@ -50,7 +50,8 @@ class TestHooks(unittest.TestCase):
 
         with patch('builtins.print'):
             result = install_pre_commit_hook(self.test_dir)
-        self.assertFalse(result)
+        # New behavior: returns True (success) but skips overwriting
+        self.assertTrue(result)
         self.assertEqual(hook_path.read_text(), "#!/bin/sh\necho 'existing'")
 
     def test_install_pre_commit_hook_reinstall(self):
@@ -76,7 +77,8 @@ class TestHooks(unittest.TestCase):
 
         with patch('builtins.print'):
             result = uninstall_pre_commit_hook(self.test_dir)
-        self.assertFalse(result)
+        # New behavior: returns True (success) but doesn't remove foreign hook
+        self.assertTrue(result)
         self.assertTrue(hook_path.exists())
 
     def test_uninstall_pre_commit_hook_no_hook(self):

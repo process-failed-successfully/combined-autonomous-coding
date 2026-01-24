@@ -182,5 +182,26 @@ class TestLogsCommand(unittest.TestCase):
         # Check that it printed the exit message
         self.assertIn("--- Stopped following log ---", output)
 
+    @patch('shared.log_explorer.LogExplorerApp')
+    @patch('sys.exit')
+    def test_explore_flag(self, mock_exit, MockApp):
+        """Test that --explore flag launches the TUI."""
+        # args needs explore=True
+        from main import run_logs
+        args = MagicMock()
+        args.explore = True
+        args.project_dir = Path(".")
+        args.agent = "gemini"
+
+        # Make sys.exit raise SystemExit so execution stops
+        mock_exit.side_effect = SystemExit
+
+        with self.assertRaises(SystemExit):
+            run_logs(args)
+
+        MockApp.assert_called_with(project_dir=args.project_dir, agent_type="gemini")
+        MockApp.return_value.run.assert_called_once()
+        mock_exit.assert_called_with(0)
+
 if __name__ == '__main__':
     unittest.main()

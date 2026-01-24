@@ -4074,6 +4074,15 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
 
 def run_logs(args):
     """Displays agent logs."""
+    if hasattr(args, 'explore') and args.explore:
+        from shared.log_explorer import LogExplorerApp
+        app = LogExplorerApp(
+            project_dir=args.project_dir,
+            agent_type=getattr(args, 'agent', 'gemini')
+        )
+        app.run()
+        sys.exit(0)
+
     success = _run_logs_logic(
         run_id=args.run_id,
         lines=args.lines,
@@ -5698,6 +5707,17 @@ def parse_args(argv=None):
 
     # Subparser for 'logs'
     parser_logs = subparsers.add_parser("logs", help="Show agent logs with advanced filtering")
+    parser_logs.add_argument(
+        "--explore",
+        action="store_true",
+        help="Open the interactive Log Explorer TUI.",
+    )
+    parser_logs.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for analysis (default: gemini)."
+    )
     parser_logs.add_argument(
         "run_id",
         nargs="?",

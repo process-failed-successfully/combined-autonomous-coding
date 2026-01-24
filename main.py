@@ -65,6 +65,7 @@ from shared.verify import run_verify_logic
 from shared.polish import run_polish_logic
 from shared.troubleshoot import run_troubleshoot_logic
 from shared.health import run_health_check
+from shared.sentinel import Sentinel
 from shared.work_session import WorkSessionManager
 import json
 import yaml
@@ -8120,6 +8121,40 @@ def parse_args(argv=None):
         help="Enable verbose logging."
     )
 
+    # --- New 'sentinel' command ---
+    parser_sentinel = subparsers.add_parser(
+        "sentinel",
+        help="Autonomous Sentinel: Watches files, runs checks, and auto-fixes issues."
+    )
+    parser_sentinel.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to watch."
+    )
+    parser_sentinel.add_argument(
+        "--auto-fix",
+        action="store_true",
+        help="Enable automatic AI fixing of detected issues."
+    )
+    parser_sentinel.add_argument(
+        "--checks",
+        type=str,
+        default="lint,test",
+        help="Comma-separated list of checks to run (lint,test,type,security). Default: lint,test."
+    )
+    parser_sentinel.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for fixing (default: gemini)."
+    )
+    parser_sentinel.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     # --- New 'health' command ---
     parser_health = subparsers.add_parser(
         "health",
@@ -9065,6 +9100,21 @@ async def run_resolve(args):
         yes=args.yes
     )
     sys.exit(0 if success else 1)
+
+
+def run_sentinel(args):
+    """Runs the Sentinel auto-fix watcher."""
+    project_dir = args.project_dir.resolve()
+    checks = [c.strip() for c in args.checks.split(",")] if args.checks else None
+
+    sentinel = Sentinel(
+        project_dir=project_dir,
+        checks=checks,
+        auto_fix=args.auto_fix,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sentinel.start()
 
 
 async def run_resolve_conflicts(args):
@@ -10940,6 +10990,10 @@ async def main():
 
     if args.command == "troubleshoot":
         await run_troubleshoot(args)
+        return
+
+    if args.command == "sentinel":
+        run_sentinel(args)
         return
 
     # Handle `health` command

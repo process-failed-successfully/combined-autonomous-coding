@@ -45,6 +45,8 @@ from shared.timeline import TimelineCollector, TimelineRenderer
 from shared.docstring import DocstringManager
 from shared.link_checker import LinkChecker
 from shared.openapi import OpenAPIGenerator
+from shared.cost import CostCalculator
+from shared.charts import draw_ascii_bar_chart
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -3266,6 +3268,113 @@ class ConfigTab(Container):
             self.notify(f"Error saving configuration: {e}", severity="error")
 
 
+class CostTab(Container):
+    """Tab for monitoring costs."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.calculator = CostCalculator(project_dir)
+
+    def compose(self) -> ComposeResult:
+        with VerticalScroll():
+            yield Label("[bold]Cost Management[/bold]", classes="welcome-text")
+
+            # Budget Status
+            with Container(classes="stat-box"):
+                yield Label("[bold]Budget Status[/bold]")
+                yield Label("Loading...", id="cost-budget-lbl")
+                yield Label("Remaining: ", id="cost-remaining-lbl")
+
+            # Chart
+            with Container(classes="stat-box"):
+                yield Label("[bold]Cost History[/bold]")
+                yield RichLog(id="cost-chart-log", wrap=False, highlight=False)
+
+            # Details
+            with Container(classes="stat-box"):
+                yield Label("[bold]Run Details[/bold]")
+                yield DataTable(id="cost-table")
+
+            # Actions
+            with Horizontal(classes="stat-box"):
+                yield Button("Refresh", id="btn-cost-refresh", variant="primary")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#cost-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Run ID", "Model", "Total Tokens", "Cost ($)")
+        self.refresh_data()
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-cost-refresh":
+            self.refresh_data()
+            self.notify("Cost data refreshed.")
+
+    def refresh_data(self) -> None:
+        import asyncio
+        asyncio.create_task(self._load_data())
+
+    async def _load_data(self) -> None:
+        import asyncio
+        data = await asyncio.to_thread(self.calculator.calculate_total_cost)
+        budget = await asyncio.to_thread(self.calculator.check_budget)
+
+        self._update_ui(data, budget)
+
+    def _update_ui(self, data: dict, budget: dict) -> None:
+        # Update Budget
+        status = budget["status"]
+        status_color = "green"
+        if status == "WARNING": status_color = "yellow"
+        elif status == "EXCEEDED": status_color = "red"
+        elif status == "No Limit": status_color = "blue"
+
+        if status == "No Limit":
+             self.query_one("#cost-budget-lbl").update(f"Status: [bold {status_color}]{status}[/]")
+             self.query_one("#cost-remaining-lbl").update(f"Total Spent: ${budget.get('current', 0.0):.4f}")
+        else:
+             self.query_one("#cost-budget-lbl").update(f"Status: [bold {status_color}]{status}[/] ({budget['percent']:.1f}%)")
+             self.query_one("#cost-remaining-lbl").update(f"Remaining: ${budget['remaining']:.4f} / ${budget['limit']:.2f}")
+
+        # Update Table
+        table = self.query_one("#cost-table", DataTable)
+        table.clear()
+
+        # Details are in data['details'] list of dicts
+        details = data.get("details", [])
+        # Show latest first
+        for run in reversed(details):
+            if "error" in run:
+                continue
+
+            total_tokens = run["input_tokens"] + run["output_tokens"]
+            table.add_row(
+                run["run_id"],
+                run["model"],
+                f"{int(total_tokens):,}",
+                f"${run['total_cost']:.4f}"
+            )
+
+        # Update Chart
+        chart_log = self.query_one("#cost-chart-log", RichLog)
+        chart_log.clear()
+
+        # Prepare data for chart (last 10 runs)
+        chart_data = {}
+        for run in details[-10:]:
+             if "error" in run: continue
+             # Use short ID
+             label = run["run_id"][-6:] if len(run["run_id"]) > 6 else run["run_id"]
+             chart_data[label] = run["total_cost"]
+
+        if chart_data:
+            chart = draw_ascii_bar_chart(chart_data, "Recent Run Costs ($)")
+            chart_log.write(chart)
+        else:
+            chart_log.write("No data for chart.")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -3336,6 +3445,8 @@ class AgentTUI(App):
                 yield SecretsTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("Cost", id="tab-cost"):
+                yield CostTab(self.project_dir)
             with TabPane("Playground", id="tab-playground"):
                 yield PlaygroundTab(self.project_dir)
         yield Footer()

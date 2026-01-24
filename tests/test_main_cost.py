@@ -1,15 +1,18 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import io
 import main
 
+
 # Helper to create a dummy args object
 class Args:
-    def __init__(self, run_id=None, project_dir=Path(".")):
+    def __init__(self, run_id=None, project_dir=Path("."), budget=False):
         self.run_id = run_id
         self.project_dir = project_dir
+        self.budget = budget
+
 
 class TestMainCost(unittest.TestCase):
     def setUp(self):
@@ -19,17 +22,18 @@ class TestMainCost(unittest.TestCase):
     def tearDown(self):
         sys.stdout = sys.__stdout__
 
-    @patch("main._find_metrics_file")
-    @patch("main._parse_metrics")
-    def test_run_cost_success(self, mock_parse, mock_find):
+    @patch("main.CostCalculator")
+    def test_run_cost_success(self, mock_calc_cls):
         # Mock setup
-        mock_find.return_value = Path("dummy_metrics.txt")
-        mock_parse.return_value = {
-            "Run ID": "test-run",
-            "Model": "gemini-1.5-pro",
-            "LLM Tokens Used": 1500,
-            "llm_tokens_total__gemini-1.5-pro__input": 1000,
-            "llm_tokens_total__gemini-1.5-pro__output": 500
+        mock_calc = mock_calc_cls.return_value
+        mock_calc.calculate_run_cost.return_value = {
+            "run_id": "test-run",
+            "model": "gemini-1.5-pro",
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "input_cost": 0.0035,
+            "output_cost": 0.00525,
+            "total_cost": 0.00875
         }
 
         args = Args(run_id="test-run")
@@ -40,54 +44,55 @@ class TestMainCost(unittest.TestCase):
 
         output = self.captured_output.getvalue()
         self.assertIn("Cost Estimate for Run: test-run", output)
-        self.assertIn("Model: gemini-1.5-pro", output)
-        self.assertIn("Input Tokens:  1,000", output)
-        self.assertIn("Output Tokens: 500", output)
+        self.assertIn("gemini-1.5-pro", output)  # Match just model name
+        self.assertIn("1,000", output)
+        self.assertIn("500", output)
+        self.assertIn("$0.0088", output)
 
-        # Calculation:
-        # Input: 1000/1M * 3.50 = 0.0035
-        # Output: 500/1M * 10.50 = 0.00525
-        # Total: 0.00875
-        self.assertIn("Total:  $0.0088", output) # Formatted to .4f
-
-    @patch("main._find_metrics_file")
-    @patch("main._parse_metrics")
-    def test_run_cost_fallback(self, mock_parse, mock_find):
-        # Mock setup - legacy format (no breakdown)
-        mock_find.return_value = Path("dummy_metrics.txt")
-        mock_parse.return_value = {
-            "Run ID": "legacy-run",
-            "Model": "gemini-1.5-flash",
-            "LLM Tokens Used": 10000
+    @patch("main.CostCalculator")
+    def test_run_cost_budget(self, mock_calc_cls):
+        mock_calc = mock_calc_cls.return_value
+        mock_calc.check_budget.return_value = {
+            "current": 5.0,
+            "limit": 10.0,
+            "remaining": 5.0,
+            "percent": 50.0,
+            "status": "OK"
+        }
+        # Also mock run cost since it continues to calculate run cost
+        mock_calc.calculate_run_cost.return_value = {
+            "run_id": "test-run",
+            "model": "gemini-1.5-pro",
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "input_cost": 0.0035,
+            "output_cost": 0.00525,
+            "total_cost": 0.00875
         }
 
-        args = Args(run_id="legacy-run")
+        args = Args(budget=True, run_id="test-run")  # Provide run_id to avoid file lookup
         with self.assertRaises(SystemExit) as cm:
             main.run_cost(args)
 
         self.assertEqual(cm.exception.code, 0)
-
         output = self.captured_output.getvalue()
-        self.assertIn("Assuming 75% input, 25% output", output)
+        self.assertIn("Budget Status", output)
+        self.assertIn("OK", output)
+        self.assertIn("50.0%", output)
 
-        # Calculation:
-        # Total: 10000
-        # Input: 7500 => 7500/1M * 0.35 = 0.002625
-        # Output: 2500 => 2500/1M * 1.05 = 0.002625
-        # Total: 0.00525 -> 0.0052 (Banker's rounding)
-        self.assertIn("Total:  $0.0052", output)
+    @patch("main.CostCalculator")
+    def test_run_cost_error(self, mock_calc_cls):
+        mock_calc = mock_calc_cls.return_value
+        mock_calc.calculate_run_cost.return_value = {"error": "No file found"}
 
-    @patch("main._find_metrics_file")
-    def test_run_cost_no_file(self, mock_find):
-        mock_find.return_value = None
         args = Args(run_id="missing-run")
-
         with self.assertRaises(SystemExit) as cm:
             # We capture stderr too because it prints error there
-            with patch('sys.stderr', new=io.StringIO()) as fake_stderr:
+            with patch('sys.stderr', new=io.StringIO()):
                 main.run_cost(args)
 
         self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

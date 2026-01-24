@@ -1,10 +1,9 @@
 import unittest
 from unittest.mock import patch, MagicMock, AsyncMock
-from pathlib import Path
-import sys
 
 # Ensure main is importable
 from main import run_recipes
+
 
 class TestMainRecipes(unittest.IsolatedAsyncioTestCase):
     @patch('sys.exit')
@@ -91,6 +90,7 @@ class TestMainRecipes(unittest.IsolatedAsyncioTestCase):
         # Assert
         mock_manager.run_recipe.assert_called_with("test_recipe", dry_run=False)
         mock_exit.assert_called_with(1)
+
 
 if __name__ == "__main__":
     unittest.main()

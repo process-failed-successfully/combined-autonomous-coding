@@ -6,6 +6,7 @@ from typing import cast
 
 from shared.recipe_learner import LogParser, RecipeLearner
 
+
 class TestLogParser(unittest.TestCase):
     def test_parse(self):
         log_content = """2023-10-27 10:00:00 - INFO - [Executing Bash] ls -la
@@ -26,6 +27,7 @@ class TestLogParser(unittest.TestCase):
         parser = LogParser()
         commands = parser.parse(mock_path)
         self.assertEqual(commands, [])
+
 
 class TestRecipeLearner(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -94,6 +96,7 @@ class TestRecipeLearner(unittest.IsolatedAsyncioTestCase):
             result = await self.learner.learn_from_run(None, "test_recipe")
 
         self.assertFalse(result)
+
 
 if __name__ == "__main__":
     unittest.main()

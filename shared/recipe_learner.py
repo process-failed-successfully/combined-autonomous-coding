@@ -1,7 +1,6 @@
 import json
 import logging
 import re
-import sys
 import io
 import contextlib
 from pathlib import Path
@@ -12,6 +11,7 @@ from shared.ask import run_ask_logic
 from shared.cli_utils import get_latest_log_file
 
 logger = logging.getLogger(__name__)
+
 
 class LogParser:
     """Parses agent logs to extract executed commands."""
@@ -34,6 +34,7 @@ class LogParser:
             logger.error(f"Error parsing log: {e}")
 
         return commands
+
 
 class RecipeLearner:
     """Learns recipes from previous agent runs."""
@@ -98,8 +99,8 @@ class RecipeLearner:
 
         # If run_ask_logic failed, response might contain error info or be empty
         if not success and not response:
-             print("❌ Error: Agent execution failed.")
-             return False
+            print("❌ Error: Agent execution failed.")
+            return False
 
         # 4. Parse Response
         recipe_steps = []
@@ -128,9 +129,9 @@ class RecipeLearner:
             logger.warning(f"Could not parse JSON from response: {e}")
 
         if not recipe_steps:
-             print(f"❌ Error: Could not parse recipe steps from agent response.")
-             print(f"Response was:\n{response}")
-             return False
+            print("❌ Error: Could not parse recipe steps from agent response.")
+            print(f"Response was:\n{response}")
+            return False
 
         # 5. Save Recipe
         if self.recipe_manager.add_recipe(recipe_name, recipe_steps):

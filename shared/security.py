@@ -4,8 +4,10 @@ import subprocess
 import shutil
 import json
 import math
+import requests
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from shared.dependencies import DependencyAnalyzer
 
 class SecurityAuditor:
     """
@@ -214,8 +216,85 @@ class SecurityAuditor:
 
         return findings
 
+    def _check_python_vulnerabilities(self, python_deps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Queries the OSV API (https://osv.dev) for Python vulnerabilities.
+        """
+        findings = []
+        if not python_deps:
+            return findings
+
+        # Extract unique packages to query
+        unique_pkgs = {}
+        for file_info in python_deps:
+            source = file_info["source"]
+            for dep in file_info.get("dependencies", []):
+                key = (dep["name"], dep.get("version"))
+                if key not in unique_pkgs:
+                    unique_pkgs[key] = []
+                unique_pkgs[key].append(source)
+
+        if not unique_pkgs:
+            return findings
+
+        # Construct batch query for OSV
+        # Batching (1000 limit) - for now assuming < 1000 deps
+        queries = []
+        pkg_list = []
+        for (name, version), sources in unique_pkgs.items():
+            if not version:
+                continue # Cannot check without version
+
+            # Remove operators from version if present (e.g. ==, >=)
+            clean_version = version.lstrip("=<>~")
+
+            queries.append({
+                "package": {
+                    "name": name,
+                    "ecosystem": "PyPI"
+                },
+                "version": clean_version
+            })
+            pkg_list.append(((name, version), sources))
+
+        if not queries:
+            return findings
+
+        try:
+            url = "https://api.osv.dev/v1/querybatch"
+            response = requests.post(url, json={"queries": queries}, timeout=10)
+
+            if response.status_code == 200:
+                results = response.json().get("results", [])
+
+                for i, result in enumerate(results):
+                    vulns = result.get("vulns", [])
+                    if vulns:
+                        (pkg_name, pkg_ver), sources = pkg_list[i]
+                        for vuln in vulns:
+                            # Map to finding
+                            summary = vuln.get("summary") or vuln.get("details", "No description")
+                            if len(summary) > 200:
+                                summary = summary[:200] + "..."
+
+                            findings.append({
+                                "type": "dependency",
+                                "tool": "OSV (PyPI)",
+                                "severity": "HIGH", # OSV doesn't always provide simple severity, assume high for now or parse CVSS
+                                "description": f"{pkg_name} {pkg_ver}: {vuln['id']} - {summary}",
+                                "file": ", ".join(sources),
+                                "line": 0,
+                                "snippet": f"Upgrade {pkg_name}",
+                                "url": f"https://osv.dev/vulnerability/{vuln['id']}"
+                            })
+
+        except Exception as e:
+            print(f"Error checking Python vulnerabilities: {e}")
+
+        return findings
+
     def run_dependency_check(self) -> List[Dict[str, Any]]:
-        """Runs dependency checks (npm audit for Node)."""
+        """Runs dependency checks (npm audit for Node, OSV for Python)."""
         findings = []
 
         # Node.js
@@ -262,9 +341,17 @@ class SecurityAuditor:
             except Exception as e:
                 print(f"Error running npm audit: {e}")
 
-        # Python (check for safety or pip-audit)
-        # Note: safety is not in requirements, but if it exists we can use it.
-        # For now, we skip Python deps check or add a placeholder.
+        # Python (OSV Check)
+        try:
+            analyzer = DependencyAnalyzer(self.project_dir)
+            deps = analyzer.scan()
+            python_deps = deps.get("python", [])
+            if python_deps:
+                print("Checking Python dependencies against OSV database...")
+                py_findings = self._check_python_vulnerabilities(python_deps)
+                findings.extend(py_findings)
+        except Exception as e:
+            print(f"Error running Python dependency check: {e}")
 
         return findings
 

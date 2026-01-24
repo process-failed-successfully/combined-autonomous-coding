@@ -112,5 +112,51 @@ class TestSecurityAuditor(unittest.TestCase):
         self.assertEqual(findings[0]["severity"], "HIGH")
         self.assertIn("lodash", findings[0]["description"])
 
+    @patch("shared.security.requests.post")
+    @patch("shared.security.DependencyAnalyzer")
+    def test_run_dependency_check_python(self, mock_analyzer_cls, mock_post):
+        # Mock DependencyAnalyzer
+        mock_analyzer = mock_analyzer_cls.return_value
+        mock_analyzer.scan.return_value = {
+            "python": [
+                {
+                    "source": "requirements.txt",
+                    "dependencies": [
+                        {"name": "requests", "version": "2.0.0"}
+                    ]
+                }
+            ]
+        }
+
+        # Mock OSV API response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "results": [
+                {
+                    "vulns": [
+                        {
+                            "id": "GHSA-1234",
+                            "summary": "Remote Code Execution",
+                            "details": "Details about RCE..."
+                        }
+                    ]
+                }
+            ]
+        }
+        mock_post.return_value = mock_response
+
+        # Ensure npm is skipped or handled
+        with patch("shutil.which", return_value=None):
+            findings = self.auditor.run_dependency_check()
+
+        # Let's filter for OSV findings
+        osv_findings = [f for f in findings if f.get("tool") == "OSV (PyPI)"]
+
+        self.assertEqual(len(osv_findings), 1)
+        self.assertEqual(osv_findings[0]["severity"], "HIGH")
+        self.assertIn("requests 2.0.0", osv_findings[0]["description"])
+        self.assertIn("Remote Code Execution", osv_findings[0]["description"])
+
 if __name__ == "__main__":
     unittest.main()

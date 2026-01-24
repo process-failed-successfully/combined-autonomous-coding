@@ -4281,6 +4281,13 @@ def run_help(args):
     sys.exit(0)
 
 
+def run_prompt_lab(args):
+    """Runs the Prompt Lab TUI."""
+    # Currently just launches the TUI, as it contains the Prompt Lab tab.
+    # In future, this could launch directly into that tab or run headless experiments.
+    run_tui(args)
+
+
 def run_tui(args):
     """Starts the Textual TUI."""
     try:
@@ -6111,6 +6118,15 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to view in the TUI (default: current directory)",
+    )
+
+    # Subparser for 'prompt-lab'
+    parser_prompt_lab = subparsers.add_parser("prompt-lab", help="Run the Prompt Engineering Lab.")
+    parser_prompt_lab.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory (default: current directory).",
     )
 
     # Subparser for 'tree'
@@ -10510,6 +10526,11 @@ async def main():
     # Handle `tui` command
     if args.command == "tui":
         run_tui(args)
+        return
+
+    # Handle `prompt-lab` command
+    if args.command == "prompt-lab":
+        run_prompt_lab(args)
         return
 
     # Handle `knowledge` command

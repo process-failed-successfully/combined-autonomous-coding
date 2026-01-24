@@ -47,6 +47,8 @@ from shared.link_checker import LinkChecker
 from shared.openapi import OpenAPIGenerator
 from shared.cost import CostCalculator
 from shared.charts import draw_ascii_bar_chart
+from shared.prompt_lab import PromptLabManager
+
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -3375,6 +3377,148 @@ class CostTab(Container):
             chart_log.write("No data for chart.")
 
 
+class PromptLabTab(Container):
+    """Tab for prompt engineering experiments."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = PromptLabManager(project_dir)
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Prompt Lab[/bold]", classes="welcome-text")
+
+            # Configuration
+            with Horizontal(classes="stat-box"):
+                with Vertical(id="pl-config-pane"):
+                    yield Label("Agents:")
+                    yield Checkbox("Gemini", id="pl-chk-gemini", value=True)
+                    yield Checkbox("Cursor", id="pl-chk-cursor", value=False)
+                    yield Checkbox("Local", id="pl-chk-local", value=False)
+                    yield Button("Run Experiment", id="btn-pl-run", variant="primary")
+
+                with Vertical(id="pl-save-pane"):
+                    yield Input(placeholder="Experiment Name...", id="pl-exp-name")
+                    with Horizontal():
+                        yield Button("Save", id="btn-pl-save", variant="success")
+                        yield Button("Load", id="btn-pl-load", variant="warning")
+                    yield Select([], id="pl-exp-select", prompt="Select Experiment")
+
+            # Prompts
+            with Horizontal():
+                with Vertical(classes="stat-box"):
+                    yield Label("System Prompt (Context)")
+                    yield TextArea(id="pl-system-prompt")
+                with Vertical(classes="stat-box"):
+                    yield Label("User Prompt (Instruction)")
+                    yield TextArea(id="pl-user-prompt")
+
+            # Results
+            yield Label("[bold]Results[/bold]")
+            with TabbedContent(id="pl-results-tabs"):
+                with TabPane("Gemini", id="pl-tab-gemini"):
+                    yield RichLog(id="pl-res-gemini", wrap=True, markup=True)
+                with TabPane("Cursor", id="pl-tab-cursor"):
+                    yield RichLog(id="pl-res-cursor", wrap=True, markup=True)
+                with TabPane("Local", id="pl-tab-local"):
+                    yield RichLog(id="pl-res-local", wrap=True, markup=True)
+
+    def on_mount(self) -> None:
+        self.refresh_experiments()
+
+    def refresh_experiments(self) -> None:
+        exps = self.manager.list_experiments()
+        select = self.query_one("#pl-exp-select", Select)
+        select.set_options([(e, e) for e in exps])
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-pl-run":
+            await self.run_experiment()
+        elif event.button.id == "btn-pl-save":
+            self.save_experiment()
+        elif event.button.id == "btn-pl-load":
+            self.load_experiment()
+
+    async def run_experiment(self) -> None:
+        sys_prompt = self.query_one("#pl-system-prompt", TextArea).text
+        user_prompt = self.query_one("#pl-user-prompt", TextArea).text
+
+        agents = []
+        if self.query_one("#pl-chk-gemini", Checkbox).value:
+            agents.append("gemini")
+        if self.query_one("#pl-chk-cursor", Checkbox).value:
+            agents.append("cursor")
+        if self.query_one("#pl-chk-local", Checkbox).value:
+            agents.append("local")
+
+        if not agents:
+            self.notify("Select at least one agent.", severity="error")
+            return
+
+        self.notify(f"Running experiment on {', '.join(agents)}...", severity="information")
+
+        # Clear logs
+        for agent in ["gemini", "cursor", "local"]:
+            try:
+                self.query_one(f"#pl-res-{agent}", RichLog).clear()
+            except Exception:
+                pass
+
+        results = await self.manager.run_experiment(sys_prompt, user_prompt, agents)
+
+        for agent, response in results.items():
+            try:
+                log = self.query_one(f"#pl-res-{agent}", RichLog)
+                log.write(response)
+            except Exception:
+                pass
+
+        self.notify("Experiment complete.")
+
+    def save_experiment(self) -> None:
+        name = self.query_one("#pl-exp-name", Input).value
+        if not name:
+            self.notify("Name required.", severity="error")
+            return
+
+        data = {
+            "system_prompt": self.query_one("#pl-system-prompt", TextArea).text,
+            "user_prompt": self.query_one("#pl-user-prompt", TextArea).text,
+            "agents": {
+                "gemini": self.query_one("#pl-chk-gemini", Checkbox).value,
+                "cursor": self.query_one("#pl-chk-cursor", Checkbox).value,
+                "local": self.query_one("#pl-chk-local", Checkbox).value,
+            }
+        }
+        self.manager.save_experiment(name, data)
+        self.notify(f"Saved '{name}'.")
+        self.refresh_experiments()
+
+    def load_experiment(self) -> None:
+        select = self.query_one("#pl-exp-select", Select)
+        name = select.value
+        if not name:
+            self.notify("Select an experiment to load.", severity="warning")
+            return
+
+        data = self.manager.load_experiment(name)
+        if not data:
+            self.notify("Experiment not found.", severity="error")
+            return
+
+        self.query_one("#pl-system-prompt", TextArea).text = data.get("system_prompt", "")
+        self.query_one("#pl-user-prompt", TextArea).text = data.get("user_prompt", "")
+
+        agents = data.get("agents", {})
+        self.query_one("#pl-chk-gemini", Checkbox).value = agents.get("gemini", False)
+        self.query_one("#pl-chk-cursor", Checkbox).value = agents.get("cursor", False)
+        self.query_one("#pl-chk-local", Checkbox).value = agents.get("local", False)
+
+        self.query_one("#pl-exp-name", Input).value = name
+        self.notify(f"Loaded '{name}'.")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -3449,6 +3593,8 @@ class AgentTUI(App):
                 yield CostTab(self.project_dir)
             with TabPane("Playground", id="tab-playground"):
                 yield PlaygroundTab(self.project_dir)
+            with TabPane("Prompt Lab", id="tab-prompt-lab"):
+                yield PromptLabTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

@@ -9,8 +9,18 @@ import tempfile
 sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import DataTable, Input, Select, Button
+from textual.app import App, ComposeResult
 from shared.tui import AgentTUI, TasksTab
 from shared.task_manager import Task
+
+class TasksTestApp(App):
+    def __init__(self, project_dir):
+        super().__init__()
+        self.project_dir = project_dir
+        self.tab = TasksTab(project_dir)
+
+    def compose(self) -> ComposeResult:
+        yield self.tab
 
 class TestTUITasks(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -41,6 +51,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
     async def test_tasks_tab_structure(self):
         """Test that the Tasks tab has the correct widgets."""
+        # Use AgentTUI to verify integration
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Check if tab exists
@@ -66,11 +77,9 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         ]
         self.mock_tm.fetch_all_tasks.return_value = mock_tasks
 
-        app = AgentTUI(project_dir=self.project_dir)
+        # Use TasksTestApp for isolation
+        app = TasksTestApp(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("#main-tabs").active = "tab-tasks"
-            await pilot.pause()
-
             tasks_tab = app.query_one(TasksTab)
             table = tasks_tab.query_one("#tasks-table", DataTable)
 
@@ -81,11 +90,9 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         """Test the refresh button."""
         self.mock_tm.fetch_all_tasks.return_value = []
 
-        app = AgentTUI(project_dir=self.project_dir)
+        # Use TasksTestApp for isolation
+        app = TasksTestApp(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("#main-tabs").active = "tab-tasks"
-            await pilot.pause()
-
             initial_count = self.mock_tm.fetch_all_tasks.call_count
 
             await pilot.click("#btn-tasks-refresh")
@@ -101,11 +108,9 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         ]
         self.mock_tm.fetch_all_tasks.return_value = mock_tasks
 
-        app = AgentTUI(project_dir=self.project_dir)
+        # Use TasksTestApp for isolation
+        app = TasksTestApp(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            app.query_one("#main-tabs").active = "tab-tasks"
-            await pilot.pause()
-
             tasks_tab = app.query_one(TasksTab)
             table = tasks_tab.query_one("#tasks-table", DataTable)
             self.assertEqual(table.row_count, 2)

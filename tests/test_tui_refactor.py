@@ -4,16 +4,18 @@ from unittest.mock import MagicMock, patch, AsyncMock
 import sys
 import shutil
 import tempfile
+from typing import cast
 
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Input, RichLog, Select, DirectoryTree, Button  # noqa: E402
-from textual.app import App, ComposeResult
+from textual.widgets import Input, Button  # noqa: E402
+from textual.app import App, ComposeResult  # noqa: E402
 from shared.tui import RefactorTab  # noqa: E402
 
+
 # Helper App to mount the widget for testing
-class RefactorTestApp(App):
+class RefactorTestApp(App[None]):
     def __init__(self, project_dir):
         super().__init__()
         self.project_dir = project_dir
@@ -21,6 +23,7 @@ class RefactorTestApp(App):
 
     def compose(self) -> ComposeResult:
         yield self.tab
+
 
 class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -44,7 +47,7 @@ class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
     async def test_compose(self):
         """Test the UI composition."""
         app = RefactorTestApp(self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             tab = app.tab
             self.assertIsNotNone(tab)
             self.assertIsNotNone(tab.query_one("#refactor-file-tree"))
@@ -54,7 +57,7 @@ class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
     async def test_select_file(self):
         """Test file selection logic."""
         app = RefactorTestApp(self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             tab = app.tab
 
             # Simulate selection manually calling the handler
@@ -69,19 +72,19 @@ class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
             tab.on_directory_tree_file_selected(mock_event)
 
             self.assertEqual(tab.selected_file, self.target_file)
-            self.assertFalse(tab.query_one("#btn-refactor-preview").disabled)
+            self.assertFalse(cast(Button, tab.query_one("#btn-refactor-preview")).disabled)
 
     async def test_preview_refactor(self):
         """Test preview generation."""
         app = RefactorTestApp(self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             tab = app.tab
             # Mock notify to prevent actual notifications
-            tab.notify = MagicMock()
+            tab.notify = MagicMock()  # type: ignore
 
             # Setup state
             tab.selected_file = self.target_file
-            tab.query_one("#refactor-instruction").value = "Add logging"
+            cast(Input, tab.query_one("#refactor-instruction")).value = "Add logging"
 
             # Mock manager response
             self.mock_manager.refactor_file = AsyncMock(return_value={
@@ -92,7 +95,7 @@ class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
             })
 
             # Enable the button (normally done by file selection)
-            tab.query_one("#btn-refactor-preview").disabled = False
+            cast(Button, tab.query_one("#btn-refactor-preview")).disabled = False
 
             # Run preview
             await tab.preview_refactor()
@@ -100,15 +103,15 @@ class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
             self.mock_manager.refactor_file.assert_awaited_once()
 
             # Verify UI update
-            self.assertFalse(tab.query_one("#btn-refactor-apply").disabled)
+            self.assertFalse(cast(Button, tab.query_one("#btn-refactor-apply")).disabled)
             self.assertEqual(tab.preview_data["new_content"], "print('hello')\nprint('log')")
 
     async def test_apply_changes(self):
         """Test applying changes."""
         app = RefactorTestApp(self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test() as _:
             tab = app.tab
-            tab.notify = MagicMock()
+            tab.notify = MagicMock()  # type: ignore
 
             # Setup state
             tab.selected_file = self.target_file
@@ -122,8 +125,9 @@ class TestTUIRefactor(unittest.IsolatedAsyncioTestCase):
             self.mock_manager.apply_changes.assert_called_with(
                 self.target_file, "new code"
             )
-            self.assertTrue(tab.query_one("#btn-refactor-apply").disabled)
+            self.assertTrue(cast(Button, tab.query_one("#btn-refactor-apply")).disabled)
             self.assertEqual(tab.preview_data, {})
+
 
 if __name__ == "__main__":
     unittest.main()

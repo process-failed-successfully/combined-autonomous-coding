@@ -5,6 +5,7 @@ import os
 import shlex
 import yaml
 from pathlib import Path
+from typing import Any
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
@@ -3757,8 +3758,8 @@ class RefactorTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = RefactorManager(project_dir)
-        self.selected_file = None
-        self.preview_data = {}  # Store result from refactor_file
+        self.selected_file: Path | None = None
+        self.preview_data: dict[str, Any] = {}  # Store result from refactor_file
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -3807,7 +3808,7 @@ class RefactorTab(Container):
             self.notify("Instruction required.", severity="error")
             return
 
-        agent_type = self.query_one("#refactor-agent-select", Select).value or "gemini"
+        agent_type = str(self.query_one("#refactor-agent-select", Select).value or "gemini")
         log = self.query_one("#refactor-diff-log", RichLog)
 
         log.clear()
@@ -3844,12 +3845,12 @@ class RefactorTab(Container):
             self.notify(f"Changes applied to {self.selected_file.name}")
             self.query_one("#refactor-diff-log", RichLog).write("\n[bold green]Changes Applied![/bold green]")
             self.query_one("#btn-refactor-apply").disabled = True
-            self.preview_data = {} # Reset
+            self.preview_data = {}  # Reset
         except Exception as e:
             self.notify(f"Error applying changes: {e}", severity="error")
 
 
-class AgentTUI(App):
+class AgentTUI(App[None]):
     """Mission Control TUI."""
 
     CSS_PATH = "tui.css"

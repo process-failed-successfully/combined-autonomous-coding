@@ -6,9 +6,15 @@ Provides project templating and scaffolding capabilities.
 """
 
 import os
-from pathlib import Path
-import subprocess
+import json
+import re
 import shutil
+import subprocess
+from pathlib import Path
+from typing import Optional
+
+from shared.config import Config
+from agents.shared.prompts import get_scaffold_prompt
 
 TEMPLATES = {
     "python-basic": {
@@ -175,8 +181,9 @@ Open `index.html` in your browser.
 
 
 class ScaffoldManager:
-    def __init__(self, project_dir: Path):
+    def __init__(self, project_dir: Path, agent_type: str = "gemini"):
         self.project_dir = project_dir.resolve()
+        self.agent_type = agent_type
 
     def list_templates(self) -> dict:
         """Returns a dictionary of available templates and their descriptions."""
@@ -192,11 +199,83 @@ class ScaffoldManager:
             return False
 
         template = TEMPLATES[template_name]
-        files = template["files"]
+        return self.create_from_plan(template["files"], force=force)
 
+    async def generate_ai_scaffold(
+        self,
+        description: str,
+        agent_type: str = "gemini",
+        model: Optional[str] = None
+    ) -> dict:
+        """
+        Generates a file structure plan using AI based on the description.
+        Returns a dict of {filename: content} or empty dict on error.
+        """
+        # Import inside method to avoid circular dependency
+        from agents.gemini import GeminiAgent
+        from agents.cursor import CursorAgent
+        from agents.local import LocalAgent
+        from agents.openrouter import OpenRouterAgent
+
+        config = Config(
+            project_dir=self.project_dir,
+            agent_type=agent_type,
+            model=model,
+            verbose=False,
+            max_iterations=1,
+            stream_output=False,
+        )
+
+        agent_class_map = {
+            "gemini": GeminiAgent,
+            "cursor": CursorAgent,
+            "local": LocalAgent,
+            "openrouter": OpenRouterAgent,
+        }
+
+        agent_class = agent_class_map.get(agent_type)
+        if not agent_class:
+            print(f"❌ Unknown agent type: {agent_type}")
+            return {}
+
+        agent = agent_class(config)
+        prompt = get_scaffold_prompt().replace("{description}", description)
+
+        print(f"Requesting scaffold plan from {agent_type}...")
+        try:
+            _, response, _ = await agent.run_agent_session(prompt)
+
+            # Extract JSON block
+            json_match = re.search(r"```(?:json)?\n(.*?)```", response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1).strip()
+            else:
+                # Try parsing raw response if it looks like JSON
+                json_str = response.strip()
+
+            try:
+                files_dict = json.loads(json_str)
+                if isinstance(files_dict, dict):
+                    return files_dict
+                else:
+                    print("❌ Error: AI response is not a valid JSON object.")
+                    return {}
+            except json.JSONDecodeError as e:
+                print(f"❌ Error decoding JSON from AI response: {e}")
+                print(f"Response was: {response[:200]}...")
+                return {}
+
+        except Exception as e:
+            print(f"❌ Error generating scaffold: {e}")
+            return {}
+
+    def create_from_plan(self, plan: dict, force: bool = False) -> bool:
+        """
+        Creates files based on the plan dictionary {filename: content}.
+        """
         # Check for existing files
         if not force:
-            existing = [f for f in files if (self.project_dir / f).exists()]
+            existing = [f for f in plan.keys() if (self.project_dir / f).exists()]
             if existing:
                 print(f"❌ Error: The following files already exist in {self.project_dir}:")
                 for f in existing:
@@ -204,26 +283,28 @@ class ScaffoldManager:
                 print("Use --force to overwrite.")
                 return False
 
-        print(f"--- Scaffolding project with template: {template_name} ---")
+        print(f"--- Scaffolding {len(plan)} files ---")
         self.project_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            for filename, content in files.items():
+            for filename, content in plan.items():
                 file_path = self.project_dir / filename
+
+                # Sanitize path to prevent breaking out of project root
+                try:
+                    file_path.resolve().relative_to(self.project_dir)
+                except ValueError:
+                    print(f"❌ Error: Skipping {filename} (outside project directory)")
+                    continue
+
                 file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content.strip() + "\n")
+                file_path.write_text(content.strip() + "\n", encoding="utf-8")
                 print(f"✅ Created {filename}")
 
             # Initialize git if not present
             if shutil.which("git") and not (self.project_dir / ".git").exists():
                 subprocess.run(["git", "init"], cwd=self.project_dir, check=True, capture_output=True)
                 print("✅ Initialized git repository.")
-
-            # Create a default app_spec.txt if not provided by template
-            if "app_spec.txt" not in files:
-                spec_content = f"Application based on {template_name} template.\n"
-                (self.project_dir / "app_spec.txt").write_text(spec_content)
-                print("✅ Created app_spec.txt")
 
             return True
 

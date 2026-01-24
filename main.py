@@ -71,6 +71,7 @@ from shared.sentinel import Sentinel
 from shared.work_session import WorkSessionManager
 from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
+from shared.research import run_research_logic
 import json
 import yaml
 import platformdirs
@@ -8736,6 +8737,28 @@ def parse_args(argv=None):
     parser_api_lab_run.add_argument("--headers", type=str, help="Request headers (JSON string).")
     parser_api_lab_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'research' command ---
+    parser_research = subparsers.add_parser(
+        "research",
+        help="Research a topic by crawling a URL and saving to Knowledge Base."
+    )
+    parser_research.add_argument(
+        "url",
+        help="The starting URL to research."
+    )
+    parser_research.add_argument(
+        "--depth",
+        type=int,
+        default=0,
+        help="Recursion depth for crawling links (default: 0)."
+    )
+    parser_research.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Maximum number of pages to fetch (default: 5)."
+    )
+
     # --- New 'presentation' command ---
     parser_presentation = subparsers.add_parser(
         "presentation",
@@ -11325,6 +11348,10 @@ async def main():
 
     if args.command == "api-lab":
         run_api_lab_cli(args)
+        return
+
+    if args.command == "research":
+        run_research_logic(args.url, args.depth, args.limit)
         return
 
     if args.command == "presentation":

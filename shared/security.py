@@ -5,8 +5,9 @@ import shutil
 import json
 import math
 import requests
+import fnmatch
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Set
 from shared.dependencies import DependencyAnalyzer
 
 class SecurityAuditor:
@@ -14,6 +15,8 @@ class SecurityAuditor:
     Audits the codebase for security issues including secrets,
     SAST vulnerabilities, and dependency checks.
     """
+
+    IGNORE_FILE_NAME = ".secretignore"
 
     SECRET_PATTERNS = {
         "AWS Access Key": r"(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}",
@@ -43,6 +46,53 @@ class SecurityAuditor:
 
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir.resolve()
+        self.ignore_patterns: Set[str] = set()
+        self.load_ignore_patterns()
+
+    def load_ignore_patterns(self):
+        """Loads ignore patterns from .secretignore file."""
+        ignore_file = self.project_dir / self.IGNORE_FILE_NAME
+        if ignore_file.exists():
+            try:
+                content = ignore_file.read_text(encoding='utf-8')
+                for line in content.splitlines():
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        self.ignore_patterns.add(line)
+            except Exception as e:
+                print(f"Warning: Could not read {self.IGNORE_FILE_NAME}: {e}")
+
+    def add_ignore_pattern(self, pattern: str):
+        """Adds a pattern to the ignore list and file."""
+        if pattern in self.ignore_patterns:
+            print(f"Pattern '{pattern}' is already in {self.IGNORE_FILE_NAME}")
+            return
+
+        self.ignore_patterns.add(pattern)
+        ignore_file = self.project_dir / self.IGNORE_FILE_NAME
+        try:
+            with open(ignore_file, "a", encoding="utf-8") as f:
+                f.write(f"{pattern}\n")
+            print(f"Added '{pattern}' to {self.IGNORE_FILE_NAME}")
+        except Exception as e:
+            print(f"Error writing to {self.IGNORE_FILE_NAME}: {e}")
+
+    def _is_ignored(self, file_path: Path) -> bool:
+        """Checks if a file path matches any ignore pattern."""
+        try:
+            rel_path = file_path.relative_to(self.project_dir)
+            path_str = str(rel_path)
+            # Check against each pattern
+            for pattern in self.ignore_patterns:
+                # Use fnmatch for glob matching
+                if fnmatch.fnmatch(path_str, pattern):
+                    return True
+                # Also check if pattern matches a directory (e.g. "secrets/")
+                if pattern.endswith("/") and str(path_str).startswith(pattern):
+                    return True
+        except ValueError:
+            return False
+        return False
 
     def _calculate_entropy(self, data: str) -> float:
         """Calculates the Shannon entropy of a string."""
@@ -70,6 +120,10 @@ class SecurityAuditor:
 
                 # Check if path contains ignored keyword
                 if any(ignored in file_path.parts for ignored in self.IGNORE_DIRS):
+                    continue
+
+                # Check against .secretignore
+                if self._is_ignored(file_path):
                     continue
 
                 try:

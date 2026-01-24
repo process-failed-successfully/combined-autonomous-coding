@@ -18,6 +18,8 @@ class TestMainSecurity(unittest.TestCase):
         args.scan_type = "all"
         args.severity = "low"
         args.output = None
+        args.ignore_add = None
+        args.install_hook = False
 
         # Run command (should exit 0)
         with self.assertRaises(SystemExit) as cm:
@@ -48,6 +50,8 @@ class TestMainSecurity(unittest.TestCase):
         args.scan_type = "all"
         args.severity = "low"
         args.output = None
+        args.ignore_add = None
+        args.install_hook = False
 
         # Run command (should exit 1 because of HIGH severity)
         with self.assertRaises(SystemExit) as cm:
@@ -67,6 +71,8 @@ class TestMainSecurity(unittest.TestCase):
         args.scan_type = "sast"
         args.severity = "medium"
         args.output = str(output_file)
+        args.ignore_add = None
+        args.install_hook = False
 
         # Run command
         with self.assertRaises(SystemExit) as cm:
@@ -76,6 +82,38 @@ class TestMainSecurity(unittest.TestCase):
         # Verify output file creation
         self.assertTrue(output_file.exists())
         output_file.unlink() # Cleanup
+
+    @patch("main.SecurityAuditor")
+    @patch("main.install_hooks")
+    @patch("shared.config_loader.get_config_path")
+    @patch("yaml.safe_load")
+    @patch("yaml.dump")
+    @patch("builtins.open", new_callable=MagicMock)
+    def test_run_security_install_hook(self, mock_open, mock_yaml_dump, mock_yaml_load, mock_get_config_path, mock_install_hooks, mock_auditor_cls):
+        # Setup mock
+        mock_get_config_path.return_value = Path("agent_config.yaml")
+        mock_yaml_load.return_value = {"git_hooks": {"pre-commit": ["lint"]}}
+        mock_install_hooks.return_value = True
+
+        # Setup args
+        args = MagicMock()
+        args.project_dir = Path(".")
+        args.install_hook = True
+        args.ignore_add = None
+
+        # Run command
+        with self.assertRaises(SystemExit) as cm:
+            main.run_security(args)
+        self.assertEqual(cm.exception.code, 0)
+
+        # Verify config update
+        mock_yaml_dump.assert_called()
+        args, kwargs = mock_yaml_dump.call_args
+        config_data = args[0]
+        self.assertIn("security --scan-type secrets --severity HIGH", config_data["git_hooks"]["pre-commit"])
+
+        # Verify install call
+        mock_install_hooks.assert_called()
 
 if __name__ == "__main__":
     unittest.main()

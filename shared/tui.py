@@ -48,6 +48,7 @@ from shared.openapi import OpenAPIGenerator
 from shared.cost import CostCalculator
 from shared.charts import draw_ascii_bar_chart
 from shared.prompt_lab import PromptLabManager
+from shared.scaffold import ScaffoldManager
 
 
 # Helper to get Git info safely
@@ -70,6 +71,151 @@ def get_git_info(project_dir: Path) -> dict:
         except Exception:
             pass
     return info
+
+class ScaffoldTab(Container):
+    """Tab for project scaffolding (Templates & AI)."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = ScaffoldManager(project_dir)
+        self.ai_plan = {}
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: Templates
+            with Vertical(id="scaffold-list-container", classes="stat-box"):
+                yield Label("[bold]Templates[/bold]")
+                yield ListView(id="scaffold-template-list")
+                yield Button("Refresh", id="btn-scaffold-refresh", variant="default")
+
+            # Center Pane: Configuration
+            with Vertical(id="scaffold-config-container"):
+                yield Label("[bold]Configuration[/bold]")
+
+                with Vertical(classes="stat-box"):
+                    yield Label("Description / Custom Instructions:")
+                    yield TextArea(id="scaffold-description", disabled=True)
+
+                    with Horizontal():
+                        yield Select.from_values(["gemini", "cursor", "local"], id="scaffold-agent", value="gemini")
+                        yield Button("Generate Preview (AI)", id="btn-scaffold-preview", variant="warning", disabled=True)
+
+                yield Button("Create Project", id="btn-scaffold-create", variant="primary", disabled=True)
+
+            # Right Pane: Preview
+            with Vertical(id="scaffold-preview-container", classes="stat-box"):
+                yield Label("[bold]File Preview[/bold]")
+                yield RichLog(id="scaffold-preview-log", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        self.load_templates()
+
+    def load_templates(self) -> None:
+        list_view = self.query_one("#scaffold-template-list", ListView)
+        list_view.clear()
+
+        # Add "AI Custom" option first
+        ai_item = ListItem(Label("[bold magenta]✨ AI Custom Scaffold[/bold magenta]"))
+        ai_item.template_name = "ai_custom"
+        list_view.append(ai_item)
+
+        templates = self.manager.list_templates()
+        for name, desc in templates.items():
+            item = ListItem(Label(f"[bold]{name}[/bold]\n[dim]{desc}[/dim]"))
+            item.template_name = name
+            list_view.append(item)
+
+    @on(ListView.Selected, "#scaffold-template-list")
+    def on_template_selected(self, event: ListView.Selected) -> None:
+        if not hasattr(event.item, "template_name"):
+            return
+
+        name = event.item.template_name
+        desc_area = self.query_one("#scaffold-description", TextArea)
+        preview_btn = self.query_one("#btn-scaffold-preview", Button)
+        create_btn = self.query_one("#btn-scaffold-create", Button)
+        preview_log = self.query_one("#scaffold-preview-log", RichLog)
+
+        preview_log.clear()
+        self.ai_plan = {}
+
+        if name == "ai_custom":
+            desc_area.disabled = False
+            desc_area.text = ""
+            desc_area.focus()
+            preview_btn.disabled = False
+            create_btn.disabled = True # Wait for preview
+            preview_log.write("Enter a description and click 'Generate Preview'.")
+        else:
+            desc_area.disabled = True
+            desc_area.text = f"Selected Template: {name}"
+            preview_btn.disabled = True
+            create_btn.disabled = False
+            preview_log.write(f"Ready to scaffold '{name}'.")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-scaffold-refresh":
+            self.load_templates()
+        elif event.button.id == "btn-scaffold-preview":
+            await self.generate_preview()
+        elif event.button.id == "btn-scaffold-create":
+            await self.create_project()
+
+    async def generate_preview(self) -> None:
+        desc = self.query_one("#scaffold-description", TextArea).text
+        if not desc:
+            self.notify("Description required.", severity="error")
+            return
+
+        agent_type = self.query_one("#scaffold-agent", Select).value or "gemini"
+        log = self.query_one("#scaffold-preview-log", RichLog)
+
+        log.clear()
+        log.write(f"Generating plan with {agent_type}...")
+        self.notify("Generating plan...", severity="information")
+
+        import asyncio
+        # Run in thread
+        self.ai_plan = await self.manager.generate_ai_scaffold(desc, agent_type=agent_type)
+
+        log.clear()
+        if self.ai_plan:
+            log.write("[bold green]Proposed File Structure:[/bold green]")
+            for path in sorted(self.ai_plan.keys()):
+                log.write(f"📄 {path}")
+
+            self.query_one("#btn-scaffold-create").disabled = False
+            self.notify("Preview generated.")
+        else:
+            log.write("[bold red]Failed to generate plan.[/bold red]")
+            self.notify("Generation failed.", severity="error")
+
+    async def create_project(self) -> None:
+        list_view = self.query_one("#scaffold-template-list", ListView)
+        if list_view.index is None:
+            return
+
+        item = list_view.children[list_view.index]
+        name = item.template_name
+
+        self.notify("Creating project...")
+        success = False
+
+        if name == "ai_custom":
+            if not self.ai_plan:
+                self.notify("No plan generated.", severity="error")
+                return
+            success = self.manager.create_from_plan(self.ai_plan)
+        else:
+            success = self.manager.scaffold(name)
+
+        if success:
+            self.notify("Project created successfully!", severity="information")
+            self.query_one("#scaffold-preview-log", RichLog).write("\n[bold green]Done![/bold green]")
+        else:
+            self.notify("Failed to create project.", severity="error")
+
 
 class PlanTab(Container):
     """Tab for planning the project (spec -> plan)."""
@@ -3543,6 +3689,8 @@ class AgentTUI(App):
                 yield DocumentationTab(self.project_dir)
             with TabPane("Test Gen", id="tab-test-gen"):
                 yield TestGenTab(self.project_dir)
+            with TabPane("Scaffold", id="tab-scaffold"):
+                yield ScaffoldTab(self.project_dir)
             with TabPane("Plan", id="tab-plan"):
                 yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):

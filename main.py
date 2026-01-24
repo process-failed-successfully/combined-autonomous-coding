@@ -8468,6 +8468,40 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'dataset' command ---
+    parser_dataset = subparsers.add_parser(
+        "dataset",
+        help="Generate datasets for fine-tuning LLMs."
+    )
+    dataset_subparsers = parser_dataset.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Dataset 'generate'
+    parser_ds_gen = dataset_subparsers.add_parser("generate", help="Generate a JSONL dataset from agent history.")
+    parser_ds_gen.add_argument(
+        "-o", "--output",
+        default="fine_tuning_dataset.jsonl",
+        help="Output file path (default: fine_tuning_dataset.jsonl)."
+    )
+    parser_ds_gen.add_argument(
+        "--run-id",
+        help="Specific run ID to process (defaults to last run if not specified)."
+    )
+    parser_ds_gen.add_argument(
+        "--all",
+        action="store_true",
+        help="Process all available history."
+    )
+    parser_ds_gen.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'mock' command ---
     parser_mock = subparsers.add_parser(
         "mock",
@@ -9772,6 +9806,27 @@ def run_pr(args):
         sys.exit(1)
 
 
+def run_dataset(args):
+    """Generates a fine-tuning dataset from agent history."""
+    from shared.dataset import DatasetGenerator
+
+    project_dir = args.project_dir.resolve()
+    generator = DatasetGenerator(project_dir)
+
+    # Output defaults to project root if not absolute
+    output_file = Path(args.output)
+    if not output_file.is_absolute():
+        output_file = project_dir / output_file
+
+    if args.action == "generate":
+        generator.generate(
+            output_file=output_file,
+            run_id=args.run_id,
+            all_runs=args.all
+        )
+    sys.exit(0)
+
+
 def run_mock(args):
     """Generates mock data based on a JSON schema."""
     from shared.mock_data import MockDataGenerator
@@ -10939,6 +10994,10 @@ async def main():
 
     if args.command in ["generate-tests", "gentest"]:
         await run_generate_tests(args)
+        return
+
+    if args.command == "dataset":
+        run_dataset(args)
         return
 
     if args.command == "mock":

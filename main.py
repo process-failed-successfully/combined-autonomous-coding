@@ -67,6 +67,7 @@ from shared.troubleshoot import run_troubleshoot_logic
 from shared.health import run_health_check
 from shared.sentinel import Sentinel
 from shared.work_session import WorkSessionManager
+from shared.i18n import run_i18n_logic
 import json
 import yaml
 import platformdirs
@@ -8621,6 +8622,33 @@ def parse_args(argv=None):
         help="Table name for SQL export (default: mock_data)."
     )
 
+    # --- New 'i18n' command ---
+    parser_i18n = subparsers.add_parser(
+        "i18n",
+        help="Manage Internationalization (translation, verification)."
+    )
+    i18n_subparsers = parser_i18n.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # i18n 'translate'
+    parser_i18n_translate = i18n_subparsers.add_parser("translate", help="Translate translation files using AI.")
+    parser_i18n_translate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_i18n_translate.add_argument("--source", type=str, default="locales/en.json", help="Source language file (default: locales/en.json).")
+    parser_i18n_translate.add_argument("--langs", type=str, required=True, help="Comma-separated target languages (e.g. es,fr).")
+    parser_i18n_translate.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Which agent to use.")
+    parser_i18n_translate.add_argument("-m", "--model", type=str, help="Model to use.")
+    parser_i18n_translate.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging.")
+
+    # i18n 'verify'
+    parser_i18n_verify = i18n_subparsers.add_parser("verify", help="Verify translation consistency.")
+    parser_i18n_verify.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_i18n_verify.add_argument("--source", type=str, default="locales/en.json", help="Source language file (default: locales/en.json).")
+    parser_i18n_verify.add_argument("--langs", type=str, required=True, help="Comma-separated target languages (e.g. es,fr).")
+    parser_i18n_verify.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging.")
+
     # --- New 'presentation' command ---
     parser_presentation = subparsers.add_parser(
         "presentation",
@@ -9909,6 +9937,22 @@ def run_pr(args):
         sys.exit(1)
 
 
+async def run_i18n(args):
+    """Manages Internationalization (translation, verification)."""
+    # Setup logging
+    logger, _ = setup_logger(name="i18n_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    success = await run_i18n_logic(
+        action=args.action,
+        project_dir=args.project_dir,
+        source=args.source,
+        langs=args.langs,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sys.exit(0 if success else 1)
+
+
 def run_dataset(args):
     """Generates a fine-tuning dataset from agent history."""
     from shared.dataset import DatasetGenerator
@@ -11119,6 +11163,10 @@ async def main():
 
     if args.command == "mock":
         run_mock(args)
+        return
+
+    if args.command == "i18n":
+        await run_i18n(args)
         return
 
     if args.command == "presentation":

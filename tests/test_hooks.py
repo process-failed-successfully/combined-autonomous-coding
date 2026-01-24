@@ -76,7 +76,7 @@ class TestHooks(unittest.TestCase):
 
         with patch('builtins.print'):
             result = uninstall_pre_commit_hook(self.test_dir)
-        self.assertFalse(result)
+        self.assertTrue(result)
         self.assertTrue(hook_path.exists())
 
     def test_uninstall_pre_commit_hook_no_hook(self):

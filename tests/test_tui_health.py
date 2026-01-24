@@ -55,10 +55,10 @@ class TestTuiHealth(unittest.IsolatedAsyncioTestCase):
 
             # Check UI updates
             grade_lbl = pilot.app.query_one("#health-grade-lbl", Label)
-            self.assertIn("B", str(grade_lbl.renderable))
+            self.assertIn("B", str(grade_lbl.render()))
 
             score_lbl = pilot.app.query_one("#health-score-lbl", Label)
-            self.assertIn("85", str(score_lbl.renderable))
+            self.assertIn("85", str(score_lbl.render()))
 
             table = pilot.app.query_one("#health-breakdown-table", DataTable)
             self.assertEqual(table.row_count, 5)

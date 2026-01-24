@@ -32,6 +32,7 @@ from shared.git import get_git_log, get_commit_details
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
+from shared.troubleshoot import TroubleshootManager
 from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
 from shared.recipe_learner import RecipeLearner
@@ -2765,6 +2766,140 @@ class HealthTab(Container):
             rec_log.write("[bold green]Great job! Keep it up.[/bold green]")
 
 
+class TroubleshootTab(Container):
+    """Tab for interactive troubleshooting."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = TroubleshootManager(project_dir)
+        self.issues = {}
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Troubleshooting Assistant[/bold]", classes="welcome-text")
+
+            # Controls
+            with Horizontal(classes="stat-box"):
+                yield Button("Analyze Project", id="btn-analyze", variant="primary")
+                yield Select.from_values(["gemini", "cursor", "local"], id="troubleshoot-agent", value="gemini")
+                yield Label("User Report (Optional):")
+                yield Input(placeholder="Describe the issue...", id="troubleshoot-issue")
+
+            # Results
+            with Vertical(id="troubleshoot-results-container", classes="stat-box"):
+                yield Label("[bold]Detected Issues[/bold]")
+                yield DataTable(id="troubleshoot-table")
+
+            # Diagnosis & Plan
+            with VerticalScroll(id="troubleshoot-diagnosis-container"):
+                yield Label("[bold]AI Diagnosis & Plan[/bold]")
+                yield Markdown("Run analysis and diagnosis to see AI plan.", id="troubleshoot-markdown")
+
+            # Actions
+            with Horizontal(classes="stat-box"):
+                yield Button("Diagnose with AI", id="btn-diagnose", variant="warning", disabled=True)
+                yield Button("Apply Fix", id="btn-fix", variant="success", disabled=True)
+                yield Button("Verify", id="btn-verify", variant="default", disabled=True)
+                yield Button("Learn", id="btn-learn", variant="primary", disabled=True)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#troubleshoot-table", DataTable)
+        table.cursor_type = "row"
+        table.add_columns("Check", "Status", "Details")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-analyze":
+            await self.run_analysis()
+        elif event.button.id == "btn-diagnose":
+            await self.run_diagnosis()
+        elif event.button.id == "btn-fix":
+            await self.run_fix()
+        elif event.button.id == "btn-verify":
+            await self.run_verify()
+        elif event.button.id == "btn-learn":
+            await self.learn_solution()
+
+    async def run_analysis(self) -> None:
+        table = self.query_one("#troubleshoot-table", DataTable)
+        table.clear()
+        self.notify("Running analysis... (this may take a while)")
+
+        import asyncio
+        # Run detection in thread
+        self.issues = await asyncio.to_thread(self.manager.detect_issues)
+
+        if not self.issues:
+            self.notify("No automated issues found.")
+            table.add_row("All Checks", "[green]PASSED[/green]", "No issues detected.")
+        else:
+            self.notify(f"Found {len(self.issues)} issues.")
+            for check, res in self.issues.items():
+                status = "[red]FAILED[/red]"
+                details = res.get("stderr", "") or res.get("stdout", "")
+                # Truncate details
+                if len(details) > 100:
+                    details = details[:97] + "..."
+                table.add_row(check.upper(), status, details)
+
+        # Enable diagnosis regardless of issues (user might have manual report)
+        self.query_one("#btn-diagnose").disabled = False
+
+    async def run_diagnosis(self) -> None:
+        user_issue = self.query_one("#troubleshoot-issue", Input).value
+        if not self.issues and not user_issue:
+            self.notify("No issues to diagnose.", severity="warning")
+            return
+
+        agent_type = self.query_one("#troubleshoot-agent", Select).value or "gemini"
+
+        # Re-init manager with selected agent
+        self.manager = TroubleshootManager(self.project_dir, agent_type=agent_type)
+
+        self.notify(f"Diagnosing with {agent_type}...", severity="information")
+        md_view = self.query_one("#troubleshoot-markdown", Markdown)
+        md_view.update("Thinking... please wait.")
+
+        try:
+            response = await self.manager.diagnose(self.issues, user_query=user_issue)
+            md_view.update(response)
+            self.notify("Diagnosis complete.")
+
+            self.query_one("#btn-fix").disabled = False
+            self.query_one("#btn-verify").disabled = False
+            self.query_one("#btn-learn").disabled = False
+
+        except Exception as e:
+            md_view.update(f"Error: {e}")
+            self.notify(f"Diagnosis failed: {e}", severity="error")
+
+    async def run_fix(self) -> None:
+        self.notify("Applying fix...", severity="information")
+        try:
+            result = await self.manager.apply_fix()
+            self.query_one("#troubleshoot-markdown", Markdown).update(result + "\\n\\nFix Applied.")
+            self.notify("Fix applied.")
+        except Exception as e:
+            self.notify(f"Fix failed: {e}", severity="error")
+
+    async def run_verify(self) -> None:
+        # Re-run analysis
+        await self.run_analysis()
+        if not self.issues:
+            self.notify("Verification passed! Issues resolved.")
+        else:
+            self.notify("Issues still persist.", severity="warning")
+
+    async def learn_solution(self) -> None:
+        user_issue = self.query_one("#troubleshoot-issue", Input).value
+        summary = user_issue or "Automated Issues"
+        try:
+            self.manager.learn(summary, "Fixed via TUI")
+            self.notify("Solution saved to Knowledge Base.")
+        except Exception as e:
+            self.notify(f"Learn failed: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2809,6 +2944,8 @@ class AgentTUI(App):
                 yield AnalyticsTab(self.project_dir)
             with TabPane("Health", id="tab-health"):
                 yield HealthTab(self.project_dir)
+            with TabPane("Troubleshoot", id="tab-troubleshoot"):
+                yield TroubleshootTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):

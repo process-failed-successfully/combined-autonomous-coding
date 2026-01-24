@@ -1,11 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
-import sys
 import io
-
-# Add repo root to path to import shared
-sys.path.append(str(Path(__file__).parent.parent))
+from typing import cast
 
 from shared.recipe_learner import LogParser, RecipeLearner
 
@@ -17,11 +14,11 @@ class TestLogParser(unittest.TestCase):
 """
         mock_path = MagicMock()
         mock_path.exists.return_value = True
+        mock_path.read_text.return_value = log_content
 
-        with patch('builtins.open', unittest.mock.mock_open(read_data=log_content)):
-            parser = LogParser()
-            commands = parser.parse(mock_path)
-            self.assertEqual(commands, ["ls -la", "pytest"])
+        parser = LogParser()
+        commands = parser.parse(mock_path)
+        self.assertEqual(commands, ["ls -la", "pytest"])
 
     def test_parse_no_file(self):
         mock_path = MagicMock()
@@ -62,7 +59,10 @@ class TestRecipeLearner(unittest.IsolatedAsyncioTestCase):
 
         # Verify
         self.assertTrue(result)
-        self.learner.recipe_manager.add_recipe.assert_called_with("test_recipe", ["ls", "echo hello"])
+
+        # Cast to MagicMock to satisfy Mypy
+        manager_mock = cast(MagicMock, self.learner.recipe_manager)
+        manager_mock.add_recipe.assert_called_with("test_recipe", ["ls", "echo hello"])
 
     @patch('shared.recipe_learner.get_latest_log_file')
     async def test_learn_no_log(self, mock_get_log):

@@ -22,9 +22,7 @@ class LogParser:
             return []
 
         try:
-            with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-
+            content = log_path.read_text(encoding='utf-8', errors='ignore')
             lines = content.splitlines()
             for line in lines:
                 if "[Executing Bash]" in line:

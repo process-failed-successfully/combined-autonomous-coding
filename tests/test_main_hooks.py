@@ -16,7 +16,7 @@ class TestMainHooks(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    @patch('shared.hooks.install_pre_commit_hook')
+    @patch('shared.hooks.install_hooks')
     def test_run_hooks_install(self, mock_install):
         args = argparse.Namespace(
             action="install",
@@ -28,7 +28,7 @@ class TestMainHooks(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         mock_install.assert_called_once_with(self.test_dir)
 
-    @patch('shared.hooks.uninstall_pre_commit_hook')
+    @patch('shared.hooks.uninstall_hooks')
     def test_run_hooks_uninstall(self, mock_uninstall):
         args = argparse.Namespace(
             action="uninstall",
@@ -51,7 +51,7 @@ class TestMainHooks(unittest.TestCase):
             run_hooks(args)
 
         self.assertEqual(cm.exception.code, 0)
-        mock_run.assert_called_once_with(self.test_dir)
+        mock_run.assert_called_once_with(self.test_dir, hook_name=None)
 
     @patch('shared.hooks.run_hooks_logic')
     def test_run_hooks_run_failure(self, mock_run):
@@ -64,4 +64,4 @@ class TestMainHooks(unittest.TestCase):
             run_hooks(args)
 
         self.assertEqual(cm.exception.code, 1)
-        mock_run.assert_called_once_with(self.test_dir)
+        mock_run.assert_called_once_with(self.test_dir, hook_name=None)

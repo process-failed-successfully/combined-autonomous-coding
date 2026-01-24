@@ -29,7 +29,7 @@ from shared.health import HealthCalculator
 from shared.security import SecurityAuditor
 from shared.code_review import run_code_review_logic
 from shared.map import scan_project, CodeNode
-from shared.git import get_git_log, get_commit_details
+from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
@@ -839,28 +839,62 @@ class TasksTab(Container):
         self._update_table(self.tasks_cache)
 
 class GitTab(Container):
-    """Tab for viewing Git history."""
+    """Tab for viewing and managing Git."""
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.selected_file = None
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
-            with Vertical(id="git-list-container", classes="stat-box"):
-                yield Label("[bold]Git History[/bold]")
-                yield DataTable(id="git-log-table")
-                yield Button("Refresh", id="btn-refresh-git", variant="default")
+        with TabbedContent():
+            with TabPane("Operations"):
+                with Horizontal():
+                    # Left: Status
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Changed Files[/bold]")
+                        yield DataTable(id="git-status-table")
+                        with Horizontal():
+                            yield Button("Stage", id="btn-git-stage", variant="success")
+                            yield Button("Unstage", id="btn-git-unstage", variant="warning")
+                            yield Button("Discard", id="btn-git-discard", variant="error")
+                        yield Button("Refresh Status", id="btn-git-refresh-status", variant="default")
 
-            with Vertical(id="git-details-container"):
-                yield Label("[bold]Commit Details[/bold]")
-                yield RichLog(id="git-details-view", wrap=True, highlight=True, markup=False)
+                    # Right: Commit & Sync
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Commit[/bold]")
+                        yield TextArea(id="git-commit-msg")
+                        yield Button("Commit", id="btn-git-commit", variant="primary")
+
+                        yield Label("[bold]Sync[/bold]")
+                        with Horizontal():
+                            yield Button("Pull", id="btn-git-pull", variant="default")
+                            yield Button("Push", id="btn-git-push", variant="warning")
+                        yield Label("", id="git-sync-status")
+
+            with TabPane("History"):
+                with Horizontal():
+                    with Vertical(id="git-list-container", classes="stat-box"):
+                        yield Label("[bold]Git History[/bold]")
+                        yield DataTable(id="git-log-table")
+                        yield Button("Refresh", id="btn-refresh-git", variant="default")
+
+                    with Vertical(id="git-details-container"):
+                        yield Label("[bold]Commit Details[/bold]")
+                        yield RichLog(id="git-details-view", wrap=True, highlight=True, markup=False)
 
     def on_mount(self) -> None:
-        table = self.query_one("#git-log-table", DataTable)
-        table.cursor_type = "row"
-        table.add_columns("Hash", "Date", "Author", "Message")
+        # History Table
+        history_table = self.query_one("#git-log-table", DataTable)
+        history_table.cursor_type = "row"
+        history_table.add_columns("Hash", "Date", "Author", "Message")
         self.load_history()
+
+        # Status Table
+        status_table = self.query_one("#git-status-table", DataTable)
+        status_table.cursor_type = "row"
+        status_table.add_columns("S", "Status", "Path")
+        self.load_status()
 
     def load_history(self) -> None:
         table = self.query_one("#git-log-table", DataTable)
@@ -875,13 +909,33 @@ class GitTab(Container):
                 log["message"]
             )
 
+    def load_status(self) -> None:
+        table = self.query_one("#git-status-table", DataTable)
+        table.clear()
+
+        try:
+            files = get_git_status(self.project_dir)
+            for f in files:
+                staged_marker = "[green]✓[/green]" if f["staged"] else "[red] [/red]"
+                status_code = f["status_code"]
+                path = f["path"]
+                # Store full path in key
+                table.add_row(staged_marker, status_code, path, key=path)
+        except Exception as e:
+            self.notify(f"Error loading status: {e}", severity="error")
+
     @on(Button.Pressed, "#btn-refresh-git")
-    def on_refresh(self) -> None:
+    def on_refresh_history(self) -> None:
         self.load_history()
         self.notify("Git history refreshed.")
 
+    @on(Button.Pressed, "#btn-git-refresh-status")
+    def on_refresh_status(self) -> None:
+        self.load_status()
+        self.notify("Git status refreshed.")
+
     @on(DataTable.RowSelected, "#git-log-table")
-    def on_row_selected(self, event: DataTable.RowSelected) -> None:
+    def on_history_selected(self, event: DataTable.RowSelected) -> None:
         table = self.query_one("#git-log-table", DataTable)
         row_values = table.get_row(event.row_key)
         commit_hash = row_values[0]
@@ -890,6 +944,101 @@ class GitTab(Container):
         viewer = self.query_one("#git-details-view", RichLog)
         viewer.clear()
         viewer.write(details)
+
+    @on(DataTable.RowSelected, "#git-status-table")
+    def on_status_selected(self, event: DataTable.RowSelected) -> None:
+        self.selected_file = event.row_key.value
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-git-stage":
+            self.stage_selected()
+        elif event.button.id == "btn-git-unstage":
+            self.unstage_selected()
+        elif event.button.id == "btn-git-discard":
+            self.discard_selected()
+        elif event.button.id == "btn-git-commit":
+            self.commit()
+        elif event.button.id == "btn-git-pull":
+            await self.pull()
+        elif event.button.id == "btn-git-push":
+            await self.push()
+
+    def stage_selected(self) -> None:
+        if not self.selected_file:
+            self.notify("No file selected.", severity="warning")
+            return
+        if stage_file(self.project_dir, self.selected_file):
+            self.notify(f"Staged {self.selected_file}")
+            self.load_status()
+        else:
+            self.notify("Stage failed.", severity="error")
+
+    def unstage_selected(self) -> None:
+        if not self.selected_file:
+            self.notify("No file selected.", severity="warning")
+            return
+        if unstage_file(self.project_dir, self.selected_file):
+            self.notify(f"Unstaged {self.selected_file}")
+            self.load_status()
+        else:
+            self.notify("Unstage failed.", severity="error")
+
+    def discard_selected(self) -> None:
+        if not self.selected_file:
+            self.notify("No file selected.", severity="warning")
+            return
+        # TODO: Confirmation dialog? Textual has ModalScreen.
+        # For now, just do it with notification.
+        if discard_changes(self.project_dir, self.selected_file):
+            self.notify(f"Discarded changes in {self.selected_file}")
+            self.load_status()
+        else:
+            self.notify("Discard failed.", severity="error")
+
+    def commit(self) -> None:
+        msg_area = self.query_one("#git-commit-msg", TextArea)
+        msg = msg_area.text
+        if not msg:
+            self.notify("Commit message required.", severity="error")
+            return
+
+        if commit_changes(self.project_dir, msg):
+            self.notify("Committed.")
+            msg_area.text = "" # Clear
+            self.load_status()
+            self.load_history()
+        else:
+            self.notify("Commit failed.", severity="error")
+
+    async def pull(self) -> None:
+        lbl = self.query_one("#git-sync-status", Label)
+        lbl.update("Pulling...")
+
+        import asyncio
+        success = await asyncio.to_thread(pull_changes, self.project_dir)
+
+        if success:
+            lbl.update("[green]Pull Successful[/green]")
+            self.notify("Pull successful.")
+            self.load_history()
+            self.load_status()
+        else:
+            lbl.update("[red]Pull Failed[/red]")
+            self.notify("Pull failed.", severity="error")
+
+    async def push(self) -> None:
+        lbl = self.query_one("#git-sync-status", Label)
+        lbl.update("Pushing...")
+
+        import asyncio
+        success = await asyncio.to_thread(push_branch, self.project_dir)
+
+        if success:
+            lbl.update("[green]Push Successful[/green]")
+            self.notify("Push successful.")
+        else:
+            lbl.update("[red]Push Failed[/red]")
+            self.notify("Push failed.", severity="error")
 
 class ProfileTab(Container):
     """Tab for performance profiling."""

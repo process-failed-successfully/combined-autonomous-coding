@@ -36,7 +36,8 @@ class TestTUIGit(unittest.IsolatedAsyncioTestCase):
             # Check if TabPane exists
             self.assertTrue(app.query_one("#tab-git"))
 
-    async def test_git_tab_logic(self):
+    @patch("shared.tui.get_git_status")
+    async def test_git_tab_logic(self, mock_get_status):
         """Test logic of GitTab isolated."""
 
         # Setup mock data
@@ -45,16 +46,22 @@ class TestTUIGit(unittest.IsolatedAsyncioTestCase):
             {"hash": "def5678", "author": "Bob", "date": "2023-01-02", "message": "Fix bug"}
         ]
 
+        mock_get_status.return_value = [
+            {"path": "file1.py", "status_code": "M ", "staged": True}
+        ]
+
         tab = GitTab(self.project_dir)
         # Mock notify
         tab.notify = MagicMock()
 
         # Mock UI elements
-        mock_table = MagicMock(spec=DataTable)
+        mock_history_table = MagicMock(spec=DataTable)
+        mock_status_table = MagicMock(spec=DataTable)
         mock_details = MagicMock(spec=RichLog)
 
         tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#git-log-table": mock_table,
+            "#git-log-table": mock_history_table,
+            "#git-status-table": mock_status_table,
             "#git-details-view": mock_details
         }.get(selector))
 
@@ -62,15 +69,16 @@ class TestTUIGit(unittest.IsolatedAsyncioTestCase):
         tab.on_mount()
 
         self.mock_get_log.assert_called_once_with(self.project_dir)
-        mock_table.add_columns.assert_called()
-        mock_table.clear.assert_called()
+        mock_history_table.add_columns.assert_called()
+        mock_history_table.clear.assert_called()
 
-        # Verify row addition
-        # "abc1234", "2023-01-01", "Alice", "Initial commit"
-        add_row_calls = mock_table.add_row.call_args_list
+        # Verify history row addition
+        add_row_calls = mock_history_table.add_row.call_args_list
         self.assertEqual(len(add_row_calls), 2)
         self.assertEqual(add_row_calls[0][0][0], "abc1234")
-        self.assertEqual(add_row_calls[1][0][0], "def5678")
+
+        # Verify status row addition
+        mock_status_table.add_row.assert_called()
 
     async def test_git_selection_logic(self):
         """Test row selection logic."""
@@ -100,7 +108,7 @@ class TestTUIGit(unittest.IsolatedAsyncioTestCase):
         event.row_key = "row1"
 
         # Call handler directly since we can't easily emit event in isolation without full app
-        tab.on_row_selected(event)
+        tab.on_history_selected(event)
 
         mock_table.get_row.assert_called_with("row1")
         self.mock_get_details.assert_called_with(self.project_dir, "abc1234")

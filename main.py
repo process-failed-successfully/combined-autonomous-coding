@@ -4897,18 +4897,27 @@ async def run_recipes(args):
 
 def run_hooks(args):
     """Manages git hooks for the project."""
-    from shared.hooks import install_pre_commit_hook, uninstall_pre_commit_hook, run_hooks_logic
+    from shared.hooks import install_hooks, uninstall_hooks, run_hook_logic
+    from shared.config_loader import load_config_from_file
 
     project_dir = args.project_dir.resolve()
 
+    # Load config to get hooks definition
+    config = load_config_from_file()
+    hooks_config = config.get("git_hooks", {})
+
     if args.action == "install":
-        success = install_pre_commit_hook(project_dir)
+        success = install_hooks(project_dir, hooks_config)
         sys.exit(0 if success else 1)
     elif args.action == "uninstall":
-        success = uninstall_pre_commit_hook(project_dir)
+        success = uninstall_hooks(project_dir)
         sys.exit(0 if success else 1)
     elif args.action == "run":
-        success = run_hooks_logic(project_dir)
+        hook_name = args.hook_name
+        if not hook_name:
+            # Fallback for manual run without args, usually pre-commit
+            hook_name = "pre-commit"
+        success = run_hook_logic(project_dir, hook_name, hooks_config)
         sys.exit(0 if success else 1)
     sys.exit(0)
 
@@ -6484,7 +6493,12 @@ def parse_args(argv=None):
     # Hooks 'run' action
     parser_hooks_run = hooks_subparsers.add_parser(
         "run",
-        help="Manually run the hooks checks."
+        help="Manually run a hook."
+    )
+    parser_hooks_run.add_argument(
+        "hook_name",
+        nargs="?",
+        help="Name of the hook to run (e.g., pre-commit)."
     )
     parser_hooks_run.add_argument(
         "-p", "--project-dir",
@@ -11125,6 +11139,9 @@ async def main():
 
         # Docker-in-Docker
         dind_enabled=args.dind or file_config.get("dind_enabled", False),
+
+        # Git Hooks
+        git_hooks=file_config.get("git_hooks"),
     )
 
     # Initialize Database

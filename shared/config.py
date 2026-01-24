@@ -75,6 +75,10 @@ class Config:
     # Jira Configuration
     jira: Optional["JiraConfig"] = None
 
+    # Git Hooks Configuration
+    # Map hook_name (e.g. pre-commit) -> list of commands
+    git_hooks: Optional[dict[str, list[str]]] = None
+
     def __post_init__(self):
         if self.model is None:
             if self.agent_type == "gemini":

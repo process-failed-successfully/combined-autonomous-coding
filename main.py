@@ -70,6 +70,7 @@ from shared.health import run_health_check
 from shared.sentinel import Sentinel
 from shared.work_session import WorkSessionManager
 from shared.i18n import run_i18n_logic
+from shared.api_lab import run_api_lab_cli
 import json
 import yaml
 import platformdirs
@@ -8712,6 +8713,29 @@ def parse_args(argv=None):
     parser_i18n_verify.add_argument("--langs", type=str, required=True, help="Comma-separated target languages (e.g. es,fr).")
     parser_i18n_verify.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging.")
 
+    # --- New 'api-lab' command ---
+    parser_api_lab = subparsers.add_parser(
+        "api-lab",
+        help="Interactive API Lab (list endpoints, run requests)."
+    )
+    api_lab_subparsers = parser_api_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # api-lab 'list'
+    parser_api_lab_list = api_lab_subparsers.add_parser("list", help="List available endpoints from OpenAPI spec.")
+    parser_api_lab_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # api-lab 'run'
+    parser_api_lab_run = api_lab_subparsers.add_parser("run", help="Execute an API request.")
+    parser_api_lab_run.add_argument("method", choices=["GET", "POST", "PUT", "DELETE", "PATCH"], help="HTTP method.")
+    parser_api_lab_run.add_argument("url", help="URL path (e.g. /users) or full URL.")
+    parser_api_lab_run.add_argument("--body", type=str, help="Request body (JSON string).")
+    parser_api_lab_run.add_argument("--headers", type=str, help="Request headers (JSON string).")
+    parser_api_lab_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'presentation' command ---
     parser_presentation = subparsers.add_parser(
         "presentation",
@@ -11297,6 +11321,10 @@ async def main():
 
     if args.command == "i18n":
         await run_i18n(args)
+        return
+
+    if args.command == "api-lab":
+        run_api_lab_cli(args)
         return
 
     if args.command == "presentation":

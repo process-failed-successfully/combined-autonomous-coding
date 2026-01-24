@@ -1,6 +1,7 @@
 import yaml
 import json
 import requests
+import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -128,3 +129,76 @@ class ApiLabManager:
                 'body': f"Request Error: {str(e)}",
                 'success': False
             }
+
+def run_api_lab_cli(args):
+    """
+    CLI entry point for API Lab.
+    """
+    project_dir = args.project_dir.resolve()
+    manager = ApiLabManager(project_dir)
+
+    # Attempt to load spec
+    if not manager.load_spec():
+        print(f"Warning: No openapi.yaml or openapi.json found in {project_dir}")
+        print("Functionality may be limited.")
+
+    if args.action == "list":
+        endpoints = manager.list_endpoints()
+        if not endpoints:
+            print("No endpoints found in spec.")
+            sys.exit(0)
+
+        print(f"--- API Endpoints ({len(endpoints)}) ---")
+        # Calc max method length for padding
+        max_method = max(len(e['method']) for e in endpoints)
+        for e in endpoints:
+            method = e['method'].ljust(max_method)
+            path = e['path']
+            summary = f" - {e['summary']}" if e['summary'] else ""
+            print(f"{method} {path}{summary}")
+        sys.exit(0)
+
+    elif args.action == "run":
+        method = args.method.upper()
+        url = args.url
+        body = args.body
+
+        headers = {}
+        if args.headers:
+            try:
+                headers = json.loads(args.headers)
+            except json.JSONDecodeError:
+                print("Error: Invalid JSON format for --headers", file=sys.stderr)
+                sys.exit(1)
+
+        # If URL is relative, prepend base URL from spec
+        if not url.startswith("http"):
+            base = manager.get_server_url()
+            # Handle slashes
+            if base.endswith("/") and url.startswith("/"):
+                url = base + url[1:]
+            elif not base.endswith("/") and not url.startswith("/"):
+                url = base + "/" + url
+            else:
+                url = base + url
+            print(f"Resolved URL: {url}")
+
+        print(f"Executing {method} {url}...")
+        result = manager.execute_request(method, url, headers=headers, body=body)
+
+        status_code = result['status_code']
+        status_marker = "✅" if result['success'] else "❌"
+
+        print(f"\n--- Response ({status_marker} {status_code}) ---")
+        print("Headers:")
+        for k, v in result['headers'].items():
+            print(f"  {k}: {v}")
+
+        print("\nBody:")
+        print(result['body'])
+
+        sys.exit(0 if result['success'] else 1)
+
+    else:
+        print(f"Unknown action: {args.action}", file=sys.stderr)
+        sys.exit(1)

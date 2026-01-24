@@ -34,6 +34,7 @@ from shared.search import search_codebase
 from shared.work_session import WorkSessionManager, Session
 from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
+from shared.recipe_learner import RecipeLearner
 from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
 from shared.playground import PlaygroundManager
@@ -1652,7 +1653,10 @@ class RecipesTab(Container):
                 with Horizontal():
                     yield Input(placeholder="Name...", id="recipe-new-name")
                     yield Input(placeholder="Steps (comma-separated)...", id="recipe-new-steps")
-                yield Button("Create Recipe", id="btn-recipe-create", variant="primary")
+
+                with Horizontal():
+                    yield Button("Create Manual", id="btn-recipe-create", variant="primary")
+                    yield Button("Learn from Last Run", id="btn-recipe-learn", variant="warning")
 
                 yield Button("Refresh", id="btn-recipe-refresh", variant="default")
 
@@ -1717,11 +1721,47 @@ class RecipesTab(Container):
         elif event.button.id == "btn-recipe-create":
             await self.create_recipe()
 
+        elif event.button.id == "btn-recipe-learn":
+            await self.learn_recipe()
+
         elif event.button.id == "btn-recipe-run":
             await self.run_recipe()
 
         elif event.button.id == "btn-recipe-delete":
             await self.delete_recipe()
+
+    async def learn_recipe(self) -> None:
+        name_inp = self.query_one("#recipe-new-name", Input)
+        name = name_inp.value
+
+        if not name:
+            self.notify("Name required.", severity="error")
+            return
+
+        self.notify(f"Learning recipe '{name}' from last run...", severity="information")
+        log = self.query_one("#recipe-log", RichLog)
+        log.write(f"\n[bold yellow]Learning recipe '{name}'...[/bold yellow]")
+
+        learner = RecipeLearner(self.project_dir)
+        output_capture = io.StringIO()
+        success = False
+
+        try:
+            with contextlib.redirect_stdout(output_capture):
+                # Pass None for run_id to use latest
+                success = await learner.learn_from_run(None, name)
+        except Exception as e:
+            output_capture.write(f"Error: {e}")
+
+        output = output_capture.getvalue()
+        log.write(output)
+
+        if success:
+            self.notify(f"Recipe '{name}' learned.")
+            name_inp.value = ""
+            self.load_recipes()
+        else:
+            self.notify("Failed to learn recipe.", severity="error")
 
     async def create_recipe(self) -> None:
         name_inp = self.query_one("#recipe-new-name", Input)

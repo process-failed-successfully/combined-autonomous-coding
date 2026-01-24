@@ -2949,6 +2949,30 @@ async def run_optimize(args):
     sys.exit(0 if success else 1)
 
 
+def run_perf(args):
+    """Runs performance profiling tools."""
+    from shared.profiler import ProfilerManager
+
+    project_dir = args.project_dir.resolve()
+    manager = ProfilerManager(project_dir)
+
+    if args.action == "run":
+        if not args.script:
+            print("Error: Script required for 'run' action.", file=sys.stderr)
+            sys.exit(1)
+
+        script_path = Path(args.script)
+        # Separate script args if any
+        script_args = args.script_args if hasattr(args, 'script_args') else []
+
+        success = manager.run(script_path, script_args)
+        sys.exit(0 if success else 1)
+
+    elif args.action == "report":
+        manager.report(limit=args.limit, sort_by=args.sort)
+        sys.exit(0)
+
+
 async def run_troubleshoot(args):
     """Runs the interactive troubleshooting session."""
     # Setup logging
@@ -8468,6 +8492,29 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'perf' command ---
+    parser_perf = subparsers.add_parser(
+        "perf",
+        help="Performance profiling tools (run, report)."
+    )
+    perf_subparsers = parser_perf.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # perf run
+    parser_perf_run = perf_subparsers.add_parser("run", help="Run a script with profiling enabled.")
+    parser_perf_run.add_argument("script", help="The script to run.")
+    parser_perf_run.add_argument("script_args", nargs=argparse.REMAINDER, help="Arguments for the script.")
+    parser_perf_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # perf report
+    parser_perf_report = perf_subparsers.add_parser("report", help="Show profiling report.")
+    parser_perf_report.add_argument("-l", "--limit", type=int, default=20, help="Number of functions to show.")
+    parser_perf_report.add_argument("-s", "--sort", default="tottime", choices=["tottime", "cumtime", "ncalls"], help="Sort key.")
+    parser_perf_report.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
     # --- New 'dataset' command ---
     parser_dataset = subparsers.add_parser(
         "dataset",
@@ -10493,6 +10540,11 @@ async def main():
     # Handle `optimize` command
     if args.command == "optimize":
         await run_optimize(args)
+        return
+
+    # Handle `perf` command
+    if args.command == "perf":
+        run_perf(args)
         return
 
     # Handle `debug` command

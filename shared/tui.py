@@ -41,6 +41,9 @@ from shared.api_lab import ApiLabManager
 from shared.playground import PlaygroundManager
 from shared.release import get_latest_tag, get_commits_since_tag, determine_next_version, generate_changelog, perform_release, parse_current_version
 from shared.timeline import TimelineCollector, TimelineRenderer
+from shared.docstring import DocstringManager
+from shared.link_checker import LinkChecker
+from shared.openapi import OpenAPIGenerator
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
@@ -2900,6 +2903,207 @@ class TroubleshootTab(Container):
             self.notify(f"Learn failed: {e}", severity="error")
 
 
+class DocumentationTab(Container):
+    """Tab for managing project documentation."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.docstring_mgr = DocstringManager(project_dir)
+        self.link_checker = LinkChecker()
+        self.openapi_gen = OpenAPIGenerator(project_dir)
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("[bold]Documentation Hub[/bold]", classes="welcome-text")
+
+            with TabbedContent():
+                with TabPane("Overview"):
+                    with Vertical():
+                        with Horizontal(classes="stat-box"):
+                            yield Button("Save README", id="btn-docs-save-readme", variant="success")
+                            yield Button("Preview", id="btn-docs-preview-readme", variant="default")
+                        yield TextArea(id="readme-editor", language="markdown")
+                        yield Markdown(id="readme-preview", classes="hidden")
+
+                with TabPane("Docstrings"):
+                    with Vertical():
+                        with Horizontal(classes="stat-box"):
+                            yield Button("Scan Missing", id="btn-docs-scan-docstrings", variant="primary")
+                            yield Button("Generate All", id="btn-docs-gen-docstrings", variant="warning")
+                            yield Select.from_values(["gemini", "cursor", "local"], id="docs-agent-select", value="gemini")
+                        yield DataTable(id="docstring-table")
+                        yield RichLog(id="docstring-log", wrap=True, highlight=True, markup=True)
+
+                with TabPane("Links"):
+                    with Vertical():
+                        with Horizontal(classes="stat-box"):
+                            yield Button("Check Links", id="btn-docs-check-links", variant="primary")
+                        yield DataTable(id="links-table")
+
+                with TabPane("OpenAPI"):
+                    with Vertical():
+                        with Horizontal(classes="stat-box"):
+                            yield Button("Generate Spec", id="btn-docs-gen-openapi", variant="warning")
+                            yield Button("Save Spec", id="btn-docs-save-openapi", variant="success")
+                        yield TextArea(id="openapi-editor", language="yaml")
+
+    def on_mount(self) -> None:
+        # Load README
+        self.load_readme()
+
+        # Init Tables
+        ds_table = self.query_one("#docstring-table", DataTable)
+        ds_table.cursor_type = "row"
+        ds_table.add_columns("File", "Name", "Type", "Line")
+
+        links_table = self.query_one("#links-table", DataTable)
+        links_table.cursor_type = "row"
+        links_table.add_columns("File", "Line", "URL", "Status/Error")
+
+    def load_readme(self) -> None:
+        readme_path = self.project_dir / "README.md"
+        editor = self.query_one("#readme-editor", TextArea)
+        if readme_path.exists():
+            editor.text = readme_path.read_text(encoding="utf-8", errors="replace")
+        else:
+            editor.text = "# New Project"
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-docs-save-readme":
+            self.save_readme()
+        elif event.button.id == "btn-docs-preview-readme":
+            self.toggle_readme_preview()
+        elif event.button.id == "btn-docs-scan-docstrings":
+            self.scan_docstrings()
+        elif event.button.id == "btn-docs-gen-docstrings":
+            await self.generate_docstrings()
+        elif event.button.id == "btn-docs-check-links":
+            await self.check_links()
+        elif event.button.id == "btn-docs-gen-openapi":
+            await self.generate_openapi()
+        elif event.button.id == "btn-docs-save-openapi":
+            self.save_openapi()
+
+    def save_readme(self) -> None:
+        content = self.query_one("#readme-editor", TextArea).text
+        path = self.project_dir / "README.md"
+        try:
+            path.write_text(content, encoding="utf-8")
+            self.notify("README.md saved.")
+        except Exception as e:
+            self.notify(f"Error saving README: {e}", severity="error")
+
+    def toggle_readme_preview(self) -> None:
+        editor = self.query_one("#readme-editor", TextArea)
+        preview = self.query_one("#readme-preview", Markdown)
+
+        if editor.has_class("hidden"):
+            editor.remove_class("hidden")
+            preview.add_class("hidden")
+        else:
+            preview.update(editor.text)
+            editor.add_class("hidden")
+            preview.remove_class("hidden")
+
+    def scan_docstrings(self) -> None:
+        table = self.query_one("#docstring-table", DataTable)
+        table.clear()
+
+        items = self.docstring_mgr.scan()
+        self.notify(f"Found {len(items)} missing docstrings.")
+
+        for item in items:
+            rel_path = item["file"].relative_to(self.project_dir)
+            table.add_row(str(rel_path), item["name"], item["type"], str(item["lineno"]))
+
+    async def generate_docstrings(self) -> None:
+        agent_type = self.query_one("#docs-agent-select", Select).value or "gemini"
+
+        # Re-scan to be safe
+        items = self.docstring_mgr.scan()
+        if not items:
+            self.notify("No missing docstrings found.")
+            return
+
+        log = self.query_one("#docstring-log", RichLog)
+        log.write(f"Generating docstrings for {len(items)} items with {agent_type}...")
+
+        import asyncio
+        import contextlib
+
+        # Capture stdout from manager
+        output_capture = io.StringIO()
+        count = 0
+
+        try:
+            with contextlib.redirect_stdout(output_capture):
+                count = await self.docstring_mgr.generate_and_apply(items, agent_type=agent_type)
+        except Exception as e:
+            output_capture.write(f"Error: {e}")
+
+        log.write(output_capture.getvalue())
+        log.write(f"Applied {count} docstrings.")
+        self.notify(f"Generated {count} docstrings.")
+        self.scan_docstrings() # Refresh table
+
+    async def check_links(self) -> None:
+        table = self.query_one("#links-table", DataTable)
+        table.clear()
+        self.notify("Checking links... (this may take a while)")
+
+        import asyncio
+
+        # Resolve files (all .md files)
+        files = list(self.project_dir.rglob("*.md"))
+
+        if not files:
+            self.notify("No markdown files found.")
+            return
+
+        try:
+            # Run in thread
+            # check_files returns a dict report
+            result = await asyncio.to_thread(self.link_checker.check_files, files)
+
+            if result["broken_links_count"] == 0:
+                self.notify("All links are valid!")
+            else:
+                self.notify(f"Found {result['broken_links_count']} broken links.", severity="warning")
+
+                for p, issues in result["details"].items():
+                    rel_path = p.relative_to(self.project_dir)
+                    for issue in issues:
+                        status = f"Status: {issue['status']}" if issue['status'] > 0 else f"Error: {issue['error']}"
+                        table.add_row(str(rel_path), str(issue['line']), issue['url'], status)
+
+        except Exception as e:
+            self.notify(f"Link check error: {e}", severity="error")
+
+    async def generate_openapi(self) -> None:
+        self.notify("Generating OpenAPI spec...")
+        output_path = self.project_dir / "openapi.yaml"
+
+        import asyncio
+        success = await self.openapi_gen.generate(output_path)
+
+        if success:
+            self.notify("Spec generated.")
+            if output_path.exists():
+                self.query_one("#openapi-editor", TextArea).text = output_path.read_text(encoding="utf-8")
+        else:
+            self.notify("Failed to generate spec.", severity="error")
+
+    def save_openapi(self) -> None:
+        content = self.query_one("#openapi-editor", TextArea).text
+        path = self.project_dir / "openapi.yaml"
+        try:
+            path.write_text(content, encoding="utf-8")
+            self.notify("openapi.yaml saved.")
+        except Exception as e:
+            self.notify(f"Error saving spec: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -2918,6 +3122,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Docs", id="tab-docs"):
+                yield DocumentationTab(self.project_dir)
             with TabPane("Test Gen", id="tab-test-gen"):
                 yield TestGenTab(self.project_dir)
             with TabPane("Plan", id="tab-plan"):

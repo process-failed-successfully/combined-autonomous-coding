@@ -32,6 +32,7 @@ from shared.config import Config
 from shared.logger import setup_logger
 from shared.git import ensure_git_safe
 from shared.config_loader import load_config_from_file, ensure_config_exists
+from shared.hooks import install_hooks
 
 # Import agent runners
 # We import these lazily or handled via dispatch to avoid circular deps if any,
@@ -8270,6 +8271,15 @@ def parse_args(argv=None):
         type=str,
         help="Path to save the security report (JSON).",
     )
+    parser_security.add_argument(
+        "--ignore-add",
+        help="Add a file pattern to .secretignore (e.g. 'tests/fixtures/*').",
+    )
+    parser_security.add_argument(
+        "--install-hook",
+        action="store_true",
+        help="Install a git pre-commit hook that enforces security checks.",
+    )
 
     # --- New 'openapi' command ---
     parser_openapi = subparsers.add_parser(
@@ -9287,11 +9297,73 @@ async def run_docstring(args):
 def run_security(args):
     """Runs security checks on the project."""
     project_dir = args.project_dir.resolve()
+    auditor = SecurityAuditor(project_dir)
+
+    # --- Feature: Ignore Add ---
+    if args.ignore_add:
+        auditor.add_ignore_pattern(args.ignore_add)
+        sys.exit(0)
+
+    # --- Feature: Install Hook ---
+    if args.install_hook:
+        print("--- Installing Security Pre-commit Hook ---")
+        from shared.config_loader import get_config_path, ensure_config_exists
+
+        # 1. Resolve Config
+        config_path = get_config_path()
+        if not config_path:
+            ensure_config_exists()
+            config_path = get_config_path() # Should exist now
+
+        if not config_path:
+            print("❌ Error: Could not resolve configuration path.", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            with open(config_path, "r") as f:
+                config_data = yaml.safe_load(f) or {}
+
+            # 2. Update Hooks Configuration
+            if "git_hooks" not in config_data:
+                config_data["git_hooks"] = {}
+            if "pre-commit" not in config_data["git_hooks"]:
+                config_data["git_hooks"]["pre-commit"] = []
+
+            # The command we want to run
+            # We use HIGH severity to block only critical leaks
+            cmd = "security --scan-type secrets --severity HIGH"
+
+            if cmd not in config_data["git_hooks"]["pre-commit"]:
+                config_data["git_hooks"]["pre-commit"].append(cmd)
+
+                # Save config
+                with open(config_path, "w") as f:
+                    yaml.dump(config_data, f, sort_keys=False, indent=2)
+                print(f"✅ Added security check to configuration in {config_path}")
+            else:
+                print("ℹ️  Security check already configured in agent_config.yaml")
+
+            # 3. Install Hooks
+            # We pass the loaded config directly to install_hooks logic
+            # But install_hooks takes (project_dir, hooks_config, ...)
+            # So we pass the git_hooks section
+            success = install_hooks(project_dir, config_data["git_hooks"])
+            if success:
+                print("✅ Security hook installed successfully.")
+            else:
+                print("❌ Failed to install security hook.", file=sys.stderr)
+                sys.exit(1)
+
+        except Exception as e:
+            print(f"❌ Error configuring hook: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        sys.exit(0)
+
     print(f"--- Running Security Audit in: {project_dir} ---")
     print(f"Scan Type: {args.scan_type}")
     print(f"Severity Threshold: {args.severity}")
 
-    auditor = SecurityAuditor(project_dir)
     findings = auditor.run_all(scan_type=args.scan_type, severity=args.severity)
 
     if args.scan_history:

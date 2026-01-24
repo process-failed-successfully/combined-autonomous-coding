@@ -255,3 +255,83 @@ def get_commit_details(project_dir: Path, commit_hash: str) -> str:
     except Exception as e:
         logger.error(f"Error getting commit details: {e}")
         return f"Error loading details for {commit_hash}"
+
+
+def get_git_status(project_dir: Path) -> list[dict]:
+    """
+    Returns a list of file status objects.
+    Format: [{"path": "file.py", "status_code": "M ", "staged": True}, ...]
+    """
+    try:
+        # porcelain gives XY PATH
+        cmd = ["git", "status", "--porcelain"]
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        files = []
+        for line in result.stdout.strip().split('\n'):
+            if not line or len(line) < 4:
+                continue
+
+            # Extract XY and Path
+            # porcelain format is fixed width for XY (2 chars) then space then path
+            # But if path has spaces it might be quoted? --porcelain v1 quotes paths.
+            # v1: XY PATH
+            status_code = line[:2]
+            path = line[3:].strip('"') # Simple unquote for now
+
+            # Determine staged status
+            # X (index), Y (worktree)
+            # M_ -> Staged
+            # _M -> Unstaged
+            # MM -> Both
+            # ?? -> Untracked (Unstaged)
+            # A_ -> Added (Staged)
+
+            index_status = status_code[0]
+            # worktree_status = status_code[1] # Unused
+
+            files.append({
+                "path": path,
+                "status_code": status_code,
+                "staged": index_status not in [' ', '?', '!']
+            })
+        return files
+    except Exception as e:
+        logger.error(f"Error getting git status: {e}")
+        return []
+
+
+def stage_file(project_dir: Path, file_path: str) -> bool:
+    """Stages a file."""
+    return run_git(["add", file_path], project_dir)
+
+
+def unstage_file(project_dir: Path, file_path: str) -> bool:
+    """Unstages a file (git restore --staged)."""
+    return run_git(["restore", "--staged", file_path], project_dir)
+
+
+def commit_changes(project_dir: Path, message: str) -> bool:
+    """Commits staged changes."""
+    return run_git(["commit", "-m", message], project_dir)
+
+
+def discard_changes(project_dir: Path, file_path: str) -> bool:
+    """Discards changes (checkout or clean)."""
+    # If untracked, use clean. If modified, use restore.
+    # We can try restore first, if it fails try clean?
+    # Or check status first.
+    # For simplicity, let's try restore then clean.
+    if run_git(["restore", file_path], project_dir):
+        return True
+    return run_git(["clean", "-f", file_path], project_dir)
+
+
+def pull_changes(project_dir: Path) -> bool:
+    """Pulls changes from origin."""
+    return run_git(["pull"], project_dir)

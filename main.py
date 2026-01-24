@@ -49,6 +49,7 @@ from agents.local import run_autonomous_agent as run_local, LocalAgent
 from agents.openrouter import run_autonomous_agent as run_openrouter, OpenRouterAgent
 from shared.shell import InteractiveShell
 from shared.commands import run_why
+from shared.cost import CostCalculator
 from shared.onboarding import run_onboard_logic
 from shared.ask import run_ask_logic
 from shared.cli import run_do_logic
@@ -4316,105 +4317,55 @@ def _format_duration(seconds: float) -> str:
     return f"{int(minutes)}m {seconds:.2f}s"
 
 
-PRICING_MODELS = {
-    "gemini-1.5-pro": {"input": 3.50, "output": 10.50},  # Per 1M tokens
-    "gemini-1.5-flash": {"input": 0.35, "output": 1.05},
-    "claude-3.5-sonnet": {"input": 3.00, "output": 15.00},
-    "gpt-4o": {"input": 5.00, "output": 15.00},
-    "unknown": {"input": 0.0, "output": 0.0},
-}
-
 def run_cost(args):
     """Estimates the cost of the agent run based on token usage."""
-    run_id = args.run_id
     project_dir = args.project_dir.resolve()
+    calculator = CostCalculator(project_dir)
 
+    if args.budget:
+        status = calculator.check_budget()
+        print(f"--- Budget Status ---")
+        if status['status'] == "No Limit":
+             print("Status: No budget limit set in agent_config.yaml")
+             print(f"Total Cost: ${status['current']:.4f}")
+        else:
+             print(f"Status:    {status['status']}")
+             print(f"Limit:     ${status['limit']:.2f}")
+             print(f"Used:      ${status['current']:.4f} ({status['percent']:.1f}%)")
+             print(f"Remaining: ${status['remaining']:.4f}")
+        print("")
+
+    run_id = args.run_id
     if not run_id:
         # Default to latest run
-        metrics_file = project_dir / "final_metrics.txt"
-        if not metrics_file.exists():
-             # Try history
-             history_file = project_dir / ".agent_history"
-             if history_file.exists():
-                 try:
-                     with open(history_file, "r") as f:
-                         run_ids = [line.strip() for line in f if line.strip()]
-                     if run_ids:
-                         run_id = run_ids[-1]
-                 except IOError:
-                     pass
+        history_file = project_dir / ".agent_history"
+        if history_file.exists():
+            try:
+                with open(history_file, "r") as f:
+                    run_ids = [line.strip() for line in f if line.strip()]
+                if run_ids:
+                    run_id = run_ids[-1]
+            except IOError:
+                pass
 
-        if not run_id and not metrics_file.exists():
-             print("❌ Error: Could not determine Run ID or find metrics file.", file=sys.stderr)
-             sys.exit(1)
-
-    if run_id:
-        metrics_file = _find_metrics_file(run_id, project_dir)
-        if not metrics_file:
-            print(f"❌ Error: Could not find metrics for Run ID: {run_id}", file=sys.stderr)
-            sys.exit(1)
-
-    metrics = _parse_metrics(metrics_file)
-    if not metrics:
-        print("❌ Error: Metrics file is empty or could not be parsed.", file=sys.stderr)
+    if not run_id:
+        if args.budget:
+            sys.exit(0)
+        print("❌ Error: Could not determine Run ID.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"--- Cost Estimate for Run: {metrics.get('Run ID', 'Unknown')} ---")
+    result = calculator.calculate_run_cost(run_id)
+    if "error" in result:
+        if args.budget:
+            sys.exit(0)
+        print(f"❌ Error: {result['error']}", file=sys.stderr)
+        sys.exit(1)
 
-    model = metrics.get("Model", "unknown")
-    # Clean up model string (sometimes it has extra info or is "auto")
-    pricing = PRICING_MODELS.get(model, None)
-    if not pricing:
-        # fuzzy match?
-        for key in PRICING_MODELS:
-            if key in model:
-                pricing = PRICING_MODELS[key]
-                break
-
-    if not pricing:
-        print(f"⚠️  Warning: No pricing model found for '{model}'. Using $0.00.")
-        pricing = {"input": 0.0, "output": 0.0}
-    else:
-        print(f"Model: {model} (Pricing: ${pricing['input']}/1M in, ${pricing['output']}/1M out)")
-
-    # Extract detailed usage if available (from our new parser logic)
-    # We stored breakdowns as `llm_tokens_total__{model}__{type}`
-
-    input_tokens = 0
-    output_tokens = 0
-
-    # Try to find breakdown keys
-    for key, value in metrics.items():
-        if key.startswith("llm_tokens_total__"):
-            parts = key.split("__")
-            if len(parts) == 3:
-                # _, model_label, type_label = parts
-                type_label = parts[2]
-                if type_label == "input":
-                    input_tokens += value
-                elif type_label == "output":
-                    output_tokens += value
-
-    # Fallback to total if breakdown not found (e.g. legacy metrics)
-    total_tokens = metrics.get("LLM Tokens Used", 0)
-    if input_tokens == 0 and output_tokens == 0 and total_tokens > 0:
-        print("⚠️  Detailed input/output breakdown not available. Assuming 75% input, 25% output.")
-        input_tokens = total_tokens * 0.75
-        output_tokens = total_tokens * 0.25
-
-    input_cost = (input_tokens / 1_000_000) * pricing["input"]
-    output_cost = (output_tokens / 1_000_000) * pricing["output"]
-    total_cost = input_cost + output_cost
-
-    print(f"\nUsage:")
-    print(f"  Input Tokens:  {int(input_tokens):,}")
-    print(f"  Output Tokens: {int(output_tokens):,}")
-    print(f"  Total Tokens:  {int(input_tokens + output_tokens):,}")
-
-    print(f"\nEstimated Cost:")
-    print(f"  Input:  ${input_cost:.4f}")
-    print(f"  Output: ${output_cost:.4f}")
-    print(f"  Total:  ${total_cost:.4f}")
+    print(f"--- Cost Estimate for Run: {run_id} ---")
+    print(f"Model:         {result['model']}")
+    print(f"Input Tokens:  {int(result['input_tokens']):,}")
+    print(f"Output Tokens: {int(result['output_tokens']):,}")
+    print(f"Total Cost:    ${result['total_cost']:.4f}")
 
     sys.exit(0)
 
@@ -6202,6 +6153,11 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+    parser_cost.add_argument(
+        "-b", "--budget",
+        action="store_true",
+        help="Show budget status (total cost vs limit).",
     )
 
     # --- New 'benchmark' command ---

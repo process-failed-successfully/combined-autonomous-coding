@@ -49,6 +49,7 @@ from shared.cost import CostCalculator
 from shared.charts import draw_ascii_bar_chart
 from shared.prompt_lab import PromptLabManager
 from shared.scaffold import ScaffoldManager
+from shared.refactor import RefactorManager
 
 
 # Helper to get Git info safely
@@ -3665,6 +3666,105 @@ class PromptLabTab(Container):
         self.notify(f"Loaded '{name}'.")
 
 
+class RefactorTab(Container):
+    """Tab for interactive AI refactoring."""
+
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.manager = RefactorManager(project_dir)
+        self.selected_file = None
+        self.preview_data = {}  # Store result from refactor_file
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            # Left Pane: File Tree
+            with Vertical(id="refactor-tree-container", classes="stat-box"):
+                yield Label("[bold]Select File[/bold]")
+                yield DirectoryTree(str(self.project_dir), id="refactor-file-tree")
+
+            # Right Pane: Controls & Preview
+            with Vertical(id="refactor-main-container"):
+                yield Label("[bold]Refactoring Controls[/bold]")
+
+                with Vertical(classes="stat-box"):
+                    yield Label("Instruction:")
+                    yield Input(placeholder="e.g. Extract class, Rename variable...", id="refactor-instruction")
+
+                    with Horizontal():
+                        yield Select.from_values(["gemini", "cursor", "local"], id="refactor-agent-select", value="gemini")
+                        yield Button("Preview Refactor", id="btn-refactor-preview", variant="primary", disabled=True)
+                        yield Button("Apply Changes", id="btn-refactor-apply", variant="success", disabled=True)
+
+                yield Label("[bold]Diff Preview[/bold]")
+                yield RichLog(id="refactor-diff-log", wrap=True, highlight=True, markup=True)
+
+    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
+        if event.path.is_file():
+            self.selected_file = event.path
+            self.query_one("#btn-refactor-preview").disabled = False
+            self.notify(f"Selected {event.path.name}")
+        else:
+            self.selected_file = None
+            self.query_one("#btn-refactor-preview").disabled = True
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-refactor-preview":
+            await self.preview_refactor()
+        elif event.button.id == "btn-refactor-apply":
+            self.apply_changes()
+
+    async def preview_refactor(self) -> None:
+        if not self.selected_file:
+            return
+
+        instruction = self.query_one("#refactor-instruction", Input).value
+        if not instruction:
+            self.notify("Instruction required.", severity="error")
+            return
+
+        agent_type = self.query_one("#refactor-agent-select", Select).value or "gemini"
+        log = self.query_one("#refactor-diff-log", RichLog)
+
+        log.clear()
+        log.write(f"Refactoring {self.selected_file.name} with {agent_type}...")
+        self.notify("Generating preview...", severity="information")
+
+        try:
+            # refactor_file returns dict with keys: original_content, new_content, diff, changed
+            self.preview_data = await self.manager.refactor_file(
+                self.selected_file,
+                instruction,
+                agent_type=agent_type
+            )
+
+            log.clear()
+            if self.preview_data["changed"]:
+                log.write(Syntax(self.preview_data["diff"], "diff", theme="monokai"))
+                self.query_one("#btn-refactor-apply").disabled = False
+                self.notify("Preview generated.")
+            else:
+                log.write("No changes suggested by AI.")
+                self.query_one("#btn-refactor-apply").disabled = True
+
+        except Exception as e:
+            log.write(f"[bold red]Error:[/bold red] {e}")
+            self.notify(f"Refactor failed: {e}", severity="error")
+
+    def apply_changes(self) -> None:
+        if not self.preview_data or not self.selected_file:
+            return
+
+        try:
+            self.manager.apply_changes(self.selected_file, self.preview_data["new_content"])
+            self.notify(f"Changes applied to {self.selected_file.name}")
+            self.query_one("#refactor-diff-log", RichLog).write("\n[bold green]Changes Applied![/bold green]")
+            self.query_one("#btn-refactor-apply").disabled = True
+            self.preview_data = {} # Reset
+        except Exception as e:
+            self.notify(f"Error applying changes: {e}", severity="error")
+
+
 class AgentTUI(App):
     """Mission Control TUI."""
 
@@ -3691,6 +3791,8 @@ class AgentTUI(App):
                 yield TestGenTab(self.project_dir)
             with TabPane("Scaffold", id="tab-scaffold"):
                 yield ScaffoldTab(self.project_dir)
+            with TabPane("Refactor", id="tab-refactor"):
+                yield RefactorTab(self.project_dir)
             with TabPane("Plan", id="tab-plan"):
                 yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):

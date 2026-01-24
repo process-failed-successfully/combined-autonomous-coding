@@ -4873,18 +4873,21 @@ async def run_recipes(args):
 
 def run_hooks(args):
     """Manages git hooks for the project."""
-    from shared.hooks import install_pre_commit_hook, uninstall_pre_commit_hook, run_hooks_logic
+    from shared.hooks import install_hooks, uninstall_hooks, run_hooks_logic
 
     project_dir = args.project_dir.resolve()
 
     if args.action == "install":
-        success = install_pre_commit_hook(project_dir)
+        success = install_hooks(project_dir)
         sys.exit(0 if success else 1)
     elif args.action == "uninstall":
-        success = uninstall_pre_commit_hook(project_dir)
+        success = uninstall_hooks(project_dir)
         sys.exit(0 if success else 1)
     elif args.action == "run":
-        success = run_hooks_logic(project_dir)
+        # Pass hook_name if available (it might not be if running older version of cli wrapper?)
+        # But args will have it if parser is updated.
+        hook_name = getattr(args, 'hook_name', None)
+        success = run_hooks_logic(project_dir, hook_name=hook_name)
         sys.exit(0 if success else 1)
     sys.exit(0)
 
@@ -6461,6 +6464,11 @@ def parse_args(argv=None):
     parser_hooks_run = hooks_subparsers.add_parser(
         "run",
         help="Manually run the hooks checks."
+    )
+    parser_hooks_run.add_argument(
+        "hook_name",
+        nargs="?",
+        help="Name of the hook to run (optional, e.g. pre-commit)."
     )
     parser_hooks_run.add_argument(
         "-p", "--project-dir",

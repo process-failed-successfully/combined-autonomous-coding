@@ -55,6 +55,7 @@ from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
+from shared.tui_services import ServicesTab
 
 
 # Helper to get Git info safely
@@ -3936,6 +3937,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Services", id="tab-services"):
+                yield ServicesTab(self.project_dir)
             with TabPane("Config", id="tab-config"):
                 yield ConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):

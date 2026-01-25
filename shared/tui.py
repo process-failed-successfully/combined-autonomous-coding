@@ -51,6 +51,7 @@ from shared.charts import draw_ascii_bar_chart
 from shared.prompt_lab import PromptLabManager
 from shared.scaffold import ScaffoldManager
 from shared.refactor import RefactorManager
+from shared.tui_security import SecurityTab
 
 
 # Helper to get Git info safely
@@ -4059,6 +4060,8 @@ class AgentTUI(App):
                 yield DependenciesTab(self.project_dir)
             with TabPane("Analytics", id="tab-analytics"):
                 yield AnalyticsTab(self.project_dir)
+            with TabPane("Security", id="tab-security"):
+                yield SecurityTab(self.project_dir)
             with TabPane("Health", id="tab-health"):
                 yield HealthTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):

@@ -72,6 +72,7 @@ from shared.work_session import WorkSessionManager
 from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
 from shared.research import run_research_logic
+from shared.serve import ServeManager
 import json
 import yaml
 import platformdirs
@@ -97,6 +98,18 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_serve(args):
+    """Starts a local development server."""
+    project_dir = args.project_dir.resolve()
+    manager = ServeManager(project_dir)
+    success = manager.start(
+        port=args.port,
+        host=args.host,
+        command=args.command_str,
+        dry_run=args.dry_run
+    )
+    sys.exit(0 if success else 1)
 
 def run_onboard(args):
     """Runs the onboarding wizard."""
@@ -8837,6 +8850,38 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'serve' command ---
+    parser_serve = subparsers.add_parser(
+        "serve",
+        help="Start a local development server with auto-detection."
+    )
+    parser_serve.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_serve.add_argument(
+        "--port",
+        type=int,
+        help="Port to bind to (overrides auto-detection)."
+    )
+    parser_serve.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host to bind to (default: 127.0.0.1)."
+    )
+    parser_serve.add_argument(
+        "--command",
+        dest="command_str",
+        help="Manually specify the start command (e.g. 'npm run dev')."
+    )
+    parser_serve.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the start command without running it."
+    )
+
     # --- New 'guardrails' command ---
     parser_guardrails = subparsers.add_parser(
         "guardrails",
@@ -11420,6 +11465,10 @@ async def main():
 
     if args.command == "research":
         run_research_logic(args.url, args.depth, args.limit)
+        return
+
+    if args.command == "serve":
+        run_serve(args)
         return
 
     if args.command == "guardrails":

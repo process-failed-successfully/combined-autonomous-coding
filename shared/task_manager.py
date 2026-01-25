@@ -3,12 +3,15 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+import logging
 
 from shared.config_loader import load_config_from_file
 from shared.github_client import GitHubClient
 from shared.jira_client import JiraClient
 from shared.todos import scan_todos
 from shared.config import JiraConfig
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Task:
@@ -90,11 +93,7 @@ class TaskManager:
         try:
             config = JiraConfig(url=url, email=email, token=token)
             client = JiraClient(config)
-            # Fetch assigned to me or open? Let's fetch open issues for the project?
-            # Or just "To Do"? Let's try a generic JQL.
-            # Assuming we want to see what's relevant.
-            # Maybe just assigned to current user? Or everything?
-            # Let's try fetching "To Do" and "In Progress"
+            # Fetch generic active issues
             jql = 'statusCategory in ("To Do", "In Progress") ORDER BY updated DESC'
             issues = client.search_issues(jql, max_results=20)
 
@@ -124,9 +123,6 @@ class TaskManager:
             tasks = []
             for t in data.get("tasks", []):
                 status = t.get("status", "PENDING")
-                # Filter out completed if we want only active tasks?
-                # Let's keep all but maybe sort/filter in UI.
-
                 tasks.append(Task(
                     id=f"SPRINT-{t.get('id')}",
                     source="sprint",
@@ -167,3 +163,85 @@ class TaskManager:
             return tasks
         except Exception:
             return []
+
+    def update_task_status(self, task_id: str, source: str, new_status: str) -> bool:
+        """
+        Updates the status of a task.
+        Returns True if successful, False otherwise.
+        """
+        if source == "sprint":
+            return self._update_sprint_task(task_id, new_status)
+        elif source == "jira":
+            return self._update_jira_task(task_id, new_status)
+        elif source == "github":
+            # Not implemented yet (requires write access and complex state mapping)
+            logger.warning("Updating GitHub issues is not yet supported via TUI.")
+            return False
+        elif source == "todo":
+            # TODOs are code comments, cannot easily update status without code modification
+            logger.warning("Cannot update TODO status directly.")
+            return False
+
+        return False
+
+    def _update_sprint_task(self, task_id: str, new_status: str) -> bool:
+        """Updates a task in sprint_plan.json."""
+        sprint_plan_path = self.project_dir / "sprint_plan.json"
+        if not sprint_plan_path.exists():
+            return False
+
+        try:
+            # ID format: SPRINT-<id>
+            raw_id = task_id.replace("SPRINT-", "")
+
+            # Read
+            with open(sprint_plan_path, 'r') as f:
+                data = json.load(f)
+
+            # Update
+            found = False
+            for t in data.get("tasks", []):
+                if str(t.get("id")) == raw_id:
+                    # Map Kanban status to Sprint status if needed
+                    # Kanban: "To Do", "In Progress", "Done"
+                    # Sprint: "PENDING", "IN_PROGRESS", "COMPLETED"
+                    sprint_status = "PENDING"
+                    if new_status == "In Progress":
+                        sprint_status = "IN_PROGRESS"
+                    elif new_status == "Done":
+                        sprint_status = "COMPLETED"
+
+                    t["status"] = sprint_status
+                    found = True
+                    break
+
+            if not found:
+                return False
+
+            # Write
+            with open(sprint_plan_path, 'w') as f:
+                json.dump(data, f, indent=2)
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating sprint task: {e}")
+            return False
+
+    def _update_jira_task(self, task_id: str, new_status: str) -> bool:
+        """Updates a Jira ticket status."""
+        jira_cfg = self.config.get("jira", {})
+        url = jira_cfg.get("url") or os.environ.get("JIRA_URL")
+        email = jira_cfg.get("email") or os.environ.get("JIRA_EMAIL")
+        token = jira_cfg.get("token") or os.environ.get("JIRA_TOKEN")
+
+        if not (url and email and token):
+            return False
+
+        try:
+            config = JiraConfig(url=url, email=email, token=token)
+            client = JiraClient(config)
+            return client.transition_issue(task_id, new_status)
+        except Exception as e:
+            logger.error(f"Error updating Jira task: {e}")
+            return False

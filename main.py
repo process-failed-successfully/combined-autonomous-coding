@@ -73,6 +73,7 @@ from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
 from shared.research import run_research_logic
 from shared.serve import ServeManager
+from shared.network import run_network_logic
 import json
 import yaml
 import platformdirs
@@ -110,6 +111,18 @@ def run_serve(args):
         dry_run=args.dry_run
     )
     sys.exit(0 if success else 1)
+
+def run_network(args):
+    """Generates an interactive network graph of the codebase."""
+    output_path = Path(args.output).resolve()
+    run_network_logic(
+        project_dir=args.project_dir,
+        output_file=output_path,
+        include_authors=args.include_authors,
+        include_git=args.include_git,
+        limit=args.limit
+    )
+    sys.exit(0)
 
 def run_onboard(args):
     """Runs the onboarding wizard."""
@@ -8968,6 +8981,41 @@ def parse_args(argv=None):
     parser_gr_check = guardrails_subparsers.add_parser("check", help="Run policy checks.")
     parser_gr_check.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'network' command ---
+    parser_network = subparsers.add_parser(
+        "network",
+        help="Generate an interactive network graph of the codebase (files, imports, authors)."
+    )
+    parser_network.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_network.add_argument(
+        "-o", "--output",
+        default="network_graph.html",
+        help="Output HTML file path (default: network_graph.html)."
+    )
+    parser_network.add_argument(
+        "--include-authors",
+        action="store_true",
+        help="Include authors as nodes in the graph."
+    )
+    parser_network.add_argument(
+        "--no-git",
+        dest="include_git",
+        action="store_false",
+        help="Disable git history analysis (co-edits)."
+    )
+    parser_network.set_defaults(include_git=True)
+    parser_network.add_argument(
+        "-l", "--limit",
+        type=int,
+        default=100,
+        help="Limit the number of commits to analyze for co-edits (default: 100)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -11557,6 +11605,10 @@ async def main():
     if args.command == "visualize":
         from shared.visualization import run_visualize
         run_visualize(args)
+        return
+
+    if args.command == "network":
+        run_network(args)
         return
 
     # Initialize Agent Client

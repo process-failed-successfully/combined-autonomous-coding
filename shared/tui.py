@@ -57,6 +57,7 @@ from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
 from shared.tui_regex import RegexLabTab
+from shared.tui_datalab import DataLabTab
 
 
 # Helper to get Git info safely
@@ -4010,6 +4011,8 @@ class AgentTUI(App):
                 yield PromptLabTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("Data Lab", id="tab-datalab"):
+                yield DataLabTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

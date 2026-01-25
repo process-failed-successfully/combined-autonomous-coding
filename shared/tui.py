@@ -54,6 +54,7 @@ from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_env import EnvTab
+from shared.tui_kanban import KanbanBoard
 
 
 # Helper to get Git info safely
@@ -775,60 +776,65 @@ class TasksTab(Container):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("[bold]Unified Task Board[/bold]", classes="welcome-text")
+
+            # Common Controls
             with Horizontal(classes="stat-box"):
                 yield Button("Refresh", id="btn-tasks-refresh", variant="primary")
                 yield Select.from_values(["All", "GitHub", "Jira", "Sprint", "TODO"], id="select-task-source", value="All")
                 yield Input(placeholder="Filter by title...", id="input-task-filter")
 
-            yield DataTable(id="tasks-table")
+            with TabbedContent():
+                with TabPane("Board View"):
+                    yield KanbanBoard(id="kanban-board")
+
+                with TabPane("List View"):
+                    yield DataTable(id="tasks-table")
 
     def on_mount(self) -> None:
+        # Init DataTable
         table = self.query_one("#tasks-table", DataTable)
         table.cursor_type = "row"
         table.add_columns("Source", "ID", "Title", "Status", "Priority")
         self.load_tasks()
 
     def load_tasks(self) -> None:
-        table = self.query_one("#tasks-table", DataTable)
-        table.clear()
         self.notify("Loading tasks...", timeout=1)
-
         try:
             tasks = self.task_manager.fetch_all_tasks()
             self.tasks_cache = tasks
-            self._update_table(tasks)
+            self._update_views(tasks)
             self.notify(f"Loaded {len(tasks)} tasks.")
         except Exception as e:
             self.notify(f"Error fetching tasks: {e}", severity="error")
 
-    def _update_table(self, tasks: list[Task]) -> None:
-        table = self.query_one("#tasks-table", DataTable)
-        table.clear()
-
+    def _update_views(self, tasks: list[Task]) -> None:
+        # Apply filters
         source_filter = self.query_one("#select-task-source", Select).value or "All"
         filter_text = self.query_one("#input-task-filter", Input).value.lower()
 
+        filtered_tasks = []
         for task in tasks:
             if source_filter != "All" and task.source.lower() != source_filter.lower():
                 continue
-
             if filter_text and filter_text not in task.title.lower():
                 continue
+            filtered_tasks.append(task)
 
-            # Color code status/priority?
-            # Textual DataTables use Rich Renderables.
-
+        # Update List
+        table = self.query_one("#tasks-table", DataTable)
+        table.clear()
+        for task in filtered_tasks:
             source_display = task.source.upper()
-            status_display = task.status
             priority_display = task.priority
-
-            # Simple color formatting tags
             if task.priority == "High":
                 priority_display = f"[red]{task.priority}[/red]"
             elif task.priority == "Low":
                 priority_display = f"[green]{task.priority}[/green]"
+            table.add_row(source_display, task.id, task.title, task.status, priority_display)
 
-            table.add_row(source_display, task.id, task.title, status_display, priority_display)
+        # Update Kanban
+        kanban = self.query_one("#kanban-board", KanbanBoard)
+        kanban.load_tasks(filtered_tasks)
 
     @on(Button.Pressed, "#btn-tasks-refresh")
     def refresh_tasks(self):
@@ -836,11 +842,21 @@ class TasksTab(Container):
 
     @on(Select.Changed, "#select-task-source")
     def filter_source(self):
-        self._update_table(self.tasks_cache)
+        self._update_views(self.tasks_cache)
 
     @on(Input.Changed, "#input-task-filter")
     def filter_text(self):
-        self._update_table(self.tasks_cache)
+        self._update_views(self.tasks_cache)
+
+    @on(KanbanBoard.StatusChange)
+    def on_kanban_status_change(self, event: KanbanBoard.StatusChange):
+        # Update backend
+        success = self.task_manager.update_task_status(event.task_id, event.new_status)
+        if success:
+            self.notify(f"Updated status for {event.task_id} to {event.new_status}")
+            self.load_tasks()
+        else:
+            self.notify(f"Failed to update {event.task_id}. Source may not support updates.", severity="error")
 
 class GitTab(Container):
     """Tab for viewing and managing Git."""

@@ -98,3 +98,19 @@ DataTable {
     border: none;
     padding: 0;
 }
+
+/* Kanban Board */
+.kanban-col {
+    width: 1fr;
+    height: 100%;
+    border: solid $secondary;
+    margin: 1;
+    padding: 1;
+}
+
+.kanban-header {
+    text-align: center;
+    background: $primary;
+    color: $text;
+    margin-bottom: 1;
+}

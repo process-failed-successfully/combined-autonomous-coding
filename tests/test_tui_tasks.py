@@ -8,8 +8,9 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import DataTable, Input, Select, Button
+from textual.widgets import DataTable, Input, Select, Button, TabbedContent
 from shared.tui import AgentTUI, TasksTab
+from shared.tui_kanban import KanbanBoard
 from shared.task_manager import Task
 
 class TestTUITasks(unittest.IsolatedAsyncioTestCase):
@@ -41,8 +42,9 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
     async def test_tasks_tab_structure(self):
         """Test that the Tasks tab has the correct widgets."""
+        # Need large screen for split views
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(120, 40)) as pilot:
             # Check if tab exists
             self.assertTrue(app.query_one("#tab-tasks"))
 
@@ -54,12 +56,15 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(tasks_tab)
 
             self.assertIsInstance(tasks_tab.query_one("#tasks-table"), DataTable)
+            self.assertIsInstance(tasks_tab.query_one("#kanban-board"), KanbanBoard)
+            self.assertIsInstance(tasks_tab.query_one(TabbedContent), TabbedContent)
+
             self.assertIsInstance(tasks_tab.query_one("#btn-tasks-refresh"), Button)
             self.assertIsInstance(tasks_tab.query_one("#select-task-source"), Select)
             self.assertIsInstance(tasks_tab.query_one("#input-task-filter"), Input)
 
     async def test_tasks_load(self):
-        """Test that tasks are loaded into the table."""
+        """Test that tasks are loaded into the table and kanban."""
         mock_tasks = [
             Task(id="1", source="github", title="Task 1", status="Open"),
             Task(id="2", source="todo", title="Task 2", status="Open")
@@ -67,14 +72,22 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         self.mock_tm.fetch_all_tasks.return_value = mock_tasks
 
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(120, 40)) as pilot:
             app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
             tasks_tab = app.query_one(TasksTab)
             table = tasks_tab.query_one("#tasks-table", DataTable)
+            kanban = tasks_tab.query_one("#kanban-board", KanbanBoard)
 
+            # Check table
             self.assertEqual(table.row_count, 2)
+
+            # Check Kanban
+            # We can inspect the internal lists of Kanban
+            col_todo = kanban.query_one("#col-todo").query_one("ListView")
+            self.assertEqual(len(col_todo.children), 2)
+
             self.mock_tm.fetch_all_tasks.assert_called()
 
     async def test_tasks_refresh(self):
@@ -82,7 +95,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         self.mock_tm.fetch_all_tasks.return_value = []
 
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(120, 40)) as pilot:
             app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
@@ -102,11 +115,14 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         self.mock_tm.fetch_all_tasks.return_value = mock_tasks
 
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(120, 40)) as pilot:
             app.query_one("#main-tabs").active = "tab-tasks"
             await pilot.pause()
 
             tasks_tab = app.query_one(TasksTab)
+            # Ensure List View is active (default might be Board depending on TabbedContent)
+            # But the table update logic runs regardless of active tab
+
             table = tasks_tab.query_one("#tasks-table", DataTable)
             self.assertEqual(table.row_count, 2)
 

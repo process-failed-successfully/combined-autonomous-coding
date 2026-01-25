@@ -220,6 +220,63 @@ async def run_db(args):
         print(f"Unknown action: {args.action}", file=sys.stderr)
         sys.exit(1)
 
+async def run_adr(args):
+    """Manages Architecture Decision Records."""
+    from shared.adr import ADRManager
+    project_dir = args.project_dir.resolve()
+    manager = ADRManager(project_dir)
+
+    if args.action == "init":
+        print(manager.init_adr_repo())
+        sys.exit(0)
+
+    elif args.action == "new":
+        if not args.title:
+            print("Error: Title required for 'new' action.", file=sys.stderr)
+            sys.exit(1)
+        path = manager.create_adr(args.title, status="Proposed")
+        print(f"✅ Created ADR: {path}")
+        sys.exit(0)
+
+    elif args.action == "list":
+        adrs = manager.list_adrs()
+        if not adrs:
+            print("No ADRs found.")
+        else:
+            print("--- Architecture Decision Records ---")
+            for adr in adrs:
+                print(f"{adr['filename']} - {adr['title']} ({adr['status']})")
+        sys.exit(0)
+
+    elif args.action == "status":
+        if not args.id or not args.status:
+            print("Error: ID and Status required.", file=sys.stderr)
+            sys.exit(1)
+        if manager.update_status(args.id, args.status):
+            print(f"✅ Updated status of ADR {args.id} to {args.status}")
+        else:
+            print(f"❌ ADR {args.id} not found.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "generate":
+        if not args.title or not args.context:
+            print("Error: Title and --context required for generation.", file=sys.stderr)
+            sys.exit(1)
+
+        content = await manager.generate_adr_content(
+            args.title,
+            args.context,
+            agent_type=args.agent,
+            model=args.model
+        )
+
+        path = manager.create_adr(args.title, status="Proposed", content=content)
+        print(f"✅ Generated and created ADR: {path}")
+        sys.exit(0)
+
+    sys.exit(0)
+
+
 def run_session(args):
     """Manages work sessions."""
     project_dir = args.project_dir.resolve()
@@ -5626,6 +5683,17 @@ def parse_args(argv=None):
         help="Skip all confirmation prompts",
     )
 
+    # Subparser for 'adr'
+    parser_adr = subparsers.add_parser("adr", help="Manage Architecture Decision Records (ADRs)")
+    parser_adr.add_argument("action", choices=["init", "new", "list", "status", "generate"], help="Action to perform")
+    parser_adr.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory")
+    parser_adr.add_argument("title", nargs="?", help="Title for the new ADR")
+    parser_adr.add_argument("--id", help="ADR ID or filename for updates")
+    parser_adr.add_argument("--status", help="New status for the ADR")
+    parser_adr.add_argument("--context", help="Context for AI generation")
+    parser_adr.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use for generation")
+    parser_adr.add_argument("-m", "--model", type=str, help="Model to use for generation")
+
     # Subparser for 'status'
     # Subparser for 'glance'
     parser_glance = subparsers.add_parser("glance", help="Show a compact, high-level overview of the project status")
@@ -10960,6 +11028,11 @@ async def main():
     # Handle `init` command
     if args.command == "init":
         run_init(args)
+        return
+
+    # Handle `adr` command
+    if args.command == "adr":
+        await run_adr(args)
         return
 
     # Handle `onboard` command

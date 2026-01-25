@@ -5,7 +5,10 @@ import socket
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 from typing import Dict, Any, Optional, List, Tuple
 from prometheus_client import (
     CollectorRegistry,
@@ -426,15 +429,16 @@ class Telemetry:
     def _system_monitoring_loop(self):
         while self.monitoring_active:
             try:
-                process = psutil.Process(os.getpid())
-                mem_info = process.memory_info()
-                cpu_percent = process.cpu_percent(interval=None)  # Non-blocking
+                if psutil:
+                    process = psutil.Process(os.getpid())
+                    mem_info = process.memory_info()
+                    cpu_percent = process.cpu_percent(interval=None)  # Non-blocking
 
-                self.record_gauge("container_memory_usage_bytes", mem_info.rss)
-                self.record_gauge("container_cpu_usage_pct", cpu_percent)
-                self.record_gauge(
-                    "process_count", len(process.children(recursive=True)) + 1
-                )  # Self + children
+                    self.record_gauge("container_memory_usage_bytes", mem_info.rss)
+                    self.record_gauge("container_cpu_usage_pct", cpu_percent)
+                    self.record_gauge(
+                        "process_count", len(process.children(recursive=True)) + 1
+                    )  # Self + children
 
                 # Heartbeat
                 self.record_gauge("agent_heartbeat_timestamp", time.time())

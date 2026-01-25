@@ -1,8 +1,9 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
 from shared.estimate import run_estimate_logic, _collect_context, get_estimate_prompt
 import shutil
+
 
 class TestEstimate(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -28,7 +29,7 @@ class TestEstimate(unittest.IsolatedAsyncioTestCase):
         self.assertIn("File: test.py", context)
         self.assertIn("print('hello')", context)
 
-    @patch("shared.estimate.GeminiAgent")
+    @patch("agents.gemini.GeminiAgent")
     async def test_run_estimate_logic_success(self, MockAgent):
         # Setup mock
         mock_instance = MockAgent.return_value
@@ -48,7 +49,7 @@ class TestEstimate(unittest.IsolatedAsyncioTestCase):
         prompt = args[0]
         self.assertIn("Add login", prompt)
 
-    @patch("shared.estimate.GeminiAgent")
+    @patch("agents.gemini.GeminiAgent")
     async def test_run_estimate_logic_error(self, MockAgent):
         mock_instance = MockAgent.return_value
         mock_instance.run_agent_session = AsyncMock(return_value=("error", "Some error", []))
@@ -59,6 +60,7 @@ class TestEstimate(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertFalse(success)
+
 
 if __name__ == "__main__":
     unittest.main()

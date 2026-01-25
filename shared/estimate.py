@@ -11,12 +11,9 @@ from pathlib import Path
 from typing import Optional, List
 
 from shared.config import Config
-from agents.gemini import GeminiAgent
-from agents.cursor import CursorAgent
-from agents.local import LocalAgent
-from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
+
 
 def get_estimate_prompt() -> str:
     """Reads the estimate prompt template."""
@@ -27,6 +24,7 @@ def get_estimate_prompt() -> str:
     except Exception as e:
         logger.error(f"Error reading estimate prompt: {e}")
         return ""
+
 
 def _collect_context(project_dir: Path, files: Optional[List[str]]) -> str:
     """
@@ -62,6 +60,7 @@ def _collect_context(project_dir: Path, files: Optional[List[str]]) -> str:
 
     return "\n".join(context_parts)
 
+
 async def run_estimate_logic(
     feature_description: str,
     project_dir: Path,
@@ -94,6 +93,11 @@ async def run_estimate_logic(
         max_iterations=1,  # Single shot
         stream_output=True,
     )
+
+    from agents.gemini import GeminiAgent
+    from agents.cursor import CursorAgent
+    from agents.local import LocalAgent
+    from agents.openrouter import OpenRouterAgent
 
     # Initialize Agent
     agent_class_map = {

@@ -74,6 +74,7 @@ from shared.api_lab import run_api_lab_cli
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
+from shared.scheduler import Scheduler
 import json
 import yaml
 import platformdirs
@@ -111,6 +112,27 @@ def run_serve(args):
         dry_run=args.dry_run
     )
     sys.exit(0 if success else 1)
+
+def run_scheduler(args):
+    """Manages the autonomous scheduler."""
+    project_dir = args.project_dir.resolve()
+    scheduler = Scheduler(project_dir)
+
+    if args.action == "init":
+        if scheduler.init_config():
+            print(f"✅ Created default schedule at {scheduler.config_path}")
+        else:
+            print(f"ℹ️  Schedule config already exists at {scheduler.config_path}")
+
+    elif args.action == "list":
+        scheduler.load_config()
+        scheduler.list_tasks()
+
+    elif args.action == "start":
+        scheduler.load_config()
+        scheduler.start()
+
+    sys.exit(0)
 
 def run_network(args):
     """Generates an interactive network graph of the codebase."""
@@ -8958,6 +8980,29 @@ def parse_args(argv=None):
         help="Print the start command without running it."
     )
 
+    # --- New 'scheduler' command ---
+    parser_scheduler = subparsers.add_parser(
+        "scheduler",
+        help="Run the autonomous maintenance scheduler."
+    )
+    scheduler_subparsers = parser_scheduler.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # scheduler init
+    parser_scheduler_init = scheduler_subparsers.add_parser("init", help="Create default schedule config.")
+    parser_scheduler_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # scheduler list
+    parser_scheduler_list = scheduler_subparsers.add_parser("list", help="List scheduled tasks.")
+    parser_scheduler_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # scheduler start
+    parser_scheduler_start = scheduler_subparsers.add_parser("start", help="Start the scheduler loop.")
+    parser_scheduler_start.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'guardrails' command ---
     parser_guardrails = subparsers.add_parser(
         "guardrails",
@@ -11585,6 +11630,10 @@ async def main():
 
     if args.command == "serve":
         run_serve(args)
+        return
+
+    if args.command == "scheduler":
+        run_scheduler(args)
         return
 
     if args.command == "guardrails":

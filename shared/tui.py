@@ -54,6 +54,7 @@ from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_env import EnvTab
+from shared.tui_log_explorer import LogExplorerTab
 
 
 # Helper to get Git info safely
@@ -557,101 +558,6 @@ class TimelineTab(Container):
             self.notify(f"Error exporting timeline: {e}", severity="error")
 
 
-class LogsTab(Container):
-    """Tab for viewing and filtering logs."""
-
-    def compose(self) -> ComposeResult:
-        with Horizontal():
-            # Left Pane: Log List
-            with Vertical(id="logs-list-container", classes="stat-box"):
-                yield Label("[bold]Log Files[/bold]")
-                yield ListView(id="log-file-list")
-                yield Button("Refresh Logs", id="btn-refresh-logs", variant="default")
-
-            # Right Pane: Log Viewer
-            with Vertical(id="logs-view-container"):
-                with Horizontal(classes="stat-box"):
-                    yield Label("Filter:", classes="label")
-                    yield Input(placeholder="Type to filter log lines...", id="log-filter")
-                yield RichLog(id="log-viewer", wrap=True, highlight=True, markup=True)
-
-    def on_mount(self) -> None:
-        self.load_log_files()
-
-    def load_log_files(self) -> None:
-        log_list = self.query_one("#log-file-list", ListView)
-        log_list.clear()
-
-        logs = get_all_log_files()
-        if not logs:
-            log_list.append(ListItem(Label("No logs found")))
-            return
-
-        for log_file in logs:
-            # Format: filename (size)
-            try:
-                size = log_file.stat().st_size
-                size_str = f"{size / 1024:.1f} KB"
-                label = f"{log_file.name} ({size_str})"
-            except OSError:
-                label = log_file.name
-
-            item = ListItem(Label(label))
-            # Attach the path to the item for retrieval
-            item.log_path = log_file
-            log_list.append(item)
-
-        # Select the first one (latest) by default
-        if len(log_list.children) > 0:
-            log_list.index = 0
-            # Manually trigger load as setting index doesn't always fire Selected
-            if hasattr(log_list.children[0], "log_path"):
-                self.load_log_content(log_list.children[0].log_path)
-
-    @on(ListView.Selected, "#log-file-list")
-    def on_log_selected(self, event: ListView.Selected) -> None:
-        if hasattr(event.item, "log_path"):
-            self.load_log_content(event.item.log_path)
-
-    @on(Input.Changed, "#log-filter")
-    def on_filter_changed(self, event: Input.Changed) -> None:
-        # We need to reload the CURRENT log file with the new filter.
-        if hasattr(self, "current_log_path") and self.current_log_path:
-            self.load_log_content(self.current_log_path, filter_text=event.value)
-
-    @on(Button.Pressed, "#btn-refresh-logs")
-    def on_refresh_logs(self) -> None:
-        self.load_log_files()
-        self.notify("Log list refreshed.")
-
-    def load_log_content(self, file_path: Path, filter_text: str = "") -> None:
-        self.current_log_path = file_path
-        log_viewer = self.query_one("#log-viewer", RichLog)
-        log_viewer.clear()
-
-        # Get filter text if not provided (e.g. from state)
-        if filter_text == "":
-            inp = self.query_one("#log-filter", Input)
-            if inp:
-                filter_text = inp.value
-
-        try:
-            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                lines = f.readlines()
-
-                # Apply filter
-                if filter_text:
-                    lines = [line for line in lines if filter_text.lower() in line.lower()]
-
-                # Limit to last 2000 lines if too many
-                if len(lines) > 2000:
-                    log_viewer.write(f"[bold yellow]Displaying last 2000 lines of {len(lines)}...[/bold yellow]")
-                    lines = lines[-2000:]
-
-                log_viewer.write("".join(lines))
-
-        except Exception as e:
-            log_viewer.write(f"[bold red]Error reading log file:[/bold red] {e}")
 
 class InteractTab(Container):
     """Tab for interacting with the agent (Chat)."""
@@ -4082,8 +3988,8 @@ class AgentTUI(App):
                 yield SessionTab(self.project_dir)
             with TabPane("Timeline", id="tab-timeline"):
                 yield TimelineTab(self.project_dir)
-            with TabPane("Logs", id="tab-logs"):
-                yield LogsTab()
+            with TabPane("Log Explorer", id="tab-logs"):
+                yield LogExplorerTab(self.project_dir)
             with TabPane("Database", id="tab-database"):
                 yield DatabaseTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):

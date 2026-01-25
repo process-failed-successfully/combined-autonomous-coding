@@ -4206,12 +4206,7 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
 def run_logs(args):
     """Displays agent logs."""
     if hasattr(args, 'explore') and args.explore:
-        from shared.log_explorer import LogExplorerApp
-        app = LogExplorerApp(
-            project_dir=args.project_dir,
-            agent_type=getattr(args, 'agent', 'gemini')
-        )
-        app.run()
+        print("Log Explorer is now integrated into the main TUI. Please run 'tui' command.")
         sys.exit(0)
 
     success = _run_logs_logic(

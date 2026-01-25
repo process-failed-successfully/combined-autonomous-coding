@@ -4,6 +4,7 @@ import subprocess
 import re
 from pathlib import Path
 from typing import List, Dict, Optional, Union
+from shared.git import get_all_git_files
 
 def search_codebase(
     project_dir: Path,
@@ -301,7 +302,58 @@ def _search_with_python(
     """Fallback python scanning."""
     results = []
 
-    # Helper to check ignores
+    # Helper for glob matching
+    import fnmatch
+    def matches_file_pattern(filename: str) -> bool:
+        if not file_pattern:
+            return True
+        return fnmatch.fnmatch(filename, file_pattern)
+
+    # Helper to scan a single file
+    def scan_file(file_path: Path):
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                file_lines = f.readlines()
+
+            for i, line in enumerate(file_lines):
+                clean_line = line.rstrip('\n')
+
+                if regex.search(clean_line):
+                    line_num = i + 1
+
+                    c_before = []
+                    if context_lines > 0:
+                        start = max(0, i - context_lines)
+                        c_before = [l.rstrip('\n') for l in file_lines[start:i]]
+
+                    c_after = []
+                    if context_lines > 0:
+                        end = min(len(file_lines), i + 1 + context_lines)
+                        c_after = [l.rstrip('\n') for l in file_lines[i+1:end]]
+
+                    results.append({
+                        "file": str(file_path.relative_to(project_dir)),
+                        "line": line_num,
+                        "content": clean_line,
+                        "context_before": c_before,
+                        "context_after": c_after
+                    })
+        except Exception:
+            pass
+
+    # Optimization: Use git ls-files if available
+    if is_git_repo and git_path:
+        git_files = get_all_git_files(project_dir)
+        if git_files:
+            for rel_path in git_files:
+                file_path = project_dir / rel_path
+                # Check file pattern against filename (not path) to match os.walk behavior
+                if matches_file_pattern(file_path.name):
+                    scan_file(file_path)
+            return results
+
+    # Fallback to os.walk for non-git repos
+    # Helper to check ignores (only needed for fallback)
     def is_ignored(path: Path) -> bool:
         if is_git_repo and git_path:
             try:
@@ -314,13 +366,6 @@ def _search_with_python(
             except Exception:
                 return False
         return False
-
-    # Helper for glob matching
-    import fnmatch
-    def matches_file_pattern(filename: str) -> bool:
-        if not file_pattern:
-            return True
-        return fnmatch.fnmatch(filename, file_pattern)
 
     ignore_dirs = {'.git', '__pycache__', '.venv', 'node_modules', 'dist', 'build', '.agent_trash', '.agent_archives'}
 
@@ -339,38 +384,6 @@ def _search_with_python(
             if is_ignored(file_path):
                 continue
 
-            try:
-                # Read all lines to handle context
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    file_lines = f.readlines()
-
-                for i, line in enumerate(file_lines):
-                    # Strip newline for matching/display
-                    clean_line = line.rstrip('\n')
-
-                    if regex.search(clean_line):
-                        # Found match
-                        line_num = i + 1
-
-                        c_before = []
-                        if context_lines > 0:
-                            start = max(0, i - context_lines)
-                            c_before = [l.rstrip('\n') for l in file_lines[start:i]]
-
-                        c_after = []
-                        if context_lines > 0:
-                            end = min(len(file_lines), i + 1 + context_lines)
-                            c_after = [l.rstrip('\n') for l in file_lines[i+1:end]]
-
-                        results.append({
-                            "file": str(file_path.relative_to(project_dir)),
-                            "line": line_num,
-                            "content": clean_line,
-                            "context_before": c_before,
-                            "context_after": c_after
-                        })
-            except Exception:
-                # Skip unreadable files
-                continue
+            scan_file(file_path)
 
     return results

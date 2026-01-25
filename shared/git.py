@@ -335,3 +335,43 @@ def discard_changes(project_dir: Path, file_path: str) -> bool:
 def pull_changes(project_dir: Path) -> bool:
     """Pulls changes from origin."""
     return run_git(["pull"], project_dir)
+
+
+def get_all_git_files(project_dir: Path) -> list[str]:
+    """
+    Returns a list of all files in the repository (tracked + untracked),
+    excluding ignored files. Paths are relative to project_dir.
+    """
+    try:
+        # Tracked files
+        cmd_tracked = ["git", "ls-files", "-z"]
+        res_tracked = subprocess.run(
+            cmd_tracked,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        tracked = res_tracked.stdout.split('\0')
+
+        # Untracked files (excluding ignored)
+        cmd_untracked = ["git", "ls-files", "-z", "--others", "--exclude-standard"]
+        res_untracked = subprocess.run(
+            cmd_untracked,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        untracked = res_untracked.stdout.split('\0')
+
+        # Combine and remove empty strings
+        all_files = set(tracked + untracked)
+        if '' in all_files:
+            all_files.remove('')
+
+        return sorted(list(all_files))
+
+    except Exception as e:
+        logger.error(f"Error listing git files: {e}")
+        return []

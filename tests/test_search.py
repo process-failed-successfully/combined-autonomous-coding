@@ -115,5 +115,33 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['content'], "123")
 
+    @patch("shared.search.get_all_git_files")
+    @patch("shared.search.shutil.which")
+    def test_search_python_git_optimization(self, mock_which, mock_get_git_files):
+        # Setup: It looks like a git repo (has .git), git is available
+        mock_which.return_value = "/usr/bin/git"
+        if not (self.project_dir / ".git").exists():
+            (self.project_dir / ".git").mkdir()
+
+        # Mock get_all_git_files to return our file
+        # Note: path relative to project_dir
+        mock_get_git_files.return_value = ["test.py"]
+
+        # Create file
+        (self.project_dir / "test.py").write_text("hello world")
+
+        # Call with use_git_grep=False to force python path
+        results = search_codebase(
+            self.project_dir,
+            "hello",
+            use_git_grep=False
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['file'], "test.py")
+
+        # Verify get_all_git_files was called
+        mock_get_git_files.assert_called_once()
+
 if __name__ == '__main__':
     unittest.main()

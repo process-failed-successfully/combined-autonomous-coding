@@ -8,8 +8,10 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
+from unittest.mock import patch
 from shared.utils import execute_read_block, execute_write_block
 
+@patch("shared.telemetry.get_telemetry")
 class TestUtilsSecurity(unittest.TestCase):
 
     def setUp(self):
@@ -26,7 +28,7 @@ class TestUtilsSecurity(unittest.TestCase):
         shutil.rmtree(self.test_dir)
         shutil.rmtree(self.outside_dir)
 
-    def test_read_block_path_traversal(self):
+    def test_read_block_path_traversal(self, mock_telemetry):
         """Test that execute_read_block prevents reading files outside project_dir."""
 
         # Try to read the file using relative path traversal
@@ -41,7 +43,7 @@ class TestUtilsSecurity(unittest.TestCase):
         self.assertIn("Error: Access denied", result)
         self.assertNotIn("SECRET_CONTENT", result)
 
-    def test_write_block_path_traversal(self):
+    def test_write_block_path_traversal(self, mock_telemetry):
         """Test that execute_write_block prevents writing files outside project_dir."""
 
         rel_path = f"../{os.path.basename(self.outside_dir)}/hacked.txt"
@@ -54,7 +56,7 @@ class TestUtilsSecurity(unittest.TestCase):
         target_file = Path(self.outside_dir) / "hacked.txt"
         self.assertFalse(target_file.exists())
 
-    def test_read_block_valid_file(self):
+    def test_read_block_valid_file(self, mock_telemetry):
         """Test that execute_read_block works for valid files."""
         filename = "valid.txt"
         with open(self.project_dir / filename, "w") as f:
@@ -63,7 +65,7 @@ class TestUtilsSecurity(unittest.TestCase):
         result = execute_read_block(filename, self.project_dir)
         self.assertIn("valid content", result)
 
-    def test_write_block_valid_file(self):
+    def test_write_block_valid_file(self, mock_telemetry):
         """Test that execute_write_block works for valid files."""
         filename = "new_file.txt"
         content = "new content"

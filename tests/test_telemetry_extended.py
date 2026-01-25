@@ -1,14 +1,25 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import logging
+import tempfile
+import shutil
+import os
 from shared.telemetry import Telemetry, get_telemetry, init_telemetry
 
 
 class TestTelemetryExtended(unittest.TestCase):
     def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.patcher = patch("shared.telemetry.LOG_DIR", os.path.join(self.test_dir, "logs"))
+        self.mock_log_dir = self.patcher.start()
+
         # Reset singleton logic if needed or just instantiate directly
         self.telemetry = Telemetry("test_agent", "test_job")
         self.telemetry.synchronous_mode = True
+
+    def tearDown(self):
+        self.patcher.stop()
+        shutil.rmtree(self.test_dir)
 
     @patch("shared.telemetry.push_to_gateway")
     def test_record_histogram(self, mock_push):

@@ -72,7 +72,8 @@ class TestGeminiAgent(unittest.IsolatedAsyncioTestCase):
 
     @patch("agents.gemini.agent.GeminiClient")
     @patch("agents.gemini.agent.get_file_tree")
-    async def test_run_agent_session_candidates_format(self, mock_get_tree, mock_client_cls):
+    @patch("agents.gemini.agent.get_telemetry")
+    async def test_run_agent_session_candidates_format(self, mock_telemetry, mock_get_tree, mock_client_cls):
         mock_client_instance = mock_client_cls.return_value
         mock_client_instance.config = self.config
         # Mock Gemini response with "candidates" format

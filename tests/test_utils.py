@@ -43,9 +43,10 @@ MOCK_BROKEN_JSON_BLOCK = """
 """
 
 
+@patch("shared.telemetry.get_telemetry")
 class TestProcessResponseBlocks(unittest.IsolatedAsyncioTestCase):
 
-    async def test_process_bash_block(self):
+    async def test_process_bash_block(self, mock_telemetry):
         project_dir = Path("/tmp/test_project")
 
         with patch(
@@ -61,7 +62,7 @@ class TestProcessResponseBlocks(unittest.IsolatedAsyncioTestCase):
                 'echo "hello"', project_dir, timeout=120.0
             )
 
-    async def test_process_write_block(self):
+    async def test_process_write_block(self, mock_telemetry):
         project_dir = Path("/tmp/test_project")
 
         with patch("shared.utils.execute_write_block") as mock_write:
@@ -72,7 +73,7 @@ class TestProcessResponseBlocks(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Wrote File: test.txt", actions)
             mock_write.assert_called_once_with("test.txt", "content", project_dir)
 
-    async def test_process_mixed_blocks(self):
+    async def test_process_mixed_blocks(self, mock_telemetry):
         project_dir = Path("/tmp/test_project")
 
         with (
@@ -94,7 +95,7 @@ class TestProcessResponseBlocks(unittest.IsolatedAsyncioTestCase):
             mock_write.assert_called_once()
             mock_bash.assert_called_once()
 
-    async def test_process_malformed_block(self):
+    async def test_process_malformed_block(self, mock_telemetry):
         project_dir = Path("/tmp/test_project")
 
         log, actions = await process_response_blocks(

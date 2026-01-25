@@ -10,13 +10,22 @@ try:
 except ImportError:
     psutil = None
 from typing import Dict, Any, Optional, List, Tuple
-from prometheus_client import (
-    CollectorRegistry,
-    Gauge,
-    Counter,
-    Histogram,
-    push_to_gateway,
-)
+try:
+    from prometheus_client import (
+        CollectorRegistry,
+        Gauge,
+        Counter,
+        Histogram,
+        push_to_gateway,
+    )
+    DEFAULT_BUCKETS = Histogram.DEFAULT_BUCKETS
+except ImportError:
+    CollectorRegistry = None
+    Gauge = None
+    Counter = None
+    Histogram = None
+    push_to_gateway = None
+    DEFAULT_BUCKETS = ()
 
 # Configuration
 PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "localhost:9081")
@@ -38,7 +47,10 @@ class Telemetry:
         self.job_name = job_name
         self.agent_type = agent_type
         self.project_name = project_name
-        self.registry = CollectorRegistry()
+        if CollectorRegistry:
+            self.registry = CollectorRegistry()
+        else:
+            self.registry = None
         self.metrics: Dict[str, Any] = {}
 
         # Optimization: Cache default labels per metric to avoid re-calculation
@@ -274,6 +286,8 @@ class Telemetry:
         self._metric_defaults[name] = defaults
 
     def register_gauge(self, name: str, documentation: str, labelnames: List[str] = []):
+        if not Gauge:
+            return
         if name not in self.metrics:
             self.metrics[name] = Gauge(
                 name, documentation, labelnames=labelnames, registry=self.registry
@@ -281,6 +295,8 @@ class Telemetry:
             self._cache_defaults(name, labelnames)
 
     def register_counter(self, name: str, documentation: str, labelnames: List[str] = []):
+        if not Counter:
+            return
         if name not in self.metrics:
             self.metrics[name] = Counter(
                 name, documentation, labelnames=labelnames, registry=self.registry
@@ -292,8 +308,10 @@ class Telemetry:
         name: str,
         documentation: str,
         labelnames: List[str] = [],
-        buckets: Tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
+        buckets: Tuple[float, ...] = DEFAULT_BUCKETS,
     ):
+        if not Histogram:
+            return
         if name not in self.metrics:
             self.metrics[name] = Histogram(
                 name,
@@ -379,6 +397,8 @@ class Telemetry:
 
     def _push_metrics_sync(self):
         """Synchronous version of push metrics for background thread or final flush."""
+        if not push_to_gateway:
+            return
         try:
             grouping_key = {
                 "instance": socket.gethostname(),

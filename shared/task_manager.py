@@ -113,6 +113,56 @@ class TaskManager:
         except Exception:
             return []
 
+    def update_task_status(self, task_id: str, new_status: str, source: str) -> bool:
+        """Updates the status of a task in its source system."""
+        if source == "sprint":
+            return self._update_sprint_task(task_id, new_status)
+        elif source == "jira":
+            return self._update_jira_task(task_id, new_status)
+        # GitHub and TODOs are not yet supported for status updates
+        return False
+
+    def _update_sprint_task(self, task_id: str, new_status: str) -> bool:
+        sprint_plan_path = self.project_dir / "sprint_plan.json"
+        if not sprint_plan_path.exists():
+            return False
+
+        try:
+            data = json.loads(sprint_plan_path.read_text())
+            updated = False
+            # task_id for sprint is "SPRINT-{id}"
+            raw_id = task_id.replace("SPRINT-", "")
+
+            for task in data.get("tasks", []):
+                if str(task.get("id")) == raw_id:
+                    task["status"] = new_status
+                    updated = True
+                    break
+
+            if updated:
+                sprint_plan_path.write_text(json.dumps(data, indent=2))
+                return True
+            return False
+        except Exception:
+            return False
+
+    def _update_jira_task(self, task_id: str, new_status: str) -> bool:
+        # Load Jira config
+        jira_cfg = self.config.get("jira", {})
+        url = jira_cfg.get("url") or os.environ.get("JIRA_URL")
+        email = jira_cfg.get("email") or os.environ.get("JIRA_EMAIL")
+        token = jira_cfg.get("token") or os.environ.get("JIRA_TOKEN")
+
+        if not (url and email and token):
+            return False
+
+        try:
+            config = JiraConfig(url=url, email=email, token=token)
+            client = JiraClient(config)
+            return client.transition_issue(task_id, new_status)
+        except Exception:
+            return False
+
     def fetch_sprint_tasks(self) -> List[Task]:
         """Fetches tasks from sprint_plan.json."""
         sprint_plan_path = self.project_dir / "sprint_plan.json"

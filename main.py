@@ -102,6 +102,20 @@ if FileSystemEventHandler:
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 
+def run_docs(args):
+    """Manages the static documentation site."""
+    from shared.docs import DocsManager
+    project_dir = args.project_dir.resolve()
+    manager = DocsManager(project_dir)
+
+    if args.action == "init":
+        manager.init()
+    elif args.action == "build":
+        manager.build()
+    elif args.action == "serve":
+        manager.serve(port=args.port)
+    sys.exit(0)
+
 def run_serve(args):
     """Starts a local development server."""
     project_dir = args.project_dir.resolve()
@@ -9048,6 +9062,29 @@ def parse_args(argv=None):
         help="Print the start command without running it."
     )
 
+    # --- New 'docs' command ---
+    parser_docs = subparsers.add_parser(
+        "docs",
+        help="Manage the static documentation site."
+    )
+    docs_subparsers = parser_docs.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+    # docs init
+    parser_docs_init = docs_subparsers.add_parser("init", help="Initialize docs structure.")
+    parser_docs_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # docs build
+    parser_docs_build = docs_subparsers.add_parser("build", help="Build the static site.")
+    parser_docs_build.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # docs serve
+    parser_docs_serve = docs_subparsers.add_parser("serve", help="Serve the static site.")
+    parser_docs_serve.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_docs_serve.add_argument("--port", type=int, default=8000, help="Port to bind to (default: 8000).")
+
     # --- New 'scheduler' command ---
     parser_scheduler = subparsers.add_parser(
         "scheduler",
@@ -11730,6 +11767,10 @@ async def main():
 
     if args.command == "serve":
         run_serve(args)
+        return
+
+    if args.command == "docs":
+        run_docs(args)
         return
 
     if args.command == "scheduler":

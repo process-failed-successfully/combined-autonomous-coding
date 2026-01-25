@@ -563,6 +563,51 @@ dashboard_state.json
     sys.exit(0)
 
 
+def run_guardrails(args):
+    """Manages project guardrails (policy enforcement)."""
+    from shared.guardrails import GuardrailsManager
+
+    project_dir = args.project_dir.resolve()
+    manager = GuardrailsManager(project_dir)
+
+    print(f"--- Guardrails in: {project_dir} ---")
+
+    if args.action == "init":
+        try:
+            path = manager.create_default_config()
+            print(f"✅ Created default configuration at: {path}")
+        except Exception as e:
+            print(f"❌ Error creating configuration: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "list":
+        if not manager.policies:
+            print("No policies configured. Run 'init' to create a default configuration.")
+        else:
+            print("Active Policies:")
+            for p in manager.policies:
+                p_type = p.config.get("type", "unknown")
+                print(f"  - {p.name} ({p_type})")
+
+    elif args.action == "check":
+        print("Running policy checks...")
+        violations = manager.run()
+
+        if not violations:
+            print("\n✅ All checks passed.")
+            sys.exit(0)
+        else:
+            print(f"\n❌ Found {len(violations)} violations:")
+            for v in violations:
+                loc = v.file or "Project"
+                if v.line:
+                    loc += f":{v.line}"
+                print(f"  - [{v.policy_name}] {v.message} ({loc})")
+            sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_validate():
     """Validates the agent_config.yaml file."""
     print("--- Validating Agent Configuration ---")
@@ -8792,6 +8837,29 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'guardrails' command ---
+    parser_guardrails = subparsers.add_parser(
+        "guardrails",
+        help="Enforce project policies and standards."
+    )
+    guardrails_subparsers = parser_guardrails.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # guardrails init
+    parser_gr_init = guardrails_subparsers.add_parser("init", help="Create default configuration.")
+    parser_gr_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # guardrails list
+    parser_gr_list = guardrails_subparsers.add_parser("list", help="List active policies.")
+    parser_gr_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # guardrails check
+    parser_gr_check = guardrails_subparsers.add_parser("check", help="Run policy checks.")
+    parser_gr_check.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -11352,6 +11420,10 @@ async def main():
 
     if args.command == "research":
         run_research_logic(args.url, args.depth, args.limit)
+        return
+
+    if args.command == "guardrails":
+        run_guardrails(args)
         return
 
     if args.command == "presentation":

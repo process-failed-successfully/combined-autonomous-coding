@@ -52,6 +52,7 @@ from shared.prompt_lab import PromptLabManager
 from shared.scaffold import ScaffoldManager
 from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
+from shared.tui_guardrails import GuardrailsTab
 
 
 # Helper to get Git info safely
@@ -4062,6 +4063,8 @@ class AgentTUI(App):
                 yield AnalyticsTab(self.project_dir)
             with TabPane("Security", id="tab-security"):
                 yield SecurityTab(self.project_dir)
+            with TabPane("Guardrails", id="tab-guardrails"):
+                yield GuardrailsTab(self.project_dir)
             with TabPane("Health", id="tab-health"):
                 yield HealthTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):

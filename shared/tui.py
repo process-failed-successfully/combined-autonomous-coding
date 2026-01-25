@@ -57,6 +57,7 @@ from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
 from shared.tui_regex import RegexLabTab
+from shared.tui_datalab import DataLabTab
 
 
 # Helper to get Git info safely
@@ -3994,6 +3995,8 @@ class AgentTUI(App):
                 yield TimelineTab(self.project_dir)
             with TabPane("Log Explorer", id="tab-logs"):
                 yield LogExplorerTab(self.project_dir)
+            with TabPane("Data Lab", id="tab-datalab"):
+                yield DataLabTab(self.project_dir)
             with TabPane("Database", id="tab-database"):
                 yield DatabaseTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):

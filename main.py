@@ -75,6 +75,7 @@ from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
 from shared.scheduler import Scheduler
+from shared.chaos import run_chaos_logic
 import json
 import yaml
 import platformdirs
@@ -132,6 +133,16 @@ def run_scheduler(args):
         scheduler.load_config()
         scheduler.start()
 
+    sys.exit(0)
+
+def run_chaos(args):
+    """Runs chaos engineering experiments."""
+    run_chaos_logic(
+        project_dir=args.project_dir,
+        action=args.action,
+        dry_run=args.dry_run,
+        yes=args.yes
+    )
     sys.exit(0)
 
 def run_network(args):
@@ -9003,6 +9014,33 @@ def parse_args(argv=None):
     parser_scheduler_start = scheduler_subparsers.add_parser("start", help="Start the scheduler loop.")
     parser_scheduler_start.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'chaos' command ---
+    parser_chaos = subparsers.add_parser(
+        "chaos",
+        help="Run chaos engineering experiments to test resilience."
+    )
+    chaos_subparsers = parser_chaos.add_subparsers(
+        dest="action",
+        required=True,
+        help="Chaos experiment to run."
+    )
+
+    # chaos list
+    parser_chaos_list = chaos_subparsers.add_parser("list", help="List available experiments.")
+    parser_chaos_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # chaos kill-process
+    parser_chaos_kill = chaos_subparsers.add_parser("kill-process", help="Kill random development processes.")
+    parser_chaos_kill.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_chaos_kill.add_argument("--dry-run", action="store_true", help="Simulate the action.")
+    parser_chaos_kill.add_argument("-y", "--yes", action="store_true", help="Skip confirmation.")
+
+    # chaos file-jitter
+    parser_chaos_jitter = chaos_subparsers.add_parser("file-jitter", help="Touch random source files.")
+    parser_chaos_jitter.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_chaos_jitter.add_argument("--dry-run", action="store_true", help="Simulate the action.")
+    parser_chaos_jitter.add_argument("-y", "--yes", action="store_true", help="Skip confirmation.")
+
     # --- New 'guardrails' command ---
     parser_guardrails = subparsers.add_parser(
         "guardrails",
@@ -11634,6 +11672,10 @@ async def main():
 
     if args.command == "scheduler":
         run_scheduler(args)
+        return
+
+    if args.command == "chaos":
+        run_chaos(args)
         return
 
     if args.command == "guardrails":

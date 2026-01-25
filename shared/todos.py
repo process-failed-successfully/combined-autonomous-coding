@@ -4,6 +4,7 @@ import subprocess
 import re
 from pathlib import Path
 from typing import List, Dict, Optional, Set
+from shared.git import get_all_git_files
 
 DEFAULT_TAGS = ["TODO", "FIXME", "BUG", "HACK", "NOTE", "XXX"]
 
@@ -145,6 +146,39 @@ def _scan_with_python(
     """Fallback python scanning."""
     parsed_results = []
 
+    # Helper to scan a single file
+    def scan_file(file_path: Path):
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for i, line in enumerate(f, 1):
+                    if any(tag in line for tag in tags):
+                        match = line_parser.search(line)
+                        if match:
+                            parsed_results.append({
+                                "file": str(file_path.relative_to(project_dir)),
+                                "line": i,
+                                "tag": match.group("tag").upper(),
+                                "text": match.group("text").strip(),
+                                "raw_content": line.strip()
+                            })
+        except Exception:
+            pass
+
+    # Optimization: Use git ls-files if available
+    if is_git_repo and git_path:
+        git_files = get_all_git_files(project_dir)
+        if git_files:
+            for rel_path in git_files:
+                file_path = project_dir / rel_path
+
+                # Check excludes
+                if any(str(file_path).startswith(str(project_dir / excl)) for excl in exclude_paths):
+                    continue
+
+                scan_file(file_path)
+            return parsed_results
+
+    # Fallback to os.walk for non-git repos
     # Helper to check ignores
     def is_ignored(path: Path) -> bool:
         if is_git_repo and git_path:
@@ -177,25 +211,7 @@ def _scan_with_python(
             if is_ignored(file_path):
                 continue
 
-            try:
-                # Skip binary files check? Simple check for null byte
-                # Reading line by line
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    for i, line in enumerate(f, 1):
-                        # Quick check before regex
-                        if any(tag in line for tag in tags):
-                            match = line_parser.search(line)
-                            if match:
-                                parsed_results.append({
-                                    "file": str(file_path.relative_to(project_dir)),
-                                    "line": i,
-                                    "tag": match.group("tag").upper(),
-                                    "text": match.group("text").strip(),
-                                    "raw_content": line.strip()
-                                })
-            except Exception:
-                # Skip unreadable files
-                continue
+            scan_file(file_path)
 
     return parsed_results
 

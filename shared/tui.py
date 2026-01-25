@@ -58,6 +58,7 @@ from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_datalab import DataLabTab
+from shared.tui_chaos import ChaosTab
 
 
 # Helper to get Git info safely
@@ -3941,6 +3942,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
+            with TabPane("Chaos", id="tab-chaos"):
+                yield ChaosTab(self.project_dir)
             with TabPane("Config", id="tab-config"):
                 yield ConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):

@@ -55,6 +55,7 @@ from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
+from shared.tui_kanban import KanbanBoard, KanbanTask, TaskMoved
 
 
 # Helper to get Git info safely
@@ -686,7 +687,11 @@ class TasksTab(Container):
                 yield Select.from_values(["All", "GitHub", "Jira", "Sprint", "TODO"], id="select-task-source", value="All")
                 yield Input(placeholder="Filter by title...", id="input-task-filter")
 
-            yield DataTable(id="tasks-table")
+            with TabbedContent():
+                with TabPane("List View"):
+                    yield DataTable(id="tasks-table")
+                with TabPane("Kanban Board"):
+                    yield KanbanBoard(id="kanban-board")
 
     def on_mount(self) -> None:
         table = self.query_one("#tasks-table", DataTable)
@@ -697,12 +702,17 @@ class TasksTab(Container):
     def load_tasks(self) -> None:
         table = self.query_one("#tasks-table", DataTable)
         table.clear()
+
+        kanban = self.query_one("#kanban-board", KanbanBoard)
+        kanban.clear()
+
         self.notify("Loading tasks...", timeout=1)
 
         try:
             tasks = self.task_manager.fetch_all_tasks()
             self.tasks_cache = tasks
             self._update_table(tasks)
+            self._update_kanban(tasks)
             self.notify(f"Loaded {len(tasks)} tasks.")
         except Exception as e:
             self.notify(f"Error fetching tasks: {e}", severity="error")
@@ -721,14 +731,10 @@ class TasksTab(Container):
             if filter_text and filter_text not in task.title.lower():
                 continue
 
-            # Color code status/priority?
-            # Textual DataTables use Rich Renderables.
-
             source_display = task.source.upper()
             status_display = task.status
             priority_display = task.priority
 
-            # Simple color formatting tags
             if task.priority == "High":
                 priority_display = f"[red]{task.priority}[/red]"
             elif task.priority == "Low":
@@ -736,17 +742,68 @@ class TasksTab(Container):
 
             table.add_row(source_display, task.id, task.title, status_display, priority_display)
 
+    def _update_kanban(self, tasks: list[Task]) -> None:
+        kanban = self.query_one("#kanban-board", KanbanBoard)
+        kanban.clear()
+
+        source_filter = self.query_one("#select-task-source", Select).value or "All"
+        filter_text = self.query_one("#input-task-filter", Input).value.lower()
+
+        for task in tasks:
+            if source_filter != "All" and task.source.lower() != source_filter.lower():
+                continue
+
+            if filter_text and filter_text not in task.title.lower():
+                continue
+
+            k_task = KanbanTask(
+                id=task.id,
+                title=task.title,
+                status=task.status,
+                priority=task.priority,
+                source=task.source
+            )
+            kanban.add_task(k_task)
+
     @on(Button.Pressed, "#btn-tasks-refresh")
     def refresh_tasks(self):
         self.load_tasks()
 
     @on(Select.Changed, "#select-task-source")
     def filter_source(self):
-        self._update_table(self.tasks_cache)
+        self.load_tasks()
 
     @on(Input.Changed, "#input-task-filter")
     def filter_text(self):
-        self._update_table(self.tasks_cache)
+        self.load_tasks()
+
+    @on(TaskMoved)
+    async def on_task_moved(self, event: TaskMoved) -> None:
+        task_id = event.task_id
+        new_status = event.new_status
+
+        task = next((t for t in self.tasks_cache if t.id == task_id), None)
+        if not task:
+            self.notify(f"Task {task_id} not found.", severity="error")
+            return
+
+        self.notify(f"Updating task {task_id} to {new_status}...")
+
+        import asyncio
+        success = await asyncio.to_thread(
+            self.task_manager.update_task_status,
+            task_id,
+            task.source,
+            new_status
+        )
+
+        if success:
+            self.notify(f"Task {task_id} updated.")
+            self.load_tasks()
+        else:
+            self.notify(f"Failed to update task {task_id}.", severity="error")
+            # Reload to revert UI state
+            self.load_tasks()
 
 class GitTab(Container):
     """Tab for viewing and managing Git."""

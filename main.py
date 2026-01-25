@@ -3340,6 +3340,26 @@ async def run_summarize(args):
     sys.exit(0 if success else 1)
 
 
+async def run_estimate(args):
+    """Estimates the complexity and effort of a feature."""
+    from shared.estimate import run_estimate_logic
+
+    # Setup logging
+    logger, _ = setup_logger(name="estimate_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    files = [f.strip() for f in args.files.split(",")] if args.files else None
+
+    success = await run_estimate_logic(
+        feature_description=args.feature,
+        project_dir=args.project_dir,
+        files=files,
+        agent_type=args.agent,
+        model=args.model,
+        verbose=args.verbose
+    )
+    sys.exit(0 if success else 1)
+
+
 def run_context(args):
     """Displays an analysis of the agent's context."""
     if args.action == "show":
@@ -8115,6 +8135,43 @@ def parse_args(argv=None):
         help="The project directory."
     )
 
+    # --- New 'estimate' command ---
+    parser_estimate = subparsers.add_parser(
+        "estimate",
+        help="Estimate complexity and effort for a feature."
+    )
+    parser_estimate.add_argument(
+        "feature",
+        help="Description of the feature to estimate."
+    )
+    parser_estimate.add_argument(
+        "--files",
+        type=str,
+        help="Comma-separated list of file patterns to include as context."
+    )
+    parser_estimate.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_estimate.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_estimate.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_estimate.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+
     # --- New 'release' command ---
     parser_release = subparsers.add_parser(
         "release",
@@ -11194,6 +11251,11 @@ async def main():
     # Handle `plan` command
     if args.command == "plan":
         await run_plan(args)
+        return
+
+    # Handle `estimate` command
+    if args.command == "estimate":
+        await run_estimate(args)
         return
 
     # Handle `config` command

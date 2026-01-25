@@ -53,6 +53,7 @@ from shared.scaffold import ScaffoldManager
 from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
+from shared.tui_env import EnvTab
 
 
 # Helper to get Git info safely
@@ -4087,6 +4088,8 @@ class AgentTUI(App):
                 yield DatabaseTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):
                 yield SecretsTab(self.project_dir)
+            with TabPane("Env", id="tab-env"):
+                yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
             with TabPane("Cost", id="tab-cost"):

@@ -32,6 +32,7 @@ from shared.map import scan_project, CodeNode
 from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
+from shared.replace import replace_in_codebase
 from shared.work_session import WorkSessionManager, Session
 from shared.troubleshoot import TroubleshootManager
 from shared.worktree import WorktreeManager
@@ -1662,11 +1663,17 @@ class SearchTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.replace_preview_data = {}
 
     def compose(self) -> ComposeResult:
         with Horizontal(classes="stat-box"):
             yield Input(placeholder="Search pattern...", id="search-input")
             yield Button("Search", id="btn-search", variant="primary")
+
+        with Horizontal(classes="stat-box"):
+            yield Input(placeholder="Replacement...", id="replace-input")
+            yield Button("Preview Replace", id="btn-preview-replace", variant="warning")
+            yield Button("Apply Replace", id="btn-apply-replace", variant="error", disabled=True)
 
         with Horizontal(classes="stat-box"):
             yield Checkbox("Case Sensitive", id="chk-case")
@@ -1687,10 +1694,98 @@ class SearchTab(Container):
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-search":
             await self.perform_search()
+        elif event.button.id == "btn-preview-replace":
+            await self.preview_replace()
+        elif event.button.id == "btn-apply-replace":
+            await self.apply_replace()
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "search-input":
             await self.perform_search()
+
+    async def preview_replace(self) -> None:
+        pattern = self.query_one("#search-input", Input).value
+        replacement = self.query_one("#replace-input", Input).value
+
+        if not pattern:
+            self.notify("Search pattern required.", severity="error")
+            return
+
+        case_sensitive = self.query_one("#chk-case", Checkbox).value
+        is_regex = self.query_one("#chk-regex", Checkbox).value
+        file_pattern = self.query_one("#file-pattern-input", Input).value
+
+        log = self.query_one("#search-preview", RichLog)
+        log.clear()
+        self.notify("Generating preview...")
+
+        import asyncio
+        try:
+            # Run in thread
+            stats = await asyncio.to_thread(
+                replace_in_codebase,
+                self.project_dir,
+                pattern,
+                replacement,
+                file_pattern=file_pattern if file_pattern else None,
+                case_sensitive=case_sensitive,
+                is_regex=is_regex,
+                dry_run=True
+            )
+
+            self.replace_preview_data = stats
+
+            log.write(f"[bold]Preview Replace: {pattern} -> {replacement}[/bold]")
+            log.write(f"Files matched: {stats['files_matched']}")
+            log.write(f"Files changed: {stats['files_changed']}")
+            log.write(f"Replacements: {stats['replacements_count']}")
+
+            if stats['files_changed'] > 0:
+                self.query_one("#btn-apply-replace").disabled = False
+                log.write("\n[bold]Diffs:[/bold]")
+                for file, diff in stats['diffs'].items():
+                    log.write(f"\n[bold]{file}[/bold]")
+                    log.write(Syntax(diff, "diff", theme="monokai"))
+            else:
+                self.query_one("#btn-apply-replace").disabled = True
+                log.write("\nNo changes detected.")
+
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+            log.write(f"[red]Error: {e}[/red]")
+
+    async def apply_replace(self) -> None:
+        pattern = self.query_one("#search-input", Input).value
+        replacement = self.query_one("#replace-input", Input).value
+
+        # Re-fetch params to be safe
+        case_sensitive = self.query_one("#chk-case", Checkbox).value
+        is_regex = self.query_one("#chk-regex", Checkbox).value
+        file_pattern = self.query_one("#file-pattern-input", Input).value
+
+        self.notify("Applying replacements...")
+
+        import asyncio
+        try:
+            stats = await asyncio.to_thread(
+                replace_in_codebase,
+                self.project_dir,
+                pattern,
+                replacement,
+                file_pattern=file_pattern if file_pattern else None,
+                case_sensitive=case_sensitive,
+                is_regex=is_regex,
+                dry_run=False
+            )
+
+            self.notify(f"Replaced {stats['replacements_count']} occurrences in {stats['files_changed']} files.")
+            self.query_one("#btn-apply-replace").disabled = True
+
+            # Refresh search results
+            await self.perform_search()
+
+        except Exception as e:
+            self.notify(f"Error applying replace: {e}", severity="error")
 
     async def perform_search(self) -> None:
         query = self.query_one("#search-input", Input).value

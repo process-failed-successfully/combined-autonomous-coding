@@ -122,5 +122,26 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             log = tab.query_one("#terminal-log", RichLog)
             self.assertTrue(len(log.lines) > 0)
 
+    @patch("asyncio.create_subprocess_shell")
+    async def test_run_command_no_stdout(self, mock_subprocess):
+        """Test run_command handles missing stdout gracefully (no infinite loop)."""
+        # Mock process with no stdout
+        mock_process = AsyncMock()
+        mock_process.stdout = None
+        mock_process.returncode = 0
+        mock_subprocess.return_value = mock_process
+
+        async with self.app.run_test() as pilot:
+            tab = self.app.query_one(TerminalTab)
+            inp = tab.query_one("#terminal-input", Input)
+
+            # Type command
+            inp.value = "echo 'test'"
+            await inp.action_submit()
+            await pilot.pause(0.2)
+
+            # Should not hang and complete
+            mock_subprocess.assert_called()
+
 if __name__ == "__main__":
     unittest.main()

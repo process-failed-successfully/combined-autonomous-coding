@@ -8926,6 +8926,49 @@ def parse_args(argv=None):
     parser_perf_report.add_argument("-s", "--sort", default="tottime", choices=["tottime", "cumtime", "ncalls"], help="Sort key.")
     parser_perf_report.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
 
+    # --- New 'snippets' command ---
+    parser_snippets = subparsers.add_parser(
+        "snippets",
+        help="Manage code snippets and components."
+    )
+    snippets_subparsers = parser_snippets.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # snippets list
+    parser_snippets_list = snippets_subparsers.add_parser("list", help="List available snippets.")
+    parser_snippets_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # snippets show
+    parser_snippets_show = snippets_subparsers.add_parser("show", help="Show snippet content.")
+    parser_snippets_show.add_argument("name", help="Snippet name.")
+    parser_snippets_show.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # snippets add
+    parser_snippets_add = snippets_subparsers.add_parser("add", help="Add a snippet from a file.")
+    parser_snippets_add.add_argument("name", help="Snippet name.")
+    parser_snippets_add.add_argument("file", help="Source file path.")
+    parser_snippets_add.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # snippets create
+    parser_snippets_create = snippets_subparsers.add_parser("create", help="Create a snippet interactively.")
+    parser_snippets_create.add_argument("name", help="Snippet name.")
+    parser_snippets_create.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # snippets delete
+    parser_snippets_delete = snippets_subparsers.add_parser("delete", help="Delete a snippet.")
+    parser_snippets_delete.add_argument("name", help="Snippet name.")
+    parser_snippets_delete.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # snippets apply
+    parser_snippets_apply = snippets_subparsers.add_parser("apply", help="Apply a snippet to a file.")
+    parser_snippets_apply.add_argument("name", help="Snippet name.")
+    parser_snippets_apply.add_argument("target", help="Target file path.")
+    parser_snippets_apply.add_argument("--mode", choices=["append", "prepend", "overwrite"], default="append", help="Application mode (default: append).")
+    parser_snippets_apply.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'dataset' command ---
     parser_dataset = subparsers.add_parser(
         "dataset",
@@ -10590,6 +10633,86 @@ def run_dataset(args):
     sys.exit(0)
 
 
+def run_snippets(args):
+    """Manages code snippets."""
+    from shared.snippets import SnippetManager
+
+    project_dir = args.project_dir.resolve()
+    manager = SnippetManager(project_dir)
+
+    if args.action == "list":
+        snippets = manager.list_snippets()
+        if not snippets:
+            print("No snippets found.")
+        else:
+            print("--- Snippets ---")
+            for s in snippets:
+                print(f"  - {s}")
+
+    elif args.action == "show":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+        content = manager.get_snippet(args.name)
+        if content is None:
+            print(f"Snippet '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+        print(content)
+
+    elif args.action == "add":
+        if not args.name or not args.file:
+            print("Error: Name and File required.", file=sys.stderr)
+            sys.exit(1)
+
+        source_path = Path(args.file)
+        if not source_path.exists():
+            print(f"Error: File '{args.file}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        content = source_path.read_text(encoding="utf-8", errors="replace")
+        manager.create_snippet(args.name, content)
+        print(f"✅ Snippet '{args.name}' created from {args.file}")
+
+    elif args.action == "create":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Enter content for snippet '{args.name}' (Press Ctrl+D to finish):")
+        try:
+            content = sys.stdin.read()
+            manager.create_snippet(args.name, content)
+            print(f"\n✅ Snippet '{args.name}' created.")
+        except KeyboardInterrupt:
+            print("\nAborted.")
+            sys.exit(1)
+
+    elif args.action == "apply":
+        if not args.name or not args.target:
+            print("Error: Name and Target file required.", file=sys.stderr)
+            sys.exit(1)
+
+        target_path = Path(args.target)
+        if manager.apply_snippet(args.name, target_path, mode=args.mode):
+            print(f"✅ Snippet '{args.name}' applied to {args.target}")
+        else:
+            print(f"Error: Snippet '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "delete":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+
+        if manager.delete_snippet(args.name):
+            print(f"✅ Snippet '{args.name}' deleted.")
+        else:
+            print(f"Snippet '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_mock(args):
     """Generates mock data based on a JSON schema."""
     from shared.mock_data import MockDataGenerator
@@ -11790,6 +11913,10 @@ async def main():
 
     if args.command == "dataset":
         run_dataset(args)
+        return
+
+    if args.command == "snippets":
+        run_snippets(args)
         return
 
     if args.command == "mock":

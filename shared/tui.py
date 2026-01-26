@@ -62,6 +62,7 @@ from shared.tui_regex import RegexLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
+from shared.tui_scheduler import SchedulerTab
 from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
 
@@ -3981,6 +3982,8 @@ class AgentTUI(App):
                 yield DockerTab(self.project_dir)
             with TabPane("Chaos", id="tab-chaos"):
                 yield ChaosTab(self.project_dir)
+            with TabPane("Scheduler", id="tab-scheduler"):
+                yield SchedulerTab(self.project_dir)
             with TabPane("Config", id="tab-config"):
                 yield ConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):

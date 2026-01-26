@@ -52,8 +52,13 @@ class TestMainInit(unittest.TestCase):
         # Verify .gitignore was created
         gitignore_path = self.project_dir / ".gitignore"
         self.assertTrue(gitignore_path.exists())
-        self.assertIn("__pycache__/", gitignore_path.read_text())
-        self.assertIn(".agent_trash/", gitignore_path.read_text())
+        content = gitignore_path.read_text()
+        self.assertIn("__pycache__/", content)
+        self.assertIn(".agent_trash/", content)
+        # Security checks
+        self.assertIn(".agent_secrets.key", content)
+        self.assertIn(".agent_secrets.enc", content)
+        self.assertIn("agent_config.yaml", content)
 
         # Verify app_spec.txt was created with correct content
         spec_path = self.project_dir / "app_spec.txt"

@@ -623,6 +623,11 @@ venv.bak/
 worktrees/
 final_metrics.txt
 dashboard_state.json
+
+# Secrets & Configuration
+.agent_secrets.key
+.agent_secrets.enc
+agent_config.yaml
 """
                 gitignore_path.write_text(gitignore_content.strip())
                 print("✅ Created a .gitignore file.")

@@ -77,6 +77,7 @@ from shared.network import run_network_logic
 from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
 from shared.impact import ImpactAnalyzer
+from shared.autodoc import run_autodoc_logic
 import json
 import yaml
 import platformdirs
@@ -8668,6 +8669,39 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'autodoc' command ---
+    parser_autodoc = subparsers.add_parser(
+        "autodoc",
+        help="Automatically update README.md based on code and structure."
+    )
+    parser_autodoc.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_autodoc.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_autodoc.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_autodoc.add_argument(
+        "--check",
+        action="store_true",
+        help="Check if documentation is up-to-date without modifying it.",
+    )
+    parser_autodoc.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+
     # --- New 'docstring' command ---
     parser_docstring = subparsers.add_parser(
         "docstring",
@@ -9779,6 +9813,20 @@ async def run_openapi(args):
         model=args.model
     )
     sys.exit(0 if success else 1)
+
+
+async def run_autodoc(args):
+    """Automatically updates documentation."""
+    # Setup logging
+    logger, _ = setup_logger(name="autodoc_logger", log_file=None, verbose=args.verbose, console_output=True)
+
+    await run_autodoc_logic(
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        check=args.check
+    )
+    sys.exit(0)
 
 
 async def run_docstring(args):
@@ -11762,6 +11810,10 @@ async def main():
 
     if args.command == "openapi":
         await run_openapi(args)
+        return
+
+    if args.command == "autodoc":
+        await run_autodoc(args)
         return
 
     if args.command == "docstring":

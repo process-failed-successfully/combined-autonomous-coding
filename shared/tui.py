@@ -67,6 +67,7 @@ from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
+from shared.tui_adr import ADRTab
 
 
 # Helper to get Git info safely
@@ -4029,6 +4030,8 @@ class AgentTUI(App):
                 yield ConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):
                 yield DocumentationTab(self.project_dir)
+            with TabPane("ADRs", id="tab-adr"):
+                yield ADRTab(self.project_dir)
             with TabPane("Test Gen", id="tab-test-gen"):
                 yield TestGenTab(self.project_dir)
             with TabPane("Scaffold", id="tab-scaffold"):

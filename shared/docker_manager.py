@@ -26,7 +26,7 @@ class DockerManager:
         try:
             subprocess.run(["docker", "start", container_id], check=True, capture_output=True)
             return True
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             return False
 
     def stop_container(self, container_id: str) -> bool:
@@ -34,7 +34,7 @@ class DockerManager:
         try:
             subprocess.run(["docker", "stop", container_id], check=True, capture_output=True)
             return True
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             return False
 
     def restart_container(self, container_id: str) -> bool:
@@ -42,7 +42,7 @@ class DockerManager:
         try:
             subprocess.run(["docker", "restart", container_id], check=True, capture_output=True)
             return True
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             return False
 
     def get_logs(self, container_id: str, tail: int = 100) -> str:
@@ -53,6 +53,8 @@ class DockerManager:
             return result.stdout + result.stderr
         except subprocess.CalledProcessError as e:
             return f"Error fetching logs: {e.stderr}"
+        except FileNotFoundError:
+            return "Error fetching logs: Docker not found"
 
     def inspect_container(self, container_id: str) -> Optional[Dict]:
         """Returns detailed inspection data."""
@@ -63,5 +65,5 @@ class DockerManager:
             if data:
                 return data[0]
             return None
-        except (subprocess.CalledProcessError, json.JSONDecodeError):
+        except (subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
             return None

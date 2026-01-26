@@ -70,14 +70,9 @@ class TestDockerTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.2)
 
             # Verify stop called.
-            # Note: TUI calls start_container in a thread.
-            # Because of this, it's hard to assert call on the mock immediately without waiting.
-            # But in unittest, standard MagicMock isn't thread-safe for assertions if called from another thread
-            # unless we wait enough.
-            # However, asyncio.to_thread runs in a separate thread.
-
-            # Let's just verify the UI didn't crash.
-            self.assertFalse(tab.query_one("#btn-docker-stop").disabled)
+            # TUI calls start_container in a thread, so we waited with pause(0.2).
+            # We verify the mock was called.
+            mock_instance.stop_container.assert_called_with("123")
 
 if __name__ == "__main__":
     unittest.main()

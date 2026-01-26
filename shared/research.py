@@ -58,7 +58,7 @@ class ResearchManager:
             logger.error(f"Error extracting links from {url}: {e.stderr}")
             return []
 
-    def crawl(self, start_url: str, depth: int = 0, limit: int = 5) -> List[Dict[str, str]]:
+    def crawl(self, start_url: str, depth: int = 0, limit: int = 5, progress_callback=None) -> List[Dict[str, str]]:
         """
         Crawls URLs starting from start_url up to depth.
         Returns a list of dicts {url, content}.
@@ -75,9 +75,14 @@ class ResearchManager:
             visited.add(url)
 
             logger.info(f"Researching: {url} (depth {current_depth})")
+            if progress_callback:
+                progress_callback(url, "fetching")
+
             content = self.fetch_page_text(url)
 
             if content:
+                if progress_callback:
+                    progress_callback(url, "success")
                 results.append({"url": url, "content": content})
                 self.save_to_knowledge(content, url)
 

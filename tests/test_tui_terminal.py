@@ -1,10 +1,11 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock, ANY
+from unittest.mock import patch, AsyncMock, ANY
 from pathlib import Path
 import asyncio
 from textual.app import App, ComposeResult
 from textual.widgets import Input, RichLog
 from shared.tui_terminal import TerminalTab, HistoryInput
+
 
 class TerminalTestApp(App[None]):
     def __init__(self, project_dir):
@@ -13,6 +14,7 @@ class TerminalTestApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield TerminalTab(self.project_dir)
+
 
 class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -26,7 +28,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
 
     async def test_history_input(self):
         """Test HistoryInput up/down navigation."""
-        async with self.app.run_test() as pilot:
+        async with self.app.run_test() as _:
             tab = self.app.query_one(TerminalTab)
             inp = tab.query_one("#terminal-input", HistoryInput)
 
@@ -71,7 +73,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type command
             inp.value = "ls -la"
             await inp.action_submit()
-            await pilot.pause(0.5) # Wait for async execution
+            await pilot.pause(0.1)  # Wait for async execution
 
             # Verify subprocess called
             mock_subprocess.assert_called_with(
@@ -98,7 +100,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type cd ..
             inp.value = "cd .."
             await inp.action_submit()
-            await pilot.pause(0.5)
+            await pilot.pause(0.1)
 
             # Verify CWD changed
             self.assertEqual(tab.cwd, self.project_dir.parent)
@@ -113,7 +115,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type invalid cd
             inp.value = "cd /non/existent/path"
             await inp.action_submit()
-            await pilot.pause(0.5)
+            await pilot.pause(0.1)
 
             # Verify CWD NOT changed
             self.assertEqual(tab.cwd, current_cwd)
@@ -121,6 +123,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Verify error logged
             log = tab.query_one("#terminal-log", RichLog)
             self.assertTrue(len(log.lines) > 0)
+
 
 if __name__ == "__main__":
     unittest.main()

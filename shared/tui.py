@@ -62,6 +62,7 @@ from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
 from shared.tui_kanban import KanbanBoard
+from shared.tui_network import NetworkTab
 
 
 # Helper to get Git info safely
@@ -4027,6 +4028,8 @@ class AgentTUI(App):
                 yield FileExplorerTab(self.project_dir)
             with TabPane("Code Map", id="tab-codemap"):
                 yield CodeMapTab(self.project_dir)
+            with TabPane("Network", id="tab-network"):
+                yield NetworkTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):
                 yield ProfileTab(self.project_dir)
             with TabPane("Sessions", id="tab-sessions"):

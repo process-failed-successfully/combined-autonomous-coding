@@ -1,0 +1,63 @@
+import unittest
+from unittest.mock import patch, MagicMock
+from shared.docker_manager import DockerManager
+import subprocess
+import json
+
+class TestDockerManager(unittest.TestCase):
+    def setUp(self):
+        self.manager = DockerManager()
+
+    @patch("subprocess.run")
+    def test_list_containers(self, mock_run):
+        # Mock successful output
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '{"ID":"123","Image":"test"}\n{"ID":"456","Image":"prod"}'
+
+        containers = self.manager.list_containers()
+        self.assertEqual(len(containers), 2)
+        self.assertEqual(containers[0]["ID"], "123")
+        self.assertEqual(containers[1]["Image"], "prod")
+
+        # Mock empty output
+        mock_run.return_value.stdout = ""
+        containers = self.manager.list_containers()
+        self.assertEqual(len(containers), 0)
+
+        # Mock error
+        mock_run.side_effect = subprocess.CalledProcessError(1, ["docker"])
+        containers = self.manager.list_containers()
+        self.assertEqual(len(containers), 0)
+
+    @patch("subprocess.run")
+    def test_start_container(self, mock_run):
+        mock_run.return_value.returncode = 0
+        self.assertTrue(self.manager.start_container("123"))
+        mock_run.assert_called_with(["docker", "start", "123"], check=True, capture_output=True)
+
+        mock_run.side_effect = subprocess.CalledProcessError(1, ["docker"])
+        self.assertFalse(self.manager.start_container("123"))
+
+    @patch("subprocess.run")
+    def test_get_logs(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "log line 1\n"
+        mock_run.return_value.stderr = "log line 2\n"
+
+        logs = self.manager.get_logs("123", tail=50)
+        self.assertIn("log line 1", logs)
+        self.assertIn("log line 2", logs)
+        mock_run.assert_called_with(["docker", "logs", "--tail", "50", "123"], check=True, capture_output=True, text=True)
+
+    @patch("subprocess.run")
+    def test_inspect_container(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '[{"Id": "123", "State": {"Running": true}}]'
+
+        data = self.manager.inspect_container("123")
+        self.assertIsNotNone(data)
+        self.assertEqual(data["Id"], "123")
+        self.assertTrue(data["State"]["Running"])
+
+if __name__ == "__main__":
+    unittest.main()

@@ -57,6 +57,7 @@ from shared.tui_impact import ImpactTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
+from shared.tui_docker import DockerTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
@@ -3976,6 +3977,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
+            with TabPane("Docker", id="tab-docker"):
+                yield DockerTab(self.project_dir)
             with TabPane("Chaos", id="tab-chaos"):
                 yield ChaosTab(self.project_dir)
             with TabPane("Config", id="tab-config"):

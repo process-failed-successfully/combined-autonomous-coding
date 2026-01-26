@@ -70,6 +70,7 @@ from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
+from shared.tui_command_palette import NavigationProvider, ActionProvider
 
 
 # Helper to get Git info safely
@@ -4010,6 +4011,7 @@ class AgentTUI(App):
         ("q", "quit", "Quit"),
         ("d", "toggle_dark", "Toggle Dark Mode"),
     ]
+    COMMANDS = {NavigationProvider, ActionProvider}
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)

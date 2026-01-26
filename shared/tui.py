@@ -65,6 +65,7 @@ from shared.tui_bisect import BisectTab
 from shared.tui_scheduler import SchedulerTab
 from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
+from shared.tui_snippets import SnippetsTab
 
 
 # Helper to get Git info safely
@@ -4075,6 +4076,8 @@ class AgentTUI(App):
                 yield CodeMapTab(self.project_dir)
             with TabPane("Network", id="tab-network"):
                 yield NetworkTab(self.project_dir)
+            with TabPane("Snippets", id="tab-snippets"):
+                yield SnippetsTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):
                 yield ProfileTab(self.project_dir)
             with TabPane("Sessions", id="tab-sessions"):

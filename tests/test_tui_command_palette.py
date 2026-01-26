@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, AsyncMock
-from textual.style import Style
+from rich.style import Style
 from textual.command import Hit
 from textual.widgets import TabbedContent, TabPane, Button
 from shared.tui_command_palette import NavigationProvider, ActionProvider

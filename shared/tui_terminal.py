@@ -143,8 +143,8 @@ class TerminalTab(Container):
                 env=os.environ.copy()
             )
 
-            while True:
-                if process.stdout:
+            if process.stdout:
+                while True:
                     line = await process.stdout.readline()
                     if not line:
                         break

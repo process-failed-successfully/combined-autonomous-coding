@@ -375,3 +375,51 @@ def get_all_git_files(project_dir: Path) -> list[str]:
     except Exception as e:
         logger.error(f"Error listing git files: {e}")
         return []
+
+
+def get_file_diff(project_dir: Path, file_path: str, staged: bool = False) -> str:
+    """
+    Returns the diff for a specific file.
+    If staged is True, returns cached diff.
+    If file is untracked, returns file content as a new file diff.
+    """
+    try:
+        cmd = ["git", "diff", "--no-color"]
+        if staged:
+            cmd.append("--cached")
+
+        cmd.append("--") # Separator
+        cmd.append(file_path)
+
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True
+        )
+
+        diff = result.stdout
+
+        # If no diff (and not error), maybe it's untracked or new
+        if not diff and result.returncode == 0:
+            # Check if untracked
+            cmd_untracked = ["git", "ls-files", "--others", "--exclude-standard", "--", file_path]
+            res_untracked = subprocess.run(
+                cmd_untracked,
+                cwd=project_dir,
+                capture_output=True,
+                text=True
+            )
+            if res_untracked.stdout.strip():
+                # It is untracked, read content
+                try:
+                    content = (project_dir / file_path).read_text(encoding="utf-8", errors="replace")
+                    return f"--- /dev/null\n+++ b/{file_path}\n@@ -0,0 +1,{len(content.splitlines())} @@\n{content}"
+                except Exception as e:
+                    return f"Error reading untracked file: {e}"
+
+        return diff
+
+    except Exception as e:
+        logger.error(f"Error getting diff for {file_path}: {e}")
+        return f"Error getting diff: {e}"

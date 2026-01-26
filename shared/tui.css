@@ -163,3 +163,7 @@ KanbanBoard {
     min-width: 5;
     margin: 0 1;
 }
+
+.git-ops-top {
+    height: 50%;
+}

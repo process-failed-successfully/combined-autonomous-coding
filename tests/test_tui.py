@@ -30,10 +30,15 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
         self.mock_ask = self.patcher_ask.start()
 
+        # Mock DockerManager to prevent real docker calls
+        self.patcher_docker = patch("shared.tui_docker.DockerManager")
+        self.mock_docker = self.patcher_docker.start()
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
+        self.patcher_docker.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_app_startup(self):

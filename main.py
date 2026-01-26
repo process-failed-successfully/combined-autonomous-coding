@@ -158,6 +158,66 @@ def run_network(args):
     )
     sys.exit(0)
 
+def run_quiz(args):
+    """Runs the interactive codebase quiz."""
+    from shared.quiz import QuizGenerator
+
+    project_dir = args.project_dir.resolve()
+    generator = QuizGenerator(project_dir)
+
+    # Check if TUI mode requested
+    if args.tui:
+        print("Launching TUI...")
+        from shared.tui import AgentTUI
+        app = AgentTUI(project_dir=project_dir)
+        app.run()
+        sys.exit(0)
+
+    # Text Mode
+    print(f"--- Codebase Quiz: {project_dir.name} ---")
+    try:
+        questions = generator.generate_questions(count=args.count)
+    except Exception as e:
+        print(f"Error generating questions: {e}")
+        sys.exit(1)
+
+    if not questions:
+        print("No questions could be generated. Ensure there are Python files in the project.")
+        sys.exit(0)
+
+    score = 0
+    for i, q in enumerate(questions):
+        print(f"\n[Question {i+1}/{len(questions)}] {q.text}")
+        for idx, opt in enumerate(q.options):
+            print(f"  {idx+1}. {opt}")
+
+        while True:
+            try:
+                choice = input("\nYour answer (1-4): ").strip()
+                if not choice.isdigit():
+                    print("Please enter a number.")
+                    continue
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(q.options):
+                    break
+                print("Invalid choice.")
+            except (EOFError, KeyboardInterrupt):
+                print("\nAborted.")
+                sys.exit(0)
+
+        if choice_idx == q.correct_index:
+            print("✅ Correct!")
+            score += 1
+        else:
+            print(f"❌ Incorrect. The correct answer was: {q.options[q.correct_index]}")
+
+        if q.explanation:
+            print(f"   Note: {q.explanation}")
+
+    print(f"\n--- Game Over ---")
+    print(f"Final Score: {score}/{len(questions)}")
+    sys.exit(0)
+
 def run_onboard(args):
     """Runs the onboarding wizard."""
     run_onboard_logic(args.project_dir)
@@ -9352,6 +9412,29 @@ def parse_args(argv=None):
         help="Limit the number of commits to analyze for co-edits (default: 100)."
     )
 
+    # --- New 'quiz' command ---
+    parser_quiz = subparsers.add_parser(
+        "quiz",
+        help="Test your knowledge of the codebase with an interactive quiz."
+    )
+    parser_quiz.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_quiz.add_argument(
+        "-c", "--count",
+        type=int,
+        default=5,
+        help="Number of questions (default: 5)."
+    )
+    parser_quiz.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the TUI version of the quiz."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -12137,6 +12220,10 @@ async def main():
 
     if args.command == "network":
         run_network(args)
+        return
+
+    if args.command == "quiz":
+        run_quiz(args)
         return
 
     # Initialize Agent Client

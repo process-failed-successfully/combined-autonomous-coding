@@ -53,6 +53,7 @@ from shared.scaffold import ScaffoldManager
 from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
+from shared.tui_impact import ImpactTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
@@ -4016,6 +4017,8 @@ class AgentTUI(App):
                 yield GuardrailsTab(self.project_dir)
             with TabPane("Health", id="tab-health"):
                 yield HealthTab(self.project_dir)
+            with TabPane("Impact", id="tab-impact"):
+                yield ImpactTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):
                 yield TroubleshootTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):

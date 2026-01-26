@@ -59,6 +59,7 @@ from shared.tui_services import ServicesTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
+from shared.tui_bisect import BisectTab
 
 
 # Helper to get Git info safely
@@ -3968,6 +3969,8 @@ class AgentTUI(App):
                 yield TasksTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
+            with TabPane("Bisect", id="tab-bisect"):
+                yield BisectTab(self.project_dir)
             with TabPane("Release", id="tab-release"):
                 yield ReleaseTab(self.project_dir)
             with TabPane("Worktrees", id="tab-worktrees"):

@@ -60,6 +60,7 @@ from shared.tui_regex import RegexLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
+from shared.tui_kanban import KanbanBoard
 
 
 # Helper to get Git info safely
@@ -691,7 +692,11 @@ class TasksTab(Container):
                 yield Select.from_values(["All", "GitHub", "Jira", "Sprint", "TODO"], id="select-task-source", value="All")
                 yield Input(placeholder="Filter by title...", id="input-task-filter")
 
-            yield DataTable(id="tasks-table")
+            with TabbedContent():
+                with TabPane("List View"):
+                    yield DataTable(id="tasks-table")
+                with TabPane("Kanban View"):
+                    yield KanbanBoard(id="kanban-board")
 
     def on_mount(self) -> None:
         table = self.query_one("#tasks-table", DataTable)
@@ -708,9 +713,35 @@ class TasksTab(Container):
             tasks = self.task_manager.fetch_all_tasks()
             self.tasks_cache = tasks
             self._update_table(tasks)
+
+            # Update Kanban
+            try:
+                kanban = self.query_one("#kanban-board", KanbanBoard)
+                kanban.load_tasks(tasks)
+            except Exception:
+                pass
+
             self.notify(f"Loaded {len(tasks)} tasks.")
         except Exception as e:
             self.notify(f"Error fetching tasks: {e}", severity="error")
+
+    @on(KanbanBoard.StatusUpdate)
+    def on_status_update(self, event: KanbanBoard.StatusUpdate) -> None:
+        self.notify(f"Updating task {event.task_id} to {event.new_status}...")
+
+        # Run in thread to avoid blocking UI
+        import asyncio
+        asyncio.create_task(self._async_update_status(event.task_id, event.new_status))
+
+    async def _async_update_status(self, task_id: str, new_status: str) -> None:
+        import asyncio
+        success = await asyncio.to_thread(self.task_manager.update_task_status, task_id, new_status)
+
+        if success:
+            self.notify(f"Task {task_id} updated.")
+            self.load_tasks()
+        else:
+            self.notify(f"Failed to update task {task_id}.", severity="error")
 
     def _update_table(self, tasks: list[Task]) -> None:
         table = self.query_one("#tasks-table", DataTable)

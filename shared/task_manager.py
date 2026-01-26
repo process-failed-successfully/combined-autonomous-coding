@@ -113,6 +113,72 @@ class TaskManager:
         except Exception:
             return []
 
+    def update_task_status(self, task_id: str, new_status: str) -> bool:
+        """Updates the status of a task."""
+        if task_id.startswith("SPRINT-"):
+            return self._update_sprint_task(task_id, new_status)
+        elif "-" in task_id and not task_id.startswith("TODO-") and not task_id.startswith("GH-"):
+             # Assumption: Jira IDs are PROJECT-123
+             return self._update_jira_task(task_id, new_status)
+
+        return False
+
+    def _update_sprint_task(self, task_id: str, new_status: str) -> bool:
+        sprint_plan_path = self.project_dir / "sprint_plan.json"
+        if not sprint_plan_path.exists():
+            return False
+
+        try:
+            data = json.loads(sprint_plan_path.read_text())
+            raw_id = task_id.replace("SPRINT-", "")
+            updated = False
+            for t in data.get("tasks", []):
+                if str(t.get("id")) == raw_id:
+                    t["status"] = new_status
+                    updated = True
+                    break
+
+            if updated:
+                sprint_plan_path.write_text(json.dumps(data, indent=2))
+                return True
+            return False
+        except Exception:
+            return False
+
+    def _update_jira_task(self, task_id: str, new_status: str) -> bool:
+        jira_cfg = self.config.get("jira", {})
+        url = jira_cfg.get("url") or os.environ.get("JIRA_URL")
+        email = jira_cfg.get("email") or os.environ.get("JIRA_EMAIL")
+        token = jira_cfg.get("token") or os.environ.get("JIRA_TOKEN")
+
+        if not (url and email and token):
+            return False
+
+        # Map generic status to Jira status
+        target_status = new_status
+        status_map = jira_cfg.get("status_map", {})
+
+        key = new_status.lower()
+        if key == "pending": key = "todo"
+
+        if status_map and key in status_map:
+            target_status = status_map[key]
+        else:
+            # Default defaults
+            if key == "todo" or key == "pending":
+                target_status = "To Do"
+            elif key == "in_progress":
+                target_status = "In Progress"
+            elif key == "completed" or key == "done":
+                target_status = "Done"
+
+        try:
+            config = JiraConfig(url=url, email=email, token=token)
+            client = JiraClient(config)
+            return client.transition_issue(task_id, target_status)
+        except Exception:
+            return False
+
     def fetch_sprint_tasks(self) -> List[Task]:
         """Fetches tasks from sprint_plan.json."""
         sprint_plan_path = self.project_dir / "sprint_plan.json"

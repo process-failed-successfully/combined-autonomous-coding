@@ -323,6 +323,28 @@ async def run_adr(args):
     sys.exit(0)
 
 
+def run_docs(args):
+    """Manages the static documentation site."""
+    from shared.docs import DocsManager
+    project_dir = args.project_dir.resolve()
+    manager = DocsManager(project_dir)
+
+    if args.action == "init":
+        if manager.init_site():
+            print(f"✅ Initialized documentation site in {project_dir}")
+        else:
+            sys.exit(1)
+    elif args.action == "build":
+        if manager.build_site():
+            print(f"✅ Documentation site built successfully.")
+        else:
+            sys.exit(1)
+    elif args.action == "serve":
+        manager.serve_site(port=args.port, host=args.host)
+
+    sys.exit(0)
+
+
 def run_session(args):
     """Manages work sessions."""
     project_dir = args.project_dir.resolve()
@@ -8626,6 +8648,31 @@ def parse_args(argv=None):
         help="Skip confirmation prompt for 'generate' action."
     )
 
+    # --- New 'docs' command ---
+    parser_docs = subparsers.add_parser(
+        "docs",
+        help="Manage static documentation site (MkDocs)."
+    )
+    docs_subparsers = parser_docs.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # docs init
+    parser_docs_init = docs_subparsers.add_parser("init", help="Initialize a new documentation site.")
+    parser_docs_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # docs build
+    parser_docs_build = docs_subparsers.add_parser("build", help="Build the static site.")
+    parser_docs_build.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # docs serve
+    parser_docs_serve = docs_subparsers.add_parser("serve", help="Serve the site locally.")
+    parser_docs_serve.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_docs_serve.add_argument("--port", type=int, default=8000, help="Port to serve on (default: 8000).")
+    parser_docs_serve.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1).")
+
     # --- New 'refactor' command ---
     parser_refactor = subparsers.add_parser(
         "refactor",
@@ -11691,6 +11738,10 @@ async def main():
 
     if args.command == "docstring":
         await run_docstring(args)
+        return
+
+    if args.command == "docs":
+        run_docs(args)
         return
 
     if args.command == "refactor":

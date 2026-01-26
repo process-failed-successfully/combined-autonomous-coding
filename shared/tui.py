@@ -69,6 +69,7 @@ from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
+from shared.tui_terminal import TerminalTab
 
 
 # Helper to get Git info safely
@@ -4019,6 +4020,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Terminal", id="tab-terminal"):
+                yield TerminalTab(self.project_dir)
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):

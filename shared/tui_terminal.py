@@ -4,9 +4,9 @@ from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Input, RichLog, Label
 from textual.containers import Container, Vertical
-from textual import on
 from textual.binding import Binding
 from rich.text import Text
+
 
 class HistoryInput(Input):
     """Input widget with history navigation."""
@@ -54,6 +54,7 @@ class HistoryInput(Input):
         self.history_index = -1
         self.current_input = ""
 
+
 class TerminalTab(Container):
     """Tab for running shell commands."""
 
@@ -71,7 +72,7 @@ class TerminalTab(Container):
 
     def on_mount(self) -> None:
         log = self.query_one("#terminal-log", RichLog)
-        log.write(f"Welcome to Agent Terminal.")
+        log.write("Welcome to Agent Terminal.")
         log.write(f"Current directory: {self.cwd}")
         self.query_one("#terminal-input").focus()
 
@@ -152,6 +153,8 @@ class TerminalTab(Container):
                     decoded = line.decode('utf-8', errors='replace').rstrip()
                     # Use Text.from_ansi to handle colors
                     log.write(Text.from_ansi(decoded))
+                else:
+                    break
 
             await process.wait()
             if process.returncode != 0:

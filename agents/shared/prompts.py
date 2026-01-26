@@ -76,6 +76,11 @@ def get_ask_prompt() -> str:
     return load_prompt("ask_prompt")
 
 
+def get_chat_prompt() -> str:
+    """Load the chat prompt."""
+    return load_prompt("chat_prompt")
+
+
 def get_code_review_prompt() -> str:
     """Load the code review prompt."""
     return load_prompt("code_review_prompt")

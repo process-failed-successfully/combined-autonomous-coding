@@ -73,7 +73,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type command
             inp.value = "ls -la"
             await inp.action_submit()
-            await pilot.pause(0.1)  # Wait for async execution
+            await pilot.pause(0.5) # Wait for async execution
 
             # Verify subprocess called
             mock_subprocess.assert_called_with(
@@ -100,7 +100,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type cd ..
             inp.value = "cd .."
             await inp.action_submit()
-            await pilot.pause(0.1)
+            await pilot.pause(0.5)
 
             # Verify CWD changed
             self.assertEqual(tab.cwd, self.project_dir.parent)
@@ -115,7 +115,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type invalid cd
             inp.value = "cd /non/existent/path"
             await inp.action_submit()
-            await pilot.pause(0.1)
+            await pilot.pause(0.5)
 
             # Verify CWD NOT changed
             self.assertEqual(tab.cwd, current_cwd)

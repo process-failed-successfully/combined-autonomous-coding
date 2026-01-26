@@ -110,7 +110,8 @@ class TerminalTab(Container):
         finally:
             self.cmd_running = False
             inp.disabled = False
-            inp.focus()
+            if self.visible:
+                inp.focus()
 
     async def handle_cd(self, command: str) -> None:
         parts = command.split(maxsplit=1)

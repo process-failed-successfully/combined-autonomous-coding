@@ -68,6 +68,7 @@ from shared.tui_network import NetworkTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_adr import ADRTab
+from shared.tui_research import ResearchTab
 
 
 # Helper to get Git info safely
@@ -4042,6 +4043,8 @@ class AgentTUI(App):
                 yield PlanTab(self.project_dir)
             with TabPane("Interact", id="tab-interact"):
                 yield InteractTab(self.project_dir)
+            with TabPane("Research", id="tab-research"):
+                yield ResearchTab(self.project_dir)
             with TabPane("Recipes", id="tab-recipes"):
                 yield RecipesTab(self.project_dir)
             with TabPane("Code Review", id="tab-code-review"):

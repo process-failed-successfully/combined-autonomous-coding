@@ -53,6 +53,7 @@ from shared.commands import run_why
 from shared.cost import CostCalculator
 from shared.onboarding import run_onboard_logic
 from shared.ask import run_ask_logic
+from shared.chat import run_chat_logic
 from shared.cli import run_do_logic
 from shared.playground import PlaygroundManager
 from shared.debug import run_debug_logic
@@ -7320,6 +7321,29 @@ def parse_args(argv=None):
     parser_knowledge_graph.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
 
+    # --- New 'chat' command ---
+    parser_chat = subparsers.add_parser(
+        "chat",
+        help="Start an interactive chat session with context-aware agent."
+    )
+    parser_chat.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_chat.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_chat.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     # --- New 'ask' command ---
     parser_ask = subparsers.add_parser(
         "ask",
@@ -11537,6 +11561,15 @@ async def main():
     # Handle `knowledge` command
     if args.command == "knowledge":
         run_knowledge(args)
+        return
+
+    # Handle `chat` command
+    if args.command == "chat":
+        await run_chat_logic(
+            project_dir=args.project_dir,
+            agent_type=args.agent,
+            model=args.model
+        )
         return
 
     # Handle `ask` command

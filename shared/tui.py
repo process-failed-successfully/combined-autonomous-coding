@@ -29,7 +29,7 @@ from shared.health import HealthCalculator
 from shared.security import SecurityAuditor
 from shared.code_review import run_code_review_logic
 from shared.map import scan_project, CodeNode
-from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch
+from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch, get_file_diff
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.replace import replace_in_codebase
@@ -795,32 +795,39 @@ class GitTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.selected_file = None
+        self.git_status_cache = {}
 
     def compose(self) -> ComposeResult:
         with TabbedContent():
             with TabPane("Operations"):
-                with Horizontal():
-                    # Left: Status
-                    with Vertical(classes="stat-box"):
-                        yield Label("[bold]Changed Files[/bold]")
-                        yield DataTable(id="git-status-table")
-                        with Horizontal():
-                            yield Button("Stage", id="btn-git-stage", variant="success")
-                            yield Button("Unstage", id="btn-git-unstage", variant="warning")
-                            yield Button("Discard", id="btn-git-discard", variant="error")
-                        yield Button("Refresh Status", id="btn-git-refresh-status", variant="default")
+                with Vertical():
+                    with Horizontal(classes="git-ops-top"):
+                        # Left: Status
+                        with Vertical(classes="stat-box"):
+                            yield Label("[bold]Changed Files[/bold]")
+                            yield DataTable(id="git-status-table")
+                            with Horizontal():
+                                yield Button("Stage", id="btn-git-stage", variant="success")
+                                yield Button("Unstage", id="btn-git-unstage", variant="warning")
+                                yield Button("Discard", id="btn-git-discard", variant="error")
+                            yield Button("Refresh Status", id="btn-git-refresh-status", variant="default")
 
-                    # Right: Commit & Sync
-                    with Vertical(classes="stat-box"):
-                        yield Label("[bold]Commit[/bold]")
-                        yield TextArea(id="git-commit-msg")
-                        yield Button("Commit", id="btn-git-commit", variant="primary")
+                        # Right: Commit & Sync
+                        with Vertical(classes="stat-box"):
+                            yield Label("[bold]Commit[/bold]")
+                            yield TextArea(id="git-commit-msg")
+                            yield Button("Commit", id="btn-git-commit", variant="primary")
 
-                        yield Label("[bold]Sync[/bold]")
-                        with Horizontal():
-                            yield Button("Pull", id="btn-git-pull", variant="default")
-                            yield Button("Push", id="btn-git-push", variant="warning")
-                        yield Label("", id="git-sync-status")
+                            yield Label("[bold]Sync[/bold]")
+                            with Horizontal():
+                                yield Button("Pull", id="btn-git-pull", variant="default")
+                                yield Button("Push", id="btn-git-push", variant="warning")
+                            yield Label("", id="git-sync-status")
+
+                    # Bottom: Diff
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Diff[/bold]")
+                        yield RichLog(id="git-ops-diff-view", wrap=True, highlight=True, markup=False)
 
             with TabPane("History"):
                 with Horizontal():
@@ -862,6 +869,7 @@ class GitTab(Container):
     def load_status(self) -> None:
         table = self.query_one("#git-status-table", DataTable)
         table.clear()
+        self.git_status_cache = {}
 
         try:
             files = get_git_status(self.project_dir)
@@ -869,6 +877,7 @@ class GitTab(Container):
                 staged_marker = "[green]✓[/green]" if f["staged"] else "[red] [/red]"
                 status_code = f["status_code"]
                 path = f["path"]
+                self.git_status_cache[path] = f
                 # Store full path in key
                 table.add_row(staged_marker, status_code, path, key=path)
         except Exception as e:
@@ -898,6 +907,36 @@ class GitTab(Container):
     @on(DataTable.RowSelected, "#git-status-table")
     def on_status_selected(self, event: DataTable.RowSelected) -> None:
         self.selected_file = event.row_key.value
+
+        # Show diff
+        diff_view = self.query_one("#git-ops-diff-view", RichLog)
+        diff_view.clear()
+
+        if not self.selected_file:
+            return
+
+        file_info = self.git_status_cache.get(self.selected_file)
+        if not file_info:
+            return
+
+        is_staged = file_info.get("staged", False)
+
+        import asyncio
+        asyncio.create_task(self._load_diff(self.selected_file, is_staged))
+
+    async def _load_diff(self, file_path: str, staged: bool) -> None:
+        import asyncio
+        diff_view = self.query_one("#git-ops-diff-view", RichLog)
+        diff_view.clear()
+        diff_view.write("Loading diff...")
+
+        diff = await asyncio.to_thread(get_file_diff, self.project_dir, file_path, staged)
+
+        diff_view.clear()
+        if diff.strip():
+            diff_view.write(Syntax(diff, "diff", theme="monokai"))
+        else:
+            diff_view.write("No diff available (possibly binary or empty).")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-git-stage":

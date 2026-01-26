@@ -34,8 +34,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
     @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("shared.database.init_db")
     async def test_main_gemini_run(
         self,
+        mock_init_db,
         mock_gen_id,
         mock_sprint,
         mock_cursor,
@@ -105,8 +107,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("shared.database.init_db")
     async def test_main_cursor_run(
         self,
+        mock_init_db,
         mock_gen_id,
         mock_run_cursor,
         mock_client_cls,
@@ -157,8 +161,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("shared.database.init_db")
     async def test_main_sprint_run(
         self,
+        mock_init_db,
         mock_gen_id,
         mock_run_sprint,
         mock_client_cls,
@@ -273,8 +279,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("shared.database.init_db")
     async def test_main_cleanup(
         self,
+        mock_init_db,
         mock_gen_id,
         mock_gemini,
         mock_client_cls,

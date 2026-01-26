@@ -76,6 +76,7 @@ from shared.serve import ServeManager
 from shared.network import run_network_logic
 from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
+from shared.impact import ImpactAnalyzer
 import json
 import yaml
 import platformdirs
@@ -5155,6 +5156,52 @@ def run_test(args):
 
     print(f"--- Running tests in: {project_dir} ---")
 
+    # --- Smart Mode ---
+    if hasattr(args, 'smart') and args.smart:
+        # Smart mode currently only supports Python projects
+        is_python = (project_dir / "pyproject.toml").exists() or \
+                    (project_dir / "requirements.txt").exists()
+
+        if is_python:
+            print("🧠 Smart Mode Enabled: Analyzing changes to run relevant tests...")
+            analyzer = ImpactAnalyzer(project_dir)
+            print("Building dependency graph...")
+            analyzer.build_graph()
+            changed_files = analyzer.get_changed_files()
+
+            if not changed_files:
+                print("✅ No changed files detected. Skipping tests.")
+                sys.exit(0)
+
+            _, impacted_tests = analyzer.find_impacted_files(changed_files)
+
+            if not impacted_tests:
+                print("⚠️  No tests found that cover the changed files.")
+                sys.exit(0)
+
+            print(f"🎯 identified {len(impacted_tests)} relevant test file(s):")
+            for t in impacted_tests:
+                print(f"  - {t}")
+
+            # Override command to run these tests
+            if shutil.which("pytest"):
+                full_command = ["pytest"] + list(impacted_tests)
+                if passthrough_args:
+                    full_command.extend(passthrough_args)
+
+                print(f"Executing command: {' '.join(full_command)}")
+                try:
+                    result = subprocess.run(full_command, cwd=project_dir)
+                    sys.exit(result.returncode)
+                except Exception as e:
+                    print(f"❌ Error running smart tests: {e}", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                print("❌ Smart mode requires 'pytest' to be installed.", file=sys.stderr)
+                sys.exit(1)
+        else:
+             print("⚠️  Smart test mode is currently only supported for Python projects. Falling back to full suite.")
+
     # --- Project Detection ---
     command_base = []
 
@@ -6626,6 +6673,11 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to run tests in (default: current directory).",
+    )
+    parser_test.add_argument(
+        "--smart",
+        action="store_true",
+        help="Run only tests affected by recent changes (smart test selection).",
     )
     parser_test.add_argument(
         "test_args",

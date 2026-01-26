@@ -64,6 +64,7 @@ from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
 from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
+from shared.tui_presentation import PresentationTab
 
 
 # Helper to get Git info safely
@@ -4057,6 +4058,8 @@ class AgentTUI(App):
                 yield PlaygroundTab(self.project_dir)
             with TabPane("Prompt Lab", id="tab-prompt-lab"):
                 yield PromptLabTab(self.project_dir)
+            with TabPane("Presentation", id="tab-presentation"):
+                yield PresentationTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
         yield Footer()

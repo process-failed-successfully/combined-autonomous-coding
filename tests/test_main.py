@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 import tempfile
 import shutil
 import os
@@ -15,7 +15,12 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.spec_file = self.project_dir / "spec.txt"
         self.spec_file.write_text("Spec content")
 
+        # Patch argcomplete globally for all tests to avoid FD usage and verify behavior
+        self.argcomplete_patcher = patch("main.argcomplete", MagicMock())
+        self.mock_argcomplete = self.argcomplete_patcher.start()
+
     def tearDown(self):
+        self.argcomplete_patcher.stop()
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
@@ -34,8 +39,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
     @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("main.load_config_from_file", return_value={})
     async def test_main_gemini_run(
         self,
+        mock_load_config,
         mock_gen_id,
         mock_sprint,
         mock_cursor,
@@ -89,9 +96,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
 
         mock_gemini.assert_called()
         mock_source_cursor.assert_not_called()
-        mock_source_gemini.assert_not_called()  # Should match source patch if called via main?
-        # Actually if we patch source and main... main calls main.run_gemini (mock_gemini).
-        # source_gemini (agents.gemini...) might NOT be called if main uses its own mock.
+        mock_source_gemini.assert_not_called()
 
         mock_cursor.assert_not_called()
         mock_sprint.assert_not_called()
@@ -105,8 +110,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_cursor", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("main.load_config_from_file", return_value={})
     async def test_main_cursor_run(
         self,
+        mock_load_config,
         mock_gen_id,
         mock_run_cursor,
         mock_client_cls,
@@ -157,8 +164,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_sprint", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("main.load_config_from_file", return_value={})
     async def test_main_sprint_run(
         self,
+        mock_load_config,
         mock_gen_id,
         mock_run_sprint,
         mock_client_cls,
@@ -195,47 +204,13 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         mock_parse_args.return_value = args
         mock_setup_logger.return_value = (MagicMock(), MagicMock())
 
-        # We need to ensure config.sprint_mode is True.
-        # Main creates Config(..., agent_type=args.agent, ..., )
-        # It seems main.py doesn't pass 'sprint' to Config explicitly?
-        # Let's check shared/config.py to see how sprint_mode is determined.
-        # If it's not passed, maybe it defaults to False?
-        # In main.py:
-        # config = Config(..., timeout=...)
-        # It does NOT look like it passes sprint.
-        # But main.py line 205:
-        # config = Config(...)
-        # Maybe I missed it?
-        # Wait, if main.py doesn't pass sprint arg to Config, then Config.sprint_mode is likely False by default.
-        # BUT main.py checks `if config.sprint_mode:`.
-        # So Config MUST have a way to set it.
-        # Let's assume Config has it or main sets it.
-        # Actually, let's look at `shared/config.py` in my mind (or read it if I must).
-        # Assuming main.py logic relies on Config knowing it.
-        # But if main.py doesn't pass it, how does Config know?
-        # Maybe main.py logic is broken regarding sprint mode passing?
-        # OR main.py DOES pass it and I missed it in `read_file main.py`.
-
-        # Re-reading `read_file main.py` output from earlier...
-        # It lists many args passed to Config. `sprint` is NOT one of them.
-        # `manager_frequency=... login_mode=args.login`
-        # `timeout=...`
-        # Nothing about sprint.
-        # BUT `shared/config.py` might parse args itself? No, it takes args in
-        # init.
-
-        # IF main.py is buggy regarding sprint mode, I should fix it too!
-        # `config.sprint_mode` usage:
-        # if config.sprint_mode:
-        #    await run_sprint(...)
-
-        # If Config doesn't receive it, maybe it defaults to checking args?
-
         # I will patch Config to ensure sprint_mode is True for this test.
         with patch("main.Config") as mock_config_cls:
             mock_conf = MagicMock()
             mock_conf.feature_list_path.exists.return_value = False
             mock_conf.sprint_mode = True
+            # FIX: Set project_dir to avoid garbage file creation
+            mock_conf.project_dir = self.project_dir
             mock_config_cls.return_value = mock_conf
 
             with patch.object(Path, "exists", return_value=True):
@@ -247,17 +222,29 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("main.parse_args")
     @patch("main.setup_logger")
     @patch("shared.utils.generate_agent_id")
-    async def test_main_missing_spec_exit(self, mock_gen, mock_logger, mock_parse_args):
+    @patch("main.load_config_from_file", return_value={})
+    async def test_main_missing_spec_exit(self, mock_load_config, mock_gen, mock_logger, mock_parse_args):
         args = MagicMock()
         args.project_dir = self.project_dir
         args.spec = None  # Missing spec
         args.dashboard_only = False
+        args.jira_ticket = None
+        args.jira_label = None
+        args.dry_run = False # FIX: Ensure dry_run is False to avoid early exit
+        args.command = None
         mock_parse_args.return_value = args
+
+        # FIX: Configure mock_logger to return a tuple
+        mock_logger.return_value = (MagicMock(), MagicMock())
 
         # feature_list_path.exists() -> False (fresh)
         with patch("main.Config") as mock_config_cls:
             mock_conf = MagicMock()
             mock_conf.feature_list_path.exists.return_value = False
+            # FIX: Set project_dir to avoid garbage file creation (if any)
+            mock_conf.project_dir = self.project_dir
+            # FIX: Ensure jira_spec_content is None/False to fail the check
+            mock_conf.jira_spec_content = None
             mock_config_cls.return_value = mock_conf
 
             with patch.object(
@@ -273,8 +260,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.agent_client.AgentClient")
     @patch("main.run_gemini", new_callable=unittest.mock.AsyncMock)
     @patch("shared.utils.generate_agent_id")
+    @patch("main.load_config_from_file", return_value={})
     async def test_main_cleanup(
         self,
+        mock_load_config,
         mock_gen_id,
         mock_gemini,
         mock_client_cls,
@@ -291,7 +280,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.timeout = None
         args.jira_ticket = None
         args.jira_label = None
-        args.dry_run = False
+        args.dry_run = False # FIX
         args.dind = False
         args.command = None
         args.login = False
@@ -315,15 +304,12 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             mock_conf = MagicMock()
             mock_conf.feature_list_path.exists.return_value = True  # Not fresh
             mock_conf.sprint_mode = False
+            # FIX: Set project_dir to avoid garbage file creation
+            mock_conf.project_dir = self.project_dir
 
             # Mock PROJECT_SIGNED_OFF check
-            mock_project_dir = MagicMock()
-            mock_conf.project_dir = mock_project_dir
-
-            signed_off_path = MagicMock()
-            signed_off_path.exists.return_value = True
-
-            mock_project_dir.__truediv__.return_value = signed_off_path
+            # Create the file in temp dir to make exists() return True naturally
+            (self.project_dir / "PROJECT_SIGNED_OFF").touch()
 
             mock_config_cls.return_value = mock_conf
 
@@ -460,14 +446,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertTrue((self.project_dir / "COMPLETED").exists())
         self.assertTrue((self.project_dir / "feature_list.json").exists())
 
-    @patch('main.argcomplete', new_callable=MagicMock)
     @patch('main.parse_args')
-    async def test_main_completion_command(self, mock_parse_args, mock_argcomplete):
+    async def test_main_completion_command(self, mock_parse_args):
         args = MagicMock()
         args.command = "completion"
         mock_parse_args.return_value = args
 
-        mock_argcomplete.shellcode.return_value = "completion_script"
+        # Set return value for the global mock
+        self.mock_argcomplete.shellcode.return_value = "completion_script"
 
         # Capture stdout
         from contextlib import redirect_stdout

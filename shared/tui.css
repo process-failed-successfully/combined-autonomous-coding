@@ -98,3 +98,68 @@ DataTable {
     border: none;
     padding: 0;
 }
+
+/* Kanban Board */
+KanbanBoard {
+    height: 100%;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.kanban-column {
+    width: 33%;
+    height: 100%;
+    border: solid $accent;
+    margin: 1;
+    padding: 1;
+    background: $surface;
+}
+
+.column-header {
+    text-align: center;
+    background: $primary;
+    color: $text;
+    padding: 1;
+    margin-bottom: 1;
+    text-style: bold;
+}
+
+.kanban-card {
+    height: auto;
+    border: solid $secondary;
+    margin-bottom: 1;
+    padding: 1;
+    background: $panel;
+}
+
+.card-header {
+    text-style: bold;
+    color: $text-muted;
+}
+
+.card-title {
+    margin-top: 1;
+    margin-bottom: 1;
+}
+
+.card-priority-high {
+    color: $error;
+}
+
+.card-priority-medium {
+    color: $warning;
+}
+
+.card-priority-low {
+    color: $success;
+}
+
+.card-actions {
+    height: auto;
+    align: center middle;
+}
+
+.btn-move {
+    min-width: 5;
+    margin: 0 1;
+}

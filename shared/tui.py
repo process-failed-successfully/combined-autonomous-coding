@@ -70,6 +70,7 @@ from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
+from shared.tui_quiz import QuizTab
 
 
 # Helper to get Git info safely
@@ -4116,6 +4117,8 @@ class AgentTUI(App):
                 yield PromptLabTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("Quiz", id="tab-quiz"):
+                yield QuizTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

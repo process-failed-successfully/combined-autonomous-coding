@@ -74,7 +74,6 @@ class TerminalTab(Container):
         log = self.query_one("#terminal-log", RichLog)
         log.write("Welcome to Agent Terminal.")
         log.write(f"Current directory: {self.cwd}")
-        self.query_one("#terminal-input").focus()
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         command = event.value.strip()

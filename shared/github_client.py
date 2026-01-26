@@ -107,3 +107,99 @@ class GitHubClient:
             return response.json()
         else:
             response.raise_for_status()
+
+    def list_pull_requests(self, project_dir, state="open"):
+        """Lists pull requests for the repository."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls"
+        headers = self._get_headers()
+        params = {"state": state, "per_page": 50}
+
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def get_pull_request(self, project_dir, pr_number):
+        """Fetches details of a specific pull request."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls/{pr_number}"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def get_pull_request_reviews(self, project_dir, pr_number):
+        """Fetches reviews for a pull request."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def get_pull_request_checks(self, project_dir, pr_ref):
+        """Fetches check runs for a specific PR reference (SHA)."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/commits/{pr_ref}/check-runs"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            # Not all repos have check runs enabled or accessible this way, fail gracefully?
+            # Or assume it might be check-suites.
+            # Let's just raise for now.
+            response.raise_for_status()
+
+    def merge_pull_request(self, project_dir, pr_number, method="merge"):
+        """Merges a pull request."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls/{pr_number}/merge"
+        headers = self._get_headers()
+        data = {"merge_method": method}
+
+        response = requests.put(url, headers=headers, json=data, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def close_pull_request(self, project_dir, pr_number):
+        """Closes a pull request without merging."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/pulls/{pr_number}"
+        headers = self._get_headers()
+        data = {"state": "closed"}
+
+        response = requests.patch(url, headers=headers, json=data, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()

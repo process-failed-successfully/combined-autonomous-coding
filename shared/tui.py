@@ -66,6 +66,7 @@ from shared.tui_scheduler import SchedulerTab
 from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
 from shared.tui_snippets import SnippetsTab
+from shared.tui_pull_requests import PullRequestsTab
 
 
 # Helper to get Git info safely
@@ -4048,6 +4049,8 @@ class AgentTUI(App):
                 yield TasksTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
+            with TabPane("Pull Requests", id="tab-pr"):
+                yield PullRequestsTab(self.project_dir)
             with TabPane("Bisect", id="tab-bisect"):
                 yield BisectTab(self.project_dir)
             with TabPane("Release", id="tab-release"):

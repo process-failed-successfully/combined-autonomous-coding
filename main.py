@@ -3787,9 +3787,21 @@ def run_report(args):
 
 def run_dashboard(args):
     """Displays a comprehensive dashboard of the project's status."""
-    dashboard_text = _run_dashboard_logic(project_dir=args.project_dir)
-    print(dashboard_text)
-    sys.exit(0)
+    if hasattr(args, 'format') and args.format == "html":
+        from shared.html_dashboard import generate_html_dashboard
+        output = generate_html_dashboard(args.project_dir)
+        output_file = Path(args.output)
+        try:
+            output_file.write_text(output, encoding='utf-8')
+            print(f"✅ Dashboard saved to: {output_file.resolve()}")
+        except IOError as e:
+            print(f"❌ Error writing dashboard to file: {e}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+    else:
+        dashboard_text = _run_dashboard_logic(project_dir=args.project_dir)
+        print(dashboard_text)
+        sys.exit(0)
 
 def run_tree(args):
     """Displays a tree view of the project directory."""
@@ -5786,6 +5798,17 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to display the dashboard for (default: current directory)",
+    )
+    parser_dashboard.add_argument(
+        "--format",
+        choices=["text", "html"],
+        default="text",
+        help="Output format (default: text)."
+    )
+    parser_dashboard.add_argument(
+        "-o", "--output",
+        default="dashboard.html",
+        help="Output file path for HTML format (default: dashboard.html)."
     )
 
     # Subparser for 'summary'

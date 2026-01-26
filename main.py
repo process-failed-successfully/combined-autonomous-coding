@@ -7135,6 +7135,79 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory."
     )
+
+    # PR 'list' action
+    parser_pr_list = pr_subparsers.add_parser(
+        "list",
+        help="List open pull requests."
+    )
+    parser_pr_list.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
+    # PR 'show' action
+    parser_pr_show = pr_subparsers.add_parser(
+        "show",
+        help="Show details of a pull request."
+    )
+    parser_pr_show.add_argument(
+        "number",
+        type=int,
+        help="The pull request number."
+    )
+    parser_pr_show.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
+    # PR 'merge' action
+    parser_pr_merge = pr_subparsers.add_parser(
+        "merge",
+        help="Merge a pull request."
+    )
+    parser_pr_merge.add_argument(
+        "number",
+        type=int,
+        help="The pull request number."
+    )
+    parser_pr_merge.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation."
+    )
+    parser_pr_merge.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
+    # PR 'close' action
+    parser_pr_close = pr_subparsers.add_parser(
+        "close",
+        help="Close a pull request without merging."
+    )
+    parser_pr_close.add_argument(
+        "number",
+        type=int,
+        help="The pull request number."
+    )
+    parser_pr_close.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation."
+    )
+    parser_pr_close.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
     parser_prune.add_argument(
         "--types",
         type=str,
@@ -10581,8 +10654,95 @@ def _pr_create(args, config):
 
     sys.exit(0)
 
+def _pr_list(args, config):
+    """Lists open pull requests."""
+    from shared.github_client import GitHubClient
+    if not config.github_token:
+        print("❌ Error: GitHub token not found.", file=sys.stderr)
+        sys.exit(1)
+
+    client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+    try:
+        prs = client.list_pull_requests(args.project_dir)
+        if not prs:
+            print("No open pull requests found.")
+            sys.exit(0)
+
+        print(f"--- Open Pull Requests ---")
+        for pr in prs:
+            print(f"#{pr['number']} {pr['title']} (by {pr['user']['login']})")
+            print(f"  URL: {pr['html_url']}")
+    except Exception as e:
+        print(f"❌ Error listing PRs: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def _pr_show(args, config):
+    """Shows details of a pull request."""
+    from shared.github_client import GitHubClient
+    if not config.github_token:
+        print("❌ Error: GitHub token not found.", file=sys.stderr)
+        sys.exit(1)
+
+    client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+    try:
+        pr = client.get_pull_request(args.project_dir, args.number)
+        print(f"--- PR #{pr['number']}: {pr['title']} ---")
+        print(f"State: {pr['state']}")
+        print(f"User: {pr['user']['login']}")
+        print(f"URL: {pr['html_url']}")
+        print(f"\n{pr['body']}")
+    except Exception as e:
+        print(f"❌ Error fetching PR: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def _pr_merge(args, config):
+    """Merges a pull request."""
+    from shared.github_client import GitHubClient
+    if not config.github_token:
+        print("❌ Error: GitHub token not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.yes:
+        confirm = input(f"Are you sure you want to merge PR #{args.number}? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+    try:
+        res = client.merge_pull_request(args.project_dir, args.number)
+        if res.get("merged"):
+            print(f"✅ PR #{args.number} merged successfully.")
+        else:
+            print(f"❌ Failed to merge PR #{args.number}. Message: {res.get('message')}")
+            sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error merging PR: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def _pr_close(args, config):
+    """Closes a pull request."""
+    from shared.github_client import GitHubClient
+    if not config.github_token:
+        print("❌ Error: GitHub token not found.", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.yes:
+        confirm = input(f"Are you sure you want to close PR #{args.number}? [y/N]: ").strip().lower()
+        if confirm != 'y':
+            print("Aborted.")
+            sys.exit(0)
+
+    client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
+    try:
+        res = client.close_pull_request(args.project_dir, args.number)
+        print(f"✅ PR #{args.number} closed successfully.")
+    except Exception as e:
+        print(f"❌ Error closing PR: {e}", file=sys.stderr)
+        sys.exit(1)
+
 def run_pr(args):
-    """Handles the creation of GitHub pull requests."""
+    """Handles GitHub pull requests."""
     file_config = load_config_from_file(profile=getattr(args, 'profile', None))
     config = argparse.Namespace(
         github_token=os.environ.get("GITHUB_TOKEN") or file_config.get("github_token"),
@@ -10591,6 +10751,14 @@ def run_pr(args):
 
     if args.action == "create":
         _pr_create(args, config)
+    elif args.action == "list":
+        _pr_list(args, config)
+    elif args.action == "show":
+        _pr_show(args, config)
+    elif args.action == "merge":
+        _pr_merge(args, config)
+    elif args.action == "close":
+        _pr_close(args, config)
     else:
         print(f"Unknown pr action: {args.action}", file=sys.stderr)
         sys.exit(1)

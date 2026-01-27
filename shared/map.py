@@ -121,7 +121,7 @@ def scan_project(project_dir: Path) -> Dict[str, CodeNode]:
                             map_data[result[0]] = result[1]
                     except Exception:
                         pass
-        except (ImportError, OSError, ValueError):
+        except (ImportError, OSError, ValueError, RuntimeError, concurrent.futures.TimeoutError):
             # Fallback to sequential execution if parallel fails
             for f in py_files:
                 result = _process_file_map(f, project_dir)

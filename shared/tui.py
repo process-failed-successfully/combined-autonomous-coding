@@ -72,6 +72,7 @@ from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
+from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -4018,6 +4019,7 @@ class AgentTUI(App):
     PALETTE_COMMANDS = [
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
+        PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
         PaletteCommand("Go to Logs", "switch_tab_logs"),
         PaletteCommand("Go to Chat", "switch_tab_interact"),
@@ -4091,6 +4093,8 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Terminal", id="tab-terminal"):
                 yield TerminalTab(self.project_dir)
+            with TabPane("Monitor", id="tab-monitor"):
+                yield SystemMonitorTab()
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):

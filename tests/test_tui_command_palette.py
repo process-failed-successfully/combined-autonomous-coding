@@ -1,17 +1,15 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch
 from pathlib import Path
-import sys
 import tempfile
 import shutil
 
-# Ensure shared module is available
-sys.path.append(str(Path(__file__).parent.parent))
-
 from textual.app import App
-from textual.widgets import Input, ListView, Label
+from textual.widgets import ListView, Label
+
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui import AgentTUI
+
 
 class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -83,9 +81,6 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
             # Check that the current screen is AgentCommandPalette
             self.assertIsInstance(app.screen, AgentCommandPalette)
 
-            palette = app.screen
-            list_view = palette.query_one(ListView)
-
             # Filter for "Dashboard"
             await pilot.press("D", "a", "s", "h")
             await pilot.pause()
@@ -135,6 +130,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
             # Verify it dismissed
             self.assertNotIsInstance(app.screen, AgentCommandPalette)
+
 
 if __name__ == "__main__":
     unittest.main()

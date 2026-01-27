@@ -73,6 +73,7 @@ from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
+from shared.tui_system_monitor import SystemMonitorTab
 
 
 # Helper to get Git info safely
@@ -4089,6 +4090,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("System", id="tab-system"):
+                yield SystemMonitorTab(self.project_dir)
             with TabPane("Terminal", id="tab-terminal"):
                 yield TerminalTab(self.project_dir)
             with TabPane("Services", id="tab-services"):

@@ -103,20 +103,34 @@ def _process_file_map(file_path: Path, project_dir: Path) -> Optional[Tuple[str,
         return None
 
 
+PARALLEL_THRESHOLD = 10
+
+
 def scan_project(project_dir: Path) -> Dict[str, CodeNode]:
     """Scans the project directory and builds a map of the code structure."""
     py_files = get_python_files(project_dir)
     map_data = {}
 
-    # Use 'spawn' to ensure a clean process environment, preventing issues with
-    # pytest-cov or other tools that might interfere with 'fork' behavior.
-    ctx = multiprocessing.get_context("spawn")
-    with concurrent.futures.ProcessPoolExecutor(mp_context=ctx) as executor:
-        futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
+    if len(py_files) < PARALLEL_THRESHOLD:
+        # Run sequentially for small projects to avoid multiprocessing overhead
+        for f in py_files:
+            result = _process_file_map(f, project_dir)
             if result:
                 map_data[result[0]] = result[1]
+    else:
+        # Use 'spawn' to ensure a clean process environment, preventing issues with
+        # pytest-cov or other tools that might interfere with 'fork' behavior.
+        ctx = multiprocessing.get_context("spawn")
+        with concurrent.futures.ProcessPoolExecutor(mp_context=ctx) as executor:
+            futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    result = future.result()
+                    if result:
+                        map_data[result[0]] = result[1]
+                except Exception:
+                    # Ignore worker errors to prevent crash
+                    pass
 
     return map_data
 

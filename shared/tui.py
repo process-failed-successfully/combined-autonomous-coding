@@ -29,7 +29,7 @@ from shared.health import HealthCalculator
 from shared.security import SecurityAuditor
 from shared.code_review import run_code_review_logic
 from shared.map import scan_project, CodeNode
-from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch, get_file_diff
+from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch, get_file_diff, get_git_stash_list, push_stash, pop_stash, apply_stash, drop_stash, get_stash_show
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.replace import replace_in_codebase
@@ -846,6 +846,27 @@ class GitTab(Container):
                         yield Label("[bold]Commit Details[/bold]")
                         yield RichLog(id="git-details-view", wrap=True, highlight=True, markup=False)
 
+            with TabPane("Stash"):
+                with Horizontal():
+                    # Left: Stash List
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Stashes[/bold]")
+                        yield DataTable(id="git-stash-table")
+                        with Horizontal():
+                            yield Input(placeholder="Stash message...", id="git-stash-msg")
+                            yield Checkbox("Include Untracked", id="git-stash-untracked")
+                        with Horizontal():
+                            yield Button("Push", id="btn-git-stash-push", variant="primary")
+                            yield Button("Pop", id="btn-git-stash-pop", variant="warning")
+                            yield Button("Apply", id="btn-git-stash-apply", variant="success")
+                            yield Button("Drop", id="btn-git-stash-drop", variant="error")
+                        yield Button("Refresh", id="btn-git-stash-refresh", variant="default")
+
+                    # Right: Details
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Stash Content[/bold]")
+                        yield RichLog(id="git-stash-view", wrap=True, highlight=True, markup=False)
+
     def on_mount(self) -> None:
         # History Table
         history_table = self.query_one("#git-log-table", DataTable)
@@ -858,6 +879,25 @@ class GitTab(Container):
         status_table.cursor_type = "row"
         status_table.add_columns("S", "Status", "Path")
         self.load_status()
+
+        # Stash Table
+        stash_table = self.query_one("#git-stash-table", DataTable)
+        stash_table.cursor_type = "row"
+        stash_table.add_columns("Index", "Branch", "Message")
+        self.load_stashes()
+
+    def load_stashes(self) -> None:
+        table = self.query_one("#git-stash-table", DataTable)
+        table.clear()
+
+        stashes = get_git_stash_list(self.project_dir)
+        for stash in stashes:
+            table.add_row(
+                str(stash["index"]),
+                stash["branch"],
+                stash["message"],
+                key=str(stash["index"])
+            )
 
     def load_history(self) -> None:
         table = self.query_one("#git-log-table", DataTable)
@@ -899,6 +939,11 @@ class GitTab(Container):
         self.load_status()
         self.notify("Git status refreshed.")
 
+    @on(Button.Pressed, "#btn-git-stash-refresh")
+    def on_refresh_stash(self) -> None:
+        self.load_stashes()
+        self.notify("Git stashes refreshed.")
+
     @on(DataTable.RowSelected, "#git-log-table")
     def on_history_selected(self, event: DataTable.RowSelected) -> None:
         table = self.query_one("#git-log-table", DataTable)
@@ -930,6 +975,28 @@ class GitTab(Container):
         import asyncio
         asyncio.create_task(self._load_diff(self.selected_file, is_staged))
 
+    @on(DataTable.RowSelected, "#git-stash-table")
+    def on_stash_selected(self, event: DataTable.RowSelected) -> None:
+        stash_index = int(event.row_key.value)
+
+        view = self.query_one("#git-stash-view", RichLog)
+        view.clear()
+        view.write("Loading stash diff...")
+
+        import asyncio
+        asyncio.create_task(self._load_stash_diff(stash_index))
+
+    async def _load_stash_diff(self, index: int) -> None:
+        import asyncio
+        diff = await asyncio.to_thread(get_stash_show, self.project_dir, index)
+
+        view = self.query_one("#git-stash-view", RichLog)
+        view.clear()
+        if diff.strip():
+            view.write(Syntax(diff, "diff", theme="monokai"))
+        else:
+            view.write("No diff available.")
+
     async def _load_diff(self, file_path: str, staged: bool) -> None:
         import asyncio
         diff_view = self.query_one("#git-ops-diff-view", RichLog)
@@ -957,6 +1024,74 @@ class GitTab(Container):
             await self.pull()
         elif event.button.id == "btn-git-push":
             await self.push()
+        elif event.button.id == "btn-git-stash-push":
+            self.stash_push()
+        elif event.button.id == "btn-git-stash-pop":
+            self.stash_pop()
+        elif event.button.id == "btn-git-stash-apply":
+            self.stash_apply()
+        elif event.button.id == "btn-git-stash-drop":
+            self.stash_drop()
+
+    def stash_push(self) -> None:
+        msg = self.query_one("#git-stash-msg", Input).value
+        untracked = self.query_one("#git-stash-untracked", Checkbox).value
+
+        if push_stash(self.project_dir, msg, include_untracked=untracked):
+            self.notify("Stash created.")
+            self.query_one("#git-stash-msg", Input).value = ""
+            self.load_stashes()
+            self.load_status() # Stash push clears changes
+        else:
+            self.notify("Stash failed.", severity="error")
+
+    def get_selected_stash_index(self) -> int | None:
+        table = self.query_one("#git-stash-table", DataTable)
+        if table.cursor_row is not None:
+            # We stored index as key
+            # But get_row returns values.
+            # We can use coordinate to get row key
+            row_key = table.coordinate_to_cell_key(table.cursor_coordinate).row_key
+            return int(row_key.value)
+        return None
+
+    def stash_pop(self) -> None:
+        idx = self.get_selected_stash_index()
+        if idx is None:
+            self.notify("No stash selected.", severity="warning")
+            return
+
+        if pop_stash(self.project_dir, idx):
+            self.notify(f"Stash @{{{idx}}} popped.")
+            self.load_stashes()
+            self.load_status()
+        else:
+            self.notify("Pop failed.", severity="error")
+
+    def stash_apply(self) -> None:
+        idx = self.get_selected_stash_index()
+        if idx is None:
+            self.notify("No stash selected.", severity="warning")
+            return
+
+        if apply_stash(self.project_dir, idx):
+            self.notify(f"Stash @{{{idx}}} applied.")
+            self.load_status()
+        else:
+            self.notify("Apply failed.", severity="error")
+
+    def stash_drop(self) -> None:
+        idx = self.get_selected_stash_index()
+        if idx is None:
+            self.notify("No stash selected.", severity="warning")
+            return
+
+        if drop_stash(self.project_dir, idx):
+            self.notify(f"Stash @{{{idx}}} dropped.")
+            self.load_stashes()
+            self.query_one("#git-stash-view", RichLog).clear()
+        else:
+            self.notify("Drop failed.", severity="error")
 
     def stage_selected(self) -> None:
         if not self.selected_file:

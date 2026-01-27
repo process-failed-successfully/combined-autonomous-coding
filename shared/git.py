@@ -423,3 +423,137 @@ def get_file_diff(project_dir: Path, file_path: str, staged: bool = False) -> st
     except Exception as e:
         logger.error(f"Error getting diff for {file_path}: {e}")
         return f"Error getting diff: {e}"
+
+def get_git_stash_list(project_dir: Path) -> list[dict]:
+    """
+    Returns a list of stashes.
+    Format: [{"index": 0, "branch": "main", "message": "WIP: ..."}, ...]
+    """
+    try:
+        # stash list format: stash@{0}: On branch: message
+        cmd = ["git", "stash", "list"]
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        stashes = []
+        for line in result.stdout.strip().split('\n'):
+            if not line:
+                continue
+
+            # Parse line: stash@{0}: On main: WIP work
+            try:
+                parts = line.split(':', 2)
+                if len(parts) >= 3:
+                    # extract index from stash@{N}
+                    stash_ref = parts[0].strip()
+                    index_str = stash_ref.split('{')[1].split('}')[0]
+                    index = int(index_str)
+
+                    branch_part = parts[1].strip() # On main
+                    branch = branch_part.replace("On ", "")
+
+                    message = parts[2].strip()
+
+                    stashes.append({
+                        "index": index,
+                        "branch": branch,
+                        "message": message,
+                        "raw": line
+                    })
+            except Exception as e:
+                logger.warning(f"Error parsing stash line '{line}': {e}")
+
+        return stashes
+    except Exception as e:
+        logger.error(f"Error getting stash list: {e}")
+        return []
+
+def push_stash(project_dir: Path, message: str, include_untracked: bool = False) -> bool:
+    """Creates a new stash."""
+    try:
+        cmd = ["git", "stash", "push"]
+        if include_untracked:
+            cmd.append("-u")
+
+        if message:
+            cmd.extend(["-m", message])
+
+        subprocess.run(
+            cmd,
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error pushing stash: {e}")
+        return False
+
+def pop_stash(project_dir: Path, stash_index: int) -> bool:
+    """Pops a stash (applies and drops)."""
+    try:
+        cmd = ["git", "stash", "pop", f"stash@{{{stash_index}}}"]
+        subprocess.run(
+            cmd,
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error popping stash: {e}")
+        return False
+
+def apply_stash(project_dir: Path, stash_index: int) -> bool:
+    """Applies a stash (keeps it)."""
+    try:
+        cmd = ["git", "stash", "apply", f"stash@{{{stash_index}}}"]
+        subprocess.run(
+            cmd,
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error applying stash: {e}")
+        return False
+
+def drop_stash(project_dir: Path, stash_index: int) -> bool:
+    """Drops (deletes) a stash."""
+    try:
+        cmd = ["git", "stash", "drop", f"stash@{{{stash_index}}}"]
+        subprocess.run(
+            cmd,
+            cwd=project_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error dropping stash: {e}")
+        return False
+
+def get_stash_show(project_dir: Path, stash_index: int) -> str:
+    """Returns the diff of a stash."""
+    try:
+        cmd = ["git", "stash", "show", "-p", f"stash@{{{stash_index}}}"]
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except Exception as e:
+        logger.error(f"Error showing stash: {e}")
+        return f"Error loading stash diff: {e}"

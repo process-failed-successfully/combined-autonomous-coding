@@ -157,7 +157,7 @@ class PresentationGenerator:
             logger.error(f"Unknown agent type: {self.agent_type}")
             return False
 
-        agent = agent_class(config)
+        agent = agent_class(config)  # type: ignore[abstract]
 
         # Prompt construction
         base_prompt = get_presentation_prompt()

@@ -1,10 +1,11 @@
 import hashlib
 from pathlib import Path
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Input, Label, RichLog, TextArea, Select, TabbedContent, TabPane
 from textual import on
 from shared.devtools import DevTools
+
 
 class DevToolsTab(Container):
     """Tab for developer utilities."""
@@ -109,7 +110,7 @@ class DevToolsTab(Container):
     @on(Button.Pressed, "#btn-hash-calc")
     def on_hash_calc(self):
         text = self.query_one("#dt-hash-input", TextArea).text
-        algo = self.query_one("#dt-hash-algo", Select).value
+        algo = str(self.query_one("#dt-hash-algo", Select).value)
         res = DevTools.calculate_hash(text, algo)
         self.query_one("#dt-hash-output", Input).value = res
 

@@ -3,12 +3,12 @@ from textual.widgets import Input, ListView, ListItem, Label
 from textual.containers import Vertical
 from textual import on
 from textual.app import ComposeResult
-from typing import Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple, Union
 
 
 class PaletteCommand(NamedTuple):
     title: str
-    action: Union[str, Callable]
+    action: Union[str, Callable[..., Any]]
     id: str = ""
 
 

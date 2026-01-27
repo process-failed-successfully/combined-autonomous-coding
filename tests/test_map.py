@@ -86,6 +86,22 @@ def my_func():
                 self.assertIn("test.py", result)
                 self.assertEqual(result["test.py"].children[0].name, "foo")
 
+    @patch("shared.map.PARALLEL_THRESHOLD", 0)
+    def test_scan_project_parallel(self):
+        # Force parallel execution by setting threshold to 0
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_parallel.py"
+            file_path.write_text("def bar(): pass", encoding="utf-8")
+
+            with patch("shared.map.get_python_files") as mock_get_files:
+                mock_get_files.return_value = [file_path]
+                result = scan_project(temp_path)
+
+                self.assertIn("test_parallel.py", result)
+                self.assertEqual(result["test_parallel.py"].children[0].name, "bar")
+
     def test_end_lineno_capture(self):
         code = """
 def single_line(): pass

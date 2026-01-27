@@ -75,6 +75,7 @@ from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
+from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -4023,6 +4024,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
+        PaletteCommand("Go to Disk Usage", "switch_tab_disk_usage"),
         PaletteCommand("Go to Logs", "switch_tab_logs"),
         PaletteCommand("Go to Chat", "switch_tab_interact"),
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
@@ -4161,6 +4163,8 @@ class AgentTUI(App):
                 yield KnowledgeTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):
                 yield FileExplorerTab(self.project_dir)
+            with TabPane("Disk Usage", id="tab-disk-usage"):
+                yield DiskUsageTab(self.project_dir)
             with TabPane("Code Map", id="tab-codemap"):
                 yield CodeMapTab(self.project_dir)
             with TabPane("Network", id="tab-network"):

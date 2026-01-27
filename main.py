@@ -103,6 +103,38 @@ if FileSystemEventHandler:
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 
+async def run_cron_lab(args):
+    """Runs the interactive cron lab."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+    manager = CronLabManager(project_dir)
+
+    if args.expression:
+        valid, msg = manager.validate(args.expression)
+        if not valid:
+            print(f"❌ Invalid: {msg}")
+            sys.exit(1)
+
+        print(f"✅ Valid: {msg}")
+
+        if args.next:
+            runs = manager.get_next_runs(args.expression, count=args.next)
+            print("Next runs:")
+            for dt in runs:
+                print(f"  {dt}")
+
+        if args.explain:
+            explanation = await manager.explain_expression(args.expression)
+            print(f"\nExplanation: {explanation}")
+
+    else:
+        # Launch TUI
+        from shared.tui import AgentTUI
+        print("Launching TUI... Navigate to 'Cron Lab' tab.")
+        app = AgentTUI(project_dir=project_dir)
+        await app.run_async()
+
 def run_devtools(args):
     """Runs developer tools from CLI."""
     from shared.devtools import DevTools
@@ -9454,6 +9486,34 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Interactive Cron Expression Lab."
+    )
+    parser_cron.add_argument(
+        "expression",
+        nargs="?",
+        help="Cron expression to validate/analyze."
+    )
+    parser_cron.add_argument(
+        "--next",
+        type=int,
+        default=5,
+        help="Show next N runs (default: 5)."
+    )
+    parser_cron.add_argument(
+        "--explain",
+        action="store_true",
+        help="Explain the expression using AI."
+    )
+    parser_cron.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'network' command ---
     parser_network = subparsers.add_parser(
         "network",
@@ -12262,6 +12322,10 @@ async def main():
 
     if args.command == "devtools":
         run_devtools(args)
+        return
+
+    if args.command == "cron-lab":
+        await run_cron_lab(args)
         return
 
     if args.command == "presentation":

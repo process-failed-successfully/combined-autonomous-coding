@@ -103,6 +103,46 @@ if FileSystemEventHandler:
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 
+def run_devtools(args):
+    """Runs developer tools from CLI."""
+    from shared.devtools import DevTools
+
+    if args.action == "epoch":
+        if args.value:
+            # Try parsing as float first (timestamp to date)
+            try:
+                ts = float(args.value)
+                print(DevTools.epoch_to_date(ts))
+            except ValueError:
+                # Try parsing as date string (date to timestamp)
+                try:
+                    print(DevTools.date_to_epoch(args.value))
+                except ValueError as e:
+                    print(f"Error: {e}")
+        else:
+            # No value? print current time
+            import time
+            now = time.time()
+            print(f"Current Epoch: {now}")
+            print(f"Current Date:  {DevTools.epoch_to_date(now)}")
+
+    elif args.action == "uuid":
+        print(DevTools.generate_uuid())
+
+    elif args.action == "base64":
+        if args.decode:
+            print(DevTools.base64_decode(args.text))
+        else:
+            print(DevTools.base64_encode(args.text))
+
+    elif args.action == "hash":
+        print(DevTools.calculate_hash(args.text, args.algo))
+
+    elif args.action == "json":
+        print(DevTools.format_json(args.text))
+
+    sys.exit(0)
+
 def run_quiz(args):
     """Runs the codebase quiz."""
     from shared.quiz import QuizGenerator
@@ -9382,6 +9422,38 @@ def parse_args(argv=None):
     parser_gr_check = guardrails_subparsers.add_parser("check", help="Run policy checks.")
     parser_gr_check.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'devtools' command ---
+    parser_devtools = subparsers.add_parser(
+        "devtools",
+        help="Developer utilities (epoch, base64, uuid, hash, json)."
+    )
+    devtools_subparsers = parser_devtools.add_subparsers(
+        dest="action",
+        required=True,
+        help="Tool to use."
+    )
+
+    # devtools epoch
+    parser_dt_epoch = devtools_subparsers.add_parser("epoch", help="Convert timestamp <-> date.")
+    parser_dt_epoch.add_argument("value", nargs="?", help="Timestamp or Date string (optional, defaults to now).")
+
+    # devtools uuid
+    parser_dt_uuid = devtools_subparsers.add_parser("uuid", help="Generate UUID v4.")
+
+    # devtools base64
+    parser_dt_b64 = devtools_subparsers.add_parser("base64", help="Encode/Decode Base64.")
+    parser_dt_b64.add_argument("text", help="Text to process.")
+    parser_dt_b64.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
+
+    # devtools hash
+    parser_dt_hash = devtools_subparsers.add_parser("hash", help="Calculate hash.")
+    parser_dt_hash.add_argument("text", help="Text to hash.")
+    parser_dt_hash.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+
+    # devtools json
+    parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
+    parser_dt_json.add_argument("text", help="JSON string.")
+
     # --- New 'network' command ---
     parser_network = subparsers.add_parser(
         "network",
@@ -12186,6 +12258,10 @@ async def main():
 
     if args.command == "guardrails":
         run_guardrails(args)
+        return
+
+    if args.command == "devtools":
+        run_devtools(args)
         return
 
     if args.command == "presentation":

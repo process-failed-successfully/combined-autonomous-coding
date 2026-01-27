@@ -76,6 +76,7 @@ from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
+from shared.tui_devtools import DevToolsTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -4030,6 +4031,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
         PaletteCommand("Go to Git", "switch_tab_git"),
         PaletteCommand("Go to Config", "switch_tab_config"),
+        PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4203,6 +4205,8 @@ class AgentTUI(App):
                 yield QuizTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("DevTools", id="tab-devtools"):
+                yield DevToolsTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

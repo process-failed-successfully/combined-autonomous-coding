@@ -13,7 +13,7 @@ from shared.schema_parser import SchemaParser
 class DatabaseDiagramTab(Container):
     """Tab for visualizing Database Schema."""
 
-    def __init__(self, project_dir: Path, **kwargs) -> None:
+    def __init__(self, project_dir: Path, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.parser = SchemaParser()
@@ -45,7 +45,6 @@ class DatabaseDiagramTab(Container):
 
     async def _load_schema_async(self) -> None:
         # get_schema_info might block if it searches files, run in thread
-        import asyncio
         try:
             schema_text, db_path = await asyncio.to_thread(get_schema_info, self.project_dir)
 

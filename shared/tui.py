@@ -71,6 +71,7 @@ from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_quiz import QuizTab
+from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
 # Helper to get Git info safely
@@ -4010,11 +4011,77 @@ class AgentTUI(App):
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("d", "toggle_dark", "Toggle Dark Mode"),
+        ("f1", "toggle_command_palette", "Command Palette"),
+    ]
+
+    PALETTE_COMMANDS = [
+        PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
+        PaletteCommand("Go to Terminal", "switch_tab_terminal"),
+        PaletteCommand("Go to Explorer", "switch_tab_explorer"),
+        PaletteCommand("Go to Logs", "switch_tab_logs"),
+        PaletteCommand("Go to Chat", "switch_tab_interact"),
+        PaletteCommand("Go to Tasks", "switch_tab_tasks"),
+        PaletteCommand("Go to Git", "switch_tab_git"),
+        PaletteCommand("Go to Config", "switch_tab_config"),
+        PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
+        PaletteCommand("Run Tests", "run_tests"),
+        PaletteCommand("Run Lint", "run_lint"),
+        PaletteCommand("Toggle Dark Mode", "toggle_dark"),
+        PaletteCommand("Quit", "quit"),
     ]
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+
+    def action_toggle_command_palette(self) -> None:
+        self.push_screen(AgentCommandPalette(self.PALETTE_COMMANDS), self.on_command_palette_selected)
+
+    def on_command_palette_selected(self, command: PaletteCommand | None) -> None:
+        if not command:
+            return
+
+        action = command.action
+        if callable(action):
+            action()
+        elif isinstance(action, str):
+            if action.startswith("switch_tab_"):
+                tab_id = action.replace("switch_tab_", "tab-")
+                self.query_one("#main-tabs", TabbedContent).active = tab_id
+            elif action == "refresh_dashboard":
+                self.action_refresh_dashboard()
+            elif action == "run_tests":
+                self.action_run_tests()
+            elif action == "run_lint":
+                self.action_run_lint()
+            elif action == "toggle_dark":
+                self.action_toggle_dark()
+            elif action == "quit":
+                self.action_quit()
+            else:
+                self.notify(f"Unknown action: {action}", severity="warning")
+
+    def action_refresh_dashboard(self) -> None:
+        self.query_one(DashboardTab).update_history()
+        self.notify("Dashboard refreshed.")
+
+    def action_run_tests(self) -> None:
+        import subprocess
+        self.notify("Running tests...")
+        try:
+            subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])
+            self.notify("Tests started in background.")
+        except Exception as e:
+            self.notify(f"Failed to start tests: {e}", severity="error")
+
+    def action_run_lint(self) -> None:
+        import subprocess
+        self.notify("Running lint...")
+        try:
+            subprocess.Popen([sys.executable, "main.py", "lint", "-p", str(self.project_dir)])
+            self.notify("Lint started in background.")
+        except Exception as e:
+            self.notify(f"Failed to start lint: {e}", severity="error")
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -4122,26 +4189,13 @@ class AgentTUI(App):
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        import subprocess
-
         # Handle dashboard buttons (bubble up)
         if event.button.id == "btn-refresh":
-            self.query_one(DashboardTab).update_history()
-            self.notify("Dashboard refreshed.")
+            self.action_refresh_dashboard()
         elif event.button.id == "btn-test":
-            self.notify("Running tests...")
-            try:
-                subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])
-                self.notify("Tests started in background.")
-            except Exception as e:
-                self.notify(f"Failed to start tests: {e}", severity="error")
+            self.action_run_tests()
         elif event.button.id == "btn-lint":
-            self.notify("Running lint...")
-            try:
-                subprocess.Popen([sys.executable, "main.py", "lint", "-p", str(self.project_dir)])
-                self.notify("Lint started in background.")
-            except Exception as e:
-                self.notify(f"Failed to start lint: {e}", severity="error")
+            self.action_run_lint()
 
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution

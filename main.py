@@ -71,6 +71,7 @@ from shared.sentinel import Sentinel
 from shared.work_session import WorkSessionManager
 from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
+from shared.cron_lab import run_cron_lab_cli
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
@@ -9262,6 +9263,35 @@ def parse_args(argv=None):
     parser_api_lab_run.add_argument("--headers", type=str, help="Request headers (JSON string).")
     parser_api_lab_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron_lab = subparsers.add_parser(
+        "cron-lab",
+        help="Interactive Cron Lab (calc, explain, generate)."
+    )
+    cron_lab_subparsers = parser_cron_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # cron-lab 'calc'
+    parser_cron_calc = cron_lab_subparsers.add_parser("calc", help="Calculate next run times.")
+    parser_cron_calc.add_argument("expression", help="Cron expression.")
+    parser_cron_calc.add_argument("-c", "--count", type=int, default=5, help="Number of runs to show.")
+    parser_cron_calc.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # cron-lab 'explain'
+    parser_cron_explain = cron_lab_subparsers.add_parser("explain", help="Explain cron expression using AI.")
+    parser_cron_explain.add_argument("expression", help="Cron expression.")
+    parser_cron_explain.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use.")
+    parser_cron_explain.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # cron-lab 'generate'
+    parser_cron_generate = cron_lab_subparsers.add_parser("generate", help="Generate cron expression from description.")
+    parser_cron_generate.add_argument("description", help="Schedule description.")
+    parser_cron_generate.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use.")
+    parser_cron_generate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'research' command ---
     parser_research = subparsers.add_parser(
         "research",
@@ -12238,6 +12268,10 @@ async def main():
 
     if args.command == "api-lab":
         run_api_lab_cli(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab_cli(args)
         return
 
     if args.command == "research":

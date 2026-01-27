@@ -103,6 +103,54 @@ if FileSystemEventHandler:
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 
+def run_quiz(args):
+    """Runs the codebase quiz."""
+    from shared.quiz import QuizGenerator
+
+    project_dir = args.project_dir.resolve()
+
+    if args.tui:
+        # Launch TUI
+        from shared.tui import AgentTUI
+        print("Launching TUI... Navigate to 'Quiz' tab.")
+        app = AgentTUI(project_dir=project_dir)
+        app.run()
+        return
+
+    # CLI Mode
+    generator = QuizGenerator(project_dir)
+    questions = generator.generate_questions(10)
+    score = 0
+
+    print(f"--- Codebase Quiz: {project_dir.name} ---")
+    print(f"Generated {len(questions)} questions.\n")
+
+    for i, q in enumerate(questions):
+        print(f"Q{i+1}: {q.text}")
+        for idx, opt in enumerate(q.options):
+            print(f"  [{idx+1}] {opt}")
+
+        while True:
+            try:
+                choice = input("Answer (1-4): ").strip()
+                if not choice: continue
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(q.options):
+                    break
+                print("Invalid choice.")
+            except ValueError:
+                print("Invalid input.")
+
+        if choice_idx == q.correct_index:
+            print("✅ Correct!\n")
+            score += 1
+        else:
+            print(f"❌ Incorrect. {q.explanation}\n")
+
+    print(f"--- Game Over ---")
+    print(f"Final Score: {score}/{len(questions)}")
+    sys.exit(0)
+
 def run_serve(args):
     """Starts a local development server."""
     project_dir = args.project_dir.resolve()
@@ -7136,6 +7184,23 @@ def parse_args(argv=None):
         help="The project directory."
     )
 
+    # --- New 'quiz' command ---
+    parser_quiz = subparsers.add_parser(
+        "quiz",
+        help="Run an interactive codebase quiz."
+    )
+    parser_quiz.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_quiz.add_argument(
+        "--tui",
+        action="store_true",
+        help="Run in TUI mode."
+    )
+
     # PR 'list' action
     parser_pr_list = pr_subparsers.add_parser(
         "list",
@@ -11527,6 +11592,10 @@ async def main():
     # Handle `tui` command
     if args.command == "tui":
         run_tui(args)
+        return
+
+    if args.command == "quiz":
+        run_quiz(args)
         return
 
     # Handle `prompt-lab` command

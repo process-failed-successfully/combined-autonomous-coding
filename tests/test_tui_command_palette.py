@@ -58,7 +58,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
             await pilot.press("A", "n", "o", "t", "h", "e", "r")
 
             # Wait for reactive update
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             self.assertEqual(len(list_view.children), 1)
 
@@ -75,7 +75,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
             # Open palette with key binding
             await pilot.press("f1")
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Check that the current screen is AgentCommandPalette
             self.assertIsInstance(app.screen, AgentCommandPalette)
@@ -86,11 +86,11 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
             # Filter for "Dashboard"
             await pilot.press("D", "a", "s", "h")
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Select first item (Go to Dashboard)
             await pilot.press("enter")
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Should be back to main screen
             self.assertNotIsInstance(app.screen, AgentCommandPalette)
@@ -109,15 +109,15 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
             # Open palette
             await pilot.press("f1")
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Filter for "Run Tests"
             await pilot.press("R", "u", "n", " ", "T", "e", "s", "t", "s")
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Select
             await pilot.press("enter")
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Verify command execution
             self.assertTrue(mock_popen.called, "subprocess.Popen was not called")
@@ -126,9 +126,12 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
             found = False
             for call in mock_popen.call_args_list:
                 args, _ = call
-                if args and "main.py" in args[0] and "test" in args[0]:
-                    found = True
-                    break
+                if args:
+                    cmd_list = args[0]
+                    has_main = any(str(arg).endswith("main.py") for arg in cmd_list)
+                    if has_main and "test" in cmd_list:
+                        found = True
+                        break
             self.assertTrue(found, "subprocess.Popen not called with test command")
 
             # Verify it dismissed

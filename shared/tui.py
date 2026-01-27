@@ -4138,7 +4138,7 @@ class RefactorTab(Container):
             self.notify(f"Error applying changes: {e}", severity="error")
 
 
-class AgentTUI(App):
+class AgentTUI(App[None]):
     """Mission Control TUI."""
 
     CSS_PATH = "tui.css"
@@ -4148,7 +4148,7 @@ class AgentTUI(App):
         ("f1", "toggle_command_palette", "Command Palette"),
     ]
 
-    PALETTE_COMMANDS = [
+    PALETTE_COMMANDS: list[PaletteCommand] = [
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
@@ -4191,7 +4191,7 @@ class AgentTUI(App):
             elif action == "toggle_dark":
                 self.action_toggle_dark()
             elif action == "quit":
-                self.action_quit()
+                self.exit()
             else:
                 self.notify(f"Unknown action: {action}", severity="warning")
 

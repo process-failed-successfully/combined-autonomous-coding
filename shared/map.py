@@ -7,12 +7,13 @@ Generates a visualization of the project's internal structure (files, classes, f
 
 import ast
 import json
-import os
+import concurrent.futures
 from pathlib import Path
-from typing import Dict, List, Any, Set, Optional
+from typing import Dict, List, Set, Optional, Tuple
 
 # Re-use existing utility for finding Python files
 from shared.complexity import get_python_files
+
 
 class CodeNode:
     def __init__(self, name: str, type: str, file: str, lineno: int, end_lineno: Optional[int] = None):
@@ -34,6 +35,7 @@ class CodeNode:
             "children": [c.to_dict() for c in self.children],
             "dependencies": list(sorted(self.dependencies))
         }
+
 
 class PythonMapBuilder(ast.NodeVisitor):
     def __init__(self, file_path: Path, project_root: Path):
@@ -89,22 +91,31 @@ class PythonMapBuilder(ast.NodeVisitor):
         self.generic_visit(node)
 
 
+def _process_file_map(file_path: Path, project_dir: Path) -> Optional[Tuple[str, CodeNode]]:
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        tree = ast.parse(content)
+        builder = PythonMapBuilder(file_path, project_dir)
+        builder.visit(tree)
+        return (builder.rel_path, builder.module_node)
+    except Exception:
+        return None
+
+
 def scan_project(project_dir: Path) -> Dict[str, CodeNode]:
     """Scans the project directory and builds a map of the code structure."""
     py_files = get_python_files(project_dir)
     map_data = {}
 
-    for file_path in py_files:
-        try:
-            content = file_path.read_text(encoding="utf-8", errors="ignore")
-            tree = ast.parse(content)
-            builder = PythonMapBuilder(file_path, project_dir)
-            builder.visit(tree)
-            map_data[builder.rel_path] = builder.module_node
-        except Exception:
-            pass
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                map_data[result[0]] = result[1]
 
     return map_data
+
 
 def generate_mermaid(map_data: Dict[str, CodeNode], focus_file: Optional[str] = None) -> str:
     """Generates a Mermaid class diagram from the map data."""
@@ -161,8 +172,8 @@ def generate_mermaid(map_data: Dict[str, CodeNode], focus_file: Optional[str] = 
                 pass
 
             if matched_key and (not focus_file or matched_key in relevant_files or file_path in relevant_files):
-                 safe_dep_id = matched_key.replace("/", "_").replace(".", "_").replace("-", "_")
-                 lines.append(f"    {safe_id} ..> {safe_dep_id} : imports")
+                safe_dep_id = matched_key.replace("/", "_").replace(".", "_").replace("-", "_")
+                lines.append(f"    {safe_id} ..> {safe_dep_id} : imports")
 
     return "\n".join(lines)
 
@@ -187,8 +198,8 @@ def _run_map_logic(project_dir: Path, output_format: str, focus: Optional[str] =
                 print(f"  ├─ [{prefix}] {child.name}")
                 if child.children:
                     for grandchild in child.children:
-                         prefix_gc = "C" if grandchild.type == 'class' else "F"
-                         print(f"  │    ├─ [{prefix_gc}] {grandchild.name}")
+                        prefix_gc = "C" if grandchild.type == 'class' else "F"
+                        print(f"  │    ├─ [{prefix_gc}] {grandchild.name}")
             if node.dependencies:
                 print(f"  └─ Imports: {', '.join(list(node.dependencies)[:5])}...")
             print("")

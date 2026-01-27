@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 class SchemaParser:
     """Parses SQL schema (SQLite) into a structured format and generates diagrams."""
@@ -35,7 +35,7 @@ class SchemaParser:
 
             # Simple splitting by comma is risky if types contain commas (e.g. DECIMAL(5,2))
             # We'll split by newline first as that's common formatting
-            lines = [l.strip() for l in body.split('\n')]
+            lines = [line.strip() for line in body.split('\n')]
 
             # If multiple definitions on one line, we might miss them.
             # But get_schema_info usually returns formatted SQL from sqlite_master.

@@ -1,16 +1,15 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch
 from pathlib import Path
-import asyncio
 
 from textual.app import App, ComposeResult
-from textual.widgets import Tree, RichLog, Button
+from textual.widgets import Tree
 
 # We need to import the class we are testing
 from shared.tui_database_diagram import DatabaseDiagramTab
 
 # A simple app wrapper for testing
-class TestApp(App):
+class DatabaseDiagramTestApp(App[None]):
     def compose(self) -> ComposeResult:
         yield DatabaseDiagramTab(Path("."))
 
@@ -24,7 +23,7 @@ class TestDatabaseDiagramTab(unittest.IsolatedAsyncioTestCase):
         """
         mock_get_schema.return_value = (schema_text, Path("test.db"))
 
-        app = TestApp()
+        app = DatabaseDiagramTestApp()
         async with app.run_test() as pilot:
             # Wait for background tasks
             await pilot.pause(2.0)
@@ -45,7 +44,7 @@ class TestDatabaseDiagramTab(unittest.IsolatedAsyncioTestCase):
     async def test_no_schema(self, mock_get_schema):
         mock_get_schema.return_value = ("", None)
 
-        app = TestApp()
+        app = DatabaseDiagramTestApp()
         async with app.run_test() as pilot:
             await pilot.pause(0.5)
             tab = app.query_one(DatabaseDiagramTab)

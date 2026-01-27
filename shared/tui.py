@@ -4133,7 +4133,7 @@ class RefactorTab(Container):
             self.notify(f"Changes applied to {self.selected_file.name}")
             self.query_one("#refactor-diff-log", RichLog).write("\n[bold green]Changes Applied![/bold green]")
             self.query_one("#btn-refactor-apply").disabled = True
-            self.preview_data = {} # Reset
+            self.preview_data = {}  # Reset
         except Exception as e:
             self.notify(f"Error applying changes: {e}", severity="error")
 
@@ -4328,6 +4328,7 @@ class AgentTUI(App[None]):
             self.action_run_tests()
         elif event.button.id == "btn-lint":
             self.action_run_lint()
+
 
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution

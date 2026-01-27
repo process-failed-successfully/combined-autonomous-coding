@@ -73,7 +73,7 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Type command
             inp.value = "ls -la"
             await inp.action_submit()
-            await pilot.pause(0.5) # Wait for async execution
+            await pilot.pause(0.5)  # Wait for async execution
 
             # Verify subprocess called
             mock_subprocess.assert_called_with(

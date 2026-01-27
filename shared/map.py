@@ -7,6 +7,7 @@ Generates a visualization of the project's internal structure (files, classes, f
 
 import ast
 import json
+import multiprocessing
 import concurrent.futures
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple
@@ -107,7 +108,7 @@ def scan_project(project_dir: Path) -> Dict[str, CodeNode]:
     py_files = get_python_files(project_dir)
     map_data = {}
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as executor:
         futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()

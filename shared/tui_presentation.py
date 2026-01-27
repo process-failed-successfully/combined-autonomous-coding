@@ -76,4 +76,17 @@ class PresentationTab(Container):
     def _run_generation(self, generator: PresentationGenerator, output_path: Path, theme: str) -> bool:
         """Helper to run the async generate method synchronously for to_thread."""
         import asyncio
-        return asyncio.run(generator.generate(output_path, theme))
+        # Since generator.generate is async, we need a loop to run it in the thread
+        try:
+            return asyncio.run(generator.generate(output_path, theme))
+        except RuntimeError:
+            # Fallback for environments where asyncio.run might fail (e.g. existing loop?)
+            # But to_thread runs in a separate thread, so a new loop is fine.
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(generator.generate(output_path, theme))
+                return result
+            finally:
+                loop.close()
+                asyncio.set_event_loop(None)

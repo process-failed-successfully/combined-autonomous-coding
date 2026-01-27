@@ -108,10 +108,20 @@ def scan_project(project_dir: Path) -> Dict[str, CodeNode]:
     py_files = get_python_files(project_dir)
     map_data = {}
 
-    with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as executor:
-        futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
+    try:
+        with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as executor:
+            futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    result = future.result()
+                    if result:
+                        map_data[result[0]] = result[1]
+                except Exception:
+                    pass
+    except (ImportError, OSError, ValueError):
+        # Fallback to sequential execution if parallel fails
+        for f in py_files:
+            result = _process_file_map(f, project_dir)
             if result:
                 map_data[result[0]] = result[1]
 

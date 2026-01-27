@@ -71,6 +71,7 @@ from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
+from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -4170,6 +4171,8 @@ class AgentTUI(App):
                 yield DataLabTab(self.project_dir)
             with TabPane("Database", id="tab-database"):
                 yield DatabaseTab(self.project_dir)
+            with TabPane("DB Diagram", id="tab-db-diag"):
+                yield DatabaseDiagramTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):
                 yield SecretsTab(self.project_dir)
             with TabPane("Env", id="tab-env"):

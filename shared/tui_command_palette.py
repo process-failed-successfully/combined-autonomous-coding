@@ -5,15 +5,18 @@ from textual import on
 from textual.app import ComposeResult
 from typing import Any, Callable, NamedTuple, Union
 
+
 class PaletteCommand(NamedTuple):
     title: str
     action: Union[str, Callable[..., Any]]
     id: str = ""
 
+
 class CommandHit(ListItem):
     def __init__(self, command: PaletteCommand, **kwargs) -> None:
         super().__init__(Label(command.title), **kwargs)
         self.command = command
+
 
 class AgentCommandPalette(ModalScreen[Union[PaletteCommand, None]]):
     CSS = """

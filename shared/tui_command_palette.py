@@ -7,7 +7,7 @@ from typing import Any, Callable, NamedTuple, Union
 
 class PaletteCommand(NamedTuple):
     title: str
-    action: Union[str, Callable]
+    action: Union[str, Callable[..., Any]]
     id: str = ""
 
 class CommandHit(ListItem):

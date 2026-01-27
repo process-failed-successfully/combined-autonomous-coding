@@ -15,6 +15,8 @@ from typing import Dict, List, Set, Optional, Tuple
 # Re-use existing utility for finding Python files
 from shared.complexity import get_python_files
 
+PARALLEL_THRESHOLD = 10
+
 
 class CodeNode:
     def __init__(self, name: str, type: str, file: str, lineno: int, end_lineno: Optional[int] = None):
@@ -108,18 +110,25 @@ def scan_project(project_dir: Path) -> Dict[str, CodeNode]:
     py_files = get_python_files(project_dir)
     map_data = {}
 
-    try:
-        with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as executor:
-            futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    result = future.result()
-                    if result:
-                        map_data[result[0]] = result[1]
-                except Exception:
-                    pass
-    except (ImportError, OSError, ValueError):
-        # Fallback to sequential execution if parallel fails
+    if len(py_files) > PARALLEL_THRESHOLD:
+        try:
+            with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as executor:
+                futures = [executor.submit(_process_file_map, f, project_dir) for f in py_files]
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        result = future.result()
+                        if result:
+                            map_data[result[0]] = result[1]
+                    except Exception:
+                        pass
+        except (ImportError, OSError, ValueError):
+            # Fallback to sequential execution if parallel fails
+            for f in py_files:
+                result = _process_file_map(f, project_dir)
+                if result:
+                    map_data[result[0]] = result[1]
+    else:
+        # Sequential execution for small projects
         for f in py_files:
             result = _process_file_map(f, project_dir)
             if result:

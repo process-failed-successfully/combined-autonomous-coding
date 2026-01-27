@@ -205,6 +205,32 @@ def multi_line():
                             self.assertIn("test.py", result)
                             mock_executor.assert_called()
 
+    def test_scan_project_broken_pool_fallback(self):
+        from concurrent.futures.process import BrokenProcessPool
+        from unittest.mock import MagicMock
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_broken.py"
+            file_path.write_text("def broken_func(): pass", encoding="utf-8")
+
+            with patch("concurrent.futures.ProcessPoolExecutor") as mock_executor_cls:
+                mock_executor = MagicMock()
+                mock_executor_cls.return_value.__enter__.return_value = mock_executor
+
+                # Simulate broken pool on submit
+                mock_executor.submit.side_effect = BrokenProcessPool("Pool is broken")
+
+                # Force parallel execution
+                with patch("shared.map.PARALLEL_THRESHOLD", 0):
+                    with patch("shared.map.get_python_files", return_value=[file_path]):
+                        result = scan_project(temp_path)
+
+                        # Should have fallen back to sequential and succeeded
+                        self.assertIn("test_broken.py", result)
+                        self.assertEqual(result["test_broken.py"].children[0].name, "broken_func")
+
 
 if __name__ == "__main__":
     unittest.main()

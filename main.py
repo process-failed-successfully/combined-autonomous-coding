@@ -143,6 +143,43 @@ def run_devtools(args):
 
     sys.exit(0)
 
+async def run_cron_lab(args):
+    """Runs the Cron Expression Lab."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+    manager = CronLabManager(project_dir)
+
+    print(f"--- Cron Lab: {args.expression if args.expression else 'Interactive'} ---")
+
+    if args.expression:
+        if args.explain:
+            print("Explaining expression with AI...")
+            explanation = await manager.explain_expression(args.expression, args.agent)
+            print(f"\n{explanation}")
+        else:
+            # Validate and Next Runs
+            if manager.validate(args.expression):
+                print("✅ Valid Expression")
+                runs = manager.get_next_runs(args.expression, count=args.count)
+                print(f"\nNext {args.count} Runs:")
+                for run in runs:
+                    print(f"  - {run}")
+            else:
+                print("❌ Invalid Cron Expression")
+                sys.exit(1)
+
+    elif args.generate:
+        print(f"Generating cron expression for: '{args.generate}'")
+        result = await manager.generate_expression(args.generate, args.agent)
+        print(f"\n{result}")
+
+    else:
+        print("Error: Please provide --expression or --generate, or use the TUI for interactive mode.")
+        sys.exit(1)
+
+    sys.exit(0)
+
 def run_quiz(args):
     """Runs the codebase quiz."""
     from shared.quiz import QuizGenerator
@@ -9454,6 +9491,44 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with Cron expressions (validate, next runs, explain, generate)."
+    )
+    parser_cron.add_argument(
+        "expression",
+        nargs="?",
+        help="The cron expression to analyze."
+    )
+    parser_cron.add_argument(
+        "--explain",
+        action="store_true",
+        help="Explain the expression using AI."
+    )
+    parser_cron.add_argument(
+        "--generate",
+        help="Generate a cron expression from a natural language description."
+    )
+    parser_cron.add_argument(
+        "-c", "--count",
+        type=int,
+        default=5,
+        help="Number of next runs to show (default: 5)."
+    )
+    parser_cron.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_cron.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for AI tasks (default: gemini)."
+    )
+
     # --- New 'network' command ---
     parser_network = subparsers.add_parser(
         "network",
@@ -12282,6 +12357,10 @@ async def main():
 
     if args.command == "network":
         run_network(args)
+        return
+
+    if args.command == "cron-lab":
+        await run_cron_lab(args)
         return
 
     # Initialize Agent Client

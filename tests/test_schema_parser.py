@@ -1,6 +1,7 @@
 import unittest
 from shared.schema_parser import SchemaParser
 
+
 class TestSchemaParser(unittest.TestCase):
     def setUp(self):
         self.parser = SchemaParser()
@@ -73,6 +74,7 @@ class TestSchemaParser(unittest.TestCase):
         self.assertIn("erDiagram", mermaid)
         self.assertIn("users {", mermaid)
         self.assertIn("posts }|..|| users : \"user_id->id\"", mermaid)
+
 
 if __name__ == '__main__':
     unittest.main()

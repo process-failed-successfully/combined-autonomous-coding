@@ -1,14 +1,17 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
+import sys
 import tempfile
 import shutil
 
+# Ensure shared module is available
+sys.path.append(str(Path(__file__).parent.parent))
+
 from textual.app import App
-from textual.widgets import ListView, Label
+from textual.widgets import Input, ListView, Label
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui import AgentTUI
-
 
 class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -45,7 +48,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
         async with app.run_test() as pilot:
             # Wait for screen to be pushed
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Use app.screen which should be the palette
             current_screen = app.screen
@@ -71,7 +74,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
         async with app.run_test() as pilot:
             # Wait for app to be ready
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Open palette with key binding
             await pilot.press("f1")
@@ -81,8 +84,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.screen, AgentCommandPalette)
 
             palette = app.screen
-            # Use query_one to check existence, but don't assign if unused
-            palette.query_one(ListView)
+            list_view = palette.query_one(ListView)
 
             # Filter for "Dashboard"
             await pilot.press("D", "a", "s", "h")
@@ -105,7 +107,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
 
         async with app.run_test() as pilot:
-            await pilot.pause()
+            await pilot.pause(0.5)
 
             # Open palette
             await pilot.press("f1")
@@ -126,17 +128,17 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
             found = False
             for call in mock_popen.call_args_list:
                 args, _ = call
-                if args:
-                    cmd_list = args[0]
-                    has_main = any(str(arg).endswith("main.py") for arg in cmd_list)
-                    if has_main and "test" in cmd_list:
-                        found = True
-                        break
+                # args[0] is the command list e.g. [python, /path/to/main.py, test, ...]
+                cmd_list = args[0]
+                # Check if "main.py" is in the command path (any element ending in main.py)
+                has_main = any(str(arg).endswith("main.py") for arg in cmd_list)
+                if args and has_main and "test" in cmd_list:
+                    found = True
+                    break
             self.assertTrue(found, "subprocess.Popen not called with test command")
 
             # Verify it dismissed
             self.assertNotIsInstance(app.screen, AgentCommandPalette)
-
 
 if __name__ == "__main__":
     unittest.main()

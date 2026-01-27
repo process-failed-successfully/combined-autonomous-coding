@@ -1,8 +1,9 @@
 import ast
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from shared.map import CodeNode, PythonMapBuilder, generate_mermaid, scan_project
+
 
 class TestCodeMap(unittest.TestCase):
     def test_code_node_serialization(self):
@@ -51,7 +52,7 @@ def my_func():
 
     def test_generate_mermaid(self):
         node1 = CodeNode("a.py", "module", "a.py", 1)
-        node1.dependencies.add("b") # implies b.py
+        node1.dependencies.add("b")  # implies b.py
 
         node2 = CodeNode("b.py", "module", "b.py", 1)
 
@@ -64,18 +65,26 @@ def my_func():
         self.assertIn("class b_py", diagram)
         self.assertIn("a_py ..> b_py : imports", diagram)
 
-    @patch("shared.map.get_python_files")
-    def test_scan_project(self, mock_get_files):
-        # Setup mock file system
-        mock_file = MagicMock()
-        mock_file.read_text.return_value = "def foo(): pass"
-        mock_file.relative_to.return_value = "test.py"
-        mock_get_files.return_value = [mock_file]
+    def test_scan_project(self):
+        import tempfile
 
-        result = scan_project(Path("."))
+        # Create a temporary directory and a python file inside it
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test.py"
+            file_path.write_text("def foo(): pass", encoding="utf-8")
 
-        self.assertIn("test.py", result)
-        self.assertEqual(result["test.py"].children[0].name, "foo")
+            # Mock get_python_files to return our temp file
+            with patch("shared.map.get_python_files") as mock_get_files:
+                mock_get_files.return_value = [file_path]
+                result = scan_project(temp_path)
+
+                # The key in map_data is rel_path.
+                # In scan_project, rel_path comes from file_path.relative_to(project_dir)
+                # Here project_dir is temp_path.
+
+                self.assertIn("test.py", result)
+                self.assertEqual(result["test.py"].children[0].name, "foo")
 
     def test_end_lineno_capture(self):
         code = """
@@ -98,13 +107,14 @@ def multi_line():
         # Python < 3.8 might not have end_lineno, but assuming CI environment is modern
         # If it's none, we assert it's None. If it's int, we check value.
         if hasattr(tree.body[0], 'end_lineno'):
-             self.assertEqual(single.lineno, 2)
-             self.assertEqual(single.end_lineno, 2)
+            self.assertEqual(single.lineno, 2)
+            self.assertEqual(single.end_lineno, 2)
 
-             self.assertEqual(multi.lineno, 4)
-             self.assertEqual(multi.end_lineno, 6)
+            self.assertEqual(multi.lineno, 4)
+            self.assertEqual(multi.end_lineno, 6)
         else:
-             print("Skipping end_lineno test due to old Python version")
+            print("Skipping end_lineno test due to old Python version")
+
 
 if __name__ == "__main__":
     unittest.main()

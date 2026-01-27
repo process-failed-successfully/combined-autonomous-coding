@@ -8,6 +8,7 @@ from textual.widgets import Label, Button, Tree, DataTable, Static
 from textual import on
 
 from shared.disk_usage import scan_disk_usage, format_size, get_largest_files
+from shared.trash import TrashManager
 
 class DiskUsageTab(Container):
     """Tab for visualizing disk usage."""
@@ -17,6 +18,7 @@ class DiskUsageTab(Container):
         self.project_dir = project_dir
         self.scan_data: dict = {}
         self.selected_path: Path | None = None
+        self.trash_manager = TrashManager(project_dir)
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -34,7 +36,7 @@ class DiskUsageTab(Container):
                 with Vertical(classes="stat-box"):
                     yield Label("[bold]Actions[/bold]")
                     yield Label("Select an item to see actions.", id="du-selected-lbl")
-                    yield Button("Delete Selected", id="btn-du-delete", variant="error", disabled=True)
+                    yield Button("Move to Trash", id="btn-du-delete", variant="warning", disabled=True)
 
     def on_mount(self) -> None:
         table = self.query_one("#du-table", DataTable)
@@ -130,9 +132,6 @@ class DiskUsageTab(Container):
         if not self.selected_path:
             return
 
-        import shutil
-        import os
-
         path = self.selected_path
         if not path.exists():
             self.notify("File not found.", severity="error")
@@ -143,22 +142,15 @@ class DiskUsageTab(Container):
             return
 
         try:
-            if path.is_file():
-                path.unlink()
-                self.notify(f"Deleted file: {path.name}")
-            elif path.is_dir():
-                # shutil.rmtree might be dangerous, confirm?
-                # TUI lacks easy modal confirmation without blocking or custom screen.
-                # Assuming user knows what they are doing for now or we rely on notification.
-                # Ideally we show a modal. For this MVP, we proceed.
-                shutil.rmtree(path)
-                self.notify(f"Deleted directory: {path.name}")
+            # Use TrashManager instead of deletion
+            trash_id = self.trash_manager.trash(path)
+            self.notify(f"Moved to trash: {path.name} ({trash_id})")
 
             # Refresh
             self.selected_path = None
             self.query_one("#btn-du-delete").disabled = True
-            self.query_one("#du-selected-lbl", Label).update("Deleted.")
+            self.query_one("#du-selected-lbl", Label).update("Moved to trash.")
             self.start_scan()
 
         except Exception as e:
-            self.notify(f"Error deleting: {e}", severity="error")
+            self.notify(f"Error moving to trash: {e}", severity="error")

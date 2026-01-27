@@ -58,6 +58,7 @@ from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
 from shared.tui_docker import DockerTab
+from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
@@ -4181,6 +4182,8 @@ class AgentTUI(App):
                 yield PlaygroundTab(self.project_dir)
             with TabPane("Prompt Lab", id="tab-prompt-lab"):
                 yield PromptLabTab(self.project_dir)
+            with TabPane("Presentation", id="tab-presentation"):
+                yield PresentationTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
         yield Footer()

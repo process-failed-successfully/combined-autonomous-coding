@@ -59,8 +59,8 @@ class TerminalTab(Container):
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.project_dir = project_dir
-        self.cwd = project_dir
+        self.project_dir = project_dir.resolve()
+        self.cwd = self.project_dir
         self.cmd_running = False
 
     def compose(self) -> ComposeResult:
@@ -121,6 +121,15 @@ class TerminalTab(Container):
 
         try:
             new_path = (self.cwd / target).resolve()
+
+            # Security check: prevent directory traversal outside project root
+            try:
+                # Ensures new_path is inside or equal to project_dir
+                new_path.relative_to(self.project_dir)
+            except ValueError:
+                self.write_error(f"cd: {target}: Access denied. Cannot navigate outside project directory.")
+                return
+
             if not new_path.exists():
                 self.write_error(f"cd: {target}: No such file or directory")
             elif not new_path.is_dir():

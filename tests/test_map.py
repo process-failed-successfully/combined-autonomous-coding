@@ -102,6 +102,29 @@ def my_func():
                 self.assertIn("test_parallel.py", result)
                 self.assertEqual(result["test_parallel.py"].children[0].name, "bar")
 
+    @patch("shared.map.PARALLEL_THRESHOLD", 0)
+    def test_scan_project_parallel_failure_fallback(self):
+        # Test fallback to sequential when parallel execution fails
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_fallback.py"
+            file_path.write_text("def fallback(): pass", encoding="utf-8")
+
+            with patch("shared.map.get_python_files") as mock_get_files, \
+                 patch("concurrent.futures.ProcessPoolExecutor") as mock_executor:
+
+                mock_get_files.return_value = [file_path]
+
+                # Simulate executor failure (e.g. OOM or system limit)
+                mock_executor.side_effect = OSError("System limit exceeded")
+
+                # Should not raise exception
+                result = scan_project(temp_path)
+
+                self.assertIn("test_fallback.py", result)
+                self.assertEqual(result["test_fallback.py"].children[0].name, "fallback")
+
     def test_end_lineno_capture(self):
         code = """
 def single_line(): pass

@@ -40,9 +40,9 @@ class PresentationTab(Container):
             await self.generate_presentation()
 
     async def generate_presentation(self) -> None:
-        theme = self.query_one("#pres-theme", Select).value or "default"
-        filename = self.query_one("#pres-output", Input).value or "presentation.md"
-        agent_type = self.query_one("#pres-agent", Select).value or "gemini"
+        theme = str(self.query_one("#pres-theme", Select).value or "default")
+        filename = str(self.query_one("#pres-output", Input).value or "presentation.md")
+        agent_type = str(self.query_one("#pres-agent", Select).value or "gemini")
 
         output_path = self.project_dir / filename
 

@@ -95,13 +95,20 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Initial CWD
             self.assertEqual(tab.cwd, self.project_dir)
 
-            # Type cd ..
-            inp.value = "cd .."
-            await inp.action_submit()
-            await pilot.pause(0.1)
+            # Create a temporary subdirectory
+            subdir = self.project_dir / "test_subdir"
+            subdir.mkdir(exist_ok=True)
+            try:
+                # Type cd test_subdir
+                inp.value = "cd test_subdir"
+                await inp.action_submit()
+                await pilot.pause(0.1)
 
-            # Verify CWD changed
-            self.assertEqual(tab.cwd, self.project_dir.parent)
+                # Verify CWD changed
+                self.assertEqual(tab.cwd, subdir)
+            finally:
+                if subdir.exists():
+                    subdir.rmdir()
 
     async def test_cd_invalid(self):
         async with self.app.run_test() as pilot:
@@ -121,6 +128,33 @@ class TestTerminalTab(unittest.IsolatedAsyncioTestCase):
             # Verify error logged
             log = tab.query_one("#terminal-log", RichLog)
             self.assertTrue(len(log.lines) > 0)
+
+    async def test_cd_traversal_blocked(self):
+        """Test that cd .. is blocked when at project root."""
+        async with self.app.run_test() as pilot:
+            tab = self.app.query_one(TerminalTab)
+            inp = tab.query_one("#terminal-input", Input)
+
+            # Initial CWD
+            self.assertEqual(tab.cwd, self.project_dir)
+
+            # Type cd ..
+            inp.value = "cd .."
+            await inp.action_submit()
+            await pilot.pause(0.1)
+
+            # Verify CWD has NOT changed (blocked)
+            self.assertEqual(tab.cwd, self.project_dir)
+
+            # Verify error message
+            log = tab.query_one("#terminal-log", RichLog)
+            # Textual RichLog lines are Strip objects
+            found_error = False
+            for line in log.lines:
+                if "Access denied" in line.text:
+                    found_error = True
+                    break
+            self.assertTrue(found_error, "Expected 'Access denied' error in log")
 
 if __name__ == "__main__":
     unittest.main()

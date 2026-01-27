@@ -4199,6 +4199,7 @@ class AgentTUI(App):
         elif event.button.id == "btn-lint":
             self.action_run_lint()
 
+
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution
     import_path = str(Path(__file__).parent.parent)

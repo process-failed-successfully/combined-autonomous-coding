@@ -4,6 +4,7 @@ import json
 import uuid
 from datetime import datetime
 
+
 class DevTools:
     """Utility collection for developers."""
 

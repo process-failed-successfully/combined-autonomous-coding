@@ -2,6 +2,7 @@ import unittest
 from shared.devtools import DevTools
 from datetime import datetime
 
+
 class TestDevTools(unittest.TestCase):
 
     def test_epoch_to_date(self):
@@ -43,9 +44,10 @@ class TestDevTools(unittest.TestCase):
         self.assertIn('  "a": 1', pretty_json)
 
     def test_invalid_json(self):
-        bad_json = "{'a': 1}" # Single quotes not valid JSON
+        bad_json = "{'a': 1}"  # Single quotes not valid JSON
         res = DevTools.format_json(bad_json)
         self.assertTrue(res.startswith("Error:"))
+
 
 if __name__ == '__main__':
     unittest.main()

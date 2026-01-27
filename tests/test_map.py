@@ -115,6 +115,42 @@ def multi_line():
         else:
             print("Skipping end_lineno test due to old Python version")
 
+    def test_scan_project_handles_worker_exception(self):
+        from unittest.mock import MagicMock
+
+        # We need to mock ProcessPoolExecutor to simulate a worker crash
+        # But scan_project uses it as a context manager.
+
+        with patch("concurrent.futures.ProcessPoolExecutor") as mock_executor_cls:
+            mock_executor = MagicMock()
+            mock_executor_cls.return_value.__enter__.return_value = mock_executor
+
+            mock_future = MagicMock()
+            mock_future.result.side_effect = Exception("Worker crashed")
+
+            mock_executor.submit.return_value = mock_future
+
+            # We also need to patch as_completed to yield our mock_future
+            with patch("concurrent.futures.as_completed", return_value=[mock_future]):
+                # And we need to ensure get_python_files returns something
+                with patch("shared.map.get_python_files", return_value=[Path("test.py")]):
+                    # This should NOT raise exception
+                    result = scan_project(Path("."))
+                    self.assertEqual(result, {})
+
+    def test_scan_project_fallback(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_fallback.py"
+            file_path.write_text("def fallback_func(): pass", encoding="utf-8")
+
+            with patch("concurrent.futures.ProcessPoolExecutor", side_effect=OSError("Resource limit")):
+                with patch("shared.map.get_python_files", return_value=[file_path]):
+                    result = scan_project(temp_path)
+
+                    self.assertIn("test_fallback.py", result)
+
 
 if __name__ == "__main__":
     unittest.main()

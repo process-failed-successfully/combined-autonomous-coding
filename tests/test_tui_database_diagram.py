@@ -1,18 +1,19 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch
 from pathlib import Path
-import asyncio
 
 from textual.app import App, ComposeResult
-from textual.widgets import Tree, RichLog, Button
+from textual.widgets import Tree
 
 # We need to import the class we are testing
 from shared.tui_database_diagram import DatabaseDiagramTab
 
+
 # A simple app wrapper for testing
-class TestApp(App):
+class DatabaseDiagramTestApp(App[None]):
     def compose(self) -> ComposeResult:
         yield DatabaseDiagramTab(Path("."))
+
 
 class TestDatabaseDiagramTab(unittest.IsolatedAsyncioTestCase):
     @patch("shared.tui_database_diagram.get_schema_info")
@@ -24,7 +25,7 @@ class TestDatabaseDiagramTab(unittest.IsolatedAsyncioTestCase):
         """
         mock_get_schema.return_value = (schema_text, Path("test.db"))
 
-        app = TestApp()
+        app = DatabaseDiagramTestApp()
         async with app.run_test() as pilot:
             # Wait for background tasks
             await pilot.pause(2.0)
@@ -34,7 +35,7 @@ class TestDatabaseDiagramTab(unittest.IsolatedAsyncioTestCase):
 
             # Textual Tree nodes are a bit complex to inspect directly for text content recursively easily in test without expansion
             # But we can check if root has children.
-            self.assertEqual(len(tree.root.children), 2) # users and posts
+            self.assertEqual(len(tree.root.children), 2)  # users and posts
 
             # Check internal schema_data
             tab = app.query_one(DatabaseDiagramTab)
@@ -45,11 +46,12 @@ class TestDatabaseDiagramTab(unittest.IsolatedAsyncioTestCase):
     async def test_no_schema(self, mock_get_schema):
         mock_get_schema.return_value = ("", None)
 
-        app = TestApp()
+        app = DatabaseDiagramTestApp()
         async with app.run_test() as pilot:
             await pilot.pause(0.5)
             tab = app.query_one(DatabaseDiagramTab)
             self.assertEqual(tab.schema_data, {})
+
 
 if __name__ == '__main__':
     unittest.main()

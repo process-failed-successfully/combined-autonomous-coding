@@ -1,12 +1,14 @@
 import asyncio
 from pathlib import Path
+from typing import Any
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Label, Button, Tree, RichLog
 from textual import on
 
 from shared.db_query import get_schema_info
 from shared.schema_parser import SchemaParser
+
 
 class DatabaseDiagramTab(Container):
     """Tab for visualizing Database Schema."""
@@ -15,7 +17,7 @@ class DatabaseDiagramTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.parser = SchemaParser()
-        self.schema_data = {}
+        self.schema_data: dict[str, Any] = {}
 
     def compose(self) -> ComposeResult:
         with Horizontal():

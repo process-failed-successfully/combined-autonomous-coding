@@ -1,5 +1,6 @@
 import re
-from typing import Dict, List, Any
+from typing import Dict, Any
+
 
 class SchemaParser:
     """Parses SQL schema (SQLite) into a structured format and generates diagrams."""
@@ -35,7 +36,7 @@ class SchemaParser:
 
             # Simple splitting by comma is risky if types contain commas (e.g. DECIMAL(5,2))
             # We'll split by newline first as that's common formatting
-            lines = [l.strip() for l in body.split('\n')]
+            lines = [line.strip() for line in body.split('\n')]
 
             # If multiple definitions on one line, we might miss them.
             # But get_schema_info usually returns formatted SQL from sqlite_master.
@@ -60,9 +61,9 @@ class SchemaParser:
                 if line.upper().startswith("PRIMARY KEY") or line.upper().startswith("CONSTRAINT"):
                     # We skip complex constraints parsing for now unless it's FK
                     if "FOREIGN KEY" in line.upper():
-                         # Try to parse constraint line with FK
-                         fk_match = re.search(r'FOREIGN\s+KEY\s*\((["`]?\w+["`]?)\)\s*REFERENCES\s+["`]?(\w+)["`]?\s*\((["`]?\w+["`]?)\)', line, re.IGNORECASE)
-                         if fk_match:
+                        # Try to parse constraint line with FK
+                        fk_match = re.search(r'FOREIGN\s+KEY\s*\((["`]?\w+["`]?)\)\s*REFERENCES\s+["`]?(\w+)["`]?\s*\((["`]?\w+["`]?)\)', line, re.IGNORECASE)
+                        if fk_match:
                             fks.append({
                                 "from_col": fk_match.group(1).strip('"').strip('`'),
                                 "to_table": fk_match.group(2).strip('"').strip('`'),

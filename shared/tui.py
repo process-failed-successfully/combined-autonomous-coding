@@ -62,6 +62,7 @@ from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
+from shared.tui_quiz import QuizTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
@@ -4194,6 +4195,8 @@ class AgentTUI(App):
                 yield PromptLabTab(self.project_dir)
             with TabPane("Presentation", id="tab-presentation"):
                 yield PresentationTab(self.project_dir)
+            with TabPane("Quiz", id="tab-quiz"):
+                yield QuizTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
         yield Footer()

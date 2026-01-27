@@ -57,6 +57,7 @@ from shared.tui_impact import ImpactTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
+from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
@@ -4017,6 +4018,7 @@ class AgentTUI(App):
 
     PALETTE_COMMANDS = [
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
+        PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
         PaletteCommand("Go to Logs", "switch_tab_logs"),
@@ -4089,6 +4091,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs"):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Monitor", id="tab-monitor"):
+                yield SystemMonitorTab(self.project_dir)
             with TabPane("Terminal", id="tab-terminal"):
                 yield TerminalTab(self.project_dir)
             with TabPane("Services", id="tab-services"):

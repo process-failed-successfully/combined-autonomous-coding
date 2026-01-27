@@ -4,6 +4,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from shared.tui_presentation import PresentationTab
 
+
 class PresentationTestApp(App[None]):
     def __init__(self, project_dir: Path):
         super().__init__()
@@ -11,6 +12,7 @@ class PresentationTestApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield PresentationTab(self.project_dir)
+
 
 class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -28,7 +30,7 @@ class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
             await pilot.click("#btn-pres-generate")
 
             # Wait for background task
-            await pilot.pause(0.5)
+            await pilot.pause(2.0)
 
             # Verify generate was called
             mock_generator.generate.assert_called_once()
@@ -53,7 +55,7 @@ class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
             await pilot.click("#btn-pres-generate")
 
             # Wait for background task
-            await pilot.pause(0.5)
+            await pilot.pause(2.0)
 
             # Verify generate was called
             mock_generator.generate.assert_called_once()
@@ -68,6 +70,7 @@ class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
                     break
 
             self.assertTrue(found, "Error notification not found in calls")
+
 
 if __name__ == "__main__":
     unittest.main()

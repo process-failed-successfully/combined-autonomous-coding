@@ -151,6 +151,60 @@ def multi_line():
 
                     self.assertIn("test_fallback.py", result)
 
+    def test_scan_project_sequential_threshold(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test.py"
+            file_path.write_text("def foo(): pass", encoding="utf-8")
+
+            # Threshold = 100, files = 1 -> Sequential
+            with patch("shared.map.PARALLEL_THRESHOLD", 100):
+                with patch("shared.map.get_python_files", return_value=[file_path]):
+                    with patch("concurrent.futures.ProcessPoolExecutor") as mock_executor:
+                        result = scan_project(temp_path)
+                        self.assertIn("test.py", result)
+                        mock_executor.assert_not_called()
+
+    def test_scan_project_parallel_threshold(self):
+        import tempfile
+        from unittest.mock import MagicMock
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test.py"
+            file_path.write_text("def foo(): pass", encoding="utf-8")
+
+            # Threshold = 0, files = 1 -> Parallel
+            with patch("shared.map.PARALLEL_THRESHOLD", 0):
+                with patch("shared.map.get_python_files", return_value=[file_path]):
+                    with patch("concurrent.futures.ProcessPoolExecutor") as mock_executor:
+                        # We need to mock the context manager and submit/as_completed interaction
+                        # But since we are patching ProcessPoolExecutor class, we can just check if it was initialized/called
+                        # However, the code uses it as a context manager and iterates results.
+                        # So we must mock it sufficiently to not crash.
+
+                        instance = mock_executor.return_value
+                        instance.__enter__.return_value = instance
+
+                        mock_future = MagicMock()
+                        # We need result to return (rel_path, module_node) or None
+                        # But since we mock ProcessPoolExecutor, the real _process_file_map is NOT called by executor.
+                        # So we must mock future.result() to return what we expect.
+
+                        # However, _process_file_map is a standalone function.
+                        # If we don't mock it, we can't easily get the return value from a mock future unless we set it.
+
+                        # Let's just mock submit return value.
+                        instance.submit.return_value = mock_future
+
+                        # We also need to mock as_completed
+                        with patch("concurrent.futures.as_completed", return_value=[mock_future]):
+                            mock_future.result.return_value = ("test.py", MagicMock())
+
+                            result = scan_project(temp_path)
+                            self.assertIn("test.py", result)
+                            mock_executor.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,8 +1,9 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
 from textual.app import App, ComposeResult
 from shared.tui_presentation import PresentationTab
+
 
 class PresentationTestApp(App[None]):
     def __init__(self, project_dir: Path):
@@ -11,6 +12,7 @@ class PresentationTestApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield PresentationTab(self.project_dir)
+
 
 class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -37,6 +39,7 @@ class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
             # args[0] is output_path, args[1] is theme
             self.assertEqual(args[0].name, "presentation.md")
             self.assertEqual(args[1], "default")
+
 
 if __name__ == "__main__":
     unittest.main()

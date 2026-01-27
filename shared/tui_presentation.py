@@ -2,8 +2,8 @@ from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Label, Button, Input, Select, Markdown
-from textual import on
 from shared.presentation import PresentationGenerator
+
 
 class PresentationTab(Container):
     """Tab for generating project presentations."""
@@ -85,6 +85,8 @@ class PresentationTab(Container):
             # So running it inside to_thread requires setting up a loop in that thread.
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(generator.generate(output_path, theme))
-            loop.close()
-            return result
+            try:
+                return loop.run_until_complete(generator.generate(output_path, theme))
+            finally:
+                loop.close()
+                asyncio.set_event_loop(None)

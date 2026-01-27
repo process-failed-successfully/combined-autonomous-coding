@@ -1,7 +1,9 @@
 import asyncio
 from pathlib import Path
+from typing import Any, Dict
+
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Label, Button, Tree, RichLog
 from textual import on
 
@@ -15,7 +17,7 @@ class DatabaseDiagramTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.parser = SchemaParser()
-        self.schema_data = {}
+        self.schema_data: Dict[str, Any] = {}
 
     def compose(self) -> ComposeResult:
         with Horizontal():

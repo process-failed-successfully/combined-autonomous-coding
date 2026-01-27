@@ -37,7 +37,7 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
         palette = AgentCommandPalette(commands)
 
-        class PaletteApp(App):
+        class PaletteApp(App[None]):
             def on_mount(self):
                 self.push_screen(palette)
 

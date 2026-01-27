@@ -4069,7 +4069,8 @@ class AgentTUI(App):
         import subprocess
         self.notify("Running tests...")
         try:
-            subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])
+            main_py = Path(__file__).parent.parent / "main.py"
+            subprocess.Popen([sys.executable, str(main_py), "test", "-p", str(self.project_dir)])
             self.notify("Tests started in background.")
         except Exception as e:
             self.notify(f"Failed to start tests: {e}", severity="error")
@@ -4078,7 +4079,8 @@ class AgentTUI(App):
         import subprocess
         self.notify("Running lint...")
         try:
-            subprocess.Popen([sys.executable, "main.py", "lint", "-p", str(self.project_dir)])
+            main_py = Path(__file__).parent.parent / "main.py"
+            subprocess.Popen([sys.executable, str(main_py), "lint", "-p", str(self.project_dir)])
             self.notify("Lint started in background.")
         except Exception as e:
             self.notify(f"Failed to start lint: {e}", severity="error")

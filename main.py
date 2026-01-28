@@ -224,6 +224,36 @@ def run_scheduler(args):
 
     sys.exit(0)
 
+def run_cron_lab(args):
+    """Runs the Cron Lab (CLI or TUI)."""
+    if args.tui:
+        from shared.tui import AgentTUI
+        print("Launching TUI... Navigate to 'Cron Lab' tab.")
+        app = AgentTUI(project_dir=args.project_dir)
+        app.run()
+        return
+
+    from shared.cron_lab import CronLabManager
+    manager = CronLabManager()
+
+    expr = args.expression
+    if not expr:
+        print("Error: Expression required for CLI mode. Or use --tui.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Cron Lab: {expr} ---")
+    if not manager.validate(expr):
+        print("❌ Invalid expression.")
+        sys.exit(1)
+
+    print(f"Description: {manager.describe(expr)}")
+    print("\nNext 5 Occurrences:")
+    occurrences = manager.get_next_occurrences(expr)
+    for occ in occurrences:
+        print(f"  - {occ}")
+
+    sys.exit(0)
+
 def run_chaos(args):
     """Runs chaos engineering experiments."""
     run_chaos_logic(
@@ -9372,6 +9402,28 @@ def parse_args(argv=None):
     parser_scheduler_start = scheduler_subparsers.add_parser("start", help="Start the scheduler loop.")
     parser_scheduler_start.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron_lab = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with cron expressions."
+    )
+    parser_cron_lab.add_argument(
+        "expression",
+        nargs="?",
+        help="The cron expression to analyze."
+    )
+    parser_cron_lab.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the interactive TUI mode."
+    )
+    parser_cron_lab.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'chaos' command ---
     parser_chaos = subparsers.add_parser(
         "chaos",
@@ -12281,6 +12333,10 @@ async def main():
 
     if args.command == "scheduler":
         run_scheduler(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     if args.command == "chaos":

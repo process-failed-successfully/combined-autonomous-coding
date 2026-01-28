@@ -25,6 +25,16 @@ class TestDevTools(unittest.TestCase):
         decoded = DevTools.base64_decode(encoded)
         self.assertEqual(decoded, "Hello World")
 
+    def test_url_encode(self):
+        text = "Hello World?"
+        encoded = DevTools.url_encode(text)
+        self.assertEqual(encoded, "Hello%20World%3F")
+
+    def test_url_decode(self):
+        encoded = "Hello%20World%3F"
+        decoded = DevTools.url_decode(encoded)
+        self.assertEqual(decoded, "Hello World?")
+
     def test_generate_uuid(self):
         uuid_str = DevTools.generate_uuid()
         self.assertEqual(len(uuid_str), 36)

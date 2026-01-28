@@ -62,6 +62,7 @@ from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
+from shared.tui_cron import CronLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
 from shared.tui_datalab import DataLabTab
@@ -3799,9 +3800,17 @@ class AgentTUI(App):
         PaletteCommand("Quit", "quit"),
     ]
 
-    def __init__(self, project_dir: Path, **kwargs) -> None:
+    def __init__(self, project_dir: Path, start_tab: str = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.start_tab = start_tab
+
+    def on_mount(self) -> None:
+        if self.start_tab:
+            try:
+                self.query_one("#main-tabs", TabbedContent).active = self.start_tab
+            except Exception:
+                pass
 
     def action_toggle_command_palette(self) -> None:
         self.push_screen(AgentCommandPalette(self.PALETTE_COMMANDS), self.on_command_palette_selected)
@@ -3965,6 +3974,8 @@ class AgentTUI(App):
                 yield QuizTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("Cron Lab", id="tab-cron-lab"):
+                yield CronLabTab(self.project_dir)
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
         yield Footer()

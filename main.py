@@ -9454,6 +9454,37 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'standup' command ---
+    parser_standup = subparsers.add_parser(
+        "standup",
+        help="Generate a daily standup report based on git activity."
+    )
+    parser_standup.add_argument(
+        "--since",
+        default="24 hours ago",
+        help="Time window to analyze (default: '24 hours ago')."
+    )
+    parser_standup.add_argument(
+        "--author",
+        help="Filter commits by author (defaults to current user)."
+    )
+    parser_standup.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_standup.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_standup.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
+
     # --- New 'network' command ---
     parser_network = subparsers.add_parser(
         "network",
@@ -12262,6 +12293,11 @@ async def main():
 
     if args.command == "devtools":
         run_devtools(args)
+        return
+
+    if args.command == "standup":
+        from shared.standup import run_standup_logic
+        await run_standup_logic(args)
         return
 
     if args.command == "presentation":

@@ -11,7 +11,7 @@ import time
 import re
 from pathlib import Path
 from typing import Optional
-from shared.utils import sanitize_url
+from shared.utils import sanitize_text, sanitize_url
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def run_git(cmd: list[str], cwd: Path) -> bool:
         )
         return True
     except subprocess.CalledProcessError as e:
-        logger.debug(f"Git command failed: {cmd} -> {e.stderr.decode().strip()}")
+        logger.debug(f"Git command failed: {sanitize_text(str(cmd))} -> {sanitize_text(e.stderr.decode().strip())}")
         return False
     except Exception as e:
         logger.error(f"Git execution error: {e}")

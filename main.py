@@ -103,6 +103,46 @@ if FileSystemEventHandler:
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 
+def run_cron_lab(args):
+    """Runs the Cron Lab (CLI or TUI)."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+
+    if args.tui:
+        # Launch TUI
+        from shared.tui import AgentTUI
+        print("Launching TUI... Navigate to 'Cron Lab' tab.")
+        app = AgentTUI(project_dir=project_dir, start_tab="tab-cron-lab")
+        app.run()
+        return
+
+    # CLI Mode
+    manager = CronLabManager()
+
+    expression = args.expression
+    if not expression:
+        print("Error: Cron expression required for CLI mode (or use --tui).", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Cron Lab: {expression} ---")
+
+    if manager.validate(expression):
+        print("✅ Status: Valid")
+        print(f"Description: {manager.describe(expression)}")
+        print("\nNext 5 Occurrences:")
+        try:
+            next_runs = manager.get_next_occurrences(expression, count=5)
+            for dt in next_runs:
+                print(f"  - {dt.strftime('%Y-%m-%d %H:%M:%S')}")
+        except Exception as e:
+            print(f"Error calculating next runs: {e}")
+    else:
+        print("❌ Status: Invalid")
+        print(f"Description: Invalid format")
+
+    sys.exit(0)
+
 def run_devtools(args):
     """Runs developer tools from CLI."""
     from shared.devtools import DevTools
@@ -9570,6 +9610,28 @@ def parse_args(argv=None):
     parser_gr_check = guardrails_subparsers.add_parser("check", help="Run policy checks.")
     parser_gr_check.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with cron expressions (CLI or TUI)."
+    )
+    parser_cron.add_argument(
+        "expression",
+        nargs="?",
+        help="The cron expression to analyze."
+    )
+    parser_cron.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the interactive TUI lab."
+    )
+    parser_cron.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'devtools' command ---
     parser_devtools = subparsers.add_parser(
         "devtools",
@@ -12488,6 +12550,10 @@ async def main():
 
     if args.command == "devtools":
         run_devtools(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     if args.command == "standup":

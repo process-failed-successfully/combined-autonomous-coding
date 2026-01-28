@@ -1887,6 +1887,118 @@ def _artifacts_diff(args, base_dir, mode):
 
     sys.exit(0)
 
+def run_tour(args):
+    """Manages interactive code tours."""
+    from shared.tour import TourManager
+    from rich.console import Console
+    from rich.syntax import Syntax
+    from rich.panel import Panel
+    from rich.prompt import Prompt
+
+    project_dir = args.project_dir.resolve()
+    manager = TourManager(project_dir)
+    console = Console()
+
+    if args.action == "list":
+        tours = manager.list_tours()
+        if not tours:
+            print("No tours found.")
+        else:
+            print("--- Available Tours ---")
+            for t in tours:
+                print(f"  - {t}")
+        sys.exit(0)
+
+    elif args.action == "create":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+        try:
+            manager.create_tour(args.name)
+            print(f"✅ Created tour '{args.name}'")
+            print("Use 'tour add-step' to add steps.")
+        except Exception as e:
+            print(f"❌ Error creating tour: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "delete":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+        if manager.delete_tour(args.name):
+            print(f"✅ Deleted tour '{args.name}'")
+        else:
+            print(f"❌ Tour '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "add-step":
+        if not args.name or not args.file or not args.line:
+            print("Error: Name, file, and line required.", file=sys.stderr)
+            sys.exit(1)
+
+        desc = args.description or input("Description: ")
+        try:
+            manager.add_step(args.name, args.file, args.line, desc)
+            print(f"✅ Added step to tour '{args.name}'")
+        except Exception as e:
+            print(f"❌ Error adding step: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "play":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+
+        tour = manager.get_tour(args.name)
+        if not tour:
+            print(f"❌ Tour '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        steps = tour.steps
+        if not steps:
+            print("Tour has no steps.")
+            sys.exit(0)
+
+        idx = 0
+        while 0 <= idx < len(steps):
+            step = steps[idx]
+            console.clear()
+            console.print(f"[bold magenta]Tour: {tour.title} ({idx+1}/{len(steps)})[/bold magenta]")
+            console.print(f"[bold cyan]File:[/bold cyan] {step.file}:{step.line}")
+            console.print(Panel(step.description, title="Description", border_style="green"))
+
+            file_path = project_dir / step.file
+            if file_path.exists():
+                try:
+                    content = file_path.read_text(encoding="utf-8")
+                    # simple logic to show context around the line
+                    lines = content.splitlines()
+                    start_line = max(0, step.line - 5)
+                    end_line = min(len(lines), step.line + 5)
+                    context_code = "\n".join(lines[start_line:end_line])
+
+                    syntax = Syntax(context_code, "python", theme="monokai", line_numbers=True, start_line=start_line+1, highlight_lines={step.line})
+                    console.print(syntax)
+                except Exception as e:
+                    console.print(f"[red]Error reading file: {e}[/red]")
+            else:
+                console.print(f"[red]File not found: {step.file}[/red]")
+
+            print("\n")
+            choice = Prompt.ask("Navigate", choices=["n", "p", "q"], default="n")
+
+            if choice == "n":
+                idx += 1
+            elif choice == "p":
+                idx -= 1
+            elif choice == "q":
+                break
+
+        console.clear()
+        print("Tour finished.")
+
+    sys.exit(0)
+
 def run_artifacts(args, mode):
     """Manages agent artifacts (trash or archives)."""
     project_dir = args.project_dir.resolve()
@@ -9556,6 +9668,44 @@ def parse_args(argv=None):
         help="Limit the number of commits to analyze for co-edits (default: 100)."
     )
 
+    # --- New 'tour' command ---
+    parser_tour = subparsers.add_parser(
+        "tour",
+        help="Manage interactive code tours."
+    )
+    tour_subparsers = parser_tour.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # tour list
+    parser_tour_list = tour_subparsers.add_parser("list", help="List available tours.")
+    parser_tour_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour create
+    parser_tour_create = tour_subparsers.add_parser("create", help="Create a new tour.")
+    parser_tour_create.add_argument("name", help="Tour name.")
+    parser_tour_create.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour delete
+    parser_tour_delete = tour_subparsers.add_parser("delete", help="Delete a tour.")
+    parser_tour_delete.add_argument("name", help="Tour name.")
+    parser_tour_delete.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour add-step
+    parser_tour_add = tour_subparsers.add_parser("add-step", help="Add a step to a tour.")
+    parser_tour_add.add_argument("name", help="Tour name.")
+    parser_tour_add.add_argument("file", help="File path.")
+    parser_tour_add.add_argument("line", type=int, help="Line number.")
+    parser_tour_add.add_argument("description", nargs="?", help="Description.")
+    parser_tour_add.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour play
+    parser_tour_play = tour_subparsers.add_parser("play", help="Play a tour.")
+    parser_tour_play.add_argument("name", help="Tour name.")
+    parser_tour_play.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -11959,6 +12109,11 @@ async def main():
     # Handle `suggest` command
     if args.command == "suggest":
         run_suggest(args)
+        return
+
+    # Handle `tour` command
+    if args.command == "tour":
+        run_tour(args)
         return
 
     # Handle `history` command

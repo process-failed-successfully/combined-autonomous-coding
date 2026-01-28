@@ -251,6 +251,12 @@ def run_onboard(args):
     run_onboard_logic(args.project_dir)
     sys.exit(0)
 
+def run_tour(args):
+    """Runs the code tour."""
+    from shared.tour import run_tour_logic
+    run_tour_logic(args)
+    sys.exit(0)
+
 def run_secrets(args):
     """Manages encrypted secrets."""
     from shared.secrets import SecretsManager
@@ -8770,6 +8776,55 @@ def parse_args(argv=None):
         help="Output report in JSON format."
     )
 
+    # --- New 'tour' command ---
+    parser_tour = subparsers.add_parser(
+        "tour",
+        help="Manage and run interactive codebase tours."
+    )
+    tour_subparsers = parser_tour.add_subparsers(
+        dest="action",
+        required=True,
+        help="Tour action."
+    )
+
+    # tour list
+    tour_subparsers.add_parser("list", help="List available tours.")
+
+    # tour create
+    parser_tour_create = tour_subparsers.add_parser("create", help="Create a new tour.")
+    parser_tour_create.add_argument("name", help="Tour name.")
+    parser_tour_create.add_argument("--title", help="Tour title.")
+    parser_tour_create.add_argument("--description", help="Tour description.")
+    parser_tour_create.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour add
+    parser_tour_add = tour_subparsers.add_parser("add", help="Add a step to a tour.")
+    parser_tour_add.add_argument("name", help="Tour name.")
+    parser_tour_add.add_argument("file", help="File path.")
+    parser_tour_add.add_argument("line", type=int, help="Line number.")
+    parser_tour_add.add_argument("description", help="Step description.")
+    parser_tour_add.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour play
+    parser_tour_play = tour_subparsers.add_parser("play", help="Run a tour interactively.")
+    parser_tour_play.add_argument("name", help="Tour name.")
+    parser_tour_play.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour delete
+    parser_tour_delete = tour_subparsers.add_parser("delete", help="Delete a tour.")
+    parser_tour_delete.add_argument("name", help="Tour name.")
+    parser_tour_delete.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # tour show
+    parser_tour_show = tour_subparsers.add_parser("show", help="Show tour details.")
+    parser_tour_show.add_argument("name", help="Tour name.")
+    parser_tour_show.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # add default project dir to list as well
+    parser_tour_list = tour_subparsers.choices["list"] # Access the parser created above
+    parser_tour_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+
     # --- New 'check-links' command ---
     parser_check_links = subparsers.add_parser(
         "check-links",
@@ -12197,6 +12252,10 @@ async def main():
 
     if args.command == "security":
         run_security(args)
+        return
+
+    if args.command == "tour":
+        run_tour(args)
         return
 
     if args.command == "help":

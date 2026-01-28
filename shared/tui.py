@@ -78,6 +78,7 @@ from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_devtools import DevToolsTab
+from shared.tui_cron import CronLabTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -3967,6 +3968,8 @@ class AgentTUI(App):
                 yield RegexLabTab(self.project_dir)
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
+            with TabPane("Cron Lab", id="tab-cron-lab"):
+                yield CronLabTab(self.project_dir)
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

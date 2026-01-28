@@ -143,6 +143,48 @@ def run_devtools(args):
 
     sys.exit(0)
 
+def run_cron_lab(args):
+    """Runs the Cron Lab."""
+    from shared.cron_lab import CronLabManager
+
+    if args.tui:
+        from shared.tui import AgentTUI
+        print("Launching TUI... Navigate to 'Cron Lab' tab.")
+        app = AgentTUI(project_dir=args.project_dir)
+        app.run()
+        return
+
+    manager = CronLabManager()
+
+    if args.expression:
+        if args.action == "validate":
+            is_valid = manager.validate(args.expression)
+            if is_valid:
+                print("✅ Valid cron expression.")
+            else:
+                print("❌ Invalid cron expression.")
+                sys.exit(1)
+
+        elif args.action == "explain":
+            print(manager.explain(args.expression))
+
+        elif args.action == "next":
+            if not manager.validate(args.expression):
+                print(f"❌ Invalid cron expression: {args.expression}")
+                sys.exit(1)
+            occurrences = manager.next_occurrences(args.expression, args.count)
+            print(f"Next {args.count} occurrences for '{args.expression}':")
+            for occ in occurrences:
+                print(f"  - {occ}")
+    else:
+        # If no expression and no TUI, show help or error
+        # But if action is provided without expression, argparse might confuse things
+        # For now, require expression
+        print("Error: Expression required for CLI mode (unless --tui is used).", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
 def run_quiz(args):
     """Runs the codebase quiz."""
     from shared.quiz import QuizGenerator
@@ -9602,6 +9644,41 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with cron expressions."
+    )
+    parser_cron.add_argument(
+        "action",
+        choices=["validate", "explain", "next"],
+        nargs="?",
+        default="next",
+        help="Action to perform."
+    )
+    parser_cron.add_argument(
+        "expression",
+        nargs="?",
+        help="The cron expression (e.g. '0 0 * * *')."
+    )
+    parser_cron.add_argument(
+        "-c", "--count",
+        type=int,
+        default=5,
+        help="Number of next occurrences to show."
+    )
+    parser_cron.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the TUI mode."
+    )
+    parser_cron.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="Project directory (for TUI context)."
+    )
+
     # --- New 'standup' command ---
     parser_standup = subparsers.add_parser(
         "standup",
@@ -12488,6 +12565,10 @@ async def main():
 
     if args.command == "devtools":
         run_devtools(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     if args.command == "standup":

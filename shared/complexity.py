@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import concurrent.futures
 
+
 class ComplexityVisitor(ast.NodeVisitor):
     def __init__(self):
         self.complexity = 1  # Base complexity is 1
@@ -65,6 +66,7 @@ class ComplexityVisitor(ast.NodeVisitor):
     # but if we are analyzing a file, we might just look at functions.
     # The standard way is to calculate complexity PER FUNCTION.
 
+
 class FunctionComplexityVisitor(ast.NodeVisitor):
     def __init__(self):
         self.functions = []
@@ -105,6 +107,7 @@ class FunctionComplexityVisitor(ast.NodeVisitor):
         })
         self.generic_visit(node)
 
+
 def calculate_complexity(source_code: str):
     """Calculates complexity for all functions in the source code."""
     try:
@@ -115,6 +118,7 @@ def calculate_complexity(source_code: str):
     except SyntaxError as e:
         print(f"DEBUG: SyntaxError in file: {e}")
         return []
+
 
 def get_python_files(project_dir: Path):
     """Gets all Python files respecting .gitignore."""
@@ -147,37 +151,40 @@ def get_python_files(project_dir: Path):
                 py_files.append(Path(root) / name)
     return py_files
 
+
+def process_file(file_path, project_dir):
+    if not file_path.exists():
+        return []
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        functions = calculate_complexity(content)
+        file_results = []
+        for func in functions:
+            file_results.append({
+                "file": str(file_path.relative_to(project_dir)),
+                "function": func["name"],
+                "complexity": func["complexity"],
+                "lineno": func["lineno"]
+            })
+        return file_results
+    except Exception:
+        # Ignore read errors
+        return []
+
+
 def analyze_project_complexity(project_dir: Path):
     """Analyzes complexity for the entire project."""
     project_dir = project_dir.resolve()
     files = get_python_files(project_dir)
     results = []
 
-    def process_file(file_path):
-        if not file_path.exists():
-            return []
-        try:
-            content = file_path.read_text(encoding="utf-8", errors="ignore")
-            functions = calculate_complexity(content)
-            file_results = []
-            for func in functions:
-                file_results.append({
-                    "file": str(file_path.relative_to(project_dir)),
-                    "function": func["name"],
-                    "complexity": func["complexity"],
-                    "lineno": func["lineno"]
-                })
-            return file_results
-        except Exception:
-            # Ignore read errors
-            return []
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_file = {executor.submit(process_file, f): f for f in files}
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        future_to_file = {executor.submit(process_file, f, project_dir): f for f in files}
         for future in concurrent.futures.as_completed(future_to_file):
             results.extend(future.result())
 
     return results
+
 
 def _run_analytics_complexity_logic(project_dir: Path):
     """Displays the complexity analysis."""

@@ -3455,6 +3455,20 @@ def run_knowledge(args):
     sys.exit(0)
 
 
+async def run_chat(args):
+    """Starts an interactive chat session."""
+    from shared.chat import ChatManager
+
+    project_dir = args.project_dir.resolve()
+    manager = ChatManager(
+        project_dir=project_dir,
+        agent_type=args.agent,
+        model=args.model
+    )
+    await manager.run()
+    sys.exit(0)
+
+
 async def run_ask(args):
     """Queries the codebase using the configured agent."""
     # Setup logging
@@ -7572,6 +7586,29 @@ def parse_args(argv=None):
     parser_knowledge_graph.add_argument("-o", "--output", help="Output file path.")
     parser_knowledge_graph.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+
+    # --- New 'chat' command ---
+    parser_chat = subparsers.add_parser(
+        "chat",
+        help="Start an interactive chat session with the agent."
+    )
+    parser_chat.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_chat.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_chat.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
 
     # --- New 'ask' command ---
     parser_ask = subparsers.add_parser(
@@ -11895,6 +11932,11 @@ async def main():
     # Handle `knowledge` command
     if args.command == "knowledge":
         run_knowledge(args)
+        return
+
+    # Handle `chat` command
+    if args.command == "chat":
+        await run_chat(args)
         return
 
     # Handle `ask` command

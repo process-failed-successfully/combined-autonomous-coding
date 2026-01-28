@@ -143,6 +143,31 @@ def run_devtools(args):
 
     sys.exit(0)
 
+def run_cron_lab(args):
+    """Runs the cron lab experimenter."""
+    from shared.cron_lab import CronLabManager
+
+    manager = CronLabManager()
+    expr = args.expression
+
+    print(f"--- Cron Lab: {expr} ---")
+
+    if not manager.validate(expr):
+        print("❌ Invalid cron expression.")
+        sys.exit(1)
+
+    print("✅ Valid cron expression.")
+
+    if args.describe:
+        print(f"Description: {manager.describe(expr)}")
+
+    print(f"\nNext {args.next} occurrences:")
+    occurrences = manager.get_next_occurrences(expr, args.next)
+    for dt in occurrences:
+        print(f"  - {dt}")
+
+    sys.exit(0)
+
 def run_quiz(args):
     """Runs the codebase quiz."""
     from shared.quiz import QuizGenerator
@@ -9602,6 +9627,27 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron_lab = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with cron expressions."
+    )
+    parser_cron_lab.add_argument(
+        "expression",
+        help="The cron expression to test."
+    )
+    parser_cron_lab.add_argument(
+        "--next",
+        type=int,
+        default=5,
+        help="Number of next occurrences to show (default: 5)."
+    )
+    parser_cron_lab.add_argument(
+        "--describe",
+        action="store_true",
+        help="Show a human-readable description."
+    )
+
     # --- New 'standup' command ---
     parser_standup = subparsers.add_parser(
         "standup",
@@ -12488,6 +12534,10 @@ async def main():
 
     if args.command == "devtools":
         run_devtools(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     if args.command == "standup":

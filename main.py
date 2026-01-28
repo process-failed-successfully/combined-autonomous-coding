@@ -5186,6 +5186,14 @@ def run_hooks(args):
     sys.exit(0)
 
 
+def run_replay(args):
+    """Replays an agent run."""
+    from shared.replay import ReplayManager
+    manager = ReplayManager(args.project_dir)
+    manager.replay(args.run_id, speed=args.speed, auto=args.auto)
+    sys.exit(0)
+
+
 def run_git(args):
     """Acts as a proxy to run git commands within a specified task's worktree."""
     project_dir = args.project_dir.resolve()
@@ -6867,6 +6875,34 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory.",
+    )
+
+    # --- New 'replay' command ---
+    parser_replay = subparsers.add_parser(
+        "replay",
+        help="Replay an agent run interactively."
+    )
+    parser_replay.add_argument(
+        "run_id",
+        nargs="?",
+        help="The Run ID to replay (defaults to latest).",
+    )
+    parser_replay.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_replay.add_argument(
+        "--speed",
+        type=float,
+        default=0.5,
+        help="Speed for auto-play (seconds delay between turns).",
+    )
+    parser_replay.add_argument(
+        "--auto",
+        action="store_true",
+        help="Auto-play without waiting for user input.",
     )
 
     # --- New 'recipes' command ---
@@ -12000,6 +12036,10 @@ async def main():
 
     if args.command == "hooks":
         run_hooks(args)
+        return
+
+    if args.command == "replay":
+        run_replay(args)
         return
 
     if args.command in ["recipes", "macro"]:

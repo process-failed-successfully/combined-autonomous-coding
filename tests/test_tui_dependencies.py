@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 import sys
 import shutil
 import tempfile
@@ -8,8 +8,9 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DataTable, Input, Checkbox
-from shared.tui_dependencies import DependenciesTab
+from textual.widgets import Label, DataTable, Input, Checkbox  # noqa: E402
+from shared.tui_dependencies import DependenciesTab  # noqa: E402
+
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -52,8 +53,10 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
 
         # We mock query_one to return our mocks
         def query_one_side_effect(selector, type=None):
-            if selector == "#deps-table": return mock_table
-            if selector == "#deps-status": return mock_status
+            if selector == "#deps-table":
+                return mock_table
+            if selector == "#deps-status":
+                return mock_status
             return MagicMock()
 
         tab.query_one = MagicMock(side_effect=query_one_side_effect)
@@ -82,8 +85,10 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         mock_status = MagicMock(spec=Label)
 
         def query_one_side_effect(selector, type=None):
-            if selector == "#deps-table": return mock_table
-            if selector == "#deps-status": return mock_status
+            if selector == "#deps-table":
+                return mock_table
+            if selector == "#deps-status":
+                return mock_status
             return MagicMock()
 
         tab.query_one = MagicMock(side_effect=query_one_side_effect)
@@ -131,9 +136,12 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         mock_chk.value = False
 
         def query_one_side_effect(selector, type=None):
-            if selector == "#deps-input-name": return mock_input_name
-            if selector == "#deps-input-version": return mock_input_ver
-            if selector == "#deps-chk-dev": return mock_chk
+            if selector == "#deps-input-name":
+                return mock_input_name
+            if selector == "#deps-input-version":
+                return mock_input_ver
+            if selector == "#deps-chk-dev":
+                return mock_chk
             return MagicMock()
 
         tab.query_one = MagicMock(side_effect=query_one_side_effect)
@@ -143,6 +151,7 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
 
         tab.updater.add_package.assert_called_with("new-pkg", "1.0", False)
         tab.notify.assert_called_with("Package 'new-pkg' installed.")
+
 
 if __name__ == "__main__":
     unittest.main()

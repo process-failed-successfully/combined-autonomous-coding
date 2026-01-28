@@ -138,7 +138,7 @@ def has_recent_activity(
 
 async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) -> str:
     """Execute a bash command block."""
-    logger.info(f"[Executing Bash] {command}")
+    logger.info(f"[Executing Bash] {sanitize_text(command)}")
     try:
         process = await asyncio.create_subprocess_shell(
             command,
@@ -332,8 +332,8 @@ async def process_response_blocks(
                             labels={"tool_type": "bash", "error_type": "exception"},
                         )
                         output = "Error"
-                    execution_log += f"\n> {content}\n{output}\n"
-                    executed_actions.append(f"Ran Bash: {content}")
+                    execution_log += f"\n> {sanitize_text(content)}\n{output}\n"
+                    executed_actions.append(f"Ran Bash: {sanitize_text(content)}")
 
                 elif block_type == "write":
                     if status_callback:
@@ -512,11 +512,15 @@ class EnhancedJSONEncoder(json.JSONEncoder):
                 return str(o)
 
 
-def sanitize_url(url: str) -> str:
-    """Mask sensitive information (tokens) in a URL."""
-    if not url:
-        return url
+def sanitize_text(text: str) -> str:
+    """Mask sensitive information (tokens) in text (URLs, etc)."""
+    if not text:
+        return text
 
     import re
     # Mask https://token@github.com... or https://user:token@github.com...
-    return re.sub(r"(https?://)([^@/]+)@", r"\1****@", url)
+    return re.sub(r"(https?://)([^@/]+)@", r"\1****@", text)
+
+
+# Backward compatibility
+sanitize_url = sanitize_text

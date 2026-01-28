@@ -9706,6 +9706,34 @@ def parse_args(argv=None):
     parser_tour_play.add_argument("name", help="Tour name.")
     parser_tour_play.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'regex' command ---
+    parser_regex = subparsers.add_parser(
+        "regex",
+        help="Regex tools (match, explain, generate)."
+    )
+    regex_subparsers = parser_regex.add_subparsers(dest="action", required=True)
+
+    # regex match
+    parser_regex_match = regex_subparsers.add_parser("match", help="Match regex against text.")
+    parser_regex_match.add_argument("pattern", help="Regex pattern.")
+    parser_regex_match.add_argument("text", nargs="?", help="Text to match against (optional, reads from stdin if missing).")
+    parser_regex_match.add_argument("-i", "--ignore-case", action="store_true", help="Ignore case.")
+    parser_regex_match.add_argument("-m", "--multiline", action="store_true", help="Multiline mode.")
+    parser_regex_match.add_argument("-s", "--dotall", action="store_true", help="Dot matches all.")
+    parser_regex_match.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # regex explain
+    parser_regex_explain = regex_subparsers.add_parser("explain", help="Explain regex pattern using AI.")
+    parser_regex_explain.add_argument("pattern", help="Regex pattern.")
+    parser_regex_explain.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use.")
+    parser_regex_explain.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # regex generate
+    parser_regex_generate = regex_subparsers.add_parser("generate", help="Generate regex from description using AI.")
+    parser_regex_generate.add_argument("description", help="Description of what to match.")
+    parser_regex_generate.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use.")
+    parser_regex_generate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -11870,6 +11898,64 @@ def run_worktrees(args):
         sys.exit(0)
 
 
+async def run_regex(args):
+    """Runs regex tools."""
+    from shared.regex_lab import RegexLabManager
+    import re
+    import sys
+
+    project_dir = args.project_dir.resolve()
+    manager = RegexLabManager(project_dir)
+
+    if args.action == "match":
+        pattern = args.pattern
+        text = args.text
+
+        # Read from stdin if text not provided
+        if not text:
+            if not sys.stdin.isatty():
+                try:
+                    text = sys.stdin.read()
+                except Exception as e:
+                    print(f"Error reading stdin: {e}", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                print("Error: Text required (argument or stdin).", file=sys.stderr)
+                sys.exit(1)
+
+        flags = 0
+        if args.ignore_case: flags |= re.IGNORECASE
+        if args.multiline: flags |= re.MULTILINE
+        if args.dotall: flags |= re.DOTALL
+
+        result = manager.match_regex(pattern, text, flags)
+
+        if "error" in result:
+            print(f"Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+        matches = result["matches"]
+        print(f"Found {result['count']} matches.")
+        for i, m in enumerate(matches):
+            print(f"[{i+1}] Span: {m['span']} Match: {repr(m['group_0'])}")
+            if m['groups']:
+                print(f"    Groups: {m['groups']}")
+
+    elif args.action == "explain":
+        print(f"Explaining pattern: {args.pattern}")
+        response = await manager.explain_regex(args.pattern, args.agent)
+        print("\n--- Explanation ---")
+        print(response)
+
+    elif args.action == "generate":
+        print(f"Generating regex for: {args.description}")
+        response = await manager.generate_regex(args.description, args.agent)
+        print("\n--- Generated Regex ---")
+        print(response)
+
+    sys.exit(0)
+
+
 async def main():
     args = parse_args()
 
@@ -11885,6 +11971,10 @@ async def main():
 
     if args.command == "quiz":
         run_quiz(args)
+        return
+
+    if args.command == "regex":
+        await run_regex(args)
         return
 
     # Handle `prompt-lab` command

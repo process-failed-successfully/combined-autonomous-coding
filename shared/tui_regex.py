@@ -1,14 +1,11 @@
 import re
-import io
-import contextlib
 from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Button, Input, Label, RichLog, Checkbox, TextArea, Select
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
-from textual import on
 from rich.markup import escape
 
-from shared.ask import run_ask_logic
+from shared.regex_lab import RegexLabManager
 
 class RegexLabTab(Container):
     """Tab for experimenting with Regex."""
@@ -16,6 +13,7 @@ class RegexLabTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.manager = RegexLabManager(project_dir)
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -63,10 +61,6 @@ class RegexLabTab(Container):
         output = self.query_one("#regex-output", RichLog)
         output.clear()
 
-        if not pattern:
-            output.write("[red]Error: Pattern required.[/red]")
-            return
-
         flags = 0
         if self.query_one("#chk-ignore-case", Checkbox).value:
             flags |= re.IGNORECASE
@@ -75,46 +69,43 @@ class RegexLabTab(Container):
         if self.query_one("#chk-dotall", Checkbox).value:
             flags |= re.DOTALL
 
-        try:
-            matches = list(re.finditer(pattern, text, flags))
-            if not matches:
-                output.write("No matches found.")
-                return
+        result = self.manager.match_regex(pattern, text, flags)
 
-            output.write(f"Found [bold green]{len(matches)}[/bold green] matches:\n")
+        if "error" in result:
+            output.write(f"[bold red]Error:[/bold red] {result['error']}")
+            return
 
-            # Highlight matches in context
-            # We can construct a highlighted string or just list matches.
-            # A highlighted string is nicer.
+        matches = result["matches"]
+        if not matches:
+            output.write("No matches found.")
+            return
 
-            highlighted_text = ""
-            last_idx = 0
-            for match in matches:
-                start, end = match.span()
-                # Append text before match
-                # Escape user text to prevent markup injection
-                highlighted_text += escape(text[last_idx:start])
+        output.write(f"Found [bold green]{len(matches)}[/bold green] matches:\n")
 
-                # Append highlighted match
-                matched_str = escape(text[start:end])
-                highlighted_text += f"[bold magenta reverse]{matched_str}[/bold magenta reverse]"
-                last_idx = end
+        # Highlight matches in context
+        highlighted_text = ""
+        last_idx = 0
+        for match in matches:
+            start, end = match["span"]
+            # Append text before match
+            highlighted_text += escape(text[last_idx:start])
 
-            # Append remaining text
-            highlighted_text += escape(text[last_idx:])
+            # Append highlighted match
+            matched_str = escape(text[start:end])
+            highlighted_text += f"[bold magenta reverse]{matched_str}[/bold magenta reverse]"
+            last_idx = end
 
-            output.write(highlighted_text)
+        # Append remaining text
+        highlighted_text += escape(text[last_idx:])
 
-            output.write("\n[bold]Details:[/bold]")
-            for i, match in enumerate(matches):
-                output.write(f"{i+1}. Span: {match.span()} Group 0: '{match.group(0)}'")
-                # Show groups if any
-                if match.groups():
-                    for j, group in enumerate(match.groups()):
-                        output.write(f"   Group {j+1}: '{group}'")
+        output.write(highlighted_text)
 
-        except re.error as e:
-            output.write(f"[bold red]Regex Error:[/bold red] {e}")
+        output.write("\n[bold]Details:[/bold]")
+        for i, match in enumerate(matches):
+            output.write(f"{i+1}. Span: {match['span']} Group 0: '{match['group_0']}'")
+            if match['groups']:
+                for j, group in enumerate(match['groups']):
+                    output.write(f"   Group {j+1}: '{group}'")
 
     async def explain_regex(self) -> None:
         pattern = self.query_one("#regex-pattern", Input).value
@@ -127,9 +118,9 @@ class RegexLabTab(Container):
         output.clear()
         output.write(f"Asking {agent_type} to explain pattern: [bold]{pattern}[/bold]...")
 
-        prompt = f"Explain the following regex pattern in detail:\n\n```regex\n{pattern}\n```"
-
-        await self._run_ai(prompt, agent_type, output)
+        response = await self.manager.explain_regex(pattern, agent_type)
+        output.write("\n[bold green]AI Response:[/bold green]")
+        output.write(response)
 
     async def generate_regex(self) -> None:
         description = self.query_one("#regex-test-string", TextArea).text
@@ -142,32 +133,13 @@ class RegexLabTab(Container):
         output.clear()
         output.write(f"Asking {agent_type} to generate regex for description...")
 
-        prompt = f"Generate a Python regex pattern for the following description. Provide only the regex pattern first, wrapped in code blocks, followed by a brief explanation.\n\nDescription:\n{description}"
+        response = await self.manager.generate_regex(description, agent_type)
+        output.write("\n[bold green]AI Response:[/bold green]")
+        output.write(response)
 
-        await self._run_ai(prompt, agent_type, output)
-
-    async def _run_ai(self, prompt: str, agent_type: str, log: RichLog) -> None:
-        output_capture = io.StringIO()
-        try:
-            with contextlib.redirect_stdout(output_capture):
-                await run_ask_logic(
-                    query=prompt,
-                    project_dir=self.project_dir,
-                    agent_type=agent_type,
-                    verbose=False
-                )
-
-            response = output_capture.getvalue()
-            log.write("\n[bold green]AI Response:[/bold green]")
-            log.write(response)
-
-            # If generating, try to extract code block to input
-            if "Generate" in str(prompt): # Simple heuristic
-                match = re.search(r"```(?:regex|python)?\s*(.*?)\s*```", response, re.DOTALL)
-                if match:
-                    pattern = match.group(1).strip()
-                    self.query_one("#regex-pattern", Input).value = pattern
-                    self.notify("Pattern updated from AI.")
-
-        except Exception as e:
-            log.write(f"[bold red]AI Error:[/bold red] {e}")
+        # Extract code block
+        match = re.search(r"```(?:regex|python)?\s*(.*?)\s*```", response, re.DOTALL)
+        if match:
+            pattern = match.group(1).strip()
+            self.query_one("#regex-pattern", Input).value = pattern
+            self.notify("Pattern updated from AI.")

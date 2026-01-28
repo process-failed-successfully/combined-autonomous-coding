@@ -224,6 +224,31 @@ def run_scheduler(args):
 
     sys.exit(0)
 
+def run_cron_lab(args):
+    """Runs the Cron Expression Lab."""
+    from shared.cron_lab import CronLabManager
+
+    expression = args.expression
+
+    print(f"--- Cron Lab: {expression} ---")
+
+    desc = CronLabManager.describe(expression)
+    print(f"Description: {desc}")
+
+    if desc.startswith("Invalid"):
+        sys.exit(1)
+
+    print("\nNext 5 Occurrences:")
+    try:
+        runs = CronLabManager.get_next_runs(expression, count=5)
+        for run in runs:
+            print(f"  - {run}")
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    sys.exit(0)
+
 def run_chaos(args):
     """Runs chaos engineering experiments."""
     run_chaos_logic(
@@ -9372,6 +9397,16 @@ def parse_args(argv=None):
     parser_scheduler_start = scheduler_subparsers.add_parser("start", help="Start the scheduler loop.")
     parser_scheduler_start.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Analyze and explain cron expressions."
+    )
+    parser_cron.add_argument(
+        "expression",
+        help="The cron expression to analyze (e.g. '*/5 * * * *')."
+    )
+
     # --- New 'chaos' command ---
     parser_chaos = subparsers.add_parser(
         "chaos",
@@ -12281,6 +12316,10 @@ async def main():
 
     if args.command == "scheduler":
         run_scheduler(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     if args.command == "chaos":

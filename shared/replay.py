@@ -2,13 +2,15 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Iterator
+from typing import List, Optional
+
 
 @dataclass
 class Action:
     command: str
     output: str = ""
     status: str = "UNKNOWN"
+
 
 @dataclass
 class Turn:
@@ -17,6 +19,7 @@ class Turn:
     thought: str = ""
     actions: List[Action] = field(default_factory=list)
     prompt_summary: str = ""
+
 
 class ReplayManager:
     """Manages the replay of an agent run."""
@@ -85,9 +88,9 @@ class ReplayManager:
             if not match:
                 # Continuation line
                 if current_action and current_action.output:
-                     current_action.output += "\n" + line
+                    current_action.output += "\n" + line
                 elif current_turn and current_turn.thought is not None:
-                     current_turn.thought += "\n" + line
+                    current_turn.thought += "\n" + line
                 continue
 
             timestamp, level, message = match.groups()
@@ -108,7 +111,7 @@ class ReplayManager:
                 if current_turn:
                     # If line is "Response:", the next lines are the content
                     if message.strip() == "Response:":
-                        current_turn.thought = "" # Will be filled by continuation lines
+                        current_turn.thought = ""  # Will be filled by continuation lines
                     else:
                         # Sometimes it's logged as "Received response..." and debug logs follow
                         pass
@@ -116,11 +119,11 @@ class ReplayManager:
 
             # Capture output of response logging if we are in a turn and haven't started actions
             if current_turn and not current_turn.actions and level == "DEBUG" and not message.startswith("Response:"):
-                 # This is heuristic, capturing the response text which is usually logged in DEBUG
-                 # But we must be careful not to capture other debug info.
-                 # Actually, agent.py logs: logger.debug(f"Response:\n{response_text}")
-                 # So the line "Response:" matches above, and subsequent lines are continuation.
-                 pass
+                # This is heuristic, capturing the response text which is usually logged in DEBUG
+                # But we must be careful not to capture other debug info.
+                # Actually, agent.py logs: logger.debug(f"Response:\n{response_text}")
+                # So the line "Response:" matches above, and subsequent lines are continuation.
+                pass
 
             # Actions
             # "[Executing Bash] command"

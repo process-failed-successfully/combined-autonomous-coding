@@ -1,12 +1,18 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-from shared.replay import ReplayManager, Turn, Action
+import tempfile
+from shared.replay import ReplayManager
+
 
 class TestReplayManager(unittest.TestCase):
     def setUp(self):
-        self.project_dir = Path("/tmp/test_project")
+        self.test_dir = tempfile.TemporaryDirectory()
+        self.project_dir = Path(self.test_dir.name)
         self.manager = ReplayManager(self.project_dir)
+
+    def tearDown(self):
+        self.test_dir.cleanup()
 
     def test_parse_log(self):
         log_content = """10:00:00 - INFO - Sending prompt to Gemini...
@@ -89,6 +95,7 @@ Thinking turn 2...
 
         latest = self.manager.load_run()
         self.assertEqual(latest, log2)
+
 
 if __name__ == "__main__":
     unittest.main()

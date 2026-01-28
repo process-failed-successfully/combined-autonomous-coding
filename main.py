@@ -191,6 +191,51 @@ def run_quiz(args):
     print(f"Final Score: {score}/{len(questions)}")
     sys.exit(0)
 
+def run_cron_lab(args):
+    """Runs the Cron Lab."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+
+    if args.tui:
+        # Launch TUI
+        from shared.tui import AgentTUI
+        print("Launching TUI... Navigate to 'Cron Lab' tab.")
+        app = AgentTUI(project_dir=project_dir)
+        app.run()
+        return
+
+    if not args.expression:
+        print("Error: Cron expression required (or use --tui).", file=sys.stderr)
+        sys.exit(1)
+
+    manager = CronLabManager(project_dir)
+    is_valid, msg = manager.validate(args.expression)
+
+    print(f"--- Cron Lab: {args.expression} ---")
+    if is_valid:
+        print("✅ Valid Expression")
+        print("\nNext 10 occurrences:")
+        try:
+            dates = manager.get_next_occurrences(args.expression, count=10)
+            for d in dates:
+                print(f"  - {d.strftime('%Y-%m-%d %H:%M:%S')}")
+        except Exception as e:
+            print(f"Error calculating dates: {e}")
+
+        if args.explain:
+            print("\nExplaining with AI...")
+            import asyncio
+            try:
+                explanation = asyncio.run(manager.explain_expression(args.expression))
+                print(explanation)
+            except Exception as e:
+                print(f"AI Error: {e}")
+
+    else:
+        print(f"❌ Invalid Expression: {msg}")
+    sys.exit(0)
+
 def run_serve(args):
     """Starts a local development server."""
     project_dir = args.project_dir.resolve()
@@ -9602,6 +9647,33 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with Cron expressions."
+    )
+    parser_cron.add_argument(
+        "expression",
+        nargs="?",
+        help="Cron expression (e.g. '*/5 * * * *'). Quote it!"
+    )
+    parser_cron.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the interactive TUI."
+    )
+    parser_cron.add_argument(
+        "--explain",
+        action="store_true",
+        help="Use AI to explain the expression."
+    )
+    parser_cron.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     # --- New 'standup' command ---
     parser_standup = subparsers.add_parser(
         "standup",
@@ -11885,6 +11957,10 @@ async def main():
 
     if args.command == "quiz":
         run_quiz(args)
+        return
+
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     # Handle `prompt-lab` command

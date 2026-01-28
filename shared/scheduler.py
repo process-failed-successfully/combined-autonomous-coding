@@ -7,6 +7,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Optional
 from datetime import datetime, timedelta
+from croniter import croniter
 
 def parse_duration(duration_str: str) -> int:
     """Parses a duration string (e.g. '1h', '30m', '10s') into seconds."""
@@ -30,14 +31,37 @@ def parse_duration(duration_str: str) -> int:
 class Task:
     name: str
     command: str
-    interval: int  # seconds
+    interval: int = 0  # seconds
+    cron_expression: Optional[str] = None
     last_run: float = 0.0
 
+    def __post_init__(self):
+        # If cron, init last_run to now so we calculate next run from now
+        if self.cron_expression and self.last_run == 0:
+            self.last_run = time.time()
+
     def is_due(self) -> bool:
-        return time.time() - self.last_run >= self.interval
+        if self.cron_expression:
+            now = time.time()
+            # Check if next scheduled time after last_run has passed
+            iter = croniter(self.cron_expression, datetime.fromtimestamp(self.last_run))
+            next_run = iter.get_next(datetime).timestamp()
+            return next_run <= now
+        else:
+            return time.time() - self.last_run >= self.interval
 
     def time_until_due(self) -> float:
-        return max(0, self.interval - (time.time() - self.last_run))
+        if self.cron_expression:
+            if self.is_due():
+                return 0.0
+
+            # Calculate time to next run from NOW
+            now = datetime.now()
+            iter = croniter(self.cron_expression, now)
+            next_run = iter.get_next(datetime)
+            return (next_run - now).total_seconds()
+        else:
+            return max(0, self.interval - (time.time() - self.last_run))
 
 class Scheduler:
     def __init__(self, project_dir: Path):
@@ -47,8 +71,6 @@ class Scheduler:
 
     def load_config(self) -> None:
         if not self.config_path.exists():
-            # If config doesn't exist, try to load defaults without creating file?
-            # Or just warn.
             print(f"No scheduler config found at {self.config_path}.")
             print("Run 'main.py scheduler init' to create one.")
             return
@@ -67,11 +89,20 @@ class Scheduler:
                         print(f"Skipping invalid task '{name}': missing command or interval")
                         continue
 
-                    interval = parse_duration(str(interval_str))
-                    # Initialize last_run to 0 so it runs immediately on start
-                    # OR we might want to respect some persistence?
-                    # For now, immediate run is standard for stateless scheduler.
-                    self.tasks.append(Task(name, command, interval))
+                    cron_expr = None
+                    interval = 0
+
+                    # Check if cron expression (contains spaces)
+                    if " " in str(interval_str).strip():
+                        if croniter.is_valid(str(interval_str)):
+                            cron_expr = str(interval_str)
+                        else:
+                            print(f"Invalid cron expression for task '{name}': {interval_str}")
+                            continue
+                    else:
+                        interval = parse_duration(str(interval_str))
+
+                    self.tasks.append(Task(name, command, interval, cron_expr))
                 except ValueError as e:
                     print(f"Error parsing task '{item.get('name')}': {e}")
 
@@ -93,6 +124,11 @@ class Scheduler:
                     "name": "Daily Dependency Check",
                     "command": f"{sys.executable} main.py deps --check",
                     "interval": "24h"
+                },
+                {
+                    "name": "Weekly Cleanup (Cron Example)",
+                    "command": f"{sys.executable} main.py clean --archive",
+                    "interval": "0 0 * * 0" # Every Sunday at midnight
                 }
             ]
         }
@@ -110,25 +146,30 @@ class Scheduler:
             print("No tasks scheduled.")
             return
 
-        print(f"{'Task':<30} | {'Interval':<10} | {'Status':<20}")
-        print("-" * 66)
+        print(f"{'Task':<30} | {'Interval/Cron':<20} | {'Status':<20}")
+        print("-" * 76)
         for task in self.tasks:
-            # If last_run is 0, it hasn't run yet.
-            if task.last_run == 0:
-                status = "Pending (Runs now)"
-            else:
-                next_run = datetime.fromtimestamp(task.last_run) + timedelta(seconds=task.interval)
+            if task.cron_expression:
+                interval_display = task.cron_expression
+                iter = croniter(task.cron_expression, datetime.now())
+                next_run = iter.get_next(datetime)
                 status = f"Next: {next_run.strftime('%H:%M:%S')}"
+            else:
+                if task.last_run == 0:
+                    status = "Pending (Runs now)"
+                else:
+                    next_run = datetime.fromtimestamp(task.last_run) + timedelta(seconds=task.interval)
+                    status = f"Next: {next_run.strftime('%H:%M:%S')}"
 
-            interval_display = f"{task.interval}s"
-            if task.interval >= 86400:
-                interval_display = f"{task.interval // 86400}d"
-            elif task.interval >= 3600:
-                interval_display = f"{task.interval // 3600}h"
-            elif task.interval >= 60:
-                interval_display = f"{task.interval // 60}m"
+                interval_display = f"{task.interval}s"
+                if task.interval >= 86400:
+                    interval_display = f"{task.interval // 86400}d"
+                elif task.interval >= 3600:
+                    interval_display = f"{task.interval // 3600}h"
+                elif task.interval >= 60:
+                    interval_display = f"{task.interval // 60}m"
 
-            print(f"{task.name:<30} | {interval_display:<10} | {status}")
+            print(f"{task.name:<30} | {interval_display:<20} | {status}")
 
     def start(self) -> None:
         if not self.tasks:
@@ -142,19 +183,16 @@ class Scheduler:
                 now = time.time()
                 min_wait = 60.0 # Default wait time
 
-                ran_any = False
                 for task in self.tasks:
                     if task.is_due():
                         self.run_task(task)
-                        ran_any = True
+                        # Recheck if others are due? No, proceed.
 
                     wait = task.time_until_due()
                     if wait < min_wait:
                         min_wait = wait
 
-                # If we ran something, loop again quickly? No, calculate min_wait based on updated last_run.
-                # Re-calculating min_wait...
-
+                # Re-calculate min_wait after runs
                 current_min_wait = float('inf')
                 for task in self.tasks:
                     wait = task.time_until_due()

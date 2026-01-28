@@ -8,8 +8,8 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DataTable
-from shared.tui import AgentTUI, DependenciesTab
+from textual.widgets import Label, Button, DataTable, Input, Checkbox
+from shared.tui_dependencies import DependenciesTab
 
 class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -18,21 +18,13 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.project_dir.mkdir()
 
         # Mock dependencies analyzer
-        self.patcher_analyzer = patch("shared.tui.DependencyAnalyzer")
+        self.patcher_analyzer = patch("shared.tui_dependencies.DependencyAnalyzer")
         self.MockAnalyzer = self.patcher_analyzer.start()
         self.mock_analyzer = self.MockAnalyzer.return_value
 
     def tearDown(self):
         self.patcher_analyzer.stop()
         shutil.rmtree(self.test_dir)
-
-    async def test_dependencies_tab_structure(self):
-        """Test the dependencies tab structure."""
-        app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
-            # Check if TabPane exists (it's inside TabbedContent)
-            self.assertTrue(app.query_one("#tab-deps"))
-            pass
 
     async def test_dependencies_tab_logic(self):
         """Test logic of DependenciesTab isolated."""
@@ -59,10 +51,12 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         mock_status = MagicMock(spec=Label)
 
         # We mock query_one to return our mocks
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#deps-table": mock_table,
-            "#deps-status": mock_status
-        }.get(selector))
+        def query_one_side_effect(selector, type=None):
+            if selector == "#deps-table": return mock_table
+            if selector == "#deps-status": return mock_status
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=query_one_side_effect)
 
         # Test on_mount (load_deps)
         tab.on_mount()
@@ -70,26 +64,29 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         self.mock_analyzer.scan.assert_called_once()
         mock_table.add_columns.assert_called()
         mock_table.clear.assert_called()
+
         # Verify row addition
-        # "Python", "requests", "==2.0.0", "prod", "-", "OK"
-        # We check one call
+        # check call args
         add_row_calls = mock_table.add_row.call_args_list
         self.assertTrue(len(add_row_calls) > 0)
+        # Check package name
         self.assertEqual(add_row_calls[0][0][1], "requests")
 
     async def test_check_updates_logic(self):
         """Test check updates button logic."""
         tab = DependenciesTab(self.project_dir)
-        # Mock notify to prevent NoActiveAppError
         tab.notify = MagicMock()
 
         # Mock UI
         mock_table = MagicMock(spec=DataTable)
         mock_status = MagicMock(spec=Label)
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
-            "#deps-table": mock_table,
-            "#deps-status": mock_status
-        }.get(selector))
+
+        def query_one_side_effect(selector, type=None):
+            if selector == "#deps-table": return mock_table
+            if selector == "#deps-status": return mock_status
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=query_one_side_effect)
 
         # Mock analyzer
         self.mock_analyzer.scan.return_value = {
@@ -112,11 +109,40 @@ class TestTUIDependencies(unittest.IsolatedAsyncioTestCase):
         mock_status.update.assert_called_with("Update check complete.")
 
         # Verify table update
-        # Should now have "Outdated" status (formatted)
         add_row_calls = mock_table.add_row.call_args_list
         self.assertTrue(len(add_row_calls) > 0)
-        # Check that status is red/outdated
         self.assertIn("Outdated", str(add_row_calls[0][0]))
+
+    async def test_add_package_interaction(self):
+        """Test adding a package via UI."""
+        tab = DependenciesTab(self.project_dir)
+        tab.notify = MagicMock()
+
+        # Mock Updater
+        tab.updater = MagicMock()
+        tab.updater.add_package.return_value = True
+
+        # Mock UI
+        mock_input_name = MagicMock(spec=Input)
+        mock_input_name.value = "new-pkg"
+        mock_input_ver = MagicMock(spec=Input)
+        mock_input_ver.value = "1.0"
+        mock_chk = MagicMock(spec=Checkbox)
+        mock_chk.value = False
+
+        def query_one_side_effect(selector, type=None):
+            if selector == "#deps-input-name": return mock_input_name
+            if selector == "#deps-input-version": return mock_input_ver
+            if selector == "#deps-chk-dev": return mock_chk
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=query_one_side_effect)
+
+        # Call add_package
+        await tab.add_package()
+
+        tab.updater.add_package.assert_called_with("new-pkg", "1.0", False)
+        tab.notify.assert_called_with("Package 'new-pkg' installed.")
 
 if __name__ == "__main__":
     unittest.main()

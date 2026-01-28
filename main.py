@@ -191,6 +191,44 @@ def run_quiz(args):
     print(f"Final Score: {score}/{len(questions)}")
     sys.exit(0)
 
+def run_cron_lab(args):
+    """Runs the Cron Lab."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+    manager = CronLabManager(project_dir)
+
+    if args.action == "explain":
+        if not args.expression:
+            print("Error: --expression is required for 'explain'.", file=sys.stderr)
+            sys.exit(1)
+        print(f"Expression: {args.expression}")
+        print(f"Explanation: {manager.explain(args.expression)}")
+
+    elif args.action == "next":
+        if not args.expression:
+            print("Error: --expression is required for 'next'.", file=sys.stderr)
+            sys.exit(1)
+        runs = manager.get_next_runs(args.expression, count=args.count)
+        if not runs:
+            print("Invalid expression or no upcoming runs.")
+        else:
+            print(f"Next {args.count} runs for '{args.expression}':")
+            for r in runs:
+                print(f"  - {r}")
+
+    elif args.action == "generate":
+        if not args.text:
+            print("Error: --text is required for 'generate'.", file=sys.stderr)
+            sys.exit(1)
+        expr = manager.generate_from_text(args.text)
+        if expr:
+            print(f"Generated: {expr}")
+        else:
+            print("Could not generate expression.")
+
+    sys.exit(0)
+
 def run_serve(args):
     """Starts a local development server."""
     project_dir = args.project_dir.resolve()
@@ -6433,6 +6471,36 @@ def parse_args(argv=None):
         help="Skip confirmation prompts for 'advance' or 'revert' actions.",
     )
 
+    # --- New 'cron-lab' command ---
+    parser_cron_lab = subparsers.add_parser(
+        "cron-lab",
+        help="Experiment with Cron expressions (explain, next runs, generate)."
+    )
+    parser_cron_lab.add_argument(
+        "action",
+        choices=["explain", "next", "generate"],
+        help="Action to perform."
+    )
+    parser_cron_lab.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_cron_lab.add_argument(
+        "-e", "--expression",
+        help="The cron expression (required for 'explain' and 'next')."
+    )
+    parser_cron_lab.add_argument(
+        "-c", "--count",
+        type=int,
+        default=5,
+        help="Number of next runs to show (for 'next')."
+    )
+    parser_cron_lab.add_argument(
+        "-t", "--text",
+        help="Natural language description (required for 'generate')."
+    )
 
     # --- New 'plan' command ---
     parser_plan = subparsers.add_parser(
@@ -11704,6 +11772,11 @@ async def main():
     # Handle `prompt-lab` command
     if args.command == "prompt-lab":
         run_prompt_lab(args)
+        return
+
+    # Handle `cron-lab` command
+    if args.command == "cron-lab":
+        run_cron_lab(args)
         return
 
     # Handle `knowledge` command

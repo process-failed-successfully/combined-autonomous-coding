@@ -246,6 +246,48 @@ def run_network(args):
     )
     sys.exit(0)
 
+async def run_cron_lab(args):
+    """Runs the Cron Lab (validate, explain, generate cron expressions)."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+    manager = CronLabManager(project_dir)
+
+    if not args.expression and not args.generate:
+        print("Error: Please provide a cron expression or use --generate 'description'.", file=sys.stderr)
+        print("Example: main.py cron-lab '*/5 * * * *' --explain")
+        sys.exit(1)
+
+    if args.generate:
+        print(f"Generating cron expression for: '{args.generate}'")
+        result = await manager.generate(args.generate, agent_type=args.agent)
+        print(f"\nResult: {result}")
+        sys.exit(0)
+
+    expression = args.expression
+
+    # Validate
+    valid, message = manager.validate(expression)
+    if not valid:
+        print(f"❌ Invalid Cron Expression: {expression}")
+        print(f"   Reason: {message}")
+        sys.exit(1)
+
+    print(f"✅ Valid Cron Expression: {expression}")
+
+    if args.next:
+        print("\n--- Next 5 Occurrences ---")
+        occurrences = manager.get_next_occurrences(expression)
+        for dt in occurrences:
+            print(f"  - {dt}")
+
+    if args.explain:
+        print("\n--- AI Explanation ---")
+        explanation = await manager.explain(expression, agent_type=args.agent)
+        print(explanation)
+
+    sys.exit(0)
+
 def run_onboard(args):
     """Runs the onboarding wizard."""
     run_onboard_logic(args.project_dir)
@@ -9556,6 +9598,48 @@ def parse_args(argv=None):
         help="Limit the number of commits to analyze for co-edits (default: 100)."
     )
 
+    # --- New 'cron-lab' command ---
+    parser_cron_lab = subparsers.add_parser(
+        "cron-lab",
+        help="Validate, explain, and generate cron expressions."
+    )
+    parser_cron_lab.add_argument(
+        "expression",
+        nargs="?",
+        help="The cron expression to analyze."
+    )
+    parser_cron_lab.add_argument(
+        "--generate",
+        help="Generate a cron expression from a natural language description."
+    )
+    parser_cron_lab.add_argument(
+        "--explain",
+        action="store_true",
+        help="Explain the cron expression using AI."
+    )
+    parser_cron_lab.add_argument(
+        "--next",
+        action="store_true",
+        help="Show next 5 occurrences."
+    )
+    parser_cron_lab.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_cron_lab.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_cron_lab.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -12358,6 +12442,10 @@ async def main():
 
     if args.command == "network":
         run_network(args)
+        return
+
+    if args.command == "cron-lab":
+        await run_cron_lab(args)
         return
 
     # Initialize Agent Client

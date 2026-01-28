@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from shared.dependencies import DependencyUpdater
+import sys
 
 @pytest.fixture
 def temp_project(tmp_path):
@@ -141,3 +142,83 @@ def test_update_node_package_pnpm(mock_run, mock_which, temp_project):
         check=True,
         capture_output=True
     )
+
+@patch("shared.dependencies.shutil.which")
+@patch("shared.dependencies.subprocess.run")
+def test_add_package_node(mock_run, mock_which, temp_project):
+    updater = DependencyUpdater(temp_project)
+
+    # Mock npm
+    mock_which.return_value = "/usr/bin/npm"
+
+    success = updater.add_package("axios", version="1.0.0")
+    assert success
+    mock_run.assert_called_with(
+        ["npm", "install", "axios@1.0.0"],
+        cwd=temp_project,
+        check=True,
+        capture_output=True
+    )
+
+@patch("shared.dependencies.shutil.which")
+@patch("shared.dependencies.subprocess.run")
+def test_remove_package_node(mock_run, mock_which, temp_project):
+    updater = DependencyUpdater(temp_project)
+
+    # Mock npm
+    mock_which.return_value = "/usr/bin/npm"
+
+    success = updater.remove_package("axios")
+    assert success
+    mock_run.assert_called_with(
+        ["npm", "uninstall", "axios"],
+        cwd=temp_project,
+        check=True,
+        capture_output=True
+    )
+
+@patch("shared.dependencies.subprocess.run")
+def test_add_package_python(mock_run, temp_project):
+    # Remove package.json so it falls back to Python
+    (temp_project / "package.json").unlink()
+
+    updater = DependencyUpdater(temp_project)
+    req_file = temp_project / "requirements.txt"
+
+    success = updater.add_package("pandas", version="2.0.0")
+    assert success
+
+    # Check pip install called
+    mock_run.assert_called_with(
+        [sys.executable, "-m", "pip", "install", "pandas==2.0.0"],
+        cwd=temp_project,
+        check=True,
+        capture_output=True
+    )
+
+    # Check requirements.txt updated
+    content = req_file.read_text()
+    assert "pandas==2.0.0" in content
+
+@patch("shared.dependencies.subprocess.run")
+def test_remove_package_python(mock_run, temp_project):
+    # Remove package.json so it falls back to Python
+    (temp_project / "package.json").unlink()
+
+    updater = DependencyUpdater(temp_project)
+    req_file = temp_project / "requirements.txt"
+
+    success = updater.remove_package("flask") # flask is in temp_project fixture
+    assert success
+
+    # Check pip uninstall called
+    mock_run.assert_called_with(
+        [sys.executable, "-m", "pip", "uninstall", "-y", "flask"],
+        cwd=temp_project,
+        check=True,
+        capture_output=True
+    )
+
+    # Check requirements.txt updated
+    content = req_file.read_text()
+    assert "flask" not in content

@@ -3,6 +3,7 @@ import re
 import requests
 import subprocess
 import shutil
+import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
@@ -547,6 +548,142 @@ class DependencyUpdater:
         except subprocess.CalledProcessError as e:
             err = e.stderr.decode() if e.stderr else str(e)
             print(f"Error updating node package: {err}")
+            return False
+
+    def add_package(self, package_name: str, version: str = None, dev: bool = False) -> bool:
+        """
+        Adds a new package to the project.
+        """
+        # Node
+        if (self.project_dir / "package.json").exists():
+            return self._add_node_package(package_name, version, dev)
+
+        # Python
+        # Check if we should use requirements.txt
+        req_path = self.project_dir / "requirements.txt"
+        if req_path.exists():
+            return self._add_python_package(package_name, version, req_path)
+
+        print("No supported manifest found (package.json or requirements.txt).")
+        return False
+
+    def remove_package(self, package_name: str, dev: bool = False) -> bool:
+        """
+        Removes a package from the project.
+        """
+        # Node
+        if (self.project_dir / "package.json").exists():
+            return self._remove_node_package(package_name, dev)
+
+        # Python
+        req_path = self.project_dir / "requirements.txt"
+        if req_path.exists():
+            return self._remove_python_package(package_name, req_path)
+
+        print("No supported manifest found (package.json or requirements.txt).")
+        return False
+
+    def _add_node_package(self, package_name: str, version: str = None, dev: bool = False) -> bool:
+        pm = self._detect_package_manager() or "npm"
+
+        cmd = []
+        target = f"{package_name}@{version}" if version else package_name
+
+        if pm == "npm":
+            cmd = ["npm", "install", target]
+            if dev:
+                cmd.append("--save-dev")
+        elif pm == "yarn":
+            cmd = ["yarn", "add", target]
+            if dev:
+                cmd.append("--dev")
+        elif pm == "pnpm":
+            cmd = ["pnpm", "add", target]
+            if dev:
+                cmd.append("--save-dev")
+
+        print(f"Running: {' '.join(cmd)}")
+        try:
+            subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Error adding node package: {e}")
+            return False
+
+    def _remove_node_package(self, package_name: str, dev: bool = False) -> bool:
+        pm = self._detect_package_manager() or "npm"
+
+        cmd = []
+        if pm == "npm":
+            cmd = ["npm", "uninstall", package_name]
+            if dev:
+                cmd.append("--save-dev")
+        elif pm == "yarn":
+            cmd = ["yarn", "remove", package_name]
+        elif pm == "pnpm":
+            cmd = ["pnpm", "remove", package_name]
+
+        print(f"Running: {' '.join(cmd)}")
+        try:
+            subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Error removing node package: {e}")
+            return False
+
+    def _add_python_package(self, package_name: str, version: str, req_path: Path) -> bool:
+        # 1. Run pip install
+        target = f"{package_name}=={version}" if version else package_name
+        cmd = [sys.executable, "-m", "pip", "install", target]
+
+        print(f"Running: {' '.join(cmd)}")
+        try:
+            subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error installing python package: {e}")
+            return False
+
+        # 2. Append to requirements.txt if not present
+        try:
+            content = req_path.read_text(encoding="utf-8")
+            # Simple check if package is already mentioned
+            if not re.search(r"^" + re.escape(package_name) + r"([<=>!~].*)?$", content, re.MULTILINE | re.IGNORECASE):
+                with open(req_path, "a", encoding="utf-8") as f:
+                    if not content.endswith("\n"):
+                        f.write("\n")
+                    f.write(f"{target}\n")
+            return True
+        except Exception as e:
+            print(f"Error updating requirements.txt: {e}")
+            return False
+
+    def _remove_python_package(self, package_name: str, req_path: Path) -> bool:
+        # 1. Run pip uninstall
+        cmd = [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
+
+        print(f"Running: {' '.join(cmd)}")
+        try:
+            subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error uninstalling python package: {e}")
+            return False
+
+        # 2. Remove from requirements.txt
+        try:
+            content = req_path.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            new_lines = []
+            pattern = re.compile(r"^" + re.escape(package_name) + r"([<=>!~].*)?(\s*#.*)?$", re.IGNORECASE)
+
+            for line in lines:
+                if pattern.match(line.strip()):
+                    continue # Skip this line
+                new_lines.append(line)
+
+            req_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+            return True
+        except Exception as e:
+            print(f"Error updating requirements.txt: {e}")
             return False
 
 

@@ -275,12 +275,13 @@ class DependencyAnalyzer:
         results = []
 
         def normalize(lic):
-            if not lic: return "unknown"
+            if not lic:
+                return "unknown"
             # Basic normalization: lowercase, remove common suffixes
             return lic.lower().replace(" license", "").replace(" software", "").strip()
 
-        allow_set = {normalize(l) for l in allow_list} if allow_list else set()
-        deny_set = {normalize(l) for l in deny_list} if deny_list else set()
+        allow_set = {normalize(lic_item) for lic_item in allow_list} if allow_list else set()
+        deny_set = {normalize(lic_item) for lic_item in deny_list} if deny_list else set()
 
         # Helper to process a dependency
         def process_dep(lang, file_info, dep):
@@ -383,9 +384,9 @@ class DependencyAnalyzer:
 
                 # 2. Try license field
                 license_field = info.get("license", "")
-                if license_field and len(license_field) < 50: # Avoid long license texts
-                     self.license_cache[package_name] = license_field
-                     return license_field
+                if license_field and len(license_field) < 50:  # Avoid long license texts
+                    self.license_cache[package_name] = license_field
+                    return license_field
 
         except Exception:
             pass
@@ -677,7 +678,7 @@ class DependencyUpdater:
 
             for line in lines:
                 if pattern.match(line.strip()):
-                    continue # Skip this line
+                    continue  # Skip this line
                 new_lines.append(line)
 
             req_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")

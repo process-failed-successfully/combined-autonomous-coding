@@ -8,6 +8,7 @@ Functions for managing git state and ensuring safe branching for agents.
 import logging
 import subprocess
 import time
+import re
 from pathlib import Path
 from typing import Optional
 from shared.utils import sanitize_url
@@ -423,3 +424,65 @@ def get_file_diff(project_dir: Path, file_path: str, staged: bool = False) -> st
     except Exception as e:
         logger.error(f"Error getting diff for {file_path}: {e}")
         return f"Error getting diff: {e}"
+
+
+def get_git_stash_list(project_dir: Path) -> list[dict]:
+    """
+    Returns list of stashes: [{"index": "0", "name": "stash@{0}", "message": "..."}]
+    """
+    try:
+        cmd = ["git", "stash", "list"]
+        result = subprocess.run(
+            cmd, cwd=project_dir, capture_output=True, text=True, check=True
+        )
+        stashes = []
+        for line in result.stdout.strip().split('\n'):
+            if not line: continue
+            # stash@{0}: On main: message...
+            parts = line.split(':', 2)
+            if len(parts) >= 2:
+                name = parts[0].strip() # stash@{0}
+                # extract index from stash@{N}
+                m = re.search(r"stash@\{(\d+)\}", name)
+                index = m.group(1) if m else "0"
+                message = parts[2].strip() if len(parts) > 2 else ""
+                stashes.append({"index": index, "name": name, "message": message})
+        return stashes
+    except Exception as e:
+        logger.error(f"Error listing stashes: {e}")
+        return []
+
+
+def get_stash_show(project_dir: Path, stash_ref: str) -> str:
+    """Returns the diff of a stash."""
+    try:
+        # -p for patch (diff)
+        cmd = ["git", "stash", "show", "-p", stash_ref]
+        result = subprocess.run(
+            cmd, cwd=project_dir, capture_output=True, text=True, check=True
+        )
+        return result.stdout
+    except Exception as e:
+        logger.error(f"Error showing stash {stash_ref}: {e}")
+        return f"Error showing stash {stash_ref}: {e}"
+
+
+def stash_push(project_dir: Path, message: str) -> bool:
+    """Push changes to a new stash."""
+    cmd = ["stash", "push", "-m", message]
+    return run_git(cmd, project_dir)
+
+
+def stash_pop(project_dir: Path, stash_ref: str) -> bool:
+    """Pop a stash (apply and drop)."""
+    return run_git(["stash", "pop", stash_ref], project_dir)
+
+
+def stash_apply(project_dir: Path, stash_ref: str) -> bool:
+    """Apply a stash without dropping it."""
+    return run_git(["stash", "apply", stash_ref], project_dir)
+
+
+def stash_drop(project_dir: Path, stash_ref: str) -> bool:
+    """Drop a stash."""
+    return run_git(["stash", "drop", stash_ref], project_dir)

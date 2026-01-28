@@ -5,6 +5,7 @@ from textual.widgets import Label, DataTable, Button, Input, Checkbox
 from textual import on
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 
+
 class DependenciesTab(Container):
     """Tab for managing dependencies."""
 
@@ -100,10 +101,10 @@ class DependenciesTab(Container):
             row = self.query_one("#deps-table", DataTable).get_row(event.row_key)
             # row is [Language, Package, Version, Type, Latest, Status, Source]
             self.selected_ver = row[2]
-            self.selected_dep_type = row[3] # "prod" or "dev"
+            self.selected_dep_type = row[3]  # "prod" or "dev"
 
             latest = row[4]
-            status = str(row[5]) # might contain markup
+            status = str(row[5])  # might contain markup
 
             self.query_one("#btn-deps-remove").disabled = False
 

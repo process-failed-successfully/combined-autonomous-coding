@@ -9143,6 +9143,46 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'regex' command ---
+    parser_regex = subparsers.add_parser(
+        "regex",
+        help="Regex Lab: Match, Explain, and Generate regular expressions."
+    )
+    parser_regex.add_argument(
+        "action",
+        choices=["match", "explain", "generate"],
+        help="Action to perform."
+    )
+    parser_regex.add_argument(
+        "--pattern",
+        help="The regex pattern."
+    )
+    parser_regex.add_argument(
+        "--text",
+        help="The text to match against, or the description for generation."
+    )
+    parser_regex.add_argument(
+        "--flags",
+        help="Regex flags (e.g. 'ims')."
+    )
+    parser_regex.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_regex.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_regex.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     # --- New 'resolve-conflicts' command ---
     parser_resolve_conflicts = subparsers.add_parser(
         "resolve-conflicts",
@@ -10152,6 +10192,73 @@ async def run_resolve(args):
         yes=args.yes
     )
     sys.exit(0 if success else 1)
+
+
+async def run_regex(args):
+    """Runs the Regex Lab."""
+    from shared.regex_lab import RegexLabManager
+    import re
+
+    project_dir = args.project_dir.resolve()
+    manager = RegexLabManager()
+
+    if args.action == "match":
+        if not args.pattern:
+            print("Error: --pattern is required for 'match' action.", file=sys.stderr)
+            sys.exit(1)
+        if args.text is None:
+             print("Error: --text is required for 'match' action.", file=sys.stderr)
+             sys.exit(1)
+
+        flags = 0
+        if args.flags:
+            if 'i' in args.flags: flags |= re.IGNORECASE
+            if 'm' in args.flags: flags |= re.MULTILINE
+            if 's' in args.flags: flags |= re.DOTALL
+
+        result = manager.match_regex(args.pattern, args.text, flags)
+
+        if result["success"]:
+            print(f"✅ Found {result['count']} matches.")
+            for m in result["matches"]:
+                print(f"  Match {m['index']}: {m['full_match']!r} at {m['span']}")
+                if m['groups']:
+                     print(f"    Groups: {m['groups']}")
+                if m['group_dict']:
+                     print(f"    Named Groups: {m['group_dict']}")
+        else:
+            print(f"❌ Regex Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "explain":
+        if not args.pattern:
+            print("Error: --pattern is required for 'explain' action.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Asking {args.agent} to explain pattern: {args.pattern}...")
+        success = await manager.explain_regex(
+            pattern=args.pattern,
+            project_dir=project_dir,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0 if success else 1)
+
+    elif args.action == "generate":
+        if not args.text: # reusing --text for description
+             print("Error: --text (description) is required for 'generate' action.", file=sys.stderr)
+             sys.exit(1)
+
+        print(f"Asking {args.agent} to generate regex...")
+        success = await manager.generate_regex(
+            description=args.text,
+            project_dir=project_dir,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0 if success else 1)
+
+    sys.exit(0)
 
 
 def run_sentinel(args):
@@ -12436,6 +12543,10 @@ async def main():
 
     if args.command == "resolve":
         await run_resolve(args)
+        return
+
+    if args.command == "regex":
+        await run_regex(args)
         return
 
     if args.command in ["resolve-conflicts", "fix-conflicts"]:

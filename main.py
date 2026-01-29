@@ -9461,32 +9461,66 @@ def parse_args(argv=None):
     # --- New 'mock' command ---
     parser_mock = subparsers.add_parser(
         "mock",
-        help="Generate mock data based on a JSON schema."
+        help="Mock Data Tools (generate, serve)."
     )
-    parser_mock.add_argument(
+    mock_subparsers = parser_mock.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # mock generate
+    parser_mock_gen = mock_subparsers.add_parser("generate", help="Generate mock data based on a JSON schema.")
+    parser_mock_gen.add_argument(
         "schema",
         help="Path to the JSON schema file."
     )
-    parser_mock.add_argument(
+    parser_mock_gen.add_argument(
         "--count",
         type=int,
         default=1,
         help="Number of records to generate (default: 1)."
     )
-    parser_mock.add_argument(
+    parser_mock_gen.add_argument(
         "--format",
         choices=["json", "csv", "sql"],
         default="json",
         help="Output format (default: json)."
     )
-    parser_mock.add_argument(
+    parser_mock_gen.add_argument(
         "--output",
         help="Output file path (optional)."
     )
-    parser_mock.add_argument(
+    parser_mock_gen.add_argument(
         "--table-name",
         default="mock_data",
         help="Table name for SQL export (default: mock_data)."
+    )
+
+    # mock serve
+    parser_mock_serve = mock_subparsers.add_parser("serve", help="Serve a mock API.")
+    parser_mock_serve.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to listen on (default: 8000)."
+    )
+    parser_mock_serve.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_mock_serve.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_mock_serve.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
     )
 
     # --- New 'i18n' command ---
@@ -11491,40 +11525,51 @@ def run_snippets(args):
 
 
 def run_mock(args):
-    """Generates mock data based on a JSON schema."""
-    from shared.mock_data import MockDataGenerator
+    """Manages mock data tools (generate, serve)."""
+    if args.action == "serve":
+        from shared.mock_server import run_mock_server
+        run_mock_server(
+            project_dir=args.project_dir,
+            port=args.port,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0)
 
-    schema_path = Path(args.schema)
-    if not schema_path.exists():
-        print(f"❌ Error: Schema file '{schema_path}' not found.", file=sys.stderr)
-        sys.exit(1)
+    elif args.action == "generate":
+        from shared.mock_data import MockDataGenerator
 
-    try:
-        with open(schema_path, 'r') as f:
-            schema = json.load(f)
-    except Exception as e:
-        print(f"❌ Error parsing schema file: {e}", file=sys.stderr)
-        sys.exit(1)
+        schema_path = Path(args.schema)
+        if not schema_path.exists():
+            print(f"❌ Error: Schema file '{schema_path}' not found.", file=sys.stderr)
+            sys.exit(1)
 
-    try:
-        generator = MockDataGenerator(schema)
-        data = generator.generate(count=args.count)
-        output_content = generator.export(data, format=args.format, table_name=args.table_name)
-    except Exception as e:
-         print(f"❌ Error generating data: {e}", file=sys.stderr)
-         sys.exit(1)
-
-    if args.output:
         try:
-            with open(args.output, 'w') as f:
-                f.write(output_content)
-            print(f"✅ Mock data generated to {args.output}")
+            with open(schema_path, 'r') as f:
+                schema = json.load(f)
         except Exception as e:
-             print(f"❌ Error writing output file: {e}", file=sys.stderr)
+            print(f"❌ Error parsing schema file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            generator = MockDataGenerator(schema)
+            data = generator.generate(count=args.count)
+            output_content = generator.export(data, format=args.format, table_name=args.table_name)
+        except Exception as e:
+             print(f"❌ Error generating data: {e}", file=sys.stderr)
              sys.exit(1)
-    else:
-        print(output_content)
-    sys.exit(0)
+
+        if args.output:
+            try:
+                with open(args.output, 'w') as f:
+                    f.write(output_content)
+                print(f"✅ Mock data generated to {args.output}")
+            except Exception as e:
+                 print(f"❌ Error writing output file: {e}", file=sys.stderr)
+                 sys.exit(1)
+        else:
+            print(output_content)
+        sys.exit(0)
 
 
 async def run_commit(args):

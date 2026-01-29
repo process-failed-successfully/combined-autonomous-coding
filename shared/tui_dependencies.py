@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 from textual import on
@@ -150,7 +151,6 @@ class DependenciesTab(Container):
         self.notify(f"Installing {name}...", severity="information")
         self.query_one("#deps-status", Label).update(f"Installing {name}...")
 
-        import asyncio
         success = await asyncio.to_thread(
             self.updater.add_package,
             name,
@@ -177,7 +177,6 @@ class DependenciesTab(Container):
         self.notify(f"Removing {name}...", severity="information")
         self.query_one("#deps-status", Label).update(f"Removing {name}...")
 
-        import asyncio
         success = await asyncio.to_thread(self.updater.remove_package, name, dev)
 
         if success:
@@ -205,7 +204,6 @@ class DependenciesTab(Container):
         # The analyzer stores it as string in 'source' but we need Path for updater
         file_path = self.project_dir / source
 
-        import asyncio
         success = await asyncio.to_thread(
             self.updater.update_dependency,
             file_path,
@@ -226,8 +224,6 @@ class DependenciesTab(Container):
     async def check_updates(self):
         self.query_one("#deps-status", Label).update("Checking for updates... (this may take a while)")
         self.notify("Checking updates...", severity="information")
-
-        import asyncio
 
         try:
             def do_check():

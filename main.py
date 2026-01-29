@@ -3471,6 +3471,25 @@ async def run_ask(args):
     sys.exit(0 if success else 1)
 
 
+async def run_chat(args):
+    """Starts an interactive chat session with the agent."""
+    from shared.chat import run_chat_logic
+
+    # We don't setup console logging here because ChatManager uses rich Console
+    # and we don't want mixed output.
+    # But we might want file logging if verbose.
+    if args.verbose:
+        setup_logger(name="chat_logger", log_file=None, verbose=True, console_output=False)
+
+    await run_chat_logic(
+        project_dir=args.project_dir,
+        agent_type=args.agent,
+        model=args.model,
+        verbose=args.verbose
+    )
+    sys.exit(0)
+
+
 async def run_do(args):
     """Translates natural language to shell commands."""
     # Setup logging
@@ -7572,6 +7591,34 @@ def parse_args(argv=None):
     parser_knowledge_graph.add_argument("-o", "--output", help="Output file path.")
     parser_knowledge_graph.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+
+    # --- New 'chat' command ---
+    parser_chat = subparsers.add_parser(
+        "chat",
+        help="Interactive chat with the agent."
+    )
+    parser_chat.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_chat.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_chat.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+    parser_chat.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging."
+    )
 
     # --- New 'ask' command ---
     parser_ask = subparsers.add_parser(
@@ -12097,6 +12144,11 @@ async def main():
     # Handle `knowledge` command
     if args.command == "knowledge":
         run_knowledge(args)
+        return
+
+    # Handle `chat` command
+    if args.command == "chat":
+        await run_chat(args)
         return
 
     # Handle `ask` command

@@ -8,6 +8,8 @@ Generates a daily standup report based on git activity.
 import logging
 import shutil
 import subprocess
+import io
+import contextlib
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -90,37 +92,18 @@ def get_commits_since(project_dir: Path, since: str, author: Optional[str] = Non
         logger.error(f"Error fetching commits: {e}")
         return []
 
-async def run_standup_logic(args) -> bool:
+async def generate_standup_report(
+    commits: List[Dict[str, str]],
+    agent_type: str,
+    model: Optional[str] = None,
+    project_dir: Optional[Path] = None,
+    since: str = "24 hours ago"
+) -> str:
     """
-    Executes the standup generation logic.
+    Generates a standup report using AI based on the provided commits.
     """
-    project_dir = args.project_dir.resolve()
-    since = args.since
-    author = args.author
-
-    # If author is not specified, try to detect current user
-    if not author:
-        try:
-            res = subprocess.run(
-                ["git", "config", "user.name"],
-                cwd=project_dir, capture_output=True, text=True
-            )
-            author = res.stdout.strip()
-        except Exception:
-            pass
-
-    print(f"--- Generating Standup Report ---")
-    print(f"Project: {project_dir}")
-    print(f"Since: {since}")
-    print(f"Author: {author or 'All'}")
-
-    commits = get_commits_since(project_dir, since, author)
-
     if not commits:
-        print("❌ No commits found matching criteria.")
-        return True
-
-    print(f"Found {len(commits)} commit(s).")
+        return "No commits found."
 
     # Prepare Prompt
     commits_text = ""
@@ -150,11 +133,14 @@ async def run_standup_logic(args) -> bool:
     """
 
     # Initialize Agent
+    # If project_dir is None, use current dir, though Config usually requires it.
+    p_dir = project_dir or Path(".")
+
     config = Config(
-        project_dir=project_dir,
-        agent_type=args.agent or "gemini",
-        model=args.model,
-        verbose=args.verbose,
+        project_dir=p_dir,
+        agent_type=agent_type,
+        model=model,
+        verbose=False,
         max_iterations=1,
         stream_output=True
     )
@@ -169,10 +155,59 @@ async def run_standup_logic(args) -> bool:
     agent_class = agent_class_map.get(config.agent_type, GeminiAgent)
     agent = agent_class(config)
 
-    print("\n--- Standup Report ---\n")
+    # Capture output if streaming is enabled by agent, but we want to return the string.
+    # Most agents print to stdout if stream_output is True.
+    # We'll use io.StringIO to capture it.
+
+    output_capture = io.StringIO()
     try:
-        await agent.run_agent_session(prompt)
-        return True
+        with contextlib.redirect_stdout(output_capture):
+            await agent.run_agent_session(prompt)
+        return output_capture.getvalue()
     except Exception as e:
         logger.error(f"Error generating standup: {e}")
-        return False
+        return f"Error generating report: {e}"
+
+async def run_standup_logic(args) -> bool:
+    """
+    Executes the standup generation logic (CLI entry point).
+    """
+    project_dir = args.project_dir.resolve()
+    since = args.since
+    author = args.author
+
+    # If author is not specified, try to detect current user
+    if not author:
+        try:
+            res = subprocess.run(
+                ["git", "config", "user.name"],
+                cwd=project_dir, capture_output=True, text=True
+            )
+            author = res.stdout.strip()
+        except Exception:
+            pass
+
+    print(f"--- Generating Standup Report ---")
+    print(f"Project: {project_dir}")
+    print(f"Since: {since}")
+    print(f"Author: {author or 'All'}")
+
+    commits = get_commits_since(project_dir, since, author)
+
+    if not commits:
+        print("❌ No commits found matching criteria.")
+        return True
+
+    print(f"Found {len(commits)} commit(s).")
+    print("\n--- Standup Report ---\n")
+
+    report = await generate_standup_report(
+        commits=commits,
+        agent_type=args.agent or "gemini",
+        model=args.model,
+        project_dir=project_dir,
+        since=since
+    )
+
+    print(report)
+    return True

@@ -93,5 +93,25 @@ Body line 1
 
         self.assertTrue(result) # Should return True (success) even if no commits
 
+    async def test_generate_standup_report_empty(self):
+        report = await self.standup.generate_standup_report([], "gemini")
+        self.assertEqual(report, "No commits found.")
+
+    @patch('shared.standup.GeminiAgent')
+    async def test_generate_standup_report_success(self, MockAgent):
+        # Mock agent behavior
+        mock_instance = MockAgent.return_value
+        mock_instance.run_agent_session = AsyncMock()
+
+        async def side_effect(prompt):
+            print("Generated Report Content")
+
+        mock_instance.run_agent_session.side_effect = side_effect
+
+        commits = [{"date": "d", "hash": "h", "subject": "s", "body": "b"}]
+        report = await self.standup.generate_standup_report(commits, "gemini")
+
+        self.assertIn("Generated Report Content", report)
+
 if __name__ == '__main__':
     unittest.main()

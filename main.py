@@ -191,6 +191,73 @@ def run_quiz(args):
     print(f"Final Score: {score}/{len(questions)}")
     sys.exit(0)
 
+def run_kata(args):
+    """Runs the Refactoring Kata game."""
+    from shared.kata import KataManager
+
+    project_dir = args.project_dir.resolve()
+    manager = KataManager(project_dir)
+
+    if args.action == "list":
+        print(f"--- Refactoring Katas in: {project_dir} ---")
+        print("Scanning for high-complexity code...")
+        challenges = manager.list_challenges(limit=args.limit)
+
+        if not challenges:
+            print("✅ No high-complexity challenges found! Great job.")
+            sys.exit(0)
+
+        print(f"Found {len(challenges)} challenges:\n")
+        header = f"{'#':<3} | {'Complexity':<10} | {'File':<40} | {'Function'}"
+        print(header)
+        print("-" * len(header))
+
+        for i, c in enumerate(challenges):
+            file_display = c["file"]
+            if len(file_display) > 38:
+                file_display = "..." + file_display[-35:]
+            print(f"{i+1:<3} | {c['complexity']:<10} | {file_display:<40} | {c['function']}")
+
+        print("\nTo start a challenge, run: main.py kata start --index <number>")
+
+    elif args.action == "start":
+        challenges = manager.list_challenges(limit=args.limit) # Re-fetch to be safe/consistent indexes
+        if not challenges:
+             print("No challenges found.")
+             sys.exit(0)
+
+        idx = args.index - 1
+        if not (0 <= idx < len(challenges)):
+            print("Invalid index.")
+            sys.exit(1)
+
+        target = challenges[idx]
+        print(f"--- Kata Challenge: {target['function']} ---")
+        print(f"File: {target['file']}")
+        print(f"Line: {target['lineno']}")
+        print(f"Current Complexity: {target['complexity']}")
+        print("\nGoal: Reduce complexity below 10 (or significantly lower than current).")
+        print("Instructions:")
+        print("1. Open the file in your editor.")
+        print("2. Refactor the function to simplify logic (extract methods, reduce nesting).")
+        print("3. Run verification command below:")
+        # Easier verification command
+        print(f"\n  python3 main.py kata verify --file \"{target['file']}\" --function \"{target['function']}\" --target {target['complexity']}")
+
+    elif args.action == "verify":
+        if not args.file or not args.function or not args.target:
+            print("Error: --file, --function, and --target are required for verify.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.verify_improvement(args.file, args.function, int(args.target))
+
+        if result["success"]:
+            print(f"✅ {result['message']}")
+        else:
+            print(f"❌ {result['message']}")
+
+    sys.exit(0)
+
 def run_serve(args):
     """Starts a local development server."""
     project_dir = args.project_dir.resolve()
@@ -9771,6 +9838,35 @@ def parse_args(argv=None):
     parser_dt_json = devtools_subparsers.add_parser("json", help="Format/Validate JSON.")
     parser_dt_json.add_argument("text", help="JSON string.")
 
+    # --- New 'kata' command ---
+    parser_kata = subparsers.add_parser(
+        "kata",
+        help="Play the Refactoring Kata game."
+    )
+    kata_subparsers = parser_kata.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # kata list
+    parser_kata_list = kata_subparsers.add_parser("list", help="List available challenges.")
+    parser_kata_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_kata_list.add_argument("-l", "--limit", type=int, default=10, help="Limit number of challenges.")
+
+    # kata start
+    parser_kata_start = kata_subparsers.add_parser("start", help="Start a challenge.")
+    parser_kata_start.add_argument("--index", type=int, required=True, help="Challenge number from list.")
+    parser_kata_start.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_kata_start.add_argument("-l", "--limit", type=int, default=10, help="Limit number of challenges (to match list index).")
+
+    # kata verify
+    parser_kata_verify = kata_subparsers.add_parser("verify", help="Verify solution.")
+    parser_kata_verify.add_argument("--file", required=True, help="File path.")
+    parser_kata_verify.add_argument("--function", required=True, help="Function name.")
+    parser_kata_verify.add_argument("--target", type=int, required=True, help="Original complexity.")
+    parser_kata_verify.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'standup' command ---
     parser_standup = subparsers.add_parser(
         "standup",
@@ -12185,6 +12281,10 @@ async def main():
 
     if args.command == "quiz":
         run_quiz(args)
+        return
+
+    if args.command == "kata":
+        run_kata(args)
         return
 
     # Handle `prompt-lab` command

@@ -85,3 +85,15 @@ def test_delete_session(temp_project):
     manager.delete_session("s1")
     assert not (temp_project / ".agent_sessions" / "s1.json").exists()
     assert manager.get_active_session() is None
+
+def test_chat_history_persistence(temp_project):
+    manager = WorkSessionManager(temp_project)
+    manager.create("chat-session")
+
+    manager.add_chat_turn("chat-session", "user", "Hello")
+    manager.add_chat_turn("chat-session", "agent", "Hi there")
+
+    session = manager.load_session("chat-session")
+    assert len(session.chat_history) == 2
+    assert session.chat_history[0] == {"role": "user", "content": "Hello"}
+    assert session.chat_history[1] == {"role": "agent", "content": "Hi there"}

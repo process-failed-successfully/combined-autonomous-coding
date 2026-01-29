@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import requests
 
@@ -275,7 +275,7 @@ class DependencyAnalyzer:
         print("Checking licenses (this may take a moment)...")
         results = []
 
-        def normalize(lic):
+        def normalize(lic: Optional[str]) -> str:
             if not lic:
                 return "unknown"
             # Basic normalization: lowercase, remove common suffixes
@@ -285,7 +285,7 @@ class DependencyAnalyzer:
         deny_set = {normalize(lic) for lic in deny_list} if deny_list else set()
 
         # Helper to process a dependency
-        def process_dep(lang, file_info, dep):
+        def process_dep(lang: str, file_info: Dict[str, Any], dep: Dict[str, str]) -> Dict[str, str]:
             name = dep["name"]
             license_name = "Unknown"
 
@@ -344,7 +344,7 @@ class DependencyAnalyzer:
             url = f"https://pypi.org/pypi/{package_name}/json"
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
-                return response.json()["info"]["version"]
+                return cast(str, response.json()["info"]["version"])
         except Exception:
             pass
         return None
@@ -354,7 +354,7 @@ class DependencyAnalyzer:
             url = f"https://registry.npmjs.org/{package_name}/latest"
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
-                return response.json()["version"]
+                return cast(str, response.json()["version"])
         except Exception:
             pass
         return None
@@ -370,7 +370,7 @@ class DependencyAnalyzer:
                 info = response.json()["info"]
 
                 # 1. Try Classifiers first (more standard)
-                classifiers = info.get("classifiers", [])
+                classifiers = cast(List[str], info.get("classifiers", []))
                 for c in classifiers:
                     if c.startswith("License :: OSI Approved :: "):
                         lic = c.replace("License :: OSI Approved :: ", "").strip()
@@ -384,7 +384,7 @@ class DependencyAnalyzer:
                             return lic
 
                 # 2. Try license field
-                license_field = info.get("license", "")
+                license_field = cast(str, info.get("license", ""))
                 if license_field and len(license_field) < 50:  # Avoid long license texts
                     self.license_cache[package_name] = license_field
                     return license_field
@@ -408,7 +408,9 @@ class DependencyAnalyzer:
 
                 # Sometimes it's a dict { type: "MIT", ... }
                 if isinstance(license_field, dict):
-                    license_field = license_field.get("type", "")
+                    license_field = cast(str, license_field.get("type", ""))
+
+                license_field = cast(str, license_field)
 
                 if license_field:
                     self.license_cache[package_name] = license_field
@@ -689,7 +691,7 @@ class DependencyUpdater:
             return False
 
 
-def _run_deps_logic(project_dir: Path, output_format: str = "text", check_updates: bool = False):
+def _run_deps_logic(project_dir: Path, output_format: str = "text", check_updates: bool = False) -> str:
     analyzer = DependencyAnalyzer(project_dir)
     data = analyzer.scan()
 

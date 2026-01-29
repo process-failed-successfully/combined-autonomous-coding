@@ -1,9 +1,12 @@
 from pathlib import Path
+
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Label, DataTable, Button, Input, Checkbox
-from textual import on
+from textual.widgets import Button, Checkbox, DataTable, Input, Label
+
 from shared.dependencies import DependencyAnalyzer, DependencyUpdater
+
 
 class DependenciesTab(Container):
     """Tab for managing dependencies."""
@@ -17,6 +20,7 @@ class DependenciesTab(Container):
         self.selected_ver = None
         self.selected_file_source = None
         self.selected_dep_type = "prod"
+        self.selected_latest = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -92,7 +96,7 @@ class DependenciesTab(Container):
         # Key format: lang|name|source
         key = event.row_key.value
         try:
-            lang, name, src = key.split("|")
+            lang, name, src = key.split("|", 2)
             self.selected_pkg = name
             self.selected_file_source = src
 
@@ -100,10 +104,10 @@ class DependenciesTab(Container):
             row = self.query_one("#deps-table", DataTable).get_row(event.row_key)
             # row is [Language, Package, Version, Type, Latest, Status, Source]
             self.selected_ver = row[2]
-            self.selected_dep_type = row[3] # "prod" or "dev"
+            self.selected_dep_type = row[3]  # "prod" or "dev"
 
             latest = row[4]
-            status = str(row[5]) # might contain markup
+            status = str(row[5])  # might contain markup
 
             self.query_one("#btn-deps-remove").disabled = False
 
@@ -186,7 +190,7 @@ class DependenciesTab(Container):
             self.query_one("#deps-status", Label).update("Removal failed.")
 
     async def upgrade_package(self) -> None:
-        if not self.selected_pkg or not hasattr(self, 'selected_latest'):
+        if not self.selected_pkg or not self.selected_latest:
             return
 
         name = self.selected_pkg

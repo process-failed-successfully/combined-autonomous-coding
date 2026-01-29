@@ -1,17 +1,11 @@
 import shutil
 import tempfile
-import sys
 from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 
-# Mock rich before importing shared.chat
-sys.modules["rich"] = MagicMock()
-sys.modules["rich.console"] = MagicMock()
-sys.modules["rich.prompt"] = MagicMock()
-sys.modules["rich.markdown"] = MagicMock()
-
-# Now import
+# Remove sys.modules hacking
+# Imports
 from shared.chat import ChatManager
 from shared.work_session import WorkSessionManager
 
@@ -33,8 +27,10 @@ async def test_chat_manager_loads_session_history(temp_project):
 
     # Init ChatManager
     # We need to mock the agent to avoid actual calls
+    # We also mock Console to avoid output during tests
     with patch("shared.chat.ChatManager._init_agent") as mock_init_agent, \
-         patch("shared.chat.WorkSessionManager.get_active_session") as mock_get_active:
+         patch("shared.chat.WorkSessionManager.get_active_session") as mock_get_active, \
+         patch("shared.chat.Console"):
 
         mock_agent = MagicMock()
         mock_init_agent.return_value = mock_agent
@@ -65,7 +61,8 @@ async def test_chat_manager_saves_session_history(temp_project):
     # Init ChatManager and mock agent/console/prompt
     with patch("shared.chat.ChatManager._init_agent") as mock_init_agent, \
          patch("shared.chat.Prompt.ask") as mock_prompt, \
-         patch("shared.chat.WorkSessionManager") as MockWSM:
+         patch("shared.chat.WorkSessionManager") as MockWSM, \
+         patch("shared.chat.Console") as MockConsole:
 
         # Make ChatManager use our session manager instance
         MockWSM.return_value = session_manager
@@ -80,8 +77,6 @@ async def test_chat_manager_saves_session_history(temp_project):
         mock_prompt.side_effect = ["Hello", "/exit"]
 
         manager = ChatManager(temp_project, agent_type="gemini", verbose=False)
-        # Mock console print to avoid clutter
-        manager.console = MagicMock()
 
         # Run chat loop
         await manager.run()

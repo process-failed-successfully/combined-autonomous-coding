@@ -74,6 +74,33 @@ class ApiLabManager:
 
         return "http://localhost:8000"
 
+    def fuzz_endpoint(self, method: str, path: str) -> List[Dict[str, Any]]:
+        """
+        Fuzzes a specific endpoint.
+        """
+        from shared.api_fuzzer import APIFuzzer
+        fuzzer = APIFuzzer(self)
+
+        # Resolve full URL
+        base = self.get_server_url()
+        if path.startswith("http"):
+            full_url = path
+            # Try to infer relative path for schema lookup?
+            # For now, if full url is passed, schema lookup might fail if we don't reverse match.
+            # We'll rely on fuzzing without schema or user providing relative path.
+        else:
+            full_url = base.rstrip('/') + "/" + path.lstrip('/')
+
+        # Find schema
+        schema = {}
+        if self.spec_data and 'paths' in self.spec_data:
+            if path in self.spec_data['paths']:
+                path_item = self.spec_data['paths'][path]
+                if method.lower() in path_item:
+                    schema = path_item[method.lower()]
+
+        return fuzzer.fuzz_endpoint(method, full_url, schema)
+
     def execute_request(self, method: str, url: str, headers: Dict[str, str] = None, params: Dict[str, str] = None, body: str = None) -> Dict[str, Any]:
         """
         Executes an HTTP request.
@@ -198,6 +225,28 @@ def run_api_lab_cli(args):
         print(result['body'])
 
         sys.exit(0 if result['success'] else 1)
+
+    elif args.action == "fuzz":
+        method = args.method.upper()
+        path = args.url # Argument name is url, but for fuzz we prefer path key
+
+        results = manager.fuzz_endpoint(method, path)
+
+        crashes = [r for r in results if r['crash']]
+        print(f"\n--- Fuzzing Complete ---")
+        print(f"Total Requests: {len(results)}")
+        print(f"Crashes (5xx): {len(crashes)}")
+
+        if crashes:
+            print("\n❌ CRASHES DETECTED:")
+            for c in crashes:
+                print(f"  Payload: {c['payload']}")
+                print(f"  Status: {c['status']}")
+                print(f"  Error: {c.get('error', '')}")
+            sys.exit(1)
+        else:
+            print("\n✅ No crashes detected.")
+            sys.exit(0)
 
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)

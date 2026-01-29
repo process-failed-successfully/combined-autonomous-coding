@@ -9539,6 +9539,12 @@ def parse_args(argv=None):
     parser_api_lab_run.add_argument("--headers", type=str, help="Request headers (JSON string).")
     parser_api_lab_run.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # api-lab 'fuzz'
+    parser_api_lab_fuzz = api_lab_subparsers.add_parser("fuzz", help="Fuzz an API endpoint to find bugs.")
+    parser_api_lab_fuzz.add_argument("method", choices=["GET", "POST", "PUT", "DELETE", "PATCH"], help="HTTP method.")
+    parser_api_lab_fuzz.add_argument("url", help="URL path (e.g. /users) as defined in spec, or full URL.")
+    parser_api_lab_fuzz.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'research' command ---
     parser_research = subparsers.add_parser(
         "research",

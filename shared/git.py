@@ -344,30 +344,22 @@ def get_all_git_files(project_dir: Path) -> list[str]:
     excluding ignored files. Paths are relative to project_dir.
     """
     try:
-        # Tracked files
-        cmd_tracked = ["git", "ls-files", "-z"]
-        res_tracked = subprocess.run(
-            cmd_tracked,
+        # Combined: Tracked + Untracked (respecting ignores)
+        # -c: cached (tracked)
+        # -o: others (untracked)
+        # --exclude-standard: respect .gitignore
+        cmd = ["git", "ls-files", "-z", "-c", "-o", "--exclude-standard"]
+        result = subprocess.run(
+            cmd,
             cwd=project_dir,
             capture_output=True,
             text=True,
             check=True
         )
-        tracked = res_tracked.stdout.split('\0')
+        files = result.stdout.split('\0')
 
-        # Untracked files (excluding ignored)
-        cmd_untracked = ["git", "ls-files", "-z", "--others", "--exclude-standard"]
-        res_untracked = subprocess.run(
-            cmd_untracked,
-            cwd=project_dir,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        untracked = res_untracked.stdout.split('\0')
-
-        # Combine and remove empty strings
-        all_files = set(tracked + untracked)
+        # Remove empty strings and duplicates
+        all_files = set(files)
         if '' in all_files:
             all_files.remove('')
 

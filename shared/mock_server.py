@@ -1,13 +1,10 @@
 import http.server
-import socketserver
-import threading
 import json
 import yaml
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast
 import asyncio
-import sys
 
 from shared.config import Config
 from shared.mock_data import MockDataGenerator
@@ -17,6 +14,7 @@ from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
+
 
 class MockRequestHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, *args, project_dir: Path, config: Dict[str, Any], agent_config: Config, **kwargs):
@@ -146,7 +144,7 @@ Do not include any markdown formatting or explanations outside the JSON.
         if not agent_class:
             return {"status": 500, "body": {"error": f"Unknown agent type: {agent_type}"}}
 
-        agent = agent_class(self.agent_config)
+        agent = cast(Any, agent_class)(self.agent_config)
 
         try:
             # We need to run the async agent method in a synchronous context
@@ -176,12 +174,13 @@ Do not include any markdown formatting or explanations outside the JSON.
             logger.error(f"AI Agent error: {e}")
             return {"status": 500, "body": {"error": f"AI Agent error: {e}"}}
 
+
 def run_mock_server(project_dir: Path, port: int = 8000, agent_type: str = "gemini", model: Optional[str] = None):
     """
     Starts the AI-powered mock server.
     """
     # Load Configuration
-    mock_config = {}
+    mock_config: Dict[str, Any] = {}
     config_file = project_dir / "mock_config.yaml"
     if config_file.exists():
         try:
@@ -198,7 +197,7 @@ def run_mock_server(project_dir: Path, port: int = 8000, agent_type: str = "gemi
         agent_type=agent_type,
         model=model,
         max_iterations=1,
-        stream_output=False, # We don't want streaming to stdout mixed with server logs
+        stream_output=False,  # We don't want streaming to stdout mixed with server logs
         verbose=False
     )
 
@@ -206,10 +205,10 @@ def run_mock_server(project_dir: Path, port: int = 8000, agent_type: str = "gemi
     def handler_factory(*args, **kwargs):
         return MockRequestHandler(*args, project_dir=project_dir, config=mock_config, agent_config=agent_config, **kwargs)
 
-    print(f"--- AI Mock Server ---")
+    print("--- AI Mock Server ---")
     print(f"Listening on port {port}...")
     print(f"Agent: {agent_type}")
-    print(f"Press Ctrl+C to stop.")
+    print("Press Ctrl+C to stop.")
 
     try:
         with http.server.ThreadingHTTPServer(("", port), handler_factory) as httpd:

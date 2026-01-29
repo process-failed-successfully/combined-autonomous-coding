@@ -11556,8 +11556,8 @@ def run_mock(args):
             data = generator.generate(count=args.count)
             output_content = generator.export(data, format=args.format, table_name=args.table_name)
         except Exception as e:
-             print(f"❌ Error generating data: {e}", file=sys.stderr)
-             sys.exit(1)
+            print(f"❌ Error generating data: {e}", file=sys.stderr)
+            sys.exit(1)
 
         if args.output:
             try:
@@ -11565,8 +11565,8 @@ def run_mock(args):
                     f.write(output_content)
                 print(f"✅ Mock data generated to {args.output}")
             except Exception as e:
-                 print(f"❌ Error writing output file: {e}", file=sys.stderr)
-                 sys.exit(1)
+                print(f"❌ Error writing output file: {e}", file=sys.stderr)
+                sys.exit(1)
         else:
             print(output_content)
         sys.exit(0)

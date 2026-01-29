@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from textual import on
 from textual.app import ComposeResult
@@ -225,12 +225,12 @@ class DependenciesTab(Container):
             self.notify(f"Failed to upgrade '{name}'.", severity="error")
             self.query_one("#deps-status", Label).update("Upgrade failed.")
 
-    async def check_updates(self):
+    async def check_updates(self) -> None:
         self.query_one("#deps-status", Label).update("Checking for updates... (this may take a while)")
         self.notify("Checking updates...", severity="information")
 
         try:
-            def do_check():
+            def do_check() -> Dict[str, Any]:
                 data = self.analyzer.scan()
                 return self.analyzer.check_updates(data)
 

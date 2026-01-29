@@ -9183,6 +9183,48 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'cron-lab' command ---
+    parser_cron = subparsers.add_parser(
+        "cron-lab",
+        help="Cron Lab: Next, Explain, and Generate cron expressions."
+    )
+    parser_cron.add_argument(
+        "action",
+        choices=["next", "explain", "generate"],
+        help="Action to perform."
+    )
+    parser_cron.add_argument(
+        "--expression",
+        help="The cron expression."
+    )
+    parser_cron.add_argument(
+        "--description",
+        help="The description for generation."
+    )
+    parser_cron.add_argument(
+        "--count",
+        type=int,
+        default=5,
+        help="Number of occurrences to calculate (default: 5)."
+    )
+    parser_cron.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_cron.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_cron.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     # --- New 'resolve-conflicts' command ---
     parser_resolve_conflicts = subparsers.add_parser(
         "resolve-conflicts",
@@ -10252,6 +10294,59 @@ async def run_regex(args):
         print(f"Asking {args.agent} to generate regex...")
         success = await manager.generate_regex(
             description=args.text,
+            project_dir=project_dir,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0 if success else 1)
+
+    sys.exit(0)
+
+
+async def run_cron_lab(args):
+    """Runs the Cron Lab."""
+    from shared.cron_lab import CronLabManager
+
+    project_dir = args.project_dir.resolve()
+    manager = CronLabManager()
+
+    if args.action == "next":
+        if not args.expression:
+            print("Error: --expression is required for 'next' action.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.get_next_occurrences(args.expression, args.count)
+
+        if result["success"]:
+            print(f"✅ Next {args.count} occurrences for '{args.expression}':")
+            for occ in result["occurrences"]:
+                print(f"  - {occ}")
+        else:
+            print(f"❌ Cron Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "explain":
+        if not args.expression:
+            print("Error: --expression is required for 'explain' action.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Asking {args.agent} to explain cron expression: {args.expression}...")
+        success = await manager.explain_expression(
+            expression=args.expression,
+            project_dir=project_dir,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0 if success else 1)
+
+    elif args.action == "generate":
+        if not args.description:
+             print("Error: --description is required for 'generate' action.", file=sys.stderr)
+             sys.exit(1)
+
+        print(f"Asking {args.agent} to generate cron expression...")
+        success = await manager.generate_expression(
+            description=args.description,
             project_dir=project_dir,
             agent_type=args.agent,
             model=args.model
@@ -12547,6 +12642,10 @@ async def main():
 
     if args.command == "regex":
         await run_regex(args)
+        return
+
+    if args.command == "cron-lab":
+        await run_cron_lab(args)
         return
 
     if args.command in ["resolve-conflicts", "fix-conflicts"]:

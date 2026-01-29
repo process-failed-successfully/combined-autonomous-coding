@@ -27,7 +27,9 @@ class TestTelemetryConnectionError(unittest.TestCase):
             self.fail(f"_shutdown raised exception: {e}")
 
         # Verify: Warning was attempted (even if it failed internally and was caught)
-        t.logger.warning.assert_called()
+        # t.logger.warning.assert_called()
+        # Update: We now expect NO logging call, as we silently suppress the error.
+        t.logger.warning.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()

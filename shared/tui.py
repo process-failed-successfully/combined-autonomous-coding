@@ -79,6 +79,7 @@ from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
+from shared.tui_standup import StandupTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -3779,6 +3780,8 @@ class AgentTUI(App):
                 yield SearchTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):
                 yield TasksTab(self.project_dir)
+            with TabPane("Standup", id="tab-standup"):
+                yield StandupTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
             with TabPane("Pull Requests", id="tab-pr"):

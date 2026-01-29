@@ -3,12 +3,13 @@ import io
 import contextlib
 from pathlib import Path
 from textual.app import ComposeResult
-from textual.widgets import Button, Input, Label, RichLog, Checkbox, TextArea, Select
+from textual.widgets import Button, Input, Label, RichLog, Checkbox, TextArea, Select, TabbedContent, TabPane
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual import on
 from rich.markup import escape
 
 from shared.ask import run_ask_logic
+from shared.regex_game import RegexGameEngine, RegexGameGenerator
 
 class RegexLabTab(Container):
     """Tab for experimenting with Regex."""
@@ -16,38 +17,84 @@ class RegexLabTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.game_generator = RegexGameGenerator()
+        self.game_engine = RegexGameEngine()
+        self.current_level_index = 0
+        self.levels = self.game_generator.generate_levels()
 
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("[bold]Regex Lab[/bold]", classes="welcome-text")
 
-            # Pattern Input
-            with Container(classes="stat-box"):
-                yield Label("Regex Pattern:")
-                with Horizontal():
-                    yield Input(placeholder="e.g. ^[a-zA-Z0-9]+$", id="regex-pattern")
-                    yield Button("Match", id="btn-regex-match", variant="primary")
+            with TabbedContent():
+                with TabPane("Playground"):
+                    # Pattern Input
+                    with Container(classes="stat-box"):
+                        yield Label("Regex Pattern:")
+                        with Horizontal():
+                            yield Input(placeholder="e.g. ^[a-zA-Z0-9]+$", id="regex-pattern")
+                            yield Button("Match", id="btn-regex-match", variant="primary")
 
-                with Horizontal():
-                    yield Checkbox("Ignore Case", id="chk-ignore-case")
-                    yield Checkbox("Multiline", id="chk-multiline")
-                    yield Checkbox("Dot All", id="chk-dotall")
+                        with Horizontal():
+                            yield Checkbox("Ignore Case", id="chk-ignore-case")
+                            yield Checkbox("Multiline", id="chk-multiline")
+                            yield Checkbox("Dot All", id="chk-dotall")
 
-            # AI Helpers
-            with Horizontal(classes="stat-box"):
-                yield Select.from_values(["gemini", "cursor", "local"], id="regex-agent", value="gemini")
-                yield Button("Explain Pattern (AI)", id="btn-regex-explain", variant="warning")
-                yield Button("Generate from Description (AI)", id="btn-regex-generate", variant="success")
+                    # AI Helpers
+                    with Horizontal(classes="stat-box"):
+                        yield Select.from_values(["gemini", "cursor", "local"], id="regex-agent", value="gemini")
+                        yield Button("Explain Pattern (AI)", id="btn-regex-explain", variant="warning")
+                        yield Button("Generate from Description (AI)", id="btn-regex-generate", variant="success")
 
-            # Test String
-            with Vertical(classes="stat-box", id="regex-test-container"):
-                yield Label("Test String:")
-                yield TextArea(id="regex-test-string")
+                    # Test String
+                    with Vertical(classes="stat-box", id="regex-test-container"):
+                        yield Label("Test String:")
+                        yield TextArea(id="regex-test-string")
 
-            # Output
-            with VerticalScroll(classes="stat-box", id="regex-output-container"):
-                yield Label("[bold]Results[/bold]")
-                yield RichLog(id="regex-output", wrap=True, highlight=False, markup=True)
+                    # Output
+                    with VerticalScroll(classes="stat-box", id="regex-output-container"):
+                        yield Label("[bold]Results[/bold]")
+                        yield RichLog(id="regex-output", wrap=True, highlight=False, markup=True)
+
+                with TabPane("Game Mode"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Regex Golf[/bold]", classes="welcome-text")
+                        yield Label("", id="game-level-name")
+                        yield Label("", id="game-level-description")
+
+                        with Horizontal():
+                            yield Input(placeholder="Enter regex...", id="game-input")
+                            yield Button("Submit", id="btn-game-submit", variant="primary")
+                            yield Button("Next Level", id="btn-game-next", variant="success", disabled=True)
+                            yield Button("Hint (AI)", id="btn-game-hint", variant="warning")
+
+                        yield Label("[bold]Test Cases[/bold]")
+                        yield RichLog(id="game-feedback", wrap=True, highlight=False, markup=True)
+
+    def on_mount(self) -> None:
+        self.load_level()
+
+    def load_level(self) -> None:
+        if self.current_level_index < len(self.levels):
+            level = self.levels[self.current_level_index]
+            self.query_one("#game-level-name", Label).update(f"[bold]{level.name}[/bold]")
+            self.query_one("#game-level-description", Label).update(level.description)
+            self.query_one("#game-input", Input).value = ""
+            self.query_one("#btn-game-next").disabled = True
+
+            feedback = self.query_one("#game-feedback", RichLog)
+            feedback.clear()
+            feedback.write("[bold green]Positive Cases (Must Match):[/bold green]")
+            for case in level.positive_cases:
+                feedback.write(f"  - {case}")
+            feedback.write("\n[bold red]Negative Cases (Must NOT Match):[/bold red]")
+            for case in level.negative_cases:
+                feedback.write(f"  - {case}")
+        else:
+            self.query_one("#game-level-name", Label).update("[bold]All levels completed![/bold]")
+            self.query_one("#game-level-description", Label).update("Congratulations! You have mastered regex.")
+            self.query_one("#game-input", Input).disabled = True
+            self.query_one("#btn-game-submit").disabled = True
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-regex-match":
@@ -56,6 +103,80 @@ class RegexLabTab(Container):
             await self.explain_regex()
         elif event.button.id == "btn-regex-generate":
             await self.generate_regex()
+        elif event.button.id == "btn-game-submit":
+            self.check_game_answer()
+        elif event.button.id == "btn-game-next":
+            self.current_level_index += 1
+            self.load_level()
+        elif event.button.id == "btn-game-hint":
+            await self.get_hint()
+
+    def check_game_answer(self) -> None:
+        pattern = self.query_one("#game-input", Input).value
+        if not pattern:
+            self.notify("Please enter a regex pattern.", severity="error")
+            return
+
+        level = self.levels[self.current_level_index]
+        result = self.game_engine.validate(pattern, level)
+
+        feedback = self.query_one("#game-feedback", RichLog)
+        feedback.clear()
+
+        if result.get("error"):
+            feedback.write(f"[bold red]Error:[/bold red] {result['error']}")
+            return
+
+        feedback.write("[bold]Validation Results:[/bold]\n")
+
+        # Positive Cases
+        feedback.write("[bold green]Positive Cases:[/bold green]")
+        for case, passed in result["positive_results"]:
+            icon = "✅" if passed else "❌"
+            feedback.write(f"{icon} '{case}'")
+
+        # Negative Cases
+        feedback.write("\n[bold red]Negative Cases:[/bold red]")
+        for case, passed in result["negative_results"]:
+            icon = "✅" if passed else "❌"
+            feedback.write(f"{icon} '{case}' (Should NOT match)")
+
+        if result["success"]:
+            feedback.write("\n[bold green]Level Passed![/bold green]")
+            self.notify("Correct!")
+            self.query_one("#btn-game-next").disabled = False
+        else:
+            feedback.write("\n[bold red]Try Again.[/bold red]")
+            self.notify("Incorrect.", severity="error")
+
+    async def get_hint(self) -> None:
+        level = self.levels[self.current_level_index]
+        agent_type = "gemini" # Default or user choice
+
+        prompt = f"""
+I am trying to solve a regex puzzle.
+Goal: {level.description}
+Must match: {level.positive_cases}
+Must NOT match: {level.negative_cases}
+
+Give me a hint about what regex concepts I should use. Do not give me the exact answer.
+"""
+        feedback = self.query_one("#game-feedback", RichLog)
+        feedback.write("\n[italic]Asking AI for a hint...[/italic]")
+
+        output_capture = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output_capture):
+                await run_ask_logic(
+                    query=prompt,
+                    project_dir=self.project_dir,
+                    agent_type=agent_type,
+                    verbose=False
+                )
+            hint = output_capture.getvalue()
+            feedback.write(f"\n[bold yellow]Hint:[/bold yellow] {hint}")
+        except Exception as e:
+            feedback.write(f"\n[bold red]Hint Error:[/bold red] {e}")
 
     def match_regex(self) -> None:
         pattern = self.query_one("#regex-pattern", Input).value

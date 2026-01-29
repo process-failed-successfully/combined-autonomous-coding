@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime
 
 @dataclass
@@ -15,6 +15,7 @@ class Session:
     notes: List[str]
     description: str = ""
     env_vars: Dict[str, str] = None
+    chat_history: List[Dict[str, str]] = field(default_factory=list)
 
 class WorkSessionManager:
     def __init__(self, project_dir: Path):
@@ -41,7 +42,8 @@ class WorkSessionManager:
             files=[],
             notes=[],
             description=description,
-            env_vars={}
+            env_vars={},
+            chat_history=[]
         )
         self.save_session(session)
         self.set_active_session(name)
@@ -61,6 +63,9 @@ class WorkSessionManager:
         try:
             with open(path, 'r') as f:
                 data = json.load(f)
+            # Ensure chat_history exists in data for backward compatibility
+            if "chat_history" not in data:
+                data["chat_history"] = []
             return Session(**data)
         except Exception as e:
             print(f"Error loading session {name}: {e}", file=sys.stderr)
@@ -146,4 +151,12 @@ class WorkSessionManager:
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         session.notes.append(f"[{timestamp}] {note}")
+        self.save_session(session)
+
+    def add_chat_turn(self, name: str, role: str, content: str):
+        session = self.load_session(name)
+        if not session:
+            raise FileNotFoundError(f"Session '{name}' not found.")
+
+        session.chat_history.append({"role": role, "content": content})
         self.save_session(session)

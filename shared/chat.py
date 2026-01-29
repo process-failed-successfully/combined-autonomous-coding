@@ -22,6 +22,7 @@ from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 from agents.shared.prompts import get_ask_prompt
 from shared.utils import get_file_tree
+from shared.work_session import WorkSessionManager
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,8 @@ class ChatManager:
             stream_output=True,
         )
         self.agent = self._init_agent(agent_type)
+        self.session_manager = WorkSessionManager(project_dir)
+        self._load_active_session()
 
     def _init_agent(self, agent_type: str):
         agent_class_map = {
@@ -94,6 +97,20 @@ class ChatManager:
         if not agent_class:
             raise ValueError(f"Unknown agent type: {agent_type}")
         return agent_class(self.config)
+
+    def _load_active_session(self):
+        """Loads context from the active work session if one exists."""
+        active_session = self.session_manager.get_active_session()
+        if active_session:
+            self.console.print(f"[green]Resumed session: {active_session.name}[/green]")
+
+            # Load files
+            for file_path in active_session.files:
+                self.session.add_file(file_path)
+
+            # Load history
+            for turn in active_session.chat_history:
+                self.session.add_turn(turn["role"], turn["content"])
 
     def _build_prompt(self, user_input: str) -> str:
         # Base prompt
@@ -133,6 +150,12 @@ class ChatManager:
 
         return full_prompt
 
+    def _persist_turn(self, role: str, content: str):
+        """Persists a turn to the active session if one exists."""
+        active_session = self.session_manager.get_active_session()
+        if active_session:
+            self.session_manager.add_chat_turn(active_session.name, role, content)
+
     async def run(self):
         self.console.print(f"[bold green]Starting Chat with {self.config.agent_type.capitalize()} Agent[/bold green]")
         self.console.print("Commands: /add <file>, /remove <file>, /files, /clear, /exit")
@@ -151,6 +174,7 @@ class ChatManager:
 
                 # Add user turn
                 self.session.add_turn("user", user_input)
+                self._persist_turn("user", user_input)
 
                 # Generate response
                 prompt = self._build_prompt(user_input)
@@ -163,6 +187,7 @@ class ChatManager:
                 self.console.print("")
 
                 self.session.add_turn("agent", response)
+                self._persist_turn("agent", response)
 
             except (KeyboardInterrupt, EOFError):
                 self.console.print("\nExiting chat.")
@@ -181,7 +206,13 @@ class ChatManager:
 
         if cmd == "/clear":
             self.session.clear_history()
-            self.console.print("[yellow]History cleared.[/yellow]")
+            # Note: We probably don't want to clear the *persistent* session history unless explicitly asked
+            # But "clear" in chat usually means "start fresh context".
+            # For now, let's keep it local to the run unless we want to wipe the session too.
+            # Ideally, clearing context shouldn't delete history from the record, but it should stop sending it.
+            # Since _build_prompt uses self.session.history, this achieves that effect.
+            # If the user restarts chat, history reloads.
+            self.console.print("[yellow]History cleared from context (persistent session preserved).[/yellow]")
             return True
 
         if cmd == "/files":
@@ -201,6 +232,13 @@ class ChatManager:
             file_path = args[0]
             if self.session.add_file(file_path):
                 self.console.print(f"[green]Added {file_path}[/green]")
+                # Persist
+                active = self.session_manager.get_active_session()
+                if active:
+                    try:
+                        self.session_manager.add_file(active.name, file_path)
+                    except Exception:
+                        pass
             else:
                 self.console.print(f"[red]Could not add {file_path}[/red]")
             return True
@@ -212,6 +250,13 @@ class ChatManager:
             file_path = args[0]
             if self.session.remove_file(file_path):
                 self.console.print(f"[green]Removed {file_path}[/green]")
+                # Persist
+                active = self.session_manager.get_active_session()
+                if active:
+                    try:
+                        self.session_manager.remove_file(active.name, file_path)
+                    except Exception:
+                        pass
             else:
                 self.console.print(f"[red]File {file_path} not found in context.[/red]")
             return True

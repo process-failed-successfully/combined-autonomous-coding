@@ -35,9 +35,11 @@ class SecretsManager:
             return False
 
         key = Fernet.generate_key()
-        # Set permission to 600
-        with open(self.key_path, "wb") as f:
+        # Set permission to 600 atomically
+        fd = os.open(self.key_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "wb") as f:
             f.write(key)
+        # Ensure permissions are correct even if file existed with different permissions
         os.chmod(self.key_path, 0o600)
         return True
 
@@ -59,8 +61,10 @@ class SecretsManager:
         data = json.dumps(secrets).encode()
         encrypted = fernet.encrypt(data)
 
-        with open(self.secrets_path, "wb") as f:
+        fd = os.open(self.secrets_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "wb") as f:
             f.write(encrypted)
+        # Ensure permissions are correct even if file existed with different permissions
         os.chmod(self.secrets_path, 0o600)
 
     def load_secrets(self) -> Dict[str, str]:

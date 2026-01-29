@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+from typing import Any, Optional
 
 from textual import on
 from textual.app import ComposeResult
@@ -12,16 +13,16 @@ from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 class DependenciesTab(Container):
     """Tab for managing dependencies."""
 
-    def __init__(self, project_dir: Path, **kwargs) -> None:
+    def __init__(self, project_dir: Path, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.analyzer = DependencyAnalyzer(project_dir)
         self.updater = DependencyUpdater(project_dir)
-        self.selected_pkg = None
-        self.selected_ver = None
-        self.selected_file_source = None
-        self.selected_dep_type = "prod"
-        self.selected_latest = None
+        self.selected_pkg: Optional[str] = None
+        self.selected_ver: Optional[str] = None
+        self.selected_file_source: Optional[str] = None
+        self.selected_dep_type: str = "prod"
+        self.selected_latest: Optional[str] = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -96,6 +97,9 @@ class DependenciesTab(Container):
     def on_row_selected(self, event: DataTable.RowSelected) -> None:
         # Key format: lang|name|source
         key = event.row_key.value
+        if not key:
+            return
+
         try:
             lang, name, src = key.split("|", 2)
             self.selected_pkg = name
@@ -110,21 +114,21 @@ class DependenciesTab(Container):
             latest = row[4]
             status = str(row[5])  # might contain markup
 
-            self.query_one("#btn-deps-remove").disabled = False
+            self.query_one("#btn-deps-remove", Button).disabled = False
 
             # Enable upgrade if outdated
             if "Outdated" in status and latest != "-":
-                self.query_one("#btn-deps-upgrade").disabled = False
-                self.query_one("#btn-deps-upgrade").label = f"Upgrade to {latest}"
+                self.query_one("#btn-deps-upgrade", Button).disabled = False
+                self.query_one("#btn-deps-upgrade", Button).label = f"Upgrade to {latest}"
                 self.selected_latest = latest
             else:
-                self.query_one("#btn-deps-upgrade").disabled = True
-                self.query_one("#btn-deps-upgrade").label = "Upgrade Selected"
+                self.query_one("#btn-deps-upgrade", Button).disabled = True
+                self.query_one("#btn-deps-upgrade", Button).label = "Upgrade Selected"
 
         except Exception:
             self.selected_pkg = None
-            self.query_one("#btn-deps-remove").disabled = True
-            self.query_one("#btn-deps-upgrade").disabled = True
+            self.query_one("#btn-deps-remove", Button).disabled = True
+            self.query_one("#btn-deps-upgrade", Button).disabled = True
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-deps-refresh":
@@ -182,14 +186,14 @@ class DependenciesTab(Container):
         if success:
             self.notify(f"Package '{name}' removed.")
             self.load_deps()
-            self.query_one("#btn-deps-remove").disabled = True
-            self.query_one("#btn-deps-upgrade").disabled = True
+            self.query_one("#btn-deps-remove", Button).disabled = True
+            self.query_one("#btn-deps-upgrade", Button).disabled = True
         else:
             self.notify(f"Failed to remove '{name}'.", severity="error")
             self.query_one("#deps-status", Label).update("Removal failed.")
 
     async def upgrade_package(self) -> None:
-        if not self.selected_pkg or not self.selected_latest:
+        if not self.selected_pkg or not self.selected_latest or not self.selected_file_source:
             return
 
         name = self.selected_pkg
@@ -215,8 +219,8 @@ class DependenciesTab(Container):
         if success:
             self.notify(f"Upgraded {name}.")
             self.load_deps()
-            self.query_one("#btn-deps-remove").disabled = True
-            self.query_one("#btn-deps-upgrade").disabled = True
+            self.query_one("#btn-deps-remove", Button).disabled = True
+            self.query_one("#btn-deps-upgrade", Button).disabled = True
         else:
             self.notify(f"Failed to upgrade '{name}'.", severity="error")
             self.query_one("#deps-status", Label).update("Upgrade failed.")

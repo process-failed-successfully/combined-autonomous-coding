@@ -1,10 +1,10 @@
 import shutil
 import tempfile
+import sys
 from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 
-# Remove sys.modules hacking
 # Imports
 from shared.chat import ChatManager
 from shared.work_session import WorkSessionManager
@@ -28,6 +28,7 @@ async def test_chat_manager_loads_session_history(temp_project):
     # Init ChatManager
     # We need to mock the agent to avoid actual calls
     # We also mock Console to avoid output during tests
+    # Mocking shared.chat.Console ensures we don't need real Rich console interaction
     with patch("shared.chat.ChatManager._init_agent") as mock_init_agent, \
          patch("shared.chat.WorkSessionManager.get_active_session") as mock_get_active, \
          patch("shared.chat.Console"):

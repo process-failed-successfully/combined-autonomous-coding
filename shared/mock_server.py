@@ -3,15 +3,33 @@ import json
 import yaml
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, cast
+from typing import Optional, Dict, Any
 import asyncio
 
 from shared.config import Config
 from shared.mock_data import MockDataGenerator
-from agents.gemini import GeminiAgent
-from agents.cursor import CursorAgent
-from agents.local import LocalAgent
-from agents.openrouter import OpenRouterAgent
+
+# Lazy/Safe imports for agents to avoid breaking if dependencies are missing (though they shouldn't be)
+# This is defensive programming for CI environments or partial installs.
+try:
+    from agents.gemini import GeminiAgent
+except ImportError:
+    GeminiAgent = None  # type: ignore
+
+try:
+    from agents.cursor import CursorAgent
+except ImportError:
+    CursorAgent = None  # type: ignore
+
+try:
+    from agents.local import LocalAgent
+except ImportError:
+    LocalAgent = None  # type: ignore
+
+try:
+    from agents.openrouter import OpenRouterAgent
+except ImportError:
+    OpenRouterAgent = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -142,9 +160,9 @@ Do not include any markdown formatting or explanations outside the JSON.
         agent_class = agent_class_map.get(agent_type)
 
         if not agent_class:
-            return {"status": 500, "body": {"error": f"Unknown agent type: {agent_type}"}}
+            return {"status": 500, "body": {"error": f"Unknown or unavailable agent type: {agent_type}"}}
 
-        agent = cast(Any, agent_class)(self.agent_config)
+        agent = agent_class(self.agent_config)
 
         try:
             # We need to run the async agent method in a synchronous context
@@ -180,7 +198,7 @@ def run_mock_server(project_dir: Path, port: int = 8000, agent_type: str = "gemi
     Starts the AI-powered mock server.
     """
     # Load Configuration
-    mock_config: Dict[str, Any] = {}
+    mock_config = {}
     config_file = project_dir / "mock_config.yaml"
     if config_file.exists():
         try:

@@ -6,6 +6,7 @@ import json
 import time
 import shutil
 import tempfile
+import socket
 from pathlib import Path
 from unittest.mock import patch, AsyncMock
 from shared.mock_server import MockRequestHandler
@@ -16,10 +17,9 @@ class TestMockServer(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.test_dir)
-        # Use a random-ish port or just hope 8889 is free.
-        # Better to let OS pick port by binding to 0, but then we need to read it back.
         self.server = None
         self.server_thread = None
+        self.port = 0
 
     def tearDown(self):
         if self.server:
@@ -42,13 +42,26 @@ class TestMockServer(unittest.TestCase):
             )
 
         # Bind to port 0 to let OS assign a free port
-        self.server = http.server.ThreadingHTTPServer(("localhost", 0), handler_factory)
+        # We use 127.0.0.1 explicitly to avoid issues with localhost resolution (IPv4/IPv6)
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler_factory)
         self.port = self.server.server_port
 
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.daemon = True
         self.server_thread.start()
-        time.sleep(0.1)  # Wait for server to start
+
+        # Wait for server to be reachable
+        self.wait_for_server()
+
+    def wait_for_server(self, timeout=5.0):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                with socket.create_connection(("127.0.0.1", self.port), timeout=0.1):
+                    return
+            except (ConnectionRefusedError, socket.timeout, OSError):
+                time.sleep(0.1)
+        raise RuntimeError(f"Server failed to start on port {self.port} within {timeout} seconds")
 
     def test_static_route(self):
         config = {
@@ -62,7 +75,7 @@ class TestMockServer(unittest.TestCase):
         }
         self.start_server(config)
 
-        conn = http.client.HTTPConnection("localhost", self.port)
+        conn = http.client.HTTPConnection("127.0.0.1", self.port)
         conn.request("GET", "/static")
         res = conn.getresponse()
 
@@ -92,7 +105,7 @@ class TestMockServer(unittest.TestCase):
         }
         self.start_server(config)
 
-        conn = http.client.HTTPConnection("localhost", self.port)
+        conn = http.client.HTTPConnection("127.0.0.1", self.port)
         conn.request("GET", "/user")
         res = conn.getresponse()
 
@@ -111,7 +124,7 @@ class TestMockServer(unittest.TestCase):
 
         self.start_server({})  # Empty config
 
-        conn = http.client.HTTPConnection("localhost", self.port)
+        conn = http.client.HTTPConnection("127.0.0.1", self.port)
         conn.request("POST", "/create-user", body=json.dumps({"name": "Test"}).encode("utf-8"))
         res = conn.getresponse()
 

@@ -6,11 +6,11 @@ import json
 import time
 import shutil
 import tempfile
-import asyncio
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from shared.mock_server import MockRequestHandler
 from shared.config import Config
+
 
 class TestMockServer(unittest.TestCase):
     def setUp(self):
@@ -48,7 +48,7 @@ class TestMockServer(unittest.TestCase):
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.daemon = True
         self.server_thread.start()
-        time.sleep(0.1) # Wait for server to start
+        time.sleep(0.1)  # Wait for server to start
 
     def test_static_route(self):
         config = {
@@ -109,7 +109,7 @@ class TestMockServer(unittest.TestCase):
         mock_response_text = '```json\n{"status": 201, "body": {"id": 123}}\n```'
         mock_run.return_value = ("success", mock_response_text, [])
 
-        self.start_server({}) # Empty config
+        self.start_server({})  # Empty config
 
         conn = http.client.HTTPConnection("localhost", self.port)
         conn.request("POST", "/create-user", body=json.dumps({"name": "Test"}).encode("utf-8"))
@@ -126,6 +126,7 @@ class TestMockServer(unittest.TestCase):
         self.assertIn("POST", prompt)
         self.assertIn("/create-user", prompt)
         self.assertIn('"name": "Test"', prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

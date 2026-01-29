@@ -395,7 +395,14 @@ class Telemetry:
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                try:
+                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                except ValueError:
+                    # Logging stream might be closed during shutdown (atexit)
+                    pass
+                except Exception:
+                    # Failsafe for any other logging errors during shutdown
+                    pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):

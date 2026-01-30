@@ -1,11 +1,12 @@
 import asyncio
+from typing import List, Dict, cast
 from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Label, Button, Input, DataTable, Select, Markdown
-from textual import on
 
 from shared.standup import get_commits_since, generate_standup_report
+
 
 class StandupTab(Container):
     """Tab for generating daily standup reports."""
@@ -13,7 +14,7 @@ class StandupTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.commits_cache = []
+        self.commits_cache: List[Dict[str, str]] = []
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -82,7 +83,7 @@ class StandupTab(Container):
             self.query_one("#btn-standup-generate").disabled = True
             self.query_one("#standup-markdown", Markdown).update("No commits found.")
 
-    def _update_table(self, commits: list) -> None:
+    def _update_table(self, commits: List[Dict[str, str]]) -> None:
         table = self.query_one("#standup-table", DataTable)
         table.clear()
         for c in commits:
@@ -92,7 +93,7 @@ class StandupTab(Container):
         if not self.commits_cache:
             return
 
-        agent_type = self.query_one("#standup-agent", Select).value or "gemini"
+        agent_type = cast(str, self.query_one("#standup-agent", Select).value or "gemini")
         since = self.query_one("#standup-since", Input).value
 
         self.notify(f"Generating report with {agent_type}...", severity="information")

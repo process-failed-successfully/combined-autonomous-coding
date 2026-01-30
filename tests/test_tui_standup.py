@@ -1,11 +1,12 @@
 import unittest
 import shutil
 import tempfile
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Markdown, Button
+from textual.widgets import DataTable, Button
 from shared.tui_standup import StandupTab
+
 
 class StandupTestApp(App):
     def __init__(self, project_dir: Path):
@@ -14,6 +15,7 @@ class StandupTestApp(App):
 
     def compose(self) -> ComposeResult:
         yield StandupTab(self.project_dir)
+
 
 class TestTUIStandup(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -30,7 +32,7 @@ class TestTUIStandup(unittest.IsolatedAsyncioTestCase):
         ]
 
         app = StandupTestApp(self.test_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             tab = app.query_one(StandupTab)
             btn = tab.query_one("#btn-standup-fetch", Button)
 
@@ -54,7 +56,7 @@ class TestTUIStandup(unittest.IsolatedAsyncioTestCase):
         mock_gen_report.return_value = "**Report Content**"
 
         app = StandupTestApp(self.test_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             tab = app.query_one(StandupTab)
 
             # Must fetch first to enable generate
@@ -67,6 +69,7 @@ class TestTUIStandup(unittest.IsolatedAsyncioTestCase):
 
             # Verify mock called
             mock_gen_report.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

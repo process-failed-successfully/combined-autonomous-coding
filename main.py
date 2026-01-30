@@ -9829,6 +9829,15 @@ def parse_args(argv=None):
     parser_api_lab_fuzz.add_argument("url", help="URL path (e.g. /users) as defined in spec, or full URL.")
     parser_api_lab_fuzz.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # api-lab 'load-test'
+    parser_api_lab_load = api_lab_subparsers.add_parser("load-test", help="Run a load test against an API endpoint.")
+    parser_api_lab_load.add_argument("method", choices=["GET", "POST", "PUT", "DELETE", "PATCH"], help="HTTP method.")
+    parser_api_lab_load.add_argument("url", help="URL path (e.g. /users) or full URL.")
+    parser_api_lab_load.add_argument("--users", type=int, default=10, help="Number of concurrent users (default: 10).")
+    parser_api_lab_load.add_argument("--duration", type=int, default=10, help="Duration in seconds (default: 10).")
+    parser_api_lab_load.add_argument("--body", type=str, help="Request body (JSON string).")
+    parser_api_lab_load.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'research' command ---
     parser_research = subparsers.add_parser(
         "research",

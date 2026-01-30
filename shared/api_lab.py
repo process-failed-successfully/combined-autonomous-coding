@@ -102,6 +102,22 @@ class ApiLabManager:
 
         return fuzzer.fuzz_endpoint(method, full_url, schema)
 
+    def load_test_endpoint(self, method: str, path: str, users: int, duration: int, body: str = None) -> Dict[str, Any]:
+        """
+        Runs a load test on a specific endpoint.
+        """
+        from shared.api_load_tester import APILoadTester
+        tester = APILoadTester(self)
+
+        # Resolve full URL
+        base = self.get_server_url()
+        if path.startswith("http"):
+            full_url = path
+        else:
+            full_url = base.rstrip('/') + "/" + path.lstrip('/')
+
+        return tester.run_load_test(method, full_url, users, duration, body)
+
     def execute_request(self, method: str, url: str, headers: Dict[str, str] = None, params: Dict[str, str] = None, body: str = None) -> Dict[str, Any]:
         """
         Executes an HTTP request.
@@ -248,6 +264,28 @@ def run_api_lab_cli(args):
         else:
             print("\n✅ No crashes detected.")
             sys.exit(0)
+
+    elif args.action == "load-test":
+        method = args.method.upper()
+        url = args.url
+        users = args.users
+        duration = args.duration
+        body = args.body
+
+        results = manager.load_test_endpoint(method, url, users, duration, body)
+
+        print(f"\n--- Load Test Results ({method} {url}) ---")
+        print(f"Users: {users} | Duration: {duration}s")
+        print(f"Total Requests: {results['total_requests']}")
+        print(f"RPS: {results['rps']:.2f}")
+        print(f"Avg Latency: {results['avg_latency']:.2f} ms")
+        print(f"P50 Latency: {results['p50_latency']:.2f} ms")
+        print(f"P95 Latency: {results['p95_latency']:.2f} ms")
+        print(f"P99 Latency: {results['p99_latency']:.2f} ms")
+        print(f"Errors: {results['errors']}")
+        print("Status Codes:")
+        for code, count in results['status_codes'].items():
+            print(f"  {code}: {count}")
 
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)

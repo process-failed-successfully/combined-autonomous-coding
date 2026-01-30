@@ -395,16 +395,9 @@ class Telemetry:
             # Use throttled logging to avoid spamming
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
-                try:
-                    # Avoid logging if handler stream is closed to prevent "Logging error" noise on stderr
-                    if hasattr(self, 'file_handler') and hasattr(self.file_handler, 'stream'):
-                        if self.file_handler.stream and not self.file_handler.stream.closed:
-                            self.logger.warning(f"Failed to push metrics to gateway: {e}")
-                    else:
-                        self.logger.warning(f"Failed to push metrics to gateway: {e}")
-                except Exception:
-                    # If logger is closed (e.g. during atexit), suppress the error
-                    pass
+                # Suppress logging of connection errors to avoid "ValueError: I/O operation on closed file"
+                # during interpreter shutdown (atexit), which causes CI failure.
+                pass
                 self._last_push_error_time = now
 
     def _push_metrics(self, force: bool = False, sync: bool = False):

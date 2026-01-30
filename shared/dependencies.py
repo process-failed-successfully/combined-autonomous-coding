@@ -244,7 +244,7 @@ class DependencyAnalyzer:
         # Python
         for file_info in data.get("python", []):
             for dep in file_info.get("dependencies", []):
-                latest = self._get_latest_pypi_version(dep["name"])
+                latest = self.get_latest_pypi_version(dep["name"])
                 if latest:
                     dep["latest"] = latest
                     # Basic check: if latest is not in version string (e.g. '==1.0.0')
@@ -257,7 +257,7 @@ class DependencyAnalyzer:
         # Node
         for file_info in data.get("node", []):
             for dep in file_info.get("dependencies", []):
-                latest = self._get_latest_npm_version(dep["name"])
+                latest = self.get_latest_npm_version(dep["name"])
                 if latest:
                     dep["latest"] = latest
                     current_clean = dep.get("version", "").replace("^", "").replace("~", "").strip()
@@ -275,12 +275,13 @@ class DependencyAnalyzer:
         results = []
 
         def normalize(lic):
-            if not lic: return "unknown"
+            if not lic:
+                return "unknown"
             # Basic normalization: lowercase, remove common suffixes
             return lic.lower().replace(" license", "").replace(" software", "").strip()
 
-        allow_set = {normalize(l) for l in allow_list} if allow_list else set()
-        deny_set = {normalize(l) for l in deny_list} if deny_list else set()
+        allow_set = {normalize(lic) for lic in allow_list} if allow_list else set()
+        deny_set = {normalize(lic) for lic in deny_list} if deny_list else set()
 
         # Helper to process a dependency
         def process_dep(lang, file_info, dep):
@@ -337,7 +338,7 @@ class DependencyAnalyzer:
 
         return results
 
-    def _get_latest_pypi_version(self, package_name: str) -> Optional[str]:
+    def get_latest_pypi_version(self, package_name: str) -> Optional[str]:
         try:
             url = f"https://pypi.org/pypi/{package_name}/json"
             response = requests.get(url, timeout=2)
@@ -347,7 +348,7 @@ class DependencyAnalyzer:
             pass
         return None
 
-    def _get_latest_npm_version(self, package_name: str) -> Optional[str]:
+    def get_latest_npm_version(self, package_name: str) -> Optional[str]:
         try:
             url = f"https://registry.npmjs.org/{package_name}/latest"
             response = requests.get(url, timeout=2)
@@ -383,9 +384,9 @@ class DependencyAnalyzer:
 
                 # 2. Try license field
                 license_field = info.get("license", "")
-                if license_field and len(license_field) < 50: # Avoid long license texts
-                     self.license_cache[package_name] = license_field
-                     return license_field
+                if license_field and len(license_field) < 50:  # Avoid long license texts
+                    self.license_cache[package_name] = license_field
+                    return license_field
 
         except Exception:
             pass
@@ -677,7 +678,7 @@ class DependencyUpdater:
 
             for line in lines:
                 if pattern.match(line.strip()):
-                    continue # Skip this line
+                    continue  # Skip this line
                 new_lines.append(line)
 
             req_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")

@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+
 class ApiLabManager:
     """
     Manages API Lab state, including loading specs and executing requests.
@@ -14,6 +15,7 @@ class ApiLabManager:
         self.project_dir = project_dir
         self.spec_data: Dict[str, Any] = {}
         self.history: List[Dict[str, Any]] = []
+        self.session = requests.Session()
 
     def load_spec(self, path: Optional[Path] = None) -> bool:
         """
@@ -116,7 +118,7 @@ class ApiLabManager:
                 except json.JSONDecodeError:
                     data_body = body
 
-            response = requests.request(
+            response = self.session.request(
                 method=method,
                 url=url,
                 headers=headers,
@@ -156,6 +158,7 @@ class ApiLabManager:
                 'body': f"Request Error: {str(e)}",
                 'success': False
             }
+
 
 def run_api_lab_cli(args):
     """
@@ -228,12 +231,12 @@ def run_api_lab_cli(args):
 
     elif args.action == "fuzz":
         method = args.method.upper()
-        path = args.url # Argument name is url, but for fuzz we prefer path key
+        path = args.url  # Argument name is url, but for fuzz we prefer path key
 
         results = manager.fuzz_endpoint(method, path)
 
         crashes = [r for r in results if r['crash']]
-        print(f"\n--- Fuzzing Complete ---")
+        print("\n--- Fuzzing Complete ---")
         print(f"Total Requests: {len(results)}")
         print(f"Crashes (5xx): {len(crashes)}")
 

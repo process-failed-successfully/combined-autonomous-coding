@@ -40,6 +40,7 @@ from shared.recipes import RecipeManager
 from shared.recipe_learner import RecipeLearner
 from shared.secrets import SecretsManager
 from shared.api_lab import ApiLabManager
+from shared.api_collections import ApiCollectionManager
 from shared.playground import PlaygroundManager
 from shared.release import get_latest_tag, get_commits_since_tag, determine_next_version, generate_changelog, perform_release, parse_current_version
 from shared.timeline import TimelineCollector, TimelineRenderer
@@ -2063,23 +2064,32 @@ class TUIStream:
         pass
 
 class ApiLabTab(Container):
-    """Tab for API experimentation."""
+    """Tab for API experimentation and Collections."""
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = ApiLabManager(project_dir)
+        self.collection_manager = ApiCollectionManager(project_dir)
         self.selected_endpoint = None
+        self.selected_saved_request = None
 
     def compose(self) -> ComposeResult:
         with Horizontal():
-            # Left Pane: Endpoint List
+            # Left Pane: Tabbed content for Spec vs Saved
             with Vertical(id="api-list-container", classes="stat-box"):
-                yield Label("[bold]Endpoints[/bold]")
-                yield ListView(id="api-endpoint-list")
-                with Horizontal():
-                    yield Button("Load Spec", id="btn-api-load", variant="primary")
-                    yield Button("Generate", id="btn-api-generate", variant="warning")
+                with TabbedContent():
+                    with TabPane("Spec"):
+                        yield Label("[bold]Endpoints[/bold]")
+                        yield ListView(id="api-endpoint-list")
+                        with Horizontal():
+                            yield Button("Load Spec", id="btn-api-load", variant="primary")
+                            yield Button("Generate", id="btn-api-generate", variant="warning")
+
+                    with TabPane("Saved"):
+                        yield Label("[bold]Collections[/bold]")
+                        yield ListView(id="api-collection-list")
+                        yield Button("Delete Saved", id="btn-api-delete-saved", variant="error", disabled=True)
 
             # Right Pane: Request/Response & Fuzzer
             with Vertical(id="api-details-container"):
@@ -2087,11 +2097,16 @@ class ApiLabTab(Container):
                     with TabPane("Request"):
                         yield Label("[bold]Request Builder[/bold]")
 
-                        # Request Line
-                        with Horizontal(classes="stat-box"):
-                            yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH"], id="api-method", value="GET")
-                            yield Input(placeholder="URL...", id="api-url")
-                            yield Button("Send", id="btn-api-send", variant="success")
+                        with Vertical(classes="stat-box"):
+                            yield Input(placeholder="Request Name (optional for saving)...", id="api-req-name")
+                            # Request Line
+                            with Horizontal():
+                                yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH"], id="api-method", value="GET")
+                                yield Input(placeholder="URL...", id="api-url")
+
+                            with Horizontal():
+                                yield Button("Send", id="btn-api-send", variant="success")
+                                yield Button("Save", id="btn-api-save", variant="primary")
 
                         # Body
                         with Vertical(classes="stat-box"):
@@ -2114,6 +2129,7 @@ class ApiLabTab(Container):
 
     def on_mount(self) -> None:
         self.load_spec()
+        self.load_collections()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-api-load":
@@ -2122,6 +2138,10 @@ class ApiLabTab(Container):
             await self.generate_spec()
         elif event.button.id == "btn-api-send":
             await self.send_request()
+        elif event.button.id == "btn-api-save":
+            self.save_current_request()
+        elif event.button.id == "btn-api-delete-saved":
+            self.delete_saved_request()
         elif event.button.id == "btn-api-fuzz":
             await self.run_fuzzer()
 
@@ -2158,6 +2178,25 @@ class ApiLabTab(Container):
             base = self.manager.get_server_url()
             url_input.value = base
 
+    def load_collections(self) -> None:
+        list_view = self.query_one("#api-collection-list", ListView)
+        list_view.clear()
+
+        requests = self.collection_manager.list_requests()
+        for req in requests:
+            method = req['method']
+            name = req.get('name', 'Untitled')
+            # Color code method
+            if method == "GET": method_fmt = f"[blue]{method}[/blue]"
+            elif method == "POST": method_fmt = f"[green]{method}[/green]"
+            elif method == "DELETE": method_fmt = f"[red]{method}[/red]"
+            else: method_fmt = f"[yellow]{method}[/yellow]"
+
+            label = f"{method_fmt} {name}"
+            item = ListItem(Label(label, markup=True))
+            item.request_data = req
+            list_view.append(item)
+
     async def generate_spec(self) -> None:
         self.notify("Generating OpenAPI spec... (this takes time)")
         from shared.openapi import OpenAPIGenerator
@@ -2193,12 +2232,63 @@ class ApiLabTab(Container):
                 full_url = base + path
 
             self.query_one("#api-url", Input).value = full_url
+            self.query_one("#api-req-name", Input).value = "" # Clear name for fresh endpoint
 
             # Update Fuzz Target Label
             try:
                 self.query_one("#lbl-fuzz-target", Label).update(f"[{data['method']}] {full_url}")
             except Exception:
                 pass
+
+    @on(ListView.Selected, "#api-collection-list")
+    def on_saved_request_selected(self, event: ListView.Selected) -> None:
+        if hasattr(event.item, "request_data"):
+            data = event.item.request_data
+            self.selected_saved_request = data.get("id")
+
+            self.query_one("#api-method", Select).value = data.get('method', 'GET')
+            self.query_one("#api-url", Input).value = data.get('url', '')
+            self.query_one("#api-body", Input).value = data.get('body', '')
+            self.query_one("#api-req-name", Input).value = data.get('name', '')
+
+            self.query_one("#btn-api-delete-saved").disabled = False
+            self.notify(f"Loaded '{data.get('name')}'")
+
+    def save_current_request(self) -> None:
+        name = self.query_one("#api-req-name", Input).value
+        method = self.query_one("#api-method", Select).value
+        url = self.query_one("#api-url", Input).value
+        body = self.query_one("#api-body", Input).value
+
+        if not name:
+            self.notify("Please enter a Request Name to save.", severity="error")
+            self.query_one("#api-req-name", Input).focus()
+            return
+
+        if not url:
+            self.notify("URL required.", severity="error")
+            return
+
+        # Headers support is minimal in UI for now, defaulting to empty or json if body present
+        headers = {}
+        if body:
+            headers["Content-Type"] = "application/json"
+
+        self.collection_manager.save_request(name, method, url, headers, body)
+        self.notify(f"Request '{name}' saved.")
+        self.load_collections()
+
+    def delete_saved_request(self) -> None:
+        if not self.selected_saved_request:
+            return
+
+        if self.collection_manager.delete_request(self.selected_saved_request):
+            self.notify("Request deleted.")
+            self.selected_saved_request = None
+            self.query_one("#btn-api-delete-saved").disabled = True
+            self.load_collections()
+        else:
+            self.notify("Failed to delete request.", severity="error")
 
     async def send_request(self) -> None:
         method = self.query_one("#api-method", Select).value

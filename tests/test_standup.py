@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 import sys
 
+
 class TestStandup(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         # Patch sys.modules to mock missing dependencies
@@ -91,7 +92,7 @@ Body line 1
 
         result = await self.standup.run_standup_logic(args)
 
-        self.assertTrue(result) # Should return True (success) even if no commits
+        self.assertTrue(result)  # Should return True (success) even if no commits
 
     async def test_generate_standup_report_empty(self):
         report = await self.standup.generate_standup_report([], "gemini")
@@ -112,6 +113,7 @@ Body line 1
         report = await self.standup.generate_standup_report(commits, "gemini")
 
         self.assertIn("Generated Report Content", report)
+
 
 if __name__ == '__main__':
     unittest.main()

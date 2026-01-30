@@ -11,7 +11,7 @@ import subprocess
 import io
 import contextlib
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
 from shared.config import Config
 from agents.gemini import GeminiAgent
@@ -20,6 +20,7 @@ from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
+
 
 def get_commits_since(project_dir: Path, since: str, author: Optional[str] = None) -> List[Dict[str, str]]:
     """
@@ -43,7 +44,7 @@ def get_commits_since(project_dir: Path, since: str, author: Optional[str] = Non
         "log",
         f"--since={since}",
         "--pretty=format:%h|%an|%ad|%s%n%b%n---COMMIT_END---",
-        "--date=local" # Use local time for standup relevance
+        "--date=local"  # Use local time for standup relevance
     ]
 
     if author:
@@ -91,6 +92,7 @@ def get_commits_since(project_dir: Path, since: str, author: Optional[str] = Non
     except subprocess.CalledProcessError as e:
         logger.error(f"Error fetching commits: {e}")
         return []
+
 
 async def generate_standup_report(
     commits: List[Dict[str, str]],
@@ -152,7 +154,7 @@ async def generate_standup_report(
         "openrouter": OpenRouterAgent,
     }
 
-    agent_class = agent_class_map.get(config.agent_type, GeminiAgent)
+    agent_class: Any = agent_class_map.get(config.agent_type, GeminiAgent)
     agent = agent_class(config)
 
     # Capture output if streaming is enabled by agent, but we want to return the string.
@@ -167,6 +169,7 @@ async def generate_standup_report(
     except Exception as e:
         logger.error(f"Error generating standup: {e}")
         return f"Error generating report: {e}"
+
 
 async def run_standup_logic(args) -> bool:
     """
@@ -187,7 +190,7 @@ async def run_standup_logic(args) -> bool:
         except Exception:
             pass
 
-    print(f"--- Generating Standup Report ---")
+    print("--- Generating Standup Report ---")
     print(f"Project: {project_dir}")
     print(f"Since: {since}")
     print(f"Author: {author or 'All'}")

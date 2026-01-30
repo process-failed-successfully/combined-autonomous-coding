@@ -112,7 +112,7 @@ KNOWN_COMMANDS = [
     "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
-    "standup", "presentation", "visualize", "network"
+    "standup", "presentation", "visualize", "network", "sanitize"
 ]
 
 if FileSystemEventHandler:
@@ -10143,6 +10143,32 @@ def parse_args(argv=None):
     parser_tour_play.add_argument("name", help="Tour name.")
     parser_tour_play.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'sanitize' command ---
+    parser_sanitize = subparsers.add_parser(
+        "sanitize",
+        help="Sanitize PII (Personally Identifiable Information) from files or text."
+    )
+    sanitize_subparsers = parser_sanitize.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # sanitize text
+    parser_sanitize_text = sanitize_subparsers.add_parser("text", help="Sanitize a text string.")
+    parser_sanitize_text.add_argument("text", help="Text to sanitize.")
+
+    # sanitize file
+    parser_sanitize_file = sanitize_subparsers.add_parser("file", help="Sanitize a file.")
+    parser_sanitize_file.add_argument("file", help="File path.")
+    parser_sanitize_file.add_argument("-o", "--output", help="Output path (default: overwrite).")
+    parser_sanitize_file.add_argument("--dry-run", action="store_true", help="Check without modifying.")
+
+    # sanitize check
+    parser_sanitize_check = sanitize_subparsers.add_parser("check", help="Check for PII without modifying.")
+    parser_sanitize_check.add_argument("--text", help="Text to check.")
+    parser_sanitize_check.add_argument("--file", help="File to check.")
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -12394,6 +12420,64 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
     sys.exit(0)
 
 
+def run_sanitize(args):
+    """Sanitizes PII from files or text."""
+    from shared.sanitizer import Sanitizer
+
+    sanitizer = Sanitizer()
+
+    if args.action == "text":
+        if not args.text:
+            print("Error: --text is required.")
+            sys.exit(1)
+        result = sanitizer.sanitize_text(args.text)
+        print(result)
+
+    elif args.action == "file":
+        if not args.file:
+            print("Error: --file is required.")
+            sys.exit(1)
+
+        path = Path(args.file)
+        out_path = Path(args.output) if args.output else None
+
+        changed, msg = sanitizer.sanitize_file(path, out_path, dry_run=args.dry_run)
+
+        if changed:
+            if args.dry_run:
+                print(f"⚠️  {msg}")
+            else:
+                print(f"✅ {msg}")
+        else:
+            print(f"✅ {msg}")
+
+    elif args.action == "check":
+        if args.text:
+            detected = sanitizer.check_text(args.text)
+            if detected:
+                print(f"⚠️  PII Detected: {', '.join(detected)}")
+                sys.exit(1)
+            else:
+                print("✅ No PII detected.")
+        elif args.file:
+            path = Path(args.file)
+            if not path.exists():
+                print(f"Error: {path} not found.")
+                sys.exit(1)
+            content = path.read_text(encoding="utf-8", errors="ignore")
+            detected = sanitizer.check_text(content)
+            if detected:
+                print(f"⚠️  PII Detected in {path.name}: {', '.join(detected)}")
+                sys.exit(1)
+            else:
+                print(f"✅ No PII detected in {path.name}.")
+        else:
+            print("Error: --text or --file required for check.")
+            sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_worktrees(args):
     """Manages agent-created git worktrees."""
     project_dir = args.project_dir.resolve()
@@ -13192,6 +13276,10 @@ async def main():
 
     if args.command == "network":
         run_network(args)
+        return
+
+    if args.command == "sanitize":
+        run_sanitize(args)
         return
 
     # Initialize Agent Client

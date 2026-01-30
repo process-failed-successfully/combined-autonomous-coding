@@ -1,6 +1,6 @@
 import json
 import concurrent.futures
-from typing import Any, Dict, List, Generator
+from typing import Any, Dict, List, Generator, Optional
 
 
 class APIFuzzer:
@@ -125,7 +125,7 @@ class APIFuzzer:
             if valid_payload:
                 yield valid_payload * 100
 
-    def fuzz_endpoint(self, method: str, url: str, schema: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def fuzz_endpoint(self, method: str, url: str, schema: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
         Runs the fuzzing loop against the endpoint.
         """

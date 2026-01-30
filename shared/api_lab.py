@@ -50,7 +50,7 @@ class ApiLabManager:
         """
         Returns a list of available endpoints from the loaded spec.
         """
-        endpoints = []
+        endpoints: List[Dict[str, str]] = []
         if not self.spec_data or 'paths' not in self.spec_data:
             return endpoints
 
@@ -103,7 +103,7 @@ class ApiLabManager:
 
         return fuzzer.fuzz_endpoint(method, full_url, schema)
 
-    def execute_request(self, method: str, url: str, headers: Dict[str, str] = None, params: Dict[str, str] = None, body: str = None) -> Dict[str, Any]:
+    def execute_request(self, method: str, url: str, headers: Optional[Dict[str, str]] = None, params: Optional[Dict[str, str]] = None, body: Optional[str] = None) -> Dict[str, Any]:
         """
         Executes an HTTP request.
         """

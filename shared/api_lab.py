@@ -14,6 +14,7 @@ class ApiLabManager:
         self.project_dir = project_dir
         self.spec_data: Dict[str, Any] = {}
         self.history: List[Dict[str, Any]] = []
+        self.session = requests.Session()
 
     def load_spec(self, path: Optional[Path] = None) -> bool:
         """
@@ -116,7 +117,7 @@ class ApiLabManager:
                 except json.JSONDecodeError:
                     data_body = body
 
-            response = requests.request(
+            response = self.session.request(
                 method=method,
                 url=url,
                 headers=headers,

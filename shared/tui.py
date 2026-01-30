@@ -83,6 +83,7 @@ from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
 from shared.tui_sanitizer import SanitizerTab
+from shared.tui_gantt import GanttTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -3865,6 +3866,8 @@ class AgentTUI(App):
                 yield SearchTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):
                 yield TasksTab(self.project_dir)
+            with TabPane("Gantt", id="tab-gantt"):
+                yield GanttTab(self.project_dir)
             with TabPane("Standup", id="tab-standup"):
                 yield StandupTab(self.project_dir)
             with TabPane("Git", id="tab-git"):

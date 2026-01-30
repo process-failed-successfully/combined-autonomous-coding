@@ -93,6 +93,33 @@ def get_file_tree(root_dir: Path) -> str:
 # Common directories to skip for performance
 IGNORED_DIRS = {".git", "node_modules", "__pycache__", ".venv", ".idea", ".vscode"}
 
+# Paths that agents are not allowed to read/write for security
+RESTRICTED_PATHS = {".git", ".github", ".ssh", ".aws", ".ds_store"}
+
+
+def is_restricted_path(path: Path, root_dir: Path) -> bool:
+    """Check if the path includes any restricted components or sensitive files."""
+    try:
+        # Get path relative to project root
+        # We assume path is already resolved and validated to be within root_dir
+        rel_path = path.relative_to(root_dir)
+
+        # Check if any part of the path is in RESTRICTED_PATHS
+        # This blocks .git/config, src/.git/..., etc.
+        if any(part in RESTRICTED_PATHS for part in rel_path.parts):
+            return True
+
+        # Check for sensitive file patterns (e.g., .env*)
+        if rel_path.name.startswith(".env"):
+            return True
+
+    except ValueError:
+        # If not relative to root_dir, it should have been blocked by prior checks,
+        # but let's be safe.
+        return True
+
+    return False
+
 
 def has_recent_activity(
     root_dir: Path, seconds: float = 60, ignore_patterns: Optional[List[str]] = None
@@ -194,6 +221,10 @@ def execute_write_block(filename: str, content: str, cwd: Path) -> str:
         except ValueError:
             return f"Error: Access denied. Cannot write to {filename} outside of project directory."
 
+        # Security Check: Restricted paths
+        if is_restricted_path(file_path, resolved_cwd):
+            return f"Error: Access denied. Cannot write to restricted path {filename}."
+
         # Create parent directories
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -226,6 +257,10 @@ def execute_read_block(filename: str, cwd: Path) -> str:
             file_path.relative_to(resolved_cwd)
         except ValueError:
              return f"Error: Access denied. Cannot read {filename} outside of project directory."
+
+        # Security Check: Restricted paths
+        if is_restricted_path(file_path, resolved_cwd):
+            return f"Error: Access denied. Cannot read restricted path {filename}."
 
         if not file_path.exists():
             return f"Error: File {filename} does not exist."

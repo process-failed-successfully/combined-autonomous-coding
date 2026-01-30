@@ -2043,6 +2043,21 @@ class WorktreesTab(Container):
             self.notify(f"Error removing worktree: {e}", severity="error")
 
 
+class TUIStream:
+    """Helper to redirect stdout to a RichLog widget in a thread-safe way."""
+    def __init__(self, log_widget, app):
+        self.log = log_widget
+        self.app = app
+
+    def write(self, text):
+        if text.strip():
+            # Use call_from_thread because this will be called from a background thread
+            # Use rstrip() to remove trailing newline from print(), but keep leading indentation
+            self.app.call_from_thread(self.log.write, text.rstrip())
+
+    def flush(self):
+        pass
+
 class ApiLabTab(Container):
     """Tab for API experimentation."""
 
@@ -2062,24 +2077,36 @@ class ApiLabTab(Container):
                     yield Button("Load Spec", id="btn-api-load", variant="primary")
                     yield Button("Generate", id="btn-api-generate", variant="warning")
 
-            # Right Pane: Request/Response
+            # Right Pane: Request/Response & Fuzzer
             with Vertical(id="api-details-container"):
-                yield Label("[bold]Request Builder[/bold]")
+                with TabbedContent():
+                    with TabPane("Request"):
+                        yield Label("[bold]Request Builder[/bold]")
 
-                # Request Line
-                with Horizontal(classes="stat-box"):
-                    yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH"], id="api-method", value="GET")
-                    yield Input(placeholder="URL...", id="api-url")
-                    yield Button("Send", id="btn-api-send", variant="success")
+                        # Request Line
+                        with Horizontal(classes="stat-box"):
+                            yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH"], id="api-method", value="GET")
+                            yield Input(placeholder="URL...", id="api-url")
+                            yield Button("Send", id="btn-api-send", variant="success")
 
-                # Body
-                with Vertical(classes="stat-box"):
-                    yield Label("Request Body (JSON):")
-                    yield Input(placeholder="{ ... }", id="api-body")
+                        # Body
+                        with Vertical(classes="stat-box"):
+                            yield Label("Request Body (JSON):")
+                            yield Input(placeholder="{ ... }", id="api-body")
 
-                # Response
-                yield Label("[bold]Response[/bold]")
-                yield RichLog(id="api-response-log", wrap=True, highlight=True, markup=True)
+                        # Response
+                        yield Label("[bold]Response[/bold]")
+                        yield RichLog(id="api-response-log", wrap=True, highlight=True, markup=True)
+
+                    with TabPane("Fuzzer"):
+                        yield Label("[bold]Interactive API Fuzzer[/bold]", classes="welcome-text")
+                        with Container(classes="stat-box"):
+                            yield Label("Target Endpoint:", classes="label")
+                            yield Label("None", id="lbl-fuzz-target", classes="value")
+                            yield Button("Start Fuzzing", id="btn-api-fuzz", variant="warning")
+
+                        yield Label("[bold]Fuzzing Log[/bold]")
+                        yield RichLog(id="api-fuzzer-log", wrap=True, highlight=True, markup=True)
 
     def on_mount(self) -> None:
         self.load_spec()
@@ -2091,6 +2118,8 @@ class ApiLabTab(Container):
             await self.generate_spec()
         elif event.button.id == "btn-api-send":
             await self.send_request()
+        elif event.button.id == "btn-api-fuzz":
+            await self.run_fuzzer()
 
     def load_spec(self, force_reload: bool = False) -> None:
         if not self.manager.spec_data or force_reload:
@@ -2161,6 +2190,12 @@ class ApiLabTab(Container):
 
             self.query_one("#api-url", Input).value = full_url
 
+            # Update Fuzz Target Label
+            try:
+                self.query_one("#lbl-fuzz-target", Label).update(f"[{data['method']}] {full_url}")
+            except Exception:
+                pass
+
     async def send_request(self) -> None:
         method = self.query_one("#api-method", Select).value
         url = self.query_one("#api-url", Input).value
@@ -2195,6 +2230,53 @@ class ApiLabTab(Container):
                 log.write(result['body'])
         except Exception:
             log.write(result['body'])
+
+    async def run_fuzzer(self) -> None:
+        method = self.query_one("#api-method", Select).value
+        url = self.query_one("#api-url", Input).value
+
+        if not url:
+            self.notify("URL required.", severity="error")
+            return
+
+        log = self.query_one("#api-fuzzer-log", RichLog)
+        log.clear()
+        log.write(f"[bold]Fuzzing {method} {url}...[/bold]")
+        self.notify("Fuzzing started...")
+        self.query_one("#btn-api-fuzz").disabled = True
+
+        import asyncio
+        import contextlib
+
+        # Create TUIStream
+        stream = TUIStream(log, self.app)
+
+        def do_fuzz():
+            with contextlib.redirect_stdout(stream):
+                return self.manager.fuzz_endpoint(method, url)
+
+        try:
+            results = await asyncio.to_thread(do_fuzz)
+
+            crashes = [r for r in results if r['crash']]
+            log.write(f"\n[bold]Fuzzing Complete.[/bold]")
+            log.write(f"Total Requests: {len(results)}")
+            log.write(f"Crashes: {len(crashes)}")
+
+            if crashes:
+                log.write("[bold red]CRASHES DETECTED:[/bold red]")
+                for c in crashes:
+                    log.write(f"  Payload: {c['payload']} -> Status: {c['status']}")
+            else:
+                log.write("[bold green]No crashes detected.[/bold green]")
+
+            self.notify("Fuzzing complete.")
+
+        except Exception as e:
+            log.write(f"[bold red]Fuzzing Error:[/bold red] {e}")
+            self.notify(f"Error: {e}", severity="error")
+        finally:
+            self.query_one("#btn-api-fuzz").disabled = False
 
 
 class PlaygroundTab(Container):

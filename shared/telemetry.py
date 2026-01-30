@@ -396,9 +396,14 @@ class Telemetry:
             now = time.time()
             if now - self._last_push_error_time > 60:  # Log once per minute
                 try:
-                    self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                    # Suppress logging errors (e.g. from closed files during shutdown)
+                    prev_raise = logging.raiseExceptions
+                    logging.raiseExceptions = False
+                    try:
+                        self.logger.warning(f"Failed to push metrics to gateway: {e}")
+                    finally:
+                        logging.raiseExceptions = prev_raise
                 except Exception:
-                    # If logger is closed (e.g. during atexit), suppress the error
                     pass
                 self._last_push_error_time = now
 

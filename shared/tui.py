@@ -74,6 +74,7 @@ from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
+from shared.tui_conflict import ConflictTab
 from shared.tui_adr import ADRTab
 from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
@@ -3964,6 +3965,8 @@ class AgentTUI(App):
                 yield GitTab(self.project_dir)
             with TabPane("Pull Requests", id="tab-pr"):
                 yield PullRequestsTab(self.project_dir)
+            with TabPane("Conflicts", id="tab-conflicts"):
+                yield ConflictTab(self.project_dir)
             with TabPane("Bisect", id="tab-bisect"):
                 yield BisectTab(self.project_dir)
             with TabPane("Release", id="tab-release"):

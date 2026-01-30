@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, AsyncMock
 from shared.conflict_resolver import ConflictResolver
-from shared.config import Config
+
 
 class TestConflictResolver(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -76,6 +76,38 @@ print("Hello Universe")
         self.resolver.apply_resolution(target_file, new_content)
 
         self.assertEqual(target_file.read_text(), new_content)
+
+    def test_resolve_manual(self):
+        # Create conflicted file
+        conflicted_file = self.test_dir / "manual_conflict.py"
+        content = """
+Before
+<<<<<<< HEAD
+Ours
+=======
+Theirs
+>>>>>>> branch
+After
+"""
+        conflicted_file.write_text(content.strip())
+
+        # Test Ours
+        result_ours = self.resolver.resolve_manual(conflicted_file, "ours")
+        self.assertTrue(result_ours["resolved"])
+        self.assertIn("Ours", result_ours["resolved_content"])
+        self.assertNotIn("Theirs", result_ours["resolved_content"])
+        self.assertNotIn("<<<<<<<", result_ours["resolved_content"])
+
+        # Reset file
+        conflicted_file.write_text(content.strip())
+
+        # Test Theirs
+        result_theirs = self.resolver.resolve_manual(conflicted_file, "theirs")
+        self.assertTrue(result_theirs["resolved"])
+        self.assertIn("Theirs", result_theirs["resolved_content"])
+        self.assertNotIn("Ours", result_theirs["resolved_content"])
+        self.assertNotIn("<<<<<<<", result_theirs["resolved_content"])
+
 
 if __name__ == '__main__':
     unittest.main()

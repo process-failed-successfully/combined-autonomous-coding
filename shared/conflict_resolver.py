@@ -111,6 +111,89 @@ class ConflictResolver:
             "resolved": True
         }
 
+    def resolve_manual(self, target_file: Path, strategy: str) -> Dict[str, Any]:
+        """
+        Resolves conflicts by accepting 'ours' or 'theirs' changes.
+
+        Args:
+            target_file: The file to resolve.
+            strategy: 'ours' (HEAD) or 'theirs' (incoming).
+
+        Returns:
+            Dict result with resolved status and content.
+        """
+        if strategy not in ["ours", "theirs"]:
+            raise ValueError("Strategy must be 'ours' or 'theirs'.")
+
+        target_file = target_file.resolve()
+        if not target_file.exists():
+            raise FileNotFoundError(f"File not found: {target_file}")
+
+        content = target_file.read_text(encoding="utf-8")
+
+        lines = content.splitlines(keepends=True)
+        resolved_lines = []
+
+        in_conflict = False
+        in_ours = False
+        in_theirs = False
+        # in_base is implied if in_conflict but not ours/theirs (between ||| and ===)
+
+        current_ours = []
+        current_theirs = []
+
+        conflict_count = 0
+
+        for line in lines:
+            if line.startswith("<<<<<<<"):
+                in_conflict = True
+                in_ours = True
+                in_theirs = False
+                current_ours = []
+                current_theirs = []
+                conflict_count += 1
+                continue
+
+            if in_conflict:
+                if line.startswith("|||||||"):
+                    in_ours = False
+                    # We are in base, ignore lines until =======
+                    continue
+
+                if line.startswith("======="):
+                    in_ours = False
+                    in_theirs = True
+                    continue
+
+                if line.startswith(">>>>>>>"):
+                    # End of conflict block
+                    if strategy == "ours":
+                        resolved_lines.extend(current_ours)
+                    elif strategy == "theirs":
+                        resolved_lines.extend(current_theirs)
+
+                    in_conflict = False
+                    in_ours = False
+                    in_theirs = False
+                    continue
+
+                if in_ours:
+                    current_ours.append(line)
+                elif in_theirs:
+                    current_theirs.append(line)
+                # else: in base, ignore
+            else:
+                resolved_lines.append(line)
+
+        resolved_content = "".join(resolved_lines)
+
+        return {
+            "original_content": content,
+            "resolved_content": resolved_content,
+            "resolved": True,
+            "conflicts_processed": conflict_count
+        }
+
     def apply_resolution(self, target_file: Path, resolved_content: str):
         """Writes the resolved content to the file."""
         target_file.write_text(resolved_content, encoding="utf-8")

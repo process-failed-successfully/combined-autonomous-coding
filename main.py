@@ -9525,6 +9525,39 @@ def parse_args(argv=None):
         help="The project directory."
     )
 
+    # --- New 'frontend' command ---
+    parser_frontend = subparsers.add_parser(
+        "frontend",
+        help="Frontend Verification (snapshot, verify)."
+    )
+    frontend_subparsers = parser_frontend.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # frontend snapshot
+    parser_frontend_snap = frontend_subparsers.add_parser("snapshot", help="Capture a baseline snapshot.")
+    parser_frontend_snap.add_argument("url", help="URL to capture.")
+    parser_frontend_snap.add_argument("--name", required=True, help="Unique name for this snapshot.")
+    parser_frontend_snap.add_argument("--baseline", action="store_true", help="Save as baseline directly.")
+    parser_frontend_snap.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # frontend verify
+    parser_frontend_verify = frontend_subparsers.add_parser("verify", help="Verify current state against baseline.")
+    parser_frontend_verify.add_argument("url", help="URL to verify.")
+    parser_frontend_verify.add_argument("--name", required=True, help="Unique name (matches baseline).")
+    parser_frontend_verify.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # frontend list
+    parser_frontend_list = frontend_subparsers.add_parser("list", help="List baselines.")
+    parser_frontend_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # frontend approve
+    parser_frontend_approve = frontend_subparsers.add_parser("approve", help="Promote current snapshot to baseline.")
+    parser_frontend_approve.add_argument("--name", required=True, help="Name of the snapshot.")
+    parser_frontend_approve.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'mock' command ---
     parser_mock = subparsers.add_parser(
         "mock",
@@ -11620,6 +11653,71 @@ def run_snippets(args):
     sys.exit(0)
 
 
+def run_frontend(args):
+    """Runs frontend verification tools."""
+    from shared.frontend import FrontendVerifier
+
+    project_dir = args.project_dir.resolve()
+    verifier = FrontendVerifier(project_dir)
+
+    if args.action == "snapshot":
+        if not args.url or not args.name:
+            print("Error: --url and --name required for snapshot.")
+            sys.exit(1)
+        path = verifier.capture_snapshot(args.url, args.name, is_baseline=args.baseline)
+        if path:
+            print(f"✅ Snapshot saved: {path}")
+        else:
+            print("❌ Snapshot failed.")
+            sys.exit(1)
+
+    elif args.action == "verify":
+        if not args.url or not args.name:
+             print("Error: --url and --name required for verify.")
+             sys.exit(1)
+
+        # First capture current
+        print(f"Capturing current state of {args.url}...")
+        current_path = verifier.capture_snapshot(args.url, args.name, is_baseline=False)
+        if not current_path:
+            print("❌ Capture failed.")
+            sys.exit(1)
+
+        # Then verify
+        result = verifier.verify(args.name)
+        if result["success"]:
+            if result["match"]:
+                print(f"✅ Verification Passed! (Score: {result['diff_score']:.4f})")
+            else:
+                print(f"❌ Verification Failed. (Score: {result['diff_score']:.4f})")
+                print(f"   Diff saved to: {result['diff_path']}")
+                sys.exit(1)
+        else:
+            print(f"Error: {result.get('error')}")
+            sys.exit(1)
+
+    elif args.action == "list":
+        baselines = verifier.list_baselines()
+        if baselines:
+            print("--- Frontend Baselines ---")
+            for b in baselines:
+                print(f"  - {b}")
+        else:
+            print("No baselines found.")
+
+    elif args.action == "approve":
+        if not args.name:
+            print("Error: --name required.")
+            sys.exit(1)
+        if verifier.approve_current(args.name):
+            print(f"✅ Approved. Current snapshot is now the baseline for '{args.name}'.")
+        else:
+            print(f"❌ Failed to approve (no current snapshot found).")
+            sys.exit(1)
+
+    sys.exit(0)
+
+
 def run_mock(args):
     """Manages mock data tools (generate, serve)."""
     if args.action == "serve":
@@ -12869,6 +12967,10 @@ async def main():
 
     if args.command == "mock":
         run_mock(args)
+        return
+
+    if args.command == "frontend":
+        run_frontend(args)
         return
 
     if args.command == "i18n":

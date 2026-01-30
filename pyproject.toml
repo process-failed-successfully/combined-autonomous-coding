@@ -35,6 +35,8 @@ dependencies = [
     "argcomplete",
     "google-generativeai",
     "croniter",
+    "playwright",
+    "pillow",
 ]
 requires-python = ">=3.11"
 

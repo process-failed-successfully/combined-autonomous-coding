@@ -9079,6 +9079,21 @@ def parse_args(argv=None):
         action="store_true",
         help="Install a git pre-commit hook that enforces security checks.",
     )
+    parser_security.add_argument(
+        "--fix",
+        action="store_true",
+        help="Attempt to automatically fix found vulnerabilities (dependencies only)."
+    )
+    parser_security.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate the remediation without applying changes."
+    )
+    parser_security.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompts during remediation."
+    )
 
     # --- New 'openapi' command ---
     parser_openapi = subparsers.add_parser(
@@ -10735,6 +10750,31 @@ def run_security(args):
     if args.ignore_add:
         auditor.add_ignore_pattern(args.ignore_add)
         sys.exit(0)
+
+    # --- Feature: Fix ---
+    if args.fix:
+        print(f"--- Running Security Fix in: {project_dir} ---")
+        # If scan_type is not 'all' or 'deps', warn user
+        if args.scan_type not in ["all", "deps"]:
+            print("Warning: --fix currently only supports dependency vulnerabilities. Ensure --scan-type includes 'deps'.")
+
+        print("Scanning for vulnerabilities...")
+        findings = auditor.run_all(scan_type=args.scan_type, severity=args.severity)
+
+        if not findings:
+            print("✅ No vulnerabilities found to fix.")
+            sys.exit(0)
+
+        from shared.security_fix import SecurityRemediator
+        remediator = SecurityRemediator(project_dir)
+        results = remediator.run_remediation(findings, dry_run=args.dry_run, yes=args.yes)
+
+        # Print summary
+        print("\n--- Remediation Summary ---")
+        print(f"Fixed: {len(results['fixed'])}")
+        print(f"Failed: {len(results['failed'])}")
+        print(f"Skipped: {len(results['skipped'])}")
+        sys.exit(0 if not results['failed'] else 1)
 
     # --- Feature: Install Hook ---
     if args.install_hook:

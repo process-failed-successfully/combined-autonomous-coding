@@ -167,3 +167,51 @@ KanbanBoard {
 .git-ops-top {
     height: 50%;
 }
+
+/* Gantt Chart */
+.gantt-row {
+    height: 1;
+    width: 100%;
+    margin-bottom: 1;
+}
+
+.gantt-label {
+    width: 25;
+    margin-right: 1;
+    color: $text-muted;
+}
+
+.gantt-bar {
+    height: 1;
+    background: $panel;
+}
+
+.gantt-bar-pending {
+    background: $secondary;
+}
+
+.gantt-bar-active {
+    background: $primary;
+}
+
+.gantt-bar-completed {
+    background: $success;
+}
+
+.gantt-bar-blocked {
+    background: $error;
+}
+
+.gantt-header {
+    height: 1;
+    width: 100%;
+    background: $surface;
+    border-bottom: solid $secondary;
+    margin-bottom: 1;
+}
+
+.gantt-label-header {
+    width: 25;
+    text-style: bold;
+    margin-right: 1;
+}

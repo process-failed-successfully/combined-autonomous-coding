@@ -2,6 +2,7 @@ import logging
 import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from dataclasses import dataclass
 
 from shared.config import Config
 from agents.shared.prompts import get_conflict_resolution_prompt
@@ -11,6 +12,18 @@ from agents.local import LocalAgent
 from agents.openrouter import OpenRouterAgent
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class Conflict:
+    start_line: int  # 0-indexed line number of <<<<<<<
+    sep_line: int    # 0-indexed line number of =======
+    end_line: int    # 0-indexed line number of >>>>>>>
+    base_line: Optional[int] # 0-indexed line number of ||||||| (diff3)
+    ours_content: str
+    theirs_content: str
+    base_content: Optional[str] = None
+    marker_ours: str = ""
+    marker_theirs: str = ""
 
 class ConflictResolver:
     def __init__(self, project_dir: Path):
@@ -28,6 +41,122 @@ class ConflictResolver:
                 except Exception:
                     continue
         return conflicted_files
+
+    def parse_conflicts(self, content: str) -> List[Conflict]:
+        """
+        Parses the content for git conflict markers.
+        Handles standard and diff3 styles.
+        """
+        lines = content.splitlines(keepends=True)
+        conflicts = []
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.startswith("<<<<<<<"):
+                start_line = i
+                marker_ours = line.strip()
+
+                # Scan for separator or base
+                j = i + 1
+                base_line = None
+                sep_line = None
+                end_line = None
+
+                while j < len(lines):
+                    if lines[j].startswith("|||||||"):
+                        base_line = j
+                    elif lines[j].startswith("======="):
+                        sep_line = j
+                    elif lines[j].startswith(">>>>>>>"):
+                        end_line = j
+                        marker_theirs = lines[j].strip()
+                        break
+                    j += 1
+
+                if sep_line is not None and end_line is not None:
+                    # Extract contents
+                    # Ours: start+1 to (base if base else sep)
+                    ours_end = base_line if base_line is not None else sep_line
+                    ours_content = "".join(lines[start_line+1 : ours_end])
+
+                    base_content = None
+                    if base_line is not None:
+                        base_content = "".join(lines[base_line+1 : sep_line])
+
+                    theirs_content = "".join(lines[sep_line+1 : end_line])
+
+                    conflicts.append(Conflict(
+                        start_line=start_line,
+                        sep_line=sep_line,
+                        end_line=end_line,
+                        base_line=base_line,
+                        ours_content=ours_content,
+                        theirs_content=theirs_content,
+                        base_content=base_content,
+                        marker_ours=marker_ours,
+                        marker_theirs=marker_theirs
+                    ))
+                    i = end_line # Advance to end of conflict
+            i += 1
+
+        return conflicts
+
+    def resolve_manual(self, file_path: Path, conflict_index: int, strategy: str) -> bool:
+        """
+        Resolves a specific conflict in a file.
+        strategy: 'ours', 'theirs', or 'base'
+        """
+        content = file_path.read_text(encoding="utf-8")
+        conflicts = self.parse_conflicts(content)
+
+        if not conflicts or conflict_index >= len(conflicts):
+            return False
+
+        c = conflicts[conflict_index]
+        resolution = ""
+
+        if strategy == "ours":
+            resolution = c.ours_content
+        elif strategy == "theirs":
+            resolution = c.theirs_content
+        elif strategy == "base" and c.base_content is not None:
+            resolution = c.base_content
+        else:
+            return False
+
+        # Reconstruct content
+        lines = content.splitlines(keepends=True)
+        # Pre-conflict
+        new_lines = lines[:c.start_line]
+        # Resolved content
+        new_lines.append(resolution)
+        # Post-conflict
+        new_lines.extend(lines[c.end_line+1:])
+
+        file_path.write_text("".join(new_lines), encoding="utf-8")
+        return True
+
+    def resolve_all_manual(self, file_path: Path, strategy: str) -> int:
+        """
+        Resolves all conflicts in a file with the given strategy.
+        Returns number of resolved conflicts.
+        """
+        resolved_count = 0
+        while True:
+            # Re-read and re-parse every time to handle shifting offsets safely
+            content = file_path.read_text(encoding="utf-8")
+            conflicts = self.parse_conflicts(content)
+            if not conflicts:
+                break
+
+            # Resolve the first one
+            if self.resolve_manual(file_path, 0, strategy):
+                resolved_count += 1
+            else:
+                break # Should not happen if conflicts exist
+
+        return resolved_count
 
     async def resolve_file(
         self,

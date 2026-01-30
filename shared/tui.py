@@ -64,6 +64,7 @@ from shared.tui_docker import DockerTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
+from shared.tui_conflict import ConflictTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
@@ -3962,6 +3963,8 @@ class AgentTUI(App):
                 yield StandupTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
+            with TabPane("Conflicts", id="tab-conflicts"):
+                yield ConflictTab(self.project_dir)
             with TabPane("Pull Requests", id="tab-pr"):
                 yield PullRequestsTab(self.project_dir)
             with TabPane("Bisect", id="tab-bisect"):

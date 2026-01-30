@@ -10,6 +10,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.app import App
 from textual.widgets import Input, ListView, Label
+from textual.containers import Container
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui import AgentTUI
 
@@ -99,7 +100,13 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
 
     @patch("subprocess.run")
     @patch("subprocess.Popen")
-    async def test_run_tests_command(self, mock_popen, mock_run):
+    @patch("shared.tui.ServicesTab")
+    @patch("shared.tui.ReleaseTab")
+    async def test_run_tests_command(self, mock_release_tab, mock_services_tab, mock_popen, mock_run):
+        # Mock tabs to avoid side effects/crashes during test
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_release_tab.side_effect = lambda *args, **kwargs: Container()
+
         # Setup mock_run to avoid ReleaseTab crash
         mock_run.return_value.stdout = ""
         mock_run.return_value.returncode = 0

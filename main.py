@@ -91,6 +91,30 @@ AVAILABLE_AGENTS = {
     "openrouter": "Uses a model from the OpenRouter API.",
 }
 
+# Known CLI commands for recipe execution
+KNOWN_COMMANDS = [
+    "shell", "tui", "quiz", "kata", "prompt-lab", "knowledge", "chat", "ask", "do",
+    "optimize", "perf", "debug", "code-review", "summarize", "explain", "init", "adr",
+    "onboard", "session", "secrets", "db", "database", "playground", "completion",
+    "plan", "estimate", "config", "configure", "validate", "doctor", "clean", "prune",
+    "archive", "empty-trash", "restore", "trash", "revert", "rewind", "discard", "undo",
+    "archives", "artifacts", "worktrees", "snapshot", "list-agents", "models", "glance",
+    "status", "dashboard", "summary", "suggest", "tour", "history", "last", "last-run-id",
+    "diff-summary", "diff", "log", "logs", "workflow", "cost", "benchmark", "sprint",
+    "branch", "mutate", "test", "lint", "format", "hooks", "replay", "recipes", "macro",
+    "git", "history-graph", "tree", "report", "push", "pull", "patch", "issues", "pr",
+    "commit", "feature", "interact", "profile", "watch", "why", "blame", "stash", "next",
+    "context", "search", "smart-search", "ssearch", "replace", "todos", "review", "env",
+    "setup", "scaffold", "dockerize", "cicd", "verify", "troubleshoot", "sentinel", "health",
+    "debt", "check-links", "security", "help", "cherry-pick", "rollback", "timeline",
+    "analytics", "deps", "duplication", "unused", "risk", "impact", "a11y", "license",
+    "bisect", "map", "architecture", "arch", "release", "openapi", "docstring", "refactor",
+    "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
+    "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
+    "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
+    "standup", "presentation", "visualize", "network"
+]
+
 if FileSystemEventHandler:
     class CommandEventHandler(FileSystemEventHandler):
         def __init__(self, command, project_dir):
@@ -5304,7 +5328,7 @@ async def run_recipes(args):
         if not args.name:
              print("Error: Name required for 'run' action.", file=sys.stderr)
              sys.exit(1)
-        success = manager.run_recipe(args.name, dry_run=args.dry_run)
+        success = manager.run_recipe(args.name, dry_run=args.dry_run, known_commands=KNOWN_COMMANDS)
         sys.exit(0 if success else 1)
 
     elif args.action == "delete":
@@ -5327,6 +5351,102 @@ async def run_recipes(args):
             model=args.model
         )
         sys.exit(0 if success else 1)
+
+    elif args.action == "record":
+        print("--- Record New Recipe ---")
+        name = args.name
+        if not name:
+            name = input("Recipe name: ").strip()
+        if not name:
+            print("Aborted.")
+            sys.exit(1)
+
+        print(f"Recording recipe '{name}'.")
+        print("Type commands to execute. Type 'stop' or 'exit' to finish.")
+
+        steps = []
+        current_cwd = project_dir
+        import subprocess
+        import shlex
+
+        while True:
+            # Show prompt with relative path
+            try:
+                rel_path = current_cwd.relative_to(project_dir)
+                prompt_path = f"./{rel_path}" if str(rel_path) != "." else "."
+            except ValueError:
+                prompt_path = str(current_cwd)
+
+            try:
+                cmd_line = input(f"{prompt_path} $ ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+
+            if not cmd_line:
+                continue
+
+            if cmd_line in ["stop", "exit"]:
+                break
+
+            # Handle cd
+            parts = shlex.split(cmd_line)
+            if parts and parts[0] == "cd":
+                if len(parts) > 1:
+                    target = parts[1]
+                    new_path = (current_cwd / target).resolve()
+                    if new_path.is_dir():
+                        current_cwd = new_path
+                        steps.append(cmd_line)
+                        continue
+                    else:
+                        print(f"❌ Directory not found: {target}")
+                        continue
+                else:
+                    # cd home -> default to project root for this tool's behavior
+                    current_cwd = project_dir
+                    steps.append(cmd_line)
+                    continue
+
+            # Execute
+            try:
+                # Check if it's an agent command
+                is_agent_cmd = parts[0] in KNOWN_COMMANDS
+
+                # Setup kwargs
+                kwargs = {
+                    "cwd": current_cwd,
+                    "env": os.environ.copy(),
+                    "text": True
+                }
+
+                if is_agent_cmd:
+                    # Execute as agent command
+                    executable = sys.executable
+                    script = str(Path(sys.argv[0]).resolve())
+                    cmd = [executable, script] + parts
+                    res = subprocess.run(cmd, **kwargs)
+                else:
+                    # Execute as shell command
+                    res = subprocess.run(cmd_line, shell=True, **kwargs)  # nosec B602
+
+                if res.returncode == 0:
+                    steps.append(cmd_line)
+                else:
+                    print(f"Command failed (exit code {res.returncode}).")
+                    confirm = input("Add to recipe anyway? [y/N]: ").strip().lower()
+                    if confirm == 'y':
+                        steps.append(cmd_line)
+            except Exception as e:
+                print(f"Error executing command: {e}")
+
+        if steps:
+            if manager.add_recipe(name, steps):
+                print(f"✅ Recipe '{name}' recorded with {len(steps)} steps.")
+            else:
+                print("❌ Failed to save recipe.")
+        else:
+            print("No steps recorded.")
+        sys.exit(0)
 
     elif args.action == "create":
         print("--- Create New Recipe ---")
@@ -7139,6 +7259,10 @@ def parse_args(argv=None):
     parser_recipes_learn.add_argument("--run-id", help="The Run ID to learn from (defaults to latest).")
     parser_recipes_learn.add_argument("-a", "--agent", choices=list(AVAILABLE_AGENTS.keys()), default="gemini", help="Agent to use for analysis.")
     parser_recipes_learn.add_argument("-m", "--model", type=str, help="Model to use.")
+
+    # Recipes 'record'
+    parser_recipes_record = recipes_subparsers.add_parser("record", help="Record a new recipe by executing commands.")
+    parser_recipes_record.add_argument("name", nargs="?", help="Name of the recipe.")
 
     # Recipes 'create'
     parser_recipes_create = recipes_subparsers.add_parser("create", help="Create a new recipe interactively.")

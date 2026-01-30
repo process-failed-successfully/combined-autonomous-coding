@@ -82,7 +82,7 @@ class RecipeManager:
             return self._save_config()
         return False
 
-    def run_recipe(self, name: str, dry_run: bool = False, capture_output: bool = False) -> bool | tuple[bool, str]:
+    def run_recipe(self, name: str, dry_run: bool = False, capture_output: bool = False, known_commands: List[str] = None) -> bool | tuple[bool, str]:
         """
         Executes a recipe.
 
@@ -91,6 +91,8 @@ class RecipeManager:
             dry_run: If True, only prints the steps without executing.
             capture_output: If True, returns a tuple (success, output_log).
                             If False, prints to stdout and returns success (bool).
+            known_commands: Optional list of known agent commands. If a step starts with one of these,
+                            it will be executed as an agent command. Otherwise, it runs as shell.
         """
         steps = self.get_recipe(name)
         output_log = []
@@ -109,8 +111,6 @@ class RecipeManager:
         log(f"--- Running Recipe: {name} ---")
 
         # Prevent infinite recursion (basic check)
-        # We check if 'recipes run <name>' is in the steps, but aliases make this hard.
-        # A simple depth limit via environment variable is safer.
         import os
         depth = int(os.environ.get("AGENT_RECIPE_DEPTH", "0"))
         if depth > 5:
@@ -121,8 +121,8 @@ class RecipeManager:
         env["AGENT_RECIPE_DEPTH"] = str(depth + 1)
 
         executable = sys.executable
-        # Resolve script path to absolute to handle cwd changes properly
         script = str(Path(sys.argv[0]).resolve())
+        current_cwd = self.project_dir
 
         success = True
         for i, step in enumerate(steps):
@@ -131,43 +131,60 @@ class RecipeManager:
             if dry_run:
                 continue
 
-            # Parse the command line
             try:
-                # We prepend the python exe and script path to ensure we use the same entry point
-                # However, the user might provide just "lint --fix" or "main.py lint"
-                # We assume the user provides subcommands.
-
-                # Check if the user typed "main.py ..." or just "subcommand ..."
                 parts = shlex.split(step)
                 if not parts:
                     continue
 
+                cmd_name = parts[0]
+                run_as_shell = False
                 cmd = []
-                # If they explicitly wrote "python main.py ...", trust them but replace with current exe
-                if parts[0] == "python" or parts[0].endswith("python") or parts[0].endswith("python3"):
-                     cmd = [executable] + parts[1:]
-                elif parts[0].endswith("main.py"):
-                     cmd = [executable, script] + parts[1:]
-                else:
-                     # Assume it's a subcommand for THIS agent
-                     cmd = [executable, script] + parts
 
-                # Inject project_dir if not present and not help/version
-                # This is tricky because some commands don't take -p.
-                # But most do. Let's rely on the user to put -p if needed,
-                # OR automatically append -p if it looks like a standard command.
-                # Actually, passing the CWD to subprocess is cleaner.
+                # Handle internal commands like 'cd'
+                if cmd_name == "cd":
+                    if len(parts) > 1:
+                        target = parts[1]
+                        new_path = (current_cwd / target).resolve()
+                        if new_path.is_dir():
+                            current_cwd = new_path
+                            log(f"Changed directory to: {current_cwd}")
+                        else:
+                            log(f"❌ Error: Directory not found: {target}", is_error=True)
+                            success = False
+                            break
+                    else:
+                        current_cwd = self.project_dir
+                        log(f"Changed directory to project root: {current_cwd}")
+                    continue
+
+                # Determine execution mode
+                is_explicit_python = cmd_name == "python" or cmd_name.endswith("python") or cmd_name.endswith("python3")
+                is_explicit_main = cmd_name.endswith("main.py")
+
+                if is_explicit_python:
+                    cmd = [executable] + parts[1:]
+                elif is_explicit_main:
+                    cmd = [executable, script] + parts[1:]
+                elif known_commands and cmd_name in known_commands:
+                    # It's an agent command
+                    cmd = [executable, script] + parts
+                else:
+                    # Default to shell for unknown commands (likely git, ls, etc.)
+                    run_as_shell = True
 
                 kwargs = {
-                    "cwd": self.project_dir,
+                    "cwd": current_cwd,
                     "env": env,
                     "text": True
                 }
-
                 if capture_output:
                     kwargs["capture_output"] = True
 
-                result = subprocess.run(cmd, **kwargs)
+                if run_as_shell:
+                    # Run raw step string in shell
+                    result = subprocess.run(step, shell=True, **kwargs)  # nosec B602
+                else:
+                    result = subprocess.run(cmd, **kwargs)
 
                 if capture_output:
                     if result.stdout:

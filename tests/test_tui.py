@@ -9,6 +9,7 @@ import tempfile
 sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
+from textual.containers import Container
 from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, InteractTab, KnowledgeTab
 from shared.tui_log_explorer import LogExplorerTab
 
@@ -86,9 +87,14 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(explorer.query_one(DirectoryTree), DirectoryTree)
             self.assertIsInstance(explorer.query_one(RichLog), RichLog)
 
+    @patch("shared.tui.ServicesTab")
     @patch("shared.tui_log_explorer.get_all_log_files")
-    async def test_logs_tab(self, mock_get_logs):
+    async def test_logs_tab(self, mock_get_logs, mock_services_tab):
         """Test log explorer updates with file list."""
+
+        # Mock ServicesTab to return an empty Container to avoid crashes
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+
         # Setup mock log files
         log1 = self.test_dir / "test1.log"
         log1.write_text("10:00:00 - INFO - Log 1 Content")

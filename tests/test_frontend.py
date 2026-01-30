@@ -1,6 +1,12 @@
 import unittest
+import sys
+import os
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+
+# Ensure shared module can be imported
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from shared.frontend import FrontendVerifier
 
 class TestFrontendVerifier(unittest.TestCase):

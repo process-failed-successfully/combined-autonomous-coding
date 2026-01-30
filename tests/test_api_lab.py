@@ -7,7 +7,8 @@ import os
 # Add repo root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.api_lab import ApiLabManager
+from shared.api_lab import ApiLabManager  # noqa: E402
+
 
 class TestApiLabManager(unittest.TestCase):
     def setUp(self):
@@ -39,7 +40,7 @@ paths:
                 url = self.manager.get_server_url()
                 self.assertEqual(url, "http://api.example.com")
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_execute_request(self, mock_request):
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -59,6 +60,7 @@ paths:
     def test_get_server_url_default(self):
         self.manager.spec_data = {}
         self.assertEqual(self.manager.get_server_url(), "http://localhost:8000")
+
 
 if __name__ == "__main__":
     unittest.main()

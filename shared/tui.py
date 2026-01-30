@@ -80,6 +80,7 @@ from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
+from shared.tui_frontend import FrontendTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -3922,6 +3923,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("Frontend", id="tab-frontend"):
+                yield FrontendTab(self.project_dir)
             with TabPane("Cost", id="tab-cost"):
                 yield CostTab(self.project_dir)
             with TabPane("Playground", id="tab-playground"):

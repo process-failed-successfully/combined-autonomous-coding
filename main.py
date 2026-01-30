@@ -112,7 +112,7 @@ KNOWN_COMMANDS = [
     "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
-    "standup", "presentation", "visualize", "network", "sanitize"
+    "standup", "presentation", "visualize", "network", "sanitize", "ide"
 ]
 
 if FileSystemEventHandler:
@@ -293,6 +293,17 @@ def run_serve(args):
         dry_run=args.dry_run
     )
     sys.exit(0 if success else 1)
+
+def run_ide(args):
+    """Generates IDE configuration files."""
+    from shared.ide_config import IdeConfigManager
+
+    project_dir = args.project_dir.resolve()
+    manager = IdeConfigManager(project_dir)
+
+    if args.action == "vscode" or args.action == "cursor":
+        success = manager.generate_vscode_config(dry_run=args.dry_run, force=args.force)
+        sys.exit(0 if success else 1)
 
 def run_scheduler(args):
     """Manages the autonomous scheduler."""
@@ -9905,6 +9916,29 @@ def parse_args(argv=None):
         help="Print the start command without running it."
     )
 
+    # --- New 'ide' command ---
+    parser_ide = subparsers.add_parser(
+        "ide",
+        help="Generate IDE configuration files (vscode, cursor)."
+    )
+    ide_subparsers = parser_ide.add_subparsers(
+        dest="action",
+        required=True,
+        help="Editor to configure."
+    )
+
+    # ide vscode
+    parser_ide_vscode = ide_subparsers.add_parser("vscode", help="Configure VS Code.")
+    parser_ide_vscode.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_ide_vscode.add_argument("--dry-run", action="store_true", help="Print config without writing.")
+    parser_ide_vscode.add_argument("--force", action="store_true", help="Overwrite existing config.")
+
+    # ide cursor (alias)
+    parser_ide_cursor = ide_subparsers.add_parser("cursor", help="Configure Cursor (same as VS Code).")
+    parser_ide_cursor.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_ide_cursor.add_argument("--dry-run", action="store_true", help="Print config without writing.")
+    parser_ide_cursor.add_argument("--force", action="store_true", help="Overwrite existing config.")
+
     # --- New 'scheduler' command ---
     parser_scheduler = subparsers.add_parser(
         "scheduler",
@@ -13235,6 +13269,10 @@ async def main():
 
     if args.command == "serve":
         run_serve(args)
+        return
+
+    if args.command == "ide":
+        run_ide(args)
         return
 
     if args.command == "scheduler":

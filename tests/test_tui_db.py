@@ -9,6 +9,7 @@ import tempfile
 sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, RichLog, DataTable, Input, Select, TabbedContent
+from textual.containers import Container
 from shared.tui import AgentTUI, DatabaseTab
 
 class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
@@ -21,7 +22,14 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
         self.patcher_db = patch("shared.tui.init_db")
         self.mock_init_db = self.patcher_db.start()
 
+        # Patch ServicesTab to avoid side effects during AgentTUI mount
+        self.patcher_services = patch("shared.tui.ServicesTab", MagicMock(spec=Container))
+        self.mock_services_tab = self.patcher_services.start()
+        # Ensure the mock behaves like a widget that can be yielded
+        self.mock_services_tab.return_value = Container()
+
     def tearDown(self):
+        self.patcher_services.stop()
         self.patcher_db.stop()
         shutil.rmtree(self.test_dir)
 

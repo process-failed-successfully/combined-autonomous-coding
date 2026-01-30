@@ -1,6 +1,7 @@
 import random
 import string
 import json
+import concurrent.futures
 from typing import Any, Dict, List, Generator
 
 class APIFuzzer:
@@ -149,30 +150,45 @@ class APIFuzzer:
 
         print(f"Generated {len(payloads)} fuzz payloads for {method} {url}")
 
-        for i, payload in enumerate(payloads):
-            # Use the manager's execute_request
-            # We serialize payload to JSON string as execute_request expects string body
-            try:
-                body_str = json.dumps(payload)
-                result = self.manager.execute_request(method, url, body=body_str)
+        max_workers = 5
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Helper to execute request
+            def run_req(p):
+                try:
+                    b_str = json.dumps(p)
+                    return self.manager.execute_request(method, url, body=b_str), None
+                except Exception as exc:
+                    return None, exc
 
-                status = result['status_code']
+            future_to_payload = {
+                executor.submit(run_req, p): (i, p)
+                for i, p in enumerate(payloads)
+            }
 
-                # We care about 500s or timeouts (result['success'] might be False for 400s which is fine)
-                # 5xx errors are definitely bugs.
-                is_crash = 500 <= status < 600
+            for future in concurrent.futures.as_completed(future_to_payload):
+                index, payload = future_to_payload[future]
+                try:
+                    result, error = future.result()
 
-                results.append({
-                    "payload": payload,
-                    "status": status,
-                    "crash": is_crash
-                })
+                    if error:
+                        print(f"  [{index+1}] Error: {error}")
+                        results.append({"payload": payload, "error": str(error), "crash": False})
+                        continue
 
-                marker = "🔥" if is_crash else "✅" if status < 500 else "❓"
-                print(f"  [{i+1}/{len(payloads)}] {marker} Status: {status}")
+                    status = result['status_code']
+                    is_crash = 500 <= status < 600
 
-            except Exception as e:
-                print(f"  [{i+1}] Error: {e}")
-                results.append({"payload": payload, "error": str(e), "crash": False})
+                    results.append({
+                        "payload": payload,
+                        "status": status,
+                        "crash": is_crash
+                    })
+
+                    marker = "🔥" if is_crash else "✅" if status < 500 else "❓"
+                    print(f"  [{index+1}/{len(payloads)}] {marker} Status: {status}")
+
+                except Exception as e:
+                    print(f"  [{index+1}] Critical Error: {e}")
+                    results.append({"payload": payload, "error": str(e), "crash": False})
 
         return results

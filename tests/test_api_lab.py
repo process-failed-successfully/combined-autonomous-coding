@@ -39,7 +39,7 @@ paths:
                 url = self.manager.get_server_url()
                 self.assertEqual(url, "http://api.example.com")
 
-    @patch("requests.request")
+    @patch("requests.Session.request")
     def test_execute_request(self, mock_request):
         mock_response = MagicMock()
         mock_response.status_code = 200

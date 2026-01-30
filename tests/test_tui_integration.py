@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from shared.tui import TUIStream, ApiLabTab
 from pathlib import Path
 
+
 class TestTUIIntegration(unittest.TestCase):
     def test_tui_stream(self):
         mock_log = MagicMock()
@@ -34,6 +35,7 @@ class TestTUIIntegration(unittest.TestCase):
         # but we can verify the method exists and we could inspect source if we wanted,
         # but for now ensuring the method exists is a good sanity check.
         self.assertTrue(hasattr(tab, "on_button_pressed"))
+
 
 if __name__ == "__main__":
     unittest.main()

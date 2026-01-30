@@ -6,34 +6,28 @@ import shlex
 import yaml
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
+from textual.widgets import Header, Footer, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
 from textual.containers import Container, Horizontal, VerticalScroll, Vertical
-from textual.reactive import reactive
-from textual.screen import Screen
-from textual.binding import Binding
 from textual import on
 from rich.syntax import Syntax
 
-from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
+from shared.cli_utils import get_workflow_stage
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 from shared.plan import run_plan_logic
 from shared.optimize import OptimizationManager
 from shared.database import init_db
-from shared.github_client import GitHubClient
 from shared.config_loader import load_config_from_file
-from shared.dependencies import DependencyAnalyzer, DependencyUpdater
 from shared.task_manager import TaskManager, Task
 from shared.debt import DebtCollector
 from shared.health import HealthCalculator
 from shared.security import SecurityAuditor
 from shared.code_review import run_code_review_logic
-from shared.map import scan_project, CodeNode
-from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch, get_file_diff
+from shared.map import scan_project
 from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
 from shared.search import search_codebase
 from shared.replace import replace_in_codebase
-from shared.work_session import WorkSessionManager, Session
+from shared.work_session import WorkSessionManager
 from shared.troubleshoot import TroubleshootManager
 from shared.worktree import WorktreeManager
 from shared.recipes import RecipeManager
@@ -104,6 +98,7 @@ def get_git_info(project_dir: Path) -> dict:
         except Exception:
             pass
     return info
+
 
 class ScaffoldTab(Container):
     """Tab for project scaffolding (Templates & AI)."""
@@ -178,7 +173,7 @@ class ScaffoldTab(Container):
             desc_area.text = ""
             desc_area.focus()
             preview_btn.disabled = False
-            create_btn.disabled = True # Wait for preview
+            create_btn.disabled = True  # Wait for preview
             preview_log.write("Enter a description and click 'Generate Preview'.")
         else:
             desc_area.disabled = True
@@ -208,7 +203,6 @@ class ScaffoldTab(Container):
         log.write(f"Generating plan with {agent_type}...")
         self.notify("Generating plan...", severity="information")
 
-        import asyncio
         # Run in thread
         self.ai_plan = await self.manager.generate_ai_scaffold(desc, agent_type=agent_type)
 
@@ -342,11 +336,11 @@ class PlanTab(Container):
 
             if success:
                 self.notify("Plan generated successfully.")
-                self.load_files() # Reload to show new plan
+                self.load_files()  # Reload to show new plan
             else:
                 self.notify(f"Plan generation failed: {message}", severity="error", timeout=10)
         except Exception as e:
-             self.notify(f"Critical Error: {e}", severity="error")
+            self.notify(f"Critical Error: {e}", severity="error")
 
 
 class DashboardTab(Container):
@@ -408,6 +402,7 @@ class DashboardTab(Container):
         else:
             history_log.write("No history found.")
 
+
 class FileExplorerTab(Container):
     """Tab for browsing files."""
 
@@ -437,6 +432,7 @@ class FileExplorerTab(Container):
                 preview.write(content)
         except Exception as e:
             preview.write(f"Error reading file: {e}")
+
 
 class CodeMapTab(Container):
     """Tab for visualizing project structure (Classes, Functions)."""
@@ -487,11 +483,11 @@ class CodeMapTab(Container):
 
                 # Grandchildren (methods in class)
                 for gc in child.children:
-                     if filter_text and filter_text.lower() not in gc.name.lower() and filter_text.lower() not in child.name.lower() and filter_text.lower() not in file_path.lower():
-                         continue
-                     icon_gc = "M" if gc.type == "function" else "?"
-                     child_node.add(f"[{icon_gc}] {gc.name}", data=gc)
-                     child_node.expand()
+                    if filter_text and filter_text.lower() not in gc.name.lower() and filter_text.lower() not in child.name.lower() and filter_text.lower() not in file_path.lower():
+                        continue
+                    icon_gc = "M" if gc.type == "function" else "?"
+                    child_node.add(f"[{icon_gc}] {gc.name}", data=gc)
+                    child_node.expand()
 
     @on(Input.Changed, "#codemap-filter")
     def on_filter_changed(self, event: Input.Changed) -> None:
@@ -524,12 +520,13 @@ class CodeMapTab(Container):
             # Extract snippet
             snippet = "\n".join(lines[start:end])
 
-            syntax = Syntax(snippet, "python", theme="monokai", line_numbers=True, start_line=start+1)
-            preview.write(f"[bold]{node_data.type.capitalize()}: {node_data.name}[/bold] (Lines {start+1}-{end})")
+            syntax = Syntax(snippet, "python", theme="monokai", line_numbers=True, start_line=start + 1)
+            preview.write(f"[bold]{node_data.type.capitalize()}: {node_data.name}[/bold] (Lines {start + 1}-{end})")
             preview.write(syntax)
 
         except Exception as e:
             preview.write(f"Error reading code: {e}")
+
 
 class TimelineTab(Container):
     """Tab for viewing the project timeline."""
@@ -585,7 +582,6 @@ class TimelineTab(Container):
             self.notify(f"Error exporting timeline: {e}", severity="error")
 
 
-
 class InteractTab(Container):
     """Tab for interacting with the agent (Chat)."""
 
@@ -636,11 +632,12 @@ class InteractTab(Container):
 
         # Format response
         if success:
-             chat_log.write(f"[bold green]Agent:[/bold green]")
-             chat_log.write(response)
+            chat_log.write("[bold green]Agent:[/bold green]")
+            chat_log.write(response)
         else:
-             chat_log.write(f"[bold red]Agent Error:[/bold red]")
-             chat_log.write(response)
+            chat_log.write("[bold red]Agent Error:[/bold red]")
+            chat_log.write(response)
+
 
 class KnowledgeTab(Container):
     """Tab for managing knowledge."""
@@ -695,6 +692,7 @@ class KnowledgeTab(Container):
                     self.notify(f"Error adding knowledge: {e}", severity="error")
             else:
                 self.notify("Content cannot be empty.", severity="warning")
+
 
 class TasksTab(Container):
     """Tab for viewing Unified Tasks (GitHub, Jira, Sprint, TODOs)."""
@@ -805,6 +803,7 @@ class TasksTab(Container):
     def filter_text(self):
         self._update_table(self.tasks_cache)
 
+
 class ProfileTab(Container):
     """Tab for performance profiling."""
 
@@ -902,7 +901,6 @@ class ProfileTab(Container):
         suggestion = await self.manager.get_ai_suggestions(self.stats_file, agent_type=agent_type)
         ai_output.update(suggestion)
         self.notify("Analysis complete.")
-
 
 
 def collect_analytics_data(project_dir: Path) -> dict:
@@ -1130,7 +1128,7 @@ class SecretsTab(Container):
             else:
                 self.notify("Key already exists.", severity="warning")
         except Exception as e:
-             self.notify(f"Error generating key: {e}", severity="error")
+            self.notify(f"Error generating key: {e}", severity="error")
 
     def add_secret(self) -> None:
         if not self.key_exists:
@@ -1265,7 +1263,7 @@ class DatabaseTab(Container):
                 # Update input with generated SQL and switch to SQL mode
                 self.query_one("#input-db-query", Input).value = sql
                 self.query_one("#select-query-mode", Select).value = "SQL"
-                self.notify(f"SQL generated. Review and execute.")
+                self.notify("SQL generated. Review and execute.")
                 status_lbl.update("SQL Generated. Ready to execute.")
                 return  # Stop here, don't execute
             except Exception as e:
@@ -1472,7 +1470,7 @@ class SearchTab(Container):
                     res["file"],
                     str(res["line"]),
                     res["content"],
-                    key=str(i) # Store index as key
+                    key=str(i)  # Store index as key
                 )
         except Exception as e:
             self.notify(f"Search error: {e}", severity="error")
@@ -1501,7 +1499,7 @@ class SearchTab(Container):
                 preview.write(f"[dim]{line}[/dim]")
 
         except Exception as e:
-             self.notify(f"Preview error: {e}", severity="error")
+            self.notify(f"Preview error: {e}", severity="error")
 
 
 class SessionTab(Container):
@@ -1568,7 +1566,7 @@ class SessionTab(Container):
                 name_display,
                 s["updated_at"],
                 s.get("description", ""),
-                key=name # Store raw name as key
+                key=name  # Store raw name as key
             )
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -1663,22 +1661,22 @@ class SessionTab(Container):
             self.notify(f"Error: {e}", severity="error")
 
     async def remove_file(self) -> None:
-         if not self.current_session_name:
+        if not self.current_session_name:
             return
 
-         files_list = self.query_one("#session-files-list", ListView)
-         if files_list.index is not None:
-             item = files_list.children[files_list.index]
-             # Extract text from Label inside ListItem
-             label = item.query_one(Label)
-             path = str(label.renderable)
+        files_list = self.query_one("#session-files-list", ListView)
+        if files_list.index is not None:
+            item = files_list.children[files_list.index]
+            # Extract text from Label inside ListItem
+            label = item.query_one(Label)
+            path = str(label.renderable)
 
-             try:
-                 self.manager.remove_file(self.current_session_name, path)
-                 self.notify(f"Removed {path}")
-                 self.load_session_details(self.current_session_name)
-             except Exception as e:
-                 self.notify(f"Error: {e}", severity="error")
+            try:
+                self.manager.remove_file(self.current_session_name, path)
+                self.notify(f"Removed {path}")
+                self.load_session_details(self.current_session_name)
+            except Exception as e:
+                self.notify(f"Error: {e}", severity="error")
 
 
 class RecipesTab(Container):
@@ -1756,9 +1754,9 @@ class RecipesTab(Container):
         if steps:
             log.write("[bold]Steps:[/bold]")
             for i, step in enumerate(steps):
-                log.write(f"  {i+1}. {step}")
+                log.write(f"  {i + 1}. {step}")
         else:
-             log.write("Recipe not found.")
+            log.write("Recipe not found.")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-recipe-refresh":
@@ -1824,8 +1822,8 @@ class RecipesTab(Container):
         steps = [s.strip() for s in steps_str.split(",") if s.strip()]
 
         if not steps:
-             self.notify("At least one step required.", severity="error")
-             return
+            self.notify("At least one step required.", severity="error")
+            return
 
         try:
             self.manager.add_recipe(name, steps)
@@ -1850,21 +1848,21 @@ class RecipesTab(Container):
         output = ""
 
         def run_in_thread():
-             return self.manager.run_recipe(self.selected_recipe, capture_output=True)
+            return self.manager.run_recipe(self.selected_recipe, capture_output=True)
 
         try:
-             success, output = await asyncio.to_thread(run_in_thread)
+            success, output = await asyncio.to_thread(run_in_thread)
         except Exception as e:
-             log.write(f"[bold red]Execution Error:[/bold red] {e}")
+            log.write(f"[bold red]Execution Error:[/bold red] {e}")
 
         log.write(output)
 
         if success:
-             log.write(f"[bold green]Recipe '{self.selected_recipe}' completed.[/bold green]")
-             self.notify("Recipe completed.")
+            log.write(f"[bold green]Recipe '{self.selected_recipe}' completed.[/bold green]")
+            self.notify("Recipe completed.")
         else:
-             log.write(f"[bold red]Recipe '{self.selected_recipe}' failed.[/bold red]")
-             self.notify("Recipe failed.", severity="error")
+            log.write(f"[bold red]Recipe '{self.selected_recipe}' failed.[/bold red]")
+            self.notify("Recipe failed.", severity="error")
 
     async def delete_recipe(self) -> None:
         if not self.selected_recipe:
@@ -2046,6 +2044,7 @@ class WorktreesTab(Container):
 
 class TUIStream:
     """Helper to redirect stdout to a RichLog widget in a thread-safe way."""
+
     def __init__(self, log_widget, app):
         self.log = log_widget
         self.app = app
@@ -2058,6 +2057,7 @@ class TUIStream:
 
     def flush(self):
         pass
+
 
 class ApiLabTab(Container):
     """Tab for API experimentation."""
@@ -2138,10 +2138,14 @@ class ApiLabTab(Container):
             method = ep['method']
             path = ep['path']
             # Color code method
-            if method == "GET": method_fmt = f"[blue]{method}[/blue]"
-            elif method == "POST": method_fmt = f"[green]{method}[/green]"
-            elif method == "DELETE": method_fmt = f"[red]{method}[/red]"
-            else: method_fmt = f"[yellow]{method}[/yellow]"
+            if method == "GET":
+                method_fmt = f"[blue]{method}[/blue]"
+            elif method == "POST":
+                method_fmt = f"[green]{method}[/green]"
+            elif method == "DELETE":
+                method_fmt = f"[red]{method}[/red]"
+            else:
+                method_fmt = f"[yellow]{method}[/yellow]"
 
             label = f"{method_fmt} {path}"
             item = ListItem(Label(label, markup=True))
@@ -2158,7 +2162,6 @@ class ApiLabTab(Container):
     async def generate_spec(self) -> None:
         self.notify("Generating OpenAPI spec... (this takes time)")
         from shared.openapi import OpenAPIGenerator
-        import asyncio
 
         generator = OpenAPIGenerator(self.project_dir)
         output_path = self.project_dir / "openapi.yaml"
@@ -2260,7 +2263,7 @@ class ApiLabTab(Container):
             results = await asyncio.to_thread(do_fuzz)
 
             crashes = [r for r in results if r['crash']]
-            log.write(f"\n[bold]Fuzzing Complete.[/bold]")
+            log.write("\n[bold]Fuzzing Complete.[/bold]")
             log.write(f"Total Requests: {len(results)}")
             log.write(f"Crashes: {len(crashes)}")
 
@@ -2491,7 +2494,8 @@ class CodeReviewTab(Container):
                 return
 
             for line in lines:
-                if not line.strip(): continue
+                if not line.strip():
+                    continue
                 # format: XY path
                 status = line[:2]
                 path = line[3:]
@@ -2659,7 +2663,7 @@ class ReleaseTab(Container):
             if success:
                 lbl.update(f"[green]{msg}[/green]")
                 self.notify("Release successful!")
-                self.load_status() # Refresh
+                self.load_status()  # Refresh
             else:
                 lbl.update(f"[red]{msg}[/red]")
                 self.notify("Release failed.", severity="error")
@@ -2695,8 +2699,8 @@ class TestGenTab(Container):
                     yield Select.from_values(["gemini", "cursor", "local"], id="testgen-agent", value="gemini")
 
                 with Horizontal(classes="stat-box"):
-                     yield Button("Generate Tests", id="btn-testgen-generate", variant="primary", disabled=True)
-                     yield Button("Save Tests", id="btn-testgen-save", variant="success", disabled=True)
+                    yield Button("Generate Tests", id="btn-testgen-generate", variant="primary", disabled=True)
+                    yield Button("Save Tests", id="btn-testgen-save", variant="success", disabled=True)
 
                 yield Label("[bold]Preview[/bold]")
                 yield TextArea(id="testgen-preview", language="python", read_only=False)
@@ -2849,10 +2853,14 @@ class HealthTab(Container):
     def _update_ui(self, calc: HealthCalculator) -> None:
         # Grade
         grade_color = "red"
-        if calc.grade == "A": grade_color = "green"
-        elif calc.grade == "B": grade_color = "cyan"
-        elif calc.grade == "C": grade_color = "yellow"
-        elif calc.grade == "D": grade_color = "orange"
+        if calc.grade == "A":
+            grade_color = "green"
+        elif calc.grade == "B":
+            grade_color = "cyan"
+        elif calc.grade == "C":
+            grade_color = "yellow"
+        elif calc.grade == "D":
+            grade_color = "orange"
 
         self.query_one("#health-grade-lbl").update(f"Grade: [bold {grade_color}]{calc.grade}[/]")
         self.query_one("#health-score-lbl").update(f"Score: {calc.score:.0f} / 100")
@@ -3154,7 +3162,6 @@ class DocumentationTab(Container):
         log = self.query_one("#docstring-log", RichLog)
         log.write(f"Generating docstrings for {len(items)} items with {agent_type}...")
 
-        import asyncio
         import contextlib
 
         # Capture stdout from manager
@@ -3170,7 +3177,7 @@ class DocumentationTab(Container):
         log.write(output_capture.getvalue())
         log.write(f"Applied {count} docstrings.")
         self.notify(f"Generated {count} docstrings.")
-        self.scan_docstrings() # Refresh table
+        self.scan_docstrings()  # Refresh table
 
     async def check_links(self) -> None:
         table = self.query_one("#links-table", DataTable)
@@ -3209,7 +3216,6 @@ class DocumentationTab(Container):
         self.notify("Generating OpenAPI spec...")
         output_path = self.project_dir / "openapi.yaml"
 
-        import asyncio
         success = await self.openapi_gen.generate(output_path)
 
         if success:
@@ -3302,7 +3308,7 @@ class ConfigTab(Container):
                 pass
 
         if not config:
-             config = load_config_from_file()
+            config = load_config_from_file()
 
         # Populate fields
         self.query_one("#cfg-agent-type", Select).value = config.get("agent_type", "gemini")
@@ -3346,19 +3352,24 @@ class ConfigTab(Container):
         config["agent_type"] = self.query_one("#cfg-agent-type", Select).value
 
         model = self.query_one("#cfg-model", Input).value
-        if model: config["model"] = model
+        if model:
+            config["model"] = model
 
         max_iter = self.query_one("#cfg-max-iterations", Input).value
-        if max_iter and max_iter.isdigit(): config["max_iterations"] = int(max_iter)
+        if max_iter and max_iter.isdigit():
+            config["max_iterations"] = int(max_iter)
 
         mgr_freq = self.query_one("#cfg-manager-freq", Input).value
-        if mgr_freq and mgr_freq.isdigit(): config["manager_frequency"] = int(mgr_freq)
+        if mgr_freq and mgr_freq.isdigit():
+            config["manager_frequency"] = int(mgr_freq)
 
         slack = self.query_one("#cfg-slack", Input).value
-        if slack: config["slack_webhook_url"] = slack
+        if slack:
+            config["slack_webhook_url"] = slack
 
         discord = self.query_one("#cfg-discord", Input).value
-        if discord: config["discord_webhook_url"] = discord
+        if discord:
+            config["discord_webhook_url"] = discord
 
         notif = {
             "iteration": self.query_one("#cfg-notify-iteration", Checkbox).value,
@@ -3448,16 +3459,19 @@ class CostTab(Container):
         # Update Budget
         status = budget["status"]
         status_color = "green"
-        if status == "WARNING": status_color = "yellow"
-        elif status == "EXCEEDED": status_color = "red"
-        elif status == "No Limit": status_color = "blue"
+        if status == "WARNING":
+            status_color = "yellow"
+        elif status == "EXCEEDED":
+            status_color = "red"
+        elif status == "No Limit":
+            status_color = "blue"
 
         if status == "No Limit":
-             self.query_one("#cost-budget-lbl").update(f"Status: [bold {status_color}]{status}[/]")
-             self.query_one("#cost-remaining-lbl").update(f"Total Spent: ${budget.get('current', 0.0):.4f}")
+            self.query_one("#cost-budget-lbl").update(f"Status: [bold {status_color}]{status}[/]")
+            self.query_one("#cost-remaining-lbl").update(f"Total Spent: ${budget.get('current', 0.0):.4f}")
         else:
-             self.query_one("#cost-budget-lbl").update(f"Status: [bold {status_color}]{status}[/] ({budget['percent']:.1f}%)")
-             self.query_one("#cost-remaining-lbl").update(f"Remaining: ${budget['remaining']:.4f} / ${budget['limit']:.2f}")
+            self.query_one("#cost-budget-lbl").update(f"Status: [bold {status_color}]{status}[/] ({budget['percent']:.1f}%)")
+            self.query_one("#cost-remaining-lbl").update(f"Remaining: ${budget['remaining']:.4f} / ${budget['limit']:.2f}")
 
         # Update Table
         table = self.query_one("#cost-table", DataTable)
@@ -3485,10 +3499,11 @@ class CostTab(Container):
         # Prepare data for chart (last 10 runs)
         chart_data = {}
         for run in details[-10:]:
-             if "error" in run: continue
-             # Use short ID
-             label = run["run_id"][-6:] if len(run["run_id"]) > 6 else run["run_id"]
-             chart_data[label] = run["total_cost"]
+            if "error" in run:
+                continue
+            # Use short ID
+            label = run["run_id"][-6:] if len(run["run_id"]) > 6 else run["run_id"]
+            chart_data[label] = run["total_cost"]
 
         if chart_data:
             chart = draw_ascii_bar_chart(chart_data, "Recent Run Costs ($)")
@@ -3733,7 +3748,7 @@ class RefactorTab(Container):
             self.notify(f"Changes applied to {self.selected_file.name}")
             self.query_one("#refactor-diff-log", RichLog).write("\n[bold green]Changes Applied![/bold green]")
             self.query_one("#btn-refactor-apply").disabled = True
-            self.preview_data = {} # Reset
+            self.preview_data = {}  # Reset
         except Exception as e:
             self.notify(f"Error applying changes: {e}", severity="error")
 
@@ -3949,6 +3964,7 @@ class AgentTUI(App):
             self.action_run_tests()
         elif event.button.id == "btn-lint":
             self.action_run_lint()
+
 
 if __name__ == "__main__":
     # Add parent dir to path to allow direct execution

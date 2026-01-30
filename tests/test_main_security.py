@@ -20,6 +20,7 @@ class TestMainSecurity(unittest.TestCase):
         args.output = None
         args.ignore_add = None
         args.install_hook = False
+        args.fix = False
 
         # Run command (should exit 0)
         with self.assertRaises(SystemExit) as cm:
@@ -52,6 +53,7 @@ class TestMainSecurity(unittest.TestCase):
         args.output = None
         args.ignore_add = None
         args.install_hook = False
+        args.fix = False
 
         # Run command (should exit 1 because of HIGH severity)
         with self.assertRaises(SystemExit) as cm:
@@ -73,6 +75,7 @@ class TestMainSecurity(unittest.TestCase):
         args.output = str(output_file)
         args.ignore_add = None
         args.install_hook = False
+        args.fix = False
 
         # Run command
         with self.assertRaises(SystemExit) as cm:
@@ -100,6 +103,7 @@ class TestMainSecurity(unittest.TestCase):
         args.project_dir = Path(".")
         args.install_hook = True
         args.ignore_add = None
+        args.fix = False
 
         # Run command
         with self.assertRaises(SystemExit) as cm:
@@ -114,6 +118,45 @@ class TestMainSecurity(unittest.TestCase):
 
         # Verify install call
         mock_install_hooks.assert_called()
+
+    @patch("main.SecurityAuditor")
+    @patch("shared.security_fix.SecurityRemediator")
+    def test_run_security_fix(self, mock_remediator_cls, mock_auditor_cls):
+        # Setup mock
+        mock_auditor = mock_auditor_cls.return_value
+        mock_auditor.run_all.return_value = [{"type": "dependency", "severity": "HIGH"}]
+
+        mock_remediator = mock_remediator_cls.return_value
+        mock_remediator.run_remediation.return_value = {
+            "fixed": ["pkg1"], "failed": [], "skipped": []
+        }
+
+        # Setup args
+        args = MagicMock()
+        args.project_dir = Path(".")
+        args.fix = True
+        args.ignore_add = None
+        args.install_hook = False
+        args.scan_type = "deps"
+        args.severity = "high"
+        args.dry_run = False
+        args.yes = True
+
+        # Run command
+        with self.assertRaises(SystemExit) as cm:
+            main.run_security(args)
+
+        # Should exit 0 on success
+        self.assertEqual(cm.exception.code, 0)
+
+        # Verify calls
+        mock_auditor.run_all.assert_called_with(scan_type="deps", severity="high")
+        mock_remediator_cls.assert_called_once()
+        mock_remediator.run_remediation.assert_called_with(
+            mock_auditor.run_all.return_value,
+            dry_run=False,
+            yes=True
+        )
 
 if __name__ == "__main__":
     unittest.main()

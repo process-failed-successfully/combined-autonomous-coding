@@ -9,10 +9,21 @@ import tempfile
 sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, RichLog, DataTable, Input, Select, TabbedContent
+from textual.containers import Container
 from shared.tui import AgentTUI, DatabaseTab
+
+class MockServicesTab(Container):
+    """Mock ServicesTab to avoid background timers in tests."""
+    def __init__(self, project_dir, **kwargs):
+        # We absorb the project_dir argument and don't pass it to Container
+        super().__init__(**kwargs)
 
 class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        # Patch ServicesTab to avoid side effects
+        self.patcher_services = patch("shared.tui.ServicesTab", MockServicesTab)
+        self.patcher_services.start()
+
         self.test_dir = Path(tempfile.mkdtemp())
         self.project_dir = self.test_dir / "project"
         self.project_dir.mkdir()
@@ -22,6 +33,7 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
         self.mock_init_db = self.patcher_db.start()
 
     def tearDown(self):
+        self.patcher_services.stop()
         self.patcher_db.stop()
         shutil.rmtree(self.test_dir)
 

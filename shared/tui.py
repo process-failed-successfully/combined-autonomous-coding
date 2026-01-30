@@ -64,6 +64,7 @@ from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
+from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
@@ -3937,6 +3938,8 @@ class AgentTUI(App):
                 yield QuizTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("Cron Lab", id="tab-cron"):
+                yield CronLabTab(self.project_dir)
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
         yield Footer()

@@ -8,9 +8,17 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import DataTable, Input, Select, Button
+from textual.widgets import DataTable, Input, Select, Button, Label
+from textual.containers import Container
 from shared.tui import AgentTUI, TasksTab
 from shared.task_manager import Task
+
+class MockServicesTab(Container):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def compose(self):
+        yield Label("Mock Services")
 
 class TestTUITasks(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -32,11 +40,16 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         self.mock_tm_class = self.patcher_tm.start()
         self.mock_tm = self.mock_tm_class.return_value
 
+        # Mock ServicesTab to avoid mounting errors during unrelated tests
+        self.patcher_services = patch("shared.tui.ServicesTab", side_effect=MockServicesTab)
+        self.mock_services = self.patcher_services.start()
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
         self.patcher_tm.stop()
+        self.patcher_services.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_tasks_tab_structure(self):

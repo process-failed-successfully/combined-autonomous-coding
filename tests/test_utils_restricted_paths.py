@@ -7,7 +7,8 @@ import unittest
 import tempfile
 import shutil
 from pathlib import Path
-from shared.utils import execute_read_block, execute_write_block, is_restricted_path, RESTRICTED_PATHS
+from shared.utils import execute_read_block, execute_write_block, is_restricted_path
+
 
 class TestUtilsRestrictedPaths(unittest.TestCase):
 
@@ -33,7 +34,7 @@ class TestUtilsRestrictedPaths(unittest.TestCase):
         # Not restricted
         self.assertFalse(is_restricted_path(self.project_dir / "main.py", self.project_dir))
         self.assertFalse(is_restricted_path(self.project_dir / "src/utils.py", self.project_dir))
-        self.assertFalse(is_restricted_path(self.project_dir / "git_utils.py", self.project_dir)) # "git" in name but not .git
+        self.assertFalse(is_restricted_path(self.project_dir / "git_utils.py", self.project_dir))  # "git" in name but not .git
 
     def test_write_block_restricted(self):
         # Try writing to .git
@@ -58,6 +59,7 @@ class TestUtilsRestrictedPaths(unittest.TestCase):
         # Try reading .env
         result = execute_read_block(".env", self.project_dir)
         self.assertIn("Error: Access denied", result)
+
 
 if __name__ == "__main__":
     unittest.main()

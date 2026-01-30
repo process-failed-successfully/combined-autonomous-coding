@@ -13,6 +13,8 @@ from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
+import json
+from dataclasses import is_dataclass
 
 if TYPE_CHECKING:
     from shared.config import Config
@@ -256,7 +258,7 @@ def execute_read_block(filename: str, cwd: Path) -> str:
         try:
             file_path.relative_to(resolved_cwd)
         except ValueError:
-             return f"Error: Access denied. Cannot read {filename} outside of project directory."
+            return f"Error: Access denied. Cannot read {filename} outside of project directory."
 
         # Security Check: Restricted paths
         if is_restricted_path(file_path, resolved_cwd):
@@ -525,9 +527,6 @@ def generate_agent_id(project_name: str, spec_content: str, agent_type: str) -> 
     # Combine to match requested format: cursor_agent_hello_world_uuid
     return f"{agent_type}_agent_{project_name}_{short_hash}"
 
-
-import json
-from dataclasses import asdict, is_dataclass
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, o):

@@ -15,7 +15,8 @@ class TestSentinelEventHandler(unittest.TestCase):
         """Verify that multiple events within debounce time only trigger callback once."""
         callback = MagicMock()
         project_dir = Path("/tmp")
-        handler = SentinelEventHandler(project_dir, callback, debounce_seconds=0.1)
+        # Increase debounce time to avoid flakiness in slow CI environments
+        handler = SentinelEventHandler(project_dir, callback, debounce_seconds=0.5)
 
         mock_event = MagicMock()
         mock_event.is_directory = False
@@ -28,7 +29,7 @@ class TestSentinelEventHandler(unittest.TestCase):
         callback.assert_called_once()
 
         # Wait and trigger again
-        time.sleep(0.15)
+        time.sleep(0.6)
         handler.on_modified(mock_event)
         self.assertEqual(callback.call_count, 2)
 

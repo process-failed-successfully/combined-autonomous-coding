@@ -111,6 +111,17 @@ class TestIdeConfigManager(unittest.TestCase):
             self.assertNotEqual(content, original_content)
             self.assertIn("editor.defaultFormatter", content)
 
+    def test_get_config_previews(self):
+        (self.project_dir / "requirements.txt").touch()
+
+        previews = self.manager.get_config_previews()
+        self.assertIsInstance(previews, dict)
+        self.assertIn("settings.json", previews)
+        self.assertIn("launch.json", previews)
+        self.assertIn("extensions.json", previews)
+
+        self.assertIn("python.linting.enabled", previews["settings.json"])
+
 
 if __name__ == '__main__':
     unittest.main()

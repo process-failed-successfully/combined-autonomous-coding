@@ -86,6 +86,7 @@ from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
 from shared.tui_sanitizer import SanitizerTab
 from shared.tui_gantt import GanttTab
+from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 
 
@@ -3853,6 +3854,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
         PaletteCommand("Go to Git", "switch_tab_git"),
         PaletteCommand("Go to Config", "switch_tab_config"),
+        PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -3933,6 +3935,8 @@ class AgentTUI(App):
                 yield SchedulerTab(self.project_dir)
             with TabPane("Config", id="tab-config"):
                 yield ConfigTab(self.project_dir)
+            with TabPane("IDE Config", id="tab-ide-config"):
+                yield IdeConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):
                 yield DocumentationTab(self.project_dir)
             with TabPane("ADRs", id="tab-adr"):

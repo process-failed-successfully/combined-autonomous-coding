@@ -20,6 +20,15 @@ class IdeConfigManager:
             return "go"
         return "unknown"
 
+    def get_config_previews(self) -> Dict[str, Any]:
+        """Returns the generated configuration for preview."""
+        project_type = self.detect_project_type()
+        return {
+            "settings.json": self._get_settings(project_type),
+            "launch.json": self._get_launch(project_type),
+            "extensions.json": self._get_extensions(project_type)
+        }
+
     def generate_vscode_config(self, dry_run: bool = False, force: bool = False) -> bool:
         """Generates .vscode configuration files."""
         project_type = self.detect_project_type()

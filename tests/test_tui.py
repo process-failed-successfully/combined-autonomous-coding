@@ -50,6 +50,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check new tabs
             self.assertTrue(app.query_one("#tab-interact"))
             self.assertTrue(app.query_one("#tab-knowledge"))
+            self.assertTrue(app.query_one("#tab-ide-config"))
 
     async def test_dashboard_content(self):
         """Test that the dashboard tab displays project info."""

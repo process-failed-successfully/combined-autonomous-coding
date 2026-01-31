@@ -112,7 +112,7 @@ KNOWN_COMMANDS = [
     "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
-    "standup", "presentation", "visualize", "network", "sanitize", "ide"
+    "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab"
 ]
 
 if FileSystemEventHandler:
@@ -10021,6 +10021,21 @@ def parse_args(argv=None):
     parser_gr_check = guardrails_subparsers.add_parser("check", help="Run policy checks.")
     parser_gr_check.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # --- New 'logic-lab' command ---
+    parser_logic_lab = subparsers.add_parser(
+        "logic-lab",
+        help="Truth Table Generator and Logic Lab."
+    )
+    logic_lab_subparsers = parser_logic_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # logic-lab table
+    parser_logic_table = logic_lab_subparsers.add_parser("table", help="Generate a truth table.")
+    parser_logic_table.add_argument("--expression", "-e", required=True, help="Boolean expression (e.g. 'A and B').")
+
     # --- New 'devtools' command ---
     parser_devtools = subparsers.add_parser(
         "devtools",
@@ -10658,6 +10673,47 @@ async def run_resolve(args):
         yes=args.yes
     )
     sys.exit(0 if success else 1)
+
+
+async def run_logic_lab(args):
+    """Runs the Logic Lab (Truth Table Generator)."""
+    from shared.logic_lab import LogicLabManager
+
+    manager = LogicLabManager()
+
+    if args.action == "table":
+        if not args.expression:
+            print("Error: --expression is required.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.generate_truth_table(args.expression)
+        if result.get("error"):
+            print(f"Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+        # Print table
+        variables = result["variables"]
+        headers = variables + ["Result"]
+
+        # Determine column widths
+        widths = [max(len(h), 5) for h in headers]
+
+        # Header
+        header_str = " | ".join(f"{h:<{w}}" for h, w in zip(headers, widths))
+        print(header_str)
+        print("-" * len(header_str))
+
+        for row in result["rows"]:
+            cells = []
+            for var in variables:
+                val = "T" if row["values"][var] else "F"
+                cells.append(val)
+            res = "TRUE" if row["result"] else "FALSE"
+            cells.append(res)
+
+            print(" | ".join(f"{c:<{w}}" for c, w in zip(cells, widths)))
+
+    sys.exit(0)
 
 
 async def run_regex(args):
@@ -13234,6 +13290,10 @@ async def main():
 
     if args.command == "regex":
         await run_regex(args)
+        return
+
+    if args.command == "logic-lab":
+        await run_logic_lab(args)
         return
 
     if args.command == "cron-lab":

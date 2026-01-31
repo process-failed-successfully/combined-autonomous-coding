@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import subprocess
+import shlex
 from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
@@ -166,6 +167,36 @@ def has_recent_activity(
 async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) -> str:
     """Execute a bash command block."""
     logger.info(f"[Executing Bash] {sanitize_text(command)}")
+
+    # Security Check: Scan arguments for restricted paths
+    try:
+        # Parse command into arguments (handles quotes)
+        args = shlex.split(command)
+        for arg in args:
+            # Skip flags (starting with -) unless they look like paths (e.g. -/...)
+            if arg.startswith("-") and not arg.startswith("-/"):
+                continue
+
+            # Skip special shell characters if shlex didn't separate them
+            if arg in ["&&", "||", ";", "|", ">", ">>", "<"]:
+                continue
+
+            try:
+                # Construct potential path relative to cwd
+                path_to_check = (cwd / arg).resolve()
+
+                # Check if restricted
+                if is_restricted_path(path_to_check, cwd):
+                    error_msg = f"Error: Access denied. Command references restricted path '{arg}'."
+                    logger.warning(error_msg)
+                    return error_msg
+            except Exception:
+                # If path resolution fails, ignore
+                continue
+    except ValueError:
+        # shlex parsing failed (e.g. unclosed quote). Let bash handle it.
+        pass
+
     try:
         process = await asyncio.create_subprocess_shell(
             command,

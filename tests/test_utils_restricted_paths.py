@@ -7,9 +7,9 @@ import unittest
 import tempfile
 import shutil
 from pathlib import Path
-from shared.utils import execute_read_block, execute_write_block, is_restricted_path, RESTRICTED_PATHS
+from shared.utils import execute_read_block, execute_write_block, execute_bash_block, is_restricted_path, RESTRICTED_PATHS
 
-class TestUtilsRestrictedPaths(unittest.TestCase):
+class TestUtilsRestrictedPaths(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -55,6 +55,24 @@ class TestUtilsRestrictedPaths(unittest.TestCase):
         # Try reading .env
         result = execute_read_block(".env", self.project_dir)
         self.assertIn("Error: Access denied", result)
+
+    async def test_bash_block_restricted(self):
+        # Try cat .env
+        result = await execute_bash_block("cat .env", self.project_dir)
+        self.assertIn("Error: Access denied", result)
+        self.assertIn("restricted path", result)
+
+        # Try rm .git
+        result = await execute_bash_block("rm -rf .git", self.project_dir)
+        self.assertIn("Error: Access denied", result)
+
+        # Try allowed command
+        result = await execute_bash_block("echo hello", self.project_dir)
+        self.assertEqual(result.strip(), "hello")
+
+        # Try ls -la (ensure flags don't trigger false positives)
+        result = await execute_bash_block("ls -la", self.project_dir)
+        self.assertNotIn("Error: Access denied", result)
 
 if __name__ == "__main__":
     unittest.main()

@@ -37,8 +37,10 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_ask.stop()
         shutil.rmtree(self.test_dir)
 
-    async def test_app_startup(self):
+    @patch("shared.tui.ServicesTab")
+    async def test_app_startup(self, mock_services_tab):
         """Test that the app starts up and has the expected title and tabs."""
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Check if TabbedContent exists
@@ -52,8 +54,10 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#tab-knowledge"))
             self.assertTrue(app.query_one("#tab-ide-config"))
 
-    async def test_dashboard_content(self):
+    @patch("shared.tui.ServicesTab")
+    async def test_dashboard_content(self, mock_services_tab):
         """Test that the dashboard tab displays project info."""
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to dashboard is default
@@ -72,8 +76,10 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check new history section
             self.assertTrue(dashboard.query_one("#history-log"))
 
-    async def test_file_explorer_tab(self):
+    @patch("shared.tui.ServicesTab")
+    async def test_file_explorer_tab(self, mock_services_tab):
         """Test the file explorer tab structure."""
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to explorer tab
@@ -121,8 +127,10 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             await pilot.click("#btn-log-refresh")
             mock_get_logs.assert_called()
 
-    async def test_interact_tab(self):
+    @patch("shared.tui.ServicesTab")
+    async def test_interact_tab(self, mock_services_tab):
         """Test InteractTab structure."""
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             tabbed_content = app.query_one("#main-tabs")
@@ -136,8 +144,10 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(interact.query_one("#chat-input"), Input)
             self.assertIsInstance(interact.query_one("#agent-select"), Select)
 
-    async def test_knowledge_tab(self):
+    @patch("shared.tui.ServicesTab")
+    async def test_knowledge_tab(self, mock_services_tab):
         """Test KnowledgeTab structure and loading."""
+        mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             tabbed_content = app.query_one("#main-tabs")

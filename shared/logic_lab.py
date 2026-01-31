@@ -1,6 +1,7 @@
 import re
 import itertools
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
+
 
 class LogicLabManager:
     """Manages the Logic Lab (Truth Table Generator)."""
@@ -29,7 +30,6 @@ class LogicLabManager:
         # Actually, standardizing to lowercase is safer for simplicity unless user wants case-sensitive vars.
         # Let's support case-insensitive variables for now.
 
-        raw_expr = expression
         expr = expression.lower()
 
         # Replace operators
@@ -49,7 +49,7 @@ class LogicLabManager:
 
         # 2. Word replacements (using regex for boundaries)
         word_replacements = {
-            "xor": "^", # Python bitwise XOR works as logical XOR for bools
+            "xor": "^",  # Python bitwise XOR works as logical XOR for bools
             "true": "True",
             "false": "False"
         }
@@ -76,7 +76,7 @@ class LogicLabManager:
 
             # Simple check: should not contain '.', '[', ']', '{', '}' to prevent attribute access or dict/list construction
             if any(c in expr for c in ['.', '[', ']', '{', '}', ';', 'import', 'eval', 'exec']):
-                 return {"variables": [], "rows": [], "error": "Invalid characters or unsafe constructs detected."}
+                return {"variables": [], "rows": [], "error": "Invalid characters or unsafe constructs detected."}
 
             # Compile for performance and syntax checking
             code = compile(expr, "<string>", "eval")
@@ -87,7 +87,7 @@ class LogicLabManager:
                 # Add sanitized builtins
                 ctx["__builtins__"] = {}
 
-                result = eval(code, ctx)
+                result = eval(code, ctx)  # nosec B307
                 rows.append({
                     "values": ctx,
                     "result": bool(result)

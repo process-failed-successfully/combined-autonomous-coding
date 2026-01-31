@@ -1,9 +1,9 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Vertical, Horizontal
 from textual.widgets import Label, Input, Button, DataTable
-from textual import on
 from shared.logic_lab import LogicLabManager
 import asyncio
+
 
 class LogicLabTab(Container):
     """Tab for Truth Table Logic Lab."""

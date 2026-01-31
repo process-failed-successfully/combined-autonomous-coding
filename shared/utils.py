@@ -14,6 +14,10 @@ from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
 import hashlib
+import re
+import fnmatch
+import json
+from dataclasses import asdict, is_dataclass
 
 if TYPE_CHECKING:
     from shared.config import Config
@@ -130,38 +134,53 @@ def has_recent_activity(
     ignore_patterns: List of glob patterns to ignore (e.g. ['*.log', '*.tmp'])
     """
     import time
-    import fnmatch
 
     now = time.time()
 
+    ignore_regex = None
+    if ignore_patterns:
+        # Combine patterns into one regex for performance
+        try:
+            regexes = [fnmatch.translate(p) for p in ignore_patterns]
+            combined = "|".join(regexes)
+            # Use IGNORECASE if on Windows/Case-insensitive OS (approximated by normcase behavior)
+            flags = 0
+            if os.path.normcase('A') == os.path.normcase('a'):
+                flags = re.IGNORECASE
+            ignore_regex = re.compile(combined, flags)
+        except Exception as e:
+            logger.warning(f"Failed to compile ignore patterns: {e}")
+            pass
+
+    def scan(path: str) -> bool:
+        try:
+            with os.scandir(path) as it:
+                for entry in it:
+                    if entry.is_dir():
+                        if entry.name not in IGNORED_DIRS:
+                            if scan(entry.path):
+                                return True
+                    elif entry.is_file():
+                        # Check ignore patterns using compiled regex
+                        if ignore_regex and ignore_regex.match(entry.name):
+                            continue
+
+                        try:
+                            # entry.stat() is cached on Windows and efficient on recent Linux/Python
+                            mtime = entry.stat().st_mtime
+                            if now - mtime < seconds:
+                                return True
+                        except OSError:
+                            continue
+        except OSError:
+            pass
+        return False
+
     try:
-        # Use os.walk for better control over recursion and performance
-        for root, dirs, files in os.walk(str(root_dir)):
-            # Prune ignored directories in-place
-            dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
-
-            for filename in files:
-                # Check ignore patterns for files
-                if ignore_patterns:
-                    should_ignore = False
-                    for pattern in ignore_patterns:
-                        if fnmatch.fnmatch(filename, pattern):
-                            should_ignore = True
-                            break
-                    if should_ignore:
-                        continue
-
-                try:
-                    # Construct path only when needed
-                    file_path = os.path.join(root, filename)
-                    mtime = os.stat(file_path).st_mtime
-                    if now - mtime < seconds:
-                        return True
-                except OSError:
-                    continue
+        return scan(str(root_dir))
     except Exception as e:
         logger.error(f"Error checking file activity: {e}")
-    return False
+        return False
 
 
 async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) -> str:
@@ -287,7 +306,7 @@ def execute_read_block(filename: str, cwd: Path) -> str:
         try:
             file_path.relative_to(resolved_cwd)
         except ValueError:
-             return f"Error: Access denied. Cannot read {filename} outside of project directory."
+            return f"Error: Access denied. Cannot read {filename} outside of project directory."
 
         # Security Check: Restricted paths
         if is_restricted_path(file_path, resolved_cwd):
@@ -557,9 +576,6 @@ def generate_agent_id(project_name: str, spec_content: str, agent_type: str) -> 
     return f"{agent_type}_agent_{project_name}_{short_hash}"
 
 
-import json
-from dataclasses import asdict, is_dataclass
-
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, o):
         if is_dataclass(o):
@@ -583,7 +599,6 @@ def sanitize_text(text: str) -> str:
     if not text:
         return text
 
-    import re
     # Mask https://token@github.com... or https://user:token@github.com...
     return re.sub(r"(https?://)([^@/]+)@", r"\1****@", text)
 

@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+
 class ApiLabManager:
     """
     Manages API Lab state, including loading specs and executing requests.
@@ -49,7 +50,7 @@ class ApiLabManager:
         """
         Returns a list of available endpoints from the loaded spec.
         """
-        endpoints = []
+        endpoints: List[Dict[str, str]] = []
         if not self.spec_data or 'paths' not in self.spec_data:
             return endpoints
 
@@ -102,7 +103,7 @@ class ApiLabManager:
 
         return fuzzer.fuzz_endpoint(method, full_url, schema)
 
-    def load_test_endpoint(self, method: str, path: str, users: int, duration: int, body: str = None) -> Dict[str, Any]:
+    def load_test_endpoint(self, method: str, path: str, users: int, duration: float, body: Optional[str] = None) -> Dict[str, Any]:
         """
         Runs a load test on a specific endpoint.
         """
@@ -118,7 +119,7 @@ class ApiLabManager:
 
         return tester.run_load_test(method, full_url, users, duration, body)
 
-    def execute_request(self, method: str, url: str, headers: Dict[str, str] = None, params: Dict[str, str] = None, body: str = None) -> Dict[str, Any]:
+    def execute_request(self, method: str, url: str, headers: Optional[Dict[str, str]] = None, params: Optional[Dict[str, str]] = None, body: Optional[str] = None) -> Dict[str, Any]:
         """
         Executes an HTTP request.
         """
@@ -173,6 +174,7 @@ class ApiLabManager:
                 'body': f"Request Error: {str(e)}",
                 'success': False
             }
+
 
 def run_api_lab_cli(args):
     """
@@ -245,12 +247,12 @@ def run_api_lab_cli(args):
 
     elif args.action == "fuzz":
         method = args.method.upper()
-        path = args.url # Argument name is url, but for fuzz we prefer path key
+        path = args.url  # Argument name is url, but for fuzz we prefer path key
 
         results = manager.fuzz_endpoint(method, path)
 
         crashes = [r for r in results if r['crash']]
-        print(f"\n--- Fuzzing Complete ---")
+        print("\n--- Fuzzing Complete ---")
         print(f"Total Requests: {len(results)}")
         print(f"Crashes (5xx): {len(crashes)}")
 
@@ -272,19 +274,19 @@ def run_api_lab_cli(args):
         duration = args.duration
         body = args.body
 
-        results = manager.load_test_endpoint(method, url, users, duration, body)
+        load_results = manager.load_test_endpoint(method, url, users, duration, body)
 
         print(f"\n--- Load Test Results ({method} {url}) ---")
         print(f"Users: {users} | Duration: {duration}s")
-        print(f"Total Requests: {results['total_requests']}")
-        print(f"RPS: {results['rps']:.2f}")
-        print(f"Avg Latency: {results['avg_latency']:.2f} ms")
-        print(f"P50 Latency: {results['p50_latency']:.2f} ms")
-        print(f"P95 Latency: {results['p95_latency']:.2f} ms")
-        print(f"P99 Latency: {results['p99_latency']:.2f} ms")
-        print(f"Errors: {results['errors']}")
+        print(f"Total Requests: {load_results['total_requests']}")
+        print(f"RPS: {load_results['rps']:.2f}")
+        print(f"Avg Latency: {load_results['avg_latency']:.2f} ms")
+        print(f"P50 Latency: {load_results['p50_latency']:.2f} ms")
+        print(f"P95 Latency: {load_results['p95_latency']:.2f} ms")
+        print(f"P99 Latency: {load_results['p99_latency']:.2f} ms")
+        print(f"Errors: {load_results['errors']}")
         print("Status Codes:")
-        for code, count in results['status_codes'].items():
+        for code, count in load_results['status_codes'].items():
             print(f"  {code}: {count}")
 
     else:

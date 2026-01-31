@@ -3,17 +3,17 @@ import concurrent.futures
 import statistics
 import requests
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 
 class APILoadTester:
     """
     Performs load testing on API endpoints.
     """
-    def __init__(self, manager):
+    def __init__(self, manager: Any):
         self.manager = manager
 
-    def run_load_test(self, method: str, url: str, users: int, duration: int, body: str = None) -> Dict[str, Any]:
+    def run_load_test(self, method: str, url: str, users: int, duration: float, body: Optional[str] = None) -> Dict[str, Any]:
         """
         Runs a load test against the specified endpoint.
 
@@ -47,9 +47,9 @@ class APILoadTester:
         status_codes: Dict[int, int] = {}
 
         def worker():
-            local_results = []
+            local_results: List[float] = []
             local_errors = 0
-            local_status_codes = {}
+            local_status_codes: Dict[int, int] = {}
 
             while time.time() < end_time:
                 req_start = time.time()

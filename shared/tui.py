@@ -2129,6 +2129,26 @@ class ApiLabTab(Container):
                         yield Label("[bold]Fuzzing Log[/bold]")
                         yield RichLog(id="api-fuzzer-log", wrap=True, highlight=True, markup=True)
 
+                    with TabPane("Load Test"):
+                        yield Label("[bold]API Load Tester[/bold]", classes="welcome-text")
+
+                        with Vertical(classes="stat-box"):
+                            with Horizontal():
+                                yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH"], id="api-load-method", value="GET")
+                                yield Input(placeholder="URL...", id="api-load-url")
+
+                            with Horizontal():
+                                yield Input(placeholder="Users (default 10)", id="api-load-users", type="integer")
+                                yield Input(placeholder="Duration (s) (default 5)", id="api-load-duration", type="integer")
+
+                            yield Label("Request Body (JSON):")
+                            yield TextArea(id="api-load-body", language="json")
+
+                            yield Button("Start Load Test", id="btn-api-load-start", variant="warning")
+
+                        yield Label("[bold]Test Results[/bold]")
+                        yield RichLog(id="api-load-log", wrap=True, highlight=True, markup=True)
+
     def on_mount(self) -> None:
         self.load_spec()
         self.load_collections()
@@ -2146,6 +2166,8 @@ class ApiLabTab(Container):
             self.delete_saved_request()
         elif event.button.id == "btn-api-fuzz":
             await self.run_fuzzer()
+        elif event.button.id == "btn-api-load-start":
+            await self.run_load_test()
 
     def load_spec(self, force_reload: bool = False) -> None:
         if not self.manager.spec_data or force_reload:
@@ -2236,6 +2258,13 @@ class ApiLabTab(Container):
             self.query_one("#api-url", Input).value = full_url
             self.query_one("#api-req-name", Input).value = "" # Clear name for fresh endpoint
 
+            # Pre-populate Load Test fields as well
+            try:
+                self.query_one("#api-load-method", Select).value = data['method']
+                self.query_one("#api-load-url", Input).value = full_url
+            except Exception:
+                pass
+
             # Update Fuzz Target Label
             try:
                 self.query_one("#lbl-fuzz-target", Label).update(f"[{data['method']}] {full_url}")
@@ -2252,6 +2281,14 @@ class ApiLabTab(Container):
             self.query_one("#api-url", Input).value = data.get('url', '')
             self.query_one("#api-body", Input).value = data.get('body', '')
             self.query_one("#api-req-name", Input).value = data.get('name', '')
+
+            # Also populate Load Test fields
+            try:
+                self.query_one("#api-load-method", Select).value = data.get('method', 'GET')
+                self.query_one("#api-load-url", Input).value = data.get('url', '')
+                self.query_one("#api-load-body", TextArea).text = data.get('body', '') # Note: TextArea uses .text not .value
+            except Exception:
+                pass
 
             self.query_one("#btn-api-delete-saved").disabled = False
             self.notify(f"Loaded '{data.get('name')}'")
@@ -2373,6 +2410,63 @@ class ApiLabTab(Container):
             self.notify(f"Error: {e}", severity="error")
         finally:
             self.query_one("#btn-api-fuzz").disabled = False
+
+    async def run_load_test(self) -> None:
+        method = self.query_one("#api-load-method", Select).value
+        url = self.query_one("#api-load-url", Input).value
+
+        users_str = self.query_one("#api-load-users", Input).value
+        users = int(users_str) if users_str else 10
+
+        duration_str = self.query_one("#api-load-duration", Input).value
+        duration = int(duration_str) if duration_str else 5
+
+        body = self.query_one("#api-load-body", TextArea).text
+
+        if not url:
+            self.notify("URL required.", severity="error")
+            return
+
+        log = self.query_one("#api-load-log", RichLog)
+        log.clear()
+        log.write(f"[bold]Starting Load Test: {method} {url}[/bold]")
+        log.write(f"Users: {users} | Duration: {duration}s")
+        self.notify("Load testing started...")
+        self.query_one("#btn-api-load-start").disabled = True
+
+        import asyncio
+
+        try:
+            results = await asyncio.to_thread(
+                self.manager.load_test_endpoint,
+                method, url, users, duration, body
+            )
+
+            log.write("\n[bold green]Test Complete[/bold green]")
+            log.write(f"Total Requests: {results['total_requests']}")
+            log.write(f"RPS: {results['rps']:.2f}")
+            log.write(f"Avg Latency: {results['avg_latency']:.2f} ms")
+            log.write(f"P50 Latency: {results['p50_latency']:.2f} ms")
+            log.write(f"P95 Latency: {results['p95_latency']:.2f} ms")
+            log.write(f"P99 Latency: {results['p99_latency']:.2f} ms")
+
+            if results['errors'] > 0:
+                log.write(f"[bold red]Errors: {results['errors']}[/bold red]")
+            else:
+                log.write("Errors: 0")
+
+            log.write("\n[bold]Status Codes:[/bold]")
+            for code, count in results['status_codes'].items():
+                color = "green" if 200 <= code < 300 else "red"
+                log.write(f"  [{color}]{code}[/{color}]: {count}")
+
+            self.notify("Load test finished.")
+
+        except Exception as e:
+            log.write(f"[bold red]Error:[/bold red] {e}")
+            self.notify(f"Error: {e}", severity="error")
+        finally:
+            self.query_one("#btn-api-load-start").disabled = False
 
 
 class PlaygroundTab(Container):

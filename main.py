@@ -77,6 +77,7 @@ from shared.network import run_network_logic
 from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
+from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 import json
 import yaml
@@ -114,7 +115,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume"
+    "gantt", "resume", "retro"
 ]
 
 if FileSystemEventHandler:
@@ -149,6 +150,20 @@ async def run_resume(args):
         model=args.model
     )
     sys.exit(0)
+
+async def run_retro(args):
+    """Conducts a retrospective."""
+    project_dir = args.project_dir.resolve()
+    output = Path(args.output).resolve() if args.output else None
+
+    success = await run_retro_logic(
+        project_dir=project_dir,
+        run_id=args.run_id,
+        output=output,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sys.exit(0 if success else 1)
 
 def run_devtools(args):
     """Runs developer tools from CLI."""
@@ -10289,6 +10304,37 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'retro' command ---
+    parser_retro = subparsers.add_parser(
+        "retro",
+        help="Conduct a retrospective on agent execution runs."
+    )
+    parser_retro.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_retro.add_argument(
+        "--run-id",
+        help="Specific run ID to analyze (defaults to last run)."
+    )
+    parser_retro.add_argument(
+        "-o", "--output",
+        help="Output file for the retrospective report."
+    )
+    parser_retro.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use for analysis (default: gemini)."
+    )
+    parser_retro.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -13457,6 +13503,10 @@ async def main():
 
     if args.command == "resume":
         await run_resume(args)
+        return
+
+    if args.command == "retro":
+        await run_retro(args)
         return
 
     # Initialize Agent Client

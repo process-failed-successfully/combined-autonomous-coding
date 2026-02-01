@@ -89,6 +89,7 @@ from shared.tui_sanitizer import SanitizerTab
 from shared.tui_gantt import GanttTab
 from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
+from shared.plugin_manager import PluginManager
 
 
 # Helper to get Git info safely
@@ -3961,6 +3962,9 @@ class AgentTUI(App):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.plugin_manager = PluginManager(project_dir)
+        self.plugin_manager.discover_plugins()
+        self.plugin_manager.load_plugins()
 
     def action_toggle_command_palette(self) -> None:
         self.push_screen(AgentCommandPalette(self.PALETTE_COMMANDS), self.on_command_palette_selected)
@@ -4140,6 +4144,13 @@ class AgentTUI(App):
                 yield RegexLabTab(self.project_dir)
             with TabPane("Cron Lab", id="tab-cron"):
                 yield CronLabTab(self.project_dir)
+
+            # Load Plugin Tabs
+            for title, widget in self.plugin_manager.get_tui_tabs():
+                tab_id = f"tab-plugin-{title.lower().replace(' ', '-')}"
+                with TabPane(title, id=tab_id):
+                    yield widget
+
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
         yield Footer()

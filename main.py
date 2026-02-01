@@ -114,7 +114,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt"
+    "gantt", "resume"
 ]
 
 if FileSystemEventHandler:
@@ -134,6 +134,21 @@ def run_gantt(args):
     project_dir = args.project_dir.resolve()
     success = run_gantt_logic(project_dir)
     sys.exit(0 if success else 1)
+
+async def run_resume(args):
+    """Generates a project resume."""
+    from shared.resume import run_resume_logic
+
+    project_dir = args.project_dir.resolve()
+    output = Path(args.output).resolve() if args.output else None
+
+    await run_resume_logic(
+        project_dir=project_dir,
+        output=output,
+        agent_type=args.agent,
+        model=args.model
+    )
+    sys.exit(0)
 
 def run_devtools(args):
     """Runs developer tools from CLI."""
@@ -10247,6 +10262,33 @@ def parse_args(argv=None):
         help="The project directory."
     )
 
+    # --- New 'resume' command ---
+    parser_resume = subparsers.add_parser(
+        "resume",
+        help="Generate a professional Project Resume (One-Pager)."
+    )
+    parser_resume.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory.",
+    )
+    parser_resume.add_argument(
+        "-o", "--output",
+        help="Output file path (default: print to stdout)."
+    )
+    parser_resume.add_argument(
+        "-a", "--agent",
+        choices=list(AVAILABLE_AGENTS.keys()),
+        default="gemini",
+        help="Which agent to use (default: gemini)."
+    )
+    parser_resume.add_argument(
+        "-m", "--model",
+        type=str,
+        help="Model to use (overrides default)."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -13411,6 +13453,10 @@ async def main():
 
     if args.command == "gantt":
         run_gantt(args)
+        return
+
+    if args.command == "resume":
+        await run_resume(args)
         return
 
     # Initialize Agent Client

@@ -9,6 +9,7 @@ Main entry point for running autonomous coding agents (Gemini or Cursor).
 
 import argparse
 import asyncio
+import inspect
 try:
     import argcomplete
 except ImportError:
@@ -79,6 +80,7 @@ from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
+from shared.plugin_manager import PluginManager
 import json
 import yaml
 import platformdirs
@@ -129,6 +131,40 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_plugins(args):
+    """Manages agent plugins."""
+    project_dir = args.project_dir.resolve()
+    manager = PluginManager(project_dir)
+
+    if args.action == "list":
+        manager.discover_plugins()
+        manager.load_plugins()
+        plugins = manager.list_plugins()
+        if not plugins:
+            print("No plugins found.")
+        else:
+            print(f"--- Loaded Plugins ({len(plugins)}) ---")
+            for p in plugins:
+                print(f"  - {p}")
+
+    elif args.action == "install":
+        if not args.source:
+            print("Error: Source URL or path required.", file=sys.stderr)
+            sys.exit(1)
+        if manager.install_plugin(args.source):
+            print("Plugin installed. Please restart the agent.")
+        else:
+            sys.exit(1)
+
+    elif args.action == "create":
+        if not args.name:
+            print("Error: Name required.", file=sys.stderr)
+            sys.exit(1)
+        path = manager.create_plugin(args.name)
+        print(f"✅ Plugin scaffold created at: {path}")
+
+    sys.exit(0)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -6096,8 +6132,39 @@ def run_config(args):
     return 0
 
 
+def _get_project_dir_from_args(argv=None):
+    """Helper to extract project directory before full parsing."""
+    if argv is None:
+        argv = sys.argv[1:]
+
+    project_dir = Path(".")
+    if "-p" in argv:
+        try:
+            idx = argv.index("-p")
+            if idx + 1 < len(argv):
+                project_dir = Path(argv[idx + 1])
+        except ValueError:
+            pass
+
+    if "--project-dir" in argv:
+        try:
+            idx = argv.index("--project-dir")
+            if idx + 1 < len(argv):
+                project_dir = Path(argv[idx + 1])
+        except ValueError:
+            pass
+
+    return project_dir
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
+
+    # Initialize Plugin Manager and Load Plugins
+    # We do this early so plugins can register arguments/subcommands
+    project_dir = _get_project_dir_from_args(argv)
+    plugin_manager = PluginManager(project_dir)
+    plugin_manager.discover_plugins()
+    plugin_manager.load_plugins()
 
     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")
@@ -6241,6 +6308,26 @@ def parse_args(argv=None):
 
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
+
+    # --- Register Plugins ---
+    plugin_manager.register_cli(subparsers)
+
+    # --- 'plugins' command ---
+    parser_plugins = subparsers.add_parser("plugins", help="Manage agent plugins")
+    parser_plugins.set_defaults(func=run_plugins)
+    plugins_subparsers = parser_plugins.add_subparsers(dest="action", help="Plugin action")
+
+    # plugins list
+    plugins_subparsers.add_parser("list", help="List loaded plugins")
+
+    # plugins install
+    parser_plugins_install = plugins_subparsers.add_parser("install", help="Install a plugin from URL or path")
+    parser_plugins_install.add_argument("source", help="URL or file path to plugin.py")
+
+    # plugins create
+    parser_plugins_create = plugins_subparsers.add_parser("create", help="Create a plugin scaffold")
+    parser_plugins_create.add_argument("name", help="Plugin name")
+
     parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
 
     # Subparser for 'config'
@@ -12863,6 +12950,14 @@ def run_worktrees(args):
 
 async def main():
     args = parse_args()
+
+    # Handle plugins and commands registered via set_defaults(func=...)
+    if hasattr(args, "func"):
+        if inspect.iscoroutinefunction(args.func):
+            await args.func(args)
+        else:
+            args.func(args)
+        return
 
     # Handle `shell` command
     if args.command == "shell":

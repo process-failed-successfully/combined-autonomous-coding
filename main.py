@@ -3565,6 +3565,20 @@ def run_knowledge(args):
         else:
             console.print(f"[red]Item #{args.id} not found.[/red]")
 
+    elif args.action == "graph":
+        from shared.knowledge_graph import generate_knowledge_graph
+        try:
+            output_file = Path(args.output).resolve() if args.output else None
+            result = generate_knowledge_graph(
+                project_dir=args.project_dir.resolve(),
+                output_format=args.format,
+                output_file=output_file
+            )
+            console.print(f"[green]{result}[/green]")
+        except Exception as e:
+            console.print(f"[red]Error generating graph: {e}[/red]")
+            sys.exit(1)
+
     elif args.action == "questions":
         questions = manager.get_questions(status=args.status)
         if not questions:
@@ -3595,15 +3609,6 @@ def run_knowledge(args):
               console.print(f"[green]Answered question #{args.id}[/green]")
          else:
               console.print(f"[red]Question #{args.id} not found.[/red]")
-
-    elif args.action == "graph":
-        from shared.knowledge_graph import generate_knowledge_graph
-        result = generate_knowledge_graph(
-            project_dir=args.project_dir,
-            output_format=args.format,
-            output_file=Path(args.output) if args.output else None
-        )
-        print(result)
 
     sys.exit(0)
 

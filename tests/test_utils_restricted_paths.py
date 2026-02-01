@@ -74,5 +74,19 @@ class TestUtilsRestrictedPaths(unittest.IsolatedAsyncioTestCase):
         result = await execute_bash_block("ls -la", self.project_dir)
         self.assertNotIn("Error: Access denied", result)
 
+    async def test_api_collections_restricted(self):
+        # Create dummy collection file
+        (self.project_dir / ".agent_api_collections.json").write_text("{}")
+
+        # Try to read it
+        result = execute_read_block(".agent_api_collections.json", self.project_dir)
+        self.assertIn("Error: Access denied", result)
+        self.assertIn("restricted path", result)
+
+        # Try to cat it
+        result = await execute_bash_block("cat .agent_api_collections.json", self.project_dir)
+        self.assertIn("Error: Access denied", result)
+        self.assertIn("restricted path", result)
+
 if __name__ == "__main__":
     unittest.main()

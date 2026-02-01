@@ -102,7 +102,7 @@ class PluginManager:
         try:
             if source.startswith("http"):
                 # URL
-                response = requests.get(source)
+                response = requests.get(source, timeout=30)
                 response.raise_for_status()
                 filename = source.split("/")[-1]
                 if not filename.endswith(".py"):

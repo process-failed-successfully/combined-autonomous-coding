@@ -13851,6 +13851,7 @@ async def main():
         git_user = os.environ.get("GIT_USERNAME", "x-access-token")
         configure_git_auth(git_token, git_host, git_user)
 
+    print(f"DEBUG: agent={args.agent}, sprint={config.sprint_mode}")
     # Dispatch
     try:
         if config.sprint_mode:

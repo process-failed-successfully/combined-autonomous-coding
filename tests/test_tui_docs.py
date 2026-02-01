@@ -4,7 +4,13 @@ import tempfile
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 from textual.widgets import TextArea, DataTable, Button, RichLog
+from textual.containers import Container
 from shared.tui import AgentTUI, DocumentationTab
+
+# Mock tab to isolate DocumentationTab testing
+class MockTab(Container):
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
 
 class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -43,6 +49,71 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DebtCollector'),
             patch('shared.tui.SecurityAuditor'),
             patch('shared.tui.OptimizationManager'),
+
+            # Patch tabs to isolate testing and prevent ServicesTab error
+            patch('shared.tui.ServicesTab', MockTab),
+            patch('shared.tui.DashboardTab', MockTab),
+            patch('shared.tui.SystemMonitorTab', MockTab),
+            patch('shared.tui.TerminalTab', MockTab),
+            patch('shared.tui.DockerTab', MockTab),
+            patch('shared.tui.ChaosTab', MockTab),
+            patch('shared.tui.SchedulerTab', MockTab),
+            patch('shared.tui.ConfigTab', MockTab),
+            patch('shared.tui.IdeConfigTab', MockTab),
+            patch('shared.tui.ADRTab', MockTab),
+            patch('shared.tui.TestGenTab', MockTab),
+            patch('shared.tui.ScaffoldTab', MockTab),
+            patch('shared.tui.RefactorTab', MockTab),
+            patch('shared.tui.PlanTab', MockTab),
+            patch('shared.tui.InteractTab', MockTab),
+            patch('shared.tui.ResearchTab', MockTab),
+            patch('shared.tui.RecipesTab', MockTab),
+            patch('shared.tui.CodeReviewTab', MockTab),
+            patch('shared.tui.SearchTab', MockTab),
+            patch('shared.tui.TasksTab', MockTab),
+            patch('shared.tui.GanttTab', MockTab),
+            patch('shared.tui.StandupTab', MockTab),
+            patch('shared.tui.GitTab', MockTab),
+            patch('shared.tui.PullRequestsTab', MockTab),
+            patch('shared.tui.ConflictTab', MockTab),
+            patch('shared.tui.BisectTab', MockTab),
+            patch('shared.tui.ReleaseTab', MockTab),
+            patch('shared.tui.WorktreesTab', MockTab),
+            patch('shared.tui.DependenciesTab', MockTab),
+            patch('shared.tui.AnalyticsTab', MockTab),
+            patch('shared.tui.SecurityTab', MockTab),
+            patch('shared.tui.GuardrailsTab', MockTab),
+            patch('shared.tui.HealthTab', MockTab),
+            patch('shared.tui.ImpactTab', MockTab),
+            patch('shared.tui.TroubleshootTab', MockTab),
+            patch('shared.tui.SentinelTab', MockTab),
+            patch('shared.tui.KnowledgeTab', MockTab),
+            patch('shared.tui.FileExplorerTab', MockTab),
+            patch('shared.tui.DiskUsageTab', MockTab),
+            patch('shared.tui.CodeMapTab', MockTab),
+            patch('shared.tui.NetworkTab', MockTab),
+            patch('shared.tui.SnippetsTab', MockTab),
+            patch('shared.tui.ProfileTab', MockTab),
+            patch('shared.tui.SessionTab', MockTab),
+            patch('shared.tui.TimelineTab', MockTab),
+            patch('shared.tui.LogExplorerTab', MockTab),
+            patch('shared.tui.DataLabTab', MockTab),
+            patch('shared.tui.LogicLabTab', MockTab),
+            patch('shared.tui.DatabaseTab', MockTab),
+            patch('shared.tui.DatabaseDiagramTab', MockTab),
+            patch('shared.tui.SecretsTab', MockTab),
+            patch('shared.tui.EnvTab', MockTab),
+            patch('shared.tui.ApiLabTab', MockTab),
+            patch('shared.tui.SanitizerTab', MockTab),
+            patch('shared.tui.FrontendTab', MockTab),
+            patch('shared.tui.CostTab', MockTab),
+            patch('shared.tui.PlaygroundTab', MockTab),
+            patch('shared.tui.PromptLabTab', MockTab),
+            patch('shared.tui.PresentationTab', MockTab),
+            patch('shared.tui.QuizTab', MockTab),
+            patch('shared.tui.RegexLabTab', MockTab),
+            patch('shared.tui.CronLabTab', MockTab),
+            patch('shared.tui.DevToolsTab', MockTab),
         ]
         for p in self.patches:
             p.start()

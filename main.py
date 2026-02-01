@@ -76,6 +76,7 @@ from shared.serve import ServeManager
 from shared.network import run_network_logic
 from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
+from shared.cli_gantt import run_gantt_logic
 from shared.impact import ImpactAnalyzer
 import json
 import yaml
@@ -112,7 +113,8 @@ KNOWN_COMMANDS = [
     "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
-    "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab"
+    "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
+    "gantt"
 ]
 
 if FileSystemEventHandler:
@@ -126,6 +128,12 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_gantt(args):
+    """Generates an ASCII Gantt chart for the current sprint plan."""
+    project_dir = args.project_dir.resolve()
+    success = run_gantt_logic(project_dir)
+    sys.exit(0 if success else 1)
 
 def run_devtools(args):
     """Runs developer tools from CLI."""
@@ -10227,6 +10235,18 @@ def parse_args(argv=None):
     parser_sanitize_check.add_argument("--text", help="Text to check.")
     parser_sanitize_check.add_argument("--file", help="File to check.")
 
+    # --- New 'gantt' command ---
+    parser_gantt = subparsers.add_parser(
+        "gantt",
+        help="Visualize the sprint plan as a Gantt chart."
+    )
+    parser_gantt.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -13387,6 +13407,10 @@ async def main():
 
     if args.command == "sanitize":
         run_sanitize(args)
+        return
+
+    if args.command == "gantt":
+        run_gantt(args)
         return
 
     # Initialize Agent Client

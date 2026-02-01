@@ -5,6 +5,11 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from shared.plugin_manager import PluginManager
 
+# Mock textual widget for testing if textual is not installed
+class MockLabel:
+    def __init__(self, text):
+        self.text = text
+
 class TestPluginManager(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path("tests_temp_plugins")
@@ -12,12 +17,25 @@ class TestPluginManager(unittest.TestCase):
         self.plugin_dir = self.test_dir / ".agent_plugins"
         self.plugin_dir.mkdir(exist_ok=True)
 
-        # Copy fixture
-        fixture_path = Path("tests/fixtures/plugins/hello_plugin.py")
-        if fixture_path.exists():
-            shutil.copy(fixture_path, self.plugin_dir / "hello_plugin.py")
-        else:
-            self.fail("Fixture not found")
+        # Create fixture dynamically
+        fixture_content = """
+# Mock Label if textual not present, though in test env we might mock it
+class MockLabel:
+    def __init__(self, text):
+        self.text = text
+
+def run_hello(args):
+    print(f"Hello, {args.name}!")
+
+def register_cli(subparsers):
+    parser = subparsers.add_parser("hello", help="Prints hello")
+    parser.add_argument("name", help="Name to greet")
+    parser.set_defaults(run_plugin_func=run_hello)
+
+def register_tui():
+    return ("Hello", MockLabel("Hello from Plugin!"))
+"""
+        (self.plugin_dir / "hello_plugin.py").write_text(fixture_content)
 
     def tearDown(self):
         if self.test_dir.exists():

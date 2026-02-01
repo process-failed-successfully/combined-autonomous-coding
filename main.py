@@ -12853,7 +12853,8 @@ async def main():
     args = parse_args()
 
     # Handle Plugin commands
-    if hasattr(args, 'run_plugin_func'):
+    # Use vars(args) to avoid false positives with MagicMock in tests
+    if 'run_plugin_func' in vars(args):
         import inspect
         if inspect.iscoroutinefunction(args.run_plugin_func):
             await args.run_plugin_func(args)

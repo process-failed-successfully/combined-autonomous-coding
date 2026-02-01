@@ -115,7 +115,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro"
+    "gantt", "resume", "retro", "kanban"
 ]
 
 if FileSystemEventHandler:
@@ -134,6 +134,19 @@ def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
     project_dir = args.project_dir.resolve()
     success = run_gantt_logic(project_dir)
+    sys.exit(0 if success else 1)
+
+def run_kanban(args):
+    """Runs the Kanban board CLI."""
+    from shared.cli_kanban import run_kanban_logic
+    project_dir = args.project_dir.resolve()
+
+    # Determine action and args
+    action = args.action
+    task_id = args.task_id if hasattr(args, 'task_id') else None
+    status = args.status if hasattr(args, 'status') else None
+
+    success = run_kanban_logic(project_dir, action, task_id, status)
     sys.exit(0 if success else 1)
 
 async def run_resume(args):
@@ -10277,6 +10290,35 @@ def parse_args(argv=None):
         help="The project directory."
     )
 
+    # --- New 'kanban' command ---
+    parser_kanban = subparsers.add_parser(
+        "kanban",
+        help="Manage tasks with a Kanban board."
+    )
+    parser_kanban.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_kanban.set_defaults(action="view")
+
+    kanban_subparsers = parser_kanban.add_subparsers(
+        dest="action",
+        required=False,
+        help="Action to perform."
+    )
+
+    # kanban view
+    parser_kanban_view = kanban_subparsers.add_parser("view", help="View the Kanban board.")
+    parser_kanban_view.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
+    # kanban move
+    parser_kanban_move = kanban_subparsers.add_parser("move", help="Move a task to a new status.")
+    parser_kanban_move.add_argument("task_id", help="The ID of the task to move.")
+    parser_kanban_move.add_argument("status", help="The new status (todo, in_progress, done).")
+    parser_kanban_move.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+
     # --- New 'resume' command ---
     parser_resume = subparsers.add_parser(
         "resume",
@@ -13499,6 +13541,10 @@ async def main():
 
     if args.command == "gantt":
         run_gantt(args)
+        return
+
+    if args.command == "kanban":
+        run_kanban(args)
         return
 
     if args.command == "resume":

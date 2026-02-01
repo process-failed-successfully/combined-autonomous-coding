@@ -2,3 +2,8 @@
 **Vulnerability:** Found that `subprocess.CalledProcessError`'s string representation includes the full command arguments, including sensitive tokens. In `configure_git_auth`, this exception was being caught and logged blindly with `logger.error(f"... {e}")`, exposing the git auth token in logs.
 **Learning:** Generic exception logging (`except Exception as e: log(e)`) is dangerous when dealing with `subprocess` calls that involve secrets, because the exception object itself can carry the secret payload.
 **Prevention:** Always catch `subprocess.CalledProcessError` explicitly when running commands with secrets. Log `e.returncode` and `e.stderr` instead of `e` or `e.cmd`. Ensure `e.cmd` is never logged or printed if it contains secrets.
+
+## 2026-02-04 - [Shell Command Filtering Limitations]
+**Vulnerability:** The `execute_bash_block` utility restricts file access by checking arguments against a blocklist, but this is bypassed by shell features like `eval`, variables, and command substitution.
+**Learning:** Attempting to sanitize shell commands by banning keywords (like `eval` or `exec`) naively causes regressions by blocking benign string arguments (e.g., `git commit -m "fix eval"`). Static analysis of shell commands is unreliable without a full parser.
+**Prevention:** Rely on environment isolation (containers) or OS-level access controls rather than regex/keyword-based command filtering. For specific files (like `.agent_api_collections.json`), adding them to `RESTRICTED_PATHS` is effective for preventing accidental direct access but not malicious evasion.

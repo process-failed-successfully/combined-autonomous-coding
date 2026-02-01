@@ -99,7 +99,7 @@ def get_file_tree(root_dir: Path) -> str:
 IGNORED_DIRS = {".git", "node_modules", "__pycache__", ".venv", ".idea", ".vscode"}
 
 # Paths that agents are not allowed to read/write for security
-RESTRICTED_PATHS = {".git", ".github", ".ssh", ".aws", ".ds_store"}
+RESTRICTED_PATHS = {".git", ".github", ".ssh", ".aws", ".ds_store", ".agent_api_collections.json"}
 
 
 def is_restricted_path(path: Path, root_dir: Path) -> bool:

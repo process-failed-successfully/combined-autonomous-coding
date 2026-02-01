@@ -37,27 +37,30 @@ class LogParser:
 
         try:
             with open(log_path, "r", encoding="utf-8", errors="replace") as f:
-                lines = f.readlines()
+                current_entry = None
+                message_lines = []
 
-            current_entry = None
+                for line in f:
+                    match = self.LOG_PATTERN.match(line)
+                    if match:
+                        if current_entry:
+                            current_entry.message = "\n".join(message_lines)
+                            entries.append(current_entry)
 
-            for line in lines:
-                match = self.LOG_PATTERN.match(line)
-                if match:
-                    if current_entry:
-                        entries.append(current_entry)
-                    current_entry = LogEntry(
-                        timestamp=match.group(1),
-                        level=match.group(2),
-                        message=match.group(3)
-                    )
-                else:
-                    if current_entry:
-                        # Append continuation lines, preserving indentation but removing EOL
-                        current_entry.message += "\n" + line.rstrip('\n')
+                        current_entry = LogEntry(
+                            timestamp=match.group(1),
+                            level=match.group(2),
+                            message=""  # Will be set later
+                        )
+                        message_lines = [match.group(3)]
+                    else:
+                        if current_entry:
+                            # Append continuation lines, preserving indentation but removing EOL
+                            message_lines.append(line.rstrip('\n'))
 
-            if current_entry:
-                entries.append(current_entry)
+                if current_entry:
+                    current_entry.message = "\n".join(message_lines)
+                    entries.append(current_entry)
 
         except Exception as e:
             print(f"Error parsing log {log_path}: {e}")

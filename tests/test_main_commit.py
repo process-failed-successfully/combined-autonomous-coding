@@ -26,8 +26,9 @@ class TestCommitCommand(unittest.IsolatedAsyncioTestCase):
 
     @patch('builtins.input')
     @patch('shutil.which', return_value='/usr/bin/git')
+    @patch('pathlib.Path.is_dir', return_value=True)
     @patch('pathlib.Path.exists', return_value=True)
-    async def test_interactive_commit_basic(self, mock_path_exists, mock_which, mock_input):
+    async def test_interactive_commit_basic(self, mock_path_exists, mock_is_dir, mock_which, mock_input):
         # Arrange
         mock_input.side_effect = ['feat', 'cli', 'Add new commit command', '', 'n', 'y']
         args = argparse.Namespace(
@@ -57,8 +58,9 @@ class TestCommitCommand(unittest.IsolatedAsyncioTestCase):
 
     @patch('builtins.input')
     @patch('shutil.which', return_value='/usr/bin/git')
+    @patch('pathlib.Path.is_dir', return_value=True)
     @patch('pathlib.Path.exists', return_value=True)
-    async def test_non_interactive_commit(self, mock_path_exists, mock_which, mock_input):
+    async def test_non_interactive_commit(self, mock_path_exists, mock_is_dir, mock_which, mock_input):
         # Arrange
         commit_message = "feat: a regular commit"
         args = argparse.Namespace(

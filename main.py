@@ -12952,7 +12952,8 @@ async def main():
     args = parse_args()
 
     # Handle plugins and commands registered via set_defaults(func=...)
-    if hasattr(args, "func"):
+    # We use vars(args) to avoid triggering MagicMock auto-creation in tests
+    if "func" in vars(args):
         if inspect.iscoroutinefunction(args.func):
             await args.func(args)
         else:

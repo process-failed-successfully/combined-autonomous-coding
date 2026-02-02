@@ -81,6 +81,7 @@ from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
 from shared.plugin_manager import PluginManager
+from shared.port_manager import run_port_manager_cli
 import json
 import yaml
 import platformdirs
@@ -117,7 +118,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port"
 ]
 
 if FileSystemEventHandler:
@@ -131,6 +132,10 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_port(args):
+    """Manages network ports."""
+    run_port_manager_cli(args)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10418,6 +10423,36 @@ def parse_args(argv=None):
         help="Output format."
     )
 
+    # --- New 'port' command ---
+    parser_port = subparsers.add_parser(
+        "port",
+        help="Manage network ports (list, check, kill, wait)."
+    )
+    port_subparsers = parser_port.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # port list
+    parser_port_list = port_subparsers.add_parser("list", help="List listening ports.")
+    parser_port_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory (unused).")
+
+    # port check
+    parser_port_check = port_subparsers.add_parser("check", help="Check if a port is active.")
+    parser_port_check.add_argument("port", type=int, help="Port number.")
+
+    # port kill
+    parser_port_kill = port_subparsers.add_parser("kill", help="Kill process on port.")
+    parser_port_kill.add_argument("port", type=int, help="Port number.")
+    parser_port_kill.add_argument("--force", "-f", action="store_true", help="Force kill.")
+
+    # port wait
+    parser_port_wait = port_subparsers.add_parser("wait", help="Wait for port state.")
+    parser_port_wait.add_argument("port", type=int, help="Port number.")
+    parser_port_wait.add_argument("--state", choices=["free", "active"], default="free", help="State to wait for.")
+    parser_port_wait.add_argument("--timeout", type=int, default=30, help="Timeout in seconds.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13637,6 +13672,10 @@ async def main():
 
     if args.command == "smart-context":
         run_smart_context(args)
+        return
+
+    if args.command == "port":
+        run_port(args)
         return
 
     # Initialize Agent Client

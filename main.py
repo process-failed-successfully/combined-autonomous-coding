@@ -117,7 +117,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context"
+    "gantt", "resume", "retro", "kanban", "smart-context", "color-lab"
 ]
 
 if FileSystemEventHandler:
@@ -10094,6 +10094,36 @@ def parse_args(argv=None):
     parser_logic_table = logic_lab_subparsers.add_parser("table", help="Generate a truth table.")
     parser_logic_table.add_argument("--expression", "-e", required=True, help="Boolean expression (e.g. 'A and B').")
 
+    # --- New 'color-lab' command ---
+    parser_color_lab = subparsers.add_parser(
+        "color-lab",
+        help="Color utilities (contrast, palette, blindness simulation)."
+    )
+    color_lab_subparsers = parser_color_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # color-lab check
+    parser_color_check = color_lab_subparsers.add_parser("check", help="Check contrast ratio.")
+    parser_color_check.add_argument("--color1", help="First color (hex).")
+    parser_color_check.add_argument("--color2", help="Second color (hex).")
+
+    # color-lab palette
+    parser_color_palette = color_lab_subparsers.add_parser("palette", help="Generate a color palette.")
+    parser_color_palette.add_argument("--color", help="Base color (hex).")
+    parser_color_palette.add_argument("--type", choices=["complementary", "analogous", "triadic", "monochromatic"], default="complementary", help="Harmony type.")
+
+    # color-lab simulate
+    parser_color_sim = color_lab_subparsers.add_parser("simulate", help="Simulate color blindness.")
+    parser_color_sim.add_argument("--color", help="Color to simulate (hex).")
+    parser_color_sim.add_argument("--condition", choices=["protanopia", "deuteranopia", "tritanopia", "achromatopsia"], default="protanopia", help="Condition to simulate.")
+
+    # color-lab convert
+    parser_color_conv = color_lab_subparsers.add_parser("convert", help="Convert color formats.")
+    parser_color_conv.add_argument("--color", help="Color to convert (hex).")
+
     # --- New 'devtools' command ---
     parser_devtools = subparsers.add_parser(
         "devtools",
@@ -10893,6 +10923,70 @@ async def run_resolve(args):
         yes=args.yes
     )
     sys.exit(0 if success else 1)
+
+
+async def run_color_lab(args):
+    """Runs the Color Lab (Contrast, Palette, Blindness)."""
+    from shared.color_lab import ColorLabManager
+
+    manager = ColorLabManager()
+
+    if args.action == "check":
+        if not args.color1 or not args.color2:
+            print("Error: --color1 and --color2 are required.", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            result = manager.check_contrast(args.color1, args.color2)
+            print(f"Contrast Ratio: {result['ratio']}")
+            print(f"WCAG AA: {result['aa']}")
+            print(f"WCAG AAA: {result['aaa']}")
+            print(f"WCAG AA Large: {result['aa_large']}")
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "palette":
+        if not args.color:
+            print("Error: --color is required.", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            palette = manager.generate_palette(args.color, args.type)
+            print(f"Palette ({args.type}):")
+            for c in palette:
+                print(f"  {c}")
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "simulate":
+        if not args.color:
+            print("Error: --color is required.", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            simulated = manager.simulate_blindness(args.color, args.condition)
+            print(f"Original: {args.color}")
+            print(f"Simulated ({args.condition}): {simulated}")
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "convert":
+        if not args.color:
+            print("Error: --color is required.", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            conversions = manager.convert(args.color)
+            for k, v in conversions.items():
+                print(f"{k.upper()}: {v}")
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    sys.exit(0)
 
 
 async def run_logic_lab(args):
@@ -13524,6 +13618,10 @@ async def main():
 
     if args.command == "logic-lab":
         await run_logic_lab(args)
+        return
+
+    if args.command == "color-lab":
+        await run_color_lab(args)
         return
 
     if args.command == "cron-lab":

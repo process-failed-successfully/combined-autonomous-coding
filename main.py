@@ -78,6 +78,7 @@ from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
 from shared.retro import run_retro_logic
+from shared.badges import run_badges_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
 from shared.plugin_manager import PluginManager
@@ -117,7 +118,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context"
+    "gantt", "resume", "retro", "kanban", "badges", "smart-context"
 ]
 
 if FileSystemEventHandler:
@@ -10384,6 +10385,34 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'badges' command ---
+    parser_badges = subparsers.add_parser(
+        "badges",
+        help="Generate project status badges (Tests, Lint, Security, TODOs)."
+    )
+    parser_badges.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_badges.add_argument(
+        "--generate",
+        action="store_true",
+        default=True,
+        help="Generate badges (default action)."
+    )
+    parser_badges.add_argument(
+        "--update-readme",
+        action="store_true",
+        help="Inject badges into README.md."
+    )
+    parser_badges.add_argument(
+        "--json",
+        action="store_true",
+        help="Output badges as JSON."
+    )
+
     # --- New 'smart-context' command ---
     parser_smart_context = subparsers.add_parser(
         "smart-context",
@@ -13633,6 +13662,10 @@ async def main():
 
     if args.command == "retro":
         await run_retro(args)
+        return
+
+    if args.command == "badges":
+        run_badges_logic(args)
         return
 
     if args.command == "smart-context":

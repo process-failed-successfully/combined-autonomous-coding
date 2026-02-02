@@ -79,6 +79,7 @@ from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
+from shared.plugin_manager import PluginManager
 import json
 import yaml
 import platformdirs
@@ -10382,6 +10383,35 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- Plugin Registration ---
+    try:
+        # Attempt to resolve project_dir from argv early for plugin loading
+        # This is a best-effort check to support project-specific plugins before full parsing
+        plugin_project_dir = Path(".")
+        # Simple parsing of argv to find project dir
+        args_to_check = argv if argv is not None else sys.argv
+        if "-p" in args_to_check:
+            try:
+                idx = args_to_check.index("-p") + 1
+                if idx < len(args_to_check):
+                    plugin_project_dir = Path(args_to_check[idx])
+            except ValueError:
+                pass
+        if "--project-dir" in args_to_check:
+            try:
+                idx = args_to_check.index("--project-dir") + 1
+                if idx < len(args_to_check):
+                    plugin_project_dir = Path(args_to_check[idx])
+            except ValueError:
+                pass
+
+        plugin_manager = PluginManager(plugin_project_dir)
+        plugin_manager.load_plugins()
+        plugin_manager.register_cli(subparsers)
+    except Exception as e:
+        # Don't crash arg parsing if plugins fail
+        print(f"Warning: Failed to load plugins: {e}", file=sys.stderr)
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -12868,6 +12898,16 @@ def run_worktrees(args):
 
 async def main():
     args = parse_args()
+
+    # Handle Plugin commands
+    # Use vars(args) to avoid false positives with MagicMock in tests
+    if 'run_plugin_func' in vars(args):
+        import inspect
+        if inspect.iscoroutinefunction(args.run_plugin_func):
+            await args.run_plugin_func(args)
+        else:
+            args.run_plugin_func(args)
+        return
 
     # Handle `shell` command
     if args.command == "shell":

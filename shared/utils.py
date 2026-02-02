@@ -17,7 +17,7 @@ import hashlib
 import re
 import fnmatch
 import json
-from dataclasses import asdict, is_dataclass
+from dataclasses import is_dataclass
 
 if TYPE_CHECKING:
     from shared.config import Config
@@ -343,8 +343,14 @@ async def execute_search_block(query: str, cwd: Path) -> str:
     try:
         # Recursive, line number, context=2
         # Use exec to avoid shell injection
+
+        # Build exclusion list from IGNORED_DIRS
+        exclude_args = [f"--exclude-dir={d}" for d in sorted(IGNORED_DIRS)]
+
+        cmd = ["grep", "-rnC", "2"] + exclude_args + ["--", query, "."]
+
         process = await asyncio.create_subprocess_exec(
-            "grep", "-rnC", "2", "--", query, ".",
+            *cmd,
             cwd=cwd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE

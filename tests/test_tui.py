@@ -8,9 +8,10 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView
+from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView, Checkbox
 from textual.containers import Container
-from shared.tui import AgentTUI, DashboardTab, FileExplorerTab, InteractTab, KnowledgeTab
+from shared.tui import AgentTUI, DashboardTab, InteractTab, KnowledgeTab
+from shared.tui_explorer import FileExplorerTab
 from shared.tui_log_explorer import LogExplorerTab
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
@@ -93,6 +94,8 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check for DirectoryTree and RichLog (preview)
             self.assertIsInstance(explorer.query_one(DirectoryTree), DirectoryTree)
             self.assertIsInstance(explorer.query_one(RichLog), RichLog)
+            # Check for Hex View Checkbox
+            self.assertIsInstance(explorer.query_one("#chk-hex-view"), Checkbox)
 
     @patch("shared.tui.ServicesTab")
     @patch("shared.tui_log_explorer.get_all_log_files")
@@ -239,6 +242,16 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         MockAgentTUI.assert_called_with(project_dir=self.project_dir)
         MockAgentTUI.return_value.run.assert_called_once()
         mock_exit.assert_called_with(0)
+
+    def test_file_explorer_hex_view(self):
+        """Test file explorer hex view logic."""
+        tab = FileExplorerTab(self.project_dir)
+
+        # Test hexdump
+        data = b"Hello World"
+        dump = tab.hexdump(data)
+        self.assertIn("48 65 6c 6c 6f", dump) # Hex for Hello
+        self.assertIn("|Hello World|", dump)
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,3 +7,8 @@
 **Vulnerability:** The `execute_bash_block` utility restricts file access by checking arguments against a blocklist, but this is bypassed by shell features like `eval`, variables, and command substitution.
 **Learning:** Attempting to sanitize shell commands by banning keywords (like `eval` or `exec`) naively causes regressions by blocking benign string arguments (e.g., `git commit -m "fix eval"`). Static analysis of shell commands is unreliable without a full parser.
 **Prevention:** Rely on environment isolation (containers) or OS-level access controls rather than regex/keyword-based command filtering. For specific files (like `.agent_api_collections.json`), adding them to `RESTRICTED_PATHS` is effective for preventing accidental direct access but not malicious evasion.
+
+## 2026-10-26 - [Command Substitution Bypass in Restricted Shell]
+**Vulnerability:** The `execute_bash_block` function's static path restriction check was easily bypassed using command substitution (e.g., `cat $(echo .git)/config`). The static check analyzed arguments but failed to account for dynamic shell expansion.
+**Learning:** Static analysis of shell commands is inherently flawed because the shell evaluates arguments *after* parsing. Blocking only static paths is insufficient if the shell can generate paths dynamically.
+**Prevention:** Block command substitution operators `$(...)`, `` `...` `` and process substitution `<(...)` in arguments when relying on static analysis for path restriction. While not a complete sandbox, it raises the bar significantly against trivial bypasses.

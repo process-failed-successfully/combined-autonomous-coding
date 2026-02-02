@@ -200,6 +200,17 @@ async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) ->
             if arg in ["&&", "||", ";", "|", ">", ">>", "<"]:
                 continue
 
+            # Security Check: Reject dangerous shell patterns in arguments
+            if "$(" in arg or "`" in arg:
+                error_msg = f"Error: Access denied. Command substitution not allowed in arguments: '{arg}'."
+                logger.warning(error_msg)
+                return error_msg
+
+            if "<(" in arg:
+                error_msg = f"Error: Access denied. Process substitution not allowed in arguments: '{arg}'."
+                logger.warning(error_msg)
+                return error_msg
+
             try:
                 # Construct potential path relative to cwd
                 path_to_check = (cwd / arg).resolve()

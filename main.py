@@ -79,6 +79,7 @@ from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
+from shared.smart_context import run_smart_context
 from shared.plugin_manager import PluginManager
 import json
 import yaml
@@ -116,7 +117,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban"
+    "gantt", "resume", "retro", "kanban", "smart-context"
 ]
 
 if FileSystemEventHandler:
@@ -10383,6 +10384,40 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'smart-context' command ---
+    parser_smart_context = subparsers.add_parser(
+        "smart-context",
+        help="Generate a dependency-aware context bundle for a file."
+    )
+    parser_smart_context.add_argument(
+        "file",
+        help="Target file to analyze."
+    )
+    parser_smart_context.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_smart_context.add_argument(
+        "--depth",
+        type=int,
+        default=1,
+        help="Depth of import analysis (default: 1)."
+    )
+    parser_smart_context.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Limit for history/coupling analysis (default: 10)."
+    )
+    parser_smart_context.add_argument(
+        "-o", "--output",
+        choices=["text", "json"],
+        default="text",
+        help="Output format."
+    )
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13598,6 +13633,10 @@ async def main():
 
     if args.command == "retro":
         await run_retro(args)
+        return
+
+    if args.command == "smart-context":
+        run_smart_context(args)
         return
 
     # Initialize Agent Client

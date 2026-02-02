@@ -89,6 +89,7 @@ from shared.tui_sanitizer import SanitizerTab
 from shared.tui_gantt import GanttTab
 from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
+from shared.tui_explorer import FileExplorerTab
 from shared.plugin_manager import PluginManager
 
 
@@ -416,35 +417,6 @@ class DashboardTab(Container):
         else:
             history_log.write("No history found.")
 
-class FileExplorerTab(Container):
-    """Tab for browsing files."""
-
-    def __init__(self, project_dir: Path, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.project_dir = project_dir
-
-    def compose(self) -> ComposeResult:
-        with Horizontal():
-            with Vertical(id="left-pane"):
-                yield DirectoryTree(str(self.project_dir), id="file-tree")
-            with Vertical(id="right-pane"):
-                yield RichLog(id="file-preview", wrap=True, highlight=True, markup=True)
-
-    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
-        preview = self.query_one("#file-preview", RichLog)
-        preview.clear()
-        preview.write(f"[bold]{event.path}[/bold]\n")
-        try:
-            # Limit file size for preview
-            if event.path.stat().st_size > 100 * 1024:
-                preview.write("File too large to preview.")
-                return
-
-            with open(event.path, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read()
-                preview.write(content)
-        except Exception as e:
-            preview.write(f"Error reading file: {e}")
 
 class CodeMapTab(Container):
     """Tab for visualizing project structure (Classes, Functions)."""

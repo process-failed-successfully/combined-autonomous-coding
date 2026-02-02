@@ -117,7 +117,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port"
 ]
 
 if FileSystemEventHandler:
@@ -131,6 +131,51 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_port(args):
+    """Manages network ports."""
+    from shared.port_manager import PortManager
+
+    if args.action == "check":
+        info = PortManager.get_process_on_port(args.port)
+        if info:
+            print(f"❌ Port {args.port} is in use.")
+            print(f"   Process: {info['name']} (PID: {info['pid']})")
+            print(f"   User:    {info['username']}")
+            print(f"   Command: {info['cmdline']}")
+            sys.exit(1)
+        else:
+            print(f"✅ Port {args.port} is free.")
+            sys.exit(0)
+
+    elif args.action == "list":
+        ports = PortManager.list_listening_ports()
+        if not ports:
+            print("No listening ports found.")
+            sys.exit(0)
+
+        print(f"{'Port':<8} | {'PID':<8} | {'User':<15} | {'Process'}")
+        print("-" * 50)
+        for p in ports:
+            print(f"{p['port']:<8} | {p['pid'] or '?':<8} | {p['username'] or '?':<15} | {p['name']}")
+        sys.exit(0)
+
+    elif args.action == "kill":
+        if PortManager.kill_process_on_port(args.port, force=args.force):
+            print(f"✅ Process on port {args.port} killed.")
+            sys.exit(0)
+        else:
+            print(f"❌ Failed to kill process on port {args.port}. It might not exist or you lack permission.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "wait":
+        print(f"Waiting for port {args.port} to be {args.state} (timeout: {args.timeout}s)...")
+        if PortManager.wait_for_port(args.port, state=args.state, timeout=args.timeout):
+            print(f"✅ Port {args.port} is {args.state}.")
+            sys.exit(0)
+        else:
+            print(f"❌ Timeout waiting for port {args.port}.", file=sys.stderr)
+            sys.exit(1)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10418,6 +10463,35 @@ def parse_args(argv=None):
         help="Output format."
     )
 
+    # --- New 'port' command ---
+    parser_port = subparsers.add_parser(
+        "port",
+        help="Manage network ports (check, list, kill)."
+    )
+    port_subparsers = parser_port.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # port list
+    parser_port_list = port_subparsers.add_parser("list", help="List listening ports.")
+
+    # port check
+    parser_port_check = port_subparsers.add_parser("check", help="Check if a port is in use.")
+    parser_port_check.add_argument("port", type=int, help="Port number.")
+
+    # port kill
+    parser_port_kill = port_subparsers.add_parser("kill", help="Kill process on port.")
+    parser_port_kill.add_argument("port", type=int, help="Port number.")
+    parser_port_kill.add_argument("-f", "--force", action="store_true", help="Force kill.")
+
+    # port wait
+    parser_port_wait = port_subparsers.add_parser("wait", help="Wait for port state.")
+    parser_port_wait.add_argument("port", type=int, help="Port number.")
+    parser_port_wait.add_argument("state", choices=["open", "closed"], help="State to wait for.")
+    parser_port_wait.add_argument("-t", "--timeout", type=int, default=30, help="Timeout in seconds.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13625,6 +13699,10 @@ async def main():
 
     if args.command == "kanban":
         run_kanban(args)
+        return
+
+    if args.command == "port":
+        run_port(args)
         return
 
     if args.command == "resume":

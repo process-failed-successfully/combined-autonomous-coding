@@ -85,6 +85,7 @@ from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
+from shared.tui_i18n import I18nTab
 from shared.tui_sanitizer import SanitizerTab
 from shared.tui_gantt import GanttTab
 from shared.tui_ide_config import IdeConfigTab
@@ -4101,6 +4102,8 @@ class AgentTUI(App):
                 yield SanitizerTab(self.project_dir)
             with TabPane("Frontend", id="tab-frontend"):
                 yield FrontendTab(self.project_dir)
+            with TabPane("i18n", id="tab-i18n"):
+                yield I18nTab(self.project_dir)
             with TabPane("Cost", id="tab-cost"):
                 yield CostTab(self.project_dir)
             with TabPane("Playground", id="tab-playground"):

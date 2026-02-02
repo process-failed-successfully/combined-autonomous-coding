@@ -104,7 +104,7 @@ Source JSON:
 
         try:
             source_content = json.loads(source_file.read_text(encoding="utf-8"))
-            source_keys = set(self._flatten_keys(source_content))
+            source_keys = set(self.flatten_keys(source_content))
         except Exception as e:
             return {"error": [f"Error reading source file: {e}"]}
 
@@ -118,7 +118,7 @@ Source JSON:
 
             try:
                 target_content = json.loads(target_file.read_text(encoding="utf-8"))
-                target_keys = set(self._flatten_keys(target_content))
+                target_keys = set(self.flatten_keys(target_content))
 
                 missing = list(source_keys - target_keys)
                 extra = list(target_keys - source_keys)
@@ -143,12 +143,12 @@ Source JSON:
         response = re.sub(r"```$", "", response, flags=re.MULTILINE)
         return response.strip()
 
-    def _flatten_keys(self, d: Dict[str, Any], parent_key: str = '') -> List[str]:
+    def flatten_keys(self, d: Dict[str, Any], parent_key: str = '') -> List[str]:
         items = []
         for k, v in d.items():
             new_key = f"{parent_key}.{k}" if parent_key else k
             if isinstance(v, dict):
-                items.extend(self._flatten_keys(v, new_key))
+                items.extend(self.flatten_keys(v, new_key))
             else:
                 items.append(new_key)
         return items

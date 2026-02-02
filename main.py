@@ -77,6 +77,7 @@ from shared.network import run_network_logic
 from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
+from shared.port_manager import run_port_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
@@ -117,7 +118,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port"
 ]
 
 if FileSystemEventHandler:
@@ -136,6 +137,25 @@ def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
     project_dir = args.project_dir.resolve()
     success = run_gantt_logic(project_dir)
+    sys.exit(0 if success else 1)
+
+def run_port(args):
+    """Runs the port manager CLI."""
+    project_dir = args.project_dir.resolve()
+
+    # Extract kwargs
+    kwargs = {}
+    if hasattr(args, 'state'):
+        kwargs['state'] = args.state
+    if hasattr(args, 'timeout'):
+        kwargs['timeout'] = args.timeout
+
+    success = run_port_logic(
+        project_dir,
+        args.action,
+        port=getattr(args, 'port_num', None),
+        **kwargs
+    )
     sys.exit(0 if success else 1)
 
 def run_kanban(args):
@@ -7651,6 +7671,40 @@ def parse_args(argv=None):
         help="The project directory."
     )
 
+    # --- New 'port' command ---
+    parser_port = subparsers.add_parser(
+        "port",
+        help="Manage network ports (list, check, kill, wait)."
+    )
+    parser_port.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    port_subparsers = parser_port.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # port list
+    port_subparsers.add_parser("list", help="List all listening ports.")
+
+    # port check
+    parser_port_check = port_subparsers.add_parser("check", help="Check if a port is in use.")
+    parser_port_check.add_argument("port_num", type=int, help="Port number.")
+
+    # port kill
+    parser_port_kill = port_subparsers.add_parser("kill", help="Kill the process on a port.")
+    parser_port_kill.add_argument("port_num", type=int, help="Port number.")
+
+    # port wait
+    parser_port_wait = port_subparsers.add_parser("wait", help="Wait for a port state.")
+    parser_port_wait.add_argument("port_num", type=int, help="Port number.")
+    parser_port_wait.add_argument("--state", choices=["free", "used"], default="free", help="State to wait for (default: free).")
+    parser_port_wait.add_argument("--timeout", type=float, default=30.0, help="Timeout in seconds (default: 30).")
+
     # --- New 'quiz' command ---
     parser_quiz = subparsers.add_parser(
         "quiz",
@@ -13621,6 +13675,10 @@ async def main():
 
     if args.command == "gantt":
         run_gantt(args)
+        return
+
+    if args.command == "port":
+        run_port(args)
         return
 
     if args.command == "kanban":

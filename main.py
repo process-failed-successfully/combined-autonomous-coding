@@ -77,6 +77,7 @@ from shared.network import run_network_logic
 from shared.scheduler import Scheduler
 from shared.chaos import run_chaos_logic
 from shared.cli_gantt import run_gantt_logic
+from shared.color_lab import run_color_lab_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
@@ -117,7 +118,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context", "port"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab"
 ]
 
 if FileSystemEventHandler:
@@ -181,6 +182,11 @@ def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
     project_dir = args.project_dir.resolve()
     success = run_gantt_logic(project_dir)
+    sys.exit(0 if success else 1)
+
+def run_color_lab(args):
+    """Runs the Color Lab CLI."""
+    success = run_color_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_kanban(args):
@@ -10492,6 +10498,36 @@ def parse_args(argv=None):
     parser_port_wait.add_argument("state", choices=["open", "closed"], help="State to wait for.")
     parser_port_wait.add_argument("-t", "--timeout", type=int, default=30, help="Timeout in seconds.")
 
+    # --- New 'color-lab' command ---
+    parser_color_lab = subparsers.add_parser(
+        "color-lab",
+        help="Color utilities (convert, contrast, palette, blindness)."
+    )
+    color_lab_subparsers = parser_color_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # color-lab convert
+    parser_cl_convert = color_lab_subparsers.add_parser("convert", help="Convert color formats.")
+    parser_cl_convert.add_argument("--color", required=True, help="Color (hex, rgb, hsl).")
+
+    # color-lab contrast
+    parser_cl_contrast = color_lab_subparsers.add_parser("contrast", help="Check contrast ratio.")
+    parser_cl_contrast.add_argument("--color1", required=True, help="First color.")
+    parser_cl_contrast.add_argument("--color2", required=True, help="Second color.")
+
+    # color-lab palette
+    parser_cl_palette = color_lab_subparsers.add_parser("palette", help="Generate color palette.")
+    parser_cl_palette.add_argument("--color", required=True, help="Seed color.")
+    parser_cl_palette.add_argument("--scheme", choices=["complementary", "analogous", "triadic", "monochromatic"], required=True, help="Palette scheme.")
+
+    # color-lab blindness
+    parser_cl_blindness = color_lab_subparsers.add_parser("blindness", help="Simulate color blindness.")
+    parser_cl_blindness.add_argument("--color", required=True, help="Input color.")
+    parser_cl_blindness.add_argument("--type", choices=["protanopia", "deuteranopia", "tritanopia"], required=True, help="Blindness type.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13703,6 +13739,10 @@ async def main():
 
     if args.command == "port":
         run_port(args)
+        return
+
+    if args.command == "color-lab":
+        run_color_lab(args)
         return
 
     if args.command == "resume":

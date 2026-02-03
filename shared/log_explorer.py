@@ -39,24 +39,39 @@ class LogParser:
             with open(log_path, "r", encoding="utf-8", errors="replace") as f:
                 current_entry = None
                 message_lines = []
+                valid_levels = {"INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL", "TRACE", "FATAL"}
 
                 for line in f:
-                    match = self.LOG_PATTERN.match(line)
-                    if match:
-                        if current_entry:
-                            current_entry.message = "\n".join(message_lines)
-                            entries.append(current_entry)
+                    # Optimized parsing: manual string slicing is faster than regex for this simple pattern
+                    # Pattern: HH:MM:SS - LEVEL - Message
+                    # Timestamp is 8 chars, followed by ' - ' (3 chars)
+                    if len(line) > 14 and line[8:11] == " - ":
+                        try:
+                            # Find the second separator
+                            level_end = line.index(" - ", 11)
+                            level = line[11:level_end]
 
-                        current_entry = LogEntry(
-                            timestamp=match.group(1),
-                            level=match.group(2),
-                            message=""  # Will be set later
-                        )
-                        message_lines = [match.group(3)]
-                    else:
-                        if current_entry:
-                            # Append continuation lines, preserving indentation but removing EOL
-                            message_lines.append(line.rstrip('\n'))
+                            if level in valid_levels:
+                                if current_entry:
+                                    current_entry.message = "\n".join(message_lines)
+                                    entries.append(current_entry)
+
+                                current_entry = LogEntry(
+                                    timestamp=line[:8],
+                                    level=level,
+                                    message=""  # Will be set later
+                                )
+                                # Slice the message part and strip trailing newline
+                                message_lines = [line[level_end+3:].rstrip('\n')]
+                                continue
+                        except ValueError:
+                            # " - " not found after level start, or other parsing error
+                            pass
+
+                    # Not a header, treat as continuation
+                    if current_entry:
+                        # Append continuation lines, preserving indentation but removing EOL
+                        message_lines.append(line.rstrip('\n'))
 
                 if current_entry:
                     current_entry.message = "\n".join(message_lines)

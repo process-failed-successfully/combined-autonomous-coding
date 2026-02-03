@@ -80,6 +80,7 @@ from shared.cli_gantt import run_gantt_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
+from shared.docs_generator import run_docs as run_docs_command
 from shared.plugin_manager import PluginManager
 import json
 import yaml
@@ -117,7 +118,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "docs"
 ]
 
 if FileSystemEventHandler:
@@ -10534,6 +10535,43 @@ def parse_args(argv=None):
     parser_cl_conv = color_lab_subparsers.add_parser("convert", help="Convert color formats.")
     parser_cl_conv.add_argument("color", help="Color to convert.")
 
+    # --- New 'docs' command ---
+    parser_docs = subparsers.add_parser(
+        "docs",
+        help="Generate a static documentation site for the project."
+    )
+    parser_docs.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+    parser_docs.add_argument(
+        "-o", "--output",
+        help="Output directory for the site."
+    )
+    docs_subparsers = parser_docs.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # docs build
+    parser_docs_build = docs_subparsers.add_parser("build", help="Build the documentation site.")
+    parser_docs_build.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+    parser_docs_build.add_argument("-o", "--output", help="Output directory.")
+
+    # docs serve
+    parser_docs_serve = docs_subparsers.add_parser("serve", help="Serve the documentation site.")
+    parser_docs_serve.add_argument("--port", type=int, default=8000, help="Port to serve on.")
+    parser_docs_serve.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+    parser_docs_serve.add_argument("-o", "--output", help="Output directory.")
+
+    # docs clean
+    parser_docs_clean = docs_subparsers.add_parser("clean", help="Clean the documentation site.")
+    parser_docs_clean.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="The project directory.")
+    parser_docs_clean.add_argument("-o", "--output", help="Output directory.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13749,6 +13787,10 @@ async def main():
 
     if args.command == "color-lab":
         run_color_lab(args)
+        return
+
+    if args.command == "docs":
+        run_docs_command(args)
         return
 
     if args.command == "resume":

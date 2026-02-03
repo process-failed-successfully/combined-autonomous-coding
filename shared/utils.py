@@ -223,9 +223,11 @@ async def execute_bash_block(command: str, cwd: Path, timeout: float = 120.0) ->
             except Exception:
                 # If path resolution fails, ignore
                 continue
-    except ValueError:
-        # shlex parsing failed (e.g. unclosed quote). Let bash handle it.
-        pass
+    except ValueError as e:
+        # shlex parsing failed (e.g. unclosed quote). Fail secure.
+        error_msg = f"Error: Command parsing failed: {e}. Execution blocked for security."
+        logger.warning(error_msg)
+        return error_msg
 
     try:
         process = await asyncio.create_subprocess_shell(

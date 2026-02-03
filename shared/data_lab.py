@@ -1,7 +1,7 @@
 import json
 import yaml
 import csv
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Union
@@ -12,7 +12,7 @@ class DataLabManager:
     Supported formats: JSON, YAML, CSV (limited), XML (limited).
     """
 
-    def __init__(self, project_dir: Path = None):
+    def __init__(self, project_dir: Optional[Path] = None):
         self.project_dir = project_dir or Path(".")
 
     def load_data(self, file_path: Path) -> Any:
@@ -110,9 +110,9 @@ class DataLabManager:
                     self._dict_to_xml(root, content)
                     # Use standard library tostring, but it returns bytes or string depending on encoding
                     # We want string
-                    from xml.etree import ElementTree
-                    # indent provided in python 3.9+ for tostring? No, only write.
-                    # We'll just return raw XML string for now, or basic
+                    # Use standard library tostring, but it returns bytes or string depending on encoding
+                    # We want string
+                    # defusedxml does not have tostring, so we use the safe ET we imported
                     return ET.tostring(root, encoding='unicode')
                 else:
                     raise ValueError("Data must be a dictionary for XML conversion.")
@@ -178,12 +178,12 @@ class DataLabManager:
             return level
         return max(self._get_depth(v, level + 1) for k, v in d.items())
 
-    def _xml_to_dict(self, element) -> Dict[str, Any]:
-        result = {}
+    def _xml_to_dict(self, element) -> Any:
+        result: Dict[str, Any] = {}
         for child in element:
             child_data = self._xml_to_dict(child)
             if child.tag in result:
-                if type(result[child.tag]) is list:
+                if isinstance(result[child.tag], list):
                     result[child.tag].append(child_data)
                 else:
                     result[child.tag] = [result[child.tag], child_data]
@@ -223,8 +223,8 @@ def run_data_lab_logic(args):
         target_format = args.target_format
 
         try:
-            result = manager.convert(source, target_format, output)
-            print(result)
+            convert_result = manager.convert(source, target_format, output)
+            print(convert_result)
         except Exception as e:
             print(f"❌ Error: {e}", file=sys.stderr)
             sys.exit(1)
@@ -233,19 +233,19 @@ def run_data_lab_logic(args):
         file_path = Path(args.file)
         schema_path = Path(args.schema) if args.schema else None
 
-        result = manager.validate(file_path, schema_path)
-        if result["valid"]:
-            print(f"✅ {result['message']}")
+        validate_result = manager.validate(file_path, schema_path)
+        if validate_result["valid"]:
+            print(f"✅ {validate_result['message']}")
         else:
-            print(f"❌ {result['message']}", file=sys.stderr)
+            print(f"❌ {validate_result['message']}", file=sys.stderr)
             sys.exit(1)
 
     elif args.action == "info":
         file_path = Path(args.file)
         try:
-            info = manager.get_info(file_path)
+            info_dict = manager.get_info(file_path)
             print(f"--- Data Info: {file_path.name} ---")
-            for k, v in info.items():
+            for k, v in info_dict.items():
                 print(f"  {k}: {v}")
         except Exception as e:
             print(f"❌ Error: {e}", file=sys.stderr)

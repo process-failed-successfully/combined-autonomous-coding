@@ -63,3 +63,4 @@ commit_parser = "angular"
 check_untyped_defs = true
 disallow_any_generics = true
 ignore_missing_imports = true
+exclude = ["build/"]

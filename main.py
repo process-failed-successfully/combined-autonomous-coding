@@ -71,6 +71,7 @@ from shared.sentinel import Sentinel
 from shared.work_session import WorkSessionManager
 from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
+from shared.data_lab import run_data_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
@@ -115,7 +116,7 @@ KNOWN_COMMANDS = [
     "bisect", "map", "architecture", "arch", "release", "openapi", "docstring", "refactor",
     "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
-    "api-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
+    "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab"
 ]
@@ -183,6 +184,11 @@ def run_color_lab(args):
     # Convert args to dict
     args_dict = vars(args)
     run_color_lab_logic(**args_dict)
+    sys.exit(0)
+
+def run_data_lab(args):
+    """Runs the Data Lab utilities."""
+    run_data_lab_logic(args)
     sys.exit(0)
 
 def run_gantt(args):
@@ -10534,6 +10540,33 @@ def parse_args(argv=None):
     parser_cl_conv = color_lab_subparsers.add_parser("convert", help="Convert color formats.")
     parser_cl_conv.add_argument("color", help="Color to convert.")
 
+    # --- New 'data-lab' command ---
+    parser_data_lab = subparsers.add_parser(
+        "data-lab",
+        help="Data utilities (convert, validate, info)."
+    )
+    parser_data_lab.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    data_lab_subparsers = parser_data_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # data-lab convert
+    parser_dl_convert = data_lab_subparsers.add_parser("convert", help="Convert data file format.")
+    parser_dl_convert.add_argument("source", help="Source file path.")
+    parser_dl_convert.add_argument("target_format", choices=["json", "yaml", "csv", "xml"], help="Target format.")
+    parser_dl_convert.add_argument("-o", "--output", help="Output file path (default: stdout).")
+
+    # data-lab validate
+    parser_dl_validate = data_lab_subparsers.add_parser("validate", help="Validate data file.")
+    parser_dl_validate.add_argument("file", help="File to validate.")
+    parser_dl_validate.add_argument("--schema", help="JSON Schema file path (for JSON files).")
+
+    # data-lab info
+    parser_dl_info = data_lab_subparsers.add_parser("info", help="Show data statistics.")
+    parser_dl_info.add_argument("file", help="File to analyze.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13676,6 +13709,10 @@ async def main():
 
     if args.command == "api-lab":
         run_api_lab_cli(args)
+        return
+
+    if args.command == "data-lab":
+        run_data_lab(args)
         return
 
     if args.command == "research":

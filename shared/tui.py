@@ -14,7 +14,7 @@ from textual.binding import Binding
 from textual import on
 from rich.syntax import Syntax
 
-from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
+from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files, get_suggestions, parse_metrics, find_metrics_file
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 from shared.plan import run_plan_logic
@@ -368,28 +368,45 @@ class DashboardTab(Container):
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
-            yield Label("Welcome to Mission Control", classes="welcome-text")
+            yield Label("Mission Control", classes="welcome-text")
 
-            # Project Info
-            with Container(classes="stat-box"):
-                yield Label(f"[bold]Project:[/bold] {self.project_dir.name}")
-                yield Label(f"[bold]Path:[/bold] {self.project_dir}")
+            # Top Row: Health & Workflow & Git
+            with Horizontal(classes="stat-box-row"):
+                with Container(classes="stat-box", id="dash-health-box"):
+                    yield Label("[bold]Project Health[/bold]")
+                    yield Label("Loading...", id="dash-health-lbl")
 
-            # Git Status
-            git_info = get_git_info(self.project_dir)
-            with Container(classes="stat-box"):
-                yield Label(f"[bold]Git Branch:[/bold] {git_info['branch']}")
-                yield Label(f"[bold]Git Status:[/bold] {git_info['status']}")
+                with Container(classes="stat-box", id="dash-workflow-box"):
+                    yield Label("[bold]Workflow Stage[/bold]")
+                    stage = get_workflow_stage(self.project_dir)
+                    yield Label(f"[bold green]{stage}[/bold green]", id="dash-stage-lbl")
 
-            # Workflow Stage
-            stage = get_workflow_stage(self.project_dir)
-            with Container(classes="stat-box"):
-                yield Label(f"[bold]Workflow Stage:[/bold] {stage}")
+                with Container(classes="stat-box", id="dash-git-box"):
+                    yield Label("[bold]Git Status[/bold]")
+                    git_info = get_git_info(self.project_dir)
+                    yield Label(f"Branch: {git_info['branch']}")
+                    yield Label(f"Status: {git_info['status']}")
 
-            # Recent History
+            # Second Row: Task Summary & Suggestions
+            with Horizontal(classes="stat-box-row"):
+                with Container(classes="stat-box", id="dash-tasks-box"):
+                    yield Label("[bold]Task Summary[/bold]")
+                    yield Label("Loading...", id="dash-tasks-lbl")
+                    yield Button("View Board", id="btn-goto-tasks", variant="default")
+
+                with Container(classes="stat-box", id="dash-suggest-box"):
+                    yield Label("[bold]Recommended Actions[/bold]")
+                    yield ListView(id="dash-suggest-list")
+
+            # Third Row: Metrics Chart
             with Container(classes="stat-box"):
-                yield Label("[bold]Recent Agent Runs[/bold]")
-                yield RichLog(id="history-log")
+                yield Label("[bold]Recent Activity (Tokens)[/bold]")
+                yield RichLog(id="dash-chart-log", wrap=False, highlight=False, height=10)
+
+            # Fourth Row: Recent Logs
+            with Container(classes="stat-box"):
+                yield Label("[bold]Recent Runs[/bold]")
+                yield RichLog(id="history-log", height=8)
 
             # Quick Actions
             with Container(classes="stat-box"):
@@ -400,7 +417,14 @@ class DashboardTab(Container):
                     yield Button("Refresh", id="btn-refresh", variant="success")
 
     def on_mount(self) -> None:
+        self.refresh_dashboard()
+
+    def refresh_dashboard(self) -> None:
         self.update_history()
+        self.update_health()
+        self.update_tasks()
+        self.update_suggestions()
+        self.update_chart()
 
     def update_history(self) -> None:
         history_log = self.query_one("#history-log", RichLog)
@@ -409,7 +433,6 @@ class DashboardTab(Container):
         if history_file.exists():
             try:
                 with open(history_file, "r") as f:
-                    # Get last 5 lines
                     lines = f.readlines()
                     for line in reversed(lines[-5:]):
                         history_log.write(line.strip())
@@ -417,6 +440,100 @@ class DashboardTab(Container):
                 history_log.write("Error reading history.")
         else:
             history_log.write("No history found.")
+
+    def update_health(self) -> None:
+        import asyncio
+        asyncio.create_task(self._async_update_health())
+
+    async def _async_update_health(self) -> None:
+        import asyncio
+        import contextlib
+        import io
+
+        def calc():
+            f = io.StringIO()
+            with contextlib.redirect_stdout(f):
+                c = HealthCalculator(self.project_dir)
+                c.calculate()
+            return c
+
+        try:
+            calc = await asyncio.to_thread(calc)
+            grade_color = "green" if calc.grade == "A" else "yellow" if calc.grade in "BC" else "red"
+            self.query_one("#dash-health-lbl", Label).update(f"Grade: [bold {grade_color}]{calc.grade}[/] ({calc.score:.0f}/100)")
+        except Exception:
+            self.query_one("#dash-health-lbl", Label).update("Health Check Error")
+
+    def update_tasks(self) -> None:
+        import asyncio
+        asyncio.create_task(self._async_update_tasks())
+
+    async def _async_update_tasks(self) -> None:
+        import asyncio
+        tm = TaskManager(self.project_dir)
+        try:
+            tasks = await asyncio.to_thread(tm.fetch_all_tasks)
+            todo = sum(1 for t in tasks if t.status.lower() in ["todo", "open"])
+            doing = sum(1 for t in tasks if t.status.lower() in ["in progress", "doing"])
+            done = sum(1 for t in tasks if t.status.lower() in ["done", "completed", "closed"])
+
+            text = f"Todo: {todo} | Doing: {doing} | Done: {done}"
+            self.query_one("#dash-tasks-lbl", Label).update(text)
+        except Exception:
+            self.query_one("#dash-tasks-lbl", Label).update("Error loading tasks")
+
+    def update_suggestions(self) -> None:
+        lst = self.query_one("#dash-suggest-list", ListView)
+        lst.clear()
+
+        suggs = get_suggestions(self.project_dir, limit=3)
+        if suggs:
+            for s in suggs:
+                lst.append(ListItem(Label(f"👉 {s['reason']}")))
+        else:
+            lst.append(ListItem(Label("No immediate actions suggested.")))
+
+    def update_chart(self) -> None:
+        import asyncio
+        asyncio.create_task(self._async_update_chart())
+
+    async def _async_update_chart(self) -> None:
+        import asyncio
+        log = self.query_one("#dash-chart-log", RichLog)
+        log.clear()
+
+        def build_data():
+            history_file = self.project_dir / ".agent_history"
+            if not history_file.exists(): return {}
+            with open(history_file, "r") as f:
+                run_ids = [line.strip() for line in f if line.strip()]
+
+            data = {}
+            for run_id in run_ids[-10:]:
+                mf = find_metrics_file(run_id, self.project_dir)
+                if mf:
+                    m = parse_metrics(mf)
+                    val = m.get("LLM Tokens Used", 0)
+                    if isinstance(val, (int, float)):
+                        data[run_id[-6:]] = float(val)
+            return data
+
+        try:
+            data = await asyncio.to_thread(build_data)
+            if data:
+                chart = draw_ascii_bar_chart(data, "Tokens Used", width=40)
+                log.write(chart)
+            else:
+                log.write("No metric data available.")
+        except Exception as e:
+            log.write(f"Chart Error: {e}")
+
+    @on(Button.Pressed, "#btn-goto-tasks")
+    def goto_tasks(self) -> None:
+        try:
+            self.app.query_one("TabbedContent").active = "tab-tasks"
+        except Exception:
+            pass
 
 
 class CodeMapTab(Container):

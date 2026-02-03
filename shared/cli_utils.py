@@ -1059,3 +1059,7 @@ def _run_history_graph_logic(project_dir: Path, metric: str = "tokens", limit: i
     }
 
     return draw_ascii_bar_chart(data, title=f"History: {title_map.get(metric, metric)}")
+
+# Expose internal functions for TUI usage
+parse_metrics = _parse_metrics
+find_metrics_file = _find_metrics_file

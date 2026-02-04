@@ -119,7 +119,8 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
+    "cq", "code-query"
 ]
 
 if FileSystemEventHandler:
@@ -178,6 +179,12 @@ def run_port(args):
         else:
             print(f"❌ Timeout waiting for port {args.port}.", file=sys.stderr)
             sys.exit(1)
+
+def run_code_query_cli(args):
+    """Runs the Code Query tool."""
+    from shared.code_query import run_code_query
+    run_code_query(args)
+    sys.exit(0)
 
 def run_color_lab(args):
     """Runs the Color Lab utilities."""
@@ -10592,6 +10599,20 @@ def parse_args(argv=None):
     parser_sl_convert.add_argument("-n", "--name", help="Root interface/model name.")
     parser_sl_convert.add_argument("-o", "--output", help="Output file (default: stdout).")
 
+    # --- New 'code-query' command ---
+    parser_cq = subparsers.add_parser(
+        "code-query",
+        aliases=["cq"],
+        help="Query the codebase structure (find classes, functions, etc.)."
+    )
+    parser_cq.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_cq.add_argument("--name", help="Filter by name (glob or regex).")
+    parser_cq.add_argument("--type", choices=["class", "function", "module"], help="Filter by type.")
+    parser_cq.add_argument("--imports", help="Filter by imported module (glob or regex).")
+    parser_cq.add_argument("--bases", help="Filter by base class (glob or regex).")
+    parser_cq.add_argument("--decorator", help="Filter by decorator (glob or regex).")
+    parser_cq.add_argument("--json", action="store_true", help="Output results as JSON.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13827,6 +13848,10 @@ async def main():
 
     if args.command == "smart-context":
         run_smart_context(args)
+        return
+
+    if args.command in ["cq", "code-query"]:
+        run_code_query_cli(args)
         return
 
     # Initialize Agent Client

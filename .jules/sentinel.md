@@ -17,3 +17,8 @@
 **Vulnerability:** The `execute_bash_block` function used `shlex.split()` to parse commands for security checks. However, if `shlex` raised a `ValueError` (e.g., due to malformed quotes), the exception was caught and ignored, causing the function to proceed with execution without validation.
 **Learning:** Security controls must fail closed. When input cannot be parsed or validated, execution must be blocked, not permitted. Swallowing exceptions in validation logic leads to fail-open vulnerabilities.
 **Prevention:** Ensure that exception handlers in security-critical paths explicitly deny access or return errors instead of using `pass` or allowing control flow to continue to the privileged operation.
+
+## 2026-10-28 - [Globbing Bypass in Path Restriction]
+**Vulnerability:** Restricted path checks were bypassed using shell globbing (e.g., `.g?t` matching `.git`). The static analysis validated the glob pattern as safe, but the shell expanded it to a restricted path.
+**Learning:** Static path analysis is insufficient if shell expansion occurs after the check. Path matching must account for how the shell resolves patterns.
+**Prevention:** Implement pattern matching against restricted paths using `fnmatch`, specifically accounting for shell behavior (like leading dots) to detect obfuscated restricted paths.

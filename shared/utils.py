@@ -102,6 +102,30 @@ IGNORED_DIRS = {".git", "node_modules", "__pycache__", ".venv", ".idea", ".vscod
 RESTRICTED_PATHS = {".git", ".github", ".ssh", ".aws", ".ds_store", ".agent_api_collections.json"}
 
 
+def matches_restricted(pattern: str, name: str) -> bool:
+    """
+    Check if a glob pattern matches a restricted name, accounting for shell behavior (leading dots).
+    """
+    if not fnmatch.fnmatch(name, pattern):
+        return False
+
+    # fnmatch matched. Now apply shell's leading dot rule.
+    # In shell, * and ? do not match a leading dot unless the pattern also starts with dot.
+    if name.startswith('.') and not pattern.startswith('.'):
+        # If pattern starts with explicit match for dot like [.] it counts as startswith('.')?
+        # No, pattern.startswith('.') checks literal dot.
+
+        # Conservative check: if pattern starts with '[', it MIGHT match dot explicitly.
+        # e.g. [.]git or [.g]it
+        if pattern.startswith('['):
+            return True
+
+        # Otherwise (starts with * or ? or other char), it does NOT match leading dot.
+        return False
+
+    return True
+
+
 def is_restricted_path(path: Path, root_dir: Path) -> bool:
     """Check if the path includes any restricted components or sensitive files."""
     try:
@@ -111,8 +135,17 @@ def is_restricted_path(path: Path, root_dir: Path) -> bool:
 
         # Check if any part of the path is in RESTRICTED_PATHS
         # This blocks .git/config, src/.git/..., etc.
-        if any(part in RESTRICTED_PATHS for part in rel_path.parts):
-            return True
+        for part in rel_path.parts:
+            # Direct match
+            if part in RESTRICTED_PATHS:
+                return True
+
+            # Glob match check
+            # Check if this part (which might be a glob like .g?t) matches any restricted name
+            if any(char in part for char in "*?[]"):
+                for restricted in RESTRICTED_PATHS:
+                    if matches_restricted(part, restricted):
+                        return True
 
         # Check for sensitive file patterns (e.g., .env*)
         if rel_path.name.startswith(".env"):

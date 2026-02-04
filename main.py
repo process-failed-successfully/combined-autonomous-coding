@@ -82,6 +82,7 @@ from shared.cli_gantt import run_gantt_logic
 from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
+from shared.badges import run_badges_logic
 from shared.plugin_manager import PluginManager
 import json
 import yaml
@@ -120,7 +121,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cq", "code-query"
+    "cq", "code-query", "badges"
 ]
 
 if FileSystemEventHandler:
@@ -198,6 +199,11 @@ def run_data_lab(args):
     """Runs the Data Lab utilities."""
     run_data_lab_logic(args)
     sys.exit(0)
+
+def run_badges(args):
+    """Runs the badges command."""
+    success = run_badges_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10613,6 +10619,29 @@ def parse_args(argv=None):
     parser_cq.add_argument("--decorator", help="Filter by decorator (glob or regex).")
     parser_cq.add_argument("--json", action="store_true", help="Output results as JSON.")
 
+    # --- New 'badges' command ---
+    parser_badges = subparsers.add_parser(
+        "badges",
+        help="Generate status badges for the project."
+    )
+    parser_badges.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    badges_subparsers = parser_badges.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # badges create
+    parser_badges_create = badges_subparsers.add_parser("create", help="Create a custom badge.")
+    parser_badges_create.add_argument("--label", required=True, help="Badge label (left side).")
+    parser_badges_create.add_argument("--value", required=True, help="Badge value (right side).")
+    parser_badges_create.add_argument("--color", default="#4c1", help="Badge color (hex).")
+    parser_badges_create.add_argument("-o", "--output", help="Output file path (default: badge.svg).")
+
+    # badges generate
+    parser_badges_gen = badges_subparsers.add_parser("generate", help="Generate standard project badges.")
+    parser_badges_gen.add_argument("--update-readme", action="store_true", help="Inject/Update badges in README.md.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13824,6 +13853,10 @@ async def main():
 
     if args.command == "gantt":
         run_gantt(args)
+        return
+
+    if args.command == "badges":
+        run_badges(args)
         return
 
     if args.command == "kanban":

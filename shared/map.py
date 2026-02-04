@@ -24,6 +24,8 @@ class CodeNode:
         self.end_lineno = end_lineno
         self.children: List['CodeNode'] = []
         self.dependencies: Set[str] = set()  # references to other nodes (e.g. imports)
+        self.bases: List[str] = [] # Base classes
+        self.decorators: List[str] = [] # Decorators
 
     def to_dict(self):
         return {
@@ -33,7 +35,9 @@ class CodeNode:
             "lineno": self.lineno,
             "end_lineno": self.end_lineno,
             "children": [c.to_dict() for c in self.children],
-            "dependencies": list(sorted(self.dependencies))
+            "dependencies": list(sorted(self.dependencies)),
+            "bases": self.bases,
+            "decorators": self.decorators
         }
 
 
@@ -51,9 +55,34 @@ class PythonMapBuilder(ast.NodeVisitor):
         self.current_scope = self.module_node
         self.stack = [self.module_node]
 
+    def _get_decorators(self, node) -> List[str]:
+        decorators = []
+        for d in node.decorator_list:
+            if isinstance(d, ast.Name):
+                decorators.append(d.id)
+            elif isinstance(d, ast.Call):
+                if isinstance(d.func, ast.Name):
+                    decorators.append(d.func.id)
+                elif isinstance(d.func, ast.Attribute):
+                    decorators.append(d.func.attr)
+            elif isinstance(d, ast.Attribute):
+                decorators.append(d.attr)
+        return decorators
+
     def visit_ClassDef(self, node):
         end_lineno = getattr(node, 'end_lineno', None)
         class_node = CodeNode(node.name, 'class', self.rel_path, node.lineno, end_lineno)
+
+        # Capture bases
+        for base in node.bases:
+            if isinstance(base, ast.Name):
+                class_node.bases.append(base.id)
+            elif isinstance(base, ast.Attribute):
+                class_node.bases.append(base.attr)
+
+        # Capture decorators
+        class_node.decorators = self._get_decorators(node)
+
         self.current_scope.children.append(class_node)
 
         self.stack.append(class_node)
@@ -67,6 +96,10 @@ class PythonMapBuilder(ast.NodeVisitor):
     def visit_FunctionDef(self, node):
         end_lineno = getattr(node, 'end_lineno', None)
         func_node = CodeNode(node.name, 'function', self.rel_path, node.lineno, end_lineno)
+
+        # Capture decorators
+        func_node.decorators = self._get_decorators(node)
+
         self.current_scope.children.append(func_node)
 
         self.stack.append(func_node)

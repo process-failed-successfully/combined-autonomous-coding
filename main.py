@@ -72,6 +72,7 @@ from shared.work_session import WorkSessionManager
 from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
 from shared.data_lab import run_data_lab_logic
+from shared.schema_lab import run_schema_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
@@ -118,7 +119,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab"
+    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab"
 ]
 
 if FileSystemEventHandler:
@@ -10567,6 +10568,30 @@ def parse_args(argv=None):
     parser_dl_info = data_lab_subparsers.add_parser("info", help="Show data statistics.")
     parser_dl_info.add_argument("file", help="File to analyze.")
 
+    # --- New 'schema-lab' command ---
+    parser_schema_lab = subparsers.add_parser(
+        "schema-lab",
+        help="Schema tools (infer from data, convert to TS/Pydantic)."
+    )
+    parser_schema_lab.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    schema_lab_subparsers = parser_schema_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # schema-lab infer
+    parser_sl_infer = schema_lab_subparsers.add_parser("infer", help="Infer JSON Schema from a data file.")
+    parser_sl_infer.add_argument("file", help="Input data file (JSON/YAML).")
+    parser_sl_infer.add_argument("-o", "--output", help="Output schema file (default: stdout).")
+
+    # schema-lab convert
+    parser_sl_convert = schema_lab_subparsers.add_parser("convert", help="Convert JSON Schema to other formats.")
+    parser_sl_convert.add_argument("file", help="Input JSON Schema file.")
+    parser_sl_convert.add_argument("format", choices=["ts", "pydantic"], help="Target format.")
+    parser_sl_convert.add_argument("-n", "--name", help="Root interface/model name.")
+    parser_sl_convert.add_argument("-o", "--output", help="Output file (default: stdout).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13713,6 +13738,10 @@ async def main():
 
     if args.command == "data-lab":
         run_data_lab(args)
+        return
+
+    if args.command == "schema-lab":
+        run_schema_lab_logic(args)
         return
 
     if args.command == "research":

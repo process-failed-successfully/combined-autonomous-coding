@@ -68,17 +68,13 @@ class TestTemporalCoupling(unittest.TestCase):
         mock_log.returncode = 0
         mock_log.stdout = "hash1\nhash2\n"
 
-        # Mock git show output
-        mock_show1 = MagicMock()
-        mock_show1.returncode = 0
-        mock_show1.stdout = "main.py\nutils.py\n"
+        # Mock git show output (combined)
+        mock_show = MagicMock()
+        mock_show.returncode = 0
+        mock_show.stdout = "main.py\nutils.py\nmain.py\nconfig.py\nutils.py\n"
 
-        mock_show2 = MagicMock()
-        mock_show2.returncode = 0
-        mock_show2.stdout = "main.py\nconfig.py\nutils.py\n"
-
-        # Sequence: [git log], [git show hash1], [git show hash2]
-        mock_run.side_effect = [mock_log, mock_show1, mock_show2]
+        # Sequence: [git log], [git show hash1 hash2]
+        mock_run.side_effect = [mock_log, mock_show]
 
         # Must exist as file
         with patch("pathlib.Path.relative_to", return_value=Path("main.py")):

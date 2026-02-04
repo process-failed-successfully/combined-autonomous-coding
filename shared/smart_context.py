@@ -165,19 +165,23 @@ class TemporalCoupling:
 
         file_counts = Counter()
 
-        for h in recent_hashes:
+        if recent_hashes:
+            # Batch git show command for performance (avoids N subprocess calls)
             cmd_show = [
                 self.git_path, "-C", str(self.project_dir),
-                "show", "--name-only", "--pretty=format:", h
-            ]
+                "show", "--name-only", "--pretty=format:"
+            ] + recent_hashes
+
             try:
                 res = subprocess.run(cmd_show, capture_output=True, text=True)
+                # Parse combined output (just a list of files, possibly repeating per commit)
                 files = res.stdout.strip().splitlines()
                 for f in files:
+                    f = f.strip()
                     if f and f != str(rel_path):
                         file_counts[f] += 1
             except Exception:
-                continue
+                pass
 
         # Format results
         coupling = []

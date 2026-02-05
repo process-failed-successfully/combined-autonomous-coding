@@ -43,17 +43,27 @@ def get_git_hotspots(project_dir: Path, limit: Optional[int] = 10) -> list[tuple
 
     try:
         # Get list of all changed files in all commits
-        result = subprocess.run(
+        # Use Popen to stream output instead of loading it all into memory
+        process = subprocess.Popen(
             [git_path, "-C", str(project_dir), "log", "--format=format:", "--name-only"],
-            capture_output=True, text=True, check=True
+            stdout=subprocess.PIPE,
+            text=True
         )
 
-        # Filter out empty lines and count
-        files = [line for line in result.stdout.split('\n') if line]
-        counter = Counter(files)
+        counter = Counter()
+        if process.stdout:
+            for line in process.stdout:
+                line = line.strip()
+                if line:
+                    counter[line] += 1
+
+        process.wait()
+
+        if process.returncode != 0:
+            return []
 
         return counter.most_common(limit)
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.SubprocessError):
         return []
 
 def get_git_activity(project_dir: Path, days: int = 30) -> list[tuple[str, int]]:

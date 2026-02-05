@@ -13,3 +13,7 @@
 ## 2026-01-09 - [Git Command Batching]
 **Learning:** `TemporalCoupling.analyze` was spawning a subprocess for `git show` for every commit (up to 50 times). This high overhead (fork/exec) is avoidable.
 **Action:** Batched all commit hashes into a single `git show` command. This reduces N subprocess calls to 1, significantly improving performance for history analysis.
+
+## 2026-02-05 - [Mocking Pitfall: Garbage Files]
+**Learning:** Mock objects (e.g., `MagicMock`) convert to strings like `<MagicMock ...>`. If such a mock is inadvertently used as a file path in a test that performs real file I/O, it can create garbage files on disk with bizarre names.
+**Action:** When mocking file paths or configuration objects, explicitly set `return_value` or `__str__` behavior to a safe string, or ensure the test uses `fake_filesystem` or mocks the I/O operation itself.

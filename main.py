@@ -121,7 +121,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cq", "code-query", "badges"
+    "cq", "code-query", "badges", "jwt-lab"
 ]
 
 if FileSystemEventHandler:
@@ -203,6 +203,12 @@ def run_data_lab(args):
 def run_badges(args):
     """Runs the badges command."""
     success = run_badges_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_jwt_lab(args):
+    """Runs the JWT Lab."""
+    from shared.jwt_lab import run_jwt_lab_logic
+    success = run_jwt_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_gantt(args):
@@ -10642,6 +10648,32 @@ def parse_args(argv=None):
     parser_badges_gen = badges_subparsers.add_parser("generate", help="Generate standard project badges.")
     parser_badges_gen.add_argument("--update-readme", action="store_true", help="Inject/Update badges in README.md.")
 
+    # --- New 'jwt-lab' command ---
+    parser_jwt = subparsers.add_parser(
+        "jwt-lab",
+        help="JWT utilities (decode, sign, verify)."
+    )
+    jwt_subparsers = parser_jwt.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # jwt-lab decode
+    parser_jwt_decode = jwt_subparsers.add_parser("decode", help="Decode a JWT token (no verification).")
+    parser_jwt_decode.add_argument("token", help="The JWT token.")
+
+    # jwt-lab sign
+    parser_jwt_sign = jwt_subparsers.add_parser("sign", help="Sign a JWT token.")
+    parser_jwt_sign.add_argument("--payload", required=True, help="JSON payload string.")
+    parser_jwt_sign.add_argument("--secret", required=True, help="Secret key.")
+
+    # jwt-lab verify
+    parser_jwt_verify = jwt_subparsers.add_parser("verify", help="Verify a JWT token signature.")
+    parser_jwt_verify.add_argument("token", help="The JWT token.")
+    parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
+    parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13857,6 +13889,10 @@ async def main():
 
     if args.command == "badges":
         run_badges(args)
+        return
+
+    if args.command == "jwt-lab":
+        run_jwt_lab(args)
         return
 
     if args.command == "kanban":

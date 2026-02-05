@@ -29,14 +29,19 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(contributors[2], (2, 'Charlie'))
 
     @patch('shared.analytics.shutil.which')
-    @patch('shared.analytics.subprocess.run')
-    def test_get_git_hotspots(self, mock_run, mock_which):
+    @patch('shared.analytics.subprocess.Popen')
+    def test_get_git_hotspots(self, mock_popen, mock_which):
         """Test getting git hotspots."""
         mock_which.return_value = '/usr/bin/git'
 
-        # Mock git log output (list of changed files)
-        mock_run.return_value.stdout = "file1.py\nfile2.py\nfile1.py\nfile3.py\nfile1.py\nfile2.py"
-        mock_run.return_value.returncode = 0
+        # Mock git log output (iterable lines)
+        mock_process = MagicMock()
+        mock_process.stdout = [
+            "file1.py\n", "file2.py\n", "file1.py\n",
+            "file3.py\n", "file1.py\n", "file2.py\n"
+        ]
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
 
         hotspots = get_git_hotspots(Path('.'), limit=2)
 

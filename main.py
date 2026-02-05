@@ -9981,6 +9981,33 @@ def parse_args(argv=None):
     parser_api_lab_load.add_argument("--body", type=str, help="Request body (JSON string).")
     parser_api_lab_load.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # api-lab 'collections'
+    parser_api_collections = api_lab_subparsers.add_parser("collections", aliases=["saved"], help="Manage API collections.")
+    collections_subparsers = parser_api_collections.add_subparsers(
+        dest="collection_action",
+        required=True,
+        help="Collection action."
+    )
+
+    # api-lab collections save
+    parser_coll_save = collections_subparsers.add_parser("save", help="Save a request.")
+    parser_coll_save.add_argument("--name", required=True, help="Request name.")
+    parser_coll_save.add_argument("--method", required=True, help="HTTP method.")
+    parser_coll_save.add_argument("--url", required=True, help="URL.")
+    parser_coll_save.add_argument("--headers", help="JSON headers.")
+    parser_coll_save.add_argument("--body", help="Request body.")
+
+    # api-lab collections list
+    parser_coll_list = collections_subparsers.add_parser("list", help="List saved requests.")
+
+    # api-lab collections delete
+    parser_coll_delete = collections_subparsers.add_parser("delete", help="Delete a request.")
+    parser_coll_delete.add_argument("id", help="Request ID.")
+
+    # api-lab collections run
+    parser_coll_run = collections_subparsers.add_parser("run", help="Run a saved request.")
+    parser_coll_run.add_argument("id", help="Request ID.")
+
     # --- New 'research' command ---
     parser_research = subparsers.add_parser(
         "research",

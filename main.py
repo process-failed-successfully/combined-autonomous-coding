@@ -122,7 +122,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab"
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab"
 ]
 
 if FileSystemEventHandler:
@@ -216,6 +216,12 @@ def run_jwt_lab(args):
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_password_lab(args):
+    """Runs the Password Lab."""
+    from shared.password_lab import run_password_lab_logic
+    run_password_lab_logic(args)
+    sys.exit(0)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10738,6 +10744,37 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+    # --- New 'password-lab' command ---
+    parser_pwd = subparsers.add_parser(
+        "password-lab",
+        aliases=["pwd-lab"],
+        help="Password utilities (generate, check, hash)."
+    )
+    pwd_subparsers = parser_pwd.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # password-lab generate
+    parser_pwd_gen = pwd_subparsers.add_parser("generate", help="Generate a secure random password.")
+    parser_pwd_gen.add_argument("-l", "--length", type=int, default=16, help="Password length (default: 16).")
+    parser_pwd_gen.add_argument("--no-upper", action="store_true", help="Exclude uppercase letters.")
+    parser_pwd_gen.add_argument("--no-lower", action="store_true", help="Exclude lowercase letters.")
+    parser_pwd_gen.add_argument("--no-digits", action="store_true", help="Exclude digits.")
+    parser_pwd_gen.add_argument("--no-symbols", action="store_true", help="Exclude symbols.")
+    parser_pwd_gen.add_argument("-v", "--verbose", action="store_true", help="Show strength analysis.")
+
+    # password-lab check
+    parser_pwd_check = pwd_subparsers.add_parser("check", help="Check strength of a password.")
+    parser_pwd_check.add_argument("password", nargs="?", help="Password to check (prompts if omitted).")
+
+    # password-lab hash
+    parser_pwd_hash = pwd_subparsers.add_parser("hash", help="Hash a password.")
+    parser_pwd_hash.add_argument("password", nargs="?", help="Password to hash (prompts if omitted).")
+    parser_pwd_hash.add_argument("--algo", choices=["scrypt", "pbkdf2"], default="scrypt", help="Hashing algorithm.")
+    parser_pwd_hash.add_argument("--salt", help="Optional salt (random if omitted).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -13961,6 +13998,10 @@ async def main():
 
     if args.command == "jwt-lab":
         run_jwt_lab(args)
+        return
+
+    if args.command in ["password-lab", "pwd-lab"]:
+        run_password_lab(args)
         return
 
     if args.command == "kanban":

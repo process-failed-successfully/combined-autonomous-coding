@@ -121,7 +121,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cq", "code-query", "badges", "jwt-lab"
+    "cq", "code-query", "badges", "jwt-lab", "cidr-lab"
 ]
 
 if FileSystemEventHandler:
@@ -180,6 +180,13 @@ def run_port(args):
         else:
             print(f"❌ Timeout waiting for port {args.port}.", file=sys.stderr)
             sys.exit(1)
+
+def run_cidr_lab(args):
+    """Runs the CIDR Lab utilities."""
+    from shared.cidr_lab import run_cidr_lab_logic
+    args_dict = vars(args)
+    success = run_cidr_lab_logic(**args_dict)
+    sys.exit(0 if success else 1)
 
 def run_code_query_cli(args):
     """Runs the Code Query tool."""
@@ -10611,6 +10618,36 @@ def parse_args(argv=None):
     parser_sl_convert.add_argument("-n", "--name", help="Root interface/model name.")
     parser_sl_convert.add_argument("-o", "--output", help="Output file (default: stdout).")
 
+    # --- New 'cidr-lab' command ---
+    parser_cidr_lab = subparsers.add_parser(
+        "cidr-lab",
+        help="CIDR and network utilities (info, contains, overlap, split)."
+    )
+    cidr_lab_subparsers = parser_cidr_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # cidr-lab info
+    parser_cl_info = cidr_lab_subparsers.add_parser("info", help="Get details about a CIDR block.")
+    parser_cl_info.add_argument("--cidr", required=True, help="CIDR block (e.g., 192.168.1.0/24).")
+
+    # cidr-lab contains
+    parser_cl_contains = cidr_lab_subparsers.add_parser("contains", help="Check if a network contains an IP or subnet.")
+    parser_cl_contains.add_argument("--network", required=True, help="Network CIDR.")
+    parser_cl_contains.add_argument("--ip", required=True, help="IP address or subnet to check.")
+
+    # cidr-lab overlap
+    parser_cl_overlap = cidr_lab_subparsers.add_parser("overlap", help="Check if two subnets overlap.")
+    parser_cl_overlap.add_argument("--cidr1", required=True, help="First CIDR.")
+    parser_cl_overlap.add_argument("--cidr2", required=True, help="Second CIDR.")
+
+    # cidr-lab split
+    parser_cl_split = cidr_lab_subparsers.add_parser("split", help="Split a subnet into smaller subnets.")
+    parser_cl_split.add_argument("--cidr", required=True, help="Original CIDR.")
+    parser_cl_split.add_argument("--new-prefix", required=True, type=int, help="New prefix length.")
+
     # --- New 'code-query' command ---
     parser_cq = subparsers.add_parser(
         "code-query",
@@ -13824,6 +13861,10 @@ async def main():
 
     if args.command == "schema-lab":
         run_schema_lab_logic(args)
+        return
+
+    if args.command == "cidr-lab":
+        run_cidr_lab(args)
         return
 
     if args.command == "research":

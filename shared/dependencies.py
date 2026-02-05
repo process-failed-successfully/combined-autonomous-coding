@@ -6,6 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+from shared.utils import sanitize_text
 
 
 class DependencyAnalyzer:
@@ -541,14 +542,14 @@ class DependencyUpdater:
                 cmd.append("--save-dev")
             cmd.append(f"{package_name}@{new_version}")
 
-        print(f"Running: {' '.join(cmd)}")
+        print(f"Running: {sanitize_text(' '.join(cmd))}")
         try:
             # We run the command in the directory containing package.json (usually project root)
             subprocess.run(cmd, cwd=file_path.parent, check=True, capture_output=True)
             return True
         except subprocess.CalledProcessError as e:
-            err = e.stderr.decode() if e.stderr else str(e)
-            print(f"Error updating node package: {err}")
+            err = e.stderr.decode(errors='replace') if e.stderr else f"Command failed with return code {e.returncode}"
+            print(f"Error updating node package: {sanitize_text(err)}")
             return False
 
     def add_package(self, package_name: str, version: str = None, dev: bool = False) -> bool:
@@ -603,12 +604,13 @@ class DependencyUpdater:
             if dev:
                 cmd.append("--save-dev")
 
-        print(f"Running: {' '.join(cmd)}")
+        print(f"Running: {sanitize_text(' '.join(cmd))}")
         try:
             subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
             return True
         except subprocess.CalledProcessError as e:
-            print(f"Error adding node package: {e}")
+            err = e.stderr.decode(errors='replace') if e.stderr else f"Command failed with return code {e.returncode}"
+            print(f"Error adding node package: {sanitize_text(err)}")
             return False
 
     def _remove_node_package(self, package_name: str, dev: bool = False) -> bool:
@@ -624,12 +626,13 @@ class DependencyUpdater:
         elif pm == "pnpm":
             cmd = ["pnpm", "remove", package_name]
 
-        print(f"Running: {' '.join(cmd)}")
+        print(f"Running: {sanitize_text(' '.join(cmd))}")
         try:
             subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
             return True
         except subprocess.CalledProcessError as e:
-            print(f"Error removing node package: {e}")
+            err = e.stderr.decode(errors='replace') if e.stderr else f"Command failed with return code {e.returncode}"
+            print(f"Error removing node package: {sanitize_text(err)}")
             return False
 
     def _add_python_package(self, package_name: str, version: str, req_path: Path) -> bool:
@@ -637,11 +640,12 @@ class DependencyUpdater:
         target = f"{package_name}=={version}" if version else package_name
         cmd = [sys.executable, "-m", "pip", "install", target]
 
-        print(f"Running: {' '.join(cmd)}")
+        print(f"Running: {sanitize_text(' '.join(cmd))}")
         try:
             subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
         except subprocess.CalledProcessError as e:
-            print(f"Error installing python package: {e}")
+            err = e.stderr.decode(errors='replace') if e.stderr else f"Command failed with return code {e.returncode}"
+            print(f"Error installing python package: {sanitize_text(err)}")
             return False
 
         # 2. Append to requirements.txt if not present
@@ -662,11 +666,12 @@ class DependencyUpdater:
         # 1. Run pip uninstall
         cmd = [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
 
-        print(f"Running: {' '.join(cmd)}")
+        print(f"Running: {sanitize_text(' '.join(cmd))}")
         try:
             subprocess.run(cmd, cwd=self.project_dir, check=True, capture_output=True)
         except subprocess.CalledProcessError as e:
-            print(f"Error uninstalling python package: {e}")
+            err = e.stderr.decode(errors='replace') if e.stderr else f"Command failed with return code {e.returncode}"
+            print(f"Error uninstalling python package: {sanitize_text(err)}")
             return False
 
         # 2. Remove from requirements.txt

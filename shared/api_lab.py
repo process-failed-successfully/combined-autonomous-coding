@@ -287,6 +287,75 @@ def run_api_lab_cli(args):
         for code, count in results['status_codes'].items():
             print(f"  {code}: {count}")
 
+    elif args.action == "collections":
+        from shared.api_collections import ApiCollectionManager
+        coll_manager = ApiCollectionManager(project_dir)
+        sub_action = args.collection_action
+
+        if sub_action == "save":
+            headers_dict = {}
+            if args.headers:
+                try:
+                    headers_dict = json.loads(args.headers)
+                except json.JSONDecodeError:
+                    print("Error: Invalid JSON format for --headers", file=sys.stderr)
+                    sys.exit(1)
+
+            coll_manager.save_request(
+                name=args.name,
+                method=args.method.upper(),
+                url=args.url,
+                headers=headers_dict,
+                body=args.body or ""
+            )
+            print(f"✅ Request '{args.name}' saved.")
+
+        elif sub_action == "list":
+            requests = coll_manager.list_requests()
+            if not requests:
+                print("No saved requests found.")
+                sys.exit(0)
+
+            print(f"--- Saved API Requests ({len(requests)}) ---")
+            print(f"{'ID':<36} | {'Method':<7} | {'Name':<20} | {'URL'}")
+            print("-" * 80)
+            for req in requests:
+                print(f"{req['id']:<36} | {req['method']:<7} | {req['name'][:20]:<20} | {req['url']}")
+
+        elif sub_action == "delete":
+            if coll_manager.delete_request(args.id):
+                print(f"✅ Request {args.id} deleted.")
+            else:
+                print(f"❌ Request {args.id} not found.", file=sys.stderr)
+                sys.exit(1)
+
+        elif sub_action == "run":
+            req = coll_manager.get_request(args.id)
+            if not req:
+                print(f"❌ Request {args.id} not found.", file=sys.stderr)
+                sys.exit(1)
+
+            print(f"Running saved request: {req['name']}...")
+            result = manager.execute_request(
+                method=req['method'],
+                url=req['url'],
+                headers=req['headers'],
+                body=req['body']
+            )
+
+            status_code = result['status_code']
+            status_marker = "✅" if result['success'] else "❌"
+
+            print(f"\n--- Response ({status_marker} {status_code}) ---")
+            print("Headers:")
+            for k, v in result['headers'].items():
+                print(f"  {k}: {v}")
+
+            print("\nBody:")
+            print(result['body'])
+
+            sys.exit(0 if result['success'] else 1)
+
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)
         sys.exit(1)

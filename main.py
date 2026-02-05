@@ -73,6 +73,7 @@ from shared.i18n import run_i18n_logic
 from shared.api_lab import run_api_lab_cli
 from shared.data_lab import run_data_lab_logic
 from shared.schema_lab import run_schema_lab_logic
+from shared.cidr_lab import run_cidr_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
@@ -121,7 +122,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cq", "code-query", "badges", "jwt-lab"
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab"
 ]
 
 if FileSystemEventHandler:
@@ -185,6 +186,11 @@ def run_code_query_cli(args):
     """Runs the Code Query tool."""
     from shared.code_query import run_code_query
     run_code_query(args)
+    sys.exit(0)
+
+def run_cidr_lab(args):
+    """Runs the CIDR Lab utilities."""
+    run_cidr_lab_logic(args)
     sys.exit(0)
 
 def run_color_lab(args):
@@ -10648,6 +10654,37 @@ def parse_args(argv=None):
     parser_badges_gen = badges_subparsers.add_parser("generate", help="Generate standard project badges.")
     parser_badges_gen.add_argument("--update-readme", action="store_true", help="Inject/Update badges in README.md.")
 
+    # --- New 'cidr-lab' command ---
+    parser_cidr_lab = subparsers.add_parser(
+        "cidr-lab",
+        aliases=["cidr"],
+        help="CIDR and IP utilities (info, contains, overlaps, subnet)."
+    )
+    cidr_lab_subparsers = parser_cidr_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # cidr-lab info
+    parser_cl_info = cidr_lab_subparsers.add_parser("info", help="Get details about a CIDR block.")
+    parser_cl_info.add_argument("cidr", help="CIDR block (e.g. 192.168.1.0/24).")
+
+    # cidr-lab contains
+    parser_cl_contains = cidr_lab_subparsers.add_parser("contains", help="Check if IP/CIDR is inside another.")
+    parser_cl_contains.add_argument("cidr", help="Container CIDR.")
+    parser_cl_contains.add_argument("target", help="Target IP or CIDR to check.")
+
+    # cidr-lab overlaps
+    parser_cl_overlaps = cidr_lab_subparsers.add_parser("overlaps", help="Check if two subnets overlap.")
+    parser_cl_overlaps.add_argument("cidr1", help="First CIDR.")
+    parser_cl_overlaps.add_argument("cidr2", help="Second CIDR.")
+
+    # cidr-lab subnet
+    parser_cl_subnet = cidr_lab_subparsers.add_parser("subnet", help="Split a network into smaller subnets.")
+    parser_cl_subnet.add_argument("cidr", help="Base CIDR.")
+    parser_cl_subnet.add_argument("new_prefix", type=int, help="New prefix length.")
+
     # --- New 'jwt-lab' command ---
     parser_jwt = subparsers.add_parser(
         "jwt-lab",
@@ -13889,6 +13926,10 @@ async def main():
 
     if args.command == "badges":
         run_badges(args)
+        return
+
+    if args.command in ["cidr-lab", "cidr"]:
+        run_cidr_lab(args)
         return
 
     if args.command == "jwt-lab":

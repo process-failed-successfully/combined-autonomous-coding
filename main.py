@@ -123,7 +123,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt"
+    "text-lab", "txt", "cert-lab", "cert"
 ]
 
 if FileSystemEventHandler:
@@ -228,6 +228,12 @@ def run_text_lab(args):
     """Runs the Text Lab."""
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_cert_lab(args):
+    """Runs the Certificate Lab."""
+    from shared.cert_lab import run_cert_lab_logic
+    success = run_cert_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_gantt(args):
@@ -10814,6 +10820,29 @@ def parse_args(argv=None):
     parser_tl_diff.add_argument("text1", help="First text.")
     parser_tl_diff.add_argument("text2", help="Second text.")
 
+    # --- New 'cert-lab' command ---
+    parser_cert = subparsers.add_parser(
+        "cert-lab",
+        aliases=["cert"],
+        help="Certificate utilities (inspect, generate)."
+    )
+    cert_subparsers = parser_cert.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # cert-lab inspect
+    parser_cert_inspect = cert_subparsers.add_parser("inspect", help="Inspect a certificate (file or host).")
+    parser_cert_inspect.add_argument("target", help="File path or host:port.")
+
+    # cert-lab generate
+    parser_cert_gen = cert_subparsers.add_parser("generate", help="Generate a self-signed certificate.")
+    parser_cert_gen.add_argument("--common-name", "--cn", required=True, help="Common Name (CN).")
+    parser_cert_gen.add_argument("--san", action="append", help="Subject Alternative Name (repeatable).")
+    parser_cert_gen.add_argument("--days", type=int, default=365, help="Validity in days.")
+    parser_cert_gen.add_argument("-o", "--output", help="Output directory.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14045,6 +14074,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command in ["cert-lab", "cert"]:
+        run_cert_lab(args)
         return
 
     if args.command == "kanban":

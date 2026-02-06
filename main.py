@@ -122,7 +122,8 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab"
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
+    "text-lab", "txt"
 ]
 
 if FileSystemEventHandler:
@@ -222,6 +223,12 @@ def run_password_lab(args):
     from shared.password_lab import run_password_lab_logic
     run_password_lab_logic(args)
     sys.exit(0)
+
+def run_text_lab(args):
+    """Runs the Text Lab."""
+    from shared.text_lab import run_text_lab_logic
+    success = run_text_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10775,6 +10782,38 @@ def parse_args(argv=None):
     parser_pwd_hash.add_argument("--algo", choices=["scrypt", "pbkdf2"], default="scrypt", help="Hashing algorithm.")
     parser_pwd_hash.add_argument("--salt", help="Optional salt (random if omitted).")
 
+    # --- New 'text-lab' command ---
+    parser_text_lab = subparsers.add_parser(
+        "text-lab",
+        aliases=["txt"],
+        help="Text utilities (transform, encode, info, diff)."
+    )
+    text_lab_subparsers = parser_text_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # text-lab transform
+    parser_tl_transform = text_lab_subparsers.add_parser("transform", help="Transform text case.")
+    parser_tl_transform.add_argument("--type", "-t", required=True, choices=["upper", "lower", "title", "camel", "snake", "kebab", "pascal", "constant"], help="Transformation type.")
+    parser_tl_transform.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab encode
+    parser_tl_encode = text_lab_subparsers.add_parser("encode", help="Encode/Decode text.")
+    parser_tl_encode.add_argument("--type", "-t", required=True, choices=["base64", "url", "html", "hex"], help="Encoding type.")
+    parser_tl_encode.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
+    parser_tl_encode.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab info
+    parser_tl_info = text_lab_subparsers.add_parser("info", help="Show text statistics.")
+    parser_tl_info.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab diff
+    parser_tl_diff = text_lab_subparsers.add_parser("diff", help="Diff two text inputs.")
+    parser_tl_diff.add_argument("text1", help="First text.")
+    parser_tl_diff.add_argument("text2", help="Second text.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14002,6 +14041,10 @@ async def main():
 
     if args.command in ["password-lab", "pwd-lab"]:
         run_password_lab(args)
+        return
+
+    if args.command in ["text-lab", "txt"]:
+        run_text_lab(args)
         return
 
     if args.command == "kanban":

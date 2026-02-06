@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from shared.security import SecurityAuditor
 from shared.todos import scan_todos
+from shared.text_width import calculate_text_width
 
 class BadgeGenerator:
     """Generates status badges for the project."""
@@ -13,8 +14,8 @@ class BadgeGenerator:
 
     def _estimate_width(self, text: str) -> int:
         """Estimates the width of text in pixels (approximate)."""
-        # A rough heuristic: 7px per character + padding
-        return int(len(str(text)) * 7 + 10)
+        # Calculate width based on character map + 10px padding (standard for shields.io style)
+        return calculate_text_width(str(text)) + 10
 
     def generate_badge(self, label: str, value: str, color: str = "#4c1") -> str:
         """Generates an SVG badge."""

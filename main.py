@@ -122,7 +122,8 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab"
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
+    "url-lab", "url"
 ]
 
 if FileSystemEventHandler:
@@ -221,6 +222,12 @@ def run_password_lab(args):
     """Runs the Password Lab."""
     from shared.password_lab import run_password_lab_logic
     run_password_lab_logic(args)
+    sys.exit(0)
+
+def run_url_lab(args):
+    """Runs the URL Lab."""
+    from shared.url_lab import run_url_lab_logic
+    run_url_lab_logic(args)
     sys.exit(0)
 
 def run_gantt(args):
@@ -10775,6 +10782,41 @@ def parse_args(argv=None):
     parser_pwd_hash.add_argument("--algo", choices=["scrypt", "pbkdf2"], default="scrypt", help="Hashing algorithm.")
     parser_pwd_hash.add_argument("--salt", help="Optional salt (random if omitted).")
 
+    # --- New 'url-lab' command ---
+    parser_url = subparsers.add_parser(
+        "url-lab",
+        aliases=["url"],
+        help="URL utilities (parse, encode, decode, join, query)."
+    )
+    url_subparsers = parser_url.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # url-lab parse
+    parser_url_parse = url_subparsers.add_parser("parse", help="Parse a URL into components.")
+    parser_url_parse.add_argument("url", help="The URL to parse.")
+
+    # url-lab encode
+    parser_url_encode = url_subparsers.add_parser("encode", help="URL-encode a string.")
+    parser_url_encode.add_argument("text", help="The string to encode.")
+
+    # url-lab decode
+    parser_url_decode = url_subparsers.add_parser("decode", help="URL-decode a string.")
+    parser_url_decode.add_argument("text", help="The string to decode.")
+
+    # url-lab join
+    parser_url_join = url_subparsers.add_parser("join", help="Join a base URL and a path.")
+    parser_url_join.add_argument("base", help="The base URL.")
+    parser_url_join.add_argument("path", help="The path to join.")
+
+    # url-lab query
+    parser_url_query = url_subparsers.add_parser("query", help="Manipulate URL query parameters.")
+    parser_url_query.add_argument("url", help="The URL.")
+    parser_url_query.add_argument("--add", "-a", action="append", help="Add param (key=value). Can be used multiple times.")
+    parser_url_query.add_argument("--remove", "-r", action="append", help="Remove param (key). Can be used multiple times.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14002,6 +14044,10 @@ async def main():
 
     if args.command in ["password-lab", "pwd-lab"]:
         run_password_lab(args)
+        return
+
+    if args.command in ["url-lab", "url"]:
+        run_url_lab(args)
         return
 
     if args.command == "kanban":

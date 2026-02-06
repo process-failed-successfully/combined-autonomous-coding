@@ -1,5 +1,6 @@
 import re
 import itertools
+import ast
 from typing import Dict, Any
 
 
@@ -8,6 +9,29 @@ class LogicLabManager:
 
     def __init__(self):
         pass
+
+    def _safe_eval(self, node, context):
+        """Recursively evaluate the AST node."""
+        if isinstance(node, ast.Expression):
+            return self._safe_eval(node.body, context)
+        elif isinstance(node, ast.BoolOp):
+            if isinstance(node.op, ast.And):
+                return all(self._safe_eval(v, context) for v in node.values)
+            elif isinstance(node.op, ast.Or):
+                return any(self._safe_eval(v, context) for v in node.values)
+        elif isinstance(node, ast.UnaryOp):
+            if isinstance(node.op, ast.Not):
+                return not self._safe_eval(node.operand, context)
+        elif isinstance(node, ast.BinOp):
+            # Support XOR (using ^ operator)
+            if isinstance(node.op, ast.BitXor):
+                return bool(self._safe_eval(node.left, context)) ^ bool(self._safe_eval(node.right, context))
+        elif isinstance(node, ast.Name):
+            return context.get(node.id, False)
+        elif isinstance(node, ast.Constant):
+             return bool(node.value)
+
+        raise ValueError(f"Unsupported operation or unsafe construct: {type(node).__name__}")
 
     def generate_truth_table(self, expression: str) -> Dict[str, Any]:
         """
@@ -26,16 +50,9 @@ class LogicLabManager:
             return {"variables": [], "rows": [], "error": "Empty expression."}
 
         # 1. Normalize Expression
-        # Convert to lower case for keyword matching, but keep variables case-sensitive?
-        # Actually, standardizing to lowercase is safer for simplicity unless user wants case-sensitive vars.
-        # Let's support case-insensitive variables for now.
-
         expr = expression.lower()
 
         # Replace operators
-        # Order matters: replace longer symbols first
-
-        # 1. Symbol replacements
         symbol_replacements = {
             "&&": " and ",
             "&": " and ",
@@ -47,21 +64,18 @@ class LogicLabManager:
         for k, v in symbol_replacements.items():
             expr = expr.replace(k, v)
 
-        # 2. Word replacements (using regex for boundaries)
+        # Word replacements
         word_replacements = {
-            "xor": "^",  # Python bitwise XOR works as logical XOR for bools
+            "xor": "^",
             "true": "True",
             "false": "False"
         }
         for k, v in word_replacements.items():
-            # Use \b boundary
             expr = re.sub(r'\b' + re.escape(k) + r'\b', v, expr)
 
         expr = expr.strip()
 
         # 2. Extract Variables
-        # Find valid identifiers: starts with letter/underscore, contains alphanumeric/underscore
-        # Exclude python keywords
         tokens = re.findall(r'\b[a-z_][a-z0-9_]*\b', expr)
         keywords = {"and", "or", "not", "true", "false"}
         variables = sorted(list(set(t for t in tokens if t not in keywords)))
@@ -69,25 +83,16 @@ class LogicLabManager:
         # 3. Generate Truth Table
         rows = []
         try:
-            # Safety Check: Ensure no dangerous calls
-            # We strictly whitelist characters allowed in the final python expression
-            # Allowed: a-z, 0-9, _, spaces, (, ), ^, and, or, not, True, False
-            # We already replaced operators, so we check the resulting string.
-
-            # Simple check: should not contain '.', '[', ']', '{', '}' to prevent attribute access or dict/list construction
-            if any(c in expr for c in ['.', '[', ']', '{', '}', ';', 'import', 'eval', 'exec']):
-                return {"variables": [], "rows": [], "error": "Invalid characters or unsafe constructs detected."}
-
-            # Compile for performance and syntax checking
-            code = compile(expr, "<string>", "eval")
+            # Parse the expression into AST
+            tree = ast.parse(expr, mode='eval')
 
             # Generate all 2^N combinations
             for values in itertools.product([False, True], repeat=len(variables)):
                 ctx = dict(zip(variables, values))
-                # Add sanitized builtins
-                ctx["__builtins__"] = {}
 
-                result = eval(code, ctx)  # nosec B307
+                # Use safe evaluation instead of eval()
+                result = self._safe_eval(tree, ctx)
+
                 rows.append({
                     "values": ctx,
                     "result": bool(result)
@@ -97,5 +102,7 @@ class LogicLabManager:
 
         except SyntaxError:
             return {"variables": [], "rows": [], "error": "Syntax Error in expression."}
+        except ValueError as e:
+             return {"variables": [], "rows": [], "error": str(e)}
         except Exception as e:
-            return {"variables": [], "rows": [], "error": str(e)}
+            return {"variables": [], "rows": [], "error": f"Evaluation error: {e}"}

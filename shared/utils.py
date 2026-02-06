@@ -10,6 +10,7 @@ import logging
 import os
 import subprocess
 import shlex
+import shutil
 from itertools import chain
 from pathlib import Path
 from typing import List, Tuple, TYPE_CHECKING, Optional, Any
@@ -382,18 +383,45 @@ def execute_read_block(filename: str, cwd: Path) -> str:
 
 
 async def execute_search_block(query: str, cwd: Path) -> str:
-    """Search for a pattern in the codebase using grep."""
+    """Search for a pattern in the codebase using grep (or git grep if available)."""
     if not query:
         return "Error: No search query provided."
     logger.info(f"[Searching] {query}")
     try:
-        # Recursive, line number, context=2
-        # Use exec to avoid shell injection
+        use_git_grep = False
+        git_path = shutil.which("git")
 
-        # Build exclusion list from IGNORED_DIRS
-        exclude_args = [f"--exclude-dir={d}" for d in sorted(IGNORED_DIRS)]
+        if git_path:
+            # Check if inside git repo
+            try:
+                check_process = await asyncio.create_subprocess_exec(
+                    git_path, "rev-parse", "--is-inside-work-tree",
+                    cwd=cwd,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL
+                )
+                await check_process.wait()
+                if check_process.returncode == 0:
+                    use_git_grep = True
+            except Exception:
+                pass
 
-        cmd = ["grep", "-rnC", "2"] + exclude_args + ["--", query, "."]
+        cmd = []
+        if use_git_grep:
+            # Construct git grep command
+            # -I: ignore binary files
+            # -n: line numbers
+            # -C 2: context
+            # --untracked: search untracked files too (matches grep behavior)
+            # exclusions using pathspecs :(exclude)dir
+            exclusions = [f":(exclude){d}" for d in sorted(IGNORED_DIRS)]
+            cmd = [git_path, "grep", "-I", "-n", "--untracked", "-C", "2", "--", query, "."] + exclusions
+        else:
+            # Fallback to grep
+            # Recursive, line number, context=2
+            # Build exclusion list from IGNORED_DIRS
+            exclude_args = [f"--exclude-dir={d}" for d in sorted(IGNORED_DIRS)]
+            cmd = ["grep", "-rnC", "2"] + exclude_args + ["--", query, "."]
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -406,6 +434,11 @@ async def execute_search_block(query: str, cwd: Path) -> str:
         output = ""
         if stdout:
             output += stdout.decode()
+
+        # Check for errors that should be reported (e.g. invalid regex)
+        if process.returncode > 1 and stderr:
+             return f"Error executing search: {stderr.decode()}"
+
         if not output:
             return f"No matches found for '{query}'"
 

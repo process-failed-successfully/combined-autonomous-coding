@@ -14,6 +14,12 @@ class TestBadgeGenerator(unittest.TestCase):
         self.assertIsInstance(width, int)
         self.assertGreater(width, 0)
 
+    def test_estimate_width_variable(self):
+        # "iii" should be narrower than "MMM" even with same length
+        width_i = self.generator._estimate_width("iii")
+        width_m = self.generator._estimate_width("MMM")
+        self.assertLess(width_i, width_m)
+
     def test_generate_badge(self):
         svg = self.generator.generate_badge("Tests", "Passing", "#4c1")
         self.assertIn('<svg', svg)

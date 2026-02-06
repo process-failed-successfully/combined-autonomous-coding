@@ -122,7 +122,8 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab"
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
+    "text-lab", "txt"
 ]
 
 if FileSystemEventHandler:
@@ -199,6 +200,12 @@ def run_color_lab(args):
     # Convert args to dict
     args_dict = vars(args)
     run_color_lab_logic(**args_dict)
+    sys.exit(0)
+
+def run_text_lab(args):
+    """Runs the Text Lab utilities."""
+    from shared.text_lab import run_text_lab_logic
+    run_text_lab_logic(args)
     sys.exit(0)
 
 def run_data_lab(args):
@@ -10599,6 +10606,48 @@ def parse_args(argv=None):
     parser_cl_conv = color_lab_subparsers.add_parser("convert", help="Convert color formats.")
     parser_cl_conv.add_argument("color", help="Color to convert.")
 
+    # --- New 'text-lab' command ---
+    parser_text_lab = subparsers.add_parser(
+        "text-lab",
+        aliases=["txt"],
+        help="Text utilities (transform, encode, analyze, diff)."
+    )
+    text_lab_subparsers = parser_text_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # text-lab transform
+    parser_tl_transform = text_lab_subparsers.add_parser("transform", help="Transform text case.")
+    parser_tl_transform.add_argument("type", choices=["upper", "lower", "title", "camel", "snake", "kebab", "pascal", "constant", "alternating"], help="Transformation type.")
+    parser_tl_transform.add_argument("--text", help="Input text.")
+    parser_tl_transform.add_argument("--file", help="Input file.")
+
+    # text-lab encode
+    parser_tl_encode = text_lab_subparsers.add_parser("encode", help="Encode text.")
+    parser_tl_encode.add_argument("type", choices=["base64", "url", "html", "hex", "rot13"], help="Encoding type.")
+    parser_tl_encode.add_argument("--text", help="Input text.")
+    parser_tl_encode.add_argument("--file", help="Input file.")
+
+    # text-lab decode
+    parser_tl_decode = text_lab_subparsers.add_parser("decode", help="Decode text.")
+    parser_tl_decode.add_argument("type", choices=["base64", "url", "html", "hex", "rot13"], help="Decoding type.")
+    parser_tl_decode.add_argument("--text", help="Input text.")
+    parser_tl_decode.add_argument("--file", help="Input file.")
+
+    # text-lab analyze
+    parser_tl_analyze = text_lab_subparsers.add_parser("analyze", help="Analyze text statistics.")
+    parser_tl_analyze.add_argument("--text", help="Input text.")
+    parser_tl_analyze.add_argument("--file", help="Input file.")
+
+    # text-lab diff
+    parser_tl_diff = text_lab_subparsers.add_parser("diff", help="Diff two texts.")
+    parser_tl_diff.add_argument("--text", help="Input text 1.")
+    parser_tl_diff.add_argument("--file", help="Input file 1.")
+    parser_tl_diff.add_argument("--text2", help="Input text 2.")
+    parser_tl_diff.add_argument("--file2", help="Input file 2.")
+
     # --- New 'data-lab' command ---
     parser_data_lab = subparsers.add_parser(
         "data-lab",
@@ -14014,6 +14063,10 @@ async def main():
 
     if args.command == "color-lab":
         run_color_lab(args)
+        return
+
+    if args.command in ["text-lab", "txt"]:
+        run_text_lab(args)
         return
 
     if args.command == "resume":

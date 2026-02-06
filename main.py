@@ -122,7 +122,8 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab"
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
+    "cert-lab", "cert"
 ]
 
 if FileSystemEventHandler:
@@ -215,6 +216,12 @@ def run_jwt_lab(args):
     """Runs the JWT Lab."""
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_cert_lab(args):
+    """Runs the Cert Lab."""
+    from shared.cert_lab import run_cert_lab_logic
+    success = run_cert_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_password_lab(args):
@@ -10744,6 +10751,29 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+    # --- New 'cert-lab' command ---
+    parser_cert = subparsers.add_parser(
+        "cert-lab",
+        aliases=["cert"],
+        help="Certificate utilities (inspect, generate)."
+    )
+    cert_subparsers = parser_cert.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # cert-lab inspect
+    parser_cert_inspect = cert_subparsers.add_parser("inspect", help="Inspect a certificate (file or host).")
+    parser_cert_inspect.add_argument("source", help="File path or hostname (e.g., google.com:443).")
+
+    # cert-lab generate
+    parser_cert_gen = cert_subparsers.add_parser("generate", help="Generate a self-signed certificate.")
+    parser_cert_gen.add_argument("--cn", required=True, help="Common Name (CN).")
+    parser_cert_gen.add_argument("--sans", help="Subject Alternative Names (comma-separated).")
+    parser_cert_gen.add_argument("--days", type=int, default=365, help="Validity in days (default: 365).")
+    parser_cert_gen.add_argument("-o", "--output", default=".", help="Output directory (default: current dir).")
+
     # --- New 'password-lab' command ---
     parser_pwd = subparsers.add_parser(
         "password-lab",
@@ -13998,6 +14028,10 @@ async def main():
 
     if args.command == "jwt-lab":
         run_jwt_lab(args)
+        return
+
+    if args.command in ["cert-lab", "cert"]:
+        run_cert_lab(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

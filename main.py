@@ -123,7 +123,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt"
+    "text-lab", "txt", "cert-lab", "cert"
 ]
 
 if FileSystemEventHandler:
@@ -192,6 +192,12 @@ def run_code_query_cli(args):
 def run_cidr_lab(args):
     """Runs the CIDR Lab utilities."""
     run_cidr_lab_logic(args)
+    sys.exit(0)
+
+def run_cert_lab(args):
+    """Runs the Cert Lab utilities."""
+    from shared.cert_lab import run_cert_lab_logic
+    run_cert_lab_logic(args)
     sys.exit(0)
 
 def run_color_lab(args):
@@ -10814,6 +10820,28 @@ def parse_args(argv=None):
     parser_tl_diff.add_argument("text1", help="First text.")
     parser_tl_diff.add_argument("text2", help="Second text.")
 
+    # --- New 'cert-lab' command ---
+    parser_cert = subparsers.add_parser(
+        "cert-lab",
+        aliases=["cert"],
+        help="SSL/TLS Certificate utilities (generate, inspect)."
+    )
+    parser_cert.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    cert_subparsers = parser_cert.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # cert-lab generate
+    parser_cert_gen = cert_subparsers.add_parser("generate", help="Generate a self-signed certificate.")
+    parser_cert_gen.add_argument("common_name", help="Common Name (CN) for the certificate (e.g. localhost).")
+    parser_cert_gen.add_argument("-o", "--output", help="Output directory.")
+
+    # cert-lab inspect
+    parser_cert_insp = cert_subparsers.add_parser("inspect", help="Inspect a certificate (local file or remote host).")
+    parser_cert_insp.add_argument("target", help="Certificate file path or host:port.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14045,6 +14073,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command in ["cert-lab", "cert"]:
+        run_cert_lab(args)
         return
 
     if args.command == "kanban":

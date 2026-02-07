@@ -84,6 +84,7 @@ from shared.retro import run_retro_logic
 from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
 from shared.badges import run_badges_logic
+from shared.pulse import run_pulse_logic
 from shared.plugin_manager import PluginManager
 import json
 import yaml
@@ -123,7 +124,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert"
+    "text-lab", "txt", "cert-lab", "cert", "pulse"
 ]
 
 if FileSystemEventHandler:
@@ -182,6 +183,11 @@ def run_port(args):
         else:
             print(f"❌ Timeout waiting for port {args.port}.", file=sys.stderr)
             sys.exit(1)
+
+def run_pulse(args):
+    """Runs the Project Pulse dashboard."""
+    run_pulse_logic(args.project_dir)
+    sys.exit(0)
 
 def run_code_query_cli(args):
     """Runs the Code Query tool."""
@@ -10843,6 +10849,13 @@ def parse_args(argv=None):
     parser_cert_gen.add_argument("--days", type=int, default=365, help="Validity in days.")
     parser_cert_gen.add_argument("-o", "--output", help="Output directory.")
 
+    # --- New 'pulse' command ---
+    parser_pulse = subparsers.add_parser(
+        "pulse",
+        help="Check the health pulse of the project (activity, complexity, issues)."
+    )
+    parser_pulse.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14106,6 +14119,10 @@ async def main():
 
     if args.command in ["cq", "code-query"]:
         run_code_query_cli(args)
+        return
+
+    if args.command == "pulse":
+        run_pulse(args)
         return
 
     # Initialize Agent Client

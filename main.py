@@ -74,6 +74,7 @@ from shared.api_lab import run_api_lab_cli
 from shared.data_lab import run_data_lab_logic
 from shared.schema_lab import run_schema_lab_logic
 from shared.cidr_lab import run_cidr_lab_logic
+from shared.time_lab import run_time_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
@@ -123,7 +124,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time"
 ]
 
 if FileSystemEventHandler:
@@ -240,6 +241,11 @@ def run_cert_lab(args):
     """Runs the Certificate Lab."""
     from shared.cert_lab import run_cert_lab_logic
     success = run_cert_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_time_lab(args):
+    """Runs the Time Lab."""
+    success = run_time_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_gantt(args):
@@ -10889,6 +10895,40 @@ def parse_args(argv=None):
     parser_cert_gen.add_argument("--days", type=int, default=365, help="Validity in days.")
     parser_cert_gen.add_argument("-o", "--output", help="Output directory.")
 
+    # --- New 'time-lab' command ---
+    parser_time = subparsers.add_parser(
+        "time-lab",
+        aliases=["time"],
+        help="Time utilities (now, convert, diff, epoch, zones)."
+    )
+    time_subparsers = parser_time.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # time-lab now
+    parser_time_now = time_subparsers.add_parser("now", help="Show current time.")
+    parser_time_now.add_argument("--timezone", "-z", help="Timezone (default: UTC).")
+
+    # time-lab convert
+    parser_time_convert = time_subparsers.add_parser("convert", help="Convert time to timezone.")
+    parser_time_convert.add_argument("time", help="Time string or timestamp.")
+    parser_time_convert.add_argument("to_zone", help="Target timezone.")
+
+    # time-lab diff
+    parser_time_diff = time_subparsers.add_parser("diff", help="Calculate time difference.")
+    parser_time_diff.add_argument("time1", help="First time.")
+    parser_time_diff.add_argument("time2", help="Second time.")
+
+    # time-lab epoch
+    parser_time_epoch = time_subparsers.add_parser("epoch", help="Get Unix timestamp.")
+    parser_time_epoch.add_argument("time", nargs="?", help="Time string (default: now).")
+
+    # time-lab zones
+    parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")
+    parser_time_zones.add_argument("search", nargs="?", help="Search term.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14128,6 +14168,10 @@ async def main():
 
     if args.command in ["cert-lab", "cert"]:
         run_cert_lab(args)
+        return
+
+    if args.command in ["time-lab", "time"]:
+        run_time_lab(args)
         return
 
     if args.command == "kanban":

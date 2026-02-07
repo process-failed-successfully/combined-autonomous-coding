@@ -123,7 +123,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url"
 ]
 
 if FileSystemEventHandler:
@@ -229,6 +229,12 @@ def run_text_lab(args):
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_url_lab(args):
+    """Runs the URL Lab."""
+    from shared.url_lab import run_url_lab_logic
+    run_url_lab_logic(args)
+    sys.exit(0)
 
 def run_cert_lab(args):
     """Runs the Certificate Lab."""
@@ -10820,6 +10826,46 @@ def parse_args(argv=None):
     parser_tl_diff.add_argument("text1", help="First text.")
     parser_tl_diff.add_argument("text2", help="Second text.")
 
+    # --- New 'url-lab' command ---
+    parser_url_lab = subparsers.add_parser(
+        "url-lab",
+        aliases=["url"],
+        help="URL utilities (parse, encode, decode, join, params, normalize)."
+    )
+    url_lab_subparsers = parser_url_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # url-lab parse
+    parser_ul_parse = url_lab_subparsers.add_parser("parse", help="Parse a URL into components.")
+    parser_ul_parse.add_argument("url", help="URL to parse.")
+
+    # url-lab encode
+    parser_ul_encode = url_lab_subparsers.add_parser("encode", help="URL encode text.")
+    parser_ul_encode.add_argument("text", help="Text to encode.")
+
+    # url-lab decode
+    parser_ul_decode = url_lab_subparsers.add_parser("decode", help="URL decode text.")
+    parser_ul_decode.add_argument("text", help="Text to decode.")
+
+    # url-lab join
+    parser_ul_join = url_lab_subparsers.add_parser("join", help="Join a base URL with paths.")
+    parser_ul_join.add_argument("base", help="Base URL.")
+    parser_ul_join.add_argument("paths", nargs="+", help="Paths to join.")
+
+    # url-lab params
+    parser_ul_params = url_lab_subparsers.add_parser("params", help="Manage query parameters.")
+    parser_ul_params.add_argument("url", help="Base URL.")
+    parser_ul_params.add_argument("mode", choices=["list", "add", "remove", "set", "get"], help="Action mode.")
+    parser_ul_params.add_argument("--key", help="Parameter key.")
+    parser_ul_params.add_argument("--value", help="Parameter value.")
+
+    # url-lab normalize
+    parser_ul_norm = url_lab_subparsers.add_parser("normalize", help="Normalize a URL.")
+    parser_ul_norm.add_argument("url", help="URL to normalize.")
+
     # --- New 'cert-lab' command ---
     parser_cert = subparsers.add_parser(
         "cert-lab",
@@ -14074,6 +14120,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command in ["url-lab", "url"]:
+        run_url_lab(args)
         return
 
     if args.command in ["cert-lab", "cert"]:

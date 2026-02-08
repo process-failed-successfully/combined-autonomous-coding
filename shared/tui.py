@@ -67,6 +67,7 @@ from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
+from shared.tui_semver import SemVerTab
 from shared.tui_logic import LogicLabTab
 from shared.tui_chaos import ChaosTab
 from shared.tui_bisect import BisectTab
@@ -4086,6 +4087,8 @@ class AgentTUI(App):
                 yield LogExplorerTab(self.project_dir)
             with TabPane("Data Lab", id="tab-datalab"):
                 yield DataLabTab(self.project_dir)
+            with TabPane("SemVer Lab", id="tab-semver"):
+                yield SemVerTab()
             with TabPane("Logic Lab", id="tab-logic-lab"):
                 yield LogicLabTab()
             with TabPane("Database", id="tab-database"):

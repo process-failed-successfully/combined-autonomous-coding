@@ -125,7 +125,8 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
+    "semver-lab", "semver"
 ]
 
 if FileSystemEventHandler:
@@ -253,6 +254,12 @@ def run_unit_lab(args):
     """Runs the Unit Lab."""
     success = run_unit_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_semver_lab(args):
+    """Runs the SemVer Lab."""
+    from shared.semver_lab import run_semver_lab_logic
+    run_semver_lab_logic(args)
+    sys.exit(0)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10957,6 +10964,43 @@ def parse_args(argv=None):
     parser_unit_list = unit_subparsers.add_parser("list", help="List available units.")
     parser_unit_list.add_argument("category", nargs="?", help="Filter by category (storage, time, length, weight, temperature).")
 
+    # --- New 'semver-lab' command ---
+    parser_semver = subparsers.add_parser(
+        "semver-lab",
+        aliases=["semver"],
+        help="SemVer utilities (parse, bump, compare, sort, satisfies)."
+    )
+    semver_subparsers = parser_semver.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # semver-lab parse
+    parser_sv_parse = semver_subparsers.add_parser("parse", help="Parse and validate a version string.")
+    parser_sv_parse.add_argument("version", help="Version string.")
+
+    # semver-lab bump
+    parser_sv_bump = semver_subparsers.add_parser("bump", help="Bump a version part.")
+    parser_sv_bump.add_argument("version", help="Base version.")
+    parser_sv_bump.add_argument("part", choices=["major", "minor", "patch", "prerelease", "premajor", "preminor", "prepatch"], help="Part to bump.")
+    parser_sv_bump.add_argument("--pre-id", default="alpha", help="Identifier for prereleases (default: alpha).")
+
+    # semver-lab compare
+    parser_sv_compare = semver_subparsers.add_parser("compare", help="Compare two versions.")
+    parser_sv_compare.add_argument("v1", help="First version.")
+    parser_sv_compare.add_argument("operator", choices=["==", "eq", "!=", "ne", ">", "gt", "<", "lt", ">=", "ge", "<=", "le"], help="Operator.")
+    parser_sv_compare.add_argument("v2", help="Second version.")
+
+    # semver-lab sort
+    parser_sv_sort = semver_subparsers.add_parser("sort", help="Sort a list of versions.")
+    parser_sv_sort.add_argument("versions", nargs="*", help="Versions to sort (reads from stdin if omitted).")
+
+    # semver-lab satisfies
+    parser_sv_satisfies = semver_subparsers.add_parser("satisfies", help="Check if a version satisfies a range.")
+    parser_sv_satisfies.add_argument("version", help="Version string.")
+    parser_sv_satisfies.add_argument("range", help="Range string (e.g., '>=1.0.0').")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14204,6 +14248,10 @@ async def main():
 
     if args.command in ["unit-lab", "unit"]:
         run_unit_lab(args)
+        return
+
+    if args.command in ["semver-lab", "semver"]:
+        run_semver_lab(args)
         return
 
     if args.command == "kanban":

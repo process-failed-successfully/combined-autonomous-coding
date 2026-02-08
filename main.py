@@ -75,6 +75,7 @@ from shared.data_lab import run_data_lab_logic
 from shared.schema_lab import run_schema_lab_logic
 from shared.cidr_lab import run_cidr_lab_logic
 from shared.time_lab import run_time_lab_logic
+from shared.sys_lab import run_sys_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -126,7 +127,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "semver-lab", "semver"
+    "semver-lab", "semver", "sys-lab", "sys"
 ]
 
 if FileSystemEventHandler:
@@ -254,6 +255,11 @@ def run_unit_lab(args):
     """Runs the Unit Lab."""
     success = run_unit_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_sys_lab(args):
+    """Runs the System Lab."""
+    run_sys_lab_logic(args)
+    sys.exit(0)
 
 def run_semver_lab(args):
     """Runs the SemVer Lab."""
@@ -11001,6 +11007,40 @@ def parse_args(argv=None):
     parser_sv_satisfies.add_argument("version", help="Version string.")
     parser_sv_satisfies.add_argument("range", help="Range string (e.g., '>=1.0.0').")
 
+    # --- New 'sys-lab' command ---
+    parser_sys = subparsers.add_parser(
+        "sys-lab",
+        aliases=["sys"],
+        help="System utilities (info, proc, kill, disk)."
+    )
+    sys_subparsers = parser_sys.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # sys-lab info
+    parser_sys_info = sys_subparsers.add_parser("info", help="Show system information.")
+
+    # sys-lab proc
+    parser_sys_proc = sys_subparsers.add_parser("proc", help="List processes.")
+    parser_sys_proc.add_argument("--sort", choices=["cpu", "mem", "pid", "name"], default="cpu", help="Sort by.")
+    parser_sys_proc.add_argument("--limit", type=int, default=20, help="Limit number of processes.")
+    parser_sys_proc.add_argument("--filter", help="Filter by name.")
+    parser_sys_proc.add_argument("--user", help="Filter by user.")
+
+    # sys-lab kill
+    parser_sys_kill = sys_subparsers.add_parser("kill", help="Kill a process.")
+    parser_sys_kill.add_argument("--pid", type=int, help="Process PID.")
+    parser_sys_kill.add_argument("--name", help="Process name.")
+    parser_sys_kill.add_argument("--signal", type=int, default=15, help="Signal to send (default: 15/SIGTERM).")
+    parser_sys_kill.add_argument("--force", action="store_true", help="Force kill matching processes.")
+
+    # sys-lab disk
+    parser_sys_disk = sys_subparsers.add_parser("disk", help="Analyze disk usage.")
+    parser_sys_disk.add_argument("path", nargs="?", default=".", help="Directory to analyze.")
+    parser_sys_disk.add_argument("--limit", type=int, default=20, help="Limit number of items.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14252,6 +14292,10 @@ async def main():
 
     if args.command in ["semver-lab", "semver"]:
         run_semver_lab(args)
+        return
+
+    if args.command in ["sys-lab", "sys"]:
+        run_sys_lab(args)
         return
 
     if args.command == "kanban":

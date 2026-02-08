@@ -123,7 +123,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "unit-lab", "unit"
 ]
 
 if FileSystemEventHandler:
@@ -240,6 +240,12 @@ def run_cert_lab(args):
     """Runs the Certificate Lab."""
     from shared.cert_lab import run_cert_lab_logic
     success = run_cert_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_unit_lab(args):
+    """Runs the Unit Lab."""
+    from shared.unit_lab import run_unit_lab_logic
+    success = run_unit_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_gantt(args):
@@ -10889,6 +10895,28 @@ def parse_args(argv=None):
     parser_cert_gen.add_argument("--days", type=int, default=365, help="Validity in days.")
     parser_cert_gen.add_argument("-o", "--output", help="Output directory.")
 
+    # --- New 'unit-lab' command ---
+    parser_unit_lab = subparsers.add_parser(
+        "unit-lab",
+        aliases=["unit"],
+        help="Unit utilities (convert, list)."
+    )
+    unit_lab_subparsers = parser_unit_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # unit-lab convert
+    parser_ul_convert = unit_lab_subparsers.add_parser("convert", help="Convert between units.")
+    parser_ul_convert.add_argument("value", help="Value to convert.")
+    parser_ul_convert.add_argument("from_unit", help="Source unit.")
+    parser_ul_convert.add_argument("to_unit", help="Target unit.")
+
+    # unit-lab list
+    parser_ul_list = unit_lab_subparsers.add_parser("list", help="List supported units.")
+    parser_ul_list.add_argument("category", nargs="?", help="Filter by category.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14128,6 +14156,10 @@ async def main():
 
     if args.command in ["cert-lab", "cert"]:
         run_cert_lab(args)
+        return
+
+    if args.command in ["unit-lab", "unit"]:
+        run_unit_lab(args)
         return
 
     if args.command == "kanban":

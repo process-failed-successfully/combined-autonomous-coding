@@ -75,6 +75,7 @@ from shared.data_lab import run_data_lab_logic
 from shared.schema_lab import run_schema_lab_logic
 from shared.cidr_lab import run_cidr_lab_logic
 from shared.time_lab import run_time_lab_logic
+from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
 from shared.network import run_network_logic
@@ -124,7 +125,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit"
 ]
 
 if FileSystemEventHandler:
@@ -246,6 +247,11 @@ def run_cert_lab(args):
 def run_time_lab(args):
     """Runs the Time Lab."""
     success = run_time_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_unit_lab(args):
+    """Runs the Unit Lab."""
+    success = run_unit_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_gantt(args):
@@ -10929,6 +10935,28 @@ def parse_args(argv=None):
     parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")
     parser_time_zones.add_argument("search", nargs="?", help="Search term.")
 
+    # --- New 'unit-lab' command ---
+    parser_unit = subparsers.add_parser(
+        "unit-lab",
+        aliases=["unit"],
+        help="Unit conversion utilities (storage, time, length, weight, temperature)."
+    )
+    unit_subparsers = parser_unit.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # unit-lab convert
+    parser_unit_convert = unit_subparsers.add_parser("convert", help="Convert between units.")
+    parser_unit_convert.add_argument("value", help="Value to convert.")
+    parser_unit_convert.add_argument("from_unit", help="Source unit (e.g., mb, kg, c).")
+    parser_unit_convert.add_argument("to_unit", help="Target unit (e.g., gb, lb, f).")
+
+    # unit-lab list
+    parser_unit_list = unit_subparsers.add_parser("list", help="List available units.")
+    parser_unit_list.add_argument("category", nargs="?", help="Filter by category (storage, time, length, weight, temperature).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14172,6 +14200,10 @@ async def main():
 
     if args.command in ["time-lab", "time"]:
         run_time_lab(args)
+        return
+
+    if args.command in ["unit-lab", "unit"]:
+        run_unit_lab(args)
         return
 
     if args.command == "kanban":

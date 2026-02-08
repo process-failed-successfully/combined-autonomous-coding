@@ -124,7 +124,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "docs"
 ]
 
 if FileSystemEventHandler:
@@ -247,6 +247,23 @@ def run_time_lab(args):
     """Runs the Time Lab."""
     success = run_time_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_docs(args):
+    """Manages project documentation."""
+    from shared.docs_generator import DocsGenerator
+
+    project_dir = args.project_dir.resolve()
+    generator = DocsGenerator(project_dir)
+
+    if args.action == "init":
+        generator.init_docs()
+    elif args.action == "build":
+        if not generator.build_site():
+            sys.exit(1)
+    elif args.action == "serve":
+        generator.serve_site(port=args.port)
+
+    sys.exit(0)
 
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
@@ -10929,6 +10946,28 @@ def parse_args(argv=None):
     parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")
     parser_time_zones.add_argument("search", nargs="?", help="Search term.")
 
+    # --- New 'docs' command ---
+    parser_docs = subparsers.add_parser(
+        "docs",
+        help="Documentation generator (static site, API docs)."
+    )
+    parser_docs.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    docs_subparsers = parser_docs.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # docs init
+    docs_subparsers.add_parser("init", help="Initialize documentation structure.")
+
+    # docs build
+    docs_subparsers.add_parser("build", help="Build static site.")
+
+    # docs serve
+    parser_docs_serve = docs_subparsers.add_parser("serve", help="Serve static site.")
+    parser_docs_serve.add_argument("--port", type=int, default=8000, help="Port to serve on (default: 8000).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14172,6 +14211,10 @@ async def main():
 
     if args.command in ["time-lab", "time"]:
         run_time_lab(args)
+        return
+
+    if args.command == "docs":
+        run_docs(args)
         return
 
     if args.command == "kanban":

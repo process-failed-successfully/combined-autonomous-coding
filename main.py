@@ -75,6 +75,7 @@ from shared.data_lab import run_data_lab_logic
 from shared.schema_lab import run_schema_lab_logic
 from shared.cidr_lab import run_cidr_lab_logic
 from shared.time_lab import run_time_lab_logic
+from shared.math_lab import run_math_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -125,7 +126,8 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit"
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
+    "math-lab", "math"
 ]
 
 if FileSystemEventHandler:
@@ -252,6 +254,11 @@ def run_time_lab(args):
 def run_unit_lab(args):
     """Runs the Unit Lab."""
     success = run_unit_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_math_lab(args):
+    """Runs the Math Lab."""
+    success = run_math_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_gantt(args):
@@ -10957,6 +10964,30 @@ def parse_args(argv=None):
     parser_unit_list = unit_subparsers.add_parser("list", help="List available units.")
     parser_unit_list.add_argument("category", nargs="?", help="Filter by category (storage, time, length, weight, temperature).")
 
+    # --- New 'math-lab' command ---
+    parser_math = subparsers.add_parser(
+        "math-lab",
+        aliases=["math"],
+        help="Math utilities (eval, stats, prime)."
+    )
+    math_subparsers = parser_math.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # math-lab eval
+    parser_math_eval = math_subparsers.add_parser("eval", help="Evaluate a mathematical expression.")
+    parser_math_eval.add_argument("expression", help="Expression to evaluate.")
+
+    # math-lab stats
+    parser_math_stats = math_subparsers.add_parser("stats", help="Calculate statistics.")
+    parser_math_stats.add_argument("numbers", nargs="*", help="List of numbers (or stdin if empty).")
+
+    # math-lab prime
+    parser_math_prime = math_subparsers.add_parser("prime", help="Prime number analysis.")
+    parser_math_prime.add_argument("n", type=int, help="Integer to analyze.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14204,6 +14235,10 @@ async def main():
 
     if args.command in ["unit-lab", "unit"]:
         run_unit_lab(args)
+        return
+
+    if args.command in ["math-lab", "math"]:
+        run_math_lab(args)
         return
 
     if args.command == "kanban":

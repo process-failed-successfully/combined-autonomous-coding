@@ -77,6 +77,7 @@ from shared.cidr_lab import run_cidr_lab_logic
 from shared.time_lab import run_time_lab_logic
 from shared.sys_lab import run_sys_lab_logic
 from shared.sql_lab import run_sql_lab_logic
+from shared.json_lab import run_json_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -130,7 +131,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto"
+    "crypto-lab", "crypto", "json-lab", "json"
 ]
 
 if FileSystemEventHandler:
@@ -284,6 +285,11 @@ def run_sys_lab(args):
 def run_sql_lab(args):
     """Runs the SQL Lab."""
     run_sql_lab_logic(args)
+    sys.exit(0)
+
+def run_json_lab(args):
+    """Runs the JSON Lab."""
+    run_json_lab_logic(args)
     sys.exit(0)
 
 def run_semver_lab(args):
@@ -11153,6 +11159,43 @@ def parse_args(argv=None):
     parser_sql_export.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format.")
     parser_sql_export.add_argument("--output", "-o", required=True, help="Output file path.")
 
+    # --- New 'json-lab' command ---
+    parser_json = subparsers.add_parser(
+        "json-lab",
+        aliases=["json"],
+        help="JSON utilities (get, set, del, minify, diff)."
+    )
+    json_subparsers = parser_json.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # json-lab get
+    parser_json_get = json_subparsers.add_parser("get", help="Get value from JSON.")
+    parser_json_get.add_argument("input", help="JSON string or file path.")
+    parser_json_get.add_argument("path", nargs="?", help="Path to value (e.g. key.subkey[0]).")
+
+    # json-lab set
+    parser_json_set = json_subparsers.add_parser("set", help="Set value in JSON.")
+    parser_json_set.add_argument("input", help="JSON string or file path.")
+    parser_json_set.add_argument("path", help="Path to set.")
+    parser_json_set.add_argument("value", help="Value to set.")
+
+    # json-lab del
+    parser_json_del = json_subparsers.add_parser("del", help="Delete value from JSON.")
+    parser_json_del.add_argument("input", help="JSON string or file path.")
+    parser_json_del.add_argument("path", help="Path to delete.")
+
+    # json-lab minify
+    parser_json_minify = json_subparsers.add_parser("minify", help="Minify JSON.")
+    parser_json_minify.add_argument("input", help="JSON string or file path.")
+
+    # json-lab diff
+    parser_json_diff = json_subparsers.add_parser("diff", help="Diff two JSON files.")
+    parser_json_diff.add_argument("file1", help="First file.")
+    parser_json_diff.add_argument("file2", help="Second file.")
+
     # --- New 'crypto-lab' command ---
     parser_crypto = subparsers.add_parser(
         "crypto-lab",
@@ -14467,6 +14510,10 @@ async def main():
 
     if args.command in ["sql-lab", "sql"]:
         run_sql_lab(args)
+        return
+
+    if args.command in ["json-lab", "json"]:
+        run_json_lab(args)
         return
 
     if args.command == "kanban":

@@ -89,6 +89,7 @@ from shared.impact import ImpactAnalyzer
 from shared.smart_context import run_smart_context
 from shared.badges import run_badges_logic
 from shared.plugin_manager import PluginManager
+from shared.crypto_lab import run_crypto_lab_logic
 import json
 import yaml
 import platformdirs
@@ -128,7 +129,8 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html"
+    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
+    "crypto-lab", "crypto"
 ]
 
 if FileSystemEventHandler:
@@ -215,6 +217,11 @@ def run_data_lab(args):
 def run_badges(args):
     """Runs the badges command."""
     success = run_badges_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_crypto_lab(args):
+    """Runs the Crypto Lab."""
+    success = run_crypto_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_jwt_lab(args):
@@ -11146,6 +11153,49 @@ def parse_args(argv=None):
     parser_sql_export.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format.")
     parser_sql_export.add_argument("--output", "-o", required=True, help="Output file path.")
 
+    # --- New 'crypto-lab' command ---
+    parser_crypto = subparsers.add_parser(
+        "crypto-lab",
+        aliases=["crypto"],
+        help="Crypto utilities (hash, encrypt, decrypt, gen-key, random)."
+    )
+    crypto_subparsers = parser_crypto.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # crypto-lab hash
+    parser_crypto_hash = crypto_subparsers.add_parser("hash", help="Calculate hash.")
+    parser_crypto_hash.add_argument("--text", help="Input text.")
+    parser_crypto_hash.add_argument("--file", help="Input file.")
+    parser_crypto_hash.add_argument("--algo", default="sha256", help="Algorithm (md5, sha1, sha256, sha512).")
+
+    # crypto-lab gen-key
+    parser_crypto_gen = crypto_subparsers.add_parser("gen-key", help="Generate encryption key.")
+    parser_crypto_gen.add_argument("--output", "-o", help="Save key to file.")
+
+    # crypto-lab encrypt
+    parser_crypto_enc = crypto_subparsers.add_parser("encrypt", help="Encrypt data.")
+    parser_crypto_enc.add_argument("--input", help="Input text.")
+    parser_crypto_enc.add_argument("--input-file", help="Input file.")
+    parser_crypto_enc.add_argument("--key", help="Key string.")
+    parser_crypto_enc.add_argument("--key-file", help="Key file.")
+    parser_crypto_enc.add_argument("--output", "-o", help="Output file.")
+
+    # crypto-lab decrypt
+    parser_crypto_dec = crypto_subparsers.add_parser("decrypt", help="Decrypt data.")
+    parser_crypto_dec.add_argument("--input", help="Input text (base64 encoded if encrypted).")
+    parser_crypto_dec.add_argument("--input-file", help="Input file.")
+    parser_crypto_dec.add_argument("--key", help="Key string.")
+    parser_crypto_dec.add_argument("--key-file", help="Key file.")
+    parser_crypto_dec.add_argument("--output", "-o", help="Output file.")
+
+    # crypto-lab random
+    parser_crypto_rand = crypto_subparsers.add_parser("random", help="Generate random data.")
+    parser_crypto_rand.add_argument("--length", type=int, default=32, help="Length.")
+    parser_crypto_rand.add_argument("--type", choices=["hex", "base64", "uuid", "int"], default="hex", help="Type.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14361,6 +14411,10 @@ async def main():
 
     if args.command == "badges":
         run_badges(args)
+        return
+
+    if args.command in ["crypto-lab", "crypto"]:
+        run_crypto_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

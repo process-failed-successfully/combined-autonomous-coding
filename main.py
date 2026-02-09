@@ -76,6 +76,7 @@ from shared.schema_lab import run_schema_lab_logic
 from shared.cidr_lab import run_cidr_lab_logic
 from shared.time_lab import run_time_lab_logic
 from shared.sys_lab import run_sys_lab_logic
+from shared.sql_lab import run_sql_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -127,7 +128,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys"
+    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql"
 ]
 
 if FileSystemEventHandler:
@@ -265,6 +266,11 @@ def run_unit_lab(args):
 def run_sys_lab(args):
     """Runs the System Lab."""
     run_sys_lab_logic(args)
+    sys.exit(0)
+
+def run_sql_lab(args):
+    """Runs the SQL Lab."""
+    run_sql_lab_logic(args)
     sys.exit(0)
 
 def run_semver_lab(args):
@@ -11072,6 +11078,36 @@ def parse_args(argv=None):
     parser_sys_disk.add_argument("path", nargs="?", default=".", help="Directory to analyze.")
     parser_sys_disk.add_argument("--limit", type=int, default=20, help="Limit number of items.")
 
+    # --- New 'sql-lab' command ---
+    parser_sql = subparsers.add_parser(
+        "sql-lab",
+        aliases=["sql"],
+        help="SQL utilities (run, list, schema, export)."
+    )
+    parser_sql.add_argument("--url", help="Database connection URL (defaults to DATABASE_URL env var or auto-detect).")
+    sql_subparsers = parser_sql.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # sql-lab run
+    parser_sql_run = sql_subparsers.add_parser("run", help="Run a SQL query.")
+    parser_sql_run.add_argument("query", help="SQL query to execute.")
+
+    # sql-lab list
+    parser_sql_list = sql_subparsers.add_parser("list", help="List tables.")
+
+    # sql-lab schema
+    parser_sql_schema = sql_subparsers.add_parser("schema", help="Show schema.")
+    parser_sql_schema.add_argument("table", nargs="?", help="Specific table name.")
+
+    # sql-lab export
+    parser_sql_export = sql_subparsers.add_parser("export", help="Export query results.")
+    parser_sql_export.add_argument("query", help="SQL query to execute.")
+    parser_sql_export.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format.")
+    parser_sql_export.add_argument("--output", "-o", required=True, help="Output file path.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14331,6 +14367,10 @@ async def main():
 
     if args.command in ["sys-lab", "sys"]:
         run_sys_lab(args)
+        return
+
+    if args.command in ["sql-lab", "sql"]:
+        run_sql_lab(args)
         return
 
     if args.command == "kanban":

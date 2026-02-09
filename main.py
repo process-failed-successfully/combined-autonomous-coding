@@ -128,7 +128,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql"
+    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html"
 ]
 
 if FileSystemEventHandler:
@@ -234,6 +234,12 @@ def run_text_lab(args):
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_html_lab(args):
+    """Runs the HTML Lab."""
+    from shared.html_lab import run_html_lab_logic
+    run_html_lab_logic(args)
+    sys.exit(0)
 
 def run_url_lab(args):
     """Runs the URL Lab."""
@@ -10863,6 +10869,38 @@ def parse_args(argv=None):
     parser_tl_diff.add_argument("text1", help="First text.")
     parser_tl_diff.add_argument("text2", help="Second text.")
 
+    # --- New 'html-lab' command ---
+    parser_html = subparsers.add_parser(
+        "html-lab",
+        aliases=["html"],
+        help="HTML utilities (extract, clean, table, validate)."
+    )
+    parser_html.add_argument("--file", help="Input HTML file (defaults to stdin).")
+    html_subparsers = parser_html.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # html-lab extract
+    parser_html_extract = html_subparsers.add_parser("extract", help="Extract content from tags.")
+    parser_html_extract.add_argument("--tag", help="Tag name to extract.")
+    parser_html_extract.add_argument("--attr", help="Attribute to extract (returns text if omitted).")
+    parser_html_extract.add_argument("--id", help="Filter by ID.")
+    parser_html_extract.add_argument("--class-name", help="Filter by class name.")
+
+    # html-lab clean
+    parser_html_clean = html_subparsers.add_parser("clean", help="Strip tags from HTML.")
+    parser_html_clean.add_argument("--keep", help="Comma-separated list of tags to keep.")
+
+    # html-lab table
+    parser_html_table = html_subparsers.add_parser("table", help="Parse HTML table to CSV/JSON.")
+    parser_html_table.add_argument("--index", type=int, default=0, help="Table index (default: 0).")
+    parser_html_table.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format.")
+
+    # html-lab validate
+    parser_html_validate = html_subparsers.add_parser("validate", help="Validate HTML structure.")
+
     # --- New 'url-lab' command ---
     parser_url_lab = subparsers.add_parser(
         "url-lab",
@@ -14339,6 +14377,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command in ["html-lab", "html"]:
+        run_html_lab(args)
         return
 
     if args.command in ["url-lab", "url"]:

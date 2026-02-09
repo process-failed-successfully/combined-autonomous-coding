@@ -127,7 +127,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "semver-lab", "semver", "sys-lab", "sys"
+    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys"
 ]
 
 if FileSystemEventHandler:
@@ -249,6 +249,12 @@ def run_cert_lab(args):
 def run_time_lab(args):
     """Runs the Time Lab."""
     success = run_time_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_math_lab(args):
+    """Runs the Math Lab."""
+    from shared.math_lab import run_math_lab_logic
+    success = run_math_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_unit_lab(args):
@@ -10948,6 +10954,31 @@ def parse_args(argv=None):
     parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")
     parser_time_zones.add_argument("search", nargs="?", help="Search term.")
 
+    # --- New 'math-lab' command ---
+    parser_math = subparsers.add_parser(
+        "math-lab",
+        aliases=["math"],
+        help="Math utilities (evaluate, stats, prime)."
+    )
+    math_subparsers = parser_math.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # math-lab eval
+    parser_math_eval = math_subparsers.add_parser("eval", help="Evaluate a math expression.")
+    parser_math_eval.add_argument("expression", nargs="?", help="Expression to evaluate (or stdin).")
+
+    # math-lab stats
+    parser_math_stats = math_subparsers.add_parser("stats", help="Calculate statistics.")
+    parser_math_stats.add_argument("numbers", nargs="*", help="List of numbers (or stdin).")
+
+    # math-lab prime
+    parser_math_prime = math_subparsers.add_parser("prime", help="Prime number utilities.")
+    parser_math_prime.add_argument("subaction", choices=["check", "next", "factors"], help="Operation: check, next, factors.")
+    parser_math_prime.add_argument("number", help="The integer to process.")
+
     # --- New 'unit-lab' command ---
     parser_unit = subparsers.add_parser(
         "unit-lab",
@@ -14284,6 +14315,10 @@ async def main():
 
     if args.command in ["time-lab", "time"]:
         run_time_lab(args)
+        return
+
+    if args.command in ["math-lab", "math"]:
+        run_math_lab(args)
         return
 
     if args.command in ["unit-lab", "unit"]:

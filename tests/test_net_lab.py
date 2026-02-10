@@ -1,0 +1,74 @@
+import unittest
+from unittest.mock import MagicMock, patch
+from shared.net_lab import NetLabManager
+
+
+class TestNetLabManager(unittest.TestCase):
+    def setUp(self):
+        self.manager = NetLabManager()
+
+    @patch("socket.create_connection")
+    def test_scan_ports_open(self, mock_create_connection):
+        # Setup mock to succeed (context manager)
+        mock_sock = MagicMock()
+        mock_create_connection.return_value.__enter__.return_value = mock_sock
+
+        results = self.manager.scan_ports("localhost", [80])
+        self.assertEqual(results[80], "Open")
+        mock_create_connection.assert_called_with(("localhost", 80), timeout=0.5)
+
+    @patch("socket.create_connection")
+    def test_scan_ports_closed(self, mock_create_connection):
+        # Setup mock to raise ConnectionRefusedError
+        mock_create_connection.side_effect = ConnectionRefusedError
+
+        results = self.manager.scan_ports("localhost", [80])
+        self.assertEqual(results[80], "Closed")
+
+    @patch("socket.gethostbyname_ex")
+    def test_dns_lookup_a(self, mock_gethostbyname_ex):
+        mock_gethostbyname_ex.return_value = ("example.com", [], ["1.2.3.4"])
+
+        results = self.manager.dns_lookup("example.com", "A")
+        self.assertEqual(results["A"], ["1.2.3.4"])
+
+    @patch("requests.head")
+    def test_http_head(self, mock_head):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "text/html"}
+        mock_head.return_value = mock_response
+
+        result = self.manager.http_head("http://example.com")
+        self.assertEqual(result["status_code"], 200)
+        self.assertEqual(result["headers"]["Content-Type"], "text/html")
+
+    @patch("subprocess.call")
+    def test_ping_success(self, mock_call):
+        mock_call.return_value = 0
+        self.assertTrue(self.manager.ping("localhost"))
+
+    @patch("subprocess.call")
+    def test_ping_failure(self, mock_call):
+        mock_call.return_value = 1
+        self.assertFalse(self.manager.ping("localhost"))
+
+    @patch("requests.get")
+    def test_get_ip_info(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.text = "1.2.3.4"
+        mock_get.return_value = mock_response
+
+        # Mock socket for local IP
+        with patch("socket.socket") as mock_socket:
+            mock_sock_instance = MagicMock()
+            mock_socket.return_value.__enter__.return_value = mock_sock_instance
+            mock_sock_instance.getsockname.return_value = ["192.168.1.10", 12345]
+
+            info = self.manager.get_ip_info()
+            self.assertEqual(info["public_ip"], "1.2.3.4")
+            self.assertEqual(info["local_ip"], "192.168.1.10")
+
+
+if __name__ == '__main__':
+    unittest.main()

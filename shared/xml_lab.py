@@ -1,5 +1,6 @@
 import sys
 import json
+import defusedxml.ElementTree as DetusedET
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -12,16 +13,16 @@ class XmlLabManager:
     def parse(self, content: str) -> ET.Element:
         """Parses XML content string into an ElementTree Element."""
         try:
-            return ET.fromstring(content)
-        except ET.ParseError as e:
+            return DetusedET.fromstring(content)
+        except DetusedET.ParseError as e:
             raise ValueError(f"XML Parse Error: {e}")
 
     def load_file(self, filepath: str) -> ET.Element:
         """Loads XML from a file path."""
         try:
-            tree = ET.parse(filepath)
+            tree = DetusedET.parse(filepath)
             return tree.getroot()
-        except ET.ParseError as e:
+        except DetusedET.ParseError as e:
             raise ValueError(f"XML Parse Error in {filepath}: {e}")
         except FileNotFoundError:
             raise ValueError(f"File not found: {filepath}")
@@ -40,9 +41,9 @@ class XmlLabManager:
     def validate(self, content: str) -> Optional[str]:
         """Returns None if valid, else error message."""
         try:
-            ET.fromstring(content)
+            DetusedET.fromstring(content)
             return None
-        except ET.ParseError as e:
+        except DetusedET.ParseError as e:
             return str(e)
 
     def xpath(self, element: ET.Element, query: str) -> List[ET.Element]:

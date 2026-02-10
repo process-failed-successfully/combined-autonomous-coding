@@ -93,6 +93,7 @@ from shared.badges import run_badges_logic
 from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
+from shared.markdown_lab import run_markdown_lab_logic
 import json
 import yaml
 import platformdirs
@@ -133,7 +134,8 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml"
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
+    "markdown-lab", "md", "md-lab"
 ]
 
 if FileSystemEventHandler:
@@ -248,6 +250,11 @@ def run_text_lab(args):
     """Runs the Text Lab."""
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_markdown_lab(args):
+    """Runs the Markdown Lab."""
+    success = run_markdown_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_html_lab(args):
@@ -11371,6 +11378,38 @@ def parse_args(argv=None):
     # xml-lab json
     parser_xml_json = xml_subparsers.add_parser("json", help="Convert to JSON.")
 
+    # --- New 'markdown-lab' command ---
+    parser_md = subparsers.add_parser(
+        "markdown-lab",
+        aliases=["md", "md-lab"],
+        help="Markdown utilities (toc, stats, table, lint)."
+    )
+    md_subparsers = parser_md.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # md-lab toc
+    parser_md_toc = md_subparsers.add_parser("toc", help="Generate Table of Contents.")
+    parser_md_toc.add_argument("--file", "-f", help="Input file.")
+    parser_md_toc.add_argument("--depth", type=int, default=3, help="Max header depth.")
+    parser_md_toc.add_argument("--insert", action="store_true", help="Insert into file.")
+
+    # md-lab stats
+    parser_md_stats = md_subparsers.add_parser("stats", help="Get markdown statistics.")
+    parser_md_stats.add_argument("--file", "-f", help="Input file.")
+
+    # md-lab table
+    parser_md_table = md_subparsers.add_parser("table", help="Format markdown tables.")
+    parser_md_table.add_argument("--file", "-f", help="Input file.")
+    parser_md_table.add_argument("--output", "-o", help="Output file.")
+
+    # md-lab lint
+    parser_md_lint = md_subparsers.add_parser("lint", help="Lint markdown file.")
+    parser_md_lint.add_argument("--file", "-f", help="Input file.")
+    parser_md_lint.add_argument("--root", help="Root directory for link checking.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14598,6 +14637,10 @@ async def main():
 
     if args.command in ["xml-lab", "xml"]:
         run_xml_lab(args)
+        return
+
+    if args.command in ["markdown-lab", "md", "md-lab"]:
+        run_markdown_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

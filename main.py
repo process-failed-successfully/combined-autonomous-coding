@@ -78,6 +78,7 @@ from shared.time_lab import run_time_lab_logic
 from shared.sys_lab import run_sys_lab_logic
 from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
+from shared.csv_lab import run_csv_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -131,7 +132,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json"
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv"
 ]
 
 if FileSystemEventHandler:
@@ -285,6 +286,11 @@ def run_sys_lab(args):
 def run_sql_lab(args):
     """Runs the SQL Lab."""
     run_sql_lab_logic(args)
+    sys.exit(0)
+
+def run_csv_lab(args):
+    """Runs the CSV Lab."""
+    run_csv_lab_logic(args)
     sys.exit(0)
 
 def run_json_lab(args):
@@ -11159,6 +11165,48 @@ def parse_args(argv=None):
     parser_sql_export.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format.")
     parser_sql_export.add_argument("--output", "-o", required=True, help="Output file path.")
 
+    # --- New 'csv-lab' command ---
+    parser_csv = subparsers.add_parser(
+        "csv-lab",
+        aliases=["csv"],
+        help="CSV utilities (read, stats, filter, sort, select)."
+    )
+    parser_csv.add_argument("--file", "-f", help="Input CSV file.")
+    csv_subparsers = parser_csv.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # csv-lab read
+    parser_csv_read = csv_subparsers.add_parser("read", help="Read and pretty print CSV.")
+    parser_csv_read.add_argument("--limit", type=int, default=50, help="Limit rows displayed.")
+
+    # csv-lab stats
+    parser_csv_stats = csv_subparsers.add_parser("stats", help="Show CSV statistics.")
+
+    # csv-lab headers
+    parser_csv_headers = csv_subparsers.add_parser("headers", help="List headers.")
+
+    # csv-lab filter
+    parser_csv_filter = csv_subparsers.add_parser("filter", help="Filter CSV rows.")
+    parser_csv_filter.add_argument("column", help="Column to filter by.")
+    parser_csv_filter.add_argument("value", help="Value to match.")
+    parser_csv_filter.add_argument("--operator", choices=["eq", "neq", "gt", "lt", "gte", "lte", "contains"], default="eq", help="Comparison operator.")
+    parser_csv_filter.add_argument("--output", "-o", help="Output file (default stdout).")
+
+    # csv-lab sort
+    parser_csv_sort = csv_subparsers.add_parser("sort", help="Sort CSV rows.")
+    parser_csv_sort.add_argument("column", help="Column to sort by.")
+    parser_csv_sort.add_argument("--reverse", action="store_true", help="Sort descending.")
+    parser_csv_sort.add_argument("--numeric", action="store_true", help="Treat values as numbers.")
+    parser_csv_sort.add_argument("--output", "-o", help="Output file (default stdout).")
+
+    # csv-lab select
+    parser_csv_select = csv_subparsers.add_parser("select", help="Select specific columns.")
+    parser_csv_select.add_argument("columns", help="Comma-separated list of columns.")
+    parser_csv_select.add_argument("--output", "-o", help="Output file (default stdout).")
+
     # --- New 'json-lab' command ---
     parser_json = subparsers.add_parser(
         "json-lab",
@@ -14514,6 +14562,10 @@ async def main():
 
     if args.command in ["json-lab", "json"]:
         run_json_lab(args)
+        return
+
+    if args.command in ["csv-lab", "csv"]:
+        run_csv_lab(args)
         return
 
     if args.command == "kanban":

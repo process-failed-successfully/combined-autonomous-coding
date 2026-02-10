@@ -95,6 +95,7 @@ from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
 from shared.markdown_lab import run_markdown_lab_logic
+from shared.net_lab import run_net_lab_logic
 import json
 import yaml
 import platformdirs
@@ -136,7 +137,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml"
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net"
 ]
 
 if FileSystemEventHandler:
@@ -11465,6 +11466,40 @@ def parse_args(argv=None):
     parser_md_lint.add_argument("--file", "-f", help="Input file.")
     parser_md_lint.add_argument("--root", help="Root directory for link checking.")
 
+    # --- New 'net-lab' command ---
+    parser_net = subparsers.add_parser(
+        "net-lab",
+        aliases=["net"],
+        help="Network utilities (scan, dns, head, ping, ip)."
+    )
+    net_subparsers = parser_net.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # net-lab scan
+    parser_net_scan = net_subparsers.add_parser("scan", help="Scan ports.")
+    parser_net_scan.add_argument("host", help="Target host.")
+    parser_net_scan.add_argument("--ports", help="Ports to scan (e.g. 80,443 or 1-100).")
+
+    # net-lab dns
+    parser_net_dns = net_subparsers.add_parser("dns", help="DNS Lookup.")
+    parser_net_dns.add_argument("domain", help="Domain to lookup.")
+    parser_net_dns.add_argument("--type", default="A", help="Record type (A, AAAA).")
+
+    # net-lab head
+    parser_net_head = net_subparsers.add_parser("head", help="HTTP Headers.")
+    parser_net_head.add_argument("url", help="Target URL.")
+
+    # net-lab ping
+    parser_net_ping = net_subparsers.add_parser("ping", help="Ping host.")
+    parser_net_ping.add_argument("host", help="Target host.")
+    parser_net_ping.add_argument("--count", type=int, default=4, help="Ping count.")
+
+    # net-lab ip
+    parser_net_ip = net_subparsers.add_parser("ip", help="Get IP info.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14696,6 +14731,10 @@ async def main():
 
     if args.command in ["markdown-lab", "md", "md-lab"]:
         run_markdown_lab(args)
+        return
+
+    if args.command in ["net-lab", "net"]:
+        run_net_lab_logic(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

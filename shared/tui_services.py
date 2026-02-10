@@ -58,7 +58,12 @@ class ServicesTab(Container):
 
     def refresh_ui(self) -> None:
         # Refresh Table
-        table = self.query_one("#services-table", DataTable)
+        try:
+            table = self.query_one("#services-table", DataTable)
+        except Exception:
+            # Widget might be unmounting or not ready
+            return
+
         services = self.manager.list_services()
 
         current_keys = set(table.rows.keys())

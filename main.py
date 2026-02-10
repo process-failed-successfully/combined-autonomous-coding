@@ -133,7 +133,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img"
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml"
 ]
 
 if FileSystemEventHandler:
@@ -254,6 +254,12 @@ def run_html_lab(args):
     """Runs the HTML Lab."""
     from shared.html_lab import run_html_lab_logic
     run_html_lab_logic(args)
+    sys.exit(0)
+
+def run_xml_lab(args):
+    """Runs the XML Lab."""
+    from shared.xml_lab import run_xml_lab_logic
+    run_xml_lab_logic(args)
     sys.exit(0)
 
 def run_url_lab(args):
@@ -11332,6 +11338,39 @@ def parse_args(argv=None):
     parser_image_placeholder.add_argument("--text", help="Text to overlay.")
     parser_image_placeholder.add_argument("--text-color", default="black", help="Text color.")
 
+    # --- New 'xml-lab' command ---
+    parser_xml = subparsers.add_parser(
+        "xml-lab",
+        aliases=["xml"],
+        help="XML utilities (format, validate, xpath, edit, json)."
+    )
+    parser_xml.add_argument("--input", "-i", help="Input XML file (or stdin if -).")
+    xml_subparsers = parser_xml.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # xml-lab format
+    parser_xml_format = xml_subparsers.add_parser("format", help="Format XML.")
+
+    # xml-lab validate
+    parser_xml_validate = xml_subparsers.add_parser("validate", help="Validate XML.")
+
+    # xml-lab xpath
+    parser_xml_xpath = xml_subparsers.add_parser("xpath", help="Run XPath query.")
+    parser_xml_xpath.add_argument("--query", "-q", required=True, help="XPath query.")
+
+    # xml-lab edit
+    parser_xml_edit = xml_subparsers.add_parser("edit", help="Edit XML.")
+    parser_xml_edit.add_argument("--query", "-q", required=True, help="XPath to target element(s).")
+    parser_xml_edit.add_argument("--value", "-v", required=True, help="New value.")
+    parser_xml_edit.add_argument("--attr", "-a", help="Attribute to modify (modify text content if omitted).")
+    parser_xml_edit.add_argument("--output", "-o", help="Output file (default stdout).")
+
+    # xml-lab json
+    parser_xml_json = xml_subparsers.add_parser("json", help="Convert to JSON.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14555,6 +14594,10 @@ async def main():
 
     if args.command in ["image-lab", "img"]:
         run_image_lab(args)
+        return
+
+    if args.command in ["xml-lab", "xml"]:
+        run_xml_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

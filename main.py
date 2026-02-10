@@ -92,6 +92,7 @@ from shared.smart_context import run_smart_context
 from shared.badges import run_badges_logic
 from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
+from shared.image_lab import run_image_lab_logic
 import json
 import yaml
 import platformdirs
@@ -132,7 +133,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv"
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img"
 ]
 
 if FileSystemEventHandler:
@@ -225,6 +226,11 @@ def run_crypto_lab(args):
     """Runs the Crypto Lab."""
     success = run_crypto_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_image_lab(args):
+    """Runs the Image Lab."""
+    run_image_lab_logic(args)
+    sys.exit(0)
 
 def run_jwt_lab(args):
     """Runs the JWT Lab."""
@@ -11287,6 +11293,45 @@ def parse_args(argv=None):
     parser_crypto_rand.add_argument("--length", type=int, default=32, help="Length.")
     parser_crypto_rand.add_argument("--type", choices=["hex", "base64", "uuid", "int"], default="hex", help="Type.")
 
+    # --- New 'image-lab' command ---
+    parser_image = subparsers.add_parser(
+        "image-lab",
+        aliases=["img"],
+        help="Image utilities (info, convert, resize, placeholder)."
+    )
+    image_subparsers = parser_image.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # image-lab info
+    parser_image_info = image_subparsers.add_parser("info", help="Get image metadata.")
+    parser_image_info.add_argument("file", help="Image file path.")
+
+    # image-lab convert
+    parser_image_convert = image_subparsers.add_parser("convert", help="Convert image format.")
+    parser_image_convert.add_argument("input", help="Input image file.")
+    parser_image_convert.add_argument("output", help="Output image file.")
+    parser_image_convert.add_argument("--quality", type=int, help="Quality (1-100) for JPEG/WebP.")
+
+    # image-lab resize
+    parser_image_resize = image_subparsers.add_parser("resize", help="Resize image.")
+    parser_image_resize.add_argument("input", help="Input image file.")
+    parser_image_resize.add_argument("output", help="Output image file.")
+    parser_image_resize.add_argument("--width", type=int, help="Target width.")
+    parser_image_resize.add_argument("--height", type=int, help="Target height.")
+    parser_image_resize.add_argument("--no-aspect", action="store_true", help="Do not maintain aspect ratio.")
+
+    # image-lab placeholder
+    parser_image_placeholder = image_subparsers.add_parser("placeholder", help="Generate placeholder image.")
+    parser_image_placeholder.add_argument("output", help="Output image file.")
+    parser_image_placeholder.add_argument("--width", type=int, default=640, help="Width.")
+    parser_image_placeholder.add_argument("--height", type=int, default=480, help="Height.")
+    parser_image_placeholder.add_argument("--color", default="#CCCCCC", help="Background color.")
+    parser_image_placeholder.add_argument("--text", help="Text to overlay.")
+    parser_image_placeholder.add_argument("--text-color", default="black", help="Text color.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14506,6 +14551,10 @@ async def main():
 
     if args.command in ["crypto-lab", "crypto"]:
         run_crypto_lab(args)
+        return
+
+    if args.command in ["image-lab", "img"]:
+        run_image_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

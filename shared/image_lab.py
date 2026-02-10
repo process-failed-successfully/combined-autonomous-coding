@@ -18,7 +18,6 @@ try:
 except ImportError:
     HAS_PIL = False
 
-console = Console()
 
 class ImageLabManager:
     """Manages image operations."""
@@ -143,6 +142,7 @@ class ImageLabManager:
 
 def run_image_lab_logic(args):
     """Entry point for image lab CLI."""
+    console = Console()
     manager = ImageLabManager(args.project_dir)
 
     try:

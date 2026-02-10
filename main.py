@@ -78,6 +78,7 @@ from shared.time_lab import run_time_lab_logic
 from shared.sys_lab import run_sys_lab_logic
 from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
+from shared.yaml_lab import run_yaml_lab_logic
 from shared.csv_lab import run_csv_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
@@ -135,7 +136,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
-    "markdown-lab", "md", "md-lab"
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml"
 ]
 
 if FileSystemEventHandler:
@@ -315,6 +316,11 @@ def run_csv_lab(args):
 def run_json_lab(args):
     """Runs the JSON Lab."""
     run_json_lab_logic(args)
+    sys.exit(0)
+
+def run_yaml_lab(args):
+    """Runs the YAML Lab."""
+    run_yaml_lab_logic(args)
     sys.exit(0)
 
 def run_semver_lab(args):
@@ -11263,6 +11269,47 @@ def parse_args(argv=None):
     parser_json_diff.add_argument("file1", help="First file.")
     parser_json_diff.add_argument("file2", help="Second file.")
 
+    # --- New 'yaml-lab' command ---
+    parser_yaml = subparsers.add_parser(
+        "yaml-lab",
+        aliases=["yaml"],
+        help="YAML utilities (get, set, del, merge, to-json, validate)."
+    )
+    yaml_subparsers = parser_yaml.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # yaml-lab get
+    parser_yaml_get = yaml_subparsers.add_parser("get", help="Get value from YAML.")
+    parser_yaml_get.add_argument("input", help="YAML string or file path.")
+    parser_yaml_get.add_argument("path", nargs="?", help="Path to value (e.g. key.subkey[0]).")
+
+    # yaml-lab set
+    parser_yaml_set = yaml_subparsers.add_parser("set", help="Set value in YAML.")
+    parser_yaml_set.add_argument("input", help="YAML string or file path.")
+    parser_yaml_set.add_argument("path", help="Path to set.")
+    parser_yaml_set.add_argument("value", help="Value to set.")
+
+    # yaml-lab del
+    parser_yaml_del = yaml_subparsers.add_parser("del", help="Delete value from YAML.")
+    parser_yaml_del.add_argument("input", help="YAML string or file path.")
+    parser_yaml_del.add_argument("path", help="Path to delete.")
+
+    # yaml-lab merge
+    parser_yaml_merge = yaml_subparsers.add_parser("merge", help="Merge two YAML files.")
+    parser_yaml_merge.add_argument("file1", help="First file.")
+    parser_yaml_merge.add_argument("file2", help="Second file.")
+
+    # yaml-lab to-json
+    parser_yaml_to_json = yaml_subparsers.add_parser("to-json", help="Convert YAML to JSON.")
+    parser_yaml_to_json.add_argument("input", help="YAML string or file path.")
+
+    # yaml-lab validate
+    parser_yaml_validate = yaml_subparsers.add_parser("validate", help="Validate YAML.")
+    parser_yaml_validate.add_argument("input", help="YAML string or file path.")
+
     # --- New 'crypto-lab' command ---
     parser_crypto = subparsers.add_parser(
         "crypto-lab",
@@ -14697,6 +14744,10 @@ async def main():
 
     if args.command in ["json-lab", "json"]:
         run_json_lab(args)
+        return
+
+    if args.command in ["yaml-lab", "yaml"]:
+        run_yaml_lab(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

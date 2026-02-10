@@ -93,6 +93,7 @@ from shared.badges import run_badges_logic
 from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
+from shared.log_lab import run_log_lab_logic
 import json
 import yaml
 import platformdirs
@@ -133,7 +134,8 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml"
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
+    "log-lab"
 ]
 
 if FileSystemEventHandler:
@@ -248,6 +250,11 @@ def run_text_lab(args):
     """Runs the Text Lab."""
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_log_lab(args):
+    """Runs the Log Lab."""
+    success = run_log_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_html_lab(args):
@@ -11371,6 +11378,33 @@ def parse_args(argv=None):
     # xml-lab json
     parser_xml_json = xml_subparsers.add_parser("json", help="Convert to JSON.")
 
+    # --- New 'log-lab' command ---
+    parser_log = subparsers.add_parser(
+        "log-lab",
+        help="Log analysis utilities (parse, filter, stats)."
+    )
+    parser_log.add_argument("--file", "-f", help="Input log file (default stdin).")
+    parser_log.add_argument("--format", choices=["auto", "clf", "json", "syslog", "kv"], default="auto", help="Log format.")
+
+    log_subparsers = parser_log.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # log-lab parse
+    parser_log_parse = log_subparsers.add_parser("parse", help="Parse logs to JSON.")
+
+    # log-lab filter
+    parser_log_filter = log_subparsers.add_parser("filter", help="Filter logs.")
+    parser_log_filter.add_argument("--level", help="Filter by level (e.g., ERROR).")
+    parser_log_filter.add_argument("--pattern", "-p", help="Filter by keyword or regex.")
+    parser_log_filter.add_argument("--field", help="Filter by field value (key=value).")
+
+    # log-lab stats
+    parser_log_stats = log_subparsers.add_parser("stats", help="Aggregated statistics.")
+    parser_log_stats.add_argument("--group-by", "-g", required=True, help="Field to group by (e.g., status, ip).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14614,6 +14648,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command == "log-lab":
+        run_log_lab(args)
         return
 
     if args.command in ["html-lab", "html"]:

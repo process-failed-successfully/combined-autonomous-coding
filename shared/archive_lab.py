@@ -56,6 +56,35 @@ class ArchiveLabManager:
 
         return contents
 
+    def _safe_tar_extract(self, tf: tarfile.TarFile, out_path: Path):
+        """
+        Safely extract tarfile members avoiding Zip Slip.
+        Uses 'data' filter if available (Python 3.12+ or backport).
+        Otherwise performs manual validation.
+        """
+        if hasattr(tarfile, 'data_filter'):
+            tf.extractall(out_path, filter='data')
+        else:
+            # Fallback for older python versions
+            # Manual check for Zip Slip
+            members = []
+            for member in tf.getmembers():
+                member_path = (out_path / member.name).resolve()
+                if out_path.resolve() not in member_path.parents:
+                    raise ValueError(f"Attempted path traversal in tar file: {member.name}")
+                members.append(member)
+            tf.extractall(out_path, members=members) # nosec B202
+
+    def _safe_zip_extract(self, zf: zipfile.ZipFile, out_path: Path):
+        """
+        Safely extract zipfile members avoiding Zip Slip.
+        """
+        for member in zf.namelist():
+            member_path = (out_path / member).resolve()
+            if out_path.resolve() not in member_path.parents:
+                 raise ValueError(f"Attempted path traversal in zip file: {member}")
+        zf.extractall(out_path) # nosec
+
     def extract(self, archive_path: Union[str, Path], dest_dir: Union[str, Path] = None) -> str:
         path = Path(archive_path).resolve()
         if not path.exists():
@@ -70,14 +99,10 @@ class ArchiveLabManager:
 
         if zipfile.is_zipfile(path):
              with zipfile.ZipFile(path, 'r') as zf:
-                 zf.extractall(out)
+                 self._safe_zip_extract(zf, out)
         elif tarfile.is_tarfile(path):
              with tarfile.open(path, 'r:*') as tf:
-                 # filter='data' is safer but requires Python 3.12+. We stick to default for compatibility but should be careful.
-                 # Actually, let's use shutil for extraction if possible as it handles safety somewhat better?
-                 # But shutil.unpack_archive delegates to zipfile/tarfile.
-                 # Let's just use extractall.
-                 tf.extractall(out)
+                 self._safe_tar_extract(tf, out)
         else:
              # Try shutil as fallback (e.g. for other formats registered)
              try:

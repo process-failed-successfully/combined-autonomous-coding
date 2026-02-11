@@ -96,6 +96,7 @@ from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
 from shared.markdown_lab import run_markdown_lab_logic
 from shared.net_lab import run_net_lab_logic
+from shared.pdf_lab import run_pdf_lab_logic
 from shared.archive_lab import run_archive_lab_logic
 import json
 import yaml
@@ -138,7 +139,8 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc"
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
+    "pdf-lab", "pdf"
 ]
 
 if FileSystemEventHandler:
@@ -11506,6 +11508,39 @@ def parse_args(argv=None):
     # net-lab ip
     parser_net_ip = net_subparsers.add_parser("ip", help="Get IP info.")
 
+    # --- New 'pdf-lab' command ---
+    parser_pdf = subparsers.add_parser(
+        "pdf-lab",
+        aliases=["pdf"],
+        help="PDF utilities (info, text, merge, split)."
+    )
+    pdf_subparsers = parser_pdf.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # pdf-lab info
+    parser_pdf_info = pdf_subparsers.add_parser("info", help="Get PDF metadata.")
+    parser_pdf_info.add_argument("file", help="PDF file path.")
+
+    # pdf-lab text
+    parser_pdf_text = pdf_subparsers.add_parser("text", help="Extract text from PDF.")
+    parser_pdf_text.add_argument("file", help="PDF file path.")
+    parser_pdf_text.add_argument("--start", type=int, help="Start page (0-indexed).")
+    parser_pdf_text.add_argument("--end", type=int, help="End page.")
+    parser_pdf_text.add_argument("--output", "-o", help="Output text file.")
+
+    # pdf-lab merge
+    parser_pdf_merge = pdf_subparsers.add_parser("merge", help="Merge multiple PDFs.")
+    parser_pdf_merge.add_argument("output", help="Output PDF file.")
+    parser_pdf_merge.add_argument("inputs", nargs="+", help="Input PDF files.")
+
+    # pdf-lab split
+    parser_pdf_split = pdf_subparsers.add_parser("split", help="Split PDF into pages.")
+    parser_pdf_split.add_argument("file", help="Input PDF file.")
+    parser_pdf_split.add_argument("output_dir", help="Output directory.")
+
     # --- New 'archive-lab' command ---
     parser_archive = subparsers.add_parser(
         "archive-lab",
@@ -14776,6 +14811,10 @@ async def main():
 
     if args.command in ["net-lab", "net"]:
         run_net_lab_logic(args)
+        return
+
+    if args.command in ["pdf-lab", "pdf"]:
+        run_pdf_lab_logic(args)
         return
 
     if args.command in ["archive-lab", "arc"]:

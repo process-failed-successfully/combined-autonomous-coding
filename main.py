@@ -96,6 +96,7 @@ from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
 from shared.markdown_lab import run_markdown_lab_logic
 from shared.net_lab import run_net_lab_logic
+from shared.archive_lab import run_archive_lab_logic
 import json
 import yaml
 import platformdirs
@@ -137,7 +138,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net"
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc"
 ]
 
 if FileSystemEventHandler:
@@ -196,6 +197,11 @@ def run_port(args):
         else:
             print(f"❌ Timeout waiting for port {args.port}.", file=sys.stderr)
             sys.exit(1)
+
+def run_archive_lab(args):
+    """Runs the Archive Lab."""
+    run_archive_lab_logic(args)
+    sys.exit(0)
 
 def run_code_query_cli(args):
     """Runs the Code Query tool."""
@@ -11500,6 +11506,41 @@ def parse_args(argv=None):
     # net-lab ip
     parser_net_ip = net_subparsers.add_parser("ip", help="Get IP info.")
 
+    # --- New 'archive-lab' command ---
+    parser_archive = subparsers.add_parser(
+        "archive-lab",
+        aliases=["arc"],
+        help="Archive utilities (list, extract, create, add, info)."
+    )
+    archive_subparsers = parser_archive.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # arc list
+    parser_archive_list = archive_subparsers.add_parser("list", help="List contents.")
+    parser_archive_list.add_argument("archive", help="Archive path.")
+
+    # arc extract
+    parser_archive_extract = archive_subparsers.add_parser("extract", help="Extract archive.")
+    parser_archive_extract.add_argument("archive", help="Archive path.")
+    parser_archive_extract.add_argument("dest", nargs="?", help="Destination directory.")
+
+    # arc create
+    parser_archive_create = archive_subparsers.add_parser("create", help="Create archive.")
+    parser_archive_create.add_argument("archive", help="Archive path.")
+    parser_archive_create.add_argument("files", nargs="+", help="Files to include.")
+
+    # arc add
+    parser_archive_add = archive_subparsers.add_parser("add", help="Add to archive.")
+    parser_archive_add.add_argument("archive", help="Archive path.")
+    parser_archive_add.add_argument("files", nargs="+", help="Files to add.")
+
+    # arc info
+    parser_archive_info = archive_subparsers.add_parser("info", help="Archive metadata.")
+    parser_archive_info.add_argument("archive", help="Archive path.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14735,6 +14776,10 @@ async def main():
 
     if args.command in ["net-lab", "net"]:
         run_net_lab_logic(args)
+        return
+
+    if args.command in ["archive-lab", "arc"]:
+        run_archive_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

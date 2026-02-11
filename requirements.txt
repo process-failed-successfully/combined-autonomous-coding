@@ -24,3 +24,4 @@ jira
 croniter
 Pillow
 defusedxml
+pypdf

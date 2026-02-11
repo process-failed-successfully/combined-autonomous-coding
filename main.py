@@ -98,6 +98,7 @@ from shared.markdown_lab import run_markdown_lab_logic
 from shared.net_lab import run_net_lab_logic
 from shared.pdf_lab import run_pdf_lab_logic
 from shared.archive_lab import run_archive_lab_logic
+from shared.uni_lab import run_uni_lab_logic
 import json
 import yaml
 import platformdirs
@@ -140,7 +141,7 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
-    "pdf-lab", "pdf"
+    "pdf-lab", "pdf", "uni-lab", "uni"
 ]
 
 if FileSystemEventHandler:
@@ -204,6 +205,11 @@ def run_archive_lab(args):
     """Runs the Archive Lab."""
     run_archive_lab_logic(args)
     sys.exit(0)
+
+def run_uni_lab(args):
+    """Runs the Unicode Lab."""
+    success = run_uni_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_code_query_cli(args):
     """Runs the Code Query tool."""
@@ -11576,6 +11582,35 @@ def parse_args(argv=None):
     parser_archive_info = archive_subparsers.add_parser("info", help="Archive metadata.")
     parser_archive_info.add_argument("archive", help="Archive path.")
 
+    # --- New 'uni-lab' command ---
+    parser_uni = subparsers.add_parser(
+        "uni-lab",
+        aliases=["uni"],
+        help="Unicode utilities (inspect, search, escape, unescape)."
+    )
+    uni_subparsers = parser_uni.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # uni-lab inspect
+    parser_uni_inspect = uni_subparsers.add_parser("inspect", help="Inspect characters.")
+    parser_uni_inspect.add_argument("--text", help="Input text.")
+
+    # uni-lab search
+    parser_uni_search = uni_subparsers.add_parser("search", help="Search characters by name.")
+    parser_uni_search.add_argument("--query", "-q", required=True, help="Search query.")
+    parser_uni_search.add_argument("--limit", "-l", type=int, default=50, help="Limit results.")
+
+    # uni-lab escape
+    parser_uni_escape = uni_subparsers.add_parser("escape", help="Escape non-ASCII chars.")
+    parser_uni_escape.add_argument("--text", help="Input text.")
+
+    # uni-lab unescape
+    parser_uni_unescape = uni_subparsers.add_parser("unescape", help="Unescape \\u sequences.")
+    parser_uni_unescape.add_argument("--text", help="Input text.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14819,6 +14854,10 @@ async def main():
 
     if args.command in ["archive-lab", "arc"]:
         run_archive_lab(args)
+        return
+
+    if args.command in ["uni-lab", "uni"]:
+        run_uni_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

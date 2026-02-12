@@ -25,3 +25,4 @@ croniter
 Pillow
 defusedxml
 pypdf
+qrcode

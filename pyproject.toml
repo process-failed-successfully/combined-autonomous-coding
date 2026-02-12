@@ -37,6 +37,7 @@ dependencies = [
     "croniter",
     "playwright",
     "pillow",
+    "openpyxl",
 ]
 requires-python = ">=3.11"
 

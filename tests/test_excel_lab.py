@@ -5,14 +5,23 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from shared.excel_lab import ExcelLabManager, run_excel_lab_logic
 
-import openpyxl
+# Handle optional dependency for tests
+try:
+    import openpyxl
+except ImportError:
+    openpyxl = None
 
 @pytest.fixture
 def excel_manager(tmp_path):
+    if not openpyxl:
+        pytest.skip("openpyxl not installed")
     return ExcelLabManager(tmp_path)
 
 @pytest.fixture
 def sample_xlsx(tmp_path):
+    if not openpyxl:
+        pytest.skip("openpyxl not installed")
+
     file_path = tmp_path / "data.xlsx"
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -55,6 +64,9 @@ def test_read_sheet_not_found(excel_manager, sample_xlsx):
         excel_manager.read_sheet(sample_xlsx, sheet_name="NonExistent")
 
 def test_cli_info(capsys, sample_xlsx):
+    if not openpyxl:
+        pytest.skip("openpyxl not installed")
+
     args = MagicMock()
     args.action = "info"
     args.file = str(sample_xlsx)
@@ -65,6 +77,9 @@ def test_cli_info(capsys, sample_xlsx):
     assert "Sheet1" in captured.out
 
 def test_cli_read_csv(capsys, sample_xlsx):
+    if not openpyxl:
+        pytest.skip("openpyxl not installed")
+
     args = MagicMock()
     args.action = "read"
     args.file = str(sample_xlsx)
@@ -79,6 +94,9 @@ def test_cli_read_csv(capsys, sample_xlsx):
     assert "1,A,100" in captured.out
 
 def test_cli_read_json(capsys, sample_xlsx):
+    if not openpyxl:
+        pytest.skip("openpyxl not installed")
+
     args = MagicMock()
     args.action = "read"
     args.file = str(sample_xlsx)
@@ -95,6 +113,9 @@ def test_cli_read_json(capsys, sample_xlsx):
     assert data[0]["name"] == "A"
 
 def test_cli_save_output(tmp_path, sample_xlsx):
+    if not openpyxl:
+        pytest.skip("openpyxl not installed")
+
     output_file = tmp_path / "out.csv"
     args = MagicMock()
     args.action = "read"

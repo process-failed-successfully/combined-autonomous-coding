@@ -14,7 +14,7 @@ class TestQRLabManager(unittest.TestCase):
         pass
 
     @patch("shared.qr_lab.HAS_QR", True)
-    @patch("shared.qr_lab.qrcode")
+    @patch("shared.qr_lab.qrcode", create=True)
     @patch("shared.qr_lab.console")
     def test_generate_ascii(self, mock_console, mock_qrcode):
         manager = QRLabManager()
@@ -32,7 +32,7 @@ class TestQRLabManager(unittest.TestCase):
         mock_console.print.assert_called()
 
     @patch("shared.qr_lab.HAS_QR", True)
-    @patch("shared.qr_lab.qrcode")
+    @patch("shared.qr_lab.qrcode", create=True)
     @patch("shared.qr_lab.console")
     def test_generate_image(self, mock_console, mock_qrcode):
         manager = QRLabManager()
@@ -67,7 +67,7 @@ class TestQRLabManager(unittest.TestCase):
 
         # Test escaping
         result = manager.generate_wifi("My;WiFi", "pass:word", "WPA", False)
-        self.assertEqual(result, "WIFI:S:My\;WiFi;T:WPA;P:pass\:word;H:false;;")
+        self.assertEqual(result, "WIFI:S:My\\;WiFi;T:WPA;P:pass\\:word;H:false;;")
 
     @patch("shared.qr_lab.HAS_QR", False)
     def test_missing_dependency(self):

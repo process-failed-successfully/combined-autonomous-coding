@@ -100,6 +100,7 @@ from shared.net_lab import run_net_lab_logic
 from shared.pdf_lab import run_pdf_lab_logic
 from shared.archive_lab import run_archive_lab_logic
 from shared.uni_lab import run_uni_lab_logic
+from shared.docs_generator import run_docs_lab_logic
 import json
 import yaml
 import platformdirs
@@ -142,7 +143,7 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
-    "pdf-lab", "pdf", "uni-lab", "uni"
+    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs"
 ]
 
 if FileSystemEventHandler:
@@ -205,6 +206,11 @@ def run_port(args):
 def run_archive_lab(args):
     """Runs the Archive Lab."""
     run_archive_lab_logic(args)
+    sys.exit(0)
+
+def run_docs_lab(args):
+    """Runs the Docs Lab."""
+    run_docs_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -11652,6 +11658,27 @@ def parse_args(argv=None):
     parser_uni_unescape = uni_subparsers.add_parser("unescape", help="Unescape \\u sequences.")
     parser_uni_unescape.add_argument("--text", help="Input text.")
 
+    # --- New 'docs-lab' command ---
+    parser_docs = subparsers.add_parser(
+        "docs-lab",
+        aliases=["docs"],
+        help="Documentation Generator (generate, clean)."
+    )
+    docs_subparsers = parser_docs.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # docs-lab generate
+    parser_docs_gen = docs_subparsers.add_parser("generate", help="Generate Markdown docs.")
+    parser_docs_gen.add_argument("--source", "-s", help="Source directory (default: current).")
+    parser_docs_gen.add_argument("--output", "-o", help="Output directory (default: docs/api).")
+
+    # docs-lab clean
+    parser_docs_clean = docs_subparsers.add_parser("clean", help="Clean generated docs.")
+    parser_docs_clean.add_argument("--output", "-o", help="Output directory to clean.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14899,6 +14926,10 @@ async def main():
 
     if args.command in ["uni-lab", "uni"]:
         run_uni_lab(args)
+        return
+
+    if args.command in ["docs-lab", "docs"]:
+        run_docs_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

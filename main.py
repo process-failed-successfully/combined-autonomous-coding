@@ -101,6 +101,7 @@ from shared.pdf_lab import run_pdf_lab_logic
 from shared.archive_lab import run_archive_lab_logic
 from shared.uni_lab import run_uni_lab_logic
 from shared.docs_generator import run_docs_lab_logic
+from shared.qr_lab import run_qr_lab_logic
 import json
 import yaml
 import platformdirs
@@ -143,7 +144,7 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
-    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs"
+    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr"
 ]
 
 if FileSystemEventHandler:
@@ -211,6 +212,11 @@ def run_archive_lab(args):
 def run_docs_lab(args):
     """Runs the Docs Lab."""
     run_docs_lab_logic(args)
+    sys.exit(0)
+
+def run_qr_lab(args):
+    """Runs the QR Lab."""
+    run_qr_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -11679,6 +11685,33 @@ def parse_args(argv=None):
     parser_docs_clean = docs_subparsers.add_parser("clean", help="Clean generated docs.")
     parser_docs_clean.add_argument("--output", "-o", help="Output directory to clean.")
 
+    # --- New 'qr-lab' command ---
+    parser_qr = subparsers.add_parser(
+        "qr-lab",
+        aliases=["qr"],
+        help="QR Code utilities (gen, wifi)."
+    )
+    qr_subparsers = parser_qr.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # qr-lab gen
+    parser_qr_gen = qr_subparsers.add_parser("gen", help="Generate QR code.")
+    parser_qr_gen.add_argument("text", help="Text to encode.")
+    parser_qr_gen.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+    parser_qr_gen.add_argument("--fill-color", default="black", help="Fill color (default: black).")
+    parser_qr_gen.add_argument("--back-color", default="white", help="Background color (default: white).")
+
+    # qr-lab wifi
+    parser_qr_wifi = qr_subparsers.add_parser("wifi", help="Generate WiFi config QR code.")
+    parser_qr_wifi.add_argument("--ssid", required=True, help="Network SSID.")
+    parser_qr_wifi.add_argument("--password", "-p", help="Network password.")
+    parser_qr_wifi.add_argument("--type", choices=["WPA", "WEP", "nopass"], default="WPA", help="Security type.")
+    parser_qr_wifi.add_argument("--hidden", action="store_true", help="Hidden network.")
+    parser_qr_wifi.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14930,6 +14963,10 @@ async def main():
 
     if args.command in ["docs-lab", "docs"]:
         run_docs_lab(args)
+        return
+
+    if args.command in ["qr-lab", "qr"]:
+        run_qr_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

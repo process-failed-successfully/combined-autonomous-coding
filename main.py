@@ -76,6 +76,7 @@ from shared.schema_lab import run_schema_lab_logic
 from shared.cidr_lab import run_cidr_lab_logic
 from shared.time_lab import run_time_lab_logic
 from shared.sys_lab import run_sys_lab_logic
+from shared.log_lab import run_log_lab_logic
 from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
@@ -138,7 +139,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "sql-lab", "sql", "html-lab", "html",
+    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni"
@@ -316,6 +317,11 @@ def run_unit_lab(args):
 def run_sys_lab(args):
     """Runs the System Lab."""
     run_sys_lab_logic(args)
+    sys.exit(0)
+
+def run_log_lab(args):
+    """Runs the Log Lab."""
+    run_log_lab_logic(args)
     sys.exit(0)
 
 def run_sql_lab(args):
@@ -11175,6 +11181,36 @@ def parse_args(argv=None):
     parser_sys_disk.add_argument("path", nargs="?", default=".", help="Directory to analyze.")
     parser_sys_disk.add_argument("--limit", type=int, default=20, help="Limit number of items.")
 
+    # --- New 'log-lab' command ---
+    parser_log_lab = subparsers.add_parser(
+        "log-lab",
+        aliases=["ll"],
+        help="Log analysis utilities (parse, filter, stats)."
+    )
+    parser_log_lab.add_argument("--file", "-f", help="Log file to process.")
+    parser_log_lab.add_argument("--run-id", help="Run ID to find log file.")
+
+    log_lab_subparsers = parser_log_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # log-lab parse
+    parser_log_parse = log_lab_subparsers.add_parser("parse", help="Parse log file.")
+    parser_log_parse.add_argument("--mode", choices=["steps", "raw"], default="steps", help="Parsing mode.")
+
+    # log-lab filter
+    parser_log_filter = log_lab_subparsers.add_parser("filter", help="Filter log entries.")
+    parser_log_filter.add_argument("--level", "-l", help="Filter by level (INFO, ERROR, etc).")
+    parser_log_filter.add_argument("--pattern", "-p", help="Regex pattern to match.")
+    parser_log_filter.add_argument("--limit", "-n", type=int, help="Limit results.")
+    parser_log_filter.add_argument("--json", action="store_true", help="Output as JSON.")
+
+    # log-lab stats
+    parser_log_stats = log_lab_subparsers.add_parser("stats", help="Show log statistics.")
+    parser_log_stats.add_argument("--json", action="store_true", help="Output as JSON.")
+
     # --- New 'sql-lab' command ---
     parser_sql = subparsers.add_parser(
         "sql-lab",
@@ -14906,6 +14942,10 @@ async def main():
 
     if args.command in ["sys-lab", "sys"]:
         run_sys_lab(args)
+        return
+
+    if args.command in ["log-lab", "ll"]:
+        run_log_lab(args)
         return
 
     if args.command in ["sql-lab", "sql"]:

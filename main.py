@@ -10726,6 +10726,11 @@ def parse_args(argv=None):
     parser_cl_conv = color_lab_subparsers.add_parser("convert", help="Convert color formats.")
     parser_cl_conv.add_argument("color", help="Color to convert.")
 
+    # color-lab extract
+    parser_cl_ext = color_lab_subparsers.add_parser("extract", help="Extract prominent colors from an image.")
+    parser_cl_ext.add_argument("image", help="Image file path.")
+    parser_cl_ext.add_argument("--limit", "-l", type=int, default=5, help="Number of colors to extract.")
+
     # --- New 'data-lab' command ---
     parser_data_lab = subparsers.add_parser(
         "data-lab",

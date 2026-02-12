@@ -9,11 +9,18 @@ blindness simulation, and format conversion.
 import sys
 import colorsys
 import math
-from typing import List, Tuple, Dict, Optional
+from pathlib import Path
+from typing import List, Tuple, Dict, Optional, Union
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 from rich.panel import Panel
+
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 console = Console()
 
@@ -61,6 +68,24 @@ class Color:
         # colorsys uses 0-1 for RGB, and returns 0-1 for HSL
         h, l, s = colorsys.rgb_to_hls(self.r/255, self.g/255, self.b/255)
         return (h * 360, s * 100, l * 100)
+
+    @property
+    def cmyk(self) -> Tuple[int, int, int, int]:
+        """Returns CMYK tuple (0-100)."""
+        if (self.r, self.g, self.b) == (0, 0, 0):
+            return 0, 0, 0, 100
+
+        c = 1 - self.r / 255.0
+        m = 1 - self.g / 255.0
+        y = 1 - self.b / 255.0
+
+        min_cmy = min(c, m, y)
+        c = (c - min_cmy) / (1 - min_cmy)
+        m = (m - min_cmy) / (1 - min_cmy)
+        y = (y - min_cmy) / (1 - min_cmy)
+        k = min_cmy
+
+        return (int(c * 100), int(m * 100), int(y * 100), int(k * 100))
 
     @property
     def luminance(self) -> float:
@@ -173,6 +198,55 @@ class Color:
         return [self]
 
 
+def extract_palette_from_image(image_path: Union[str, Path], limit: int = 5) -> List[Color]:
+    """Extracts a color palette from an image using quantization."""
+    if not HAS_PIL:
+        raise ImportError("Pillow library is not installed. Please run: pip install Pillow")
+
+    path = Path(image_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Image not found: {path}")
+
+    with Image.open(path) as img:
+        # Check for transparency/alpha and handle it by flattening on white
+        if img.mode != "RGB":
+            img = img.convert("RGBA")
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])
+            img = background
+
+        # Resize for performance (speed up quantization)
+        img.thumbnail((200, 200))
+
+        # Quantize to reduce colors
+        # We ask for 'limit' colors.
+        q_img = img.quantize(colors=limit)
+
+        # Get the palette (list of r, g, b, r, g, b...)
+        # But getpalette always returns 768 entries (256 colors).
+        # We need to find which colors are actually used and prominent.
+        # getcolors returns list of (count, index)
+        colors_count = q_img.getcolors(maxcolors=limit+1) # +1 safety margin
+
+        if not colors_count:
+             # Should not happen if image is not empty
+             return []
+
+        # Sort by count descending (most frequent first)
+        colors_count.sort(key=lambda x: x[0], reverse=True)
+
+        palette_data = q_img.getpalette()
+        extracted_colors = []
+
+        for count, index in colors_count[:limit]:
+            r = palette_data[index*3]
+            g = palette_data[index*3+1]
+            b = palette_data[index*3+2]
+            extracted_colors.append(Color(f"rgb({r},{g},{b})"))
+
+        return extracted_colors
+
+
 def _print_color_swatch(color: Color, label: str = ""):
     """Prints a color swatch using rich."""
     hex_val = color.hex
@@ -250,8 +324,29 @@ def run_color_lab_logic(action: str, **kwargs):
             table.add_row("RGB", str(c.rgb))
             h, s, l = c.hsl
             table.add_row("HSL", f"hsl({h:.1f}, {s:.1f}%, {l:.1f}%)")
+            cmyk = c.cmyk
+            table.add_row("CMYK", f"cmyk({cmyk[0]}%, {cmyk[1]}%, {cmyk[2]}%, {cmyk[3]}%)")
 
             console.print(table)
+
+        elif action == "extract":
+            image_path = kwargs.get("image")
+            limit = int(kwargs.get("limit", 5))
+
+            try:
+                palette = extract_palette_from_image(image_path, limit)
+                console.print(Panel(f"[bold]Extracted Palette from {Path(image_path).name}[/bold]"))
+                for i, c in enumerate(palette):
+                    _print_color_swatch(c, f"Color {i+1}")
+            except ImportError as e:
+                console.print(f"[red]Error: {e}[/red]")
+                sys.exit(1)
+            except FileNotFoundError as e:
+                console.print(f"[red]Error: {e}[/red]")
+                sys.exit(1)
+            except Exception as e:
+                console.print(f"[red]Error extracting palette: {e}[/red]")
+                sys.exit(1)
 
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")

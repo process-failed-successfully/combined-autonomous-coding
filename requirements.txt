@@ -26,3 +26,4 @@ Pillow
 defusedxml
 pypdf
 qrcode
+openpyxl

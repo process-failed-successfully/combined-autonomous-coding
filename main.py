@@ -81,6 +81,7 @@ from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
 from shared.csv_lab import run_csv_lab_logic
+from shared.excel_lab import run_excel_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -143,7 +144,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req"
 ]
@@ -351,6 +352,11 @@ def run_csv_lab(args):
     """Runs the CSV Lab."""
     run_csv_lab_logic(args)
     sys.exit(0)
+
+def run_excel_lab(args):
+    """Runs the Excel Lab."""
+    success = run_excel_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_json_lab(args):
     """Runs the JSON Lab."""
@@ -11306,6 +11312,29 @@ def parse_args(argv=None):
     parser_csv_select.add_argument("columns", help="Comma-separated list of columns.")
     parser_csv_select.add_argument("--output", "-o", help="Output file (default stdout).")
 
+    # --- New 'excel-lab' command ---
+    parser_excel = subparsers.add_parser(
+        "excel-lab",
+        aliases=["xls", "xlsx", "excel"],
+        help="Excel utilities (info, read)."
+    )
+    parser_excel.add_argument("--file", "-f", required=True, help="Input Excel file.")
+    excel_subparsers = parser_excel.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # excel-lab info
+    parser_excel_info = excel_subparsers.add_parser("info", help="Show Excel file metadata.")
+
+    # excel-lab read
+    parser_excel_read = excel_subparsers.add_parser("read", help="Read and output Excel sheet.")
+    parser_excel_read.add_argument("--sheet", "-s", help="Sheet name (defaults to active sheet).")
+    parser_excel_read.add_argument("--format", choices=["table", "csv", "json"], default="table", help="Output format.")
+    parser_excel_read.add_argument("--limit", type=int, default=50, help="Limit rows displayed (table format only).")
+    parser_excel_read.add_argument("--output", "-o", help="Output file path (optional).")
+
     # --- New 'json-lab' command ---
     parser_json = subparsers.add_parser(
         "json-lab",
@@ -15063,6 +15092,10 @@ async def main():
 
     if args.command in ["csv-lab", "csv"]:
         run_csv_lab(args)
+        return
+
+    if args.command in ["excel-lab", "xls", "xlsx", "excel"]:
+        run_excel_lab(args)
         return
 
     if args.command == "kanban":

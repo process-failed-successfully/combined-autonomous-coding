@@ -105,6 +105,7 @@ from shared.docs_generator import run_docs_lab_logic
 from shared.qr_lab import run_qr_lab_logic
 from shared.http_lab import run_http_lab_logic
 from shared.proc_lab import run_proc_lab_logic
+from shared.geo_lab import run_geo_lab_logic
 import json
 import yaml
 import platformdirs
@@ -148,7 +149,7 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
-    "proc-lab", "proc"
+    "proc-lab", "proc", "geo-lab", "geo"
 ]
 
 if FileSystemEventHandler:
@@ -226,6 +227,11 @@ def run_qr_lab(args):
 def run_http_lab(args):
     """Runs the HTTP Lab."""
     run_http_lab_logic(args)
+    sys.exit(0)
+
+def run_geo_lab(args):
+    """Runs the Geo Lab."""
+    run_geo_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -11794,6 +11800,31 @@ def parse_args(argv=None):
     # proc check
     parser_proc_check = proc_subparsers.add_parser("check", help="Validate Procfile.")
 
+    # --- New 'geo-lab' command ---
+    parser_geo = subparsers.add_parser(
+        "geo-lab",
+        aliases=["geo"],
+        help="Geolocation utilities (locate, distance, map)."
+    )
+    geo_subparsers = parser_geo.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # geo-lab locate
+    parser_geo_locate = geo_subparsers.add_parser("locate", help="Locate IP or Domain.")
+    parser_geo_locate.add_argument("query", help="IP address or domain name.")
+
+    # geo-lab distance
+    parser_geo_dist = geo_subparsers.add_parser("distance", help="Calculate distance between two coordinates.")
+    parser_geo_dist.add_argument("point1", help="Start point (lat,lon).")
+    parser_geo_dist.add_argument("point2", help="End point (lat,lon).")
+
+    # geo-lab map
+    parser_geo_map = geo_subparsers.add_parser("map", help="Get Google Maps link.")
+    parser_geo_map.add_argument("point", help="Coordinates (lat,lon).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15057,6 +15088,10 @@ async def main():
 
     if args.command in ["proc-lab", "proc"]:
         await run_proc_lab_logic(args)
+        return
+
+    if args.command in ["geo-lab", "geo"]:
+        run_geo_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

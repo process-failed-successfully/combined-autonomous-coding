@@ -104,6 +104,7 @@ from shared.uni_lab import run_uni_lab_logic
 from shared.docs_generator import run_docs_lab_logic
 from shared.qr_lab import run_qr_lab_logic
 from shared.http_lab import run_http_lab_logic
+from shared.proc_lab import run_proc_lab_logic
 import json
 import yaml
 import platformdirs
@@ -146,7 +147,8 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
-    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req"
+    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
+    "proc-lab", "proc"
 ]
 
 if FileSystemEventHandler:
@@ -11765,6 +11767,33 @@ def parse_args(argv=None):
     parser_http.add_argument("--proxy", help="Proxy URL.")
     parser_http.add_argument("--verbose", "-v", action="store_true", help="Show detailed request/response info.")
 
+    # --- New 'proc-lab' command ---
+    parser_proc = subparsers.add_parser(
+        "proc-lab",
+        aliases=["proc"],
+        help="Process Manager (start, list, run, check)."
+    )
+    parser_proc.add_argument("--file", "-f", help="Path to Procfile (default: Procfile).")
+
+    proc_subparsers = parser_proc.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # proc start
+    parser_proc_start = proc_subparsers.add_parser("start", help="Start all processes.")
+
+    # proc list
+    parser_proc_list = proc_subparsers.add_parser("list", help="List processes.")
+
+    # proc run
+    parser_proc_run = proc_subparsers.add_parser("run", help="Run a specific process.")
+    parser_proc_run.add_argument("process", help="Name of the process to run.")
+
+    # proc check
+    parser_proc_check = proc_subparsers.add_parser("check", help="Validate Procfile.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15024,6 +15053,10 @@ async def main():
 
     if args.command in ["http-lab", "http", "req"]:
         run_http_lab(args)
+        return
+
+    if args.command in ["proc-lab", "proc"]:
+        await run_proc_lab_logic(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

@@ -102,6 +102,7 @@ from shared.archive_lab import run_archive_lab_logic
 from shared.uni_lab import run_uni_lab_logic
 from shared.docs_generator import run_docs_lab_logic
 from shared.qr_lab import run_qr_lab_logic
+from shared.http_lab import run_http_lab_logic
 import json
 import yaml
 import platformdirs
@@ -144,7 +145,7 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
-    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr"
+    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req"
 ]
 
 if FileSystemEventHandler:
@@ -217,6 +218,11 @@ def run_docs_lab(args):
 def run_qr_lab(args):
     """Runs the QR Lab."""
     run_qr_lab_logic(args)
+    sys.exit(0)
+
+def run_http_lab(args):
+    """Runs the HTTP Lab."""
+    run_http_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -11712,6 +11718,24 @@ def parse_args(argv=None):
     parser_qr_wifi.add_argument("--hidden", action="store_true", help="Hidden network.")
     parser_qr_wifi.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
 
+    # --- New 'http-lab' command ---
+    parser_http = subparsers.add_parser(
+        "http-lab",
+        aliases=["http", "req"],
+        help="HTTP Client (get, post, put, delete, etc)."
+    )
+    parser_http.add_argument("method", choices=["get", "post", "put", "delete", "patch", "head", "options"], type=str.lower, help="HTTP Method.")
+    parser_http.add_argument("url", help="Target URL.")
+    parser_http.add_argument("--header", "-H", action="append", help="HTTP Header (e.g. 'Content-Type: application/json').")
+    parser_http.add_argument("--data", "-d", help="Request body (form data).")
+    parser_http.add_argument("--json", "-j", help="Request body (JSON string).")
+    parser_http.add_argument("--output", "-o", help="Save response body to file.")
+    parser_http.add_argument("--follow", action="store_true", help="Follow redirects.")
+    parser_http.add_argument("--no-verify", action="store_true", help="Disable SSL verification.")
+    parser_http.add_argument("--timeout", type=float, default=10.0, help="Request timeout.")
+    parser_http.add_argument("--proxy", help="Proxy URL.")
+    parser_http.add_argument("--verbose", "-v", action="store_true", help="Show detailed request/response info.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -14967,6 +14991,10 @@ async def main():
 
     if args.command in ["qr-lab", "qr"]:
         run_qr_lab(args)
+        return
+
+    if args.command in ["http-lab", "http", "req"]:
+        run_http_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

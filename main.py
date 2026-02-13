@@ -107,6 +107,7 @@ from shared.http_lab import run_http_lab_logic
 from shared.proc_lab import run_proc_lab_logic
 from shared.geo_lab import run_geo_lab_logic
 from shared.struct_lab import run_struct_lab_logic
+from shared.chart_lab import run_chart_lab_logic
 import json
 import yaml
 import platformdirs
@@ -150,7 +151,7 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
-    "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin"
+    "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart"
 ]
 
 if FileSystemEventHandler:
@@ -238,6 +239,11 @@ def run_geo_lab(args):
 def run_struct_lab(args):
     """Runs the Struct Lab."""
     run_struct_lab_logic(args)
+    sys.exit(0)
+
+def run_chart_lab(args):
+    """Runs the Chart Lab."""
+    run_chart_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -11865,6 +11871,37 @@ def parse_args(argv=None):
     parser_struct_pack.add_argument("output", help="Output file.")
     parser_struct_pack.add_argument("values", nargs="+", help="Values to pack.")
 
+    # --- New 'chart-lab' command ---
+    parser_chart = subparsers.add_parser(
+        "chart-lab",
+        aliases=["chart"],
+        help="Chart utilities (bar, scatter, line)."
+    )
+    parser_chart.add_argument("--file", help="Input file (CSV/JSON). Default: stdin.")
+    parser_chart.add_argument("--width", type=int, help="Chart width (default: terminal width).")
+    parser_chart.add_argument("--height", type=int, help="Chart height (default: terminal height).")
+
+    chart_subparsers = parser_chart.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # chart-lab bar
+    parser_chart_bar = chart_subparsers.add_parser("bar", help="Bar chart.")
+    parser_chart_bar.add_argument("--x", required=True, help="Column for X-axis (labels).")
+    parser_chart_bar.add_argument("--y", required=True, help="Column for Y-axis (values).")
+
+    # chart-lab scatter
+    parser_chart_scatter = chart_subparsers.add_parser("scatter", help="Scatter plot.")
+    parser_chart_scatter.add_argument("--x", required=True, help="Column for X-axis (numeric).")
+    parser_chart_scatter.add_argument("--y", required=True, help="Column for Y-axis (numeric).")
+
+    # chart-lab line
+    parser_chart_line = chart_subparsers.add_parser("line", help="Line chart.")
+    parser_chart_line.add_argument("--x", required=True, help="Column for X-axis.")
+    parser_chart_line.add_argument("--y", required=True, help="Column for Y-axis.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15136,6 +15173,10 @@ async def main():
 
     if args.command in ["struct-lab", "struct", "bin"]:
         run_struct_lab(args)
+        return
+
+    if args.command in ["chart-lab", "chart"]:
+        run_chart_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

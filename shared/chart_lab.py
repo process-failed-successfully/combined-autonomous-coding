@@ -2,9 +2,9 @@ import csv
 import json
 import sys
 import shutil
-import math
-from typing import List, Dict, Any, Union, Optional
+from typing import List, Dict, Any, Union
 from pathlib import Path
+
 
 class ChartLabManager:
     """
@@ -55,7 +55,7 @@ class ChartLabManager:
                     # Maybe it's {"data": [...]} or just a single object?
                     # Let's assume list of objects for now, or single object wrapped
                     data = [parsed]
-            else: # CSV
+            else:  # CSV
                 reader = csv.DictReader(content.splitlines())
                 data = list(reader)
         except Exception as e:
@@ -93,17 +93,17 @@ class ChartLabManager:
 
         min_val = min(values)
         max_val = max(values)
-        range_val = max_val - min(0, min_val) # Ensure 0 is included if data is positive
+        range_val = max_val - min(0, min_val)  # Ensure 0 is included if data is positive
 
         if range_val == 0:
             range_val = 1
 
         # Determine label width
-        max_label_len = max((len(str(l)) for l in labels), default=0)
-        max_label_len = min(max_label_len, 20) # Cap label width
+        max_label_len = max((len(str(lbl)) for lbl in labels), default=0)
+        max_label_len = min(max_label_len, 20)  # Cap label width
 
         # Chart width available for bars
-        bar_width = self.width - max_label_len - 10 # Reserve space for label and value text
+        bar_width = self.width - max_label_len - 10  # Reserve space for label and value text
 
         output = []
         output.append(f"Bar Chart: {y_col} by {x_col}")
@@ -115,7 +115,7 @@ class ChartLabManager:
             if value >= 0:
                 normalized = value / max_val if max_val > 0 else 0
             else:
-                normalized = 0 # Handle negative? For simple bar, maybe just 0
+                normalized = 0  # Handle negative? For simple bar, maybe just 0
 
             length = int(normalized * bar_width)
             bar = "█" * length
@@ -161,7 +161,7 @@ class ChartLabManager:
             # Map to grid coordinates
             # Y is inverted (row 0 is top)
             col = int((x - min_x) / range_x * (grid_w - 1))
-            row = int((max_y - y) / range_y * (grid_h - 1)) # Invert Y
+            row = int((max_y - y) / range_y * (grid_h - 1))  # Invert Y
 
             # Clamp
             col = max(0, min(grid_w - 1, col))
@@ -170,7 +170,7 @@ class ChartLabManager:
             if grid[row][col] == ' ':
                 grid[row][col] = '•'
             else:
-                grid[row][col] = '█' # Overlap
+                grid[row][col] = '█'  # Overlap
 
         output = []
         output.append(f"Scatter Plot: {y_col} vs {x_col}")
@@ -181,7 +181,7 @@ class ChartLabManager:
         for i, row in enumerate(grid):
             prefix = "      |"
             if i == grid_h // 2:
-                prefix = f"{min_y + (max_y - min_y)/2:5.2f} |" # Mid label
+                prefix = f"{min_y + (max_y - min_y) / 2:5.2f} |"  # Mid label
 
             output.append(prefix + "".join(row))
 
@@ -196,16 +196,19 @@ class ChartLabManager:
         Generates a simple line chart (using scatter logic but connecting dots logic is hard in ASCII).
         For now, implementing as scatter with sorted X.
         """
-        # Sort by X
-        combined = sorted(zip(self._get_column_values(data, x_col, numeric=True),
-                              self._get_column_values(data, y_col, numeric=True)))
+        def _sort_key(row):
+            try:
+                val = row.get(x_col)
+                return float(val) if val is not None else 0.0
+            except (ValueError, TypeError):
+                return 0.0
 
-        # Reconstruct sorted dicts just for the plotter?
-        # Actually simpler to just reuse scatter logic but maybe use different char
-        # Or implement a distinct line renderer if we want to "connect" points (e.g. using / \ | -)
+        # Sort by X
+        sorted_data = sorted(data, key=_sort_key)
 
         # For MVP, let's reuse scatter with '*' and indicate it's a line chart
-        return self.plot_scatter(data, x_col, y_col).replace("Scatter Plot", "Line Chart (Scatter View)")
+        return self.plot_scatter(sorted_data, x_col, y_col).replace("Scatter Plot", "Line Chart (Scatter View)")
+
 
 def run_chart_lab_logic(args):
     """

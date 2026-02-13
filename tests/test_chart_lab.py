@@ -1,13 +1,13 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from pathlib import Path
 import json
 import tempfile
 import shutil
-import sys
 import io
 
 from shared.chart_lab import ChartLabManager
+
 
 class TestChartLabManager(unittest.TestCase):
     def setUp(self):
@@ -68,7 +68,7 @@ class TestChartLabManager(unittest.TestCase):
         self.assertIn("Bar Chart: Value by Name", output)
         self.assertIn("A", output)
         self.assertIn("B", output)
-        self.assertIn("█", output) # Check for bar character
+        self.assertIn("█", output)  # Check for bar character
 
     def test_plot_scatter(self):
         data = [{"X": 1, "Y": 10}, {"X": 2, "Y": 20}]
@@ -83,10 +83,11 @@ class TestChartLabManager(unittest.TestCase):
         self.assertIn("Line Chart", output)
 
     def test_missing_columns(self):
-        data = [{"Name": "A"}] # Missing Value
+        data = [{"Name": "A"}]  # Missing Value
         output = self.manager.plot_bar(data, "Name", "Value")
         # Should still run but treat value as 0
         self.assertIn("A", output)
+
 
 if __name__ == "__main__":
     unittest.main()

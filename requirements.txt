@@ -27,3 +27,4 @@ defusedxml
 pypdf
 qrcode
 openpyxl
+tomlkit

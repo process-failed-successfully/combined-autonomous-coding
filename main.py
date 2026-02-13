@@ -80,6 +80,7 @@ from shared.log_lab import run_log_lab_logic
 from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
+from shared.toml_lab import run_toml_lab_logic
 from shared.csv_lab import run_csv_lab_logic
 from shared.excel_lab import run_excel_lab_logic
 from shared.unit_lab import run_unit_lab_logic
@@ -149,7 +150,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart"
 ]
@@ -386,6 +387,11 @@ def run_json_lab(args):
 def run_yaml_lab(args):
     """Runs the YAML Lab."""
     run_yaml_lab_logic(args)
+    sys.exit(0)
+
+def run_toml_lab(args):
+    """Runs the TOML Lab."""
+    run_toml_lab_logic(args)
     sys.exit(0)
 
 def run_semver_lab(args):
@@ -11441,6 +11447,51 @@ def parse_args(argv=None):
     parser_yaml_validate = yaml_subparsers.add_parser("validate", help="Validate YAML.")
     parser_yaml_validate.add_argument("input", help="YAML string or file path.")
 
+    # --- New 'toml-lab' command ---
+    parser_toml = subparsers.add_parser(
+        "toml-lab",
+        aliases=["toml"],
+        help="TOML utilities (get, set, del, format, json, to-toml, merge, validate)."
+    )
+    parser_toml.add_argument("--input", "-i", help="Input file or string (default: stdin).")
+
+    toml_subparsers = parser_toml.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # toml-lab get
+    parser_toml_get = toml_subparsers.add_parser("get", help="Get value at path.")
+    parser_toml_get.add_argument("path", nargs="?", help="Path (dot notation).")
+
+    # toml-lab set
+    parser_toml_set = toml_subparsers.add_parser("set", help="Set value at path.")
+    parser_toml_set.add_argument("path", help="Path (dot notation).")
+    parser_toml_set.add_argument("value", help="Value to set.")
+
+    # toml-lab del
+    parser_toml_del = toml_subparsers.add_parser("del", help="Delete key at path.")
+    parser_toml_del.add_argument("path", help="Path (dot notation).")
+
+    # toml-lab format
+    parser_toml_format = toml_subparsers.add_parser("format", help="Format TOML.")
+
+    # toml-lab json
+    parser_toml_json = toml_subparsers.add_parser("json", help="Convert to JSON.")
+
+    # toml-lab to-toml
+    parser_toml_to_toml = toml_subparsers.add_parser("to-toml", help="Convert JSON to TOML.")
+
+    # toml-lab merge
+    parser_toml_merge = toml_subparsers.add_parser("merge", help="Merge two TOML files.")
+    parser_toml_merge.add_argument("base", help="Base TOML file.")
+    parser_toml_merge.add_argument("override", help="Override TOML file.")
+
+    # toml-lab validate
+    parser_toml_validate = toml_subparsers.add_parser("validate", help="Validate TOML.")
+    parser_toml_validate.add_argument("input", nargs="?", default="-", help="Input TOML file or string.")
+
     # --- New 'crypto-lab' command ---
     parser_crypto = subparsers.add_parser(
         "crypto-lab",
@@ -15241,6 +15292,10 @@ async def main():
 
     if args.command in ["yaml-lab", "yaml"]:
         run_yaml_lab(args)
+        return
+
+    if args.command in ["toml-lab", "toml"]:
+        run_toml_lab(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

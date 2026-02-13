@@ -38,6 +38,7 @@ dependencies = [
     "playwright",
     "pillow",
     "openpyxl",
+    "tomlkit",
 ]
 requires-python = ">=3.11"
 

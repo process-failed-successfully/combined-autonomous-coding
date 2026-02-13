@@ -110,6 +110,7 @@ from shared.geo_lab import run_geo_lab_logic
 from shared.struct_lab import run_struct_lab_logic
 from shared.chart_lab import run_chart_lab_logic
 from shared.enc_lab import run_enc_lab_logic
+from shared.rss_lab import run_rss_lab_logic
 import json
 import yaml
 import platformdirs
@@ -154,7 +155,7 @@ KNOWN_COMMANDS = [
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
-    "enc-lab", "enc", "encode"
+    "enc-lab", "enc", "encode", "rss-lab", "rss"
 ]
 
 if FileSystemEventHandler:
@@ -253,6 +254,11 @@ def run_enc_lab(args):
     """Runs the Encoding Lab."""
     success = run_enc_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_rss_lab(args):
+    """Runs the RSS Lab."""
+    run_rss_lab_logic(args)
+    sys.exit(0)
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -11999,6 +12005,27 @@ def parse_args(argv=None):
     # rot13 doesn't need --decode really, but we'll accept it to not break shared logic if passed
     parser_enc_rot13.add_argument("--decode", "-d", action="store_true", help="Ignored for ROT13.")
 
+    # --- New 'rss-lab' command ---
+    parser_rss = subparsers.add_parser(
+        "rss-lab",
+        aliases=["rss"],
+        help="RSS/Atom Feed utilities (read, inspect)."
+    )
+    rss_subparsers = parser_rss.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # rss-lab read
+    parser_rss_read = rss_subparsers.add_parser("read", help="Read feed entries.")
+    parser_rss_read.add_argument("url", help="Feed URL.")
+    parser_rss_read.add_argument("--limit", "-l", type=int, default=10, help="Number of entries to show.")
+
+    # rss-lab inspect
+    parser_rss_inspect = rss_subparsers.add_parser("inspect", help="Inspect raw feed structure.")
+    parser_rss_inspect.add_argument("url", help="Feed URL.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15278,6 +15305,10 @@ async def main():
 
     if args.command in ["enc-lab", "enc", "encode"]:
         run_enc_lab(args)
+        return
+
+    if args.command in ["rss-lab", "rss"]:
+        run_rss_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

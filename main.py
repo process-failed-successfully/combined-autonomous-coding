@@ -112,6 +112,7 @@ from shared.chart_lab import run_chart_lab_logic
 from shared.enc_lab import run_enc_lab_logic
 from shared.rss_lab import run_rss_lab_logic
 from shared.fs_lab import run_fs_lab_logic
+from shared.ws_lab import run_ws_lab_logic
 import json
 import yaml
 import platformdirs
@@ -156,7 +157,8 @@ KNOWN_COMMANDS = [
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
-    "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files"
+    "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
+    "ws-lab", "ws"
 ]
 
 if FileSystemEventHandler:
@@ -12079,6 +12081,18 @@ def parse_args(argv=None):
     parser_fs_usage.add_argument("--root", "-r", default=".", help="Root directory.")
     parser_fs_usage.add_argument("--depth", "-d", type=int, default=2, help="Depth of tree.")
 
+    # --- New 'ws-lab' command ---
+    parser_ws = subparsers.add_parser(
+        "ws-lab",
+        aliases=["ws"],
+        help="WebSocket Client (connect, send, listen)."
+    )
+    parser_ws.add_argument("url", help="WebSocket URL.")
+    parser_ws.add_argument("--header", "-H", action="append", help="Custom Header (e.g. 'Authorization: Bearer ...').")
+    parser_ws.add_argument("--message", "-m", help="Initial message to send.")
+    parser_ws.add_argument("--interactive", "-i", action="store_true", help="Interactive mode (read from stdin).")
+    parser_ws.add_argument("--listen", "-l", action="store_true", help="Listen mode (keep connection open).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15366,6 +15380,10 @@ async def main():
 
     if args.command in ["fs-lab", "fs", "files"]:
         run_fs_lab(args)
+        return
+
+    if args.command in ["ws-lab", "ws"]:
+        await run_ws_lab_logic(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

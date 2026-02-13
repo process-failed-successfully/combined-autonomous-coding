@@ -29,3 +29,4 @@ qrcode
 openpyxl
 tomlkit
 feedparser
+websockets

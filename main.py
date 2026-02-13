@@ -109,6 +109,7 @@ from shared.proc_lab import run_proc_lab_logic
 from shared.geo_lab import run_geo_lab_logic
 from shared.struct_lab import run_struct_lab_logic
 from shared.chart_lab import run_chart_lab_logic
+from shared.enc_lab import run_enc_lab_logic
 import json
 import yaml
 import platformdirs
@@ -152,7 +153,8 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
-    "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart"
+    "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
+    "enc-lab", "enc", "encode"
 ]
 
 if FileSystemEventHandler:
@@ -246,6 +248,11 @@ def run_chart_lab(args):
     """Runs the Chart Lab."""
     run_chart_lab_logic(args)
     sys.exit(0)
+
+def run_enc_lab(args):
+    """Runs the Encoding Lab."""
+    success = run_enc_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -11953,6 +11960,45 @@ def parse_args(argv=None):
     parser_chart_line.add_argument("--x", required=True, help="Column for X-axis.")
     parser_chart_line.add_argument("--y", required=True, help="Column for Y-axis.")
 
+    # --- New 'enc-lab' command ---
+    parser_enc = subparsers.add_parser(
+        "enc-lab",
+        aliases=["enc", "encode"],
+        help="Encoding utilities (base64, url, html, hex, rot13)."
+    )
+    enc_subparsers = parser_enc.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # Common args for enc-lab
+    def add_enc_args(p):
+        p.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+        p.add_argument("--decode", "-d", action="store_true", help="Decode input.")
+
+    # enc-lab base64
+    parser_enc_b64 = enc_subparsers.add_parser("base64", help="Base64 encode/decode.")
+    add_enc_args(parser_enc_b64)
+
+    # enc-lab url
+    parser_enc_url = enc_subparsers.add_parser("url", help="URL encode/decode.")
+    add_enc_args(parser_enc_url)
+
+    # enc-lab html
+    parser_enc_html = enc_subparsers.add_parser("html", help="HTML entity encode/decode.")
+    add_enc_args(parser_enc_html)
+
+    # enc-lab hex
+    parser_enc_hex = enc_subparsers.add_parser("hex", help="Hex encode/decode.")
+    add_enc_args(parser_enc_hex)
+
+    # enc-lab rot13
+    parser_enc_rot13 = enc_subparsers.add_parser("rot13", help="ROT13 transform.")
+    parser_enc_rot13.add_argument("text", nargs="?", help="Input text.")
+    # rot13 doesn't need --decode really, but we'll accept it to not break shared logic if passed
+    parser_enc_rot13.add_argument("--decode", "-d", action="store_true", help="Ignored for ROT13.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15228,6 +15274,10 @@ async def main():
 
     if args.command in ["chart-lab", "chart"]:
         run_chart_lab(args)
+        return
+
+    if args.command in ["enc-lab", "enc", "encode"]:
+        run_enc_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

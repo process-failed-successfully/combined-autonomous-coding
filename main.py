@@ -111,6 +111,7 @@ from shared.struct_lab import run_struct_lab_logic
 from shared.chart_lab import run_chart_lab_logic
 from shared.enc_lab import run_enc_lab_logic
 from shared.rss_lab import run_rss_lab_logic
+from shared.fs_lab import run_fs_lab_logic
 import json
 import yaml
 import platformdirs
@@ -155,7 +156,7 @@ KNOWN_COMMANDS = [
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
-    "enc-lab", "enc", "encode", "rss-lab", "rss"
+    "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files"
 ]
 
 if FileSystemEventHandler:
@@ -258,6 +259,11 @@ def run_enc_lab(args):
 def run_rss_lab(args):
     """Runs the RSS Lab."""
     run_rss_lab_logic(args)
+    sys.exit(0)
+
+def run_fs_lab(args):
+    """Runs the FS Lab."""
+    run_fs_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -12026,6 +12032,53 @@ def parse_args(argv=None):
     parser_rss_inspect = rss_subparsers.add_parser("inspect", help="Inspect raw feed structure.")
     parser_rss_inspect.add_argument("url", help="Feed URL.")
 
+    # --- New 'fs-lab' command ---
+    parser_fs = subparsers.add_parser(
+        "fs-lab",
+        aliases=["fs", "files"],
+        help="FileSystem utilities (info, find, dedup, clean, shred, usage)."
+    )
+    fs_subparsers = parser_fs.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # fs-lab info
+    parser_fs_info = fs_subparsers.add_parser("info", help="Get file metadata.")
+    parser_fs_info.add_argument("path", help="File or directory path.")
+
+    # fs-lab find
+    parser_fs_find = fs_subparsers.add_parser("find", help="Find files.")
+    parser_fs_find.add_argument("--root", "-r", default=".", help="Root directory.")
+    parser_fs_find.add_argument("--name", help="Name pattern (glob).")
+    parser_fs_find.add_argument("--size", help="Size constraint (e.g. '>10MB', '<5k').")
+    parser_fs_find.add_argument("--mtime", help="Modified time constraint (e.g. '>1d', '<2h').")
+    parser_fs_find.add_argument("--type", choices=['f', 'd'], help="File type (f=file, d=dir).")
+    parser_fs_find.add_argument("--content", help="Regex content search.")
+
+    # fs-lab dedup
+    parser_fs_dedup = fs_subparsers.add_parser("dedup", help="Find duplicate files.")
+    parser_fs_dedup.add_argument("--root", "-r", default=".", help="Root directory.")
+    parser_fs_dedup.add_argument("--delete", action="store_true", help="Delete duplicates.")
+    parser_fs_dedup.add_argument("--force", action="store_true", help="Actually delete (disable dry-run).")
+
+    # fs-lab clean
+    parser_fs_clean = fs_subparsers.add_parser("clean", help="Clean temp files/empty dirs.")
+    parser_fs_clean.add_argument("--root", "-r", default=".", help="Root directory.")
+    parser_fs_clean.add_argument("--force", action="store_true", help="Actually delete (disable dry-run).")
+
+    # fs-lab shred
+    parser_fs_shred = fs_subparsers.add_parser("shred", help="Securely delete file.")
+    parser_fs_shred.add_argument("path", help="File path.")
+    parser_fs_shred.add_argument("--passes", type=int, default=3, help="Number of overwrite passes.")
+    parser_fs_shred.add_argument("--force", action="store_true", help="Skip confirmation.")
+
+    # fs-lab usage
+    parser_fs_usage = fs_subparsers.add_parser("usage", help="Show disk usage tree.")
+    parser_fs_usage.add_argument("--root", "-r", default=".", help="Root directory.")
+    parser_fs_usage.add_argument("--depth", "-d", type=int, default=2, help="Depth of tree.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15309,6 +15362,10 @@ async def main():
 
     if args.command in ["rss-lab", "rss"]:
         run_rss_lab(args)
+        return
+
+    if args.command in ["fs-lab", "fs", "files"]:
+        run_fs_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

@@ -106,6 +106,7 @@ from shared.qr_lab import run_qr_lab_logic
 from shared.http_lab import run_http_lab_logic
 from shared.proc_lab import run_proc_lab_logic
 from shared.geo_lab import run_geo_lab_logic
+from shared.struct_lab import run_struct_lab_logic
 import json
 import yaml
 import platformdirs
@@ -149,7 +150,7 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
-    "proc-lab", "proc", "geo-lab", "geo"
+    "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin"
 ]
 
 if FileSystemEventHandler:
@@ -232,6 +233,11 @@ def run_http_lab(args):
 def run_geo_lab(args):
     """Runs the Geo Lab."""
     run_geo_lab_logic(args)
+    sys.exit(0)
+
+def run_struct_lab(args):
+    """Runs the Struct Lab."""
+    run_struct_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -11825,6 +11831,40 @@ def parse_args(argv=None):
     parser_geo_map = geo_subparsers.add_parser("map", help="Get Google Maps link.")
     parser_geo_map.add_argument("point", help="Coordinates (lat,lon).")
 
+    # --- New 'struct-lab' command ---
+    parser_struct = subparsers.add_parser(
+        "struct-lab",
+        aliases=["struct", "bin"],
+        help="Binary structure utilities (hex, pack, unpack, calc)."
+    )
+    struct_subparsers = parser_struct.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # struct-lab hex
+    parser_struct_hex = struct_subparsers.add_parser("hex", help="Hex dump of file.")
+    parser_struct_hex.add_argument("file", help="Input file.")
+    parser_struct_hex.add_argument("--offset", type=int, default=0, help="Start offset.")
+    parser_struct_hex.add_argument("--length", type=int, help="Length to read.")
+
+    # struct-lab calc
+    parser_struct_calc = struct_subparsers.add_parser("calc", help="Calculate size of format.")
+    parser_struct_calc.add_argument("format", help="Struct format string (e.g. '2i4s').")
+
+    # struct-lab unpack
+    parser_struct_unpack = struct_subparsers.add_parser("unpack", help="Unpack binary file.")
+    parser_struct_unpack.add_argument("format", help="Struct format string.")
+    parser_struct_unpack.add_argument("file", help="Input file.")
+    parser_struct_unpack.add_argument("--offset", type=int, default=0, help="Start offset.")
+
+    # struct-lab pack
+    parser_struct_pack = struct_subparsers.add_parser("pack", help="Pack values into binary file.")
+    parser_struct_pack.add_argument("format", help="Struct format string.")
+    parser_struct_pack.add_argument("output", help="Output file.")
+    parser_struct_pack.add_argument("values", nargs="+", help="Values to pack.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15092,6 +15132,10 @@ async def main():
 
     if args.command in ["geo-lab", "geo"]:
         run_geo_lab(args)
+        return
+
+    if args.command in ["struct-lab", "struct", "bin"]:
+        run_struct_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

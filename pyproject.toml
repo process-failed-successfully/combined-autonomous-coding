@@ -39,6 +39,7 @@ dependencies = [
     "pillow",
     "openpyxl",
     "tomlkit",
+    "feedparser",
 ]
 requires-python = ">=3.11"
 

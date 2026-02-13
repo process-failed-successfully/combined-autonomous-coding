@@ -28,3 +28,4 @@ pypdf
 qrcode
 openpyxl
 tomlkit
+feedparser

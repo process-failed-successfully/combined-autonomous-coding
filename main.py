@@ -11607,6 +11607,16 @@ def parse_args(argv=None):
     parser_image_placeholder.add_argument("--text", help="Text to overlay.")
     parser_image_placeholder.add_argument("--text-color", default="black", help="Text color.")
 
+    # image-lab hide
+    parser_img_hide = img_subparsers.add_parser("hide", help="Hide a secret message in an image.")
+    parser_img_hide.add_argument("input", help="Input image path.")
+    parser_img_hide.add_argument("output", help="Output image path (will be saved as PNG).")
+    parser_img_hide.add_argument("--message", "-m", help="Message to hide (reads from stdin if omitted).")
+
+    # image-lab reveal
+    parser_img_reveal = img_subparsers.add_parser("reveal", help="Reveal a secret message from an image.")
+    parser_img_reveal.add_argument("input", help="Input image path.")
+
     # --- New 'xml-lab' command ---
     parser_xml = subparsers.add_parser(
         "xml-lab",

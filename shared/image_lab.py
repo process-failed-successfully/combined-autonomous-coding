@@ -140,6 +140,96 @@ class ImageLabManager:
         img.save(output_path)
         return output_path
 
+    def hide_message(self, input_path: Path, output_path: Path, message: str) -> Path:
+        """Hides a secret message in an image using LSB steganography."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        # Append null terminator to mark end of message
+        message += "\0"
+
+        # Convert message to bits (UTF-8)
+        binary_message = ''.join(format(byte, '08b') for byte in message.encode('utf-8'))
+        message_len = len(binary_message)
+
+        with Image.open(input_path) as img:
+            img = img.convert("RGB")  # Ensure RGB
+            width, height = img.size
+            pixels = list(img.getdata())
+
+            if len(pixels) * 3 < message_len:
+                raise ValueError(f"Image is too small to hold the message. Capacity: {len(pixels) * 3} bits, Message: {message_len} bits")
+
+            new_pixels = []
+            idx = 0
+
+            for pixel in pixels:
+                if idx < message_len:
+                    r, g, b = pixel
+
+                    # Modify R
+                    if idx < message_len:
+                        r = (r & ~1) | int(binary_message[idx])
+                        idx += 1
+
+                    # Modify G
+                    if idx < message_len:
+                        g = (g & ~1) | int(binary_message[idx])
+                        idx += 1
+
+                    # Modify B
+                    if idx < message_len:
+                        b = (b & ~1) | int(binary_message[idx])
+                        idx += 1
+
+                    new_pixels.append((r, g, b))
+                else:
+                    new_pixels.append(pixel)
+
+            new_img = Image.new(img.mode, img.size)
+            new_img.putdata(new_pixels)
+
+            # Enforce PNG
+            if output_path.suffix.lower() != '.png':
+                output_path = output_path.with_suffix('.png')
+                console.print("[yellow]Warning: Output format forced to PNG to preserve message.[/yellow]")
+
+            new_img.save(output_path, "PNG")
+
+        return output_path
+
+    def reveal_message(self, input_path: Path) -> str:
+        """Reveals a secret message from an image."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        with Image.open(input_path) as img:
+            img = img.convert("RGB")
+            pixels = list(img.getdata())
+
+            binary_message = ""
+            for pixel in pixels:
+                r, g, b = pixel
+                binary_message += str(r & 1)
+                binary_message += str(g & 1)
+                binary_message += str(b & 1)
+
+            # Convert bits to bytes then string
+            extracted_bytes = bytearray()
+            for i in range(0, len(binary_message), 8):
+                byte = binary_message[i:i+8]
+                if byte == "00000000":
+                    break
+                if len(byte) == 8:
+                    try:
+                        extracted_bytes.append(int(byte, 2))
+                    except ValueError:
+                        break  # Stop if conversion fails
+
+            return extracted_bytes.decode('utf-8', errors='replace')
+
 
 def run_image_lab_logic(args):
     """Entry point for image lab CLI."""
@@ -184,6 +274,30 @@ def run_image_lab_logic(args):
                 text_color=args.text_color
             )
             console.print(f"[green]✅ Placeholder saved to {output}[/green]")
+
+        elif args.action == "hide":
+            output = Path(args.output)
+            message = args.message
+            if not message:
+                # Try reading from stdin
+                if not sys.stdin.isatty():
+                    message = sys.stdin.read().strip()
+                else:
+                    message = input("Enter message to hide: ")
+
+            if not message:
+                console.print("[red]Error: Message is empty.[/red]")
+                sys.exit(1)
+
+            final_path = manager.hide_message(Path(args.input), output, message)
+            console.print(f"[green]✅ Message hidden in {final_path}[/green]")
+
+        elif args.action == "reveal":
+            message = manager.reveal_message(Path(args.input))
+            if message:
+                console.print(Panel(message, title="Hidden Message"))
+            else:
+                console.print("[yellow]No hidden message found (or it was empty).[/yellow]")
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")

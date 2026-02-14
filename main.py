@@ -114,6 +114,7 @@ from shared.rss_lab import run_rss_lab_logic
 from shared.fs_lab import run_fs_lab_logic
 from shared.ws_lab import run_ws_lab_logic
 from shared.hash_lab import run_hash_lab_logic
+from shared.random_lab import run_random_lab_logic
 import json
 import yaml
 import platformdirs
@@ -159,7 +160,7 @@ KNOWN_COMMANDS = [
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
-    "ws-lab", "ws", "hash-lab", "hash"
+    "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random"
 ]
 
 if FileSystemEventHandler:
@@ -273,6 +274,11 @@ def run_hash_lab(args):
     """Runs the Hash Lab."""
     success = run_hash_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_random_lab(args):
+    """Runs the Random Lab."""
+    run_random_lab_logic(args)
+    sys.exit(0)
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -12139,6 +12145,65 @@ def parse_args(argv=None):
     parser_hash_ver.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
     parser_hash_ver.add_argument("--root", help="Root directory for files (default: checksum file dir).")
 
+    # --- New 'random-lab' command ---
+    parser_random = subparsers.add_parser(
+        "random-lab",
+        aliases=["rand", "random"],
+        help="Random data generator (int, float, string, choice, pick, shuffle, uuid, coin, dice)."
+    )
+    random_subparsers = parser_random.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # random-lab int
+    parser_random_int = random_subparsers.add_parser("int", help="Random integers.")
+    parser_random_int.add_argument("min", type=int, help="Minimum value.")
+    parser_random_int.add_argument("max", type=int, help="Maximum value.")
+    parser_random_int.add_argument("--count", "-c", type=int, default=1, help="Number of items.")
+
+    # random-lab float
+    parser_random_float = random_subparsers.add_parser("float", help="Random floats.")
+    parser_random_float.add_argument("min", type=float, help="Minimum value.")
+    parser_random_float.add_argument("max", type=float, help="Maximum value.")
+    parser_random_float.add_argument("--count", "-c", type=int, default=1, help="Number of items.")
+
+    # random-lab string
+    parser_random_str = random_subparsers.add_parser("string", help="Random strings.")
+    parser_random_str.add_argument("length", type=int, help="String length.")
+    parser_random_str.add_argument("charset", nargs="?", default="alnum", help="Charset (alpha, numeric, alnum, hex, special, all) or custom string.")
+    parser_random_str.add_argument("--count", "-c", type=int, default=1, help="Number of items.")
+
+    # random-lab choice
+    parser_random_choice = random_subparsers.add_parser("choice", help="Random choice from list.")
+    parser_random_choice.add_argument("items", nargs="+", help="Items to choose from.")
+    parser_random_choice.add_argument("--count", "-c", type=int, default=1, help="Number of items.")
+
+    # random-lab pick
+    parser_random_pick = random_subparsers.add_parser("pick", help="Pick random lines from file.")
+    parser_random_pick.add_argument("--file", required=True, help="Input file.")
+    parser_random_pick.add_argument("--count", "-c", type=int, default=1, help="Number of lines.")
+    parser_random_pick.add_argument("--unique", "-u", action="store_true", help="Pick unique lines (no replacement).")
+
+    # random-lab shuffle
+    parser_random_shuffle = random_subparsers.add_parser("shuffle", help="Shuffle lines from file.")
+    parser_random_shuffle.add_argument("--file", help="Input file (default: stdin).")
+
+    # random-lab uuid
+    parser_random_uuid = random_subparsers.add_parser("uuid", help="Generate UUIDs.")
+    parser_random_uuid.add_argument("--version", "-v", type=int, default=4, choices=[1, 4], help="UUID version.")
+    parser_random_uuid.add_argument("--count", "-c", type=int, default=1, help="Number of items.")
+
+    # random-lab coin
+    parser_random_coin = random_subparsers.add_parser("coin", help="Flip a coin.")
+    parser_random_coin.add_argument("--count", "-c", type=int, default=1, help="Number of flips.")
+
+    # random-lab dice
+    parser_random_dice = random_subparsers.add_parser("dice", help="Roll a dice.")
+    parser_random_dice.add_argument("--sides", "-s", type=int, default=6, help="Number of sides.")
+    parser_random_dice.add_argument("--count", "-c", type=int, default=1, help="Number of rolls.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15435,6 +15500,10 @@ async def main():
 
     if args.command in ["hash-lab", "hash"]:
         run_hash_lab(args)
+        return
+
+    if args.command in ["random-lab", "rand", "random"]:
+        run_random_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

@@ -117,6 +117,7 @@ from shared.ws_lab import run_ws_lab_logic
 from shared.hash_lab import run_hash_lab_logic
 from shared.random_lab import run_random_lab_logic
 from shared.browser_lab import run_browser_lab_logic
+from shared.npm_lab import run_npm_lab_logic
 import json
 import yaml
 import platformdirs
@@ -163,7 +164,8 @@ KNOWN_COMMANDS = [
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
     "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random",
-    "browser-lab", "browser", "web"
+    "browser-lab", "browser", "web",
+    "npm-lab", "npm"
 ]
 
 if FileSystemEventHandler:
@@ -287,6 +289,11 @@ async def run_browser_lab(args):
     """Runs the Browser Lab."""
     await run_browser_lab_logic(args)
     sys.exit(0)
+
+def run_npm_lab(args):
+    """Runs the NPM Lab."""
+    success = run_npm_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -12296,6 +12303,41 @@ def parse_args(argv=None):
     parser_browser_inspect = browser_subparsers.add_parser("inspect", help="Inspect page metadata.")
     parser_browser_inspect.add_argument("url", help="URL to visit.")
 
+    # --- New 'npm-lab' command ---
+    parser_npm = subparsers.add_parser(
+        "npm-lab",
+        aliases=["npm"],
+        help="NPM Registry utilities (info, versions, deps, tags, search)."
+    )
+    npm_subparsers = parser_npm.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # npm-lab info
+    parser_npm_info = npm_subparsers.add_parser("info", help="Get package metadata.")
+    parser_npm_info.add_argument("package", help="Package name.")
+
+    # npm-lab versions
+    parser_npm_versions = npm_subparsers.add_parser("versions", help="List versions.")
+    parser_npm_versions.add_argument("package", help="Package name.")
+    parser_npm_versions.add_argument("--limit", type=int, default=15, help="Limit number of versions.")
+
+    # npm-lab deps
+    parser_npm_deps = npm_subparsers.add_parser("deps", help="List dependencies.")
+    parser_npm_deps.add_argument("package", help="Package name.")
+    parser_npm_deps.add_argument("--version", help="Specific version (optional).")
+
+    # npm-lab tags
+    parser_npm_tags = npm_subparsers.add_parser("tags", help="Show dist-tags.")
+    parser_npm_tags.add_argument("package", help="Package name.")
+
+    # npm-lab search
+    parser_npm_search = npm_subparsers.add_parser("search", help="Search for packages.")
+    parser_npm_search.add_argument("query", help="Search query.")
+    parser_npm_search.add_argument("--limit", type=int, default=10, help="Limit results.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15600,6 +15642,10 @@ async def main():
 
     if args.command in ["browser-lab", "browser", "web"]:
         await run_browser_lab(args)
+        return
+
+    if args.command in ["npm-lab", "npm"]:
+        run_npm_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

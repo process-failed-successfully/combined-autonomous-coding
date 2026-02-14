@@ -115,6 +115,7 @@ from shared.fs_lab import run_fs_lab_logic
 from shared.ws_lab import run_ws_lab_logic
 from shared.hash_lab import run_hash_lab_logic
 from shared.random_lab import run_random_lab_logic
+from shared.browser_lab import run_browser_lab_logic
 import json
 import yaml
 import platformdirs
@@ -160,7 +161,8 @@ KNOWN_COMMANDS = [
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
-    "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random"
+    "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random",
+    "browser-lab", "browser", "web"
 ]
 
 if FileSystemEventHandler:
@@ -278,6 +280,11 @@ def run_hash_lab(args):
 def run_random_lab(args):
     """Runs the Random Lab."""
     run_random_lab_logic(args)
+    sys.exit(0)
+
+async def run_browser_lab(args):
+    """Runs the Browser Lab."""
+    await run_browser_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -12214,6 +12221,48 @@ def parse_args(argv=None):
     parser_random_dice.add_argument("--sides", "-s", type=int, default=6, help="Number of sides.")
     parser_random_dice.add_argument("--count", "-c", type=int, default=1, help="Number of rolls.")
 
+    # --- New 'browser-lab' command ---
+    parser_browser = subparsers.add_parser(
+        "browser-lab",
+        aliases=["browser", "web"],
+        help="Browser automation utilities (screenshot, pdf, text, html, evaluate, inspect)."
+    )
+    browser_subparsers = parser_browser.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # browser-lab screenshot
+    parser_browser_screenshot = browser_subparsers.add_parser("screenshot", help="Take a screenshot.")
+    parser_browser_screenshot.add_argument("url", help="URL to visit.")
+    parser_browser_screenshot.add_argument("output", help="Output file path (.png).")
+    parser_browser_screenshot.add_argument("--viewport", "-v", action="store_true", help="Capture viewport only (default: full page).")
+
+    # browser-lab pdf
+    parser_browser_pdf = browser_subparsers.add_parser("pdf", help="Save page as PDF.")
+    parser_browser_pdf.add_argument("url", help="URL to visit.")
+    parser_browser_pdf.add_argument("output", help="Output file path (.pdf).")
+
+    # browser-lab text
+    parser_browser_text = browser_subparsers.add_parser("text", help="Extract text content.")
+    parser_browser_text.add_argument("url", help="URL to visit.")
+    parser_browser_text.add_argument("--output", "-o", help="Output file path (optional).")
+
+    # browser-lab html
+    parser_browser_html = browser_subparsers.add_parser("html", help="Extract HTML content.")
+    parser_browser_html.add_argument("url", help="URL to visit.")
+    parser_browser_html.add_argument("--output", "-o", help="Output file path (optional).")
+
+    # browser-lab evaluate
+    parser_browser_eval = browser_subparsers.add_parser("evaluate", help="Evaluate JavaScript.")
+    parser_browser_eval.add_argument("url", help="URL to visit.")
+    parser_browser_eval.add_argument("script", help="JavaScript to execute.")
+
+    # browser-lab inspect
+    parser_browser_inspect = browser_subparsers.add_parser("inspect", help="Inspect page metadata.")
+    parser_browser_inspect.add_argument("url", help="URL to visit.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15514,6 +15563,10 @@ async def main():
 
     if args.command in ["random-lab", "rand", "random"]:
         run_random_lab(args)
+        return
+
+    if args.command in ["browser-lab", "browser", "web"]:
+        await run_browser_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

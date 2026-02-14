@@ -59,12 +59,12 @@ class HashLabManager:
                     except Exception as e:
                         results[str(fp)] = f"Error: {e}"
         else:
-            for file in path.iterdir():
-                if file.is_file():
+            for file_path in path.iterdir():
+                if file_path.is_file():
                     try:
-                        results[str(file)] = self.hash_file(file, algo)
+                        results[str(file_path)] = self.hash_file(file_path, algo)
                     except Exception as e:
-                        results[str(file)] = f"Error: {e}"
+                        results[str(file_path)] = f"Error: {e}"
         return results
 
     def compare_files(self, file1: Union[str, Path], file2: Union[str, Path], algo: str = "sha256") -> Dict[str, Any]:
@@ -97,7 +97,7 @@ class HashLabManager:
             raise FileNotFoundError(f"Checksum file '{cpath}' not found.")
 
         root = Path(root_dir) if root_dir else cpath.parent
-        results = {"passed": [], "failed": [], "missing": [], "errors": []}
+        results: Dict[str, List[Any]] = {"passed": [], "failed": [], "missing": [], "errors": []}
 
         try:
             with open(cpath, "r") as f:

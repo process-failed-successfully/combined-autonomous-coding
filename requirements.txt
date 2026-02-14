@@ -30,3 +30,4 @@ openpyxl
 tomlkit
 feedparser
 websockets
+Jinja2

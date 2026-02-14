@@ -119,6 +119,7 @@ from shared.random_lab import run_random_lab_logic
 from shared.browser_lab import run_browser_lab_logic
 from shared.npm_lab import run_npm_lab_logic
 from shared.docker_lab import run_docker_lab_logic
+from shared.k8s_lab import run_k8s_lab_logic
 import json
 import yaml
 import platformdirs
@@ -167,7 +168,8 @@ KNOWN_COMMANDS = [
     "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random",
     "browser-lab", "browser", "web",
     "npm-lab", "npm",
-    "docker-lab", "docker", "container"
+    "docker-lab", "docker", "container",
+    "k8s-lab", "k8s", "kube"
 ]
 
 if FileSystemEventHandler:
@@ -300,6 +302,11 @@ def run_npm_lab(args):
 def run_docker_lab(args):
     """Runs the Docker Lab."""
     run_docker_lab_logic(args)
+    sys.exit(0)
+
+def run_k8s_lab(args):
+    """Runs the Kubernetes Lab."""
+    run_k8s_lab_logic(args)
     sys.exit(0)
 
 def run_uni_lab(args):
@@ -12403,6 +12410,59 @@ def parse_args(argv=None):
     parser_docker_stats = docker_subparsers.add_parser("stats", help="Get container stats.")
     parser_docker_stats.add_argument("container", help="Container ID or name.")
 
+    # --- New 'k8s-lab' command ---
+    parser_k8s = subparsers.add_parser(
+        "k8s-lab",
+        aliases=["k8s", "kube"],
+        help="Kubernetes utilities (pods, ns, deploy, svc, ctx, logs, describe, apply, delete)."
+    )
+    k8s_subparsers = parser_k8s.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # k8s-lab pods
+    parser_k8s_pods = k8s_subparsers.add_parser("pods", help="List pods.")
+    parser_k8s_pods.add_argument("--namespace", "-n", help="Namespace (default: all namespaces if not specified or current).")
+
+    # k8s-lab ns
+    parser_k8s_ns = k8s_subparsers.add_parser("ns", help="List namespaces.")
+
+    # k8s-lab deploy
+    parser_k8s_deploy = k8s_subparsers.add_parser("deploy", help="List deployments.")
+    parser_k8s_deploy.add_argument("--namespace", "-n", help="Namespace.")
+
+    # k8s-lab svc
+    parser_k8s_svc = k8s_subparsers.add_parser("svc", help="List services.")
+    parser_k8s_svc.add_argument("--namespace", "-n", help="Namespace.")
+
+    # k8s-lab ctx
+    parser_k8s_ctx = k8s_subparsers.add_parser("ctx", help="List or switch context.")
+    parser_k8s_ctx.add_argument("use_context", nargs="?", help="Switch to this context.")
+
+    # k8s-lab logs
+    parser_k8s_logs = k8s_subparsers.add_parser("logs", help="Get pod logs.")
+    parser_k8s_logs.add_argument("pod", help="Pod name.")
+    parser_k8s_logs.add_argument("--namespace", "-n", help="Namespace.")
+    parser_k8s_logs.add_argument("--tail", type=int, default=100, help="Number of lines.")
+
+    # k8s-lab describe
+    parser_k8s_describe = k8s_subparsers.add_parser("describe", help="Describe resource.")
+    parser_k8s_describe.add_argument("resource_type", help="Resource type (e.g., pod, deploy).")
+    parser_k8s_describe.add_argument("name", help="Resource name.")
+    parser_k8s_describe.add_argument("--namespace", "-n", help="Namespace.")
+
+    # k8s-lab apply
+    parser_k8s_apply = k8s_subparsers.add_parser("apply", help="Apply configuration.")
+    parser_k8s_apply.add_argument("file", help="File path.")
+
+    # k8s-lab delete
+    parser_k8s_delete = k8s_subparsers.add_parser("delete", help="Delete resource.")
+    parser_k8s_delete.add_argument("resource_type", help="Resource type.")
+    parser_k8s_delete.add_argument("name", help="Resource name.")
+    parser_k8s_delete.add_argument("--namespace", "-n", help="Namespace.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15715,6 +15775,10 @@ async def main():
 
     if args.command in ["docker-lab", "docker", "container"]:
         run_docker_lab(args)
+        return
+
+    if args.command in ["k8s-lab", "k8s", "kube"]:
+        run_k8s_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

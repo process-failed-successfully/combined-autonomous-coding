@@ -118,6 +118,7 @@ from shared.hash_lab import run_hash_lab_logic
 from shared.random_lab import run_random_lab_logic
 from shared.browser_lab import run_browser_lab_logic
 from shared.npm_lab import run_npm_lab_logic
+from shared.docker_lab import run_docker_lab_logic
 import json
 import yaml
 import platformdirs
@@ -165,7 +166,8 @@ KNOWN_COMMANDS = [
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
     "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random",
     "browser-lab", "browser", "web",
-    "npm-lab", "npm"
+    "npm-lab", "npm",
+    "docker-lab", "docker", "container"
 ]
 
 if FileSystemEventHandler:
@@ -294,6 +296,11 @@ def run_npm_lab(args):
     """Runs the NPM Lab."""
     success = run_npm_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_docker_lab(args):
+    """Runs the Docker Lab."""
+    run_docker_lab_logic(args)
+    sys.exit(0)
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -12338,6 +12345,64 @@ def parse_args(argv=None):
     parser_npm_search.add_argument("query", help="Search query.")
     parser_npm_search.add_argument("--limit", type=int, default=10, help="Limit results.")
 
+    # --- New 'docker-lab' command ---
+    parser_docker = subparsers.add_parser(
+        "docker-lab",
+        aliases=["docker", "container"],
+        help="Docker utilities (ps, images, start, stop, restart, rm, rmi, prune, logs, inspect, stats)."
+    )
+    docker_subparsers = parser_docker.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # docker-lab ps
+    parser_docker_ps = docker_subparsers.add_parser("ps", aliases=["list"], help="List containers.")
+
+    # docker-lab images
+    parser_docker_images = docker_subparsers.add_parser("images", help="List images.")
+
+    # docker-lab start
+    parser_docker_start = docker_subparsers.add_parser("start", help="Start a container.")
+    parser_docker_start.add_argument("container", help="Container ID or name.")
+
+    # docker-lab stop
+    parser_docker_stop = docker_subparsers.add_parser("stop", help="Stop a container.")
+    parser_docker_stop.add_argument("container", help="Container ID or name.")
+
+    # docker-lab restart
+    parser_docker_restart = docker_subparsers.add_parser("restart", help="Restart a container.")
+    parser_docker_restart.add_argument("container", help="Container ID or name.")
+
+    # docker-lab rm
+    parser_docker_rm = docker_subparsers.add_parser("rm", help="Remove a container.")
+    parser_docker_rm.add_argument("container", help="Container ID or name.")
+    parser_docker_rm.add_argument("--force", "-f", action="store_true", help="Force removal.")
+
+    # docker-lab rmi
+    parser_docker_rmi = docker_subparsers.add_parser("rmi", help="Remove an image.")
+    parser_docker_rmi.add_argument("image", help="Image ID or name.")
+    parser_docker_rmi.add_argument("--force", "-f", action="store_true", help="Force removal.")
+
+    # docker-lab prune
+    parser_docker_prune = docker_subparsers.add_parser("prune", help="Prune stopped containers/unused images.")
+    parser_docker_prune.add_argument("--what", choices=["containers", "images", "all"], default="all", help="What to prune.")
+    parser_docker_prune.add_argument("--force", "-f", action="store_true", help="Skip confirmation.")
+
+    # docker-lab logs
+    parser_docker_logs = docker_subparsers.add_parser("logs", help="Get container logs.")
+    parser_docker_logs.add_argument("container", help="Container ID or name.")
+    parser_docker_logs.add_argument("--tail", type=int, default=100, help="Number of lines.")
+
+    # docker-lab inspect
+    parser_docker_inspect = docker_subparsers.add_parser("inspect", help="Inspect container.")
+    parser_docker_inspect.add_argument("container", help="Container ID or name.")
+
+    # docker-lab stats
+    parser_docker_stats = docker_subparsers.add_parser("stats", help="Get container stats.")
+    parser_docker_stats.add_argument("container", help="Container ID or name.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15646,6 +15711,10 @@ async def main():
 
     if args.command in ["npm-lab", "npm"]:
         run_npm_lab(args)
+        return
+
+    if args.command in ["docker-lab", "docker", "container"]:
+        run_docker_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

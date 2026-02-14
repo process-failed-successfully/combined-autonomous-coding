@@ -30,6 +30,16 @@ class TestDockerManager(unittest.TestCase):
         self.assertEqual(len(containers), 0)
 
     @patch("subprocess.run")
+    def test_list_images(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '{"ID":"img1","Repository":"repo1"}'
+
+        images = self.manager.list_images()
+        self.assertEqual(len(images), 1)
+        self.assertEqual(images[0]["Repository"], "repo1")
+        mock_run.assert_called_with(["docker", "images", "--format", "{{json .}}"], check=True, capture_output=True, text=True)
+
+    @patch("subprocess.run")
     def test_start_container(self, mock_run):
         mock_run.return_value.returncode = 0
         self.assertTrue(self.manager.start_container("123"))
@@ -37,6 +47,30 @@ class TestDockerManager(unittest.TestCase):
 
         mock_run.side_effect = subprocess.CalledProcessError(1, ["docker"])
         self.assertFalse(self.manager.start_container("123"))
+
+    @patch("subprocess.run")
+    def test_remove_container(self, mock_run):
+        mock_run.return_value.returncode = 0
+        self.assertTrue(self.manager.remove_container("123", force=True))
+        mock_run.assert_called_with(["docker", "rm", "-f", "123"], check=True, capture_output=True)
+
+    @patch("subprocess.run")
+    def test_remove_image(self, mock_run):
+        mock_run.return_value.returncode = 0
+        self.assertTrue(self.manager.remove_image("img1", force=False))
+        mock_run.assert_called_with(["docker", "rmi", "img1"], check=True, capture_output=True)
+
+    @patch("subprocess.run")
+    def test_prune_containers(self, mock_run):
+        mock_run.return_value.returncode = 0
+        self.assertTrue(self.manager.prune_containers())
+        mock_run.assert_called_with(["docker", "container", "prune", "-f"], check=True, capture_output=True)
+
+    @patch("subprocess.run")
+    def test_prune_images(self, mock_run):
+        mock_run.return_value.returncode = 0
+        self.assertTrue(self.manager.prune_images())
+        mock_run.assert_called_with(["docker", "image", "prune", "-f"], check=True, capture_output=True)
 
     @patch("subprocess.run")
     def test_get_logs(self, mock_run):
@@ -58,6 +92,16 @@ class TestDockerManager(unittest.TestCase):
         self.assertIsNotNone(data)
         self.assertEqual(data["Id"], "123")
         self.assertTrue(data["State"]["Running"])
+
+    @patch("subprocess.run")
+    def test_get_stats(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = '{"Name":"test","CPUPerc":"0.1%"}'
+
+        stats = self.manager.get_stats("123")
+        self.assertIsNotNone(stats)
+        self.assertEqual(stats["Name"], "test")
+        mock_run.assert_called_with(["docker", "stats", "--no-stream", "--format", "{{json .}}", "123"], check=True, capture_output=True, text=True)
 
 if __name__ == "__main__":
     unittest.main()

@@ -83,6 +83,7 @@ from shared.yaml_lab import run_yaml_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.csv_lab import run_csv_lab_logic
 from shared.excel_lab import run_excel_lab_logic
+from shared.template_lab import run_template_lab_logic
 from shared.unit_lab import run_unit_lab_logic
 from shared.research import run_research_logic
 from shared.serve import ServeManager
@@ -156,7 +157,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "image-lab", "img", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
@@ -418,6 +419,11 @@ def run_excel_lab(args):
     """Runs the Excel Lab."""
     success = run_excel_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_template_lab(args):
+    """Runs the Template Lab."""
+    run_template_lab_logic(args)
+    sys.exit(0)
 
 def run_json_lab(args):
     """Runs the JSON Lab."""
@@ -11401,6 +11407,33 @@ def parse_args(argv=None):
     parser_excel_read.add_argument("--limit", type=int, default=50, help="Limit rows displayed (table format only).")
     parser_excel_read.add_argument("--output", "-o", help="Output file path (optional).")
 
+    # --- New 'template-lab' command ---
+    parser_template = subparsers.add_parser(
+        "template-lab",
+        aliases=["tpl", "template"],
+        help="Template utilities (render, inspect, lint)."
+    )
+    template_subparsers = parser_template.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # template-lab render
+    parser_template_render = template_subparsers.add_parser("render", help="Render a template.")
+    parser_template_render.add_argument("template", help="Template file path.")
+    parser_template_render.add_argument("--data", "-d", help="Data file (JSON/YAML).")
+    parser_template_render.add_argument("--output", "-o", help="Output file path.")
+    parser_template_render.add_argument("--var", action="append", help="Override variable (key=value).")
+
+    # template-lab inspect
+    parser_template_inspect = template_subparsers.add_parser("inspect", help="Inspect template variables.")
+    parser_template_inspect.add_argument("template", help="Template file path.")
+
+    # template-lab lint
+    parser_template_lint = template_subparsers.add_parser("lint", help="Lint template syntax.")
+    parser_template_lint.add_argument("template", help="Template file path.")
+
     # --- New 'json-lab' command ---
     parser_json = subparsers.add_parser(
         "json-lab",
@@ -15643,6 +15676,10 @@ async def main():
 
     if args.command in ["excel-lab", "xls", "xlsx", "excel"]:
         run_excel_lab(args)
+        return
+
+    if args.command in ["template-lab", "tpl", "template"]:
+        run_template_lab(args)
         return
 
     if args.command == "kanban":

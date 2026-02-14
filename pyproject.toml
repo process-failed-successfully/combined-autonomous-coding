@@ -19,6 +19,7 @@ dependencies = [
     "docker",
     "requests",
     "PyYAML",
+    "Jinja2",
     "python-dotenv",
     "tenacity",
     "openai",

@@ -113,6 +113,7 @@ from shared.enc_lab import run_enc_lab_logic
 from shared.rss_lab import run_rss_lab_logic
 from shared.fs_lab import run_fs_lab_logic
 from shared.ws_lab import run_ws_lab_logic
+from shared.hash_lab import run_hash_lab_logic
 import json
 import yaml
 import platformdirs
@@ -158,7 +159,7 @@ KNOWN_COMMANDS = [
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
-    "ws-lab", "ws"
+    "ws-lab", "ws", "hash-lab", "hash"
 ]
 
 if FileSystemEventHandler:
@@ -267,6 +268,11 @@ def run_fs_lab(args):
     """Runs the FS Lab."""
     run_fs_lab_logic(args)
     sys.exit(0)
+
+def run_hash_lab(args):
+    """Runs the Hash Lab."""
+    success = run_hash_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -12093,6 +12099,47 @@ def parse_args(argv=None):
     parser_ws.add_argument("--interactive", "-i", action="store_true", help="Interactive mode (read from stdin).")
     parser_ws.add_argument("--listen", "-l", action="store_true", help="Listen mode (keep connection open).")
 
+    # --- New 'hash-lab' command ---
+    parser_hash = subparsers.add_parser(
+        "hash-lab",
+        aliases=["hash"],
+        help="Hash utilities (string, file, dir, compare, verify)."
+    )
+    hash_subparsers = parser_hash.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # hash-lab string
+    parser_hash_str = hash_subparsers.add_parser("string", help="Hash a string.")
+    parser_hash_str.add_argument("text", nargs="?", help="Input text.")
+    parser_hash_str.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+
+    # hash-lab file
+    parser_hash_file = hash_subparsers.add_parser("file", help="Hash a file.")
+    parser_hash_file.add_argument("path", help="File path.")
+    parser_hash_file.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+
+    # hash-lab dir
+    parser_hash_dir = hash_subparsers.add_parser("dir", help="Hash a directory.")
+    parser_hash_dir.add_argument("path", help="Directory path.")
+    parser_hash_dir.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+    parser_hash_dir.add_argument("--recursive", "-r", action="store_true", help="Recursive hash.")
+
+    # hash-lab compare
+    parser_hash_cmp = hash_subparsers.add_parser("compare", help="Compare two files.")
+    parser_hash_cmp.add_argument("file1", help="First file.")
+    parser_hash_cmp.add_argument("file2", help="Second file.")
+    parser_hash_cmp.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+
+    # hash-lab verify
+    parser_hash_ver = hash_subparsers.add_parser("verify", help="Verify checksums.")
+    parser_hash_ver.add_argument("checksum_file", help="Checksum file path.")
+    parser_hash_ver.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+    parser_hash_ver.add_argument("--root", help="Root directory for files (default: checksum file dir).")
+
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -15384,6 +15431,10 @@ async def main():
 
     if args.command in ["ws-lab", "ws"]:
         await run_ws_lab_logic(args)
+        return
+
+    if args.command in ["hash-lab", "hash"]:
+        run_hash_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

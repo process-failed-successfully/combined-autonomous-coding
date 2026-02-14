@@ -119,6 +119,7 @@ from shared.random_lab import run_random_lab_logic
 from shared.browser_lab import run_browser_lab_logic
 from shared.npm_lab import run_npm_lab_logic
 from shared.docker_lab import run_docker_lab_logic
+from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
 import json
 import yaml
@@ -169,6 +170,7 @@ KNOWN_COMMANDS = [
     "browser-lab", "browser", "web",
     "npm-lab", "npm",
     "docker-lab", "docker", "container",
+    "compose-lab", "compose",
     "k8s-lab", "k8s", "kube"
 ]
 
@@ -302,6 +304,11 @@ def run_npm_lab(args):
 def run_docker_lab(args):
     """Runs the Docker Lab."""
     run_docker_lab_logic(args)
+    sys.exit(0)
+
+def run_compose_lab(args):
+    """Runs the Compose Lab."""
+    run_compose_lab_logic(args)
     sys.exit(0)
 
 def run_k8s_lab(args):
@@ -12410,6 +12417,65 @@ def parse_args(argv=None):
     parser_docker_stats = docker_subparsers.add_parser("stats", help="Get container stats.")
     parser_docker_stats.add_argument("container", help="Container ID or name.")
 
+    # --- New 'compose-lab' command ---
+    parser_compose = subparsers.add_parser(
+        "compose-lab",
+        aliases=["compose"],
+        help="Docker Compose utilities (up, down, ps, logs, stop, start, restart, build, pull, exec)."
+    )
+    compose_subparsers = parser_compose.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # compose-lab up
+    parser_compose_up = compose_subparsers.add_parser("up", help="Start services.")
+    parser_compose_up.add_argument("-d", "--detach", action="store_true", help="Detached mode.")
+    parser_compose_up.add_argument("--build", action="store_true", help="Build images before starting.")
+    parser_compose_up.add_argument("services", nargs="*", help="Services to start.")
+
+    # compose-lab down
+    parser_compose_down = compose_subparsers.add_parser("down", help="Stop and remove resources.")
+    parser_compose_down.add_argument("-v", "--volumes", action="store_true", help="Remove volumes.")
+    parser_compose_down.add_argument("--remove-orphans", action="store_true", help="Remove orphans.")
+
+    # compose-lab ps
+    parser_compose_ps = compose_subparsers.add_parser("ps", aliases=["list"], help="List containers.")
+    parser_compose_ps.add_argument("-a", "--all", action="store_true", help="Show all.")
+
+    # compose-lab logs
+    parser_compose_logs = compose_subparsers.add_parser("logs", help="View logs.")
+    parser_compose_logs.add_argument("services", nargs="*", help="Services.")
+    parser_compose_logs.add_argument("-f", "--follow", action="store_true", help="Follow logs.")
+    parser_compose_logs.add_argument("--tail", type=int, default=100, help="Number of lines.")
+
+    # compose-lab stop
+    parser_compose_stop = compose_subparsers.add_parser("stop", help="Stop services.")
+    parser_compose_stop.add_argument("services", nargs="*", help="Services.")
+
+    # compose-lab start
+    parser_compose_start = compose_subparsers.add_parser("start", help="Start services.")
+    parser_compose_start.add_argument("services", nargs="*", help="Services.")
+
+    # compose-lab restart
+    parser_compose_restart = compose_subparsers.add_parser("restart", help="Restart services.")
+    parser_compose_restart.add_argument("services", nargs="*", help="Services.")
+
+    # compose-lab build
+    parser_compose_build = compose_subparsers.add_parser("build", help="Build services.")
+    parser_compose_build.add_argument("services", nargs="*", help="Services.")
+    parser_compose_build.add_argument("--no-cache", action="store_true", help="Do not use cache.")
+
+    # compose-lab pull
+    parser_compose_pull = compose_subparsers.add_parser("pull", help="Pull images.")
+    parser_compose_pull.add_argument("services", nargs="*", help="Services.")
+
+    # compose-lab exec
+    parser_compose_exec = compose_subparsers.add_parser("exec", help="Execute command.")
+    parser_compose_exec.add_argument("service", help="Service name.")
+    parser_compose_exec.add_argument("command_args", nargs=argparse.REMAINDER, help="Command to execute.")
+
     # --- New 'k8s-lab' command ---
     parser_k8s = subparsers.add_parser(
         "k8s-lab",
@@ -15775,6 +15841,10 @@ async def main():
 
     if args.command in ["docker-lab", "docker", "container"]:
         run_docker_lab(args)
+        return
+
+    if args.command in ["compose-lab", "compose"]:
+        run_compose_lab(args)
         return
 
     if args.command in ["k8s-lab", "k8s", "kube"]:

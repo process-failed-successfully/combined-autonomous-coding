@@ -66,11 +66,20 @@ class TestTelemetryExtended(unittest.TestCase):
         self.telemetry.capture_logs_from("other_logger")
         self.assertIn(self.telemetry.file_handler, other_logger.handlers)
 
+    def tearDown(self):
+        # Reset global telemetry to avoid state pollution between tests
+        import shared.telemetry
+        if shared.telemetry._telemetry:
+            shared.telemetry._telemetry._shutdown()
+        shared.telemetry._telemetry = None
+
+    @patch("shared.telemetry.ENABLE_METRICS", False)
     def test_init_telemetry(self):
         t = init_telemetry("svc", "type", "proj")
         self.assertEqual(t.service_name, "svc")
         self.assertEqual(get_telemetry(), t)
 
+    @patch("shared.telemetry.ENABLE_METRICS", False)
     def test_get_telemetry_fallback(self):
         # Reset global
         import shared.telemetry

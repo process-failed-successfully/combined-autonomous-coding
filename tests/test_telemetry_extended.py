@@ -3,6 +3,11 @@ from unittest.mock import patch, MagicMock
 import logging
 from shared.telemetry import Telemetry, get_telemetry, init_telemetry
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 
 class TestTelemetryExtended(unittest.TestCase):
     def setUp(self):
@@ -95,6 +100,7 @@ class TestTelemetryExtended(unittest.TestCase):
         # Should not raise exception
         self.telemetry._push_metrics()
 
+    @unittest.skipIf(psutil is None, "psutil not installed")
     @patch("psutil.Process")
     def test_system_monitoring_loop(self, mock_process):
         mock_p = MagicMock()

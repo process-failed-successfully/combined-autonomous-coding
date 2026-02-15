@@ -112,7 +112,7 @@ class WebhookLabManager:
     def start_server(self, port: int, forward_url: Optional[str] = None):
         self.forward_url = forward_url
 
-        server = ThreadingHTTPServer(('0.0.0.0', port), WebhookRequestHandler)
+        server = ThreadingHTTPServer(('0.0.0.0', port), WebhookRequestHandler)  # nosec
         server.manager = self  # Inject manager
 
         self.console.print(f"[bold green]Webhook Lab listening on port {port}...[/bold green]")

@@ -7,7 +7,8 @@ from io import StringIO
 # Ensure we can import shared modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.github_lab import GitHubLabManager, run_github_lab_logic
+from shared.github_lab import GitHubLabManager, run_github_lab_logic  # noqa: E402
+
 
 class TestGitHubLab(unittest.TestCase):
 
@@ -119,6 +120,7 @@ class TestGitHubLab(unittest.TestCase):
     def test_invalid_repo_format(self):
         with self.assertRaises(ValueError):
             self.manager.get_repo("invalid-format")
+
 
 if __name__ == "__main__":
     unittest.main()

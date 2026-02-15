@@ -1,9 +1,8 @@
 import requests
 import sys
 import os
-import json
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+
 
 class GitHubLabManager:
     """Manages GitHub Lab operations: user, repo, search, gists, tree, raw."""
@@ -87,10 +86,11 @@ class GitHubLabManager:
             return response.text
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
-                 raise ValueError(f"File not found: {path} in {owner_repo}")
+                raise ValueError(f"File not found: {path} in {owner_repo}")
             raise
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Network error: {e}")
+
 
 def run_github_lab_logic(args) -> bool:
     """CLI handler for GitHub Lab."""

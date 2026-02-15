@@ -82,6 +82,27 @@ class TimeLabManager:
             zones = [z for z in zones if search_term in z.lower()]
         return zones
 
+    def get_common_timezones(self) -> List[str]:
+        """Returns a list of commonly used timezones."""
+        common_zones = [
+            "UTC",
+            "America/Los_Angeles", # US/Pacific
+            "America/Denver",      # US/Mountain
+            "America/Chicago",     # US/Central
+            "America/New_York",    # US/Eastern
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Asia/Tokyo",
+            "Asia/Shanghai",
+            "Asia/Kolkata",
+            "Australia/Sydney",
+            "Pacific/Auckland"
+        ]
+        # Filter only available zones to be safe
+        available = zoneinfo.available_timezones()
+        return [z for z in common_zones if z in available]
+
 def run_time_lab_logic(args) -> bool:
     """CLI handler for Time Lab."""
     manager = TimeLabManager()

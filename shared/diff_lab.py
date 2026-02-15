@@ -3,35 +3,34 @@ import json
 import yaml
 import difflib
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 
 try:
     from rich.console import Console
     from rich.table import Table
     from rich.syntax import Syntax
-    from rich.panel import Panel
     from rich import box
     HAS_RICH = True
 except ImportError:
     HAS_RICH = False
 
 try:
-    from PIL import Image, ImageChops, ImageDraw
+    from PIL import Image, ImageChops
     HAS_PILLOW = True
 except ImportError:
     HAS_PILLOW = False
+
 
 class DiffLabManager:
     """
     Manages smart file comparison for various formats.
     """
     def __init__(self):
+        self.console: Optional[Console] = None
         if HAS_RICH:
             self.console = Console()
-        else:
-            self.console = None
 
-    def compare_files(self, file1: Path, file2: Path, ftype: str = None, output: Path = None):
+    def compare_files(self, file1: Path, file2: Path, ftype: Optional[str] = None, output: Optional[Path] = None):
         """
         Main entry point for comparison.
         """
@@ -156,8 +155,10 @@ class DiffLabManager:
                 new_val = json.dumps(d.get('new'), default=str) if 'new' in d else "N/A"
 
                 # Truncate long values
-                if len(old_val) > 30: old_val = old_val[:27] + "..."
-                if len(new_val) > 30: new_val = new_val[:27] + "..."
+                if len(old_val) > 30:
+                    old_val = old_val[:27] + "..."
+                if len(new_val) > 30:
+                    new_val = new_val[:27] + "..."
 
                 table.add_row(path, d['type'], old_val, new_val)
 
@@ -167,7 +168,7 @@ class DiffLabManager:
                 path = "root" + d['path']
                 print(f"{path}: {d['type']} | Old: {d.get('old')} | New: {d.get('new')}")
 
-    def _diff_recursive(self, d1, d2, path="") -> List[Dict]:
+    def _diff_recursive(self, d1, d2, path="") -> List[Dict[str, Any]]:
         """
         Compare two python objects (dicts, lists, primitives) and return a list of differences.
         """
@@ -211,7 +212,7 @@ class DiffLabManager:
 
         return diffs
 
-    def _compare_image(self, file1: Path, file2: Path, output: Path = None):
+    def _compare_image(self, file1: Path, file2: Path, output: Optional[Path] = None):
         """
         Visual image comparison using Pillow.
         """

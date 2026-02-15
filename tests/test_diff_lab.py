@@ -1,19 +1,20 @@
 import unittest
 import json
-import yaml
 import tempfile
 import shutil
-import sys
 from pathlib import Path
+from typing import Optional, Dict, Any, cast
 from unittest.mock import MagicMock, patch
 from shared.diff_lab import DiffLabManager
+from rich.console import Console
+
 
 class TestDiffLab(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.manager = DiffLabManager()
         # Disable rich console to avoid cluttering test output and to assert calls
-        self.manager.console = MagicMock()
+        self.manager.console = MagicMock(spec=Console)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -29,7 +30,8 @@ class TestDiffLab(unittest.TestCase):
         with patch('sys.stdout'):
             self.manager._compare_json(f1, f2)
 
-        self.manager.console.print.assert_not_called()
+        if self.manager.console:
+            cast(MagicMock, self.manager.console).print.assert_not_called()
 
     @patch("shared.diff_lab.HAS_RICH", True)
     def test_compare_json_diff(self):
@@ -39,7 +41,8 @@ class TestDiffLab(unittest.TestCase):
         f2.write_text(json.dumps({"a": 2}))
 
         self.manager._compare_json(f1, f2)
-        self.manager.console.print.assert_called()
+        if self.manager.console:
+            cast(MagicMock, self.manager.console).print.assert_called()
 
     def test_recursive_diff(self):
         d1 = {"a": 1, "b": {"c": 3}, "d": [1, 2]}
@@ -49,15 +52,17 @@ class TestDiffLab(unittest.TestCase):
         self.assertEqual(len(diffs), 2)
 
         # b.c changed
-        mod = next((d for d in diffs if "c" in d['path']), None)
+        mod: Optional[Dict[str, Any]] = next((d for d in diffs if "c" in d['path']), None)
         self.assertIsNotNone(mod)
+        assert mod is not None
         self.assertEqual(mod['type'], 'MODIFIED')
         self.assertEqual(mod['old'], 3)
         self.assertEqual(mod['new'], 4)
 
         # d list changed (index 1)
-        lst = next((d for d in diffs if "[1]" in d['path']), None)
+        lst: Optional[Dict[str, Any]] = next((d for d in diffs if "[1]" in d['path']), None)
         self.assertIsNotNone(lst)
+        assert lst is not None
         self.assertEqual(lst['type'], 'MODIFIED')
         self.assertEqual(lst['old'], 2)
         self.assertEqual(lst['new'], 3)
@@ -86,7 +91,8 @@ class TestDiffLab(unittest.TestCase):
         f2.write_text("Hello\nPython", encoding='utf-8')
 
         self.manager._compare_text(f1, f2)
-        self.manager.console.print.assert_called()
+        if self.manager.console:
+            cast(MagicMock, self.manager.console).print.assert_called()
 
     @patch("shared.diff_lab.HAS_PILLOW", True)
     @patch("PIL.Image.open")
@@ -116,6 +122,7 @@ class TestDiffLab(unittest.TestCase):
             self.manager._compare_image(f1, f2)
 
         mock_diff.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

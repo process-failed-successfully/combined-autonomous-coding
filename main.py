@@ -124,6 +124,7 @@ from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
 from shared.diff_lab import run_diff_lab_logic
 from shared.redis_lab import run_redis_lab_logic
+from shared.github_lab import run_github_lab_logic
 import json
 import yaml
 import platformdirs
@@ -177,7 +178,8 @@ KNOWN_COMMANDS = [
     "compose-lab", "compose",
     "k8s-lab", "k8s", "kube",
     "diff-lab",
-    "redis-lab", "redis", "cache"
+    "redis-lab", "redis", "cache",
+    "github-lab", "github", "gh"
 ]
 
 if FileSystemEventHandler:
@@ -12632,6 +12634,46 @@ def parse_args(argv=None):
     # redis-lab info
     redis_subparsers.add_parser("info", help="Get server info.")
 
+    # --- New 'github-lab' command ---
+    parser_github = subparsers.add_parser(
+        "github-lab",
+        aliases=["github", "gh"],
+        help="GitHub utilities (user, repo, search, gists, tree, raw)."
+    )
+    github_subparsers = parser_github.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # github-lab user
+    parser_gh_user = github_subparsers.add_parser("user", help="Get user info.")
+    parser_gh_user.add_argument("username", help="GitHub username.")
+
+    # github-lab repo
+    parser_gh_repo = github_subparsers.add_parser("repo", help="Get repo info.")
+    parser_gh_repo.add_argument("repo", help="Owner/Repo (e.g. google/guava).")
+
+    # github-lab search
+    parser_gh_search = github_subparsers.add_parser("search", help="Search repositories.")
+    parser_gh_search.add_argument("query", help="Search query.")
+    parser_gh_search.add_argument("--limit", type=int, default=10, help="Max results.")
+
+    # github-lab gists
+    parser_gh_gists = github_subparsers.add_parser("gists", help="List user gists.")
+    parser_gh_gists.add_argument("username", help="GitHub username.")
+    parser_gh_gists.add_argument("--limit", type=int, default=10, help="Max results.")
+
+    # github-lab tree
+    parser_gh_tree = github_subparsers.add_parser("tree", help="View file tree.")
+    parser_gh_tree.add_argument("repo", help="Owner/Repo.")
+    parser_gh_tree.add_argument("path", nargs="?", default="", help="Path inside repo.")
+
+    # github-lab raw
+    parser_gh_raw = github_subparsers.add_parser("raw", help="Get raw file content.")
+    parser_gh_raw.add_argument("repo", help="Owner/Repo.")
+    parser_gh_raw.add_argument("path", help="Path to file.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15964,6 +16006,10 @@ async def main():
 
     if args.command in ["redis-lab", "redis", "cache"]:
         run_redis_lab(args)
+        return
+
+    if args.command in ["github-lab", "github", "gh"]:
+        run_github_lab_logic(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

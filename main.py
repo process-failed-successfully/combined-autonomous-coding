@@ -114,6 +114,7 @@ from shared.enc_lab import run_enc_lab_logic
 from shared.rss_lab import run_rss_lab_logic
 from shared.fs_lab import run_fs_lab_logic
 from shared.ws_lab import run_ws_lab_logic
+from shared.webhook_lab import run_webhook_lab_logic
 from shared.hash_lab import run_hash_lab_logic
 from shared.random_lab import run_random_lab_logic
 from shared.browser_lab import run_browser_lab_logic
@@ -170,7 +171,7 @@ KNOWN_COMMANDS = [
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
-    "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random",
+    "ws-lab", "ws", "webhook-lab", "webhook", "hook", "hash-lab", "hash", "random-lab", "rand", "random",
     "browser-lab", "browser", "web",
     "npm-lab", "npm",
     "pypi-lab", "pypi",
@@ -287,6 +288,11 @@ def run_rss_lab(args):
 def run_fs_lab(args):
     """Runs the FS Lab."""
     run_fs_lab_logic(args)
+    sys.exit(0)
+
+def run_webhook_lab(args):
+    """Runs the Webhook Lab."""
+    run_webhook_lab_logic(args)
     sys.exit(0)
 
 def run_hash_lab(args):
@@ -11965,6 +11971,36 @@ def parse_args(argv=None):
     parser_http.add_argument("--proxy", help="Proxy URL.")
     parser_http.add_argument("--verbose", "-v", action="store_true", help="Show detailed request/response info.")
 
+    # --- New 'webhook-lab' command ---
+    parser_webhook = subparsers.add_parser(
+        "webhook-lab",
+        aliases=["webhook", "hook"],
+        help="Webhook Lab: Capture, inspect, and replay HTTP requests."
+    )
+    webhook_subparsers = parser_webhook.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # webhook-lab listen
+    parser_wh_listen = webhook_subparsers.add_parser("listen", help="Start listening for webhooks.")
+    parser_wh_listen.add_argument("--port", "-p", type=int, default=8000, help="Port to listen on (default: 8000).")
+    parser_wh_listen.add_argument("--forward", "-f", help="Forward requests to this URL.")
+
+    # webhook-lab list
+    parser_wh_list = webhook_subparsers.add_parser("list", help="List captured webhooks.")
+    parser_wh_list.add_argument("--limit", "-n", type=int, default=10, help="Number of requests to show.")
+
+    # webhook-lab show
+    parser_wh_show = webhook_subparsers.add_parser("show", help="Show details of a webhook.")
+    parser_wh_show.add_argument("id", help="Request ID.")
+
+    # webhook-lab replay
+    parser_wh_replay = webhook_subparsers.add_parser("replay", help="Replay a captured webhook.")
+    parser_wh_replay.add_argument("id", help="Request ID.")
+    parser_wh_replay.add_argument("target", help="Target URL.")
+
     # --- New 'proc-lab' command ---
     parser_proc = subparsers.add_parser(
         "proc-lab",
@@ -15934,6 +15970,10 @@ async def main():
 
     if args.command in ["http-lab", "http", "req"]:
         run_http_lab(args)
+        return
+
+    if args.command in ["webhook-lab", "webhook", "hook"]:
+        run_webhook_lab(args)
         return
 
     if args.command in ["proc-lab", "proc"]:

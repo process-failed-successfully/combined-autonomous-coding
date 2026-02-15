@@ -2,14 +2,35 @@ import unittest
 from unittest.mock import MagicMock, patch
 import sys
 import io
-from shared.redis_lab import RedisLabManager, run_redis_lab_logic
 import argparse
+
+# --- Handle optional dependency for testing ---
+# If redis is not installed, mock it so tests can run without ImportErrors.
+try:
+    import redis
+    HAS_REDIS = True
+except ImportError:
+    HAS_REDIS = False
+    # Create a mock redis module
+    mock_redis = MagicMock()
+    # Mock ConnectionError which is used in exception handling
+    mock_redis.ConnectionError = Exception
+    sys.modules["redis"] = mock_redis
+
+# Now import the code under test (which will use the real or mocked redis)
+from shared.redis_lab import RedisLabManager, run_redis_lab_logic
+# Force HAS_REDIS to be True for tests, since we want to test the logic
+import shared.redis_lab
+shared.redis_lab.HAS_REDIS = True
 
 class TestRedisLab(unittest.TestCase):
     def setUp(self):
+        # We patch where it is used or the potentially mocked module
+        # Since we might have mocked 'redis' in sys.modules, patch should work on it.
         self.mock_redis_patcher = patch('redis.Redis.from_url')
         self.mock_from_url = self.mock_redis_patcher.start()
         self.mock_client = MagicMock()
+        # Ensure the mock client mimics a redis client instance
         self.mock_from_url.return_value = self.mock_client
 
         self.manager = RedisLabManager()

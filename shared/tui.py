@@ -61,6 +61,7 @@ from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
 from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
+from shared.tui_k8s import K8sTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
@@ -3918,6 +3919,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
         PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
+        PaletteCommand("Go to K8s", "switch_tab_k8s"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
         PaletteCommand("Go to Disk Usage", "switch_tab_disk_usage"),
         PaletteCommand("Go to Logs", "switch_tab_logs"),
@@ -4002,6 +4004,8 @@ class AgentTUI(App):
                 yield ServicesTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):
                 yield DockerTab(self.project_dir)
+            with TabPane("K8s", id="tab-k8s"):
+                yield K8sTab(self.project_dir)
             with TabPane("Chaos", id="tab-chaos"):
                 yield ChaosTab(self.project_dir)
             with TabPane("Scheduler", id="tab-scheduler"):

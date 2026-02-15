@@ -123,6 +123,7 @@ from shared.docker_lab import run_docker_lab_logic
 from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
 from shared.diff_lab import run_diff_lab_logic
+from shared.redis_lab import run_redis_lab_logic
 import json
 import yaml
 import platformdirs
@@ -175,7 +176,8 @@ KNOWN_COMMANDS = [
     "docker-lab", "docker", "container",
     "compose-lab", "compose",
     "k8s-lab", "k8s", "kube",
-    "diff-lab"
+    "diff-lab",
+    "redis-lab", "redis", "cache"
 ]
 
 if FileSystemEventHandler:
@@ -334,6 +336,11 @@ def run_code_query_cli(args):
     """Runs the Code Query tool."""
     from shared.code_query import run_code_query
     run_code_query(args)
+    sys.exit(0)
+
+def run_redis_lab(args):
+    """Runs the Redis Lab."""
+    run_redis_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -12584,6 +12591,47 @@ def parse_args(argv=None):
     parser_diff_lab.add_argument("--type", choices=["json", "yaml", "image", "text"], help="Force comparison type.")
     parser_diff_lab.add_argument("--output", help="Output path (for image diffs).")
 
+    # --- New 'redis-lab' command ---
+    parser_redis = subparsers.add_parser(
+        "redis-lab",
+        aliases=["redis", "cache"],
+        help="Redis utilities (connect, get, set, del, keys, flush, info)."
+    )
+    parser_redis.add_argument("--url", help="Redis URL (default: redis://localhost:6379/0)")
+    redis_subparsers = parser_redis.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # redis-lab connect
+    redis_subparsers.add_parser("connect", help="Test connection.")
+
+    # redis-lab get
+    parser_redis_get = redis_subparsers.add_parser("get", help="Get a value.")
+    parser_redis_get.add_argument("key", help="Key to get.")
+
+    # redis-lab set
+    parser_redis_set = redis_subparsers.add_parser("set", help="Set a value.")
+    parser_redis_set.add_argument("key", help="Key to set.")
+    parser_redis_set.add_argument("value", help="Value to set.")
+    parser_redis_set.add_argument("--ex", type=int, help="Expiry in seconds.")
+
+    # redis-lab del
+    parser_redis_del = redis_subparsers.add_parser("del", help="Delete a key.")
+    parser_redis_del.add_argument("key", help="Key to delete.")
+
+    # redis-lab keys
+    parser_redis_keys = redis_subparsers.add_parser("keys", help="List keys.")
+    parser_redis_keys.add_argument("pattern", default="*", nargs="?", help="Pattern (default: *).")
+
+    # redis-lab flush
+    parser_redis_flush = redis_subparsers.add_parser("flush", help="Flush database.")
+    parser_redis_flush.add_argument("--force", "-f", action="store_true", help="Skip confirmation.")
+
+    # redis-lab info
+    redis_subparsers.add_parser("info", help="Get server info.")
+
 
     # --- Plugin Registration ---
     try:
@@ -15912,6 +15960,10 @@ async def main():
 
     if args.command == "diff-lab":
         run_diff_lab_logic(args)
+        return
+
+    if args.command in ["redis-lab", "redis", "cache"]:
+        run_redis_lab(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

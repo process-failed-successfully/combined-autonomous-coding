@@ -122,6 +122,7 @@ from shared.pypi_lab import run_pypi_lab_logic
 from shared.docker_lab import run_docker_lab_logic
 from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
+from shared.diff_lab import run_diff_lab_logic
 import json
 import yaml
 import platformdirs
@@ -173,7 +174,8 @@ KNOWN_COMMANDS = [
     "pypi-lab", "pypi",
     "docker-lab", "docker", "container",
     "compose-lab", "compose",
-    "k8s-lab", "k8s", "kube"
+    "k8s-lab", "k8s", "kube",
+    "diff-lab"
 ]
 
 if FileSystemEventHandler:
@@ -12572,6 +12574,16 @@ def parse_args(argv=None):
     parser_k8s_delete.add_argument("name", help="Resource name.")
     parser_k8s_delete.add_argument("--namespace", "-n", help="Namespace.")
 
+    # --- New 'diff-lab' command ---
+    parser_diff_lab = subparsers.add_parser(
+        "diff-lab",
+        help="Smart comparison for various file formats (JSON, YAML, Image, Text)."
+    )
+    parser_diff_lab.add_argument("file1", help="First file.")
+    parser_diff_lab.add_argument("file2", help="Second file.")
+    parser_diff_lab.add_argument("--type", choices=["json", "yaml", "image", "text"], help="Force comparison type.")
+    parser_diff_lab.add_argument("--output", help="Output path (for image diffs).")
+
 
     # --- Plugin Registration ---
     try:
@@ -15896,6 +15908,10 @@ async def main():
 
     if args.command in ["k8s-lab", "k8s", "kube"]:
         run_k8s_lab(args)
+        return
+
+    if args.command == "diff-lab":
+        run_diff_lab_logic(args)
         return
 
     if args.command in ["cidr-lab", "cidr"]:

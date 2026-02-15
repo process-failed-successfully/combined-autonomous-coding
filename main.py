@@ -126,6 +126,7 @@ from shared.k8s_lab import run_k8s_lab_logic
 from shared.diff_lab import run_diff_lab_logic
 from shared.redis_lab import run_redis_lab_logic
 from shared.github_lab import run_github_lab_logic
+from shared.email_lab import run_email_lab_logic
 import json
 import yaml
 import platformdirs
@@ -180,7 +181,8 @@ KNOWN_COMMANDS = [
     "k8s-lab", "k8s", "kube",
     "diff-lab",
     "redis-lab", "redis", "cache",
-    "github-lab", "github", "gh"
+    "github-lab", "github", "gh",
+    "email-lab", "email", "mail", "smtp"
 ]
 
 if FileSystemEventHandler:
@@ -349,6 +351,11 @@ def run_code_query_cli(args):
 def run_redis_lab(args):
     """Runs the Redis Lab."""
     run_redis_lab_logic(args)
+    sys.exit(0)
+
+async def run_email_lab(args):
+    """Runs the Email Lab."""
+    await run_email_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -12710,6 +12717,42 @@ def parse_args(argv=None):
     parser_gh_raw.add_argument("repo", help="Owner/Repo.")
     parser_gh_raw.add_argument("path", help="Path to file.")
 
+    # --- New 'email-lab' command ---
+    parser_email = subparsers.add_parser(
+        "email-lab",
+        aliases=["email", "mail", "smtp"],
+        help="Email utilities (server, send, list, show, clear)."
+    )
+    email_subparsers = parser_email.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # email-lab server
+    parser_email_server = email_subparsers.add_parser("server", aliases=["serve"], help="Start SMTP server.")
+    parser_email_server.add_argument("--port", type=int, default=1025, help="Port to listen on (default: 1025).")
+
+    # email-lab send
+    parser_email_send = email_subparsers.add_parser("send", help="Send a test email.")
+    parser_email_send.add_argument("--to", required=True, nargs="+", help="Recipient(s).")
+    parser_email_send.add_argument("--subject", required=True, help="Subject.")
+    parser_email_send.add_argument("--body", required=True, help="Body content.")
+    parser_email_send.add_argument("--from", dest="sender", default="test@example.com", help="Sender address.")
+    parser_email_send.add_argument("--host", default="127.0.0.1", help="SMTP Host (default: 127.0.0.1).")
+    parser_email_send.add_argument("--port", type=int, default=1025, help="SMTP Port (default: 1025).")
+
+    # email-lab list
+    parser_email_list = email_subparsers.add_parser("list", help="List captured emails.")
+    parser_email_list.add_argument("--limit", type=int, default=10, help="Number of emails to show.")
+
+    # email-lab show
+    parser_email_show = email_subparsers.add_parser("show", help="Show email details.")
+    parser_email_show.add_argument("id", help="Email ID.")
+
+    # email-lab clear
+    email_subparsers.add_parser("clear", help="Clear email history.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16046,6 +16089,10 @@ async def main():
 
     if args.command in ["redis-lab", "redis", "cache"]:
         run_redis_lab(args)
+        return
+
+    if args.command in ["email-lab", "email", "mail", "smtp"]:
+        await run_email_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

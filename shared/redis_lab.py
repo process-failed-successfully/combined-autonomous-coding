@@ -1,6 +1,11 @@
 import sys
-import redis
 from typing import Dict, Any, List, Optional, Union
+
+try:
+    import redis
+    HAS_REDIS = True
+except ImportError:
+    HAS_REDIS = False
 
 class RedisLabManager:
     """
@@ -9,9 +14,13 @@ class RedisLabManager:
     def __init__(self, url: str = "redis://localhost:6379/0"):
         self.url = url
         self.client = None
+        if not HAS_REDIS:
+            print("Error: Redis library not installed. Please install 'redis'.", file=sys.stderr)
 
     def connect(self) -> bool:
         """Establishes a connection to the Redis server."""
+        if not HAS_REDIS:
+            return False
         try:
             self.client = redis.Redis.from_url(self.url, decode_responses=True)
             self.client.ping()
@@ -79,6 +88,10 @@ class RedisLabManager:
 
 def run_redis_lab_logic(args):
     """CLI logic for Redis Lab."""
+
+    if not HAS_REDIS:
+        print("Error: 'redis' library is not installed. Please install it to use this feature.", file=sys.stderr)
+        sys.exit(1)
 
     # Determine URL
     url = args.url or "redis://localhost:6379/0"

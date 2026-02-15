@@ -47,6 +47,7 @@ class PyPiLabManager:
             return data.get("urls", [])
 
     def download(self, package: str, version: Optional[str] = None, dest: str = ".") -> List[str]:
+        """Downloads package distribution files to the specified directory."""
         files = self.get_files(package, version)
         if not files:
             raise ValueError(f"No files found for package '{package}' (version: {version or 'latest'}).")

@@ -1,5 +1,5 @@
 import sys
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 
 try:
     import redis
@@ -7,13 +7,14 @@ try:
 except ImportError:
     HAS_REDIS = False
 
+
 class RedisLabManager:
     """
     Manages Redis operations.
     """
     def __init__(self, url: str = "redis://localhost:6379/0"):
         self.url = url
-        self.client = None
+        self.client: Any = None
         if not HAS_REDIS:
             print("Error: Redis library not installed. Please install 'redis'.", file=sys.stderr)
 
@@ -34,7 +35,8 @@ class RedisLabManager:
 
     def get(self, key: str) -> Optional[str]:
         """Gets a value."""
-        if not self.client and not self.connect(): return None
+        if not self.client and not self.connect():
+            return None
         try:
             return self.client.get(key)
         except Exception as e:
@@ -43,7 +45,8 @@ class RedisLabManager:
 
     def set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
         """Sets a value."""
-        if not self.client and not self.connect(): return False
+        if not self.client and not self.connect():
+            return False
         try:
             return self.client.set(key, value, ex=ex)
         except Exception as e:
@@ -52,7 +55,8 @@ class RedisLabManager:
 
     def delete(self, key: str) -> int:
         """Deletes a key."""
-        if not self.client and not self.connect(): return 0
+        if not self.client and not self.connect():
+            return 0
         try:
             return self.client.delete(key)
         except Exception as e:
@@ -61,7 +65,8 @@ class RedisLabManager:
 
     def keys(self, pattern: str = "*") -> List[str]:
         """Lists keys matching a pattern."""
-        if not self.client and not self.connect(): return []
+        if not self.client and not self.connect():
+            return []
         try:
             return self.client.keys(pattern)
         except Exception as e:
@@ -70,7 +75,8 @@ class RedisLabManager:
 
     def flush(self) -> bool:
         """Flushes the database."""
-        if not self.client and not self.connect(): return False
+        if not self.client and not self.connect():
+            return False
         try:
             return self.client.flushdb()
         except Exception as e:
@@ -79,12 +85,14 @@ class RedisLabManager:
 
     def info(self) -> Dict[str, Any]:
         """Returns server info."""
-        if not self.client and not self.connect(): return {}
+        if not self.client and not self.connect():
+            return {}
         try:
             return self.client.info()
         except Exception as e:
             print(f"Error getting info: {e}", file=sys.stderr)
             return {}
+
 
 def run_redis_lab_logic(args):
     """CLI logic for Redis Lab."""
@@ -112,7 +120,7 @@ def run_redis_lab_logic(args):
         if val is not None:
             print(val)
         else:
-            print("(nil)") # Standard redis-cli behavior
+            print("(nil)")  # Standard redis-cli behavior
         sys.exit(0)
 
     elif args.action == "set":
@@ -161,7 +169,6 @@ def run_redis_lab_logic(args):
             sys.exit(1)
 
         # Print relevant sections
-        sections = ["server", "memory", "clients", "stats", "persistence"]
         # Redis-py info returns a flat dict, but keys are prefixed or standard
 
         # Just print everything nicely
@@ -172,7 +179,7 @@ def run_redis_lab_logic(args):
         print(f"Uptime:  {info.get('uptime_in_days', '?')} days")
         print(f"Clients: {info.get('connected_clients', '?')}")
         print(f"Memory:  {info.get('used_memory_human', '?')}")
-        print(f"Keys:    {info.get('db0', {}).get('keys', 0) if isinstance(info.get('db0'), dict) else '?'}") # db0 might be keyspace dict
+        print(f"Keys:    {info.get('db0', {}).get('keys', 0) if isinstance(info.get('db0'), dict) else '?'}")  # db0 might be keyspace dict
 
         sys.exit(0)
 

@@ -7,7 +7,7 @@ import argparse
 # --- Handle optional dependency for testing ---
 # If redis is not installed, mock it so tests can run without ImportErrors.
 try:
-    import redis
+    import redis  # noqa: F401
     HAS_REDIS = True
 except ImportError:
     HAS_REDIS = False
@@ -31,6 +31,7 @@ if not hasattr(shared.redis_lab, 'redis'):
     else:
         # Should have been mocked above, but just in case
         shared.redis_lab.redis = MagicMock()
+
 
 class TestRedisLab(unittest.TestCase):
     def setUp(self):
@@ -101,6 +102,7 @@ class TestRedisLab(unittest.TestCase):
             run_redis_lab_logic(args)
         self.assertEqual(cm.exception.code, 0)
         self.assertIn("Connected", mock_stdout.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

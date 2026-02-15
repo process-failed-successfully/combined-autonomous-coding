@@ -1,12 +1,11 @@
 import unittest
 import json
-import yaml
 import tempfile
 import shutil
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from shared.diff_lab import DiffLabManager
+
 
 class TestDiffLab(unittest.TestCase):
     def setUp(self):
@@ -116,6 +115,7 @@ class TestDiffLab(unittest.TestCase):
             self.manager._compare_image(f1, f2)
 
         mock_diff.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

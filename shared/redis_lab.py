@@ -1,6 +1,10 @@
 import sys
-import redis
 from typing import Dict, Any, List, Optional, Union
+
+try:
+    import redis
+except ImportError:
+    redis = None
 
 class RedisLabManager:
     """
@@ -8,10 +12,14 @@ class RedisLabManager:
     """
     def __init__(self, url: str = "redis://localhost:6379/0"):
         self.url = url
-        self.client = None
+        self.client: Any = None
 
     def connect(self) -> bool:
         """Establishes a connection to the Redis server."""
+        if redis is None:
+            print("Error: 'redis' library not installed. Please run 'pip install redis'.", file=sys.stderr)
+            return False
+
         try:
             self.client = redis.Redis.from_url(self.url, decode_responses=True)
             self.client.ping()

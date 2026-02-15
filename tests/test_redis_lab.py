@@ -24,6 +24,13 @@ from shared.redis_lab import RedisLabManager, run_redis_lab_logic
 # Force HAS_REDIS to be True for tests, since we want to test the logic
 import shared.redis_lab
 shared.redis_lab.HAS_REDIS = True
+# Ensure 'redis' is available in shared.redis_lab namespace if it was imported before mocking
+if not hasattr(shared.redis_lab, 'redis'):
+    if 'redis' in sys.modules:
+        shared.redis_lab.redis = sys.modules['redis']
+    else:
+        # Should have been mocked above, but just in case
+        shared.redis_lab.redis = MagicMock()
 
 class TestRedisLab(unittest.TestCase):
     def setUp(self):

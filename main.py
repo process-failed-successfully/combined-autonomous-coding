@@ -98,6 +98,7 @@ from shared.badges import run_badges_logic
 from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
+from shared.media_lab import run_media_lab_logic
 from shared.markdown_lab import run_markdown_lab_logic
 from shared.net_lab import run_net_lab_logic
 from shared.pdf_lab import run_pdf_lab_logic
@@ -167,7 +168,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
@@ -389,6 +390,11 @@ def run_crypto_lab(args):
 def run_image_lab(args):
     """Runs the Image Lab."""
     run_image_lab_logic(args)
+    sys.exit(0)
+
+def run_media_lab(args):
+    """Runs the Media Lab."""
+    run_media_lab_logic(args)
     sys.exit(0)
 
 def run_jwt_lab(args):
@@ -11716,6 +11722,47 @@ def parse_args(argv=None):
     parser_img_reveal = image_subparsers.add_parser("reveal", help="Reveal a secret message from an image.")
     parser_img_reveal.add_argument("input", help="Input image path.")
 
+    # --- New 'media-lab' command ---
+    parser_media = subparsers.add_parser(
+        "media-lab",
+        aliases=["media"],
+        help="Media utilities (info, convert, resize, trim, extract-audio)."
+    )
+    media_subparsers = parser_media.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # media-lab info
+    parser_media_info = media_subparsers.add_parser("info", help="Get media metadata.")
+    parser_media_info.add_argument("file", help="Input file.")
+
+    # media-lab convert
+    parser_media_convert = media_subparsers.add_parser("convert", help="Convert media format.")
+    parser_media_convert.add_argument("input", help="Input file.")
+    parser_media_convert.add_argument("output", help="Output file.")
+
+    # media-lab resize
+    parser_media_resize = media_subparsers.add_parser("resize", help="Resize video.")
+    parser_media_resize.add_argument("input", help="Input file.")
+    parser_media_resize.add_argument("output", help="Output file.")
+    parser_media_resize.add_argument("--width", type=int, help="Target width (-1 for aspect ratio).", default=-1)
+    parser_media_resize.add_argument("--height", type=int, help="Target height (-1 for aspect ratio).", default=-1)
+
+    # media-lab extract-audio
+    parser_media_audio = media_subparsers.add_parser("extract-audio", help="Extract audio from video.")
+    parser_media_audio.add_argument("input", help="Input file.")
+    parser_media_audio.add_argument("output", help="Output audio file.")
+
+    # media-lab trim
+    parser_media_trim = media_subparsers.add_parser("trim", help="Trim media file.")
+    parser_media_trim.add_argument("input", help="Input file.")
+    parser_media_trim.add_argument("output", help="Output file.")
+    parser_media_trim.add_argument("--start", required=True, help="Start time (e.g. 00:00:10).")
+    parser_media_trim.add_argument("--end", help="End time (e.g. 00:00:20).")
+    parser_media_trim.add_argument("--duration", help="Duration (e.g. 10).")
+
     # --- New 'xml-lab' command ---
     parser_xml = subparsers.add_parser(
         "xml-lab",
@@ -15977,6 +16024,10 @@ async def main():
 
     if args.command in ["image-lab", "img"]:
         run_image_lab(args)
+        return
+
+    if args.command in ["media-lab", "media"]:
+        run_media_lab(args)
         return
 
     if args.command in ["xml-lab", "xml"]:

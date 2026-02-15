@@ -115,7 +115,8 @@ class TestWebhookLabManager(unittest.TestCase):
 
         self.manager.start_server(8080)
 
-        mock_server_cls.assert_called_with(('0.0.0.0', 8080), WebhookRequestHandler)
+        # Updated to 127.0.0.1 for security
+        mock_server_cls.assert_called_with(('127.0.0.1', 8080), WebhookRequestHandler)
         self.assertEqual(mock_server.manager, self.manager)
         mock_server.serve_forever.assert_called_once()
 

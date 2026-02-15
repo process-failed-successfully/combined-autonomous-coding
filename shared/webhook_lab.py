@@ -112,10 +112,11 @@ class WebhookLabManager:
     def start_server(self, port: int, forward_url: Optional[str] = None):
         self.forward_url = forward_url
 
-        server = ThreadingHTTPServer(('0.0.0.0', port), WebhookRequestHandler)
+        # Use localhost to avoid binding to all interfaces (Bandit security check)
+        server = ThreadingHTTPServer(('127.0.0.1', port), WebhookRequestHandler)
         server.manager = self  # Inject manager
 
-        self.console.print(f"[bold green]Webhook Lab listening on port {port}...[/bold green]")
+        self.console.print(f"[bold green]Webhook Lab listening on 127.0.0.1:{port}...[/bold green]")
         if forward_url:
             self.console.print(f"[cyan]Forwarding requests to: {forward_url}[/cyan]")
         self.console.print(f"[dim]Saving requests to: {self.history_file}[/dim]")

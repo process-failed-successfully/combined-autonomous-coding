@@ -128,6 +128,7 @@ from shared.diff_lab import run_diff_lab_logic
 from shared.redis_lab import run_redis_lab_logic
 from shared.github_lab import run_github_lab_logic
 from shared.email_lab import run_email_lab_logic
+from shared.ssh_lab import run_ssh_lab_logic
 import json
 import yaml
 import platformdirs
@@ -183,7 +184,8 @@ KNOWN_COMMANDS = [
     "diff-lab",
     "redis-lab", "redis", "cache",
     "github-lab", "github", "gh",
-    "email-lab", "email", "mail", "smtp"
+    "email-lab", "email", "mail", "smtp",
+    "ssh-lab", "ssh"
 ]
 
 if FileSystemEventHandler:
@@ -357,6 +359,11 @@ def run_redis_lab(args):
 async def run_email_lab(args):
     """Runs the Email Lab."""
     await run_email_lab_logic(args)
+    sys.exit(0)
+
+def run_ssh_lab(args):
+    """Runs the SSH Lab."""
+    run_ssh_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -12800,6 +12807,48 @@ def parse_args(argv=None):
     # email-lab clear
     email_subparsers.add_parser("clear", help="Clear email history.")
 
+    # --- New 'ssh-lab' command ---
+    parser_ssh = subparsers.add_parser(
+        "ssh-lab",
+        aliases=["ssh"],
+        help="SSH utilities (keygen, list, fingerprint, config)."
+    )
+    ssh_subparsers = parser_ssh.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ssh-lab list
+    ssh_subparsers.add_parser("list", help="List SSH keys.")
+
+    # ssh-lab keygen
+    parser_ssh_keygen = ssh_subparsers.add_parser("keygen", help="Generate a new SSH key.")
+    parser_ssh_keygen.add_argument("filename", help="Filename for the key (relative to ~/.ssh).")
+    parser_ssh_keygen.add_argument("--type", "-t", default="ed25519", help="Key type (default: ed25519).")
+    parser_ssh_keygen.add_argument("--bits", "-b", type=int, default=4096, help="Bits (for RSA).")
+    parser_ssh_keygen.add_argument("--comment", "-C", default="", help="Key comment.")
+
+    # ssh-lab fingerprint
+    parser_ssh_fingerprint = ssh_subparsers.add_parser("fingerprint", help="Get key fingerprint.")
+    parser_ssh_fingerprint.add_argument("filename", help="Filename of the key.")
+
+    # ssh-lab config
+    parser_ssh_config = ssh_subparsers.add_parser("config", help="Manage SSH config.")
+    ssh_config_subparsers = parser_ssh_config.add_subparsers(
+        dest="sub_action",
+        required=True,
+        help="Config action."
+    )
+    # ssh-lab config list
+    ssh_config_subparsers.add_parser("list", help="List defined hosts.")
+    # ssh-lab config add
+    parser_ssh_config_add = ssh_config_subparsers.add_parser("add", help="Add a new host.")
+    parser_ssh_config_add.add_argument("--host", required=True, help="Host alias.")
+    parser_ssh_config_add.add_argument("--hostname", required=True, help="Real hostname/IP.")
+    parser_ssh_config_add.add_argument("--user", required=True, help="Username.")
+    parser_ssh_config_add.add_argument("--identity", help="Identity file path.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16144,6 +16193,10 @@ async def main():
 
     if args.command in ["email-lab", "email", "mail", "smtp"]:
         await run_email_lab(args)
+        return
+
+    if args.command in ["ssh-lab", "ssh"]:
+        run_ssh_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

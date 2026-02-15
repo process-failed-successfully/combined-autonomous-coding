@@ -16,6 +16,8 @@ except ImportError:
     # Mock ConnectionError which is used in exception handling
     mock_redis.ConnectionError = Exception
     sys.modules["redis"] = mock_redis
+    # Import the mocked module so 'redis' name is available in this file's scope
+    import redis
 
 # Now import the code under test (which will use the real or mocked redis)
 from shared.redis_lab import RedisLabManager, run_redis_lab_logic

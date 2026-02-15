@@ -118,6 +118,7 @@ from shared.hash_lab import run_hash_lab_logic
 from shared.random_lab import run_random_lab_logic
 from shared.browser_lab import run_browser_lab_logic
 from shared.npm_lab import run_npm_lab_logic
+from shared.pypi_lab import run_pypi_lab_logic
 from shared.docker_lab import run_docker_lab_logic
 from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
@@ -169,6 +170,7 @@ KNOWN_COMMANDS = [
     "ws-lab", "ws", "hash-lab", "hash", "random-lab", "rand", "random",
     "browser-lab", "browser", "web",
     "npm-lab", "npm",
+    "pypi-lab", "pypi",
     "docker-lab", "docker", "container",
     "compose-lab", "compose",
     "k8s-lab", "k8s", "kube"
@@ -299,6 +301,11 @@ async def run_browser_lab(args):
 def run_npm_lab(args):
     """Runs the NPM Lab."""
     success = run_npm_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_pypi_lab(args):
+    """Runs the PyPI Lab."""
+    success = run_pypi_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_docker_lab(args):
@@ -12359,6 +12366,42 @@ def parse_args(argv=None):
     parser_npm_search.add_argument("query", help="Search query.")
     parser_npm_search.add_argument("--limit", type=int, default=10, help="Limit results.")
 
+    # --- New 'pypi-lab' command ---
+    parser_pypi = subparsers.add_parser(
+        "pypi-lab",
+        aliases=["pypi"],
+        help="PyPI Registry utilities (info, releases, deps, files, download)."
+    )
+    pypi_subparsers = parser_pypi.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # pypi-lab info
+    parser_pypi_info = pypi_subparsers.add_parser("info", help="Get package metadata.")
+    parser_pypi_info.add_argument("package", help="Package name.")
+
+    # pypi-lab releases
+    parser_pypi_releases = pypi_subparsers.add_parser("releases", help="List releases.")
+    parser_pypi_releases.add_argument("package", help="Package name.")
+
+    # pypi-lab deps
+    parser_pypi_deps = pypi_subparsers.add_parser("deps", help="List dependencies.")
+    parser_pypi_deps.add_argument("package", help="Package name.")
+    parser_pypi_deps.add_argument("--version", help="Specific version (optional).")
+
+    # pypi-lab files
+    parser_pypi_files = pypi_subparsers.add_parser("files", help="List files.")
+    parser_pypi_files.add_argument("package", help="Package name.")
+    parser_pypi_files.add_argument("--version", help="Specific version (optional).")
+
+    # pypi-lab download
+    parser_pypi_download = pypi_subparsers.add_parser("download", help="Download package files.")
+    parser_pypi_download.add_argument("package", help="Package name.")
+    parser_pypi_download.add_argument("--version", help="Specific version (optional).")
+    parser_pypi_download.add_argument("--dest", help="Destination directory (default: current).")
+
     # --- New 'docker-lab' command ---
     parser_docker = subparsers.add_parser(
         "docker-lab",
@@ -15837,6 +15880,10 @@ async def main():
 
     if args.command in ["npm-lab", "npm"]:
         run_npm_lab(args)
+        return
+
+    if args.command in ["pypi-lab", "pypi"]:
+        run_pypi_lab(args)
         return
 
     if args.command in ["docker-lab", "docker", "container"]:

@@ -2,15 +2,44 @@ import unittest
 from unittest.mock import MagicMock, patch
 import sys
 import io
-from shared.redis_lab import RedisLabManager, run_redis_lab_logic
+import types
 import argparse
+
+# We need to mock 'redis' before importing shared.redis_lab if it's not installed
+# or if we want to force usage of the mock.
+# However, if shared.redis_lab is already imported, we might need to reload it or patch it.
+
+# Let's ensure a mock redis exists in sys.modules
+if 'redis' not in sys.modules:
+    mock_redis_module = types.ModuleType('redis')
+    # Mock ConnectionError class
+    class MockConnectionError(Exception): pass
+    mock_redis_module.ConnectionError = MockConnectionError
+    # Mock Redis class
+    mock_redis_module.Redis = MagicMock()
+    sys.modules['redis'] = mock_redis_module
+
+# Now we can import
+from shared import redis_lab
+# If redis was missing, redis_lab.redis is None. We need to patch it.
+if redis_lab.redis is None:
+    redis_lab.redis = sys.modules['redis']
+
+from shared.redis_lab import RedisLabManager, run_redis_lab_logic
 
 class TestRedisLab(unittest.TestCase):
     def setUp(self):
+        # We also need to ensure patch works on 'redis.Redis.from_url'
+        # Since we injected 'redis' into sys.modules, patch should find it.
+
         self.mock_redis_patcher = patch('redis.Redis.from_url')
         self.mock_from_url = self.mock_redis_patcher.start()
         self.mock_client = MagicMock()
         self.mock_from_url.return_value = self.mock_client
+
+        # Ensure the manager uses the mocked redis
+        # If we just patched redis.Redis.from_url, the class RedisLabManager
+        # calling redis.Redis.from_url should hit the mock.
 
         self.manager = RedisLabManager()
 

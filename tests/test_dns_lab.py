@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import sys
-import subprocess
 from shared.dns_lab import DnsLabManager
+
 
 class TestDnsLabManager(unittest.TestCase):
     def setUp(self):
@@ -75,12 +74,12 @@ class TestDnsLabManager(unittest.TestCase):
     def test_check_propagation(self, mock_lookup):
         # Mock lookup responses for different servers
         def side_effect(domain, record_type, server=None):
-            if server == "8.8.8.8": # Google
+            if server == "8.8.8.8":  # Google
                 return {"records": ["1.2.3.4"]}
-            elif server == "1.1.1.1": # Cloudflare
+            elif server == "1.1.1.1":  # Cloudflare
                 return {"records": ["1.2.3.4"]}
             else:
-                return {"records": []} # Others not propagated yet
+                return {"records": []}  # Others not propagated yet
 
         mock_lookup.side_effect = side_effect
 
@@ -98,6 +97,7 @@ class TestDnsLabManager(unittest.TestCase):
             result = manager.lookup("example.com")
             self.assertIn("error", result)
             self.assertIn("dig command not found", result["error"])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -135,6 +135,7 @@ from shared.ssh_lab import run_ssh_lab_logic
 from shared.tmux_lab import run_tmux_lab_logic
 from shared.terraform_lab import run_terraform_lab_logic
 from shared.dns_lab import run_dns_lab_logic
+from shared.whois_lab import run_whois_lab_logic
 from shared.s3_lab import run_s3_lab_logic
 from shared.graphql_lab import run_graphql_lab_logic
 import json
@@ -200,6 +201,7 @@ KNOWN_COMMANDS = [
     "tmux-lab", "tmux",
     "terraform-lab", "tf", "terraform",
     "dns-lab", "dns",
+    "whois-lab", "whois",
     "s3-lab", "s3",
     "graphql-lab", "gql"
 ]
@@ -400,6 +402,11 @@ def run_terraform_lab(args):
 def run_dns_lab(args):
     """Runs the DNS Lab."""
     run_dns_lab_logic(args)
+    sys.exit(0)
+
+def run_whois_lab(args):
+    """Runs the WHOIS Lab."""
+    run_whois_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -13077,6 +13084,26 @@ def parse_args(argv=None):
     parser_dns_prop.add_argument("domain", help="Domain to check.")
     parser_dns_prop.add_argument("--type", "-t", default="A", help="Record type.")
 
+    # --- New 'whois-lab' command ---
+    parser_whois = subparsers.add_parser(
+        "whois-lab",
+        aliases=["whois"],
+        help="WHOIS utilities (lookup, check)."
+    )
+    whois_subparsers = parser_whois.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # whois-lab lookup
+    parser_whois_lookup = whois_subparsers.add_parser("lookup", help="Perform a WHOIS lookup.")
+    parser_whois_lookup.add_argument("domain", help="Domain to lookup.")
+
+    # whois-lab check
+    parser_whois_check = whois_subparsers.add_parser("check", help="Check domain availability.")
+    parser_whois_check.add_argument("domain", help="Domain to check.")
+
     # --- New 's3-lab' command ---
     parser_s3 = subparsers.add_parser(
         "s3-lab",
@@ -16520,6 +16547,10 @@ async def main():
 
     if args.command in ["dns-lab", "dns"]:
         run_dns_lab(args)
+        return
+
+    if args.command in ["whois-lab", "whois"]:
+        run_whois_lab(args)
         return
 
     if args.command in ["s3-lab", "s3"]:

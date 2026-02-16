@@ -134,6 +134,7 @@ from shared.ssh_lab import run_ssh_lab_logic
 from shared.tmux_lab import run_tmux_lab_logic
 from shared.terraform_lab import run_terraform_lab_logic
 from shared.dns_lab import run_dns_lab_logic
+from shared.s3_lab import run_s3_lab_logic
 import json
 import yaml
 import platformdirs
@@ -195,7 +196,8 @@ KNOWN_COMMANDS = [
     "ssh-lab", "ssh",
     "tmux-lab", "tmux",
     "terraform-lab", "tf", "terraform",
-    "dns-lab", "dns"
+    "dns-lab", "dns",
+    "s3-lab", "s3"
 ]
 
 if FileSystemEventHandler:
@@ -13062,6 +13064,52 @@ def parse_args(argv=None):
     parser_dns_prop.add_argument("domain", help="Domain to check.")
     parser_dns_prop.add_argument("--type", "-t", default="A", help="Record type.")
 
+    # --- New 's3-lab' command ---
+    parser_s3 = subparsers.add_parser(
+        "s3-lab",
+        aliases=["s3"],
+        help="S3 utilities (ls, mb, rb, cp, rm, presign)."
+    )
+    parser_s3.add_argument("--endpoint-url", help="Override endpoint URL (e.g. for MinIO).")
+    parser_s3.add_argument("--profile", help="AWS profile name.")
+    parser_s3.add_argument("--region", help="AWS region name.")
+
+    s3_subparsers = parser_s3.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # s3 ls
+    parser_s3_ls = s3_subparsers.add_parser("ls", help="List buckets or objects.")
+    parser_s3_ls.add_argument("bucket", nargs="?", help="Bucket name.")
+    parser_s3_ls.add_argument("--prefix", help="Filter by prefix.")
+
+    # s3 mb
+    parser_s3_mb = s3_subparsers.add_parser("mb", help="Make bucket.")
+    parser_s3_mb.add_argument("bucket", help="Bucket name.")
+    parser_s3_mb.add_argument("--region", help="Region constraint.")
+
+    # s3 rb
+    parser_s3_rb = s3_subparsers.add_parser("rb", help="Remove bucket.")
+    parser_s3_rb.add_argument("bucket", help="Bucket name.")
+
+    # s3 cp
+    parser_s3_cp = s3_subparsers.add_parser("cp", help="Copy file.")
+    parser_s3_cp.add_argument("src", help="Source path (local or s3://...).")
+    parser_s3_cp.add_argument("dest", help="Destination path (local or s3://...).")
+
+    # s3 rm
+    parser_s3_rm = s3_subparsers.add_parser("rm", help="Remove object.")
+    parser_s3_rm.add_argument("bucket", help="Bucket name.")
+    parser_s3_rm.add_argument("key", help="Object key.")
+
+    # s3 presign
+    parser_s3_presign = s3_subparsers.add_parser("presign", help="Generate presigned URL.")
+    parser_s3_presign.add_argument("bucket", help="Bucket name.")
+    parser_s3_presign.add_argument("key", help="Object key.")
+    parser_s3_presign.add_argument("--expires-in", type=int, default=3600, help="Expiration in seconds.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16430,6 +16478,10 @@ async def main():
 
     if args.command in ["dns-lab", "dns"]:
         run_dns_lab(args)
+        return
+
+    if args.command in ["s3-lab", "s3"]:
+        run_s3_lab_logic(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

@@ -32,3 +32,4 @@ feedparser
 websockets
 Jinja2
 redis
+boto3

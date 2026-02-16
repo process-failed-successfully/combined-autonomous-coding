@@ -131,6 +131,7 @@ from shared.github_lab import run_github_lab_logic
 from shared.email_lab import run_email_lab_logic
 from shared.ssh_lab import run_ssh_lab_logic
 from shared.tmux_lab import run_tmux_lab_logic
+from shared.terraform_lab import run_terraform_lab_logic
 import json
 import yaml
 import platformdirs
@@ -189,7 +190,8 @@ KNOWN_COMMANDS = [
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
     "ssh-lab", "ssh",
-    "tmux-lab", "tmux"
+    "tmux-lab", "tmux",
+    "terraform-lab", "tf", "terraform"
 ]
 
 if FileSystemEventHandler:
@@ -378,6 +380,11 @@ def run_ssh_lab(args):
 def run_tmux_lab(args):
     """Runs the Tmux Lab."""
     run_tmux_lab_logic(args)
+    sys.exit(0)
+
+def run_terraform_lab(args):
+    """Runs the Terraform Lab."""
+    run_terraform_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -12955,6 +12962,52 @@ def parse_args(argv=None):
     parser_tmux_window.add_argument("--name", "-n", help="Window name.")
     parser_tmux_window.add_argument("command_str", nargs="?", help="Command to run.")
 
+    # --- New 'terraform-lab' command ---
+    parser_tf = subparsers.add_parser(
+        "terraform-lab",
+        aliases=["tf", "terraform"],
+        help="Terraform utilities (init, plan, apply, destroy, validate, fmt, output, show)."
+    )
+    tf_subparsers = parser_tf.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # tf init
+    parser_tf_init = tf_subparsers.add_parser("init", help="Initialize configuration.")
+    parser_tf_init.add_argument("--upgrade", action="store_true", help="Upgrade modules/plugins.")
+
+    # tf plan
+    parser_tf_plan = tf_subparsers.add_parser("plan", help="Generate execution plan.")
+    parser_tf_plan.add_argument("--out", help="Output path for the plan file.")
+
+    # tf apply
+    parser_tf_apply = tf_subparsers.add_parser("apply", help="Apply changes.")
+    parser_tf_apply.add_argument("plan_file", nargs="?", help="Plan file to apply.")
+    parser_tf_apply.add_argument("--auto-approve", action="store_true", help="Skip interactive approval.")
+
+    # tf destroy
+    parser_tf_destroy = tf_subparsers.add_parser("destroy", help="Destroy infrastructure.")
+    parser_tf_destroy.add_argument("--auto-approve", action="store_true", help="Skip interactive approval.")
+
+    # tf validate
+    tf_subparsers.add_parser("validate", help="Validate configuration.")
+
+    # tf fmt
+    parser_tf_fmt = tf_subparsers.add_parser("fmt", help="Format configuration.")
+    parser_tf_fmt.add_argument("--check", action="store_true", help="Check if formatted.")
+    parser_tf_fmt.add_argument("--recursive", action="store_true", help="Recursive.")
+
+    # tf output
+    parser_tf_output = tf_subparsers.add_parser("output", help="Read outputs.")
+    parser_tf_output.add_argument("--json", action="store_true", help="JSON output.")
+
+    # tf show
+    parser_tf_show = tf_subparsers.add_parser("show", help="Show state or plan.")
+    parser_tf_show.add_argument("plan_file", nargs="?", help="Plan file to show.")
+    parser_tf_show.add_argument("--json", action="store_true", help="JSON output.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16311,6 +16364,10 @@ async def main():
 
     if args.command in ["tmux-lab", "tmux"]:
         run_tmux_lab(args)
+        return
+
+    if args.command in ["terraform-lab", "tf", "terraform"]:
+        run_terraform_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

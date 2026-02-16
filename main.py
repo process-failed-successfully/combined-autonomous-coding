@@ -129,6 +129,7 @@ from shared.redis_lab import run_redis_lab_logic
 from shared.github_lab import run_github_lab_logic
 from shared.email_lab import run_email_lab_logic
 from shared.ssh_lab import run_ssh_lab_logic
+from shared.tmux_lab import run_tmux_lab_logic
 import json
 import yaml
 import platformdirs
@@ -185,7 +186,8 @@ KNOWN_COMMANDS = [
     "redis-lab", "redis", "cache",
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
-    "ssh-lab", "ssh"
+    "ssh-lab", "ssh",
+    "tmux-lab", "tmux"
 ]
 
 if FileSystemEventHandler:
@@ -364,6 +366,11 @@ async def run_email_lab(args):
 def run_ssh_lab(args):
     """Runs the SSH Lab."""
     run_ssh_lab_logic(args)
+    sys.exit(0)
+
+def run_tmux_lab(args):
+    """Runs the Tmux Lab."""
+    run_tmux_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -12849,6 +12856,54 @@ def parse_args(argv=None):
     parser_ssh_config_add.add_argument("--user", required=True, help="Username.")
     parser_ssh_config_add.add_argument("--identity", help="Identity file path.")
 
+    # --- New 'tmux-lab' command ---
+    parser_tmux = subparsers.add_parser(
+        "tmux-lab",
+        aliases=["tmux"],
+        help="Tmux utilities (list, new, kill, attach, send, capture, windows, window)."
+    )
+    tmux_subparsers = parser_tmux.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # tmux-lab list
+    tmux_subparsers.add_parser("list", help="List active sessions.")
+
+    # tmux-lab new
+    parser_tmux_new = tmux_subparsers.add_parser("new", help="Create a new session.")
+    parser_tmux_new.add_argument("name", help="Session name.")
+    parser_tmux_new.add_argument("command_str", nargs="?", help="Command to run.")
+
+    # tmux-lab kill
+    parser_tmux_kill = tmux_subparsers.add_parser("kill", help="Kill a session.")
+    parser_tmux_kill.add_argument("target", help="Target session.")
+
+    # tmux-lab attach
+    parser_tmux_attach = tmux_subparsers.add_parser("attach", help="Attach to a session.")
+    parser_tmux_attach.add_argument("target", help="Target session.")
+
+    # tmux-lab send
+    parser_tmux_send = tmux_subparsers.add_parser("send", help="Send keys to a session/pane.")
+    parser_tmux_send.add_argument("target", help="Target session/pane.")
+    parser_tmux_send.add_argument("keys", help="Keys to send.")
+
+    # tmux-lab capture
+    parser_tmux_capture = tmux_subparsers.add_parser("capture", help="Capture pane output.")
+    parser_tmux_capture.add_argument("target", help="Target session/pane.")
+    parser_tmux_capture.add_argument("--lines", type=int, help="Number of lines to capture.")
+
+    # tmux-lab windows
+    parser_tmux_windows = tmux_subparsers.add_parser("windows", help="List windows in a session.")
+    parser_tmux_windows.add_argument("target", help="Target session.")
+
+    # tmux-lab window
+    parser_tmux_window = tmux_subparsers.add_parser("window", help="Create a new window.")
+    parser_tmux_window.add_argument("target", help="Target session.")
+    parser_tmux_window.add_argument("--name", "-n", help="Window name.")
+    parser_tmux_window.add_argument("command_str", nargs="?", help="Command to run.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16197,6 +16252,10 @@ async def main():
 
     if args.command in ["ssh-lab", "ssh"]:
         run_ssh_lab(args)
+        return
+
+    if args.command in ["tmux-lab", "tmux"]:
+        run_tmux_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

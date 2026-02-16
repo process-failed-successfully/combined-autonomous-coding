@@ -126,6 +126,7 @@ from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
 from shared.diff_lab import run_diff_lab_logic
 from shared.redis_lab import run_redis_lab_logic
+from shared.kafka_lab import run_kafka_lab_logic
 from shared.github_lab import run_github_lab_logic
 from shared.email_lab import run_email_lab_logic
 from shared.ssh_lab import run_ssh_lab_logic
@@ -184,6 +185,7 @@ KNOWN_COMMANDS = [
     "k8s-lab", "k8s", "kube",
     "diff-lab",
     "redis-lab", "redis", "cache",
+    "kafka-lab", "kafka",
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
     "ssh-lab", "ssh",
@@ -356,6 +358,11 @@ def run_code_query_cli(args):
 def run_redis_lab(args):
     """Runs the Redis Lab."""
     run_redis_lab_logic(args)
+    sys.exit(0)
+
+def run_kafka_lab(args):
+    """Runs the Kafka Lab."""
+    run_kafka_lab_logic(args)
     sys.exit(0)
 
 async def run_email_lab(args):
@@ -12738,6 +12745,50 @@ def parse_args(argv=None):
     # redis-lab info
     redis_subparsers.add_parser("info", help="Get server info.")
 
+    # --- New 'kafka-lab' command ---
+    parser_kafka = subparsers.add_parser(
+        "kafka-lab",
+        aliases=["kafka"],
+        help="Kafka utilities (list, consume, produce, create, delete, describe)."
+    )
+    parser_kafka.add_argument("--bootstrap", default="localhost:9092", help="Bootstrap servers (default: localhost:9092).")
+    kafka_subparsers = parser_kafka.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # kafka-lab list
+    kafka_subparsers.add_parser("list", help="List topics.")
+
+    # kafka-lab describe
+    parser_kafka_describe = kafka_subparsers.add_parser("describe", help="Describe a topic.")
+    parser_kafka_describe.add_argument("topic", help="Topic name.")
+
+    # kafka-lab create
+    parser_kafka_create = kafka_subparsers.add_parser("create", help="Create a topic.")
+    parser_kafka_create.add_argument("topic", help="Topic name.")
+    parser_kafka_create.add_argument("--partitions", type=int, default=1, help="Number of partitions.")
+    parser_kafka_create.add_argument("--replication", type=int, default=1, help="Replication factor.")
+
+    # kafka-lab delete
+    parser_kafka_delete = kafka_subparsers.add_parser("delete", help="Delete a topic.")
+    parser_kafka_delete.add_argument("topic", help="Topic name.")
+
+    # kafka-lab produce
+    parser_kafka_produce = kafka_subparsers.add_parser("produce", help="Produce a message.")
+    parser_kafka_produce.add_argument("topic", help="Topic name.")
+    parser_kafka_produce.add_argument("value", nargs="?", help="Message value (optional, reads from stdin if missing).")
+    parser_kafka_produce.add_argument("--key", help="Message key.")
+
+    # kafka-lab consume
+    parser_kafka_consume = kafka_subparsers.add_parser("consume", help="Consume messages.")
+    parser_kafka_consume.add_argument("topic", help="Topic name.")
+    parser_kafka_consume.add_argument("--group", help="Consumer group ID.")
+    parser_kafka_consume.add_argument("--from-beginning", action="store_true", help="Start from earliest offset.")
+    parser_kafka_consume.add_argument("--limit", type=int, default=0, help="Max messages to consume.")
+    parser_kafka_consume.add_argument("--follow", "-f", action="store_true", help="Keep consuming (follow).")
+
     # --- New 'github-lab' command ---
     parser_github = subparsers.add_parser(
         "github-lab",
@@ -16244,6 +16295,10 @@ async def main():
 
     if args.command in ["redis-lab", "redis", "cache"]:
         run_redis_lab(args)
+        return
+
+    if args.command in ["kafka-lab", "kafka"]:
+        run_kafka_lab(args)
         return
 
     if args.command in ["email-lab", "email", "mail", "smtp"]:

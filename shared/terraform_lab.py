@@ -17,12 +17,13 @@ class TerraformManager:
         """Checks if terraform is installed."""
         return self.executable is not None
 
-    def _run_command(self, args: List[str], capture_output: bool = False) -> subprocess.CompletedProcess:
+    def _run_command(self, args: List[str], capture_output: bool = False) -> "subprocess.CompletedProcess[str]":
         """Runs a terraform command."""
-        if not self.check_install():
+        executable = self.executable
+        if not executable:
             raise FileNotFoundError("Terraform executable not found. Please install terraform.")
 
-        cmd = [self.executable] + args
+        cmd = [executable] + args
         try:
             return subprocess.run(
                 cmd,

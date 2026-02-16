@@ -129,6 +129,7 @@ from shared.redis_lab import run_redis_lab_logic
 from shared.kafka_lab import run_kafka_lab_logic
 from shared.github_lab import run_github_lab_logic
 from shared.email_lab import run_email_lab_logic
+from shared.sock_lab import run_sock_lab_logic
 from shared.ssh_lab import run_ssh_lab_logic
 from shared.tmux_lab import run_tmux_lab_logic
 from shared.terraform_lab import run_terraform_lab_logic
@@ -189,6 +190,7 @@ KNOWN_COMMANDS = [
     "kafka-lab", "kafka",
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
+    "sock-lab", "sock", "nc", "netcat",
     "ssh-lab", "ssh",
     "tmux-lab", "tmux",
     "terraform-lab", "tf", "terraform"
@@ -12872,6 +12874,28 @@ def parse_args(argv=None):
     # email-lab clear
     email_subparsers.add_parser("clear", help="Clear email history.")
 
+    # --- New 'sock-lab' command ---
+    parser_sock = subparsers.add_parser(
+        "sock-lab",
+        aliases=["sock", "nc", "netcat"],
+        help="Raw socket tool (client/server)."
+    )
+    sock_subparsers = parser_sock.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # sock-lab connect
+    parser_sock_connect = sock_subparsers.add_parser("connect", help="Connect to a server.")
+    parser_sock_connect.add_argument("host", help="Host to connect to.")
+    parser_sock_connect.add_argument("port", type=int, help="Port to connect to.")
+
+    # sock-lab listen
+    parser_sock_listen = sock_subparsers.add_parser("listen", help="Listen for connections.")
+    parser_sock_listen.add_argument("port", type=int, help="Port to listen on.")
+    parser_sock_listen.add_argument("--host", default="0.0.0.0", help="Interface to bind (default: 0.0.0.0).")
+
     # --- New 'ssh-lab' command ---
     parser_ssh = subparsers.add_parser(
         "ssh-lab",
@@ -16356,6 +16380,10 @@ async def main():
 
     if args.command in ["email-lab", "email", "mail", "smtp"]:
         await run_email_lab(args)
+        return
+
+    if args.command in ["sock-lab", "sock", "nc", "netcat"]:
+        await run_sock_lab_logic(args)
         return
 
     if args.command in ["ssh-lab", "ssh"]:

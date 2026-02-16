@@ -136,6 +136,7 @@ from shared.tmux_lab import run_tmux_lab_logic
 from shared.terraform_lab import run_terraform_lab_logic
 from shared.dns_lab import run_dns_lab_logic
 from shared.s3_lab import run_s3_lab_logic
+from shared.graphql_lab import run_graphql_lab_logic
 import json
 import yaml
 import platformdirs
@@ -199,7 +200,8 @@ KNOWN_COMMANDS = [
     "tmux-lab", "tmux",
     "terraform-lab", "tf", "terraform",
     "dns-lab", "dns",
-    "s3-lab", "s3"
+    "s3-lab", "s3",
+    "graphql-lab", "gql"
 ]
 
 if FileSystemEventHandler:
@@ -13121,6 +13123,31 @@ def parse_args(argv=None):
     parser_s3_presign.add_argument("key", help="Object key.")
     parser_s3_presign.add_argument("--expires-in", type=int, default=3600, help="Expiration in seconds.")
 
+    # --- New 'graphql-lab' command ---
+    parser_gql = subparsers.add_parser(
+        "graphql-lab",
+        aliases=["gql"],
+        help="GraphQL utilities (query, schema)."
+    )
+    parser_gql.add_argument("url", help="GraphQL Endpoint URL.")
+    parser_gql.add_argument("--header", "-H", action="append", help="HTTP Header (Key:Value).")
+
+    gql_subparsers = parser_gql.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # gql query
+    parser_gql_query = gql_subparsers.add_parser("query", help="Execute a GraphQL query.")
+    parser_gql_query.add_argument("query", help="Query string or file path.")
+    parser_gql_query.add_argument("--variables", "-v", help="Variables (JSON string or file path).")
+    parser_gql_query.add_argument("--verbose", action="store_true", help="Verbose output.")
+
+    # gql schema
+    parser_gql_schema = gql_subparsers.add_parser("schema", help="Introspect schema.")
+    parser_gql_schema.add_argument("--format", "-f", choices=["sdl", "json"], default="sdl", help="Output format.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16497,6 +16524,10 @@ async def main():
 
     if args.command in ["s3-lab", "s3"]:
         run_s3_lab_logic(args)
+        return
+
+    if args.command in ["graphql-lab", "gql"]:
+        run_graphql_lab_logic(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

@@ -107,6 +107,7 @@ from shared.uni_lab import run_uni_lab_logic
 from shared.docs_generator import run_docs_lab_logic
 from shared.qr_lab import run_qr_lab_logic
 from shared.http_lab import run_http_lab_logic
+from shared.proxy_lab import run_proxy_lab_logic
 from shared.proc_lab import run_proc_lab_logic
 from shared.geo_lab import run_geo_lab_logic
 from shared.struct_lab import run_struct_lab_logic
@@ -178,6 +179,7 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
+    "proxy-lab", "proxy",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
     "ws-lab", "ws", "webhook-lab", "webhook", "hook", "hash-lab", "hash", "random-lab", "rand", "random",
@@ -12064,6 +12066,15 @@ def parse_args(argv=None):
     parser_http.add_argument("--proxy", help="Proxy URL.")
     parser_http.add_argument("--verbose", "-v", action="store_true", help="Show detailed request/response info.")
 
+    # --- New 'proxy-lab' command ---
+    parser_proxy = subparsers.add_parser(
+        "proxy-lab",
+        aliases=["proxy"],
+        help="HTTP/HTTPS Proxy Server for debugging."
+    )
+    parser_proxy.add_argument("--port", "-p", type=int, default=8080, help="Port to listen on (default: 8080).")
+    parser_proxy.add_argument("--host", default="127.0.0.1", help="Host interface (default: 127.0.0.1).")
+
     # --- New 'webhook-lab' command ---
     parser_webhook = subparsers.add_parser(
         "webhook-lab",
@@ -16374,6 +16385,10 @@ async def main():
 
     if args.command in ["http-lab", "http", "req"]:
         run_http_lab(args)
+        return
+
+    if args.command in ["proxy-lab", "proxy"]:
+        run_proxy_lab_logic(args)
         return
 
     if args.command in ["webhook-lab", "webhook", "hook"]:

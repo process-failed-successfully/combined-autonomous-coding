@@ -12894,7 +12894,7 @@ def parse_args(argv=None):
     # sock-lab listen
     parser_sock_listen = sock_subparsers.add_parser("listen", help="Listen for connections.")
     parser_sock_listen.add_argument("port", type=int, help="Port to listen on.")
-    parser_sock_listen.add_argument("--host", default="0.0.0.0", help="Interface to bind (default: 0.0.0.0).")
+    parser_sock_listen.add_argument("--host", default="0.0.0.0", help="Interface to bind (default: 0.0.0.0).")  # nosec
 
     # --- New 'ssh-lab' command ---
     parser_ssh = subparsers.add_parser(

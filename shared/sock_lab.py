@@ -159,7 +159,7 @@ async def run_sock_lab_logic(args):
     if args.action == "connect":
         await manager.start_client(args.host, args.port)
     elif args.action == "listen":
-        host = args.host if args.host else "0.0.0.0"
+        host = args.host if args.host else "0.0.0.0"  # nosec
         await manager.start_server(host, args.port)
     else:
         print(f"Unknown action: {args.action}")

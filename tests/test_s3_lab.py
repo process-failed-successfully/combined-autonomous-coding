@@ -26,11 +26,12 @@ if 'boto3' not in sys.modules:
 
 from shared import s3_lab
 
-# Ensure we are using the mocks
+# Ensure we are using the mocks and HAS_BOTO3 is True
 if 'boto3' in sys.modules:
     s3_lab.boto3 = sys.modules['boto3']
     s3_lab.ClientError = sys.modules['botocore.exceptions'].ClientError
     s3_lab.NoCredentialsError = sys.modules['botocore.exceptions'].NoCredentialsError
+    s3_lab.HAS_BOTO3 = True
 
 from shared.s3_lab import S3LabManager, run_s3_lab_logic
 

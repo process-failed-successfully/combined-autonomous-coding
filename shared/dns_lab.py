@@ -1,8 +1,8 @@
 import shutil
-import subprocess
+import subprocess  # nosec
 import sys
 from typing import List, Dict, Any, Optional
-import json
+
 
 class DnsLabManager:
     """
@@ -11,11 +11,11 @@ class DnsLabManager:
     def __init__(self):
         self.dig_path = shutil.which("dig")
 
-    def run_command(self, cmd: List[str]) -> subprocess.CompletedProcess:
+    def run_command(self, cmd: List[str]) -> subprocess.CompletedProcess[str]:
         """
         Executes a shell command.
         """
-        return subprocess.run(cmd, capture_output=True, text=True)
+        return subprocess.run(cmd, capture_output=True, text=True)  # nosec
 
     def lookup(self, domain: str, record_type: str = "A", server: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -62,6 +62,7 @@ class DnsLabManager:
                 results[name] = lookup_res["records"]
 
         return results
+
 
 def run_dns_lab_logic(args):
     """

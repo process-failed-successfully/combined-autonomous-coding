@@ -133,6 +133,7 @@ from shared.sock_lab import run_sock_lab_logic
 from shared.ssh_lab import run_ssh_lab_logic
 from shared.tmux_lab import run_tmux_lab_logic
 from shared.terraform_lab import run_terraform_lab_logic
+from shared.dns_lab import run_dns_lab_logic
 import json
 import yaml
 import platformdirs
@@ -193,7 +194,8 @@ KNOWN_COMMANDS = [
     "sock-lab", "sock", "nc", "netcat",
     "ssh-lab", "ssh",
     "tmux-lab", "tmux",
-    "terraform-lab", "tf", "terraform"
+    "terraform-lab", "tf", "terraform",
+    "dns-lab", "dns"
 ]
 
 if FileSystemEventHandler:
@@ -387,6 +389,11 @@ def run_tmux_lab(args):
 def run_terraform_lab(args):
     """Runs the Terraform Lab."""
     run_terraform_lab_logic(args)
+    sys.exit(0)
+
+def run_dns_lab(args):
+    """Runs the DNS Lab."""
+    run_dns_lab_logic(args)
     sys.exit(0)
 
 def run_cidr_lab(args):
@@ -13032,6 +13039,29 @@ def parse_args(argv=None):
     parser_tf_show.add_argument("plan_file", nargs="?", help="Plan file to show.")
     parser_tf_show.add_argument("--json", action="store_true", help="JSON output.")
 
+    # --- New 'dns-lab' command ---
+    parser_dns = subparsers.add_parser(
+        "dns-lab",
+        aliases=["dns"],
+        help="DNS utilities (lookup, propagation)."
+    )
+    dns_subparsers = parser_dns.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # dns-lab lookup
+    parser_dns_lookup = dns_subparsers.add_parser("lookup", help="Perform a DNS lookup.")
+    parser_dns_lookup.add_argument("domain", help="Domain to lookup.")
+    parser_dns_lookup.add_argument("--type", "-t", default="A", help="Record type (A, AAAA, MX, TXT, etc.).")
+    parser_dns_lookup.add_argument("--server", "-s", help="Specific nameserver to query.")
+
+    # dns-lab propagation
+    parser_dns_prop = dns_subparsers.add_parser("propagation", help="Check DNS propagation.")
+    parser_dns_prop.add_argument("domain", help="Domain to check.")
+    parser_dns_prop.add_argument("--type", "-t", default="A", help="Record type.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16396,6 +16426,10 @@ async def main():
 
     if args.command in ["terraform-lab", "tf", "terraform"]:
         run_terraform_lab(args)
+        return
+
+    if args.command in ["dns-lab", "dns"]:
+        run_dns_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

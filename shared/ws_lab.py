@@ -175,7 +175,7 @@ class WsLabManager:
             pass
 
         try:
-            async with websockets.serve(self._handler, "0.0.0.0", port):
+            async with websockets.serve(self._handler, "0.0.0.0", port): # nosec B104
                 await self.stop_event.wait()
         except OSError as e:
             print(f"Error starting server: {e}")

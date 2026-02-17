@@ -62,6 +62,7 @@ from shared.tui_services import ServicesTab
 from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
+from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
@@ -4006,6 +4007,8 @@ class AgentTUI(App):
                 yield DockerTab(self.project_dir)
             with TabPane("K8s", id="tab-k8s"):
                 yield K8sTab(self.project_dir)
+            with TabPane("Terraform", id="tab-terraform"):
+                yield TerraformTab(self.project_dir)
             with TabPane("Chaos", id="tab-chaos"):
                 yield ChaosTab(self.project_dir)
             with TabPane("Scheduler", id="tab-scheduler"):

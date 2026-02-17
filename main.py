@@ -143,6 +143,7 @@ from shared.notebook_lab import run_notebook_lab_logic
 from shared.grpc_lab import run_grpc_lab_logic
 from shared.monitor_lab import run_monitor_lab_logic
 from shared.trace_lab import run_trace_lab_logic
+from shared.fuzz_lab import run_fuzz_lab_logic
 import json
 import yaml
 import platformdirs
@@ -213,7 +214,8 @@ KNOWN_COMMANDS = [
     "notebook-lab", "nb",
     "grpc-lab", "grpc",
     "monitor-lab", "monitor", "mon",
-    "trace-lab", "trace"
+    "trace-lab", "trace",
+    "fuzz-lab", "fuzz"
 ]
 
 if FileSystemEventHandler:
@@ -291,6 +293,11 @@ def run_qr_lab(args):
 def run_monitor_lab(args):
     """Runs the Monitor Lab."""
     run_monitor_lab_logic(args)
+    sys.exit(0)
+
+def run_fuzz_lab(args):
+    """Runs the Fuzz Lab."""
+    run_fuzz_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13369,6 +13376,29 @@ def parse_args(argv=None):
     parser_trace_explain = trace_subparsers.add_parser("explain", help="Ask AI to explain an existing trace.")
     parser_trace_explain.add_argument("file", help="Path to trace file.")
 
+    # --- New 'fuzz-lab' command ---
+    parser_fuzz = subparsers.add_parser(
+        "fuzz-lab",
+        aliases=["fuzz"],
+        help="Fuzzing utilities (cli, function)."
+    )
+    fuzz_subparsers = parser_fuzz.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # fuzz cli
+    parser_fuzz_cli = fuzz_subparsers.add_parser("cli", help="Fuzz a CLI command.")
+    parser_fuzz_cli.add_argument("target", help="Command to fuzz (e.g. 'python3 app.py').")
+    parser_fuzz_cli.add_argument("--count", "-c", type=int, default=100, help="Number of iterations.")
+    parser_fuzz_cli.add_argument("--timeout", "-t", type=int, default=5, help="Timeout per iteration (seconds).")
+
+    # fuzz function
+    parser_fuzz_func = fuzz_subparsers.add_parser("function", aliases=["func"], help="Fuzz a Python function.")
+    parser_fuzz_func.add_argument("target", help="Function target (e.g. 'shared/utils.py:format_date').")
+    parser_fuzz_func.add_argument("--count", "-c", type=int, default=100, help="Number of iterations.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16773,6 +16803,10 @@ async def main():
 
     if args.command in ["trace-lab", "trace"]:
         await run_trace_lab(args)
+        return
+
+    if args.command in ["fuzz-lab", "fuzz"]:
+        run_fuzz_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

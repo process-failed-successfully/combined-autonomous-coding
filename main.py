@@ -141,6 +141,7 @@ from shared.graphql_lab import run_graphql_lab_logic
 from shared.helm_lab import run_helm_lab_logic
 from shared.notebook_lab import run_notebook_lab_logic
 from shared.grpc_lab import run_grpc_lab_logic
+from shared.monitor_lab import run_monitor_lab_logic
 import json
 import yaml
 import platformdirs
@@ -209,7 +210,8 @@ KNOWN_COMMANDS = [
     "graphql-lab", "gql",
     "helm-lab", "helm",
     "notebook-lab", "nb",
-    "grpc-lab", "grpc"
+    "grpc-lab", "grpc",
+    "monitor-lab", "monitor", "mon"
 ]
 
 if FileSystemEventHandler:
@@ -282,6 +284,11 @@ def run_docs_lab(args):
 def run_qr_lab(args):
     """Runs the QR Lab."""
     run_qr_lab_logic(args)
+    sys.exit(0)
+
+def run_monitor_lab(args):
+    """Runs the Monitor Lab."""
+    run_monitor_lab_logic(args)
     sys.exit(0)
 
 def run_http_lab(args):
@@ -13294,6 +13301,38 @@ def parse_args(argv=None):
     parser_grpc_call.add_argument("method", help="Method to call.")
     parser_grpc_call.add_argument("--data", "-d", help="JSON data.")
 
+    # --- New 'monitor-lab' command ---
+    parser_mon = subparsers.add_parser(
+        "monitor-lab",
+        aliases=["monitor", "mon"],
+        help="System monitoring utilities (stats, procs, kill, watch)."
+    )
+    mon_subparsers = parser_mon.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # mon stats
+    mon_subparsers.add_parser("stats", help="Show system statistics.")
+
+    # mon procs
+    parser_mon_procs = mon_subparsers.add_parser("procs", help="List processes.")
+    parser_mon_procs.add_argument("--sort", choices=["cpu", "memory", "pid", "name"], default="cpu", help="Sort by.")
+    parser_mon_procs.add_argument("--limit", "-n", type=int, default=20, help="Limit number of processes.")
+    parser_mon_procs.add_argument("--filter", "-f", help="Filter by name.")
+
+    # mon kill
+    parser_mon_kill = mon_subparsers.add_parser("kill", help="Kill a process.")
+    parser_mon_kill.add_argument("--pid", type=int, help="PID to kill.")
+    parser_mon_kill.add_argument("--filter", "-f", help="Kill processes matching name (interactive).")
+
+    # mon watch
+    parser_mon_watch = mon_subparsers.add_parser("watch", help="Watch stats and processes.")
+    parser_mon_watch.add_argument("--sort", choices=["cpu", "memory", "pid", "name"], default="cpu", help="Sort processes by.")
+    parser_mon_watch.add_argument("--limit", "-n", type=int, default=20, help="Limit number of processes.")
+    parser_mon_watch.add_argument("--filter", "-f", help="Filter processes by name.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16690,6 +16729,10 @@ async def main():
 
     if args.command in ["grpc-lab", "grpc"]:
         run_grpc_lab_logic(args)
+        return
+
+    if args.command in ["monitor-lab", "monitor", "mon"]:
+        run_monitor_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

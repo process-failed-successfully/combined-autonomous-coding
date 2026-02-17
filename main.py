@@ -139,6 +139,7 @@ from shared.whois_lab import run_whois_lab_logic
 from shared.s3_lab import run_s3_lab_logic
 from shared.graphql_lab import run_graphql_lab_logic
 from shared.helm_lab import run_helm_lab_logic
+from shared.notebook_lab import run_notebook_lab_logic
 import json
 import yaml
 import platformdirs
@@ -205,7 +206,8 @@ KNOWN_COMMANDS = [
     "whois-lab", "whois",
     "s3-lab", "s3",
     "graphql-lab", "gql",
-    "helm-lab", "helm"
+    "helm-lab", "helm",
+    "notebook-lab", "nb"
 ]
 
 if FileSystemEventHandler:
@@ -13229,6 +13231,38 @@ def parse_args(argv=None):
     # helm repo list
     helm_repo_subparsers.add_parser("list", help="List repos.")
 
+    # --- New 'notebook-lab' command ---
+    parser_nb = subparsers.add_parser(
+        "notebook-lab",
+        aliases=["nb"],
+        help="Jupyter Notebook utilities (list, inspect, clean, convert, audit)."
+    )
+    nb_subparsers = parser_nb.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # nb list
+    nb_subparsers.add_parser("list", help="List notebooks.")
+
+    # nb inspect
+    parser_nb_inspect = nb_subparsers.add_parser("inspect", help="Inspect notebook metadata.")
+    parser_nb_inspect.add_argument("file", help="Notebook file path.")
+
+    # nb clean
+    parser_nb_clean = nb_subparsers.add_parser("clean", help="Clean output and execution counts.")
+    parser_nb_clean.add_argument("file", help="Notebook file path.")
+    parser_nb_clean.add_argument("--dry-run", action="store_true", help="Don't modify file.")
+
+    # nb convert
+    parser_nb_convert = nb_subparsers.add_parser("convert", help="Convert to Python script.")
+    parser_nb_convert.add_argument("file", help="Notebook file path.")
+
+    # nb audit
+    parser_nb_audit = nb_subparsers.add_parser("audit", help="Audit notebook for issues.")
+    parser_nb_audit.add_argument("file", help="Notebook file path.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16617,6 +16651,10 @@ async def main():
 
     if args.command in ["helm-lab", "helm"]:
         run_helm_lab_logic(args)
+        return
+
+    if args.command in ["notebook-lab", "nb"]:
+        run_notebook_lab_logic(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

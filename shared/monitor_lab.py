@@ -1,16 +1,14 @@
 import psutil
 import time
 import sys
-import os
 import signal
 from typing import Dict, List, Any, Optional
 from rich.console import Console
 from rich.table import Table
-from rich.progress import Progress, BarColumn, TextColumn
 from rich.live import Live
 from rich.layout import Layout
 from rich.panel import Panel
-from rich.text import Text
+
 
 class MonitorLabManager:
     """
@@ -97,6 +95,7 @@ class MonitorLabManager:
             print(f"Error killing process {pid}: {e}", file=sys.stderr)
             return False
 
+
 def _bytes_to_human(n: int) -> str:
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     prefix = {}
@@ -108,11 +107,13 @@ def _bytes_to_human(n: int) -> str:
             return f"{value:.1f}{s}"
     return f"{n}B"
 
+
 def _make_bar(percentage: float, width: int = 20) -> str:
     # Simple ASCII bar for raw output if needed, but we use rich mostly
     filled = int(width * percentage / 100)
     bar = "█" * filled + "░" * (width - filled)
     return bar
+
 
 def run_monitor_lab_logic(args):
     """
@@ -126,20 +127,26 @@ def run_monitor_lab_logic(args):
 
         # CPU
         cpu_color = "green"
-        if stats['cpu'] > 60: cpu_color = "yellow"
-        if stats['cpu'] > 85: cpu_color = "red"
+        if stats['cpu'] > 60:
+            cpu_color = "yellow"
+        if stats['cpu'] > 85:
+            cpu_color = "red"
 
         # Memory
         mem_pct = stats['memory']['percent']
         mem_color = "green"
-        if mem_pct > 60: mem_color = "yellow"
-        if mem_pct > 85: mem_color = "red"
+        if mem_pct > 60:
+            mem_color = "yellow"
+        if mem_pct > 85:
+            mem_color = "red"
 
         # Disk
         disk_pct = stats['disk']['percent']
         disk_color = "green"
-        if disk_pct > 60: disk_color = "yellow"
-        if disk_pct > 85: disk_color = "red"
+        if disk_pct > 60:
+            disk_color = "yellow"
+        if disk_pct > 85:
+            disk_color = "red"
 
         table = Table(title="System Statistics", box=None)
         table.add_column("Resource", style="bold cyan")
@@ -184,8 +191,10 @@ def run_monitor_lab_logic(args):
             mem = p.get('memory_percent', 0.0)
 
             cpu_style = "green"
-            if cpu > 50: cpu_style = "yellow"
-            if cpu > 80: cpu_style = "red"
+            if cpu > 50:
+                cpu_style = "yellow"
+            if cpu > 80:
+                cpu_style = "red"
 
             table.add_row(
                 str(p['pid']),

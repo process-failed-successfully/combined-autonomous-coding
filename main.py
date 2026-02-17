@@ -12357,11 +12357,13 @@ def parse_args(argv=None):
         aliases=["ws"],
         help="WebSocket Client (connect, send, listen)."
     )
-    parser_ws.add_argument("url", help="WebSocket URL.")
+    parser_ws.add_argument("url", nargs="?", help="WebSocket URL (required for client mode).")
     parser_ws.add_argument("--header", "-H", action="append", help="Custom Header (e.g. 'Authorization: Bearer ...').")
     parser_ws.add_argument("--message", "-m", help="Initial message to send.")
     parser_ws.add_argument("--interactive", "-i", action="store_true", help="Interactive mode (read from stdin).")
     parser_ws.add_argument("--listen", "-l", action="store_true", help="Listen mode (keep connection open).")
+    parser_ws.add_argument("--server", "-s", action="store_true", help="Run as a WebSocket server.")
+    parser_ws.add_argument("--port", "-p", type=int, default=8765, help="Port to listen on (server mode).")
 
     # --- New 'hash-lab' command ---
     parser_hash = subparsers.add_parser(

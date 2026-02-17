@@ -138,6 +138,7 @@ from shared.dns_lab import run_dns_lab_logic
 from shared.whois_lab import run_whois_lab_logic
 from shared.s3_lab import run_s3_lab_logic
 from shared.graphql_lab import run_graphql_lab_logic
+from shared.helm_lab import run_helm_lab_logic
 import json
 import yaml
 import platformdirs
@@ -203,7 +204,8 @@ KNOWN_COMMANDS = [
     "dns-lab", "dns",
     "whois-lab", "whois",
     "s3-lab", "s3",
-    "graphql-lab", "gql"
+    "graphql-lab", "gql",
+    "helm-lab", "helm"
 ]
 
 if FileSystemEventHandler:
@@ -13177,6 +13179,56 @@ def parse_args(argv=None):
     parser_gql_schema = gql_subparsers.add_parser("schema", help="Introspect schema.")
     parser_gql_schema.add_argument("--format", "-f", choices=["sdl", "json"], default="sdl", help="Output format.")
 
+    # --- New 'helm-lab' command ---
+    parser_helm = subparsers.add_parser(
+        "helm-lab",
+        aliases=["helm"],
+        help="Helm utilities (ls, install, uninstall, status, repo)."
+    )
+    helm_subparsers = parser_helm.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # helm ls
+    parser_helm_ls = helm_subparsers.add_parser("ls", aliases=["list"], help="List releases.")
+    parser_helm_ls.add_argument("--all", action="store_true", help="Show all namespaces.")
+    parser_helm_ls.add_argument("--namespace", "-n", help="Namespace scope.")
+
+    # helm install
+    parser_helm_install = helm_subparsers.add_parser("install", help="Install a chart.")
+    parser_helm_install.add_argument("name", help="Release name.")
+    parser_helm_install.add_argument("chart", help="Chart reference.")
+    parser_helm_install.add_argument("--namespace", "-n", help="Namespace scope.")
+    parser_helm_install.add_argument("--values", "-f", help="Values file.")
+    parser_helm_install.add_argument("--set", action="append", help="Set values (can specify multiple).")
+
+    # helm uninstall
+    parser_helm_uninstall = helm_subparsers.add_parser("uninstall", aliases=["delete"], help="Uninstall a release.")
+    parser_helm_uninstall.add_argument("name", help="Release name.")
+    parser_helm_uninstall.add_argument("--namespace", "-n", help="Namespace scope.")
+
+    # helm status
+    parser_helm_status = helm_subparsers.add_parser("status", help="Get release status.")
+    parser_helm_status.add_argument("name", help="Release name.")
+    parser_helm_status.add_argument("--namespace", "-n", help="Namespace scope.")
+
+    # helm repo
+    parser_helm_repo = helm_subparsers.add_parser("repo", help="Manage repos.")
+    helm_repo_subparsers = parser_helm_repo.add_subparsers(dest="subaction", required=True)
+
+    # helm repo add
+    parser_helm_repo_add = helm_repo_subparsers.add_parser("add", help="Add a repo.")
+    parser_helm_repo_add.add_argument("name", help="Repo name.")
+    parser_helm_repo_add.add_argument("url", help="Repo URL.")
+
+    # helm repo update
+    helm_repo_subparsers.add_parser("update", help="Update repos.")
+
+    # helm repo list
+    helm_repo_subparsers.add_parser("list", help="List repos.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16561,6 +16613,10 @@ async def main():
 
     if args.command in ["graphql-lab", "gql"]:
         run_graphql_lab_logic(args)
+        return
+
+    if args.command in ["helm-lab", "helm"]:
+        run_helm_lab_logic(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

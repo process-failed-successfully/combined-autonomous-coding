@@ -142,6 +142,7 @@ from shared.helm_lab import run_helm_lab_logic
 from shared.notebook_lab import run_notebook_lab_logic
 from shared.grpc_lab import run_grpc_lab_logic
 from shared.monitor_lab import run_monitor_lab_logic
+from shared.trace_lab import run_trace_lab_logic
 import json
 import yaml
 import platformdirs
@@ -211,7 +212,8 @@ KNOWN_COMMANDS = [
     "helm-lab", "helm",
     "notebook-lab", "nb",
     "grpc-lab", "grpc",
-    "monitor-lab", "monitor", "mon"
+    "monitor-lab", "monitor", "mon",
+    "trace-lab", "trace"
 ]
 
 if FileSystemEventHandler:
@@ -289,6 +291,11 @@ def run_qr_lab(args):
 def run_monitor_lab(args):
     """Runs the Monitor Lab."""
     run_monitor_lab_logic(args)
+    sys.exit(0)
+
+async def run_trace_lab(args):
+    """Runs the Trace Lab."""
+    await run_trace_lab_logic(args)
     sys.exit(0)
 
 def run_http_lab(args):
@@ -13335,6 +13342,33 @@ def parse_args(argv=None):
     parser_mon_watch.add_argument("--limit", "-n", type=int, default=20, help="Limit number of processes.")
     parser_mon_watch.add_argument("--filter", "-f", help="Filter processes by name.")
 
+    # --- New 'trace-lab' command ---
+    parser_trace = subparsers.add_parser(
+        "trace-lab",
+        aliases=["trace"],
+        help="System call tracer with AI analysis."
+    )
+    trace_subparsers = parser_trace.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # trace run
+    parser_trace_run = trace_subparsers.add_parser("run", help="Run a command under trace.")
+    parser_trace_run.add_argument("--output", "-o", help="Output trace file (default: trace.log).")
+    parser_trace_run.add_argument("--explain", action="store_true", help="Ask AI to explain the trace immediately.")
+    parser_trace_run.add_argument("command_args", nargs=argparse.REMAINDER, help="Command to trace (e.g. ls -la).")
+
+    # trace analyze
+    parser_trace_analyze = trace_subparsers.add_parser("analyze", help="Analyze an existing trace file.")
+    parser_trace_analyze.add_argument("file", help="Path to trace file.")
+    parser_trace_analyze.add_argument("--json", action="store_true", help="Output as JSON.")
+
+    # trace explain
+    parser_trace_explain = trace_subparsers.add_parser("explain", help="Ask AI to explain an existing trace.")
+    parser_trace_explain.add_argument("file", help="Path to trace file.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16735,6 +16769,10 @@ async def main():
 
     if args.command in ["monitor-lab", "monitor", "mon"]:
         run_monitor_lab(args)
+        return
+
+    if args.command in ["trace-lab", "trace"]:
+        await run_trace_lab(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

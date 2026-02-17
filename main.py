@@ -140,6 +140,7 @@ from shared.s3_lab import run_s3_lab_logic
 from shared.graphql_lab import run_graphql_lab_logic
 from shared.helm_lab import run_helm_lab_logic
 from shared.notebook_lab import run_notebook_lab_logic
+from shared.grpc_lab import run_grpc_lab_logic
 import json
 import yaml
 import platformdirs
@@ -207,7 +208,8 @@ KNOWN_COMMANDS = [
     "s3-lab", "s3",
     "graphql-lab", "gql",
     "helm-lab", "helm",
-    "notebook-lab", "nb"
+    "notebook-lab", "nb",
+    "grpc-lab", "grpc"
 ]
 
 if FileSystemEventHandler:
@@ -13263,6 +13265,35 @@ def parse_args(argv=None):
     parser_nb_audit = nb_subparsers.add_parser("audit", help="Audit notebook for issues.")
     parser_nb_audit.add_argument("file", help="Notebook file path.")
 
+    # --- New 'grpc-lab' command ---
+    parser_grpc = subparsers.add_parser(
+        "grpc-lab",
+        aliases=["grpc"],
+        help="gRPC utilities (list, describe, call)."
+    )
+    parser_grpc.add_argument("--host", required=True, help="gRPC host:port.")
+    parser_grpc.add_argument("--plaintext", action="store_true", help="Use plaintext connection.")
+    parser_grpc.add_argument("--authority", help="Value of :authority pseudo-header.")
+
+    grpc_subparsers = parser_grpc.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # grpc list
+    parser_grpc_list = grpc_subparsers.add_parser("list", help="List services or methods.")
+    parser_grpc_list.add_argument("service", nargs="?", help="Service name (optional).")
+
+    # grpc describe
+    parser_grpc_describe = grpc_subparsers.add_parser("describe", help="Describe a symbol.")
+    parser_grpc_describe.add_argument("symbol", help="Symbol to describe.")
+
+    # grpc call
+    parser_grpc_call = grpc_subparsers.add_parser("call", help="Call a method.")
+    parser_grpc_call.add_argument("method", help="Method to call.")
+    parser_grpc_call.add_argument("--data", "-d", help="JSON data.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16655,6 +16686,10 @@ async def main():
 
     if args.command in ["notebook-lab", "nb"]:
         run_notebook_lab_logic(args)
+        return
+
+    if args.command in ["grpc-lab", "grpc"]:
+        run_grpc_lab_logic(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

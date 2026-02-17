@@ -65,6 +65,7 @@ class TestWsLab(unittest.IsolatedAsyncioTestCase):
             args.message = "hi"
             args.interactive = False
             args.listen = True
+            args.server = False
 
             await run_ws_lab_logic(args)
 
@@ -78,6 +79,7 @@ class TestWsLab(unittest.IsolatedAsyncioTestCase):
             args.message = None
             args.interactive = False
             args.listen = False
+            args.server = False
 
             await run_ws_lab_logic(args)
 

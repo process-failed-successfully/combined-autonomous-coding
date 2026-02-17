@@ -2,7 +2,7 @@ import asyncio
 import sys
 import signal
 import websockets
-from typing import Optional, List
+from typing import Optional, List, Set
 
 try:
     from rich.console import Console
@@ -13,11 +13,12 @@ except ImportError:
 
 class WsLabManager:
     """
-    Manages WebSocket interactions.
+    Manages WebSocket interactions (Client and Server).
     """
 
     def __init__(self):
         self.stop_event = asyncio.Event()
+        self.connected_clients: Set[websockets.WebSocketServerProtocol] = set()
 
     async def _read_stdin(self, websocket):
         loop = asyncio.get_running_loop()
@@ -46,7 +47,7 @@ class WsLabManager:
                     console.print(f"[bold green]Received:[/bold green] {message}")
                 else:
                     print(f"Received: {message}")
-        except websockets.exceptions.ConnectionClosed:
+        except websockets.ConnectionClosed:
             print("Connection closed by server.")
             self.stop_event.set()
         except Exception as e:
@@ -129,11 +130,73 @@ class WsLabManager:
             print(f"Connection failed: {e}")
             sys.exit(1)
 
+    async def _handler(self, websocket):
+        self.connected_clients.add(websocket)
+        remote_addr = websocket.remote_address
+        print(f"Client connected: {remote_addr}")
+        try:
+            async for message in websocket:
+                if 'console' in globals():
+                    console.print(f"[bold green]Received from {remote_addr}:[/bold green] {message}")
+                else:
+                    print(f"Received from {remote_addr}: {message}")
+
+                # Broadcast to others
+                if len(self.connected_clients) > 1:
+                    broadcast_tasks = []
+                    for client in self.connected_clients:
+                        if client != websocket:
+                            broadcast_tasks.append(asyncio.create_task(client.send(f"[{remote_addr}] {message}")))
+                    if broadcast_tasks:
+                        await asyncio.gather(*broadcast_tasks, return_exceptions=True)
+
+                # Echo back confirmation (optional, but good for testing)
+                # await websocket.send(f"Server received: {message}")
+
+        except websockets.ConnectionClosed:
+            pass
+        finally:
+            self.connected_clients.remove(websocket)
+            print(f"Client disconnected: {remote_addr}")
+
+    async def serve(self, port: int):
+        print(f"Starting WebSocket server on port {port}...")
+        print("Press Ctrl+C to stop.")
+
+        # Setup signal handler to stop gracefully
+        loop = asyncio.get_running_loop()
+        def stop():
+            print("\nStopping server...")
+            self.stop_event.set()
+
+        try:
+            loop.add_signal_handler(signal.SIGINT, stop)
+        except NotImplementedError:
+            pass
+
+        try:
+            async with websockets.serve(self._handler, "0.0.0.0", port): # nosec B104
+                await self.stop_event.wait()
+        except OSError as e:
+            print(f"Error starting server: {e}")
+            sys.exit(1)
+
 async def run_ws_lab_logic(args):
     manager = WsLabManager()
 
-    # Extract args
+    # Server Mode
+    if getattr(args, 'server', False):
+        port = getattr(args, 'port', 8765)
+        await manager.serve(port)
+        return
+
+    # Client Mode
     url = args.url
+    if not url:
+        print("Error: URL is required for client mode.", file=sys.stderr)
+        print("Use --server to start a server, or provide a URL to connect to.", file=sys.stderr)
+        sys.exit(1)
+
     if not url.startswith("ws://") and not url.startswith("wss://"):
         url = "ws://" + url
 

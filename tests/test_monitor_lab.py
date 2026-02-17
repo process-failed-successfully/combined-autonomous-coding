@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 import signal
 from shared.monitor_lab import MonitorLabManager
+
 
 class TestMonitorLabManager(unittest.TestCase):
 
@@ -62,7 +63,7 @@ class TestMonitorLabManager(unittest.TestCase):
         p2.as_dict.assert_called()
 
         self.assertEqual(len(procs), 2)
-        self.assertEqual(procs[0]['name'], 'python') # Higher CPU
+        self.assertEqual(procs[0]['name'], 'python')  # Higher CPU
 
         # Test filtering
         # We need to reset mocks if we want to run again cleanly, or just check result
@@ -93,6 +94,7 @@ class TestMonitorLabManager(unittest.TestCase):
         result = manager.kill_process(123)
 
         self.assertFalse(result)
+
 
 if __name__ == '__main__':
     unittest.main()

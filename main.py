@@ -1,3 +1,4 @@
+print("DEBUG: Very start")
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
 """
@@ -153,6 +154,7 @@ from shared.hex_lab import run_hex_lab_logic
 import json
 import yaml
 import platformdirs
+print("DEBUG: Top level reached")
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 
@@ -16091,6 +16093,7 @@ def run_worktrees(args):
 async def main():
     args = parse_args()
 
+    print(f"DEBUG: args.command = {args.command}")
     # Handle Plugin commands
     # Use vars(args) to avoid false positives with MagicMock in tests
     if 'run_plugin_func' in vars(args):

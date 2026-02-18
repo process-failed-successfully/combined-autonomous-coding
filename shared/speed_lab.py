@@ -115,7 +115,7 @@ class SpeedLabManager:
         print(f"Starting Speed Lab Server on {host}:{port}...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((host, port))
+            s.bind((host, port))  # nosec B104
             s.listen()
 
             while True:
@@ -201,7 +201,7 @@ def run_speed_lab_logic(args):
     elif args.action == "local":
         if args.server:
             # Default host for server if not specified
-            host = args.host or "0.0.0.0"
+            host = args.host or "0.0.0.0"  # nosec B104
             try:
                 manager.run_network_server(host=host, port=args.port)
             except KeyboardInterrupt:

@@ -146,6 +146,7 @@ from shared.trace_lab import run_trace_lab_logic
 from shared.fuzz_lab import run_fuzz_lab_logic
 from shared.static_lab import run_static_lab_logic
 from shared.notify_lab import run_notify_lab_logic
+from shared.contract_lab import run_contract_lab_logic
 import json
 import yaml
 import platformdirs
@@ -219,7 +220,8 @@ KNOWN_COMMANDS = [
     "trace-lab", "trace",
     "fuzz-lab", "fuzz",
     "static-lab", "static", "serve-static",
-    "notify-lab", "notify"
+    "notify-lab", "notify",
+    "contract-lab", "contract"
 ]
 
 if FileSystemEventHandler:
@@ -307,6 +309,11 @@ def run_fuzz_lab(args):
 def run_notify_lab(args):
     """Runs the Notify Lab."""
     run_notify_lab_logic(args)
+    sys.exit(0)
+
+def run_contract_lab(args):
+    """Runs the Contract Lab."""
+    run_contract_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13458,6 +13465,23 @@ def parse_args(argv=None):
     parser_static.add_argument("--spa", action="store_true", help="Enable SPA mode (rewrite 404 to index.html).")
     parser_static.add_argument("--ssl", action="store_true", help="Enable HTTPS (self-signed).")
 
+    # --- New 'contract-lab' command ---
+    parser_contract = subparsers.add_parser(
+        "contract-lab",
+        aliases=["contract"],
+        help="Contract testing and verification."
+    )
+    contract_subparsers = parser_contract.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # contract verify
+    parser_contract_verify = contract_subparsers.add_parser("verify", help="Verify a running service against an OpenAPI spec.")
+    parser_contract_verify.add_argument("--spec", required=True, help="Path to OpenAPI specification (YAML/JSON).")
+    parser_contract_verify.add_argument("--url", required=True, help="Target URL of the running service.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16866,6 +16890,10 @@ async def main():
 
     if args.command in ["notify-lab", "notify"]:
         run_notify_lab(args)
+        return
+
+    if args.command in ["contract-lab", "contract"]:
+        run_contract_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

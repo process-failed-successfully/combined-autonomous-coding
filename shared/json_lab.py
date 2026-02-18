@@ -31,7 +31,7 @@ class JsonLabManager:
     def _parse_path(self, path: str) -> List[Union[str, int]]:
         """Parses a path string into keys and indices."""
         normalized = path.replace('[', '.').replace(']', '')
-        parts = []
+        parts: List[Union[str, int]] = []
         for p in normalized.split('.'):
             if not p:
                 continue

@@ -150,6 +150,7 @@ from shared.notify_lab import run_notify_lab_logic
 from shared.contract_lab import run_contract_lab_logic
 from shared.ansible_lab import run_ansible_lab_logic
 from shared.hex_lab import run_hex_lab_logic
+from shared.speed_lab import run_speed_lab_logic
 import json
 import yaml
 import platformdirs
@@ -227,7 +228,8 @@ KNOWN_COMMANDS = [
     "notify-lab", "notify",
     "contract-lab", "contract",
     "ansible-lab", "ansible",
-    "hex-lab", "hex"
+    "hex-lab", "hex",
+    "speed-lab", "speed"
 ]
 
 if FileSystemEventHandler:
@@ -335,6 +337,11 @@ def run_ansible_lab(args):
 def run_hex_lab(args):
     """Runs the Hex Lab."""
     run_hex_lab_logic(args)
+    sys.exit(0)
+
+def run_speed_lab(args):
+    """Runs the Speed Lab."""
+    run_speed_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13574,6 +13581,33 @@ def parse_args(argv=None):
     # The TUI usually takes over, but we can accept a file argument to open immediately
     parser_hex.add_argument("file", nargs="?", help="Path to file to open in Hex Editor.")
 
+    # --- New 'speed-lab' command ---
+    parser_speed = subparsers.add_parser(
+        "speed-lab",
+        aliases=["speed"],
+        help="System performance benchmarks (internet, disk, network)."
+    )
+    speed_subparsers = parser_speed.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # speed internet
+    parser_speed_net = speed_subparsers.add_parser("internet", aliases=["net"], help="Measure internet download speed.")
+    parser_speed_net.add_argument("--timeout", type=int, default=30, help="Timeout in seconds.")
+
+    # speed disk
+    parser_speed_disk = speed_subparsers.add_parser("disk", aliases=["io"], help="Measure disk I/O speed.")
+    parser_speed_disk.add_argument("--size", type=int, default=100, help="Size in MB (default: 100).")
+
+    # speed local
+    parser_speed_local = speed_subparsers.add_parser("local", aliases=["lan"], help="Measure local network throughput.")
+    parser_speed_local.add_argument("--server", action="store_true", help="Run in server mode.")
+    parser_speed_local.add_argument("--host", help="Host to bind/connect to. Defaults to 0.0.0.0 for server.")
+    parser_speed_local.add_argument("--port", type=int, default=5201, help="Port (default: 5201).")
+    parser_speed_local.add_argument("--duration", type=int, default=10, help="Test duration in seconds (client mode only).")
+
 
     # --- Plugin Registration ---
     try:
@@ -16998,6 +17032,10 @@ async def main():
 
     if args.command in ["hex-lab", "hex"]:
         run_hex_lab(args)
+        return
+
+    if args.command in ["speed-lab", "speed"]:
+        run_speed_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

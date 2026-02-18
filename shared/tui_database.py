@@ -1,5 +1,6 @@
 from pathlib import Path
 import asyncio
+from typing import Optional, List
 from textual.app import ComposeResult
 from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Input, Select, RichLog
 from textual.containers import Container, Horizontal, Vertical
@@ -16,8 +17,8 @@ class DatabaseTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.manager = None
-        self.connection_string = None
+        self.manager: Optional[SqlLabManager] = None
+        self.connection_string: Optional[str] = None
         self.current_schema = ""
 
     def compose(self) -> ComposeResult:
@@ -108,7 +109,7 @@ class DatabaseTab(Container):
         table_name = event.item.name
 
         # Validate table name against known tables to prevent injection risks
-        known_tables = self.manager.list_tables() if self.manager else []
+        known_tables: List[str] = self.manager.list_tables() if self.manager else []
         if table_name not in known_tables:
             self.notify("Invalid table selected.", severity="error")
             return

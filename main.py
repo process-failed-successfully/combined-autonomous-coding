@@ -849,8 +849,9 @@ def run_chaos(args):
     run_chaos_logic(
         project_dir=args.project_dir,
         action=args.action,
-        dry_run=args.dry_run,
-        yes=args.yes
+        dry_run=getattr(args, 'dry_run', False),
+        yes=getattr(args, 'yes', False),
+        interface=getattr(args, 'interface', 'eth0')
     )
     sys.exit(0)
 
@@ -10547,6 +10548,27 @@ def parse_args(argv=None):
     parser_chaos_jitter.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
     parser_chaos_jitter.add_argument("--dry-run", action="store_true", help="Simulate the action.")
     parser_chaos_jitter.add_argument("-y", "--yes", action="store_true", help="Skip confirmation.")
+
+    # chaos network-latency
+    parser_chaos_latency = chaos_subparsers.add_parser("network-latency", help="Inject network latency.")
+    parser_chaos_latency.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_chaos_latency.add_argument("--interface", "-i", default="eth0", help="Network interface (default: eth0).")
+    parser_chaos_latency.add_argument("--dry-run", action="store_true", help="Simulate the action.")
+    parser_chaos_latency.add_argument("-y", "--yes", action="store_true", help="Skip confirmation.")
+
+    # chaos network-loss
+    parser_chaos_loss = chaos_subparsers.add_parser("network-loss", help="Inject network packet loss.")
+    parser_chaos_loss.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_chaos_loss.add_argument("--interface", "-i", default="eth0", help="Network interface (default: eth0).")
+    parser_chaos_loss.add_argument("--dry-run", action="store_true", help="Simulate the action.")
+    parser_chaos_loss.add_argument("-y", "--yes", action="store_true", help="Skip confirmation.")
+
+    # chaos network-reset
+    parser_chaos_reset = chaos_subparsers.add_parser("network-reset", help="Reset network rules.")
+    parser_chaos_reset.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_chaos_reset.add_argument("--interface", "-i", default="eth0", help="Network interface (default: eth0).")
+    parser_chaos_reset.add_argument("--dry-run", action="store_true", help="Simulate the action.")
+    parser_chaos_reset.add_argument("-y", "--yes", action="store_true", help="Skip confirmation.")
 
     # --- New 'guardrails' command ---
     parser_guardrails = subparsers.add_parser(

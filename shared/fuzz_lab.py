@@ -1,24 +1,23 @@
 import sys
-import os
 import random
 import string
-import subprocess
-import time
+import subprocess  # nosec B404
 import importlib.util
 import inspect
 import typing
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Iterable, Optional
 
 try:
     from rich.console import Console
     from rich.table import Table
     from rich.progress import track
     HAS_RICH = True
-    console = Console()
+    console: Optional[Console] = Console()
 except ImportError:
     HAS_RICH = False
     console = None
+
 
 class InputGenerator:
     """Generates random inputs based on type hints."""
@@ -31,38 +30,38 @@ class InputGenerator:
         elif type_hint == float:
             return self._gen_float()
         elif type_hint == bool:
-            return random.choice([True, False])
+            return random.choice([True, False])  # nosec B311
         elif type_hint == list or getattr(type_hint, "__origin__", None) == list:
             return self._gen_list(type_hint)
         elif type_hint == dict or getattr(type_hint, "__origin__", None) == dict:
             return self._gen_dict(type_hint)
         elif type_hint == typing.Optional or getattr(type_hint, "__origin__", None) == typing.Union:
-             # Handle Optional/Union - simplified to try one of the options
-             args = getattr(type_hint, "__args__", [])
-             if args:
-                 return self.generate(random.choice(args))
+            # Handle Optional/Union - simplified to try one of the options
+            args = getattr(type_hint, "__args__", [])
+            if args:
+                return self.generate(random.choice(args))  # nosec B311
 
         # Fallback for unknown or complex types
         return None
 
     def _gen_int(self):
         # Mix of edge cases and random numbers
-        return random.choice([0, 1, -1, 2**32, -2**32, random.randint(-1000, 1000)])
+        return random.choice([0, 1, -1, 2**32, -2**32, random.randint(-1000, 1000)])  # nosec B311
 
     def _gen_float(self):
-        return random.choice([0.0, 1.0, -1.0, float('inf'), float('nan'), random.uniform(-1000.0, 1000.0)])
+        return random.choice([0.0, 1.0, -1.0, float('inf'), float('nan'), random.uniform(-1000.0, 1000.0)])  # nosec B311
 
     def _gen_str(self):
         # Mix of empty, simple, long, and special chars
         special = "!@#$%^&*()_+-=[]{}|;':\",./<>?"
-        length = random.choice([0, 5, 20, 100, 1000])
+        length = random.choice([0, 5, 20, 100, 1000])  # nosec B311
         chars = string.ascii_letters + string.digits + special
-        return "".join(random.choices(chars, k=length))
+        return "".join(random.choices(chars, k=length))  # nosec B311
 
     def _gen_list(self, type_hint):
         args = getattr(type_hint, "__args__", [])
-        item_type = args[0] if args else int # Default to int list if unknown
-        length = random.randint(0, 10)
+        item_type = args[0] if args else int  # Default to int list if unknown
+        length = random.randint(0, 10)  # nosec B311
         return [self.generate(item_type) for _ in range(length)]
 
     def _gen_dict(self, type_hint):
@@ -70,7 +69,7 @@ class InputGenerator:
         args = getattr(type_hint, "__args__", [])
         key_type = args[0] if args else str
         val_type = args[1] if len(args) > 1 else int
-        length = random.randint(0, 5)
+        length = random.randint(0, 5)  # nosec B311
         return {self.generate(key_type): self.generate(val_type) for _ in range(length)}
 
 
@@ -95,7 +94,7 @@ class FuzzLabManager:
 
         print(f"Fuzzing CLI command: '{command}' ({count} iterations)...")
 
-        iterator = range(count)
+        iterator: Iterable[int] = range(count)
         if HAS_RICH:
             iterator = track(range(count), description="Fuzzing...")
 
@@ -114,7 +113,7 @@ class FuzzLabManager:
                     text=True,
                     timeout=timeout,
                     cwd=self.project_dir
-                )
+                )  # nosec B603
 
                 # Check for crash (non-zero exit code usually, but specifically signals)
                 # A segfault return code is usually negative (e.g. -11 for SIGSEGV)
@@ -128,7 +127,7 @@ class FuzzLabManager:
                         "iteration": i + 1,
                         "input_preview": fuzz_input[:50],
                         "return_code": result.returncode,
-                        "stderr": result.stderr[:200], # Truncate
+                        "stderr": result.stderr[:200],  # Truncate
                         "type": "Crash" if result.returncode < 0 else "Error"
                     }
                     crashes.append(crash_info)
@@ -165,8 +164,11 @@ class FuzzLabManager:
         module_name = path.stem
         try:
             spec = importlib.util.spec_from_file_location(module_name, path)
+            if spec is None or spec.loader is None:
+                print(f"Error: Could not load spec for {path}")
+                return []
             module = importlib.util.module_from_spec(spec)
-            sys.path.insert(0, str(path.parent)) # Add to path to resolve relative imports
+            sys.path.insert(0, str(path.parent))  # Add to path to resolve relative imports
             spec.loader.exec_module(module)
         except Exception as e:
             print(f"Error importing module: {e}")
@@ -189,7 +191,7 @@ class FuzzLabManager:
 
         failures = []
 
-        iterator = range(count)
+        iterator: Iterable[int] = range(count)
         if HAS_RICH:
             iterator = track(range(count), description="Fuzzing...")
 
@@ -220,7 +222,7 @@ class FuzzLabManager:
                 failures.append({
                     "iteration": i + 1,
                     "args": [str(a)[:50] for a in args],
-                    "kwargs": {k: str(v)[:50] for k,v in kwargs.items()},
+                    "kwargs": {k: str(v)[:50] for k, v in kwargs.items()},
                     "error": str(e),
                     "type": type(e).__name__
                 })
@@ -244,14 +246,14 @@ def run_fuzz_lab_logic(args):
             sys.exit(0)
 
         print(f"\n❌ Found {len(crashes)} issues:")
-        if HAS_RICH:
+        if HAS_RICH and console:
             table = Table(title="CLI Fuzzing Results")
             table.add_column("Iter", style="cyan")
             table.add_column("Type", style="red")
             table.add_column("Input (Preview)", style="white")
             table.add_column("Error/Code", style="yellow")
 
-            for c in crashes[:20]: # Limit output
+            for c in crashes[:20]:  # Limit output
                 table.add_row(str(c['iteration']), c['type'], c['input_preview'].replace("\n", "\\n"), str(c['return_code']))
             console.print(table)
             if len(crashes) > 20:
@@ -280,7 +282,7 @@ def run_fuzz_lab_logic(args):
             sys.exit(0)
 
         print(f"\n❌ Found {len(failures)} exceptions:")
-        if HAS_RICH:
+        if HAS_RICH and console:
             table = Table(title="Function Fuzzing Results")
             table.add_column("Iter", style="cyan")
             table.add_column("Type", style="red")

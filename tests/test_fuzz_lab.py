@@ -1,14 +1,14 @@
 import unittest
 import sys
-import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from typing import List, Dict
 
 # Ensure shared modules can be imported
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from shared.fuzz_lab import FuzzLabManager, InputGenerator
+from shared.fuzz_lab import FuzzLabManager, InputGenerator  # noqa: E402
+
 
 # Dummy function for testing
 def buggy_function(x: int, y: str):
@@ -16,6 +16,7 @@ def buggy_function(x: int, y: str):
         raise ValueError("Bug triggered!")
     if y == "crash":
         raise RuntimeError("Crash triggered!")
+
 
 class TestInputGenerator(unittest.TestCase):
     def setUp(self):
@@ -42,6 +43,7 @@ class TestInputGenerator(unittest.TestCase):
             k, v = next(iter(val.items()))
             self.assertIsInstance(k, str)
             self.assertIsInstance(v, int)
+
 
 class TestFuzzLabManager(unittest.TestCase):
     def setUp(self):
@@ -81,6 +83,7 @@ def target(val: int):
 
         self.assertTrue(len(crashes) > 0)
         self.assertEqual(crashes[0]["return_code"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

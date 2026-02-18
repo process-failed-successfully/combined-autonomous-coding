@@ -145,6 +145,7 @@ from shared.monitor_lab import run_monitor_lab_logic
 from shared.trace_lab import run_trace_lab_logic
 from shared.fuzz_lab import run_fuzz_lab_logic
 from shared.static_lab import run_static_lab_logic
+from shared.notify_lab import run_notify_lab_logic
 import json
 import yaml
 import platformdirs
@@ -217,7 +218,8 @@ KNOWN_COMMANDS = [
     "monitor-lab", "monitor", "mon",
     "trace-lab", "trace",
     "fuzz-lab", "fuzz",
-    "static-lab", "static", "serve-static"
+    "static-lab", "static", "serve-static",
+    "notify-lab", "notify"
 ]
 
 if FileSystemEventHandler:
@@ -300,6 +302,11 @@ def run_monitor_lab(args):
 def run_fuzz_lab(args):
     """Runs the Fuzz Lab."""
     run_fuzz_lab_logic(args)
+    sys.exit(0)
+
+def run_notify_lab(args):
+    """Runs the Notify Lab."""
+    run_notify_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13378,6 +13385,18 @@ def parse_args(argv=None):
     parser_trace_explain = trace_subparsers.add_parser("explain", help="Ask AI to explain an existing trace.")
     parser_trace_explain.add_argument("file", help="Path to trace file.")
 
+    # --- New 'notify-lab' command ---
+    parser_notify = subparsers.add_parser(
+        "notify-lab",
+        aliases=["notify"],
+        help="Send notifications to various channels."
+    )
+    parser_notify.add_argument("message", nargs="?", help="Message to send (or via stdin).")
+    parser_notify.add_argument("--title", help="Notification title.")
+    parser_notify.add_argument("--to", action="append", choices=["desktop", "slack", "discord", "console", "all"], help="Target channels (default: desktop).")
+    parser_notify.add_argument("--slack-url", help="Override Slack Webhook URL.")
+    parser_notify.add_argument("--discord-url", help="Override Discord Webhook URL.")
+
     # --- New 'fuzz-lab' command ---
     parser_fuzz = subparsers.add_parser(
         "fuzz-lab",
@@ -16821,6 +16840,10 @@ async def main():
 
     if args.command in ["trace-lab", "trace"]:
         await run_trace_lab(args)
+        return
+
+    if args.command in ["notify-lab", "notify"]:
+        run_notify_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

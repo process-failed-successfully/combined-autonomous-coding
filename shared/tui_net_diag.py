@@ -1,14 +1,14 @@
 import asyncio
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import List
 
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Input, Label, RichLog, Select, TabbedContent, TabPane, DataTable
-from textual import on
 
 from shared.net_lab import NetLabManager
+
 
 class NetDiagTab(Container):
     """Tab for Network Diagnostics (Ping, Scan, DNS, HTTP, IP)."""
@@ -114,7 +114,7 @@ class NetDiagTab(Container):
             self.notify("Host required.", severity="error")
             return
 
-        ports = []
+        ports: List[int] = []
         if ports_str:
             parts = ports_str.split(',')
             for part in parts:
@@ -158,7 +158,7 @@ class NetDiagTab(Container):
         log.clear()
         log.write(f"Looking up {rtype} records for {domain}...")
 
-        results = await asyncio.to_thread(self.manager.dns_lookup, domain, rtype)
+        results = await asyncio.to_thread(self.manager.dns_lookup, domain, str(rtype))
 
         if "error" in results:
             log.write(f"[bold red]Error: {results['error']}[/bold red]")

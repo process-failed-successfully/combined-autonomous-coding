@@ -71,7 +71,7 @@ class HexManager:
     def get_size(self) -> int:
         return self.size
 
-def run_hex_lab_logic(args):
+async def run_hex_lab_logic(args):
     """
     CLI entry point. Launches the TUI.
     """
@@ -96,4 +96,4 @@ def run_hex_lab_logic(args):
     # Ideally we'd switch tab here, but TUI lifecycle is complex.
     # For this MVP, we just launch the app.
     # Users can navigate to Hex Lab tab.
-    app.run()
+    await app.run_async()

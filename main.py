@@ -332,9 +332,9 @@ def run_ansible_lab(args):
     run_ansible_lab_logic(args)
     sys.exit(0)
 
-def run_hex_lab(args):
+async def run_hex_lab(args):
     """Runs the Hex Lab."""
-    run_hex_lab_logic(args)
+    await run_hex_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -16997,7 +16997,7 @@ async def main():
         return
 
     if args.command in ["hex-lab", "hex"]:
-        run_hex_lab(args)
+        await run_hex_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

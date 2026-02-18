@@ -91,7 +91,7 @@ class JsonLabTab(Container):
 
         self._add_nodes(tree.root, self.current_data, [])
 
-    def _add_nodes(self, parent_node: TreeNode, data: Any, current_path: List[Union[str, int]]) -> None:
+    def _add_nodes(self, parent_node: TreeNode[List[Union[str, int]]], data: Any, current_path: List[Union[str, int]]) -> None:
         if isinstance(data, dict):
             for key, value in data.items():
                 path = current_path + [key]
@@ -117,7 +117,7 @@ class JsonLabTab(Container):
                     self._add_nodes(node, value, path)
 
     @on(Tree.NodeSelected, "#json-tree")
-    def on_node_selected(self, event: Tree.NodeSelected) -> None:
+    def on_node_selected(self, event: Tree.NodeSelected[List[Union[str, int]]]) -> None:
         path = event.node.data
         self.selected_path = path
 

@@ -108,10 +108,13 @@ class SpeedLabManager:
                 except OSError:
                     pass
 
-    def run_network_server(self, host: str = "0.0.0.0", port: int = 5201):
+    def run_network_server(self, host: Optional[str] = None, port: int = 5201):
         """
         Starts a simple TCP server to sink data and measure throughput.
         """
+        if host is None:
+            host = "0.0.0.0"  # nosec B104
+
         print(f"Starting Speed Lab Server on {host}:{port}...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -200,10 +203,9 @@ def run_speed_lab_logic(args):
 
     elif args.action == "local":
         if args.server:
-            # Default host for server if not specified
-            host = args.host or "0.0.0.0"  # nosec B104
             try:
-                manager.run_network_server(host=host, port=args.port)
+                # Host defaults to 0.0.0.0 inside the method if None
+                manager.run_network_server(host=args.host, port=args.port)
             except KeyboardInterrupt:
                 print("\nServer stopped.")
         else:

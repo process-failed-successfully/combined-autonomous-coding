@@ -2,6 +2,7 @@ import sys
 import json
 import csv
 import os
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.exc import SQLAlchemyError
@@ -127,6 +128,30 @@ class SqlLabManager:
             print(f"Error writing file: {e}", file=sys.stderr)
             return False
 
+def detect_connection_string(project_dir: Path) -> str:
+    """
+    Detects the database connection string for the project.
+    Prioritizes DATABASE_URL env var, then searches for local SQLite files.
+    """
+    conn_str = os.environ.get("DATABASE_URL")
+    if conn_str:
+        return conn_str
+
+    # Check for local .db or .sqlite files
+    # Sort to prioritize certain names? Or just take first.
+    try:
+        files = [f for f in os.listdir(project_dir) if f.endswith(".db") or f.endswith(".sqlite")]
+        if files:
+            # If multiple, prefer agent_lab.db if it exists, else the first one
+            if "agent_lab.db" in files:
+                return f"sqlite:///{project_dir}/agent_lab.db"
+            return f"sqlite:///{project_dir}/{files[0]}"
+    except OSError:
+        pass
+
+    # Default fallback
+    return f"sqlite:///{project_dir}/agent_lab.db"
+
 def run_sql_lab_logic(args):
     """
     CLI entry point for SQL Lab.
@@ -134,20 +159,8 @@ def run_sql_lab_logic(args):
     # Determine connection string
     conn_str = args.url
     if not conn_str:
-        conn_str = os.environ.get("DATABASE_URL")
-
-    if not conn_str:
-        # Check for local .db or .sqlite files
-        files = [f for f in os.listdir(".") if f.endswith(".db") or f.endswith(".sqlite")]
-        if files:
-            print(f"No connection string provided. Found local database: {files[0]}")
-            conn_str = f"sqlite:///{files[0]}"
-        else:
-             # Default to an in-memory or a specific lab db?
-             # Let's default to creating a local 'agent_lab.db' if nothing else found,
-             # so users can start playing immediately.
-             print("No connection string provided and no local DB found. Using 'sqlite:///agent_lab.db'")
-             conn_str = "sqlite:///agent_lab.db"
+        conn_str = detect_connection_string(Path("."))
+        print(f"Using database: {conn_str}")
 
     manager = SqlLabManager(conn_str)
 

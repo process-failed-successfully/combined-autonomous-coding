@@ -2,11 +2,11 @@ import json
 import yaml
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union, Tuple
 
 class SchemaLabManager:
     """
-    Manages schema inference and conversion.
+    Manages schema inference, conversion, and validation.
     """
 
     def __init__(self, project_dir: Optional[Path] = None):
@@ -69,6 +69,77 @@ class SchemaLabManager:
             return {"type": "object", "properties": props}
         else:
             return {}
+
+    def validate_instance(self, instance: Any, schema: Dict[str, Any]) -> Tuple[bool, str]:
+        """
+        Validates an instance against a JSON schema.
+        Returns (valid, error_message).
+        """
+        # Try to use jsonschema if available
+        try:
+            import jsonschema
+            jsonschema.validate(instance=instance, schema=schema)
+            return True, ""
+        except ImportError:
+            pass # Fallback to custom validation
+        except Exception as e:
+            return False, str(e)
+
+        return self._validate(instance, schema, path="#")
+
+    def _validate(self, instance: Any, schema: Dict[str, Any], path: str) -> Tuple[bool, str]:
+        """
+        Internal recursive validation logic (fallback).
+        """
+        if not schema:
+            return True, ""
+
+        # Handle 'type'
+        if "type" in schema:
+            t = schema["type"]
+            if t == "string" and not isinstance(instance, str):
+                return False, f"At {path}: Expected string, got {type(instance).__name__}"
+            elif t == "integer" and (not isinstance(instance, int) or isinstance(instance, bool)):
+                return False, f"At {path}: Expected integer, got {type(instance).__name__}"
+            elif t == "number" and (not isinstance(instance, (int, float)) or isinstance(instance, bool)):
+                return False, f"At {path}: Expected number, got {type(instance).__name__}"
+            elif t == "boolean" and not isinstance(instance, bool):
+                return False, f"At {path}: Expected boolean, got {type(instance).__name__}"
+            elif t == "array" and not isinstance(instance, list):
+                return False, f"At {path}: Expected array, got {type(instance).__name__}"
+            elif t == "object" and not isinstance(instance, dict):
+                return False, f"At {path}: Expected object, got {type(instance).__name__}"
+            elif t == "null" and instance is not None:
+                return False, f"At {path}: Expected null, got {type(instance).__name__}"
+
+        # Handle 'enum'
+        if "enum" in schema:
+            if instance not in schema["enum"]:
+                return False, f"At {path}: Value {instance} not in enum {schema['enum']}"
+
+        # Handle 'properties' and 'required' (for object)
+        if isinstance(instance, dict):
+            if "required" in schema:
+                for req in schema["required"]:
+                    if req not in instance:
+                        return False, f"At {path}: Missing required property '{req}'"
+
+            if "properties" in schema:
+                for prop_name, prop_schema in schema["properties"].items():
+                    if prop_name in instance:
+                        valid, msg = self._validate(instance[prop_name], prop_schema, f"{path}/{prop_name}")
+                        if not valid:
+                            return False, msg
+
+        # Handle 'items' (for array)
+        if isinstance(instance, list) and "items" in schema:
+            item_schema = schema["items"]
+            for i, item in enumerate(instance):
+                valid, msg = self._validate(item, item_schema, f"{path}[{i}]")
+                if not valid:
+                    return False, msg
+
+        return True, ""
 
     def to_typescript(self, schema: Dict[str, Any], root_name: str = "Root") -> str:
         """

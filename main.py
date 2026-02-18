@@ -147,6 +147,7 @@ from shared.fuzz_lab import run_fuzz_lab_logic
 from shared.static_lab import run_static_lab_logic
 from shared.notify_lab import run_notify_lab_logic
 from shared.contract_lab import run_contract_lab_logic
+from shared.ansible_lab import run_ansible_lab_logic
 import json
 import yaml
 import platformdirs
@@ -221,7 +222,8 @@ KNOWN_COMMANDS = [
     "fuzz-lab", "fuzz",
     "static-lab", "static", "serve-static",
     "notify-lab", "notify",
-    "contract-lab", "contract"
+    "contract-lab", "contract",
+    "ansible-lab", "ansible"
 ]
 
 if FileSystemEventHandler:
@@ -314,6 +316,11 @@ def run_notify_lab(args):
 def run_contract_lab(args):
     """Runs the Contract Lab."""
     run_contract_lab_logic(args)
+    sys.exit(0)
+
+def run_ansible_lab(args):
+    """Runs the Ansible Lab."""
+    run_ansible_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13482,6 +13489,43 @@ def parse_args(argv=None):
     parser_contract_verify.add_argument("--spec", required=True, help="Path to OpenAPI specification (YAML/JSON).")
     parser_contract_verify.add_argument("--url", required=True, help="Target URL of the running service.")
 
+    # --- New 'ansible-lab' command ---
+    parser_ansible = subparsers.add_parser(
+        "ansible-lab",
+        aliases=["ansible"],
+        help="Ansible utilities (playbook, lint, inventory, doc, init)."
+    )
+    ansible_subparsers = parser_ansible.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ansible playbook
+    parser_ansible_playbook = ansible_subparsers.add_parser("playbook", help="Run an Ansible playbook.")
+    parser_ansible_playbook.add_argument("playbook", help="Path to the playbook file.")
+    parser_ansible_playbook.add_argument("--inventory", "-i", help="Path to inventory file.")
+    parser_ansible_playbook.add_argument("--check", action="store_true", help="Run in check mode (dry run).")
+    parser_ansible_playbook.add_argument("--diff", action="store_true", help="Show differences.")
+    parser_ansible_playbook.add_argument("--limit", "-l", help="Limit to specific hosts.")
+    parser_ansible_playbook.add_argument("--extra-vars", "-e", help="Set additional variables (key=value).")
+
+    # ansible lint
+    parser_ansible_lint = ansible_subparsers.add_parser("lint", help="Lint Ansible files.")
+    parser_ansible_lint.add_argument("path", nargs="?", default=".", help="Path to lint (default: current directory).")
+
+    # ansible inventory
+    parser_ansible_inv = ansible_subparsers.add_parser("inventory", help="List inventory.")
+    parser_ansible_inv.add_argument("--inventory", "-i", help="Path to inventory file.")
+
+    # ansible doc
+    parser_ansible_doc = ansible_subparsers.add_parser("doc", help="Show documentation for a module.")
+    parser_ansible_doc.add_argument("module", help="Module name (e.g., yum, copy).")
+
+    # ansible init
+    parser_ansible_init = ansible_subparsers.add_parser("init", help="Scaffold a new Ansible project.")
+    parser_ansible_init.add_argument("name", nargs="?", help="Project name (creates a directory).")
+
 
     # --- Plugin Registration ---
     try:
@@ -16894,6 +16938,10 @@ async def main():
 
     if args.command in ["contract-lab", "contract"]:
         run_contract_lab(args)
+        return
+
+    if args.command in ["ansible-lab", "ansible"]:
+        run_ansible_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

@@ -117,5 +117,22 @@ class TestDiffLab(unittest.TestCase):
 
         mock_diff.assert_called()
 
+    def test_get_text_diff(self):
+        lines1 = ["a\n", "b\n"]
+        lines2 = ["a\n", "c\n"]
+        diff = self.manager.get_text_diff(lines1, lines2)
+        self.assertIsInstance(diff, list)
+        self.assertTrue(any("c" in line for line in diff))
+        self.assertTrue(any("b" in line for line in diff))
+
+    def test_get_structure_diff(self):
+        d1 = {"a": 1}
+        d2 = {"a": 2}
+        diff = self.manager.get_structure_diff(d1, d2)
+        self.assertEqual(len(diff), 1)
+        self.assertEqual(diff[0]['type'], 'MODIFIED')
+        self.assertEqual(diff[0]['old'], 1)
+        self.assertEqual(diff[0]['new'], 2)
+
 if __name__ == "__main__":
     unittest.main()

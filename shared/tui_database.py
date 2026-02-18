@@ -2,11 +2,12 @@ from pathlib import Path
 import asyncio
 from typing import Optional, List
 from textual.app import ComposeResult
-from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Input, Select, RichLog
+from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Select, RichLog
 from textual.containers import Container, Horizontal, Vertical
 from textual import on
 from shared.sql_lab import SqlLabManager, detect_connection_string
 from shared.db_query import generate_sql
+
 
 class DatabaseTab(Container):
     """
@@ -126,6 +127,9 @@ class DatabaseTab(Container):
             self.notify("Not connected to database.", severity="error")
             return
 
+        # Local reference for type safety
+        manager = self.manager
+
         query_input = self.query_one("#input-db-query", TextArea)
         query = query_input.text.strip()
 
@@ -139,7 +143,7 @@ class DatabaseTab(Container):
         # Handle AI Mode
         if mode == "AI":
             log.write("[bold yellow]Generating SQL with AI...[/bold yellow]")
-            agent_type = self.query_one("#sel-db-agent", Select).value or "gemini"
+            agent_type = str(self.query_one("#sel-db-agent", Select).value or "gemini")
             try:
                 sql = await generate_sql(query, self.current_schema, self.project_dir, agent_type=agent_type)
                 if sql.startswith("ERROR:"):
@@ -160,7 +164,7 @@ class DatabaseTab(Container):
         try:
             # Run in thread to allow UI updates
             def execute_safe():
-                return self.manager.execute_query(query)
+                return manager.execute_query(query)
 
             result = await asyncio.to_thread(execute_safe)
 

@@ -1,11 +1,12 @@
 from pathlib import Path
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Label, Input, Button, DataTable, Footer
+from textual.containers import Container, Horizontal
+from textual.widgets import Label, Input, Button, DataTable
 from textual.binding import Binding
 from textual import on, events
 
 from shared.hex_lab import HexManager
+
 
 class HexTab(Container):
     """Tab for Hex Editor."""
@@ -47,7 +48,7 @@ class HexTab(Container):
         self.manager = HexManager(project_dir)
         self.chunk_size = 256  # Bytes per page
         self.current_offset = 0
-        self.cursor_byte_offset = 0 # Relative to current_offset
+        self.cursor_byte_offset = 0  # Relative to current_offset
 
     def compose(self) -> ComposeResult:
         with Horizontal(classes="hex-header"):
@@ -169,7 +170,7 @@ class HexTab(Container):
                 else:
                     status_lbl.update(current_text + inspector)
             except Exception:
-                pass
+                pass  # nosec B110
 
     @on(events.Key)
     def on_key(self, event: events.Key) -> None:
@@ -193,7 +194,7 @@ class HexTab(Container):
             file_offset = self.current_offset + byte_offset_in_chunk
 
             if file_offset >= self.manager.get_size():
-                return # Out of bounds (padding)
+                return  # Out of bounds (padding)
 
             # Read current byte
             current_byte = self.manager.read_chunk(file_offset, 1)[0]

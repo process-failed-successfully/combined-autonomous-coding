@@ -1,9 +1,9 @@
 import unittest
 import tempfile
-import os
 import shutil
 from pathlib import Path
 from shared.hex_lab import HexManager
+
 
 class TestHexManager(unittest.TestCase):
     def setUp(self):
@@ -53,6 +53,7 @@ class TestHexManager(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.manager.load_file(file_path)
+
 
 if __name__ == '__main__':
     unittest.main()

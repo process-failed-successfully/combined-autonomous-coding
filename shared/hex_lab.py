@@ -1,7 +1,6 @@
-import os
-import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
+
 
 class HexManager:
     """
@@ -70,6 +69,7 @@ class HexManager:
 
     def get_size(self) -> int:
         return self.size
+
 
 def run_hex_lab_logic(args):
     """

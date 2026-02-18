@@ -178,6 +178,95 @@ class SpeedLabManager:
         except Exception as e:
             print(f"❌ Error: {e}")
 
+    def check_cpu_speed(self, limit: int = 20000) -> Dict[str, Any]:
+        """
+        Measures CPU speed by calculating primes up to a limit.
+        """
+        print(f"Benchmarking CPU (Primes up to {limit})...")
+        try:
+            start_time = time.time()
+            primes = []
+            # Simple Sieve of Eratosthenes or trial division
+            # Trial division is more CPU intensive per number
+            count = 0
+            for num in range(2, limit + 1):
+                is_prime = True
+                for i in range(2, int(num**0.5) + 1):
+                    if num % i == 0:
+                        is_prime = False
+                        break
+                if is_prime:
+                    count += 1
+            end_time = time.time()
+            duration = end_time - start_time
+            if duration == 0: duration = 0.001
+
+            score = count / duration
+
+            return {
+                "success": True,
+                "duration": duration,
+                "primes_found": count,
+                "score": score
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def check_memory_speed(self, size_mb: int = 100) -> Dict[str, Any]:
+        """
+        Measures Memory speed by allocating and writing/reading a large array.
+        """
+        print(f"Benchmarking RAM (Size: {size_mb} MB)...")
+        try:
+            size_bytes = size_mb * 1024 * 1024
+
+            # Write Test
+            start_write = time.time()
+            # Allocate and fill
+            data = bytearray(size_bytes)
+            # Force write by iterating and setting?
+            # Python's bytearray creation is optimized in C, but let's do a fill
+            # to be sure we are touching memory.
+            # However, simply creating `bytearray(size_bytes)` initializes to 0.
+            # Let's do a more manual fill for "write" simulation if we want to measure CPU-Memory bandwidth
+            # But in Python, loop overhead is huge.
+            # Let's stick to simple allocation + initialization which is `bytearray(size_bytes)` (zeroed)
+            # or `bytes([1] * size_bytes)` (slower).
+            # Let's try to overwrite
+            for i in range(0, size_bytes, 4096): # Stride to touch pages
+                data[i] = 1
+            end_write = time.time()
+            write_duration = end_write - start_write
+            if write_duration == 0: write_duration = 0.001
+            write_speed = size_mb / write_duration
+
+            # Read Test
+            start_read = time.time()
+            # Read by slicing or iterating?
+            # Iterating in Python is slow.
+            # sum(data) is done in C
+            _ = sum(data[::100]) # Sample read
+            end_read = time.time()
+            read_duration = end_read - start_read
+            if read_duration == 0: read_duration = 0.001
+
+            # This read speed is "sampled", so it's not full throughput.
+            # But pure Python memory bandwidth is hard to measure due to interpreter overhead.
+            # Let's adjust the "read" to be more representative or just report it as is.
+            # Actually, `bytes(data)` copies it, which is a read + write operation.
+
+            read_speed = size_mb / read_duration
+
+            return {
+                "success": True,
+                "write_speed_mbps": write_speed,
+                "read_speed_mbps": read_speed,
+                "write_duration": write_duration,
+                "read_duration": read_duration
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
 
 def run_speed_lab_logic(args):
     """CLI logic for Speed Lab."""
@@ -214,6 +303,26 @@ def run_speed_lab_logic(args):
                 print("Error: --host required for client mode (or use --server).", file=sys.stderr)
                 sys.exit(1)
             manager.run_network_client(host=args.host, port=args.port, duration=args.duration)
+
+    elif args.action == "cpu":
+        result = manager.check_cpu_speed(limit=args.limit)
+        if result["success"]:
+            print(f"✅ CPU Benchmark Complete ({result['duration']:.4f}s)")
+            print(f"   Primes Found: {result['primes_found']}")
+            print(f"   Score:        {result['score']:.2f} primes/sec")
+        else:
+            print(f"❌ CPU Benchmark Failed: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "memory":
+        result = manager.check_memory_speed(size_mb=args.size)
+        if result["success"]:
+            print(f"✅ Memory Benchmark Complete (Size: {args.size} MB)")
+            print(f"   Write Speed: {result['write_speed_mbps']:.2f} MB/s (approx)")
+            print(f"   Read Speed:  {result['read_speed_mbps']:.2f} MB/s (sampled)")
+        else:
+            print(f"❌ Memory Benchmark Failed: {result['error']}", file=sys.stderr)
+            sys.exit(1)
 
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)

@@ -73,5 +73,23 @@ class TestSpeedLabManager(unittest.TestCase):
         # Verify sendall called
         self.assertTrue(mock_socket.sendall.called)
 
+    def test_check_cpu_speed(self):
+        # Use a small limit for fast testing
+        result = self.manager.check_cpu_speed(limit=100)
+        self.assertTrue(result['success'])
+        self.assertGreater(result['duration'], 0)
+        # Primes up to 100: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 (25 primes)
+        self.assertEqual(result['primes_found'], 25)
+        self.assertGreater(result['score'], 0)
+
+    def test_check_memory_speed(self):
+        # Use a small size for fast testing (1MB)
+        result = self.manager.check_memory_speed(size_mb=1)
+        self.assertTrue(result['success'])
+        self.assertGreater(result['write_speed_mbps'], 0)
+        self.assertGreater(result['read_speed_mbps'], 0)
+        self.assertGreater(result['write_duration'], 0)
+        self.assertGreater(result['read_duration'], 0)
+
 if __name__ == '__main__':
     unittest.main()

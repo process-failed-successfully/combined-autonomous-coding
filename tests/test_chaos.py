@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch, ANY
 from pathlib import Path
-from shared.chaos import ChaosManager, ProcessKiller, FileJitter, ChaosExperiment
+from shared.chaos import ChaosManager, KillProcessExperiment, FileJitterExperiment, ChaosExperiment
 
 class TestChaosManager(unittest.TestCase):
     def setUp(self):
@@ -13,7 +13,7 @@ class TestChaosManager(unittest.TestCase):
         self.assertTrue("file-jitter" in self.manager.experiments)
 
     @patch("builtins.input", return_value="y")
-    @patch.object(ProcessKiller, "run", return_value=True)
+    @patch.object(KillProcessExperiment, "run", return_value=True)
     def test_run_valid_experiment(self, mock_run, mock_input):
         result = self.manager.run("kill-process")
         self.assertTrue(result)
@@ -28,10 +28,10 @@ class TestChaosManager(unittest.TestCase):
         result = self.manager.run("invalid-exp")
         self.assertFalse(result)
 
-class TestProcessKiller(unittest.TestCase):
+class TestKillProcessExperiment(unittest.TestCase):
     def setUp(self):
         self.project_dir = Path("/app")
-        self.killer = ProcessKiller(self.project_dir)
+        self.killer = KillProcessExperiment(self.project_dir)
 
     @patch("psutil.process_iter")
     @patch("os.getpid", return_value=9999)
@@ -76,10 +76,10 @@ class TestProcessKiller(unittest.TestCase):
             self.assertTrue(result)
             p1.terminate.assert_not_called()
 
-class TestFileJitter(unittest.TestCase):
+class TestFileJitterExperiment(unittest.TestCase):
     def setUp(self):
         self.project_dir = Path("/app")
-        self.jitter = FileJitter(self.project_dir)
+        self.jitter = FileJitterExperiment(self.project_dir)
 
     @patch("os.walk")
     def test_run_touches_file(self, mock_walk):

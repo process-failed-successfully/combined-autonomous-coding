@@ -67,6 +67,22 @@ class DiffLabManager:
         else:
             self._compare_text(file1, file2)
 
+    def get_text_diff(self, lines1: List[str], lines2: List[str], fromfile: str = "a", tofile: str = "b") -> List[str]:
+        """
+        Returns unified diff lines.
+        """
+        return list(difflib.unified_diff(
+            lines1, lines2,
+            fromfile=fromfile,
+            tofile=tofile
+        ))
+
+    def get_structure_diff(self, d1: Any, d2: Any) -> List[Dict]:
+        """
+        Returns a list of structural differences.
+        """
+        return self._diff_recursive(d1, d2)
+
     def _compare_text(self, file1: Path, file2: Path):
         """
         Standard text comparison using difflib.
@@ -80,11 +96,7 @@ class DiffLabManager:
             print(f"Error reading files: {e}")
             return
 
-        diff = list(difflib.unified_diff(
-            lines1, lines2,
-            fromfile=str(file1),
-            tofile=str(file2)
-        ))
+        diff = self.get_text_diff(lines1, lines2, str(file1), str(file2))
 
         if not diff:
             print("✅ Files are identical.")
@@ -137,7 +149,7 @@ class DiffLabManager:
         """
         Recursive semantic comparison.
         """
-        diffs = self._diff_recursive(data1, data2)
+        diffs = self.get_structure_diff(data1, data2)
 
         if not diffs:
             print("✅ Structures are semantically identical.")

@@ -8,7 +8,7 @@ import tempfile
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, RichLog, DataTable, Input, Select, TabbedContent
+from textual.widgets import Label, Button, RichLog, DataTable, Input, Select, TabbedContent, TextArea
 from textual.containers import Container
 from shared.tui import AgentTUI, DatabaseTab
 
@@ -51,21 +51,21 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(db_tab)
 
             # Check for buttons
-            self.assertTrue(db_tab.query_one("#btn-db-detect", Button))
-            self.assertTrue(db_tab.query_one("#btn-db-execute", Button))
+            self.assertTrue(db_tab.query_one("#btn-db-connect", Button))
+            self.assertTrue(db_tab.query_one("#btn-db-run", Button))
 
             # Check for inputs
-            self.assertTrue(db_tab.query_one("#input-db-query", Input))
-            self.assertTrue(db_tab.query_one("#select-query-mode", Select))
+            self.assertTrue(db_tab.query_one("#input-db-query", TextArea))
+            self.assertTrue(db_tab.query_one("#sel-query-mode", Select))
 
             # Check for log and table
-            self.assertTrue(db_tab.query_one("#db-schema-view", RichLog))
+            self.assertTrue(db_tab.query_one("#db-log", RichLog))
             self.assertTrue(db_tab.query_one("#db-results-table", DataTable))
 
-    @patch("shared.tui.get_schema_info")
-    async def test_detect_db(self, mock_get_info):
+    @patch("shared.tui_database.detect_connection_string")
+    async def test_detect_db(self, mock_detect):
         """Test DB detection logic."""
-        mock_get_info.return_value = ("CREATE TABLE t1...", Path("test.db"))
+        mock_detect.return_value = "sqlite:///test.db"
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test(size=(120, 40)) as pilot:
@@ -77,19 +77,24 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
             db_tab = app.query_one(DatabaseTab)
 
             # Click detect button
-            await pilot.click("#btn-db-detect")
+            await pilot.click("#btn-db-connect")
             await pilot.pause() # Wait for event handling
 
             # Check updates
-            lbl = db_tab.query_one("#lbl-db-status", Label)
-            self.assertIn("Connected", str(lbl.render()))
+            lbl = db_tab.query_one("#lbl-db-conn", Label)
+            self.assertIn("Connected", str(lbl.renderable))
 
-    @patch("shared.tui.execute_sqlite")
-    @patch("shared.tui.get_schema_info")
-    async def test_execute_sql(self, mock_get_info, mock_execute):
+    @patch("shared.tui_database.SqlLabManager")
+    @patch("shared.tui_database.detect_connection_string")
+    async def test_execute_sql(self, mock_detect, MockSqlLabManager):
         """Test SQL execution."""
-        mock_get_info.return_value = ("SCHEMA", Path("test.db"))
-        mock_execute.return_value = (["id"], [(1,)], 1)
+        mock_detect.return_value = "sqlite:///test.db"
+
+        # Setup mock manager instance
+        mock_manager = MockSqlLabManager.return_value
+        mock_manager.execute_query.return_value = {"success": True, "columns": ["id"], "rows": [{"id": 1}]}
+        # Mock list_tables to avoid issues during connection
+        mock_manager.list_tables.return_value = []
 
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test(size=(120, 40)) as pilot:
@@ -101,32 +106,41 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
             db_tab = app.query_one(DatabaseTab)
 
             # Detect DB first
-            await pilot.click("#btn-db-detect")
+            await pilot.click("#btn-db-connect")
             await pilot.pause()
 
             # Ensure SQL mode
-            mode_select = db_tab.query_one("#select-query-mode", Select)
+            mode_select = db_tab.query_one("#sel-query-mode", Select)
             mode_select.value = "SQL"
 
             # Enter query
-            inp = db_tab.query_one("#input-db-query", Input)
-            inp.value = "SELECT 1"
+            inp = db_tab.query_one("#input-db-query", TextArea)
+            inp.text = "SELECT 1"
 
             # Execute
-            await pilot.click("#btn-db-execute")
+            await pilot.click("#btn-db-run")
             await pilot.pause() # Wait for execution
 
-            mock_execute.assert_called_with(Path("test.db"), "SELECT 1")
+            # Check call
+            mock_manager.execute_query.assert_called_with("SELECT 1")
 
-            # Check status
-            status = db_tab.query_one("#lbl-query-status", Label)
-            self.assertIn("Returned 1 rows", str(status.render()))
+            # Check log
+            log = db_tab.query_one("#db-log", RichLog)
+            # RichLog lines are list of Segments or similar, convert to str
+            # Actually RichLog.lines is not directly accessible like that in all versions?
+            # It's better to check if 'Success' text was written.
+            # But RichLog stores lines internally.
+            # We can check if `write` was called on it if we mock it, OR just assume it works if no error.
+            # However, we are running full integration test.
+            # We can check if the DataTable has columns.
+            table = db_tab.query_one("#db-results-table", DataTable)
+            self.assertEqual(len(table.columns), 1)
 
-    @patch("shared.tui.generate_sql")
-    @patch("shared.tui.get_schema_info")
-    async def test_generate_sql_safety(self, mock_get_info, mock_generate):
+    @patch("shared.tui_database.generate_sql")
+    @patch("shared.tui_database.detect_connection_string")
+    async def test_generate_sql_safety(self, mock_detect, mock_generate):
         """Test that generating SQL populates input but does not execute."""
-        mock_get_info.return_value = ("SCHEMA", Path("test.db"))
+        mock_detect.return_value = "sqlite:///test.db"
         mock_generate.return_value = "SELECT * FROM safety"
 
         app = AgentTUI(project_dir=self.project_dir)
@@ -136,28 +150,25 @@ class TestTUIDatabase(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             db_tab = app.query_one(DatabaseTab)
-            await pilot.click("#btn-db-detect")
+            await pilot.click("#btn-db-connect")
             await pilot.pause()
 
-            # Switch to Natural Language
-            mode_select = db_tab.query_one("#select-query-mode", Select)
-            mode_select.value = "Natural Language"
+            # Switch to AI
+            mode_select = db_tab.query_one("#sel-query-mode", Select)
+            mode_select.value = "AI"
 
             # Enter query
-            inp = db_tab.query_one("#input-db-query", Input)
-            inp.value = "Show me safety"
+            inp = db_tab.query_one("#input-db-query", TextArea)
+            inp.text = "Show me safety"
 
             # Execute (Generate)
-            await pilot.click("#btn-db-execute")
+            await pilot.click("#btn-db-run")
             await pilot.pause()
 
             # Verify input updated
-            self.assertEqual(inp.value, "SELECT * FROM safety")
+            self.assertEqual(inp.text, "SELECT * FROM safety")
             # Verify mode switched back to SQL
             self.assertEqual(mode_select.value, "SQL")
-            # Verify status
-            status = db_tab.query_one("#lbl-query-status", Label)
-            self.assertIn("Ready to execute", str(status.render()))
 
 if __name__ == "__main__":
     unittest.main()

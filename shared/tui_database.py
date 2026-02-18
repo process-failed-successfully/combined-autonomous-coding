@@ -36,6 +36,7 @@ class DatabaseTab(Container):
                 # Query Controls
                 with Horizontal(classes="stat-box", id="db-query-controls"):
                     yield Select.from_values(["SQL", "AI"], id="sel-query-mode", value="SQL")
+                    yield Select.from_values(["gemini", "cursor", "local"], id="sel-db-agent", value="gemini")
                     yield Button("Execute", id="btn-db-run", variant="success")
                     yield Button("Clear", id="btn-db-clear", variant="default")
 
@@ -104,8 +105,15 @@ class DatabaseTab(Container):
         if not event.item or not hasattr(event.item, "name") or not event.item.name:
             return
 
-        # When table is clicked, generate a SELECT * query
         table_name = event.item.name
+
+        # Validate table name against known tables to prevent injection risks
+        known_tables = self.manager.list_tables() if self.manager else []
+        if table_name not in known_tables:
+            self.notify("Invalid table selected.", severity="error")
+            return
+
+        # When table is clicked, generate a SELECT * query
         query = f"SELECT * FROM {table_name} LIMIT 100"
 
         self.query_one("#sel-query-mode", Select).value = "SQL"
@@ -130,10 +138,9 @@ class DatabaseTab(Container):
         # Handle AI Mode
         if mode == "AI":
             log.write("[bold yellow]Generating SQL with AI...[/bold yellow]")
+            agent_type = self.query_one("#sel-db-agent", Select).value or "gemini"
             try:
-                # Use generate_sql from shared.db_query
-                # We need to adapt it slightly or ensure it works with what we have
-                sql = await generate_sql(query, self.current_schema, self.project_dir)
+                sql = await generate_sql(query, self.current_schema, self.project_dir, agent_type=agent_type)
                 if sql.startswith("ERROR:"):
                     log.write(f"[red]{sql}[/red]")
                     return

@@ -109,6 +109,8 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
         query_input.text = "Show me users"
         mode_select = MagicMock()
         mode_select.value = "AI"
+        agent_select = MagicMock()
+        agent_select.value = "gemini"
         log = MagicMock()
         lbl_conn = MagicMock()
         list_view = MagicMock()
@@ -118,6 +120,7 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
         tab.query_one.side_effect = lambda selector, type=None: {
             "#input-db-query": query_input,
             "#sel-query-mode": mode_select,
+            "#sel-db-agent": agent_select,
             "#db-log": log,
             "#lbl-db-conn": lbl_conn,
             "#db-table-list": list_view,
@@ -132,6 +135,10 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
 
         # Verify
         mock_generate_sql.assert_called()
+        # Verify call args
+        args, kwargs = mock_generate_sql.call_args
+        self.assertEqual(kwargs.get('agent_type'), 'gemini')
+
         self.assertEqual(query_input.text, "SELECT * FROM generated")
         self.assertEqual(mode_select.value, "SQL")
 

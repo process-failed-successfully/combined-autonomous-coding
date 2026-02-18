@@ -26,7 +26,7 @@ class StaticLabHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         else:
-            super().do_OPTIONS()
+            self.send_error(501, "Unsupported method ('OPTIONS')")
 
     def do_GET(self):
         """Handle GET requests with simulated conditions."""
@@ -165,13 +165,13 @@ class StaticLabManager:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.httpd = None
+        self.httpd: Optional[http.server.ThreadingHTTPServer] = None
         self.thread = None
 
     def run(self):
         """Starts the server (blocking)."""
         port = self.config.get("port", 8000)
-        host = self.config.get("host", "0.0.0.0")
+        host = self.config.get("host", "0.0.0.0")  # nosec B104
 
         # Factory for handler
         def handler_factory(*args, **kwargs):
@@ -201,7 +201,8 @@ class StaticLabManager:
             print("SPA Mode: Enabled")
 
         try:
-            self.httpd.serve_forever()
+            if self.httpd:
+                self.httpd.serve_forever()
         except KeyboardInterrupt:
             pass
         finally:
@@ -241,7 +242,8 @@ class StaticLabManager:
 
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(certfile=cert_path, keyfile=key_path)
-        self.httpd.socket = context.wrap_socket(self.httpd.socket, server_side=True)
+        if self.httpd:
+            self.httpd.socket = context.wrap_socket(self.httpd.socket, server_side=True)
 
     def stop(self):
         if self.httpd:

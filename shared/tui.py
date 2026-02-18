@@ -76,6 +76,7 @@ from shared.tui_bisect import BisectTab
 from shared.tui_scheduler import SchedulerTab
 from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
+from shared.tui_net_diag import NetDiagTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_conflict import ConflictTab
@@ -3965,6 +3966,8 @@ class AgentTUI(App):
                 yield CodeMapTab(self.project_dir)
             with TabPane("Network", id="tab-network"):
                 yield NetworkTab(self.project_dir)
+            with TabPane("Net Diag", id="tab-net-diag"):
+                yield NetDiagTab(self.project_dir)
             with TabPane("Snippets", id="tab-snippets"):
                 yield SnippetsTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):

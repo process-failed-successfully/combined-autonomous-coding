@@ -96,6 +96,7 @@ from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
+from shared.tui_json import JsonLabTab
 from shared.tui_database import DatabaseTab
 from shared.plugin_manager import PluginManager
 
@@ -4016,6 +4017,8 @@ class AgentTUI(App):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):
                 yield HexTab(self.project_dir)
+            with TabPane("JSON Lab", id="tab-json"):
+                yield JsonLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

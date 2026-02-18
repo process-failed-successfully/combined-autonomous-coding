@@ -1,9 +1,9 @@
 import json
 import sys
-import re
-from typing import Any, List, Optional, Union, Dict
+from typing import Any, List, Union
 from pathlib import Path
 import difflib
+
 
 class JsonLabManager:
     """
@@ -30,40 +30,32 @@ class JsonLabManager:
 
     def _parse_path(self, path: str) -> List[Union[str, int]]:
         """Parses a path string into keys and indices."""
-        # Split by dot, but handle brackets
-        # Simple regex to split by dot or brackets
-        # e.g. "a.b[0].c" -> ["a", "b", "0", "c"]
-        # This regex matches:
-        # 1. Word characters (key)
-        # 2. Digits inside brackets (index)
-
-        # Strategy: replace brackets with dots temporarily or split properly
-        # a[0] -> a.0
-
         normalized = path.replace('[', '.').replace(']', '')
         parts = []
         for p in normalized.split('.'):
-            if not p: continue
+            if not p:
+                continue
             if p.isdigit():
                 parts.append(int(p))
             else:
                 parts.append(p)
         return parts
 
-    def get(self, data: Any, path: str) -> Any:
+    def get(self, data: Any, path: Union[str, List[Union[str, int]]]) -> Any:
         """Retrieves a value at the specified path."""
         if not path:
             return data
 
-        keys = self._parse_path(path)
+        keys = self._parse_path(path) if isinstance(path, str) else path
         current = data
 
         for key in keys:
             if isinstance(current, dict):
                 if str(key) in current:
                     current = current[str(key)]
-                elif isinstance(key, int) and key in current: # integer key in dict
-                     current = current[key]
+                elif isinstance(key, int) and key in current:
+                    # integer key in dict
+                    current = current[key]
                 else:
                     return None
             elif isinstance(current, list):
@@ -76,19 +68,19 @@ class JsonLabManager:
 
         return current
 
-    def set(self, data: Any, path: str, value: Any) -> Any:
+    def set(self, data: Any, path: Union[str, List[Union[str, int]]], value: Any) -> Any:
         """Sets a value at the specified path (in-place modification)."""
         if not path:
-            return value # Replaces root
+            return value  # Replaces root
 
-        keys = self._parse_path(path)
+        keys = self._parse_path(path) if isinstance(path, str) else path
         current = data
 
         for i, key in enumerate(keys[:-1]):
             if isinstance(current, dict):
                 if str(key) not in current:
                     # Look ahead to see if next key is int -> create list, else dict
-                    next_key = keys[i+1]
+                    next_key = keys[i + 1]
                     if isinstance(next_key, int):
                         current[str(key)] = []
                     else:
@@ -101,11 +93,11 @@ class JsonLabManager:
                         # We need to append a new container.
                         # Check next key to decide type
                         if i + 1 < len(keys):
-                             next_key = keys[i+1]
-                             if isinstance(next_key, int):
-                                 current.append([])
-                             else:
-                                 current.append({})
+                            next_key = keys[i + 1]
+                            if isinstance(next_key, int):
+                                current.append([])
+                            else:
+                                current.append({})
                         current = current[key]
                     elif 0 <= key < len(current):
                         current = current[key]
@@ -121,25 +113,25 @@ class JsonLabManager:
             current[str(last_key)] = value
         elif isinstance(current, list):
             if isinstance(last_key, int):
-                 if 0 <= last_key < len(current):
-                     current[last_key] = value
-                 elif last_key == len(current):
-                     current.append(value)
-                 else:
-                     raise IndexError(f"List index {last_key} out of range")
+                if 0 <= last_key < len(current):
+                    current[last_key] = value
+                elif last_key == len(current):
+                    current.append(value)
+                else:
+                    raise IndexError(f"List index {last_key} out of range")
             else:
                 raise TypeError(f"Cannot access list with string key '{last_key}'")
         else:
-             raise TypeError(f"Cannot set property on non-container type")
+            raise TypeError("Cannot set property on non-container type")
 
         return data
 
-    def delete(self, data: Any, path: str) -> Any:
+    def delete(self, data: Any, path: Union[str, List[Union[str, int]]]) -> Any:
         """Deletes a key or index at the specified path."""
         if not path:
-            return None # Delete root?
+            return None  # Delete root?
 
-        keys = self._parse_path(path)
+        keys = self._parse_path(path) if isinstance(path, str) else path
         current = data
 
         for i, key in enumerate(keys[:-1]):
@@ -147,7 +139,7 @@ class JsonLabManager:
                 if str(key) in current:
                     current = current[str(key)]
                 else:
-                    return data # Key not found, nothing to delete
+                    return data  # Key not found, nothing to delete
             elif isinstance(current, list):
                 if isinstance(key, int) and 0 <= key < len(current):
                     current = current[key]
@@ -185,6 +177,7 @@ class JsonLabManager:
         )
         return "\n".join(diff)
 
+
 def run_json_lab_logic(args):
     """CLI Entry point for Json Lab."""
     manager = JsonLabManager()
@@ -210,8 +203,8 @@ def run_json_lab_logic(args):
             val = args.value
             try:
                 val = json.loads(args.value)
-            except:
-                pass # Keep as string
+            except Exception:
+                pass  # Keep as string
 
             result = manager.set(data, args.path, val)
             print(json.dumps(result, indent=2))
@@ -248,7 +241,7 @@ def run_json_lab_logic(args):
             diff = manager.diff(data1, data2)
             if diff:
                 print(diff)
-                sys.exit(1) # Exit 1 if difference found (like diff command)
+                sys.exit(1)  # Exit 1 if difference found (like diff command)
             else:
                 sys.exit(0)
         except Exception as e:

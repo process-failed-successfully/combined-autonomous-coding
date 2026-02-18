@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from shared.tui_database import DatabaseTab
+
 
 class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
     @patch("shared.tui_database.detect_connection_string")
@@ -17,7 +18,7 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
         tab = DatabaseTab(Path("."))
 
         # Mock UI elements
-        tab.query_one = MagicMock()
+        tab.query_one = MagicMock()  # type: ignore[method-assign]
         lbl_conn = MagicMock()
         list_view = MagicMock()
         tab.query_one.side_effect = lambda selector, type=None: {
@@ -63,7 +64,7 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
         lbl_conn = MagicMock()
         list_view = MagicMock()
 
-        tab.query_one = MagicMock()
+        tab.query_one = MagicMock()  # type: ignore[method-assign]
         tab.query_one.side_effect = lambda selector, type=None: {
             "#input-db-query": query_input,
             "#sel-query-mode": mode_select,
@@ -116,7 +117,7 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
         list_view = MagicMock()
         table = MagicMock()
 
-        tab.query_one = MagicMock()
+        tab.query_one = MagicMock()  # type: ignore[method-assign]
         tab.query_one.side_effect = lambda selector, type=None: {
             "#input-db-query": query_input,
             "#sel-query-mode": mode_select,
@@ -144,6 +145,7 @@ class TestDatabaseTab(unittest.IsolatedAsyncioTestCase):
 
         # Expect execution
         mock_manager_instance.execute_query.assert_called_with("SELECT * FROM generated")
+
 
 if __name__ == "__main__":
     unittest.main()

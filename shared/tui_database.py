@@ -2,11 +2,12 @@ from pathlib import Path
 import asyncio
 from typing import Optional, List
 from textual.app import ComposeResult
-from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Input, Select, RichLog
+from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Select, RichLog
 from textual.containers import Container, Horizontal, Vertical
 from textual import on
 from shared.sql_lab import SqlLabManager, detect_connection_string
 from shared.db_query import generate_sql
+
 
 class DatabaseTab(Container):
     """
@@ -139,7 +140,8 @@ class DatabaseTab(Container):
         # Handle AI Mode
         if mode == "AI":
             log.write("[bold yellow]Generating SQL with AI...[/bold yellow]")
-            agent_type = self.query_one("#sel-db-agent", Select).value or "gemini"
+            agent_val = self.query_one("#sel-db-agent", Select).value
+            agent_type = str(agent_val) if agent_val and agent_val != Select.BLANK else "gemini"
             try:
                 sql = await generate_sql(query, self.current_schema, self.project_dir, agent_type=agent_type)
                 if sql.startswith("ERROR:"):

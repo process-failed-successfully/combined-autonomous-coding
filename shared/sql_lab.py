@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from rich.console import Console
 from rich.table import Table
 
+
 class SqlLabManager:
     """
     Manages direct SQL execution and schema inspection.
@@ -103,8 +104,8 @@ class SqlLabManager:
             return False
 
         if "rows" not in result:
-             print("Query returned no rows to export.", file=sys.stderr)
-             return False
+            print("Query returned no rows to export.", file=sys.stderr)
+            return False
 
         rows = result["rows"]
         columns = result["columns"]
@@ -127,6 +128,7 @@ class SqlLabManager:
         except IOError as e:
             print(f"Error writing file: {e}", file=sys.stderr)
             return False
+
 
 def detect_connection_string(project_dir: Path) -> str:
     """
@@ -151,6 +153,7 @@ def detect_connection_string(project_dir: Path) -> str:
 
     # Default fallback
     return f"sqlite:///{project_dir}/agent_lab.db"
+
 
 def run_sql_lab_logic(args):
     """
@@ -199,22 +202,22 @@ def run_sql_lab_logic(args):
     elif args.action == "schema":
         schema = manager.get_schema(args.table)
         if schema:
-            for table, columns in schema.items():
-                print(f"\nTable: {table}")
-                t = Table(show_header=True)
-                t.add_column("Column")
-                t.add_column("Type")
-                t.add_column("Nullable")
-                t.add_column("Default")
+            for table_name, columns in schema.items():
+                print(f"\nTable: {table_name}")
+                schema_table = Table(show_header=True)
+                schema_table.add_column("Column")
+                schema_table.add_column("Type")
+                schema_table.add_column("Nullable")
+                schema_table.add_column("Default")
 
                 for col in columns:
-                    t.add_row(
+                    schema_table.add_row(
                         col["name"],
                         col["type"],
                         str(col["nullable"]),
                         str(col["default"])
                     )
-                manager.console.print(t)
+                manager.console.print(schema_table)
         else:
             print("Schema information not found.")
 

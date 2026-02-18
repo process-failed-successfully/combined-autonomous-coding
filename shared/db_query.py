@@ -8,7 +8,6 @@ Logic for the 'db query' command to query the database using natural language.
 import sys
 import logging
 import sqlite3
-import subprocess
 from pathlib import Path
 from typing import Optional, Tuple, List, Any
 
@@ -20,6 +19,7 @@ from agents.openrouter import OpenRouterAgent
 from shared.database_manager import DatabaseManager, DatabaseFramework
 
 logger = logging.getLogger(__name__)
+
 
 def _get_sqlite_schema(db_path: Path) -> str:
     """Extracts CREATE TABLE statements from a SQLite DB."""
@@ -33,6 +33,7 @@ def _get_sqlite_schema(db_path: Path) -> str:
         return schema
     except Exception as e:
         return f"Error reading schema: {e}"
+
 
 def is_read_only_query(sql: str) -> bool:
     """Checks if a SQL query is read-only (SELECT, PRAGMA, EXPLAIN)."""
@@ -60,10 +61,11 @@ def get_schema_info(project_dir: Path) -> Tuple[str, Optional[Path]]:
     else:
         # TODO: Support other DBs via introspection commands
         if framework == DatabaseFramework.DJANGO:
-             # Could use 'python manage.py inspectdb'
-             pass
+            # Could use 'python manage.py inspectdb'
+            pass
 
     return schema_info, db_path
+
 
 async def generate_sql(
     query: str,
@@ -82,7 +84,7 @@ async def generate_sql(
         model=model,
         verbose=verbose,
         max_iterations=1,
-        stream_output=False, # We want the SQL cleanly
+        stream_output=False,  # We want the SQL cleanly
     )
 
     agent_class_map = {
@@ -96,7 +98,7 @@ async def generate_sql(
     if not agent_class:
         raise ValueError(f"Unknown agent type: {agent_type}")
 
-    agent = agent_class(config)
+    agent = agent_class(config)  # type: ignore[abstract]
 
     prompt = f"""
 You are an expert SQL assistant.
@@ -123,7 +125,8 @@ Your task is to convert a natural language query into a valid SQL query based on
         logger.error(f"Error generating SQL: {e}")
         return f"ERROR: {e}"
 
-def execute_sqlite(db_path: Path, sql: str) -> Tuple[List[str], List[Tuple], int]:
+
+def execute_sqlite(db_path: Path, sql: str) -> Tuple[List[str], List[Tuple[Any, ...]], int]:
     """
     Executes SQL on a SQLite DB.
     Returns (columns, rows, rowcount).
@@ -147,6 +150,7 @@ def execute_sqlite(db_path: Path, sql: str) -> Tuple[List[str], List[Tuple], int
         return columns, rows, rowcount
     except Exception as e:
         raise e
+
 
 async def run_db_query_logic(
     query: str,
@@ -210,8 +214,8 @@ async def run_db_query_logic(
                 print(f"✅ Executed successfully. Rows affected: {rowcount}")
 
         except Exception as e:
-             print(f"❌ SQL Execution Error: {e}")
-             return False
+            print(f"❌ SQL Execution Error: {e}")
+            return False
     else:
         print("❌ Database connection logic for non-SQLite not fully implemented in this prototype.")
         return False

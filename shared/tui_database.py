@@ -16,9 +16,9 @@ class DatabaseTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.manager = None
-        self.connection_string = None
-        self.current_schema = ""
+        self.manager: Optional[SqlLabManager] = None
+        self.connection_string: Optional[str] = None
+        self.current_schema: str = ""
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -108,13 +108,13 @@ class DatabaseTab(Container):
         table_name = event.item.name
 
         # Validate table name against known tables to prevent injection risks
-        known_tables = self.manager.list_tables() if self.manager else []
+        known_tables: List[str] = self.manager.list_tables() if self.manager else []
         if table_name not in known_tables:
             self.notify("Invalid table selected.", severity="error")
             return
 
         # When table is clicked, generate a SELECT * query
-        query = f"SELECT * FROM {table_name} LIMIT 100"
+        query = f"SELECT * FROM {table_name} LIMIT 100"  # nosec B608
 
         self.query_one("#sel-query-mode", Select).value = "SQL"
         self.query_one("#input-db-query", TextArea).text = query

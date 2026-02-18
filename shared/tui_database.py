@@ -1,5 +1,6 @@
 from pathlib import Path
 import asyncio
+from typing import Optional, List
 from textual.app import ComposeResult
 from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Input, Select, RichLog
 from textual.containers import Container, Horizontal, Vertical

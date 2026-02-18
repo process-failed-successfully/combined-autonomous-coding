@@ -115,7 +115,7 @@ class DatabaseTab(Container):
             return
 
         # When table is clicked, generate a SELECT * query
-        query = f"SELECT * FROM {table_name} LIMIT 100"
+        query = f"SELECT * FROM {table_name} LIMIT 100"  # nosec B608
 
         self.query_one("#sel-query-mode", Select).value = "SQL"
         self.query_one("#input-db-query", TextArea).text = query

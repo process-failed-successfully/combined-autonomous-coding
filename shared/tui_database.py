@@ -106,7 +106,14 @@ class DatabaseTab(Container):
 
         # When table is clicked, generate a SELECT * query
         table_name = event.item.name
-        query = f"SELECT * FROM {table_name} LIMIT 100"
+
+        # Validate table name against schema to prevent injection
+        known_tables = self.manager.list_tables() if self.manager else []
+        if table_name not in known_tables:
+            self.notify(f"Invalid table: {table_name}", severity="error")
+            return
+
+        query = f"SELECT * FROM {table_name} LIMIT 100"  # nosec B608
 
         self.query_one("#sel-query-mode", Select).value = "SQL"
         self.query_one("#input-db-query", TextArea).text = query

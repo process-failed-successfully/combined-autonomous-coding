@@ -144,6 +144,7 @@ from shared.grpc_lab import run_grpc_lab_logic
 from shared.monitor_lab import run_monitor_lab_logic
 from shared.trace_lab import run_trace_lab_logic
 from shared.fuzz_lab import run_fuzz_lab_logic
+from shared.static_lab import run_static_lab_logic
 import json
 import yaml
 import platformdirs
@@ -215,7 +216,8 @@ KNOWN_COMMANDS = [
     "grpc-lab", "grpc",
     "monitor-lab", "monitor", "mon",
     "trace-lab", "trace",
-    "fuzz-lab", "fuzz"
+    "fuzz-lab", "fuzz",
+    "static-lab", "static", "serve-static"
 ]
 
 if FileSystemEventHandler:
@@ -13399,6 +13401,22 @@ def parse_args(argv=None):
     parser_fuzz_func.add_argument("target", help="Function target (e.g. 'shared/utils.py:format_date').")
     parser_fuzz_func.add_argument("--count", "-c", type=int, default=100, help="Number of iterations.")
 
+    # --- New 'static-lab' command ---
+    parser_static = subparsers.add_parser(
+        "static-lab",
+        aliases=["static", "serve-static"],
+        help="Advanced static file server with testing capabilities."
+    )
+    parser_static.add_argument("--port", "-p", type=int, default=8000, help="Port to listen on.")
+    parser_static.add_argument("--dir", "-d", default=".", help="Directory to serve.")
+    parser_static.add_argument("--cors", action="store_true", help="Enable CORS.")
+    parser_static.add_argument("--delay", type=float, default=0, help="Artificial latency in seconds.")
+    parser_static.add_argument("--error-rate", type=float, default=0, help="Probability of returning 500 errors (0.0-1.0).")
+    parser_static.add_argument("--auth", help="Basic Auth credentials (user:pass).")
+    parser_static.add_argument("--upload", help="Directory to allow file uploads to.")
+    parser_static.add_argument("--spa", action="store_true", help="Enable SPA mode (rewrite 404 to index.html).")
+    parser_static.add_argument("--ssl", action="store_true", help="Enable HTTPS (self-signed).")
+
 
     # --- Plugin Registration ---
     try:
@@ -16807,6 +16825,10 @@ async def main():
 
     if args.command in ["fuzz-lab", "fuzz"]:
         run_fuzz_lab(args)
+        return
+
+    if args.command in ["static-lab", "static", "serve-static"]:
+        run_static_lab_logic(args)
         return
 
     if args.command in ["github-lab", "github", "gh"]:

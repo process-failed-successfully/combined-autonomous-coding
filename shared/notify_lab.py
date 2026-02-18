@@ -1,14 +1,14 @@
 import sys
-import subprocess
+import subprocess  # nosec B404
 import requests
 import platform
 import shutil
-from typing import Optional, List, Dict
-from pathlib import Path
+from typing import Optional
 from rich.console import Console
 from shared.config_loader import load_config_from_file
 
 console = Console()
+
 
 class NotifyLabManager:
     """
@@ -30,35 +30,31 @@ class NotifyLabManager:
 
         try:
             if system == "linux":
-                if shutil.which("notify-send"):
-                    subprocess.run(["notify-send", title, message], check=True)
+                notify_send = shutil.which("notify-send")
+                if notify_send:
+                    subprocess.run([notify_send, title, message], check=True)  # nosec B603
                     return True
                 else:
                     console.print("[yellow]notify-send not found. Desktop notifications disabled.[/yellow]")
 
-            elif system == "darwin": # macOS
-                # Escape quotes for AppleScript
-                safe_msg = message.replace('"', '\\"')
-                safe_title = title.replace('"', '\\"')
-                script = f'display notification "{safe_msg}" with title "{safe_title}"'
-                subprocess.run(["osascript", "-e", script], check=True)
-                return True
+            elif system == "darwin":  # macOS
+                osascript = shutil.which("osascript")
+                if osascript:
+                    # Escape quotes for AppleScript
+                    safe_msg = message.replace('"', '\\"')
+                    safe_title = title.replace('"', '\\"')
+                    script = f'display notification "{safe_msg}" with title "{safe_title}"'
+                    subprocess.run([osascript, "-e", script], check=True)  # nosec B603
+                    return True
+                else:
+                    console.print("[yellow]osascript not found. Desktop notifications disabled.[/yellow]")
 
             elif system == "windows":
                 # Try PowerShell
                 # Requires >= Windows 10 for BurntToast or custom script using System.Windows.Forms
                 # Simple msg * "message" works on some versions but is modal
                 # Let's try a simple PowerShell balloon tip script
-                ps_script = f"""
-                [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
-                $objNotifyIcon = New-Object System.Windows.Forms.NotifyIcon
-                $objNotifyIcon.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Get-Process -id $pid).Path)
-                $objNotifyIcon.BalloonTipIcon = "Info"
-                $objNotifyIcon.BalloonTipText = "{message}"
-                $objNotifyIcon.BalloonTipTitle = "{title}"
-                $objNotifyIcon.Visible = $True
-                $objNotifyIcon.ShowBalloonTip(10000)
-                """
+                # ps_script = ... (removed unused variable)
                 # This might be too heavy and requires non-headless execution.
                 # Just warn for now.
                 console.print("[yellow]Windows desktop notifications not fully supported yet.[/yellow]")
@@ -104,6 +100,7 @@ class NotifyLabManager:
         except Exception as e:
             console.print(f"[red]Failed to send Discord notification: {e}[/red]")
             return False
+
 
 def run_notify_lab_logic(args):
     """

@@ -19,7 +19,7 @@ class LoadLabManager:
             print("Error: aiohttp is required for load-lab. Please install it with 'pip install aiohttp'.", file=sys.stderr)
             sys.exit(1)
 
-    async def _worker(self, session: aiohttp.ClientSession, url: str, method: str,
+    async def _worker(self, session: "aiohttp.ClientSession", url: str, method: str,
                       headers: Optional[Dict[str, str]], body: Optional[str],
                       duration: int, results: List[Dict[str, Any]]):
         """

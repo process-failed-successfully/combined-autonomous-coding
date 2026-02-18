@@ -1,5 +1,6 @@
 from pathlib import Path
 import asyncio
+from typing import Optional, List
 from textual.app import ComposeResult
 from textual.widgets import Label, DataTable, Button, ListView, ListItem, TextArea, Input, Select, RichLog
 from textual.containers import Container, Horizontal, Vertical
@@ -16,9 +17,9 @@ class DatabaseTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.manager = None
-        self.connection_string = None
-        self.current_schema = ""
+        self.manager: Optional[SqlLabManager] = None
+        self.connection_string: Optional[str] = None
+        self.current_schema: str = ""
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -36,6 +37,7 @@ class DatabaseTab(Container):
                 # Query Controls
                 with Horizontal(classes="stat-box", id="db-query-controls"):
                     yield Select.from_values(["SQL", "AI"], id="sel-query-mode", value="SQL")
+                    yield Select.from_values(["gemini", "cursor", "local"], id="sel-db-agent", value="gemini")
                     yield Button("Execute", id="btn-db-run", variant="success")
                     yield Button("Clear", id="btn-db-clear", variant="default")
 
@@ -62,7 +64,9 @@ class DatabaseTab(Container):
             self.load_tables()
             # Cache schema for AI
             try:
-                self.current_schema = str(self.manager.get_schema())
+                # manager.get_schema() is synchronous in SqlLabManager
+                if self.manager:
+                    self.current_schema = str(self.manager.get_schema())
             except Exception:
                 self.current_schema = ""
         else:
@@ -104,9 +108,16 @@ class DatabaseTab(Container):
         if not event.item or not hasattr(event.item, "name") or not event.item.name:
             return
 
-        # When table is clicked, generate a SELECT * query
         table_name = event.item.name
-        query = f"SELECT * FROM {table_name} LIMIT 100"
+
+        # Validate table name against known tables to prevent injection risks
+        known_tables: List[str] = self.manager.list_tables() if self.manager else []
+        if table_name not in known_tables:
+            self.notify("Invalid table selected.", severity="error")
+            return
+
+        # When table is clicked, generate a SELECT * query
+        query = f"SELECT * FROM {table_name} LIMIT 100"  # nosec B608
 
         self.query_one("#sel-query-mode", Select).value = "SQL"
         self.query_one("#input-db-query", TextArea).text = query
@@ -130,10 +141,16 @@ class DatabaseTab(Container):
         # Handle AI Mode
         if mode == "AI":
             log.write("[bold yellow]Generating SQL with AI...[/bold yellow]")
+            val = self.query_one("#sel-db-agent", Select).value
+            agent_type = str(val) if val is not None and val != Select.BLANK else "gemini"
             try:
-                # Use generate_sql from shared.db_query
-                # We need to adapt it slightly or ensure it works with what we have
-                sql = await generate_sql(query, self.current_schema, self.project_dir)
+                # Ensure correct argument passing to generate_sql
+                sql = await generate_sql(
+                    query=query,
+                    schema_info=self.current_schema,
+                    project_dir=self.project_dir,
+                    agent_type=agent_type
+                )
                 if sql.startswith("ERROR:"):
                     log.write(f"[red]{sql}[/red]")
                     return
@@ -152,7 +169,9 @@ class DatabaseTab(Container):
         try:
             # Run in thread to allow UI updates
             def execute_safe():
-                return self.manager.execute_query(query)
+                if self.manager:
+                    return self.manager.execute_query(query)
+                return {"success": False, "error": "No manager"}
 
             result = await asyncio.to_thread(execute_safe)
 
@@ -160,7 +179,7 @@ class DatabaseTab(Container):
             table.clear(columns=True)
 
             if not result["success"]:
-                log.write(f"[bold red]Error:[/bold red] {result['error']}")
+                log.write(f"[bold red]Error:[/bold red] {result.get('error', 'Unknown error')}")
                 self.notify("Query failed.", severity="error")
                 return
 

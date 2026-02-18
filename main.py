@@ -144,6 +144,7 @@ from shared.grpc_lab import run_grpc_lab_logic
 from shared.monitor_lab import run_monitor_lab_logic
 from shared.trace_lab import run_trace_lab_logic
 from shared.fuzz_lab import run_fuzz_lab_logic
+from shared.metrics_lab import run_metrics_lab_logic
 from shared.static_lab import run_static_lab_logic
 from shared.notify_lab import run_notify_lab_logic
 from shared.contract_lab import run_contract_lab_logic
@@ -218,6 +219,7 @@ KNOWN_COMMANDS = [
     "notebook-lab", "nb",
     "grpc-lab", "grpc",
     "monitor-lab", "monitor", "mon",
+    "metrics-lab", "metrics",
     "trace-lab", "trace",
     "fuzz-lab", "fuzz",
     "static-lab", "static", "serve-static",
@@ -301,6 +303,11 @@ def run_qr_lab(args):
 def run_monitor_lab(args):
     """Runs the Monitor Lab."""
     run_monitor_lab_logic(args)
+    sys.exit(0)
+
+def run_metrics_lab(args):
+    """Runs the Metrics Lab."""
+    run_metrics_lab_logic(args)
     sys.exit(0)
 
 def run_fuzz_lab(args):
@@ -13394,6 +13401,31 @@ def parse_args(argv=None):
     parser_mon_watch.add_argument("--limit", "-n", type=int, default=20, help="Limit number of processes.")
     parser_mon_watch.add_argument("--filter", "-f", help="Filter processes by name.")
 
+    # --- New 'metrics-lab' command ---
+    parser_metrics = subparsers.add_parser(
+        "metrics-lab",
+        aliases=["metrics"],
+        help="Prometheus metrics utilities (scrape, lint, serve)."
+    )
+    metrics_subparsers = parser_metrics.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # metrics scrape
+    parser_metrics_scrape = metrics_subparsers.add_parser("scrape", help="Scrape metrics from a URL.")
+    parser_metrics_scrape.add_argument("url", help="URL to scrape.")
+    parser_metrics_scrape.add_argument("--filter", "-f", help="Filter metrics by name.")
+
+    # metrics lint
+    parser_metrics_lint = metrics_subparsers.add_parser("lint", help="Lint metrics from a URL.")
+    parser_metrics_lint.add_argument("url", help="URL to lint.")
+
+    # metrics serve
+    parser_metrics_serve = metrics_subparsers.add_parser("serve", help="Serve system metrics.")
+    parser_metrics_serve.add_argument("--port", "-p", type=int, default=8000, help="Port to listen on.")
+
     # --- New 'trace-lab' command ---
     parser_trace = subparsers.add_parser(
         "trace-lab",
@@ -16926,6 +16958,10 @@ async def main():
 
     if args.command in ["monitor-lab", "monitor", "mon"]:
         run_monitor_lab(args)
+        return
+
+    if args.command in ["metrics-lab", "metrics"]:
+        run_metrics_lab(args)
         return
 
     if args.command in ["trace-lab", "trace"]:

@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from shared.notify_lab import NotifyLabManager
 
+
 class TestNotifyLab(unittest.TestCase):
     def setUp(self):
         self.manager = NotifyLabManager(
@@ -19,18 +20,20 @@ class TestNotifyLab(unittest.TestCase):
         result = self.manager.send_desktop("Title", "Message")
 
         self.assertTrue(result)
-        mock_run.assert_called_with(["notify-send", "Title", "Message"], check=True)
+        mock_run.assert_called_with(["/usr/bin/notify-send", "Title", "Message"], check=True)
 
     @patch("platform.system")
+    @patch("shutil.which")
     @patch("subprocess.run")
-    def test_send_desktop_macos(self, mock_run, mock_system):
+    def test_send_desktop_macos(self, mock_run, mock_which, mock_system):
         mock_system.return_value = "darwin"
+        mock_which.return_value = "/usr/bin/osascript"
 
         result = self.manager.send_desktop("Title", "Message")
 
         self.assertTrue(result)
         expected_script = 'display notification "Message" with title "Title"'
-        mock_run.assert_called_with(["osascript", "-e", expected_script], check=True)
+        mock_run.assert_called_with(["/usr/bin/osascript", "-e", expected_script], check=True)
 
     @patch("requests.post")
     def test_send_slack(self, mock_post):
@@ -69,6 +72,7 @@ class TestNotifyLab(unittest.TestCase):
         result = self.manager.send_slack("Message")
 
         self.assertFalse(result)
+
 
 if __name__ == "__main__":
     unittest.main()

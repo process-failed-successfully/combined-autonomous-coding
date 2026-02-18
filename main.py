@@ -13608,6 +13608,14 @@ def parse_args(argv=None):
     parser_speed_local.add_argument("--port", type=int, default=5201, help="Port (default: 5201).")
     parser_speed_local.add_argument("--duration", type=int, default=10, help="Test duration in seconds (client mode only).")
 
+    # speed cpu
+    parser_speed_cpu = speed_subparsers.add_parser("cpu", help="Benchmark CPU performance (calculate primes).")
+    parser_speed_cpu.add_argument("--limit", type=int, default=20000, help="Upper limit for prime calculation (default: 20000).")
+
+    # speed memory
+    parser_speed_mem = speed_subparsers.add_parser("memory", aliases=["mem"], help="Benchmark RAM speed (write/read).")
+    parser_speed_mem.add_argument("--size", type=int, default=100, help="Size in MB (default: 100).")
+
 
     # --- Plugin Registration ---
     try:

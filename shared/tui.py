@@ -3792,6 +3792,7 @@ class AgentTUI(App):
     """Mission Control TUI."""
 
     CSS_PATH = "tui.css"
+    ENABLE_COMMAND_PALETTE = False
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("d", "toggle_dark", "Toggle Dark Mode"),

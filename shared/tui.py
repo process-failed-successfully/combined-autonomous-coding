@@ -95,6 +95,7 @@ from shared.tui_gantt import GanttTab
 from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
+from shared.tui_hex import HexTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4133,6 +4134,8 @@ class AgentTUI(App):
                 yield TimeLabTab()
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
+            with TabPane("Hex Lab", id="tab-hex"):
+                yield HexTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

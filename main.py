@@ -149,6 +149,7 @@ from shared.static_lab import run_static_lab_logic
 from shared.notify_lab import run_notify_lab_logic
 from shared.contract_lab import run_contract_lab_logic
 from shared.ansible_lab import run_ansible_lab_logic
+from shared.hex_lab import run_hex_lab_logic
 import json
 import yaml
 import platformdirs
@@ -225,7 +226,8 @@ KNOWN_COMMANDS = [
     "static-lab", "static", "serve-static",
     "notify-lab", "notify",
     "contract-lab", "contract",
-    "ansible-lab", "ansible"
+    "ansible-lab", "ansible",
+    "hex-lab", "hex"
 ]
 
 if FileSystemEventHandler:
@@ -328,6 +330,11 @@ def run_contract_lab(args):
 def run_ansible_lab(args):
     """Runs the Ansible Lab."""
     run_ansible_lab_logic(args)
+    sys.exit(0)
+
+def run_hex_lab(args):
+    """Runs the Hex Lab."""
+    run_hex_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13558,6 +13565,15 @@ def parse_args(argv=None):
     parser_ansible_init = ansible_subparsers.add_parser("init", help="Scaffold a new Ansible project.")
     parser_ansible_init.add_argument("name", nargs="?", help="Project name (creates a directory).")
 
+    # --- New 'hex-lab' command ---
+    parser_hex = subparsers.add_parser(
+        "hex-lab",
+        aliases=["hex"],
+        help="Interactive Hex Editor TUI."
+    )
+    # The TUI usually takes over, but we can accept a file argument to open immediately
+    parser_hex.add_argument("file", nargs="?", help="Path to file to open in Hex Editor.")
+
 
     # --- Plugin Registration ---
     try:
@@ -16978,6 +16994,10 @@ async def main():
 
     if args.command in ["ansible-lab", "ansible"]:
         run_ansible_lab(args)
+        return
+
+    if args.command in ["hex-lab", "hex"]:
+        run_hex_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

@@ -4,6 +4,7 @@ from pathlib import Path
 from textual.widgets import Input, RichLog, DataTable, Select, Label
 from shared.tui_net_diag import NetDiagTab
 
+
 class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.project_dir = Path("/tmp/test_project")
@@ -11,11 +12,11 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         with patch("shared.tui_net_diag.NetLabManager") as MockManager:
             self.tab = NetDiagTab(self.project_dir)
             self.mock_manager = MockManager.return_value
-            self.tab.manager = self.mock_manager # Ensure we control the instance
+            self.tab.manager = self.mock_manager  # Ensure we control the instance
 
         # Mock Textual UI methods
-        self.tab.notify = MagicMock()
-        self.tab.query_one = MagicMock()
+        self.tab.notify = MagicMock()  # type: ignore[method-assign]
+        self.tab.query_one = MagicMock()  # type: ignore[method-assign]
 
     async def test_run_ping(self):
         # Mock Inputs
@@ -26,11 +27,14 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#ping-host": return host_input
-            if selector == "#ping-count": return count_input
-            if selector == "#ping-log": return log
+            if selector == "#ping-host":
+                return host_input
+            if selector == "#ping-count":
+                return count_input
+            if selector == "#ping-log":
+                return log
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect  # type: ignore[attr-defined]
 
         # Mock Manager Result
         self.mock_manager.ping.return_value = True
@@ -40,8 +44,8 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
 
         # Verify
         self.mock_manager.ping.assert_called_with("example.com", 2)
-        log.write.assert_called() # Should write success message
-        self.tab.notify.assert_called_with("Ping successful.")
+        log.write.assert_called()  # Should write success message
+        self.tab.notify.assert_called_with("Ping successful.")  # type: ignore[attr-defined]
 
     async def test_run_scan(self):
         # Mock Inputs
@@ -52,11 +56,14 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         table = MagicMock(spec=DataTable)
 
         def query_side_effect(selector, type=None):
-            if selector == "#scan-host": return host_input
-            if selector == "#scan-ports": return ports_input
-            if selector == "#scan-table": return table
+            if selector == "#scan-host":
+                return host_input
+            if selector == "#scan-ports":
+                return ports_input
+            if selector == "#scan-table":
+                return table
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect  # type: ignore[attr-defined]
 
         # Mock Manager Result
         self.mock_manager.scan_ports.return_value = {80: "Open", 443: "Closed"}
@@ -84,11 +91,14 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#dns-domain": return domain_input
-            if selector == "#dns-type": return type_select
-            if selector == "#dns-log": return log
+            if selector == "#dns-domain":
+                return domain_input
+            if selector == "#dns-type":
+                return type_select
+            if selector == "#dns-log":
+                return log
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect  # type: ignore[attr-defined]
 
         # Mock Manager Result
         self.mock_manager.dns_lookup.return_value = {"A": ["1.2.3.4"]}
@@ -107,10 +117,12 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#http-url": return url_input
-            if selector == "#http-log": return log
+            if selector == "#http-url":
+                return url_input
+            if selector == "#http-log":
+                return log
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect  # type: ignore[attr-defined]
 
         # Mock Manager Result
         self.mock_manager.http_head.return_value = {"status_code": 200, "headers": {"Server": "Test"}}
@@ -128,10 +140,12 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         lbl_public = MagicMock(spec=Label)
 
         def query_side_effect(selector, type=None):
-            if selector == "#lbl-local-ip": return lbl_local
-            if selector == "#lbl-public-ip": return lbl_public
+            if selector == "#lbl-local-ip":
+                return lbl_local
+            if selector == "#lbl-public-ip":
+                return lbl_public
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect  # type: ignore[attr-defined]
 
         # Mock Manager Result
         self.mock_manager.get_ip_info.return_value = {"local_ip": "192.168.1.5", "public_ip": "8.8.8.8"}
@@ -143,6 +157,7 @@ class TestNetDiagTab(unittest.IsolatedAsyncioTestCase):
         self.mock_manager.get_ip_info.assert_called()
         lbl_local.update.assert_called()
         lbl_public.update.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

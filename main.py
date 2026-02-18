@@ -151,6 +151,7 @@ from shared.contract_lab import run_contract_lab_logic
 from shared.ansible_lab import run_ansible_lab_logic
 from shared.hex_lab import run_hex_lab_logic
 from shared.speed_lab import run_speed_lab_logic
+from shared.load_lab import run_load_lab_logic
 import json
 import yaml
 import platformdirs
@@ -229,7 +230,8 @@ KNOWN_COMMANDS = [
     "contract-lab", "contract",
     "ansible-lab", "ansible",
     "hex-lab", "hex",
-    "speed-lab", "speed"
+    "speed-lab", "speed",
+    "load-lab", "load"
 ]
 
 if FileSystemEventHandler:
@@ -342,6 +344,11 @@ def run_hex_lab(args):
 def run_speed_lab(args):
     """Runs the Speed Lab."""
     run_speed_lab_logic(args)
+    sys.exit(0)
+
+async def run_load_lab(args):
+    """Runs the Load Lab."""
+    await run_load_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13616,6 +13623,19 @@ def parse_args(argv=None):
     parser_speed_mem = speed_subparsers.add_parser("memory", aliases=["mem"], help="Benchmark RAM speed (write/read).")
     parser_speed_mem.add_argument("--size", type=int, default=100, help="Size in MB (default: 100).")
 
+    # --- New 'load-lab' command ---
+    parser_load = subparsers.add_parser(
+        "load-lab",
+        aliases=["load"],
+        help="HTTP load testing tool."
+    )
+    parser_load.add_argument("--url", required=True, help="Target URL.")
+    parser_load.add_argument("--users", "-u", type=int, default=1, help="Number of concurrent users.")
+    parser_load.add_argument("--duration", "-d", type=int, default=10, help="Duration of test in seconds.")
+    parser_load.add_argument("--method", "-m", default="GET", help="HTTP Method (GET, POST, etc).")
+    parser_load.add_argument("--body", help="Request body.")
+    parser_load.add_argument("--headers", help="Request headers (Key:Value,Key2:Value2).")
+
 
     # --- Plugin Registration ---
     try:
@@ -17044,6 +17064,10 @@ async def main():
 
     if args.command in ["speed-lab", "speed"]:
         run_speed_lab(args)
+        return
+
+    if args.command in ["load-lab", "load"]:
+        await run_load_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

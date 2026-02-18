@@ -7,11 +7,7 @@ from shared.load_lab import LoadLabManager
 
 class TestLoadLab(unittest.TestCase):
     def test_calculate_stats(self):
-        # Allow aiohttp to be missing for this test (it's not used in _calculate_stats)
-        # But we need to instantiate LoadLabManager.
-        # If aiohttp is missing, __init__ exits.
-        # So we must ensure it thinks aiohttp is present, or mock __init__.
-
+        # Mock __init__ to avoid checking for aiohttp
         with patch.object(LoadLabManager, '__init__', return_value=None):
             manager = LoadLabManager()
             results = [
@@ -37,9 +33,6 @@ class TestLoadLab(unittest.TestCase):
 
 class TestLoadLabAsync(unittest.TestCase):
     def test_run_load_test_real_time(self):
-        # We assume aiohttp IS installed in the dev environment.
-        # If not, this test will fail, which is correct.
-
         # Mock Response
         mock_response = AsyncMock()
         mock_response.status = 200
@@ -59,8 +52,12 @@ class TestLoadLabAsync(unittest.TestCase):
         mock_session_ctx.__aenter__.return_value = mock_session
         mock_session_ctx.__aexit__.return_value = None
 
-        # Patch aiohttp.ClientSession
-        with patch('shared.load_lab.aiohttp.ClientSession', return_value=mock_session_ctx):
+        # Patch aiohttp in shared.load_lab
+        # We supply a new Mock object as the 'aiohttp' module
+        with patch('shared.load_lab.aiohttp', new=MagicMock()) as mock_aiohttp:
+            # ClientSession() returns the context manager
+            mock_aiohttp.ClientSession.return_value = mock_session_ctx
+
             manager = LoadLabManager()
 
             # Run for a short duration

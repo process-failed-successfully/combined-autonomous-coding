@@ -43,11 +43,9 @@ class TestTuiDiffLab(unittest.IsolatedAsyncioTestCase):
         self.project_dir = Path("/tmp")
         self.tab = DiffLabTab(self.project_dir)
 
-        # The manager is now a Mock because shared.diff_lab is mocked
-        # But we need to make sure we can set return values on it.
-        # DiffLabTab.__init__ does self.manager = DiffLabManager()
-        # Since shared.diff_lab is a MagicMock, DiffLabManager is a MagicMock class.
-        # self.tab.manager is the instance.
+        # Explicitly overwrite manager with a MagicMock to ensure tests work
+        # regardless of import state
+        self.tab.manager = MagicMock()
 
         self.tab.query_one = MagicMock()
         self.tab.notify = MagicMock()

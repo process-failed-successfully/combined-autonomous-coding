@@ -59,6 +59,7 @@ from shared.tui_impact import ImpactTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_services import ServicesTab
+from shared.tui_proc import ProcLabTab
 from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
@@ -3893,6 +3894,8 @@ class AgentTUI(App):
                 yield TerminalTab(self.project_dir)
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
+            with TabPane("Processes", id="tab-proc"):
+                yield ProcLabTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):
                 yield DockerTab(self.project_dir)
             with TabPane("K8s", id="tab-k8s"):

@@ -1,113 +1,112 @@
-import sys
-import io
 import contextlib
+import io
 import os
 import shlex
-import yaml
+import sys
 from pathlib import Path
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, RichLog, DirectoryTree, TabbedContent, TabPane, Button, Label, Input, DataTable, Select, Markdown, ListView, ListItem, Tree, Checkbox, TextArea
-from textual.containers import Container, Horizontal, VerticalScroll, Vertical
-from textual.reactive import reactive
-from textual.screen import Screen
-from textual.binding import Binding
-from textual import on
-from rich.syntax import Syntax
 
-from shared.cli_utils import get_latest_log_file, get_workflow_stage, get_all_log_files
-from shared.knowledge import KnowledgeManager
-from shared.ask import run_ask_logic
-from shared.plan import run_plan_logic
-from shared.optimize import OptimizationManager
-from shared.database import init_db
-from shared.github_client import GitHubClient
-from shared.config_loader import load_config_from_file
-from shared.dependencies import DependencyAnalyzer, DependencyUpdater
-from shared.task_manager import TaskManager, Task
-from shared.debt import DebtCollector
-from shared.health import HealthCalculator
-from shared.security import SecurityAuditor
-from shared.code_review import run_code_review_logic
-from shared.map import scan_project, CodeNode
-from shared.git import get_git_log, get_commit_details, get_git_status, stage_file, unstage_file, commit_changes, discard_changes, pull_changes, push_branch, get_file_diff
-from shared.db_query import get_schema_info, generate_sql, execute_sqlite, is_read_only_query
-from shared.search import search_codebase
-from shared.replace import replace_in_codebase
-from shared.work_session import WorkSessionManager, Session
-from shared.troubleshoot import TroubleshootManager
-from shared.worktree import WorktreeManager
-from shared.recipes import RecipeManager
-from shared.recipe_learner import RecipeLearner
-from shared.secrets import SecretsManager
-from shared.api_lab import ApiLabManager
+import yaml
+from rich.syntax import Syntax
+from textual import on
+from textual.app import App, ComposeResult
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.widgets import (Button, Checkbox, DataTable, DirectoryTree,
+                             Footer, Header, Input, Label, ListItem, ListView,
+                             Markdown, RichLog, Select, TabbedContent, TabPane,
+                             TextArea, Tree)
+
 from shared.api_collections import ApiCollectionManager
-from shared.playground import PlaygroundManager
-from shared.release import get_latest_tag, get_commits_since_tag, determine_next_version, generate_changelog, perform_release, parse_current_version
-from shared.timeline import TimelineCollector, TimelineRenderer
-from shared.docstring import DocstringManager
-from shared.link_checker import LinkChecker
-from shared.openapi import OpenAPIGenerator
-from shared.cost import CostCalculator
+from shared.api_lab import ApiLabManager
+from shared.ask import run_ask_logic
 from shared.charts import draw_ascii_bar_chart
-from shared.prompt_lab import PromptLabManager
-from shared.scaffold import ScaffoldManager
-from shared.refactor import RefactorManager
-from shared.tui_security import SecurityTab
-from shared.tui_guardrails import GuardrailsTab
-from shared.tui_sentinel import SentinelTab
-from shared.tui_impact import ImpactTab
-from shared.tui_env import EnvTab
-from shared.tui_log_explorer import LogExplorerTab
-from shared.tui_services import ServicesTab
-from shared.tui_proc import ProcLabTab
-from shared.tui_system_monitor import SystemMonitorTab
-from shared.tui_docker import DockerTab
-from shared.tui_k8s import K8sTab
-from shared.tui_terraform import TerraformTab
-from shared.tui_presentation import PresentationTab
-from shared.tui_regex import RegexLabTab
-from shared.tui_git import GitTab
-from shared.tui_quiz import QuizTab
-from shared.tui_cron import CronLabTab
-from shared.tui_datalab import DataLabTab
-from shared.tui_semver import SemVerTab
-from shared.tui_logic import LogicLabTab
-from shared.tui_chaos import ChaosTab
-from shared.tui_bisect import BisectTab
-from shared.tui_scheduler import SchedulerTab
-from shared.tui_kanban import KanbanBoard
-from shared.tui_network import NetworkTab
-from shared.tui_net_diag import NetDiagTab
-from shared.tui_snippets import SnippetsTab
-from shared.tui_pull_requests import PullRequestsTab
-from shared.tui_conflict import ConflictTab
-from shared.tui_adr import ADRTab
-from shared.tui_research import ResearchTab
-from shared.tui_terminal import TerminalTab
-from shared.tui_database_diagram import DatabaseDiagramTab
-from shared.tui_disk_usage import DiskUsageTab
-from shared.tui_time import TimeLabTab
-from shared.tui_math import MathLabTab
-from shared.tui_devtools import DevToolsTab
-from shared.tui_dependencies import DependenciesTab
-from shared.tui_standup import StandupTab
-from shared.tui_frontend import FrontendTab
-from shared.tui_i18n import I18nTab
-from shared.tui_sanitizer import SanitizerTab
-from shared.tui_gantt import GanttTab
-from shared.tui_ide_config import IdeConfigTab
-from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
-from shared.tui_explorer import FileExplorerTab
-from shared.tui_hex import HexTab
-from shared.tui_json import JsonLabTab
-from shared.tui_yaml import YamlLabTab
-from shared.tui_markdown import MarkdownLabTab
-from shared.tui_csv import CsvLabTab
-from shared.tui_diff_lab import DiffLabTab
-from shared.tui_image import ImageLabTab
-from shared.tui_database import DatabaseTab
-from shared.tui_jwt import JwtLabTab
+from shared.cli_utils import get_workflow_stage
+from shared.code_review import run_code_review_logic
+from shared.config_loader import load_config_from_file
+from shared.cost import CostCalculator
+from shared.database import init_db
+from shared.debt import DebtCollector
+from shared.docstring import DocstringManager
+from shared.health import HealthCalculator
+from shared.knowledge import KnowledgeManager
+from shared.link_checker import LinkChecker
+from shared.map import scan_project
+from shared.openapi import OpenAPIGenerator
+from shared.optimize import OptimizationManager
+from shared.plan import run_plan_logic
+from shared.playground import PlaygroundManager
 from shared.plugin_manager import PluginManager
+from shared.prompt_lab import PromptLabManager
+from shared.recipe_learner import RecipeLearner
+from shared.recipes import RecipeManager
+from shared.refactor import RefactorManager
+from shared.release import (determine_next_version, generate_changelog,
+                            get_commits_since_tag, get_latest_tag,
+                            parse_current_version, perform_release)
+from shared.replace import replace_in_codebase
+from shared.scaffold import ScaffoldManager
+from shared.search import search_codebase
+from shared.secrets import SecretsManager
+from shared.security import SecurityAuditor
+from shared.task_manager import Task, TaskManager
+from shared.timeline import TimelineCollector, TimelineRenderer
+from shared.troubleshoot import TroubleshootManager
+from shared.tui_adr import ADRTab
+from shared.tui_bisect import BisectTab
+from shared.tui_chaos import ChaosTab
+from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
+from shared.tui_conflict import ConflictTab
+from shared.tui_cron import CronLabTab
+from shared.tui_csv import CsvLabTab
+from shared.tui_database import DatabaseTab
+from shared.tui_database_diagram import DatabaseDiagramTab
+from shared.tui_datalab import DataLabTab
+from shared.tui_dependencies import DependenciesTab
+from shared.tui_devtools import DevToolsTab
+from shared.tui_diff_lab import DiffLabTab
+from shared.tui_disk_usage import DiskUsageTab
+from shared.tui_docker import DockerTab
+from shared.tui_env import EnvTab
+from shared.tui_explorer import FileExplorerTab
+from shared.tui_frontend import FrontendTab
+from shared.tui_gantt import GanttTab
+from shared.tui_git import GitTab
+from shared.tui_guardrails import GuardrailsTab
+from shared.tui_hex import HexTab
+from shared.tui_i18n import I18nTab
+from shared.tui_ide_config import IdeConfigTab
+from shared.tui_image import ImageLabTab
+from shared.tui_impact import ImpactTab
+from shared.tui_json import JsonLabTab
+from shared.tui_jwt import JwtLabTab
+from shared.tui_k8s import K8sTab
+from shared.tui_kanban import KanbanBoard
+from shared.tui_log_explorer import LogExplorerTab
+from shared.tui_logic import LogicLabTab
+from shared.tui_markdown import MarkdownLabTab
+from shared.tui_math import MathLabTab
+from shared.tui_net_diag import NetDiagTab
+from shared.tui_network import NetworkTab
+from shared.tui_presentation import PresentationTab
+from shared.tui_proc import ProcLabTab
+from shared.tui_pull_requests import PullRequestsTab
+from shared.tui_quiz import QuizTab
+from shared.tui_regex import RegexLabTab
+from shared.tui_research import ResearchTab
+from shared.tui_sanitizer import SanitizerTab
+from shared.tui_scheduler import SchedulerTab
+from shared.tui_security import SecurityTab
+from shared.tui_semver import SemVerTab
+from shared.tui_sentinel import SentinelTab
+from shared.tui_services import ServicesTab
+from shared.tui_snippets import SnippetsTab
+from shared.tui_standup import StandupTab
+from shared.tui_system_monitor import SystemMonitorTab
+from shared.tui_terminal import TerminalTab
+from shared.tui_terraform import TerraformTab
+from shared.tui_time import TimeLabTab
+from shared.tui_yaml import YamlLabTab
+from shared.work_session import WorkSessionManager
+from shared.worktree import WorktreeManager
 
 
 # Helper to get Git info safely
@@ -234,7 +233,6 @@ class ScaffoldTab(Container):
         log.write(f"Generating plan with {agent_type}...")
         self.notify("Generating plan...", severity="information")
 
-        import asyncio
         # Run in thread
         self.ai_plan = await self.manager.generate_ai_scaffold(desc, agent_type=agent_type)
 
@@ -2094,7 +2092,6 @@ class ApiLabTab(Container):
     async def generate_spec(self) -> None:
         self.notify("Generating OpenAPI spec... (this takes time)")
         from shared.openapi import OpenAPIGenerator
-        import asyncio
 
         generator = OpenAPIGenerator(self.project_dir)
         output_path = self.project_dir / "openapi.yaml"
@@ -2213,6 +2210,7 @@ class ApiLabTab(Container):
         log.write(f"Sending {method} {url}...")
 
         import asyncio
+
         # Run in thread
         result = await asyncio.to_thread(self.manager.execute_request, method, url, body=body)
 
@@ -2462,6 +2460,7 @@ class PlaygroundTab(Container):
         output_log.write(f"Running {self.current_file}...")
 
         import asyncio
+
         # Run in thread
         try:
             # We updated manager.run to return (success, output) when capture_output=True
@@ -2883,8 +2882,8 @@ class HealthTab(Container):
         self.query_one("#btn-run-health").disabled = True
 
         import asyncio
-        import io
         import contextlib
+        import io
 
         def do_calc():
             # Capture stdout to prevent TUI corruption
@@ -3013,6 +3012,7 @@ class TroubleshootTab(Container):
         self.notify("Running analysis... (this may take a while)")
 
         import asyncio
+
         # Run detection in thread
         self.issues = await asyncio.to_thread(self.manager.detect_issues)
 
@@ -3213,7 +3213,6 @@ class DocumentationTab(Container):
         log = self.query_one("#docstring-log", RichLog)
         log.write(f"Generating docstrings for {len(items)} items with {agent_type}...")
 
-        import asyncio
         import contextlib
 
         # Capture stdout from manager
@@ -3268,7 +3267,6 @@ class DocumentationTab(Container):
         self.notify("Generating OpenAPI spec...")
         output_path = self.project_dir / "openapi.yaml"
 
-        import asyncio
         success = await self.openapi_gen.generate(output_path)
 
         if success:

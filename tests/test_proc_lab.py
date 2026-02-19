@@ -4,8 +4,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 import tempfile
 import shutil
-from shared.proc_lab import ProcLabManager, run_proc_lab_logic
-import argparse
+from shared.proc_lab import ProcLabManager
 import sys
 
 class TestProcLab(unittest.IsolatedAsyncioTestCase):
@@ -47,6 +46,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         callback.assert_called_with("test", "line1")
 
+    @patch("sys.platform", "win32")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_process(self, mock_subprocess):
         mock_proc = AsyncMock()
@@ -63,6 +63,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("test", self.manager.processes)
         mock_proc.terminate.assert_called_once()
 
+    @patch("sys.platform", "win32")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
         mock_proc = AsyncMock()
@@ -78,27 +79,30 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_start_processes_cli(self, mock_subprocess):
-        # Test CLI plural method
-        mock_proc = AsyncMock()
-        mock_proc.stdout.readline.return_value = b""
-        mock_proc.stderr.readline.return_value = b""
-        # returncode is None initially, then 0 after wait?
-        # The loop in start_processes waits for p.wait().
-        # We need mock_proc.wait() to eventually finish and we need the loop to exit.
-        # If wait returns, the loop continues unless returncode is set.
-        # But wait() doesn't set returncode on a mock automatically.
+        # Create distinct mocks for each call
+        proc1 = AsyncMock()
+        proc1.returncode = None
+        proc1.stdout.readline.return_value = b""
+        proc1.stderr.readline.return_value = b""
 
-        async def wait_side_effect():
-            mock_proc.returncode = 0
+        async def wait_1():
+            proc1.returncode = 0
             return None
+        proc1.wait.side_effect = wait_1
 
-        mock_proc.wait.side_effect = wait_side_effect
-        mock_proc.returncode = None
+        proc2 = AsyncMock()
+        proc2.returncode = None
+        proc2.stdout.readline.return_value = b""
+        proc2.stderr.readline.return_value = b""
 
-        mock_subprocess.return_value = mock_proc
+        async def wait_2():
+            proc2.returncode = 0
+            return None
+        proc2.wait.side_effect = wait_2
 
-        # We can't easily wait forever, so we trust it starts and waits.
-        # Since we mock wait to return immediately and set returncode, it should finish.
+        # Side effect iterates through the list for each call
+        mock_subprocess.side_effect = [proc1, proc2]
+
         await self.manager.start_processes(self.procfile)
 
         self.assertEqual(mock_subprocess.call_count, 2)

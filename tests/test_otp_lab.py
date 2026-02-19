@@ -89,6 +89,16 @@ class TestOtpLab(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("INVALID", mock_stdout.getvalue())
 
+    def test_generate_secret_exact_length(self):
+        # Test non-standard lengths to ensure exact output
+        # Length 10 -> 7 bytes (56 bits) -> 11.2 chars -> 10 chars sliced
+        secret_10 = self.manager.generate_secret(length=10)
+        self.assertEqual(len(secret_10), 10)
+
+        # Length 20 -> 13 bytes (104 bits) -> 20.8 chars -> 20 chars sliced
+        secret_20 = self.manager.generate_secret(length=20)
+        self.assertEqual(len(secret_20), 20)
+
 
 if __name__ == '__main__':
     unittest.main()

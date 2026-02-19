@@ -23,7 +23,8 @@ class OtpLabManager:
         # 16 chars of base32 is 10 bytes (16 * 5 bits = 80 bits = 10 bytes)
         # RFC 4226 recommends 160 bits (20 bytes) for secret.
         # Each base32 char is 5 bits. length * 5 / 8 bytes.
-        num_bytes = (length * 5) // 8
+        # Use ceil division (length * 5 + 7) // 8 to ensure we have enough bits.
+        num_bytes = (length * 5 + 7) // 8
         random_bytes = secrets.token_bytes(num_bytes)
         # Remove padding '=' for cleaner output, though some apps might need it (usually not).
         return base64.b32encode(random_bytes).decode('utf-8')[:length]

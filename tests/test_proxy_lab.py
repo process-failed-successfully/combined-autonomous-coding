@@ -39,11 +39,13 @@ class TestProxyLab(unittest.TestCase):
         cls.proxy_thread.daemon = True
         cls.proxy_thread.start()
 
-        # Give them a moment to start and bind
-        time.sleep(1)
-        # Update proxy port from the bound socket
-        # Note: We rely on the manager updating self.port after start()
-        # Since start() runs in a thread, we might need to wait/poll, but 1s sleep should suffice for bind
+        # Wait for proxy to bind
+        start_time = time.time()
+        while cls.proxy_manager.port == 0:
+            if time.time() - start_time > 5:
+                raise RuntimeError("Timed out waiting for proxy to bind")
+            time.sleep(0.1)
+
         cls.proxy_port = cls.proxy_manager.port
 
     @classmethod

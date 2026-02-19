@@ -7,11 +7,6 @@ import unittest
 import socket
 from shared.proxy_lab import ProxyLabManager
 
-def get_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
-
 class MockOriginHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -37,25 +32,25 @@ class TestProxyLab(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Find free ports
-        cls.origin_port = get_free_port()
-        cls.proxy_port = get_free_port()
+        # Start Origin Server on port 0 (random)
+        cls.origin_server = socketserver.TCPServer(("127.0.0.1", 0), MockOriginHandler)
+        cls.origin_port = cls.origin_server.server_address[1]
 
-        # Start Origin Server
-        cls.origin_server = socketserver.TCPServer(("127.0.0.1", cls.origin_port), MockOriginHandler)
         cls.origin_thread = threading.Thread(target=cls.origin_server.serve_forever)
         cls.origin_thread.daemon = True
         cls.origin_thread.start()
 
-        # Start Proxy Server
+        # Start Proxy Server on port 0 (random)
         # We need to run start() in a thread because it blocks
-        cls.proxy_manager = ProxyLabManager(port=cls.proxy_port, host="127.0.0.1")
+        cls.proxy_manager = ProxyLabManager(port=0, host="127.0.0.1")
         cls.proxy_thread = threading.Thread(target=cls.proxy_manager.start)
         cls.proxy_thread.daemon = True
         cls.proxy_thread.start()
 
-        # Give them a moment to start
+        # Give them a moment to start and bind
         time.sleep(1)
+        # Update proxy port from manager (it should be updated by start())
+        cls.proxy_port = cls.proxy_manager.port
 
     @classmethod
     def tearDownClass(cls):

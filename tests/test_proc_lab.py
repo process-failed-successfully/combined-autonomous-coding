@@ -47,34 +47,50 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         callback.assert_called_with("test", "line1")
 
+    @patch("os.killpg")
+    @patch("os.getpgid")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    async def test_stop_process(self, mock_subprocess):
+    async def test_stop_process(self, mock_subprocess, mock_getpgid, mock_killpg):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
         mock_proc.pid = 12345  # Ensure PID is an integer
         mock_proc.wait = AsyncMock()
         mock_proc.terminate = MagicMock()
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
+
+        # Mock os.getpgid to return a valid PGID
+        mock_getpgid.return_value = 12345
 
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
 
-        # Patch sys.platform to ensure consistent behavior (win32 path uses terminate())
-        # or verify linux path. The existing test asserted terminate(), so let's stick to win32 behavior
-        # for this specific test case, or adapt it.
-        # Let's adapt it to handle both or force one.
-
+        # Test win32 path
         with patch("sys.platform", "win32"):
             success = await self.manager.stop_process("test")
             self.assertTrue(success)
             self.assertNotIn("test", self.manager.processes)
             mock_proc.terminate.assert_called_once()
 
+        # Re-add for Linux path test
+        self.manager.processes["test"] = mock_proc
+        with patch("sys.platform", "linux"):
+            success = await self.manager.stop_process("test")
+            self.assertTrue(success)
+            mock_killpg.assert_called()
+
+    @patch("os.killpg")
+    @patch("os.getpgid")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    async def test_stop_all(self, mock_subprocess):
+    async def test_stop_all(self, mock_subprocess, mock_getpgid, mock_killpg):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
+        mock_proc.pid = 12345
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
+        mock_getpgid.return_value = 12345
 
         await self.manager.start_process("p1", "echo 1")
         await self.manager.start_process("p2", "echo 2")

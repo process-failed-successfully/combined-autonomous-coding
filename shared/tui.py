@@ -86,6 +86,7 @@ from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_time import TimeLabTab
+from shared.tui_math import MathLabTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
@@ -4024,6 +4025,8 @@ class AgentTUI(App):
                 yield CronLabTab(self.project_dir)
             with TabPane("Time Lab", id="tab-time"):
                 yield TimeLabTab()
+            with TabPane("Math Lab", id="tab-math"):
+                yield MathLabTab()
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):

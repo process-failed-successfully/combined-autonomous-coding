@@ -48,7 +48,11 @@ class ProcLabTab(Container):
 
     def on_unmount(self) -> None:
         # cleanup processes on exit
-        asyncio.create_task(self.manager.stop_all())
+        # Note: In tests with mocked manager, stop_all might be a MagicMock (not async)
+        # We check if it is awaitable to avoid TypeErrors in tests.
+        coro = self.manager.stop_all()
+        if asyncio.iscoroutine(coro):
+            asyncio.create_task(coro)
 
     def load_processes(self) -> None:
         table = self.query_one("#proc-table", DataTable)

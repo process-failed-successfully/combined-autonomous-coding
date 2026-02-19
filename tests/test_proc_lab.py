@@ -47,6 +47,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         callback.assert_called_with("test", "line1")
 
+    @patch("sys.platform", "win32")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_process(self, mock_subprocess):
         mock_proc = AsyncMock()
@@ -63,6 +64,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("test", self.manager.processes)
         mock_proc.terminate.assert_called_once()
 
+    @patch("sys.platform", "win32")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
         mock_proc = AsyncMock()
@@ -78,29 +80,18 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_start_processes_cli(self, mock_subprocess):
-        # Create distinct mocks for each process
-        p1 = AsyncMock()
-        p1.stdout.readline.return_value = b""
-        p1.stderr.readline.return_value = b""
-        p1.returncode = None
+        # Use a single mock for all processes to avoid order dependency
+        p = AsyncMock()
+        p.stdout.readline.return_value = b""
+        p.stderr.readline.return_value = b""
+        p.returncode = None
 
-        async def wait_p1():
-            p1.returncode = 0
+        async def wait_p():
+            p.returncode = 0
             return None
-        p1.wait.side_effect = wait_p1
+        p.wait.side_effect = wait_p
 
-        p2 = AsyncMock()
-        p2.stdout.readline.return_value = b""
-        p2.stderr.readline.return_value = b""
-        p2.returncode = None
-
-        async def wait_p2():
-            p2.returncode = 0
-            return None
-        p2.wait.side_effect = wait_p2
-
-        # Return p1 then p2
-        mock_subprocess.side_effect = [p1, p2]
+        mock_subprocess.return_value = p
 
         await self.manager.start_processes(self.procfile)
 

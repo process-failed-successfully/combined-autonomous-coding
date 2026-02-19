@@ -1,11 +1,13 @@
 from pathlib import Path
 from collections import deque
+from typing import Dict, Optional
 from textual.app import ComposeResult
 from textual.widgets import Button, Label, RichLog, DataTable
 from textual.containers import Container, Horizontal, Vertical
 from textual import on
 
 from shared.proc_lab import ProcLabManager
+
 
 class ProcLabTab(Container):
     """Tab for managing Procfile processes."""
@@ -14,8 +16,8 @@ class ProcLabTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = ProcLabManager(project_dir)
-        self.selected_process = None
-        self.output_buffers = {}  # name -> deque
+        self.selected_process: Optional[str] = None
+        self.output_buffers: Dict[str, deque[str]] = {}
         self.procfile_path = self.project_dir / "Procfile"
 
     def compose(self) -> ComposeResult:
@@ -67,9 +69,9 @@ class ProcLabTab(Container):
 
         # If config was empty, try reload (maybe file created)
         if not self.manager.process_defs:
-             try:
+            try:
                 self.manager.load_config(self.procfile_path)
-             except FileNotFoundError:
+            except FileNotFoundError:
                 pass
 
         current_keys = set(table.rows.keys())
@@ -128,8 +130,12 @@ class ProcLabTab(Container):
 
     @on(DataTable.RowSelected, "#proc-table")
     def on_process_selected(self, event: DataTable.RowSelected) -> None:
-        self.selected_process = event.row_key.value
-        self.query_one("#proc-header").update(f"[bold]Output: {self.selected_process}[/bold]")
+        if isinstance(event.row_key.value, str):
+            self.selected_process = event.row_key.value
+        else:
+            self.selected_process = str(event.row_key.value)
+
+        self.query_one("#proc-header", Label).update(f"[bold]Output: {self.selected_process}[/bold]")
 
         # Load buffer
         log = self.query_one("#proc-log", RichLog)
@@ -138,7 +144,8 @@ class ProcLabTab(Container):
             for line in self.output_buffers[self.selected_process]:
                 log.write(line)
 
-        self._update_buttons(self.selected_process)
+        if self.selected_process:
+            self._update_buttons(self.selected_process)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         btn_id = event.button.id

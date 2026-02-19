@@ -3,15 +3,15 @@ import sys
 import os
 import signal
 from pathlib import Path
-from typing import Dict, List, Optional, Callable
-import platform
+from typing import Any, Callable, Dict, List, Optional
+
 
 class ProcLabManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
         self.processes: Dict[str, asyncio.subprocess.Process] = {}
         self.process_defs: Dict[str, str] = {}
-        self.tasks: List[asyncio.Task] = []
+        self.tasks: List[asyncio.Task[Any]] = []
 
     def parse_procfile(self, procfile_path: Path) -> Dict[str, str]:
         if not procfile_path.exists():
@@ -64,7 +64,7 @@ class ProcLabManager:
         command = self.process_defs[name]
 
         # Prepare subprocess arguments
-        kwargs = {
+        kwargs: Dict[str, Any] = {
             "stdout": asyncio.subprocess.PIPE,
             "stderr": asyncio.subprocess.PIPE,
             "cwd": self.project_dir,
@@ -114,9 +114,9 @@ class ProcLabManager:
                         await asyncio.wait_for(p.wait(), timeout=5.0)
                     except asyncio.TimeoutError:
                         if sys.platform != "win32":
-                             try:
+                            try:
                                 os.killpg(os.getpgid(p.pid), signal.SIGKILL)
-                             except ProcessLookupError:
+                            except ProcessLookupError:
                                 pass
                         else:
                             p.kill()
@@ -169,6 +169,7 @@ class ProcLabManager:
                 print(f"{name:<15} : {cmd}")
         except FileNotFoundError:
             print(f"Procfile not found at {procfile_path}")
+
 
 async def run_proc_lab_logic(args):
     manager = ProcLabManager(args.project_dir)

@@ -6,6 +6,12 @@ import time
 import sys
 
 class JWTManager:
+    ALGORITHMS = {
+        "HS256": hashlib.sha256,
+        "HS384": hashlib.sha384,
+        "HS512": hashlib.sha512
+    }
+
     @staticmethod
     def base64url_encode(data: bytes) -> str:
         return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')
@@ -19,6 +25,9 @@ class JWTManager:
 
     @staticmethod
     def sign_token(payload: dict, secret: str, algo: str = "HS256") -> str:
+        if algo not in JWTManager.ALGORITHMS:
+            raise ValueError(f"Unsupported algorithm: {algo}")
+
         header = {"typ": "JWT", "alg": algo}
 
         header_json = json.dumps(header, separators=(',', ':')).encode('utf-8')
@@ -29,10 +38,8 @@ class JWTManager:
 
         signing_input = f"{header_b64}.{payload_b64}".encode('utf-8')
 
-        if algo == "HS256":
-            signature = hmac.new(secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
-        else:
-            raise ValueError(f"Unsupported algorithm: {algo}")
+        hash_func = JWTManager.ALGORITHMS[algo]
+        signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
 
         signature_b64 = JWTManager.base64url_encode(signature)
 
@@ -67,14 +74,15 @@ class JWTManager:
         header = decoded["header"]
 
         algo = header.get("alg")
-        if algo != "HS256":
+        if algo not in JWTManager.ALGORITHMS:
             raise ValueError(f"Unsupported algorithm for verification: {algo}")
 
         parts = token.split('.')
         signing_input = f"{parts[0]}.{parts[1]}".encode('utf-8')
         signature_b64 = parts[2]
 
-        expected_signature = hmac.new(secret.encode('utf-8'), signing_input, hashlib.sha256).digest()
+        hash_func = JWTManager.ALGORITHMS[algo]
+        expected_signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
         expected_signature_b64 = JWTManager.base64url_encode(expected_signature)
 
         # Constant time comparison
@@ -109,7 +117,8 @@ def run_jwt_lab_logic(args) -> bool:
                 print("Error: Payload must be valid JSON string.", file=sys.stderr)
                 return False
 
-            token = manager.sign_token(payload, args.secret)
+            algo = getattr(args, 'algo', 'HS256')
+            token = manager.sign_token(payload, args.secret, algo)
             print(token)
             return True
 

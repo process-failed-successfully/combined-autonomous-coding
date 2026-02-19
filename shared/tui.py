@@ -104,6 +104,7 @@ from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_database import DatabaseTab
+from shared.tui_jwt import JwtLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3999,6 +4000,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("JWT Lab", id="tab-jwt"):
+                yield JwtLabTab()
             with TabPane("Sanitizer", id="tab-sanitizer"):
                 yield SanitizerTab(self.project_dir)
             with TabPane("Frontend", id="tab-frontend"):

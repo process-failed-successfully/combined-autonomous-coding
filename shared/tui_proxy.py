@@ -51,12 +51,12 @@ class ProxyLabTab(Container):
 
         self.query_one("#proxy-log", RichLog).write(f"[bold green]Starting proxy on {host}:{port}...[/bold green]")
 
+        self.update_ui_running()
         # Run in thread
         asyncio.create_task(self._run_server())
 
     async def _run_server(self) -> None:
         try:
-            self.update_ui_running()
             await asyncio.to_thread(self.manager.start, on_log=self.log_message)
         except OSError as e:
             self.notify(f"Error starting proxy: {e}", severity="error")

@@ -15,7 +15,6 @@ class TestTuiProxy(unittest.IsolatedAsyncioTestCase):
         """Test that the tab mounts correctly and widgets exist."""
         app = ProxyTestApp()
         async with app.run_test(size=(800, 600)) as pilot:
-            # We use pilot to wait for ready
             await pilot.pause()
             self.assertIsNotNone(app.query_one("#proxy-host"))
             self.assertIsNotNone(app.query_one("#proxy-port"))
@@ -35,8 +34,9 @@ class TestTuiProxy(unittest.IsolatedAsyncioTestCase):
                 btn = app.query_one("#btn-proxy-start")
                 self.assertFalse(btn.disabled)
 
-                # Simulate click event directly
-                pilot.app.post_message(Button.Pressed(btn))
+                # Simulate click event directly on the button
+                # post_message returns bool in this version, do not await
+                btn.post_message(Button.Pressed(btn))
                 await pilot.pause()
 
                 # Verify button disabled immediately (optimistic UI update)

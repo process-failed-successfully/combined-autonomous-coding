@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from textual.widgets import Input, Select, Label, DataTable
 from shared.tui_unit import UnitLabTab
 
+
 class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.patcher = patch("shared.tui_unit.UnitLabManager")
@@ -12,11 +13,16 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         self.mock_manager = self.MockManager.return_value
         self.tab.manager = self.mock_manager
 
-        self.tab.notify = MagicMock()
-        self.tab.query_one = MagicMock()
+        self.notify_patcher = patch.object(self.tab, 'notify')
+        self.mock_notify = self.notify_patcher.start()
+
+        self.query_one_patcher = patch.object(self.tab, 'query_one')
+        self.mock_query_one = self.query_one_patcher.start()
 
     async def asyncTearDown(self):
         self.patcher.stop()
+        self.notify_patcher.stop()
+        self.query_one_patcher.stop()
 
     def test_update_result_success(self):
         # Mock Inputs
@@ -29,12 +35,16 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Label)
 
         def query_side_effect(selector, type=None):
-            if selector == "#unit-value-input": return val_input
-            if selector == "#unit-from-select": return from_sel
-            if selector == "#unit-to-select": return to_sel
-            if selector == "#unit-result-label": return lbl
+            if selector == "#unit-value-input":
+                return val_input
+            if selector == "#unit-from-select":
+                return from_sel
+            if selector == "#unit-to-select":
+                return to_sel
+            if selector == "#unit-result-label":
+                return lbl
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.mock_query_one.side_effect = query_side_effect
 
         self.mock_manager.convert.return_value = "0.01"
 
@@ -58,12 +68,16 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Label)
 
         def query_side_effect(selector, type=None):
-            if selector == "#unit-value-input": return val_input
-            if selector == "#unit-from-select": return from_sel
-            if selector == "#unit-to-select": return to_sel
-            if selector == "#unit-result-label": return lbl
+            if selector == "#unit-value-input":
+                return val_input
+            if selector == "#unit-from-select":
+                return from_sel
+            if selector == "#unit-to-select":
+                return to_sel
+            if selector == "#unit-result-label":
+                return lbl
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.mock_query_one.side_effect = query_side_effect
 
         # Run
         self.tab.update_result()
@@ -79,10 +93,12 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         to_sel.value = "km"
 
         def query_side_effect(selector, type=None):
-            if selector == "#unit-from-select": return from_sel
-            if selector == "#unit-to-select": return to_sel
+            if selector == "#unit-from-select":
+                return from_sel
+            if selector == "#unit-to-select":
+                return to_sel
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.mock_query_one.side_effect = query_side_effect
 
         self.tab.on_swap()
 
@@ -94,9 +110,10 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         cat_select = MagicMock(spec=Select)
 
         def query_side_effect(selector, type=None):
-            if selector == "#unit-category-select": return cat_select
+            if selector == "#unit-category-select":
+                return cat_select
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.mock_query_one.side_effect = query_side_effect
 
         self.tab.on_mount()
 
@@ -117,13 +134,18 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         table = MagicMock(spec=DataTable)
 
         def query_side_effect(selector, type=None):
-            if selector == "#unit-from-select": return from_sel
-            if selector == "#unit-to-select": return to_sel
-            if selector == "#unit-value-input": return val_input
-            if selector == "#unit-result-label": return lbl
-            if selector == "#unit-ref-table": return table
+            if selector == "#unit-from-select":
+                return from_sel
+            if selector == "#unit-to-select":
+                return to_sel
+            if selector == "#unit-value-input":
+                return val_input
+            if selector == "#unit-result-label":
+                return lbl
+            if selector == "#unit-ref-table":
+                return table
             return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+        self.mock_query_one.side_effect = query_side_effect
 
         self.tab.on_category_changed(event)
 
@@ -132,6 +154,7 @@ class TestUnitLabTab(unittest.IsolatedAsyncioTestCase):
         from_sel.set_options.assert_called()
         self.assertEqual(from_sel.value, "kg")
         self.assertEqual(to_sel.value, "g")
+
 
 if __name__ == "__main__":
     unittest.main()

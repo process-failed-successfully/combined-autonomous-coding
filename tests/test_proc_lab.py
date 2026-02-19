@@ -4,9 +4,32 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 import tempfile
 import shutil
-from shared.proc_lab import ProcLabManager, run_proc_lab_logic
-import argparse
 import sys
+import os
+from shared.proc_lab import ProcLabManager
+
+# Helper class to mock asyncio.subprocess.Process behavior reliably
+class MockProcess:
+    def __init__(self, name="proc"):
+        self.name = name
+        self.returncode = None
+        self.stdout = AsyncMock()
+        self.stderr = AsyncMock()
+        # Ensure readline returns EOF immediately to avoid blocking stream reading
+        self.stdout.readline.return_value = b""
+        self.stderr.readline.return_value = b""
+        self.pid = 12345
+
+    async def wait(self):
+        # Simulate process finishing
+        self.returncode = 0
+        return None
+
+    def terminate(self):
+        pass
+
+    def kill(self):
+        pass
 
 class TestProcLab(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -18,7 +41,8 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         # Ensure any lingering tasks or processes are cleaned up
         await self.manager.stop_all()
-        shutil.rmtree(self.test_dir)
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir)
 
     def test_parse_procfile(self):
         procs = self.manager.parse_procfile(self.procfile)
@@ -32,10 +56,9 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_start_process(self, mock_subprocess):
-        mock_proc = AsyncMock()
-        mock_proc.returncode = None
+        mock_proc = MockProcess("test")
+        # Mock readline to return some content then EOF
         mock_proc.stdout.readline.side_effect = [b"line1\n", b""]
-        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
 
         callback = MagicMock()
@@ -49,13 +72,15 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         callback.assert_called_with("test", "line1")
 
+    @patch("os.killpg")
+    @patch("os.getpgid")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    async def test_stop_process(self, mock_subprocess):
-        mock_proc = AsyncMock()
-        mock_proc.returncode = None
-        mock_proc.wait = AsyncMock()
+    async def test_stop_process(self, mock_subprocess, mock_getpgid, mock_killpg):
+        mock_proc = MockProcess("test")
         mock_proc.terminate = MagicMock()
         mock_subprocess.return_value = mock_proc
+        # Mock getpgid to return a PID
+        mock_getpgid.return_value = 12345
 
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
@@ -63,12 +88,15 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         success = await self.manager.stop_process("test")
         self.assertTrue(success)
         self.assertNotIn("test", self.manager.processes)
-        mock_proc.terminate.assert_called_once()
+
+        if sys.platform != "win32":
+            mock_killpg.assert_called_once()
+        else:
+            mock_proc.terminate.assert_called_once()
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
-        mock_proc = AsyncMock()
-        mock_proc.returncode = None
+        mock_proc = MockProcess("p1")
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("p1", "echo 1")
@@ -81,34 +109,14 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_start_processes_cli(self, mock_subprocess):
         # Create distinct mocks for each process
-        p1 = AsyncMock()
-        p1.stdout.readline.return_value = b""
-        p1.stderr.readline.return_value = b""
-        p1.returncode = None
-
-        async def wait_p1():
-            # Explicitly set returncode on the mock object
-            p1.returncode = 0
-            return None
-        p1.wait.side_effect = wait_p1
-
-        p2 = AsyncMock()
-        p2.stdout.readline.return_value = b""
-        p2.stderr.readline.return_value = b""
-        p2.returncode = None
-
-        async def wait_p2():
-            # Explicitly set returncode on the mock object
-            p2.returncode = 0
-            return None
-        p2.wait.side_effect = wait_p2
+        p1 = MockProcess("web")
+        p2 = MockProcess("worker")
 
         # Return p1 then p2
         mock_subprocess.side_effect = [p1, p2]
 
         # Use wait_for to prevent infinite hang if logic fails
         try:
-            # Increased timeout to 5.0s to avoid flakiness in CI
             await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=5.0)
         except asyncio.TimeoutError:
             self.fail("start_processes timed out (infinite loop detected)")

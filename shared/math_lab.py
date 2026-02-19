@@ -1,16 +1,16 @@
-import ast
 import argparse
+import ast
 import math
 import statistics
 import sys
-from typing import List, Dict, Union, Optional, Any, Callable
+from typing import Any, Dict, List, Optional, Union
 
 
 class MathLabManager:
     """Manages Math Lab operations: evaluate, stats, and primes."""
 
     def __init__(self) -> None:
-        self.allowed_names: Dict[str, Union[Callable[..., Union[int, float]], float, int]] = {
+        self.allowed_names: Dict[str, Any] = {
             k: v for k, v in math.__dict__.items() if not k.startswith("__")
         }
         self.allowed_names.update({

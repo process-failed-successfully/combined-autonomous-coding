@@ -30,25 +30,37 @@ class MockOriginHandler(http.server.BaseHTTPRequestHandler):
 class TestProxyLab(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Find free ports
-        cls.origin_port = get_free_port()
-        cls.proxy_port = get_free_port()
+        # Find free ports - use 0 to let OS allocate
+        cls.origin_port = 0 # bind to 0
+        cls.proxy_port = 0 # bind to 0
 
         # Start Origin Server
-        cls.origin_server = socketserver.TCPServer(("127.0.0.1", cls.origin_port), MockOriginHandler)
+        # We allow binding to 0, then read address
+        cls.origin_server = socketserver.TCPServer(("127.0.0.1", 0), MockOriginHandler)
+        cls.origin_port = cls.origin_server.server_address[1] # Get actual port
+
         cls.origin_thread = threading.Thread(target=cls.origin_server.serve_forever)
         cls.origin_thread.daemon = True
         cls.origin_thread.start()
 
         # Start Proxy Server
-        # We need to run start() in a thread because it blocks
-        cls.proxy_manager = ProxyLabManager(port=cls.proxy_port, host="127.0.0.1")
+        # Pass port 0
+        cls.proxy_manager = ProxyLabManager(port=0, host="127.0.0.1")
         cls.proxy_thread = threading.Thread(target=cls.proxy_manager.start)
         cls.proxy_thread.daemon = True
         cls.proxy_thread.start()
 
-        # Give them a moment to start
-        time.sleep(1)
+        # Wait for proxy server to be ready and assign port
+        timeout = 5
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if cls.proxy_manager.server:
+                cls.proxy_port = cls.proxy_manager.port
+                break
+            time.sleep(0.1)
+
+        if cls.proxy_port == 0:
+            raise RuntimeError("Proxy server failed to start within timeout")
 
     @classmethod
     def tearDownClass(cls):

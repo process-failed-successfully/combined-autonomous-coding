@@ -4,6 +4,7 @@ import tempfile
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 from textual.widgets import DataTable
+from textual.containers import Container
 from shared.tui import AgentTUI, DocumentationTab
 
 
@@ -44,6 +45,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DebtCollector'),
             patch('shared.tui.SecurityAuditor'),
             patch('shared.tui.OptimizationManager'),
+            patch('shared.tui.OtpLabTab', return_value=Container()),
         ]
         for p in self.patches:
             p.start()

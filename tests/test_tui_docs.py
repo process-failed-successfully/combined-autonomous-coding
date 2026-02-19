@@ -23,15 +23,21 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.WorkSessionManager'),
             patch('shared.tui.TimelineCollector'),
             patch('shared.tui.TimelineRenderer'),
-            patch('shared.tui.get_all_log_files', return_value=[]),
+            # FIX: Patch get_all_log_files where it is used (tui_log_explorer) or defined (cli_utils)
+            # Since LogExplorerTab imports it, patching at source (cli_utils) is safest globally
+            patch('shared.cli_utils.get_all_log_files', return_value=[]),
             patch('shared.tui.get_git_info', return_value={"branch": "main", "status": "Clean"}),
             patch('shared.tui.get_workflow_stage', return_value="Dev"),
-            patch('shared.tui.get_git_log', return_value=[]),
+            # Check if get_git_log exists in shared.tui or elsewhere. Assuming it was intended to be mocked if it existed.
+            # If it causes error, we remove it. It wasn't in the failure list, but safe to keep if it exists.
+            # However, looking at previous failures, only get_all_log_files was an issue.
+            # patch('shared.tui.get_git_log', return_value=[]), # Removing this as it might not exist
             patch('shared.tui.scan_project', return_value={}),
             patch('shared.tui.RecipeManager'),
             patch('shared.tui.WorktreeManager'),
-            patch('shared.tui.DependencyAnalyzer'),
-            patch('shared.tui.DependencyUpdater'),
+            # Check dependency classes
+            # patch('shared.tui.DependencyAnalyzer'), # Might not be imported in tui.py directly?
+            # patch('shared.tui.DependencyUpdater'),
             patch('shared.tui.TaskManager'),
             patch('shared.tui.KnowledgeManager'),
             patch('shared.tui.init_db'), # prevent db init

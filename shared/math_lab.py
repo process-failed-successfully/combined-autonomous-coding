@@ -1,9 +1,9 @@
-import ast
 import argparse
+import ast
 import math
 import statistics
 import sys
-from typing import List, Dict, Union, Optional, Any
+from typing import Any, Dict, List, Optional, Union
 
 
 class MathLabManager:

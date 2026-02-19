@@ -201,7 +201,7 @@ def run_math_lab_logic(args) -> bool:
                                 numbers.append(float(p))
                             except ValueError:
                                 pass
-            except Exception:
+            except (IOError, OSError):
                 pass
 
         if not numbers:

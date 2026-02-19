@@ -1,11 +1,10 @@
+import asyncio
 import unittest
 from unittest.mock import MagicMock, patch
 
 from textual.widgets import DataTable, Input, RichLog, Static
 
-# Import the class under test
 from shared.tui_math import MathLabTab
-
 
 class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -14,22 +13,22 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         self.MockManager = self.patcher.start()
 
         # Instantiate the tab
+        # We need to mock super().__init__ if Container does complex stuff,
+        # but let's try relying on standard behavior or if it fails we mock Container.
+        # Textual widgets often need an app context for some operations but __init__ might be safe.
+
+        # We might need to patch Container if it fails.
+        # Let's assume it works like NetDiagTab test.
         self.tab = MathLabTab()
         self.mock_manager = self.MockManager.return_value
         # Ensure the tab uses our mock instance (it should, based on __init__)
         self.tab.manager = self.mock_manager
 
-        # Patch methods on the instance using patch.object to avoid Mypy errors
-        # (Cannot assign to a method)
-        self.notify_patcher = patch.object(self.tab, 'notify')
-        self.mock_notify = self.notify_patcher.start()
-
-        self.query_one_patcher = patch.object(self.tab, 'query_one')
-        self.mock_query_one = self.query_one_patcher.start()
+        # Mock Textual UI methods
+        self.tab.notify = MagicMock()  # type: ignore
+        self.tab.query_one = MagicMock()  # type: ignore
 
     async def asyncTearDown(self):
-        self.query_one_patcher.stop()
-        self.notify_patcher.stop()
         self.patcher.stop()
 
     async def test_evaluate_expression_success(self):
@@ -39,12 +38,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#input-math-eval":
-                return expr_input
-            if selector == "#log-math-eval":
-                return log
+            if selector == "#input-math-eval": return expr_input
+            if selector == "#log-math-eval": return log
             return MagicMock()
-        self.mock_query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect
 
         # Mock Manager Result
         self.mock_manager.evaluate.return_value = 4
@@ -67,12 +64,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#input-math-eval":
-                return expr_input
-            if selector == "#log-math-eval":
-                return log
+            if selector == "#input-math-eval": return expr_input
+            if selector == "#log-math-eval": return log
             return MagicMock()
-        self.mock_query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect
 
         # Mock Manager Result
         self.mock_manager.evaluate.side_effect = ValueError("Bad syntax")
@@ -84,7 +79,7 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         log.write.assert_called()
         args, _ = log.write.call_args
         self.assertIn("Error", args[0])
-        self.mock_notify.assert_called_with("Error: Bad syntax", severity="error")
+        self.tab.notify.assert_called_with("Error: Bad syntax", severity="error")
 
     async def test_calculate_statistics(self):
         # Mock Inputs
@@ -93,12 +88,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         table = MagicMock(spec=DataTable)
 
         def query_side_effect(selector, type=None):
-            if selector == "#input-math-stats":
-                return input_widget
-            if selector == "#table-math-stats":
-                return table
+            if selector == "#input-math-stats": return input_widget
+            if selector == "#table-math-stats": return table
             return MagicMock()
-        self.mock_query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect
 
         # Mock Manager Result
         self.mock_manager.calculate_stats.return_value = {"mean": 2.0, "max": 3.0}
@@ -113,7 +106,7 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
 
         table.clear.assert_called()
         self.assertEqual(table.add_row.call_count, 2)
-        self.mock_notify.assert_called_with("Statistics calculated.")
+        self.tab.notify.assert_called_with("Statistics calculated.")
 
     async def test_check_prime_true(self):
         # Mock Inputs
@@ -122,12 +115,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Static)
 
         def query_side_effect(selector, type=None):
-            if selector == "#input-math-prime":
-                return input_widget
-            if selector == "#lbl-math-prime-result":
-                return lbl
+            if selector == "#input-math-prime": return input_widget
+            if selector == "#lbl-math-prime-result": return lbl
             return MagicMock()
-        self.mock_query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect
 
         # Mock Manager Result (asyncio.to_thread will call this)
         self.mock_manager.is_prime.return_value = True
@@ -150,12 +141,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Static)
 
         def query_side_effect(selector, type=None):
-            if selector == "#input-math-prime":
-                return input_widget
-            if selector == "#lbl-math-prime-result":
-                return lbl
+            if selector == "#input-math-prime": return input_widget
+            if selector == "#lbl-math-prime-result": return lbl
             return MagicMock()
-        self.mock_query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect
 
         # Mock Manager
         self.mock_manager.next_prime.return_value = 11
@@ -176,12 +165,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Static)
 
         def query_side_effect(selector, type=None):
-            if selector == "#input-math-prime":
-                return input_widget
-            if selector == "#lbl-math-prime-result":
-                return lbl
+            if selector == "#input-math-prime": return input_widget
+            if selector == "#lbl-math-prime-result": return lbl
             return MagicMock()
-        self.mock_query_one.side_effect = query_side_effect
+        self.tab.query_one.side_effect = query_side_effect
 
         # Mock Manager
         self.mock_manager.prime_factors.return_value = [2, 2, 3]
@@ -194,7 +181,6 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         args_list = lbl.update.call_args_list
         final_call_arg = args_list[-1][0][0]
         self.assertIn("[2, 2, 3]", final_call_arg)
-
 
 if __name__ == "__main__":
     unittest.main()

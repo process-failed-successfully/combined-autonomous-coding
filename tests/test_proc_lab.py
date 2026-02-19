@@ -15,7 +15,9 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         self.procfile.write_text("web: echo web\nworker: echo worker\n#comment\n")
         self.manager = ProcLabManager(self.test_dir)
 
-    def tearDown(self):
+    async def asyncTearDown(self):
+        # Ensure any lingering tasks or processes are cleaned up
+        await self.manager.stop_all()
         shutil.rmtree(self.test_dir)
 
     def test_parse_procfile(self):
@@ -102,7 +104,11 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         # Return p1 then p2
         mock_subprocess.side_effect = [p1, p2]
 
-        await self.manager.start_processes(self.procfile)
+        # Use wait_for to prevent infinite hang if logic fails
+        try:
+            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=2.0)
+        except asyncio.TimeoutError:
+            self.fail("start_processes timed out (infinite loop detected)")
 
         self.assertEqual(mock_subprocess.call_count, 2)
 

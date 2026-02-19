@@ -6,6 +6,7 @@ import tempfile
 import shutil
 from shared.proc_lab import ProcLabManager
 import sys
+import os
 
 class MockProcess:
     """Helper class to mock asyncio.subprocess.Process behavior."""
@@ -21,7 +22,7 @@ class MockProcess:
         self.wait_mock = AsyncMock() # To track calls if needed
 
     async def wait(self):
-        self.wait_mock()
+        await self.wait_mock()
         self.returncode = 0
         return None
 
@@ -67,17 +68,39 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_process(self, mock_subprocess):
         mock_proc = MockProcess()
-        # Mock wait to simulate process taking time to stop?
-        # But MockProcess.wait finishes immediately. That's fine for this test.
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
 
-        success = await self.manager.stop_process("test")
-        self.assertTrue(success)
-        self.assertNotIn("test", self.manager.processes)
-        mock_proc.terminate.assert_called_once()
+        # On Linux, stop_process calls os.killpg instead of terminate
+        # We need to mock os.killpg if we want to test that path, or patch sys.platform
+        with patch("sys.platform", "win32"):
+             success = await self.manager.stop_process("test")
+             self.assertTrue(success)
+             self.assertNotIn("test", self.manager.processes)
+             mock_proc.terminate.assert_called_once()
+
+        # Test Linux path separately if needed, but for now let's fix the assertion failure
+        # The previous failure was because on Linux it calls os.killpg, not terminate.
+
+    @patch("os.killpg")
+    @patch("os.getpgid")
+    @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
+    async def test_stop_process_linux(self, mock_subprocess, mock_getpgid, mock_killpg):
+        mock_proc = MockProcess()
+        mock_subprocess.return_value = mock_proc
+        mock_getpgid.return_value = 1234
+
+        await self.manager.start_process("test", "echo test")
+
+        # Force linux platform behavior if not already on linux,
+        # but the test runner is linux.
+        if sys.platform != "win32":
+            success = await self.manager.stop_process("test")
+            self.assertTrue(success)
+            mock_killpg.assert_called()
+            mock_proc.terminate.assert_not_called()
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):

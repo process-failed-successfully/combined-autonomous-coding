@@ -212,6 +212,8 @@ class ProxyLabManager:
         """Starts the proxy server."""
         try:
             self.server = ThreadedHTTPServer((self.host, self.port), ProxyRequestHandler)
+            # Update port if it was 0 (dynamic allocation)
+            self.port = self.server.server_address[1]
             print(f"✅ Proxy Lab listening on {self.host}:{self.port}")
             print("Configure your browser or tools to use this proxy.")
             print("Press Ctrl+C to stop.")
@@ -219,7 +221,7 @@ class ProxyLabManager:
             self.server.serve_forever()
         except OSError as e:
             print(f"❌ Error starting server: {e}")
-            sys.exit(1)
+            raise  # Raise exception instead of sys.exit for better testability
         except KeyboardInterrupt:
             print("\nStopping proxy...")
             self.stop()

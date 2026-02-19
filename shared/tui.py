@@ -87,6 +87,7 @@ from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
+from shared.tui_unit import UnitLabTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
@@ -4027,6 +4028,8 @@ class AgentTUI(App):
                 yield TimeLabTab()
             with TabPane("Math Lab", id="tab-math"):
                 yield MathLabTab()
+            with TabPane("Unit Lab", id="tab-unit"):
+                yield UnitLabTab()
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):

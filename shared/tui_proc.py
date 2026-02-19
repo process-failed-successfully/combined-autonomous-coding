@@ -6,6 +6,7 @@ from textual import on
 from shared.proc_lab import ProcLabManager
 import asyncio
 
+
 class ProcLabTab(Container):
     """Tab for managing Procfile processes."""
 
@@ -13,8 +14,8 @@ class ProcLabTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = ProcLabManager(project_dir)
-        self.selected_process = None
-        self.proc_map = {} # name -> command
+        self.selected_process: str | None = None
+        self.proc_map: dict[str, str] = {}  # name -> command
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -136,7 +137,7 @@ class ProcLabTab(Container):
             return
 
         self.notify(f"Starting {self.selected_process}...")
-        success = await self.manager.start_process(self.selected_process, cmd, self.log_callback)
+        success: bool = await self.manager.start_process(self.selected_process, cmd, self.log_callback)
 
         if success:
             self.notify(f"Started {self.selected_process}.")

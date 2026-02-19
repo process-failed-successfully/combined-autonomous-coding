@@ -40,10 +40,12 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_ask.stop()
         shutil.rmtree(self.test_dir)
 
+    @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_app_startup(self, mock_services_tab):
+    async def test_app_startup(self, mock_services_tab, mock_otp_tab):
         """Test that the app starts up and has the expected title and tabs."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test():
             # Check if TabbedContent exists
@@ -57,10 +59,12 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#tab-knowledge"))
             self.assertTrue(app.query_one("#tab-ide-config"))
 
+    @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_dashboard_content(self, mock_services_tab):
+    async def test_dashboard_content(self, mock_services_tab, mock_otp_tab):
         """Test that the dashboard tab displays project info."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test():
             # Switch to dashboard is default
@@ -79,14 +83,16 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check new history section
             self.assertTrue(dashboard.query_one("#history-log"))
 
+    @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_file_explorer_tab(self, mock_services_tab):
+    async def test_file_explorer_tab(self, mock_services_tab, mock_otp_tab):
         """Test the file explorer tab structure."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to explorer tab
-            tabbed_content = app.query_one("#main-tabs")
+            tabbed_content = app.query_one("#main-tabs", TabbedContent)
             tabbed_content.active = "tab-explorer"
             await pilot.pause()
 
@@ -99,13 +105,15 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check for Hex View Checkbox
             self.assertIsInstance(explorer.query_one("#chk-hex-view"), Checkbox)
 
+    @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
     @patch("shared.tui_log_explorer.get_all_log_files")
-    async def test_logs_tab(self, mock_get_logs, mock_services_tab):
+    async def test_logs_tab(self, mock_get_logs, mock_services_tab, mock_otp_tab):
         """Test log explorer updates with file list."""
 
         # Mock ServicesTab to return an empty Container to avoid crashes
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
 
         # Setup mock log files
         log1 = self.test_dir / "test1.log"
@@ -118,7 +126,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to logs tab
-            tabbed_content = app.query_one("#main-tabs")
+            tabbed_content = app.query_one("#main-tabs", TabbedContent)
             tabbed_content.active = "tab-logs"
             await pilot.pause()
 
@@ -132,13 +140,15 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             await pilot.click("#btn-log-refresh")
             mock_get_logs.assert_called()
 
+    @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_interact_tab(self, mock_services_tab):
+    async def test_interact_tab(self, mock_services_tab, mock_otp_tab):
         """Test InteractTab structure."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            tabbed_content = app.query_one("#main-tabs")
+            tabbed_content = app.query_one("#main-tabs", TabbedContent)
             tabbed_content.active = "tab-interact"
             await pilot.pause()
 
@@ -149,13 +159,15 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(interact.query_one("#chat-input"), Input)
             self.assertIsInstance(interact.query_one("#agent-select"), Select)
 
+    @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_knowledge_tab(self, mock_services_tab):
+    async def test_knowledge_tab(self, mock_services_tab, mock_otp_tab):
         """Test KnowledgeTab structure and loading."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
-            tabbed_content = app.query_one("#main-tabs")
+            tabbed_content = app.query_one("#main-tabs", TabbedContent)
             tabbed_content.active = "tab-knowledge"
             await pilot.pause()
 
@@ -191,7 +203,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_select = MagicMock(spec=Select)
         mock_select.value = "gemini"
 
-        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {
+        tab.query_one = MagicMock(side_effect=lambda selector, type=None: {  # type: ignore[method-assign]
             "#chat-history": mock_log,
             "#chat-input": mock_input,
             "#agent-select": mock_select
@@ -223,7 +235,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         tab = KnowledgeTab(self.project_dir)
 
         mock_table = MagicMock(spec=DataTable)
-        tab.query_one = MagicMock(return_value=mock_table)
+        tab.query_one = MagicMock(return_value=mock_table)  # type: ignore[method-assign]
 
         tab.on_mount()
 

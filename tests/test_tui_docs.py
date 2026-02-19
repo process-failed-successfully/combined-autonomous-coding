@@ -1,10 +1,14 @@
-import unittest
 import shutil
 import tempfile
-from unittest.mock import MagicMock, patch, AsyncMock
+import unittest
 from pathlib import Path
-from textual.widgets import TextArea, DataTable, Button, RichLog
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from textual.containers import Container
+from textual.widgets import DataTable, TabbedContent
+
 from shared.tui import AgentTUI, DocumentationTab
+
 
 class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -19,22 +23,23 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DocstringManager', return_value=self.mock_docstring_mgr),
             patch('shared.tui.LinkChecker', return_value=self.mock_link_checker),
             patch('shared.tui.OpenAPIGenerator', return_value=self.mock_openapi_gen),
+            patch('shared.tui.OtpLabTab', return_value=Container()),
             # Patch other managers instantiated by AgentTUI to avoid side effects
             patch('shared.tui.WorkSessionManager'),
             patch('shared.tui.TimelineCollector'),
             patch('shared.tui.TimelineRenderer'),
-            patch('shared.tui.get_all_log_files', return_value=[]),
+            patch('shared.tui_log_explorer.get_all_log_files', return_value=[]),
             patch('shared.tui.get_git_info', return_value={"branch": "main", "status": "Clean"}),
             patch('shared.tui.get_workflow_stage', return_value="Dev"),
-            patch('shared.tui.get_git_log', return_value=[]),
+            patch('shared.git.get_git_log', return_value=[]),
             patch('shared.tui.scan_project', return_value={}),
             patch('shared.tui.RecipeManager'),
             patch('shared.tui.WorktreeManager'),
-            patch('shared.tui.DependencyAnalyzer'),
-            patch('shared.tui.DependencyUpdater'),
+            patch('shared.tui_dependencies.DependencyAnalyzer'),
+            patch('shared.tui_dependencies.DependencyUpdater'),
             patch('shared.tui.TaskManager'),
             patch('shared.tui.KnowledgeManager'),
-            patch('shared.tui.init_db'), # prevent db init
+            patch('shared.tui.init_db'),  # prevent db init
             patch('shared.tui.ApiLabManager'),
             patch('shared.tui.PlaygroundManager'),
             patch('shared.tui.SecretsManager'),
@@ -57,7 +62,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
 
         async with app.run_test() as pilot:
             # Navigate to Docs tab
-            tabs = app.query_one("#main-tabs")
+            tabs = app.query_one("#main-tabs", TabbedContent)
             tabs.active = "tab-docs"
             await pilot.pause()
 
@@ -78,7 +83,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
         ]
 
         async with app.run_test() as pilot:
-            tabs = app.query_one("#main-tabs")
+            tabs = app.query_one("#main-tabs", TabbedContent)
             tabs.active = "tab-docs"
             await pilot.pause()
 
@@ -111,7 +116,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
         }
 
         async with app.run_test() as pilot:
-            tabs = app.query_one("#main-tabs")
+            tabs = app.query_one("#main-tabs", TabbedContent)
             tabs.active = "tab-docs"
             await pilot.pause()
 
@@ -131,10 +136,10 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.test_dir)
 
         # Setup mock
-        self.mock_openapi_gen.generate = AsyncMock(return_value=True) # Async method
+        self.mock_openapi_gen.generate = AsyncMock(return_value=True)  # Async method
 
         async with app.run_test() as pilot:
-            tabs = app.query_one("#main-tabs")
+            tabs = app.query_one("#main-tabs", TabbedContent)
             tabs.active = "tab-docs"
             await pilot.pause()
 

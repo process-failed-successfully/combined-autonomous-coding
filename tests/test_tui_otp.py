@@ -1,9 +1,11 @@
 import unittest
-from unittest.mock import MagicMock, patch, call
-import asyncio
+from typing import Any
+from unittest.mock import MagicMock, patch
+
 from textual.widgets import Input, Label, ProgressBar, Button
 # Import the class under test
 from shared.tui_otp import OtpLabTab
+
 
 class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -12,16 +14,16 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         self.MockManager = self.patcher.start()
 
         # Instantiate the tab
-        self.tab = OtpLabTab()
+        self.tab: Any = OtpLabTab()
         self.mock_manager = self.MockManager.return_value
         # Ensure the tab uses our mock instance
         self.tab.manager = self.mock_manager
 
         # Mock Textual UI methods
-        self.tab.notify = MagicMock()
-        self.tab.query_one = MagicMock()
+        self.tab.notify = MagicMock()  # type: ignore[method-assign]
+        self.tab.query_one = MagicMock()  # type: ignore[method-assign]
         # Mock set_interval
-        self.tab.set_interval = MagicMock()
+        self.tab.set_interval = MagicMock()  # type: ignore[method-assign]
 
     async def asyncTearDown(self):
         self.patcher.stop()
@@ -35,8 +37,10 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         res_input = MagicMock(spec=Input)
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-gen-len": return len_input
-            if selector == "#otp-gen-result": return res_input
+            if selector == "#otp-gen-len":
+                return len_input
+            if selector == "#otp-gen-result":
+                return res_input
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -57,7 +61,8 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         len_input.value = "abc"
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-gen-len": return len_input
+            if selector == "#otp-gen-len":
+                return len_input
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -77,9 +82,12 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Label)
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-verify-secret": return secret_input
-            if selector == "#otp-verify-code": return code_input
-            if selector == "#otp-verify-result": return lbl
+            if selector == "#otp-verify-secret":
+                return secret_input
+            if selector == "#otp-verify-code":
+                return code_input
+            if selector == "#otp-verify-result":
+                return lbl
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -101,9 +109,12 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         lbl = MagicMock(spec=Label)
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-verify-secret": return secret_input
-            if selector == "#otp-verify-code": return code_input
-            if selector == "#otp-verify-result": return lbl
+            if selector == "#otp-verify-secret":
+                return secret_input
+            if selector == "#otp-verify-code":
+                return code_input
+            if selector == "#otp-verify-result":
+                return lbl
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -126,10 +137,14 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         res_input = MagicMock(spec=Input)
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-url-secret": return secret_input
-            if selector == "#otp-url-label": return label_input
-            if selector == "#otp-url-issuer": return issuer_input
-            if selector == "#otp-url-result": return res_input
+            if selector == "#otp-url-secret":
+                return secret_input
+            if selector == "#otp-url-label":
+                return label_input
+            if selector == "#otp-url-issuer":
+                return issuer_input
+            if selector == "#otp-url-result":
+                return res_input
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -149,12 +164,17 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         btn_stop = MagicMock(spec=Button)
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-code-secret": return secret_input
-            if selector == "#btn-otp-monitor": return btn_monitor
-            if selector == "#btn-otp-stop": return btn_stop
+            if selector == "#otp-code-secret":
+                return secret_input
+            if selector == "#btn-otp-monitor":
+                return btn_monitor
+            if selector == "#btn-otp-stop":
+                return btn_stop
             # Mocks for update_totp called immediately
-            if selector == "#otp-code-display": return MagicMock()
-            if selector == "#otp-progress": return MagicMock()
+            if selector == "#otp-code-display":
+                return MagicMock()
+            if selector == "#otp-progress":
+                return MagicMock()
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -182,11 +202,16 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         progress = MagicMock(spec=ProgressBar)
 
         def query_side_effect(selector, type=None):
-            if selector == "#btn-otp-monitor": return btn_monitor
-            if selector == "#btn-otp-stop": return btn_stop
-            if selector == "#otp-code-secret": return secret_input
-            if selector == "#otp-code-display": return lbl_display
-            if selector == "#otp-progress": return progress
+            if selector == "#btn-otp-monitor":
+                return btn_monitor
+            if selector == "#btn-otp-stop":
+                return btn_stop
+            if selector == "#otp-code-secret":
+                return secret_input
+            if selector == "#otp-code-display":
+                return lbl_display
+            if selector == "#otp-progress":
+                return progress
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -204,7 +229,7 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
 
     @patch('time.time')
     def test_update_totp(self, mock_time):
-        mock_time.return_value = 100.5 # 30s interval -> 3 intervals + 10.5s remainder
+        mock_time.return_value = 100.5  # 30s interval -> 3 intervals + 10.5s remainder
 
         secret_input = MagicMock(spec=Input)
         secret_input.value = "SECRET"
@@ -212,9 +237,12 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         progress = MagicMock(spec=ProgressBar)
 
         def query_side_effect(selector, type=None):
-            if selector == "#otp-code-secret": return secret_input
-            if selector == "#otp-code-display": return lbl_display
-            if selector == "#otp-progress": return progress
+            if selector == "#otp-code-secret":
+                return secret_input
+            if selector == "#otp-code-display":
+                return lbl_display
+            if selector == "#otp-progress":
+                return progress
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -229,6 +257,7 @@ class TestOtpLabTab(unittest.IsolatedAsyncioTestCase):
         progress.update.assert_called_with(progress=19.5)
         args_list = lbl_display.update.call_args_list
         self.assertIn("123456", args_list[0][0][0])
+
 
 if __name__ == "__main__":
     unittest.main()

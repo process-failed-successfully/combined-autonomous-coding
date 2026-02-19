@@ -2,7 +2,7 @@ import ast
 import math
 import statistics
 import sys
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Sequence
 
 
 class MathLabManager:
@@ -88,7 +88,7 @@ class MathLabManager:
         except Exception as e:
             raise ValueError(str(e))
 
-    def calculate_stats(self, numbers: List[float]) -> Dict[str, Optional[Union[float, int]]]:
+    def calculate_stats(self, numbers: Sequence[float]) -> Dict[str, Optional[Union[float, int]]]:
         """Calculates basic statistics for a list of numbers."""
         if not numbers:
             return {}

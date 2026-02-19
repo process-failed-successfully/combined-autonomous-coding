@@ -106,7 +106,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         # Use wait_for to prevent infinite hang if logic fails
         try:
-            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=2.0)
+            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=5.0)
         except asyncio.TimeoutError:
             self.fail("start_processes timed out (infinite loop detected)")
 

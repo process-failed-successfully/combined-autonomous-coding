@@ -231,7 +231,8 @@ KNOWN_COMMANDS = [
     "ansible-lab", "ansible",
     "hex-lab", "hex",
     "speed-lab", "speed",
-    "load-lab", "load"
+    "load-lab", "load",
+    "otp-lab", "otp", "totp", "mfa"
 ]
 
 if FileSystemEventHandler:
@@ -349,6 +350,12 @@ def run_speed_lab(args):
 async def run_load_lab(args):
     """Runs the Load Lab."""
     await run_load_lab_logic(args)
+    sys.exit(0)
+
+def run_otp_lab(args):
+    """Runs the OTP Lab."""
+    from shared.otp_lab import run_otp_lab_logic
+    run_otp_lab_logic(args)
     sys.exit(0)
 
 async def run_trace_lab(args):
@@ -13636,6 +13643,40 @@ def parse_args(argv=None):
     parser_load.add_argument("--body", help="Request body.")
     parser_load.add_argument("--headers", help="Request headers (Key:Value,Key2:Value2).")
 
+    # --- New 'otp-lab' command ---
+    parser_otp = subparsers.add_parser(
+        "otp-lab",
+        aliases=["otp", "totp", "mfa"],
+        help="Generate and verify One-Time Passwords (TOTP/HOTP)."
+    )
+    otp_subparsers = parser_otp.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # otp generate
+    parser_otp_gen = otp_subparsers.add_parser("generate", help="Generate a new random Base32 secret.")
+    parser_otp_gen.add_argument("--length", type=int, default=16, help="Length of secret (default: 16).")
+
+    # otp code
+    parser_otp_code = otp_subparsers.add_parser("code", help="Generate current TOTP code.")
+    parser_otp_code.add_argument("secret", help="Base32 secret key.")
+    parser_otp_code.add_argument("--interval", type=int, default=30, help="Time interval (default: 30).")
+    parser_otp_code.add_argument("--digits", type=int, default=6, help="Number of digits (default: 6).")
+
+    # otp verify
+    parser_otp_verify = otp_subparsers.add_parser("verify", help="Verify a TOTP code.")
+    parser_otp_verify.add_argument("secret", help="Base32 secret key.")
+    parser_otp_verify.add_argument("code", help="Code to verify.")
+    parser_otp_verify.add_argument("--window", type=int, default=1, help="Window of intervals to check (default: 1).")
+
+    # otp url
+    parser_otp_url = otp_subparsers.add_parser("url", help="Generate otpauth URL.")
+    parser_otp_url.add_argument("secret", help="Base32 secret key.")
+    parser_otp_url.add_argument("--label", required=True, help="Account label (e.g. user@example.com).")
+    parser_otp_url.add_argument("--issuer", help="Issuer name (e.g. MyApp).")
+
 
     # --- Plugin Registration ---
     try:
@@ -17068,6 +17109,10 @@ async def main():
 
     if args.command in ["load-lab", "load"]:
         await run_load_lab(args)
+        return
+
+    if args.command in ["otp-lab", "otp", "totp", "mfa"]:
+        run_otp_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

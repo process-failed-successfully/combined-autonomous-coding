@@ -87,7 +87,7 @@ class ProxyLabTab(Container):
                 status_code = int(parts[1])
                 color = "green" if 200 <= status_code < 300 else "yellow" if 300 <= status_code < 400 else "red"
                 formatted_msg = message.replace(str(status_code), f"[{color}]{status_code}[/{color}]", 1)
-            except Exception:
+            except (ValueError, IndexError):
                 pass
         elif level == "error":
             formatted_msg = f"[bold red]{message}[/bold red]"

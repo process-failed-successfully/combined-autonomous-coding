@@ -126,5 +126,25 @@ key: value
         self.assertIn("b:", yaml_str)
         self.assertIn("- 2", yaml_str)
 
+    def test_list_path_input(self):
+        """Test that get/set/delete accept a list of keys/indices directly."""
+        data = {
+            "a": {
+                "b": [10, 20, 30]
+            }
+        }
+
+        # Test GET with list path
+        path_list = ["a", "b", 1]
+        self.assertEqual(self.manager.get(data, path_list), 20)
+
+        # Test SET with list path
+        self.manager.set(data, path_list, 99)
+        self.assertEqual(data["a"]["b"][1], 99)
+
+        # Test DELETE with list path
+        self.manager.delete(data, ["a", "b", 1])
+        self.assertEqual(data["a"]["b"], [10, 30])
+
 if __name__ == '__main__':
     unittest.main()

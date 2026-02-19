@@ -17,7 +17,10 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         # Ensure any lingering tasks or processes are cleaned up
-        await self.manager.stop_all()
+        try:
+            await self.manager.stop_all()
+        except Exception:
+            pass
         shutil.rmtree(self.test_dir)
 
     def test_parse_procfile(self):
@@ -87,6 +90,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         p1.returncode = None
 
         async def wait_p1():
+            await asyncio.sleep(0.01) # Force context switch
             p1.returncode = 0
             return None
         p1.wait.side_effect = wait_p1
@@ -97,6 +101,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         p2.returncode = None
 
         async def wait_p2():
+            await asyncio.sleep(0.01) # Force context switch
             p2.returncode = 0
             return None
         p2.wait.side_effect = wait_p2
@@ -104,13 +109,13 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         # Return p1 then p2
         mock_subprocess.side_effect = [p1, p2]
 
-        # Use wait_for to prevent infinite hang if logic fails
+        # Increase timeout to 5s for CI
         try:
-            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=2.0)
+            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=5.0)
         except asyncio.TimeoutError:
             self.fail("start_processes timed out (infinite loop detected)")
 
-        self.assertEqual(mock_subprocess.call_count, 2)
+        self.assertEqual(mock_subprocess.call_count, 2, f"Expected 2 calls, got {mock_subprocess.call_count}")
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,8 @@ import ast
 import math
 import statistics
 import sys
-from typing import List, Dict, Union, Any, Optional
+from typing import List, Dict, Union, Optional
+
 
 class MathLabManager:
     """Manages Math Lab operations: evaluate, stats, and primes."""
@@ -23,7 +24,7 @@ class MathLabManager:
     def _safe_eval(self, node: ast.AST) -> Union[int, float]:
         if isinstance(node, ast.Expression):
             return self._safe_eval(node.body)
-        elif isinstance(node, ast.Constant): # Python >= 3.8
+        elif isinstance(node, ast.Constant):  # Python >= 3.8
             if isinstance(node.value, (int, float)):
                 return node.value
             raise ValueError(f"Constant type {type(node.value)} not allowed")
@@ -37,16 +38,18 @@ class MathLabManager:
             elif isinstance(node.op, ast.Mult):
                 return left * right
             elif isinstance(node.op, ast.Div):
-                if right == 0: raise ValueError("Division by zero")
+                if right == 0:
+                    raise ValueError("Division by zero")
                 return left / right
             elif isinstance(node.op, ast.FloorDiv):
-                if right == 0: raise ValueError("Division by zero")
+                if right == 0:
+                    raise ValueError("Division by zero")
                 return left // right
             elif isinstance(node.op, ast.Mod):
                 return left % right
             elif isinstance(node.op, ast.Pow):
                 return left ** right
-            elif isinstance(node.op, ast.BitXor): # Using ^ for power as well, common in calculators
+            elif isinstance(node.op, ast.BitXor):  # Using ^ for power as well, common in calculators
                 return left ** right
         elif isinstance(node, ast.UnaryOp):
             operand = self._safe_eval(node.operand)
@@ -102,7 +105,7 @@ class MathLabManager:
         try:
             result["mode"] = statistics.mode(numbers)
         except statistics.StatisticsError:
-            result["mode"] = None # No unique mode
+            result["mode"] = None  # No unique mode
 
         if len(numbers) > 1:
             result["stdev"] = statistics.stdev(numbers)
@@ -115,9 +118,12 @@ class MathLabManager:
 
     def is_prime(self, n: int) -> bool:
         """Checks if a number is prime."""
-        if n <= 1: return False
-        if n <= 3: return True
-        if n % 2 == 0 or n % 3 == 0: return False
+        if n <= 1:
+            return False
+        if n <= 3:
+            return True
+        if n % 2 == 0 or n % 3 == 0:
+            return False
         i = 5
         while i * i <= n:
             if n % i == 0 or n % (i + 2) == 0:
@@ -127,7 +133,8 @@ class MathLabManager:
 
     def next_prime(self, n: int) -> int:
         """Finds the next prime number strictly greater than n."""
-        if n < 2: return 2
+        if n < 2:
+            return 2
         candidate = n + 1
         while True:
             if self.is_prime(candidate):
@@ -148,6 +155,7 @@ class MathLabManager:
             factors.append(temp)
         return factors
 
+
 def run_math_lab_logic(args) -> bool:
     """CLI handler for Math Lab."""
     manager = MathLabManager()
@@ -156,7 +164,7 @@ def run_math_lab_logic(args) -> bool:
         expr = args.expression
         if not expr:
             # Try to read from stdin if not provided
-             if not sys.stdin.isatty():
+            if not sys.stdin.isatty():
                 expr = sys.stdin.read().strip()
 
         if not expr:
@@ -181,20 +189,20 @@ def run_math_lab_logic(args) -> bool:
 
         # Also try reading from stdin if pipeline
         if not sys.stdin.isatty():
-             try:
-                 content = sys.stdin.read().strip()
-                 if content:
-                     # Split by whitespace or commas
-                     import re
-                     parts = re.split(r'[\s,]+', content)
-                     for p in parts:
-                         if p:
-                             try:
-                                 numbers.append(float(p))
-                             except ValueError:
-                                 pass
-             except Exception:
-                 pass
+            try:
+                content = sys.stdin.read().strip()
+                if content:
+                    # Split by whitespace or commas
+                    import re
+                    parts = re.split(r'[\s,]+', content)
+                    for p in parts:
+                        if p:
+                            try:
+                                numbers.append(float(p))
+                            except ValueError:
+                                pass
+            except Exception:
+                pass
 
         if not numbers:
             print("Error: No valid numbers provided.", file=sys.stderr)
@@ -206,16 +214,16 @@ def run_math_lab_logic(args) -> bool:
             if v is None:
                 print(f"{k.capitalize()}: N/A")
             elif isinstance(v, int):
-                 print(f"{k.capitalize()}: {v}")
+                print(f"{k.capitalize()}: {v}")
             else:
-                 print(f"{k.capitalize()}: {v:.4f}")
+                print(f"{k.capitalize()}: {v:.4f}")
 
     elif args.action == "prime":
         try:
             n = int(args.number)
         except ValueError:
-             print("Error: Integer required.", file=sys.stderr)
-             return False
+            print("Error: Integer required.", file=sys.stderr)
+            return False
 
         if args.subaction == "check":
             if manager.is_prime(n):
@@ -224,7 +232,7 @@ def run_math_lab_logic(args) -> bool:
                 print(f"❌ {n} is NOT prime.")
                 factors = manager.prime_factors(n)
                 if len(factors) > 1:
-                     print(f"Factors: {factors}")
+                    print(f"Factors: {factors}")
 
         elif args.subaction == "next":
             print(manager.next_prime(n))

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from textual.widgets import Input, RichLog, DataTable, Static
-# Import the class under test
+from textual.widgets import DataTable, Input, RichLog, Static
+
 from shared.tui_math import MathLabTab
 
 

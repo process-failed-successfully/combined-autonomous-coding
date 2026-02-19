@@ -1,9 +1,8 @@
-from textual.app import ComposeResult
-from textual.widgets import Label, Button, Input, DataTable, RichLog, TabbedContent, TabPane, Static
-from textual.containers import Container, Horizontal, Vertical
 import asyncio
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Button, DataTable, Input, Label, RichLog, Static, TabPane, TabbedContent
 from shared.math_lab import MathLabManager
-
 
 class MathLabTab(Container):
     """Tab for Math operations."""

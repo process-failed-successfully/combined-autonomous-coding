@@ -1,15 +1,16 @@
 import ast
+import argparse
 import math
 import statistics
 import sys
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Any, Callable
 
 
 class MathLabManager:
     """Manages Math Lab operations: evaluate, stats, and primes."""
 
-    def __init__(self):
-        self.allowed_names = {
+    def __init__(self) -> None:
+        self.allowed_names: Dict[str, Union[Callable[..., Union[int, float]], float, int]] = {
             k: v for k, v in math.__dict__.items() if not k.startswith("__")
         }
         self.allowed_names.update({
@@ -61,13 +62,19 @@ class MathLabManager:
             if isinstance(node.func, ast.Name):
                 func_name = node.func.id
                 if func_name in self.allowed_names:
-                    args = [self._safe_eval(arg) for arg in node.args]
-                    return self.allowed_names[func_name](*args)
+                    func = self.allowed_names[func_name]
+                    if callable(func):
+                        args = [self._safe_eval(arg) for arg in node.args]
+                        return func(*args)
+                    raise ValueError(f"'{func_name}' is not callable")
                 else:
                     raise ValueError(f"Function '{func_name}' not allowed")
         elif isinstance(node, ast.Name):
             if node.id in self.allowed_names:
-                return self.allowed_names[node.id]
+                val = self.allowed_names[node.id]
+                if isinstance(val, (int, float)):
+                    return val
+                raise ValueError(f"Variable '{node.id}' is not a numeric value")
             raise ValueError(f"Variable '{node.id}' not allowed")
 
         raise ValueError(f"Unsupported operation: {type(node).__name__}")
@@ -156,7 +163,7 @@ class MathLabManager:
         return factors
 
 
-def run_math_lab_logic(args) -> bool:
+def run_math_lab_logic(args: argparse.Namespace) -> bool:
     """CLI handler for Math Lab."""
     manager = MathLabManager()
 

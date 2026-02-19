@@ -48,39 +48,61 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         callback.assert_called_with("test", "line1")
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    async def test_stop_process(self, mock_subprocess):
+    @patch("os.killpg")
+    @patch("os.getpgid")
+    async def test_stop_process(self, mock_getpgid, mock_killpg, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
-        mock_proc.pid = 12345  # Ensure PID is an integer
+        mock_proc.pid = 12345
         mock_proc.wait = AsyncMock()
         mock_proc.terminate = MagicMock()
+        # Configure stdout/stderr to avoid task exceptions
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
 
-        # Patch sys.platform to ensure consistent behavior (win32 path uses terminate())
-        # or verify linux path. The existing test asserted terminate(), so let's stick to win32 behavior
-        # for this specific test case, or adapt it.
-        # Let's adapt it to handle both or force one.
-
+        # Test Windows path
         with patch("sys.platform", "win32"):
             success = await self.manager.stop_process("test")
             self.assertTrue(success)
             self.assertNotIn("test", self.manager.processes)
             mock_proc.terminate.assert_called_once()
 
+        # Re-add for Linux path test
+        self.manager.processes["test"] = mock_proc
+        mock_proc.returncode = None # Reset
+
+        # Test Linux path
+        with patch("sys.platform", "linux"):
+            mock_getpgid.return_value = 12345
+            success = await self.manager.stop_process("test")
+            self.assertTrue(success)
+            mock_killpg.assert_called_with(12345, 15) # 15 is SIGTERM
+
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    async def test_stop_all(self, mock_subprocess):
+    @patch("os.killpg")
+    @patch("os.getpgid")
+    async def test_stop_all(self, mock_getpgid, mock_killpg, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
+        mock_proc.pid = 12345
+        # Configure stdout/stderr
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
+        mock_getpgid.return_value = 12345
 
         await self.manager.start_process("p1", "echo 1")
         await self.manager.start_process("p2", "echo 2")
         self.assertEqual(len(self.manager.processes), 2)
 
-        await self.manager.stop_all()
+        # Ensure we don't accidentally use win32 which skips killpg
+        with patch("sys.platform", "linux"):
+            await self.manager.stop_all()
+
         self.assertEqual(len(self.manager.processes), 0)
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)

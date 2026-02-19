@@ -1,6 +1,7 @@
 import argparse
 import ast
 import math
+import re
 import statistics
 import sys
 from typing import Any, Dict, List, Optional, Union
@@ -200,7 +201,6 @@ def run_math_lab_logic(args: argparse.Namespace) -> bool:
                 content = sys.stdin.read().strip()
                 if content:
                     # Split by whitespace or commas
-                    import re
                     parts = re.split(r'[\s,]+', content)
                     for p in parts:
                         if p:
@@ -208,7 +208,7 @@ def run_math_lab_logic(args: argparse.Namespace) -> bool:
                                 numbers.append(float(p))
                             except ValueError:
                                 pass
-            except Exception:
+            except (IOError, OSError):
                 pass
 
         if not numbers:

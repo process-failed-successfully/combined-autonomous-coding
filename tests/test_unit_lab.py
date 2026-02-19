@@ -1,6 +1,7 @@
 import unittest
 from shared.unit_lab import UnitLabManager
 
+
 class TestUnitLabManager(unittest.TestCase):
     def setUp(self):
         self.manager = UnitLabManager()
@@ -42,7 +43,7 @@ class TestUnitLabManager(unittest.TestCase):
     def test_error_handling(self):
         self.assertTrue(self.manager.convert(1, "unknown", "b").startswith("Error"))
         self.assertTrue(self.manager.convert(1, "b", "unknown").startswith("Error"))
-        self.assertTrue(self.manager.convert(1, "b", "c").startswith("Error")) # Storage to Temp
+        self.assertTrue(self.manager.convert(1, "b", "c").startswith("Error"))  # Storage to Temp
 
     def test_currency(self):
         # 1 USD -> 1 USD

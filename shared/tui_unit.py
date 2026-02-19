@@ -4,13 +4,14 @@ from textual.widgets import Label, Input, Select, Button, DataTable
 from textual import on
 from shared.unit_lab import UnitLabManager
 
+
 class UnitLabTab(Container):
     """Tab for Unit Conversion."""
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.manager = UnitLabManager()
-        self.current_category = "length" # Default
+        self.current_category = "length"  # Default
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
@@ -31,7 +32,7 @@ class UnitLabTab(Container):
                         yield Select([], id="unit-from-select", prompt="From Unit")
 
                     with Vertical():
-                        yield Label(" ") # Spacer
+                        yield Label(" ")  # Spacer
                         yield Button("⇄", id="btn-unit-swap", variant="default")
 
                     with Vertical():
@@ -64,7 +65,7 @@ class UnitLabTab(Container):
     @on(Select.Changed, "#unit-category-select")
     def on_category_changed(self, event: Select.Changed) -> None:
         cat = event.value
-        if not cat:
+        if not isinstance(cat, str):
             return
 
         self.current_category = cat
@@ -111,7 +112,7 @@ class UnitLabTab(Container):
         val_to = to_sel.value
 
         from_sel.value = val_to
-        to_sel.value = val_from # Triggers on_changed -> update_result
+        to_sel.value = val_from  # Triggers on_changed -> update_result
 
     def update_result(self) -> None:
         val_str = self.query_one("#unit-value-input", Input).value
@@ -119,7 +120,7 @@ class UnitLabTab(Container):
         to_unit = self.query_one("#unit-to-select", Select).value
         lbl = self.query_one("#unit-result-label", Label)
 
-        if not val_str or not from_unit or not to_unit:
+        if not val_str or not isinstance(from_unit, str) or not isinstance(to_unit, str):
             lbl.update("---")
             return
 
@@ -139,7 +140,7 @@ class UnitLabTab(Container):
 
     def update_reference_table(self) -> None:
         from_unit = self.query_one("#unit-from-select", Select).value
-        if not from_unit:
+        if not isinstance(from_unit, str):
             return
 
         table = self.query_one("#unit-ref-table", DataTable)

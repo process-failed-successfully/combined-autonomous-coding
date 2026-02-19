@@ -1,18 +1,20 @@
+import shutil
+import sys
+import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
-import sys
-import shutil
-import tempfile
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from textual.containers import Container
+from textual.widgets import Checkbox, DataTable, DirectoryTree, Input, Label, ListView, RichLog, Select, TabbedContent
+
+from shared.tui import AgentTUI, DashboardTab, InteractTab, KnowledgeTab
+from shared.tui_explorer import FileExplorerTab
+from shared.tui_log_explorer import LogExplorerTab
 
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView, Checkbox
-from textual.containers import Container
-from shared.tui import AgentTUI, DashboardTab, InteractTab, KnowledgeTab
-from shared.tui_explorer import FileExplorerTab
-from shared.tui_log_explorer import LogExplorerTab
 
 class TestTUI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -43,7 +45,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         """Test that the app starts up and has the expected title and tabs."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Check if TabbedContent exists
             self.assertIsInstance(app.query_one("#main-tabs"), TabbedContent)
             # Check if tabs are present by ID
@@ -60,7 +62,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         """Test that the dashboard tab displays project info."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Switch to dashboard is default
             dashboard = app.query_one(DashboardTab)
             self.assertIsNotNone(dashboard)
@@ -68,7 +70,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             # Check for labels
             labels = dashboard.query(Label)
             # We look for partial matches as content might vary
-            self.assertTrue(any("Project:" in str(l.render()) for l in labels))
+            self.assertTrue(any("Project:" in str(lbl.render()) for lbl in labels))
 
             # Check for buttons
             self.assertTrue(dashboard.query_one("#btn-test"))
@@ -173,6 +175,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
     """Unit tests for individual components logic."""
+
     def setUp(self):
         self.project_dir = Path("/tmp/test_project")
         self.project_dir.mkdir(parents=True, exist_ok=True)
@@ -232,8 +235,9 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
     @patch("shared.tui.AgentTUI")
     def test_main_run_tui(self, MockAgentTUI, mock_exit):
         """Test that main.run_tui instantiates and runs the app."""
-        from main import run_tui
         import argparse
+
+        from main import run_tui
 
         args = argparse.Namespace(project_dir=self.project_dir)
 
@@ -250,8 +254,9 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         # Test hexdump
         data = b"Hello World"
         dump = tab.hexdump(data)
-        self.assertIn("48 65 6c 6c 6f", dump) # Hex for Hello
+        self.assertIn("48 65 6c 6c 6f", dump)  # Hex for Hello
         self.assertIn("|Hello World|", dump)
+
 
 if __name__ == "__main__":
     unittest.main()

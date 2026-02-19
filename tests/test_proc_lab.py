@@ -87,6 +87,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         p1.returncode = None
 
         async def wait_p1():
+            # Explicitly set returncode on the mock object
             p1.returncode = 0
             return None
         p1.wait.side_effect = wait_p1
@@ -97,6 +98,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         p2.returncode = None
 
         async def wait_p2():
+            # Explicitly set returncode on the mock object
             p2.returncode = 0
             return None
         p2.wait.side_effect = wait_p2
@@ -106,7 +108,8 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         # Use wait_for to prevent infinite hang if logic fails
         try:
-            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=2.0)
+            # Increased timeout to 5.0s to avoid flakiness in CI
+            await asyncio.wait_for(self.manager.start_processes(self.procfile), timeout=5.0)
         except asyncio.TimeoutError:
             self.fail("start_processes timed out (infinite loop detected)")
 

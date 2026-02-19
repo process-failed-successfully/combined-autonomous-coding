@@ -84,7 +84,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
                 data=body,
                 allow_redirects=False, # We want to pass redirects back to client
                 stream=True, # Stream response content
-                timeout=30
+                timeout=30,
+                proxies={"http": None, "https": None} # Bypass environment proxies
             )
 
             # Read full content to avoid Content-Length mismatches (decompression)
@@ -219,7 +220,8 @@ class ProxyLabManager:
             self.server.serve_forever()
         except OSError as e:
             print(f"❌ Error starting server: {e}")
-            sys.exit(1)
+            # Do not sys.exit(1) as it might kill the test runner or main app
+            return
         except KeyboardInterrupt:
             print("\nStopping proxy...")
             self.stop()

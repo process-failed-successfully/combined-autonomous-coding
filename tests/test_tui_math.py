@@ -1,8 +1,11 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
-from textual.widgets import Input, RichLog, DataTable, Static, Button
+from unittest.mock import MagicMock, patch
+
+from textual.widgets import DataTable, Input, RichLog, Static
+
 # Import the class under test
 from shared.tui_math import MathLabTab
+
 
 class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -209,6 +212,7 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         args_list = lbl.update.call_args_list
         final_call_arg = args_list[-1][0][0]
         self.assertIn("[2, 2, 3]", final_call_arg)
+
 
 if __name__ == "__main__":
     unittest.main()

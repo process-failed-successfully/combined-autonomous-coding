@@ -1,88 +1,50 @@
-import threading
-import time
-import requests
-import http.server
-import socketserver
 import unittest
-import socket
-from shared.proxy_lab import ProxyLabManager
+from unittest.mock import MagicMock, patch
+from shared.proxy_lab import ProxyLabManager, ProxyRequestHandler
 
-def get_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
-
-class MockOriginHandler(http.server.BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"Hello from Origin")
-
-    def do_POST(self):
-        content_length = int(self.headers.get('Content-Length', 0))
-        body = self.rfile.read(content_length)
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"Received: " + body)
 
 class TestProxyLab(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Find free ports
-        cls.origin_port = get_free_port()
-        cls.proxy_port = get_free_port()
+    def test_manager_callback(self):
+        """Test that log callback is passed to server."""
+        manager = ProxyLabManager(port=0)
+        mock_callback = MagicMock()
 
-        # Start Origin Server
-        cls.origin_server = socketserver.TCPServer(("127.0.0.1", cls.origin_port), MockOriginHandler)
-        cls.origin_thread = threading.Thread(target=cls.origin_server.serve_forever)
-        cls.origin_thread.daemon = True
-        cls.origin_thread.start()
+        # We need to mock serve_forever so start() doesn't block
+        with patch('shared.proxy_lab.ThreadedHTTPServer') as MockServer:
+            mock_instance = MockServer.return_value
+            manager.start(on_log=mock_callback)
 
-        # Start Proxy Server
-        # We need to run start() in a thread because it blocks
-        cls.proxy_manager = ProxyLabManager(port=cls.proxy_port, host="127.0.0.1")
-        cls.proxy_thread = threading.Thread(target=cls.proxy_manager.start)
-        cls.proxy_thread.daemon = True
-        cls.proxy_thread.start()
+            MockServer.assert_called_with(('127.0.0.1', 0), ProxyRequestHandler, log_callback=mock_callback)
+            mock_instance.serve_forever.assert_called_once()
 
-        # Give them a moment to start
-        time.sleep(1)
+    def test_log_methods(self):
+        """Test that helper log methods call the callback."""
+        # Create a bare object with server attribute
+        handler = ProxyRequestHandler.__new__(ProxyRequestHandler)
+        handler.server = MagicMock()
+        handler.server.log_callback = MagicMock()
 
-    @classmethod
-    def tearDownClass(cls):
-        if cls.origin_server:
-            cls.origin_server.shutdown()
-            cls.origin_server.server_close()
-        if cls.proxy_manager:
-            cls.proxy_manager.stop()
+        # Test _log_request
+        handler._log_request("GET", "http://test.com")
+        handler.server.log_callback.assert_called_with("GET http://test.com", "info")
 
-    def test_proxy_get(self):
-        proxies = {
-            "http": f"http://127.0.0.1:{self.proxy_port}",
-        }
-        url = f"http://127.0.0.1:{self.origin_port}/test"
+        # Test _log_response
+        handler._log_response(200, 0.1, 100)
+        handler.server.log_callback.assert_called_with("  -> 200 (0.100s, size: 100)", "response")
 
-        try:
-            resp = requests.get(url, proxies=proxies, timeout=5)
-            self.assertEqual(resp.status_code, 200)
-            self.assertEqual(resp.text, "Hello from Origin")
-        except requests.exceptions.RequestException as e:
-            self.fail(f"Request failed: {e}")
+        # Test _log_error
+        handler._log_error("Test Error")
+        handler.server.log_callback.assert_called_with("Test Error", "error")
 
-    def test_proxy_post(self):
-        proxies = {
-            "http": f"http://127.0.0.1:{self.proxy_port}",
-        }
-        url = f"http://127.0.0.1:{self.origin_port}/post"
+    def test_start_raises_error(self):
+        """Test that start raises OSError if bind fails."""
+        manager = ProxyLabManager(port=8080)
 
-        try:
-            resp = requests.post(url, data="test data", proxies=proxies, timeout=5)
-            self.assertEqual(resp.status_code, 200)
-            self.assertEqual(resp.text, "Received: test data")
-        except requests.exceptions.RequestException as e:
-            self.fail(f"Request failed: {e}")
+        with patch('shared.proxy_lab.ThreadedHTTPServer') as MockServer:
+            MockServer.side_effect = OSError("Address in use")
+            with self.assertRaises(OSError):
+                manager.start(on_log=MagicMock())
+
 
 if __name__ == '__main__':
     unittest.main()

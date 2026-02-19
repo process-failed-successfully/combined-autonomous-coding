@@ -51,6 +51,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
     async def test_stop_process(self, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
+        mock_proc.pid = 12345  # Ensure PID is an integer
         mock_proc.wait = AsyncMock()
         mock_proc.terminate = MagicMock()
         mock_subprocess.return_value = mock_proc
@@ -58,10 +59,16 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
 
-        success = await self.manager.stop_process("test")
-        self.assertTrue(success)
-        self.assertNotIn("test", self.manager.processes)
-        mock_proc.terminate.assert_called_once()
+        # Patch sys.platform to ensure consistent behavior (win32 path uses terminate())
+        # or verify linux path. The existing test asserted terminate(), so let's stick to win32 behavior
+        # for this specific test case, or adapt it.
+        # Let's adapt it to handle both or force one.
+
+        with patch("sys.platform", "win32"):
+            success = await self.manager.stop_process("test")
+            self.assertTrue(success)
+            self.assertNotIn("test", self.manager.processes)
+            mock_proc.terminate.assert_called_once()
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):

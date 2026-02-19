@@ -88,6 +88,7 @@ from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_unit import UnitLabTab
+from shared.tui_otp import OtpLabTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
@@ -4004,6 +4005,8 @@ class AgentTUI(App):
                 yield ApiLabTab(self.project_dir)
             with TabPane("JWT Lab", id="tab-jwt"):
                 yield JwtLabTab()
+            with TabPane("OTP Lab", id="tab-otp"):
+                yield OtpLabTab()
             with TabPane("Sanitizer", id="tab-sanitizer"):
                 yield SanitizerTab(self.project_dir)
             with TabPane("Frontend", id="tab-frontend"):

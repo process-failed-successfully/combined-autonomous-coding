@@ -1,9 +1,9 @@
-import ast
 import argparse
+import ast
 import math
 import statistics
 import sys
-from typing import List, Dict, Union, Optional, Any
+from typing import Any, Dict, List, Optional, Union
 
 
 class MathLabManager:
@@ -208,7 +208,7 @@ def run_math_lab_logic(args: argparse.Namespace) -> bool:
                                 numbers.append(float(p))
                             except ValueError:
                                 pass
-            except Exception:
+            except (IOError, OSError):
                 pass
 
         if not numbers:

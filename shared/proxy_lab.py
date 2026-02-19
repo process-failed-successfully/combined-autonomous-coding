@@ -1,15 +1,11 @@
-import sys
 import http.server
 import socketserver
 import socket
 import select
-import threading
 import logging
 import time
 import requests
 from urllib.parse import urlparse
-from typing import Optional, List, Tuple
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -17,14 +13,12 @@ logger = logging.getLogger("proxy-lab")
 
 try:
     from rich.console import Console
-    from rich.text import Text
-    from rich.highlighter import ReprHighlighter
-    from rich.syntax import Syntax
     HAS_RICH = True
     console = Console()
 except ImportError:
     HAS_RICH = False
     console = None
+
 
 class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
     """
@@ -67,7 +61,7 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
         # Handle Host header
         parsed_url = urlparse(url)
         if parsed_url.netloc:
-             headers["Host"] = parsed_url.netloc
+            headers["Host"] = parsed_url.netloc
 
         # Read body if present
         content_length = int(self.headers.get('Content-Length', 0))
@@ -82,8 +76,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
                 url=url,
                 headers=headers,
                 data=body,
-                allow_redirects=False, # We want to pass redirects back to client
-                stream=True, # Stream response content
+                allow_redirects=False,  # We want to pass redirects back to client
+                stream=True,  # Stream response content
                 timeout=30
             )
 
@@ -179,27 +173,42 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
             remote_socket.close()
 
     def _log_request(self, method, url):
-        if HAS_RICH and console:
+        msg = f"{method} {url}"
+        if hasattr(self.server, "log_callback") and self.server.log_callback:
+            self.server.log_callback(msg, "info")
+        elif HAS_RICH and console:
             console.print(f"[bold cyan]{method}[/bold cyan] [blue]{url}[/blue]")
         else:
-            logger.info(f"{method} {url}")
+            logger.info(msg)
 
     def _log_response(self, status, duration, size):
-        color = "green" if 200 <= status < 300 else "yellow" if 300 <= status < 400 else "red"
-        if HAS_RICH and console:
-            console.print(f"  -> [{color}]{status}[/{color}] ({duration:.3f}s, size: {size})")
+        msg = f"  -> {status} ({duration:.3f}s, size: {size})"
+        if hasattr(self.server, "log_callback") and self.server.log_callback:
+            self.server.log_callback(msg, "response")
         else:
-            logger.info(f"  -> {status} ({duration:.3f}s, size: {size})")
+            color = "green" if 200 <= status < 300 else "yellow" if 300 <= status < 400 else "red"
+            if HAS_RICH and console:
+                console.print(f"  -> [{color}]{status}[/{color}] ({duration:.3f}s, size: {size})")
+            else:
+                logger.info(msg)
 
     def _log_error(self, message):
-        if HAS_RICH and console:
+        if hasattr(self.server, "log_callback") and self.server.log_callback:
+            self.server.log_callback(message, "error")
+        elif HAS_RICH and console:
             console.print(f"[bold red]Error:[/bold red] {message}")
         else:
             logger.error(f"Error: {message}")
 
+
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     """Handle requests in a separate thread."""
     daemon_threads = True
+
+    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, log_callback=None):
+        self.log_callback = log_callback
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+
 
 class ProxyLabManager:
     def __init__(self, port: int = 8080, host: str = "127.0.0.1"):
@@ -208,18 +217,21 @@ class ProxyLabManager:
         self.server = None
         self.thread = None
 
-    def start(self):
+    def start(self, on_log=None):
         """Starts the proxy server."""
         try:
-            self.server = ThreadedHTTPServer((self.host, self.port), ProxyRequestHandler)
-            print(f"✅ Proxy Lab listening on {self.host}:{self.port}")
-            print("Configure your browser or tools to use this proxy.")
-            print("Press Ctrl+C to stop.")
+            self.server = ThreadedHTTPServer((self.host, self.port), ProxyRequestHandler, log_callback=on_log)
+            if not on_log:
+                print(f"✅ Proxy Lab listening on {self.host}:{self.port}")
+                print("Configure your browser or tools to use this proxy.")
+                print("Press Ctrl+C to stop.")
 
             self.server.serve_forever()
         except OSError as e:
-            print(f"❌ Error starting server: {e}")
-            sys.exit(1)
+            if not on_log:
+                print(f"❌ Error starting server: {e}")
+            # Re-raise so TUI can handle it
+            raise
         except KeyboardInterrupt:
             print("\nStopping proxy...")
             self.stop()
@@ -229,6 +241,7 @@ class ProxyLabManager:
         if self.server:
             self.server.shutdown()
             self.server.server_close()
+
 
 def run_proxy_lab_logic(args):
     """CLI logic for Proxy Lab."""

@@ -65,6 +65,7 @@ from shared.tui_k8s import K8sTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
+from shared.tui_proxy import ProxyLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
@@ -4006,6 +4007,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("Proxy Lab", id="tab-proxy"):
+                yield ProxyLabTab(self.project_dir)
             with TabPane("JWT Lab", id="tab-jwt"):
                 yield JwtLabTab()
             with TabPane("OTP Lab", id="tab-otp"):

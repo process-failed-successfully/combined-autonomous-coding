@@ -102,6 +102,7 @@ from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
+from shared.tui_notebook import NotebookLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_markdown import MarkdownLabTab
@@ -4039,6 +4040,8 @@ class AgentTUI(App):
                 yield MathLabTab()
             with TabPane("Unit Lab", id="tab-unit"):
                 yield UnitLabTab()
+            with TabPane("Notebooks", id="tab-notebooks"):
+                yield NotebookLabTab(self.project_dir)
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):

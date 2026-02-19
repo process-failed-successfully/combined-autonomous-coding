@@ -2,6 +2,8 @@ import contextlib
 import io
 import os
 import shlex
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -111,8 +113,6 @@ from shared.worktree import WorktreeManager
 
 # Helper to get Git info safely
 def get_git_info(project_dir: Path) -> dict:
-    import shutil
-    import subprocess
     git_path = shutil.which("git")
     info = {"branch": "Unknown", "status": "Unknown"}
     if git_path and (project_dir / ".git").is_dir():
@@ -126,7 +126,7 @@ def get_git_info(project_dir: Path) -> dict:
             res = subprocess.run([git_path, "-C", str(project_dir), "status", "--porcelain"], capture_output=True, text=True)
             if res.returncode == 0:
                 info["status"] = "Dirty" if res.stdout.strip() else "Clean"
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             pass
     return info
 
@@ -737,8 +737,8 @@ class TasksTab(Container):
             try:
                 kanban = self.query_one("#kanban-board", KanbanBoard)
                 kanban.load_tasks(tasks)
-            except Exception:
-                pass
+            except Exception as e:
+                self.log(f"Kanban update failed: {e}")
 
             self.notify(f"Loaded {len(tasks)} tasks.")
         except Exception as e:
@@ -2139,14 +2139,14 @@ class ApiLabTab(Container):
             try:
                 self.query_one("#api-load-method", Select).value = data['method']
                 self.query_one("#api-load-url", Input).value = full_url
-            except Exception:
-                pass
+            except Exception as e:
+                self.log(f"UI update error: {e}")
 
             # Update Fuzz Target Label
             try:
                 self.query_one("#lbl-fuzz-target", Label).update(f"[{data['method']}] {full_url}")
-            except Exception:
-                pass
+            except Exception as e:
+                self.log(f"UI update error: {e}")
 
     @on(ListView.Selected, "#api-collection-list")
     def on_saved_request_selected(self, event: ListView.Selected) -> None:
@@ -2164,8 +2164,8 @@ class ApiLabTab(Container):
                 self.query_one("#api-load-method", Select).value = data.get('method', 'GET')
                 self.query_one("#api-load-url", Input).value = data.get('url', '')
                 self.query_one("#api-load-body", TextArea).text = data.get('body', '')  # Note: TextArea uses .text not .value
-            except Exception:
-                pass
+            except Exception as e:
+                self.log(f"UI update error: {e}")
 
             self.query_one("#btn-api-delete-saved").disabled = False
             self.notify(f"Loaded '{data.get('name')}'")
@@ -2542,7 +2542,6 @@ class CodeReviewTab(Container):
         list_view.clear()
 
         # Get git status
-        import subprocess
         try:
             res = subprocess.run(
                 ["git", "-C", str(self.project_dir), "status", "--porcelain"],
@@ -3370,7 +3369,7 @@ class ConfigTab(Container):
             try:
                 with open(self.config_path, "r") as f:
                     config = yaml.safe_load(f) or {}
-            except Exception:
+            except (OSError, yaml.YAMLError):
                 pass
 
         if not config:
@@ -3411,7 +3410,7 @@ class ConfigTab(Container):
             try:
                 with open(self.config_path, "r") as f:
                     config = yaml.safe_load(f) or {}
-            except Exception:
+            except (OSError, yaml.YAMLError):
                 pass
 
         # Update with widget values
@@ -3663,8 +3662,8 @@ class PromptLabTab(Container):
         for agent in ["gemini", "cursor", "local"]:
             try:
                 self.query_one(f"#pl-res-{agent}", RichLog).clear()
-            except Exception:
-                pass
+            except Exception as e:
+                self.log(f"Clear failed: {e}")
 
         results = await self.manager.run_experiment(sys_prompt, user_prompt, agents)
 
@@ -3672,8 +3671,8 @@ class PromptLabTab(Container):
             try:
                 log = self.query_one(f"#pl-res-{agent}", RichLog)
                 log.write(response)
-            except Exception:
-                pass
+            except Exception as e:
+                self.log(f"Write failed: {e}")
 
         self.notify("Experiment complete.")
 
@@ -3888,7 +3887,6 @@ class AgentTUI(App):
         self.notify("Dashboard refreshed.")
 
     def action_run_tests(self) -> None:
-        import subprocess
         self.notify("Running tests...")
         try:
             subprocess.Popen([sys.executable, "main.py", "test", "-p", str(self.project_dir)])
@@ -3897,7 +3895,6 @@ class AgentTUI(App):
             self.notify(f"Failed to start tests: {e}", severity="error")
 
     def action_run_lint(self) -> None:
-        import subprocess
         self.notify("Running lint...")
         try:
             subprocess.Popen([sys.executable, "main.py", "lint", "-p", str(self.project_dir)])

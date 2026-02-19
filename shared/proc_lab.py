@@ -3,13 +3,15 @@ import sys
 import os
 import signal
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 import platform
 
 class ProcLabManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
-        self.processes = {}
+        self.processes: Dict[str, asyncio.subprocess.Process] = {}
+        self.process_defs: Dict[str, str] = {}
+        self.tasks: List[asyncio.Task] = []
 
     def parse_procfile(self, procfile_path: Path) -> Dict[str, str]:
         if not procfile_path.exists():
@@ -31,81 +33,133 @@ class ProcLabManager:
 
         return processes
 
-    async def _stream_output(self, name: str, stream, color_code: str):
+    def load_config(self, procfile_path: Path) -> None:
+        self.process_defs = self.parse_procfile(procfile_path)
+
+    async def _stream_output(self, name: str, stream, on_output: Optional[Callable[[str, str], None]] = None, color_code: str = "37"):
         while True:
             line = await stream.readline()
             if not line:
                 break
             decoded = line.decode().strip()
             if decoded:
-                # Use simple ANSI colors for prefixes
-                print(f"\033[{color_code}m[{name}]\033[0m {decoded}")
+                if on_output:
+                    # Callback gets (process_name, line)
+                    if asyncio.iscoroutinefunction(on_output):
+                        await on_output(name, decoded)
+                    else:
+                        on_output(name, decoded)
+                else:
+                    # Default CLI output
+                    print(f"\033[{color_code}m[{name}]\033[0m {decoded}")
 
+    async def start_process(self, name: str, on_output: Optional[Callable[[str, str], None]] = None):
+        if name not in self.process_defs:
+            raise ValueError(f"Process '{name}' not found in definitions.")
+
+        if name in self.processes and self.processes[name].returncode is None:
+            # Already running
+            return
+
+        command = self.process_defs[name]
+
+        # Prepare subprocess arguments
+        kwargs = {
+            "stdout": asyncio.subprocess.PIPE,
+            "stderr": asyncio.subprocess.PIPE,
+            "cwd": self.project_dir,
+        }
+
+        # Use setsid on Unix to easily kill process groups
+        if sys.platform != "win32":
+            kwargs["preexec_fn"] = os.setsid
+
+        # Create subprocess
+        process = await asyncio.create_subprocess_shell(
+            command,
+            **kwargs
+        )
+
+        self.processes[name] = process
+
+        # Assign a simple color based on name hash or something simpler for consistency
+        # For now, just use a default or cycle if we had an index.
+        # Since this method starts one, we pick a color.
+        colors = ["32", "33", "34", "35", "36", "31"]
+        color = colors[hash(name) % len(colors)]
+
+        # Create tasks for streaming stdout and stderr
+        # We store these tasks to ensure they run?
+        # Actually, we should probably fire and forget or track them if we want to wait.
+        # For TUI, fire and forget (or track in background) is better.
+
+        t1 = asyncio.create_task(self._stream_output(name, process.stdout, on_output, color))
+        t2 = asyncio.create_task(self._stream_output(name, process.stderr, on_output, color))
+        self.tasks.extend([t1, t2])
+
+    async def stop_process(self, name: str):
+        if name in self.processes:
+            p = self.processes[name]
+            if p.returncode is None:
+                try:
+                    if sys.platform != "win32":
+                        try:
+                            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+                        except ProcessLookupError:
+                            pass
+                    else:
+                        p.terminate()
+
+                    try:
+                        await asyncio.wait_for(p.wait(), timeout=5.0)
+                    except asyncio.TimeoutError:
+                        if sys.platform != "win32":
+                             try:
+                                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+                             except ProcessLookupError:
+                                pass
+                        else:
+                            p.kill()
+                        await p.wait()
+
+                except ProcessLookupError:
+                    pass
+            del self.processes[name]
+
+    async def stop_all(self):
+        # Create list of stop tasks to run concurrently
+        stop_tasks = [self.stop_process(name) for name in list(self.processes.keys())]
+        if stop_tasks:
+            await asyncio.gather(*stop_tasks)
+
+    # CLI Compatibility Method
     async def start_processes(self, procfile_path: Path, specific_process: Optional[str] = None):
-        processes_map = self.parse_procfile(procfile_path)
+        self.load_config(procfile_path)
 
-        if specific_process:
-            if specific_process not in processes_map:
-                print(f"Process '{specific_process}' not found in Procfile.")
-                return
-            processes_map = {specific_process: processes_map[specific_process]}
+        targets = [specific_process] if specific_process else list(self.process_defs.keys())
 
-        if not processes_map:
+        if not targets:
             print("No processes to start.")
             return
 
-        tasks = []
-        # Assign colors for output prefixes
-        colors = ["32", "33", "34", "35", "36", "31"] # Green, Yellow, Blue, Magenta, Cyan, Red
-
-        print(f"Starting {len(processes_map)} process(es)...")
+        print(f"Starting {len(targets)} process(es)...")
         print("Press Ctrl+C to stop.")
 
-        running_procs = []
-
         try:
-            for i, (name, command) in enumerate(processes_map.items()):
-                color = colors[i % len(colors)]
+            for name in targets:
+                await self.start_process(name)
 
-                # Prepare subprocess arguments
-                kwargs = {
-                    "stdout": asyncio.subprocess.PIPE,
-                    "stderr": asyncio.subprocess.PIPE,
-                    "cwd": self.project_dir,
-                }
-
-                # Use setsid on Unix to easily kill process groups
-                if sys.platform != "win32":
-                    kwargs["preexec_fn"] = os.setsid
-
-                # Create subprocess
-                process = await asyncio.create_subprocess_shell(
-                    command,
-                    **kwargs
-                )
-
-                running_procs.append(process)
-                self.processes[name] = process
-
-                # Create tasks for streaming stdout and stderr
-                tasks.append(asyncio.create_task(self._stream_output(name, process.stdout, color)))
-                tasks.append(asyncio.create_task(self._stream_output(name, process.stderr, color)))
-
-            # Wait for all processes to complete
-            await asyncio.gather(*tasks)
+            # Wait for all processes to exit or cancellation
+            # We can wait on the process objects
+            while True:
+                running = [p for p in self.processes.values() if p.returncode is None]
+                if not running:
+                    break
+                await asyncio.sleep(0.1)
 
         except asyncio.CancelledError:
             print("\nStopping processes...")
-            for p in running_procs:
-                try:
-                    if sys.platform != "win32":
-                        os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-                    else:
-                        p.terminate()
-                except ProcessLookupError:
-                    pass
-            # Wait for termination
-            await asyncio.gather(*[p.wait() for p in running_procs])
+            await self.stop_all()
 
     def list_processes(self, procfile_path: Path):
         try:
@@ -118,8 +172,6 @@ class ProcLabManager:
 
 async def run_proc_lab_logic(args):
     manager = ProcLabManager(args.project_dir)
-    # Default to Procfile if not specified, but check for Procfile.dev etc?
-    # args.file will be handled in main.py argument parsing or we assume default here.
     filename = getattr(args, 'file', None) or "Procfile"
     procfile_path = args.project_dir / filename
 
@@ -127,7 +179,7 @@ async def run_proc_lab_logic(args):
         try:
             await manager.start_processes(procfile_path)
         except (KeyboardInterrupt, asyncio.CancelledError):
-            pass # Clean exit handled in start_processes
+            pass
         except FileNotFoundError:
             print(f"Error: {filename} not found in {args.project_dir}")
             sys.exit(1)

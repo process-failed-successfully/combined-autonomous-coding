@@ -32,23 +32,8 @@ class TestProcLab(unittest.TestCase):
     def test_start_processes(self, mock_subprocess):
         # Mock process
         mock_proc = AsyncMock()
-        # Side effect for readline must be an iterable of awaitables or return awaitables?
-        # AsyncMock side_effect with list returns items one by one.
-        # But readline is async, so it returns a coroutine.
-        # Standard AsyncMock handles 'await mock()' but 'await mock.readline()' needs configuration.
-
-        # We need mock_proc.stdout.readline() to be awaited and return bytes.
-
-        async def mock_readline_gen(lines):
-            for line in lines:
-                yield line
-            while True:
-                yield b""
-
-        # Simplification: just return empty bytes immediately to terminate loop
         mock_proc.stdout.readline.return_value = b""
         mock_proc.stderr.readline.return_value = b""
-
         mock_proc.wait = AsyncMock()
         mock_subprocess.return_value = mock_proc
 
@@ -78,9 +63,58 @@ class TestProcLab(unittest.TestCase):
         self.assertEqual(args[0], "echo web")
 
     def test_list_processes(self):
-        # Just ensure it runs without error (prints to stdout)
-        # We could capture stdout to verify output but basic execution is enough for now
         self.manager.list_processes(self.procfile)
+
+    @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
+    def test_start_stop_process(self, mock_subprocess):
+        mock_proc = AsyncMock()
+        mock_proc.pid = 1234
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
+        mock_proc.returncode = None
+
+        async def wait_side_effect():
+            mock_proc.returncode = 0
+            return 0
+
+        mock_proc.wait.side_effect = wait_side_effect
+        mock_subprocess.return_value = mock_proc
+
+        async def run():
+            self.manager.load_config(self.procfile)
+            await self.manager.start_process("web")
+            self.assertIn("web", self.manager.processes)
+
+            await self.manager.stop_process("web")
+            self.assertNotIn("web", self.manager.processes)
+
+        asyncio.run(run())
+
+    @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
+    def test_output_callback(self, mock_subprocess):
+        mock_proc = AsyncMock()
+        mock_proc.stdout.readline.side_effect = [b"line1\n", b"line2\n", b""]
+        mock_proc.stderr.readline.return_value = b""
+        mock_subprocess.return_value = mock_proc
+
+        captured = []
+        def on_output(name, line):
+            captured.append((name, line))
+
+        async def run():
+            self.manager.load_config(self.procfile)
+            await self.manager.start_process("web", on_output=on_output)
+            # Give the background tasks a moment to process the mock stream
+            await asyncio.sleep(0.01)
+
+        asyncio.run(run())
+
+        # Verify callback was called
+        # Note: the order depends on how tasks are scheduled, but we check presence
+        self.assertTrue(len(captured) >= 2)
+        lines = [c[1] for c in captured]
+        self.assertIn("line1", lines)
+        self.assertIn("line2", lines)
 
 if __name__ == "__main__":
     unittest.main()

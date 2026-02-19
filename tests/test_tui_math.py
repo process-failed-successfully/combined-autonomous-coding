@@ -1,9 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch
-from textual.widgets import Input, RichLog, DataTable, Static
+from unittest.mock import MagicMock, patch, AsyncMock
+from textual.widgets import Input, RichLog, DataTable, Static, Button
 # Import the class under test
 from shared.tui_math import MathLabTab
-
 
 class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -11,16 +10,8 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         self.patcher = patch("shared.tui_math.MathLabManager")
         self.MockManager = self.patcher.start()
 
-        # Instantiate the tab
-        # We need to mock super().__init__ if Container does complex stuff,
-        # but let's try relying on standard behavior or if it fails we mock Container.
-        # Textual widgets often need an app context for some operations but __init__ might be safe.
-
-        # We might need to patch Container if it fails.
-        # Let's assume it works like NetDiagTab test.
         self.tab = MathLabTab()
         self.mock_manager = self.MockManager.return_value
-        # Ensure the tab uses our mock instance (it should, based on __init__)
         self.tab.manager = self.mock_manager
 
         # Mock Textual UI methods using patch.object to satisfy mypy
@@ -34,6 +25,15 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         self.notify_patcher.stop()
         self.query_one_patcher.stop()
         self.patcher.stop()
+
+    def test_on_mount(self):
+        table = MagicMock(spec=DataTable)
+        self.mock_query_one.return_value = table
+
+        self.tab.on_mount()
+
+        self.mock_query_one.assert_called_with("#table-math-stats", DataTable)
+        table.add_columns.assert_called_with("Metric", "Value")
 
     async def test_evaluate_expression_success(self):
         # Mock Inputs
@@ -52,8 +52,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Manager Result
         self.mock_manager.evaluate.return_value = 4
 
-        # Run
-        await self.tab.evaluate_expression()
+        # Trigger via button
+        event = MagicMock()
+        event.button.id = "btn-math-eval"
+        await self.tab.on_button_pressed(event)
 
         # Verify
         self.mock_manager.evaluate.assert_called_with("2 + 2")
@@ -80,8 +82,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Manager Result
         self.mock_manager.evaluate.side_effect = ValueError("Bad syntax")
 
-        # Run
-        await self.tab.evaluate_expression()
+        # Trigger via button
+        event = MagicMock()
+        event.button.id = "btn-math-eval"
+        await self.tab.on_button_pressed(event)
 
         # Verify
         log.write.assert_called()
@@ -106,8 +110,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Manager Result
         self.mock_manager.calculate_stats.return_value = {"mean": 2.0, "max": 3.0}
 
-        # Run
-        await self.tab.calculate_statistics()
+        # Trigger via button
+        event = MagicMock()
+        event.button.id = "btn-math-stats"
+        await self.tab.on_button_pressed(event)
 
         # Verify
         self.mock_manager.calculate_stats.assert_called()
@@ -135,8 +141,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Manager Result (asyncio.to_thread will call this)
         self.mock_manager.is_prime.return_value = True
 
-        # Run
-        await self.tab.check_prime()
+        # Trigger via button
+        event = MagicMock()
+        event.button.id = "btn-math-check-prime"
+        await self.tab.on_button_pressed(event)
 
         # Verify
         self.mock_manager.is_prime.assert_called_with(7)
@@ -163,8 +171,10 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Manager
         self.mock_manager.next_prime.return_value = 11
 
-        # Run
-        await self.tab.find_next_prime()
+        # Trigger via button
+        event = MagicMock()
+        event.button.id = "btn-math-next-prime"
+        await self.tab.on_button_pressed(event)
 
         # Verify
         self.mock_manager.next_prime.assert_called_with(10)
@@ -189,15 +199,16 @@ class TestMathLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Manager
         self.mock_manager.prime_factors.return_value = [2, 2, 3]
 
-        # Run
-        await self.tab.find_prime_factors()
+        # Trigger via button
+        event = MagicMock()
+        event.button.id = "btn-math-factors"
+        await self.tab.on_button_pressed(event)
 
         # Verify
         self.mock_manager.prime_factors.assert_called_with(12)
         args_list = lbl.update.call_args_list
         final_call_arg = args_list[-1][0][0]
         self.assertIn("[2, 2, 3]", final_call_arg)
-
 
 if __name__ == "__main__":
     unittest.main()

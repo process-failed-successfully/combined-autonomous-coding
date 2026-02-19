@@ -1,9 +1,10 @@
 from textual.app import ComposeResult
-from textual.widgets import Label, Button, Input, TabbedContent, TabPane, Static, ProgressBar
+from textual.widgets import Label, Button, Input, TabbedContent, TabPane, ProgressBar
 from textual.containers import Container, Horizontal, Vertical
-from textual import on
+from textual.timer import Timer
 from shared.otp_lab import OtpLabManager
 import time
+
 
 class OtpLabTab(Container):
     """Tab for OTP operations."""
@@ -11,7 +12,7 @@ class OtpLabTab(Container):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.manager = OtpLabManager()
-        self.timer = None
+        self.timer: Timer | None = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -107,7 +108,7 @@ class OtpLabTab(Container):
 
         # Start timer (runs every 0.5s to be smooth)
         self.timer = self.set_interval(0.5, self.update_totp)
-        self.update_totp() # Immediate update
+        self.update_totp()  # Immediate update
 
     def stop_monitoring(self) -> None:
         if self.timer:

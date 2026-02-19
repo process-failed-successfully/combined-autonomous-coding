@@ -58,48 +58,79 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
 
-        success = await self.manager.stop_process("test")
-        self.assertTrue(success)
-        self.assertNotIn("test", self.manager.processes)
-        mock_proc.terminate.assert_called_once()
+        # Patch sys.platform to 'linux' to force the os.killpg path
+        with patch('sys.platform', 'linux'):
+            # Must mock os.getpgid and os.killpg
+            with patch('os.getpgid') as mock_getpgid, \
+                 patch('os.killpg') as mock_killpg:
+
+                mock_proc.pid = 123
+                mock_getpgid.return_value = 123  # return pgid
+
+                success = await self.manager.stop_process("test")
+
+                self.assertTrue(success)
+                self.assertNotIn("test", self.manager.processes)
+                mock_getpgid.assert_called_with(123)
+                mock_killpg.assert_called()
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
+        # Provide a pid for killpg
+        mock_proc.pid = 123
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("p1", "echo 1")
         await self.manager.start_process("p2", "echo 2")
         self.assertEqual(len(self.manager.processes), 2)
 
-        await self.manager.stop_all()
+        with patch('sys.platform', 'linux'):
+            with patch('os.getpgid') as mock_getpgid, \
+                 patch('os.killpg') as mock_killpg:
+
+                mock_getpgid.return_value = 123
+                await self.manager.stop_all()
+
+                self.assertEqual(mock_getpgid.call_count, 2)
+                self.assertEqual(mock_killpg.call_count, 2)
+
         self.assertEqual(len(self.manager.processes), 0)
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_start_processes_cli(self, mock_subprocess):
-        # Test CLI plural method
-        mock_proc = AsyncMock()
-        mock_proc.stdout.readline.return_value = b""
-        mock_proc.stderr.readline.return_value = b""
-        # returncode is None initially, then 0 after wait?
-        # The loop in start_processes waits for p.wait().
-        # We need mock_proc.wait() to eventually finish and we need the loop to exit.
-        # If wait returns, the loop continues unless returncode is set.
-        # But wait() doesn't set returncode on a mock automatically.
+        # Create distinct mocks for each process call
 
-        async def wait_side_effect():
-            mock_proc.returncode = 0
+        # Mock 1
+        mock_proc1 = AsyncMock()
+        mock_proc1.stdout.readline.return_value = b""
+        mock_proc1.stderr.readline.return_value = b""
+        mock_proc1.returncode = None
+        mock_proc1.pid = 101
+
+        async def wait_side_effect1():
+            mock_proc1.returncode = 0
             return None
+        mock_proc1.wait.side_effect = wait_side_effect1
 
-        mock_proc.wait.side_effect = wait_side_effect
-        mock_proc.returncode = None
+        # Mock 2
+        mock_proc2 = AsyncMock()
+        mock_proc2.stdout.readline.return_value = b""
+        mock_proc2.stderr.readline.return_value = b""
+        mock_proc2.returncode = None
+        mock_proc2.pid = 102
 
-        mock_subprocess.return_value = mock_proc
+        async def wait_side_effect2():
+            mock_proc2.returncode = 0
+            return None
+        mock_proc2.wait.side_effect = wait_side_effect2
 
-        # We can't easily wait forever, so we trust it starts and waits.
-        # Since we mock wait to return immediately and set returncode, it should finish.
-        await self.manager.start_processes(self.procfile)
+        # Return them in sequence
+        mock_subprocess.side_effect = [mock_proc1, mock_proc2]
+
+        with patch('sys.platform', 'linux'):
+            await self.manager.start_processes(self.procfile)
 
         self.assertEqual(mock_subprocess.call_count, 2)
 

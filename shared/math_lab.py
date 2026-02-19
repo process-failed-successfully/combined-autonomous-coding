@@ -65,7 +65,10 @@ class MathLabManager:
                     func = self.allowed_names[func_name]
                     if callable(func):
                         args = [self._safe_eval(arg) for arg in node.args]
-                        return func(*args)
+                        result = func(*args)
+                        if isinstance(result, (int, float)):
+                            return result
+                        raise ValueError(f"Function '{func_name}' returned non-numeric value")
                     raise ValueError(f"'{func_name}' is not callable")
                 else:
                     raise ValueError(f"Function '{func_name}' not allowed")

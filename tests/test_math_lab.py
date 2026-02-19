@@ -38,6 +38,13 @@ class TestMathLabManager(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.evaluate("unknown_func(1)")
 
+    def test_evaluate_non_numeric_function(self):
+        # Mock a function that returns a string
+        self.manager.allowed_names["str_func"] = lambda x: "string"
+        with self.assertRaises(ValueError) as cm:
+            self.manager.evaluate("str_func(1)")
+        self.assertIn("returned non-numeric value", str(cm.exception))
+
     def test_stats_basic(self):
         numbers = [1, 2, 3, 4, 5]
         stats = self.manager.calculate_stats(numbers)

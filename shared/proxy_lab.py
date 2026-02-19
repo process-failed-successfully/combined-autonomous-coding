@@ -213,6 +213,8 @@ class ProxyLabManager:
         """Starts the proxy server."""
         try:
             self.server = ThreadedHTTPServer((self.host, self.port), ProxyRequestHandler)
+            # Update port if it was 0 (dynamic allocation)
+            self.port = self.server.server_address[1]
             print(f"✅ Proxy Lab listening on {self.host}:{self.port}")
             print("Configure your browser or tools to use this proxy.")
             print("Press Ctrl+C to stop.")
@@ -231,6 +233,7 @@ class ProxyLabManager:
         if self.server:
             # Run shutdown in a separate thread to prevent hanging
             t = threading.Thread(target=self.server.shutdown)
+            t.daemon = True
             t.start()
             t.join(timeout=2.0)
             self.server.server_close()

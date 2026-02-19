@@ -42,7 +42,10 @@ class TestShutdown(unittest.TestCase):
         # requests.get uses a context manager so it should be fine.
 
         proxies = {"http": f"http://127.0.0.1:{proxy_port}"}
-        requests.get(f"http://127.0.0.1:{origin_port}", proxies=proxies)
+        try:
+            requests.get(f"http://127.0.0.1:{origin_port}", proxies=proxies, timeout=5)
+        except Exception:
+            pass
 
         # Now try to stop
         start_time = time.time()

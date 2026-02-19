@@ -105,6 +105,7 @@ from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
+from shared.tui_color import ColorLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4040,6 +4041,8 @@ class AgentTUI(App):
                 yield DiffLabTab(self.project_dir)
             with TabPane("Image Lab", id="tab-image"):
                 yield ImageLabTab(self.project_dir)
+            with TabPane("Color Lab", id="tab-color"):
+                yield ColorLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

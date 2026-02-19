@@ -23,6 +23,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         mock_instance = MockManager.return_value
         mock_instance.parse_procfile.return_value = {"web": "python server.py", "worker": "python worker.py"}
         mock_instance.processes = {}
+        mock_instance.stop_all = AsyncMock()
 
         async with self.app.run_test() as pilot:
             tab = self.app.query_one(ProcLabTab)
@@ -38,6 +39,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         mock_instance.parse_procfile.return_value = {"web": "cmd"}
         mock_instance.processes = {}
         mock_instance.start_process = AsyncMock(return_value=True)
+        mock_instance.stop_all = AsyncMock()
 
         async with self.app.run_test() as pilot:
             tab = self.app.query_one(ProcLabTab)
@@ -66,6 +68,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         mock_instance.processes = {"web": mock_proc}
 
         mock_instance.stop_process = AsyncMock(return_value=True)
+        mock_instance.stop_all = AsyncMock()
 
         async with self.app.run_test() as pilot:
             tab = self.app.query_one(ProcLabTab)

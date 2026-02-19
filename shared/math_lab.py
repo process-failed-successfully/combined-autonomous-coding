@@ -93,7 +93,7 @@ class MathLabManager:
         if not numbers:
             return {}
 
-        result = {
+        result: Dict[str, Optional[float]] = {
             "count": len(numbers),
             "min": min(numbers),
             "max": max(numbers),

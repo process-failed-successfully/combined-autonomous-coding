@@ -1,12 +1,11 @@
 import unittest
 import asyncio
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
 import tempfile
 import shutil
-from shared.proc_lab import ProcLabManager, run_proc_lab_logic
-import argparse
-import sys
+from shared.proc_lab import ProcLabManager
+
 
 class TestProcLab(unittest.TestCase):
     def setUp(self):
@@ -42,7 +41,7 @@ class TestProcLab(unittest.TestCase):
 
         asyncio.run(run())
 
-        self.assertEqual(mock_subprocess.call_count, 2) # web and worker
+        self.assertEqual(mock_subprocess.call_count, 2)  # web and worker
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     def test_start_specific_process(self, mock_subprocess):
@@ -98,6 +97,7 @@ class TestProcLab(unittest.TestCase):
         mock_subprocess.return_value = mock_proc
 
         captured = []
+
         def on_output(name, line):
             captured.append((name, line))
 
@@ -115,6 +115,7 @@ class TestProcLab(unittest.TestCase):
         lines = [c[1] for c in captured]
         self.assertIn("line1", lines)
         self.assertIn("line2", lines)
+
 
 if __name__ == "__main__":
     unittest.main()

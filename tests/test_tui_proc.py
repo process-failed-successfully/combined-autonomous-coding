@@ -2,16 +2,18 @@ import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Button, RichLog
+from textual.widgets import DataTable, Button
 from shared.tui_proc import ProcLabTab
 
-class ProcLabApp(App):
+
+class ProcLabApp(App[None]):
     def __init__(self, project_dir):
         super().__init__()
         self.project_dir = project_dir
 
     def compose(self) -> ComposeResult:
         yield ProcLabTab(self.project_dir)
+
 
 class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
     @patch("shared.tui_proc.ProcLabManager")
@@ -23,7 +25,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         manager.load_config = MagicMock()
 
         app = ProcLabApp(Path("."))
-        async with app.run_test() as pilot:
+        async with app.run_test():
             tab = app.query_one(ProcLabTab)
             table = tab.query_one("#proc-table", DataTable)
 
@@ -48,7 +50,6 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         app = ProcLabApp(Path("."))
         async with app.run_test() as pilot:
             tab = app.query_one(ProcLabTab)
-            table = tab.query_one("#proc-table", DataTable)
 
             # Select 'web'
             # Simulate selection event manually
@@ -68,7 +69,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
 
             # Simulate process started (mock state change)
             mock_proc = MagicMock()
-            mock_proc.returncode = None # Running
+            mock_proc.returncode = None  # Running
             mock_proc.pid = 123
             manager.processes["web"] = mock_proc
 
@@ -91,7 +92,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         manager.processes = {}
 
         app = ProcLabApp(Path("."))
-        async with app.run_test() as pilot:
+        async with app.run_test():
             tab = app.query_one(ProcLabTab)
 
             # Simulate output
@@ -99,10 +100,9 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
             tab.on_process_output("web", "Starting web server...")
 
             # Check log
-            log = tab.query_one("#proc-log", RichLog)
-
             self.assertIn("web", tab.output_buffers)
             self.assertEqual(tab.output_buffers["web"][-1], "Starting web server...")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,9 +1,12 @@
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Button, RichLog
+from textual.widgets import Button, DataTable
+
 from shared.tui_proc import ProcLabTab
+
 
 class ProcTestApp(App):
     def __init__(self, project_dir):
@@ -12,6 +15,7 @@ class ProcTestApp(App):
 
     def compose(self) -> ComposeResult:
         yield ProcLabTab(self.project_dir)
+
 
 class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -23,8 +27,9 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         mock_instance = MockManager.return_value
         mock_instance.parse_procfile.return_value = {"web": "python server.py", "worker": "python worker.py"}
         mock_instance.processes = {}
+        mock_instance.stop_all = AsyncMock()
 
-        async with self.app.run_test() as pilot:
+        async with self.app.run_test() as _:
             tab = self.app.query_one(ProcLabTab)
             table = tab.query_one("#proc-table", DataTable)
 
@@ -38,13 +43,14 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         mock_instance.parse_procfile.return_value = {"web": "cmd"}
         mock_instance.processes = {}
         mock_instance.start_process = AsyncMock(return_value=True)
+        mock_instance.stop_all = AsyncMock()
 
         async with self.app.run_test() as pilot:
             tab = self.app.query_one(ProcLabTab)
 
             # Select process
             tab.selected_process = "web"
-            tab.update_buttons() # Update state
+            tab.update_buttons()  # Update state
 
             btn_start = tab.query_one("#btn-proc-start", Button)
             self.assertFalse(btn_start.disabled)
@@ -66,6 +72,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
         mock_instance.processes = {"web": mock_proc}
 
         mock_instance.stop_process = AsyncMock(return_value=True)
+        mock_instance.stop_all = AsyncMock()
 
         async with self.app.run_test() as pilot:
             tab = self.app.query_one(ProcLabTab)
@@ -80,6 +87,7 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
             await pilot.click("#btn-proc-stop")
 
             mock_instance.stop_process.assert_called_with("web")
+
 
 if __name__ == "__main__":
     unittest.main()

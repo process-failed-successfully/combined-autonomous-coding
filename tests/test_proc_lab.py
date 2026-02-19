@@ -1,11 +1,12 @@
-import unittest
 import asyncio
-from unittest.mock import MagicMock, patch, AsyncMock
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from shared.proc_lab import ProcLabManager
-import sys
+
 
 class TestProcLab(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -53,6 +54,8 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         mock_proc.returncode = None
         mock_proc.wait = AsyncMock()
         mock_proc.terminate = MagicMock()
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("test", "echo test")
@@ -67,7 +70,10 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
         mock_proc = AsyncMock()
+        mock_proc.terminate = MagicMock()
         mock_proc.returncode = None
+        mock_proc.stdout.readline.return_value = b""
+        mock_proc.stderr.readline.return_value = b""
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("p1", "echo 1")
@@ -106,6 +112,7 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         await self.manager.start_processes(self.procfile)
 
         self.assertEqual(mock_subprocess.call_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -88,12 +88,12 @@ class MathLabManager:
         except Exception as e:
             raise ValueError(str(e))
 
-    def calculate_stats(self, numbers: List[float]) -> Dict[str, Optional[float]]:
+    def calculate_stats(self, numbers: List[float]) -> Dict[str, Optional[Union[float, int]]]:
         """Calculates basic statistics for a list of numbers."""
         if not numbers:
             return {}
 
-        result = {
+        result: Dict[str, Optional[Union[float, int]]] = {
             "count": len(numbers),
             "min": min(numbers),
             "max": max(numbers),

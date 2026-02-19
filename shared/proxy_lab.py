@@ -4,6 +4,7 @@ import socket
 import select
 import logging
 import time
+from typing import Optional, Any
 import requests
 from urllib.parse import urlparse
 
@@ -14,7 +15,7 @@ logger = logging.getLogger("proxy-lab")
 try:
     from rich.console import Console
     HAS_RICH = True
-    console = Console()
+    console: Optional[Any] = Console()
 except ImportError:
     HAS_RICH = False
     console = None
@@ -166,8 +167,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
                     if not data:
                         return
                     other.sendall(data)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Tunnel closed: {e}")
         finally:
             client_socket.close()
             remote_socket.close()
@@ -214,8 +215,8 @@ class ProxyLabManager:
     def __init__(self, port: int = 8080, host: str = "127.0.0.1"):
         self.port = port
         self.host = host
-        self.server = None
-        self.thread = None
+        self.server: Optional[ThreadedHTTPServer] = None
+        self.thread: Optional[Any] = None
 
     def start(self, on_log=None):
         """Starts the proxy server."""

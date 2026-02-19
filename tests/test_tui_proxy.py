@@ -5,7 +5,7 @@ from textual.widgets import Button
 from shared.tui_proxy import ProxyLabTab
 
 
-class ProxyTestApp(App):
+class ProxyTestApp(App[None]):
     def compose(self) -> ComposeResult:
         yield ProxyLabTab()
 
@@ -32,11 +32,11 @@ class TestTuiProxy(unittest.IsolatedAsyncioTestCase):
 
             async with app.run_test(size=(800, 600)) as pilot:
                 # Initial state
-                btn = app.query_one("#btn-proxy-start")
+                btn = app.query_one("#btn-proxy-start", Button)
                 self.assertFalse(btn.disabled)
 
                 # Simulate click event directly
-                pilot.app.post_message(Button.Pressed(btn))
+                btn.post_message(Button.Pressed(btn))
                 await pilot.pause()
 
                 # Verify button disabled immediately (optimistic UI update)

@@ -3879,7 +3879,7 @@ class AgentTUI(App):
             elif action == "toggle_dark":
                 self.action_toggle_dark()
             elif action == "quit":
-                self.action_quit()
+                self.run_worker(self.action_quit())
             else:
                 self.notify(f"Unknown action: {action}", severity="warning")
 

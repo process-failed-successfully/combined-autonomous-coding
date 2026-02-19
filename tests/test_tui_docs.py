@@ -4,6 +4,7 @@ import tempfile
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
 from textual.widgets import TextArea, DataTable, Button, RichLog
+from textual.containers import Container
 from shared.tui import AgentTUI, DocumentationTab
 
 class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
@@ -19,6 +20,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DocstringManager', return_value=self.mock_docstring_mgr),
             patch('shared.tui.LinkChecker', return_value=self.mock_link_checker),
             patch('shared.tui.OpenAPIGenerator', return_value=self.mock_openapi_gen),
+            patch('shared.tui.OtpLabTab', return_value=Container()),
             # Patch other managers instantiated by AgentTUI to avoid side effects
             patch('shared.tui.WorkSessionManager'),
             patch('shared.tui.TimelineCollector'),

@@ -40,11 +40,14 @@ class YamlLabManager:
         """Dumps data to a YAML string."""
         return yaml.safe_dump(data, default_flow_style=False, sort_keys=False)
 
-    def _parse_path(self, path: str) -> List[Union[str, int]]:
-        """Parses a path string into keys and indices (dot notation)."""
+    def _parse_path(self, path: Union[str, List[Union[str, int]]]) -> List[Union[str, int]]:
+        """Parses a path string into keys and indices (dot notation), or returns list as is."""
+        if isinstance(path, list):
+            return path
+
         # Reusing logic similar to JsonLabManager
         normalized = path.replace('[', '.').replace(']', '')
-        parts = []
+        parts: List[Union[str, int]] = []
         for p in normalized.split('.'):
             if not p: continue
             if p.isdigit():
@@ -53,7 +56,7 @@ class YamlLabManager:
                 parts.append(p)
         return parts
 
-    def get(self, data: Any, path: str) -> Any:
+    def get(self, data: Any, path: Union[str, List[Union[str, int]]]) -> Any:
         """Retrieves a value at the specified path."""
         if not path:
             return data
@@ -79,7 +82,7 @@ class YamlLabManager:
 
         return current
 
-    def set(self, data: Any, path: str, value: Any) -> Any:
+    def set(self, data: Any, path: Union[str, List[Union[str, int]]], value: Any) -> Any:
         """Sets a value at the specified path (in-place modification)."""
         if not path:
             return value
@@ -134,7 +137,7 @@ class YamlLabManager:
 
         return data
 
-    def delete(self, data: Any, path: str) -> Any:
+    def delete(self, data: Any, path: Union[str, List[Union[str, int]]]) -> Any:
         """Deletes a key or index at the specified path."""
         if not path:
             return None

@@ -98,6 +98,7 @@ from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
 from shared.tui_json import JsonLabTab
+from shared.tui_markdown import MarkdownLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
@@ -4025,6 +4026,8 @@ class AgentTUI(App):
                 yield HexTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):
                 yield JsonLabTab(self.project_dir)
+            with TabPane("Markdown Lab", id="tab-markdown"):
+                yield MarkdownLabTab(self.project_dir)
             with TabPane("CSV Lab", id="tab-csv"):
                 yield CsvLabTab(self.project_dir)
             with TabPane("Diff Lab", id="tab-diff"):

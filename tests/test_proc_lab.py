@@ -32,8 +32,9 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
     async def test_start_process(self, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
-        mock_proc.stdout.readline.side_effect = [b"line1\n", b""]
-        mock_proc.stderr.readline.return_value = b""
+        # Explicitly configure readline to be an AsyncMock returning bytes
+        mock_proc.stdout.readline = AsyncMock(side_effect=[b"line1\n", b""])
+        mock_proc.stderr.readline = AsyncMock(return_value=b"")
         mock_subprocess.return_value = mock_proc
 
         callback = MagicMock()
@@ -53,37 +54,36 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         mock_proc.returncode = None
         mock_proc.wait = AsyncMock()
         mock_proc.terminate = MagicMock()
+        mock_proc.stdout.readline = AsyncMock(return_value=b"")
+        mock_proc.stderr.readline = AsyncMock(return_value=b"")
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("test", "echo test")
         self.assertIn("test", self.manager.processes)
 
-        # Patch sys.platform to test Unix/Windows branching if needed,
-        # but the manager checks sys.platform.
-        # Let's assume linux behavior for now or patch it if testing logic requires it.
-        # The original test passed, so we keep it simple.
-        with patch('sys.platform', 'linux'):
-            # On linux it uses os.killpg
-            with patch('os.killpg') as mock_killpg:
-                mock_proc.pid = 123
-                success = await self.manager.stop_process("test")
-                self.assertTrue(success)
-                self.assertNotIn("test", self.manager.processes)
-                mock_killpg.assert_called()
+        # We must mock os.getpgid because it will be called with mock_proc.pid (which is a Mock object or arbitrary int)
+        # causing ProcessLookupError or TypeError on real system.
+        with patch('sys.platform', 'linux'), patch('os.killpg') as mock_killpg, patch('os.getpgid', return_value=123):
+            mock_proc.pid = 123
+            success = await self.manager.stop_process("test")
+            self.assertTrue(success)
+            self.assertNotIn("test", self.manager.processes)
+            mock_killpg.assert_called()
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.returncode = None
-        # Provide a pid for killpg
         mock_proc.pid = 123
+        mock_proc.stdout.readline = AsyncMock(return_value=b"")
+        mock_proc.stderr.readline = AsyncMock(return_value=b"")
         mock_subprocess.return_value = mock_proc
 
         await self.manager.start_process("p1", "echo 1")
         await self.manager.start_process("p2", "echo 2")
         self.assertEqual(len(self.manager.processes), 2)
 
-        with patch('sys.platform', 'linux'), patch('os.killpg'):
+        with patch('sys.platform', 'linux'), patch('os.killpg'), patch('os.getpgid', return_value=123):
             await self.manager.stop_all()
 
         self.assertEqual(len(self.manager.processes), 0)
@@ -94,8 +94,8 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         # Mock 1
         mock_proc1 = AsyncMock()
-        mock_proc1.stdout.readline.return_value = b""
-        mock_proc1.stderr.readline.return_value = b""
+        mock_proc1.stdout.readline = AsyncMock(return_value=b"")
+        mock_proc1.stderr.readline = AsyncMock(return_value=b"")
         mock_proc1.returncode = None
         mock_proc1.pid = 101
 
@@ -106,8 +106,8 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
         # Mock 2
         mock_proc2 = AsyncMock()
-        mock_proc2.stdout.readline.return_value = b""
-        mock_proc2.stderr.readline.return_value = b""
+        mock_proc2.stdout.readline = AsyncMock(return_value=b"")
+        mock_proc2.stderr.readline = AsyncMock(return_value=b"")
         mock_proc2.returncode = None
         mock_proc2.pid = 102
 
@@ -119,8 +119,6 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
         # Return them in sequence
         mock_subprocess.side_effect = [mock_proc1, mock_proc2]
 
-        # Use linux platform to avoid Windows specific logic in start_process (preexec_fn)
-        # which might not matter for mock, but consistency is good.
         with patch('sys.platform', 'linux'):
             await self.manager.start_processes(self.procfile)
 

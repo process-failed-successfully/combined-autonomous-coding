@@ -1,8 +1,9 @@
 import ast
 import math
+import re
 import statistics
 import sys
-from typing import List, Dict, Union, Optional
+from typing import Dict, List, Optional, Union
 
 
 class MathLabManager:
@@ -193,7 +194,6 @@ def run_math_lab_logic(args) -> bool:
                 content = sys.stdin.read().strip()
                 if content:
                     # Split by whitespace or commas
-                    import re
                     parts = re.split(r'[\s,]+', content)
                     for p in parts:
                         if p:
@@ -201,7 +201,8 @@ def run_math_lab_logic(args) -> bool:
                                 numbers.append(float(p))
                             except ValueError:
                                 pass
-            except Exception:
+            except OSError:
+                # Ignore read errors from stdin
                 pass
 
         if not numbers:

@@ -3,8 +3,10 @@ import shutil
 import tempfile
 from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
-from textual.widgets import TextArea, DataTable, Button, RichLog
+from textual.widgets import DataTable
+from textual.containers import Container
 from shared.tui import AgentTUI, DocumentationTab
+
 
 class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -23,18 +25,18 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.WorkSessionManager'),
             patch('shared.tui.TimelineCollector'),
             patch('shared.tui.TimelineRenderer'),
-            patch('shared.tui.get_all_log_files', return_value=[]),
+            patch('shared.cli_utils.get_all_log_files', return_value=[]),
             patch('shared.tui.get_git_info', return_value={"branch": "main", "status": "Clean"}),
             patch('shared.tui.get_workflow_stage', return_value="Dev"),
-            patch('shared.tui.get_git_log', return_value=[]),
+            patch('shared.git.get_git_log', return_value=[]),
             patch('shared.tui.scan_project', return_value={}),
             patch('shared.tui.RecipeManager'),
             patch('shared.tui.WorktreeManager'),
-            patch('shared.tui.DependencyAnalyzer'),
-            patch('shared.tui.DependencyUpdater'),
+            patch('shared.dependencies.DependencyAnalyzer'),
+            patch('shared.dependencies.DependencyUpdater'),
             patch('shared.tui.TaskManager'),
             patch('shared.tui.KnowledgeManager'),
-            patch('shared.tui.init_db'), # prevent db init
+            patch('shared.tui.init_db'),  # prevent db init
             patch('shared.tui.ApiLabManager'),
             patch('shared.tui.PlaygroundManager'),
             patch('shared.tui.SecretsManager'),
@@ -43,6 +45,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DebtCollector'),
             patch('shared.tui.SecurityAuditor'),
             patch('shared.tui.OptimizationManager'),
+            patch('shared.tui.OtpLabTab', return_value=Container()),
         ]
         for p in self.patches:
             p.start()
@@ -131,7 +134,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
         app = AgentTUI(project_dir=self.test_dir)
 
         # Setup mock
-        self.mock_openapi_gen.generate = AsyncMock(return_value=True) # Async method
+        self.mock_openapi_gen.generate = AsyncMock(return_value=True)  # Async method
 
         async with app.run_test() as pilot:
             tabs = app.query_one("#main-tabs")

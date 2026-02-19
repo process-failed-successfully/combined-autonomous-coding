@@ -1,8 +1,11 @@
-from textual.app import ComposeResult
-from typing import Any
-from textual.widgets import Label, Button, Input, DataTable, RichLog, TabbedContent, TabPane, Static
-from textual.containers import Container, Horizontal, Vertical
 import asyncio
+from typing import Any
+
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import (Button, DataTable, Input, Label, RichLog, Static,
+                             TabbedContent, TabPane)
+
 from shared.math_lab import MathLabManager
 
 

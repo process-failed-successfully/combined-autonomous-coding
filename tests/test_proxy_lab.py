@@ -4,13 +4,8 @@ import requests
 import http.server
 import socketserver
 import unittest
-import socket
 from shared.proxy_lab import ProxyLabManager
 
-def get_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
 
 class MockOriginHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -27,6 +22,7 @@ class MockOriginHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Received: " + body)
 
+
 class TestProxyLab(unittest.TestCase):
     origin_port: int
     proxy_port: int
@@ -37,25 +33,34 @@ class TestProxyLab(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Find free ports
-        cls.origin_port = get_free_port()
-        cls.proxy_port = get_free_port()
+        # Start Origin Server on dynamic port
+        cls.origin_server = socketserver.TCPServer(("127.0.0.1", 0), MockOriginHandler)
+        cls.origin_port = cls.origin_server.server_address[1]
 
-        # Start Origin Server
-        cls.origin_server = socketserver.TCPServer(("127.0.0.1", cls.origin_port), MockOriginHandler)
         cls.origin_thread = threading.Thread(target=cls.origin_server.serve_forever)
         cls.origin_thread.daemon = True
         cls.origin_thread.start()
 
-        # Start Proxy Server
-        # We need to run start() in a thread because it blocks
-        cls.proxy_manager = ProxyLabManager(port=cls.proxy_port, host="127.0.0.1")
+        # Start Proxy Server on dynamic port
+        cls.proxy_manager = ProxyLabManager(port=0, host="127.0.0.1")
         cls.proxy_thread = threading.Thread(target=cls.proxy_manager.start)
         cls.proxy_thread.daemon = True
         cls.proxy_thread.start()
 
-        # Give them a moment to start
-        time.sleep(1)
+        # Wait for Proxy Server to start and assign port
+        # We poll cls.proxy_manager.server, which is set in start()
+        # and self.port is updated in start()
+        attempts = 0
+        while attempts < 50:
+            if cls.proxy_manager.server and cls.proxy_manager.port != 0:
+                cls.proxy_port = cls.proxy_manager.port
+                break
+            time.sleep(0.1)
+            attempts += 1
+        else:
+            if cls.proxy_manager.server:
+                cls.proxy_manager.server.shutdown()
+            raise RuntimeError("Proxy server failed to start within timeout")
 
     @classmethod
     def tearDownClass(cls):
@@ -90,6 +95,7 @@ class TestProxyLab(unittest.TestCase):
             self.assertEqual(resp.text, "Received: test data")
         except requests.exceptions.RequestException as e:
             self.fail(f"Request failed: {e}")
+
 
 if __name__ == '__main__':
     unittest.main()

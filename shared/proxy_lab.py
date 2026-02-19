@@ -8,7 +8,7 @@ import logging
 import time
 import requests
 from urllib.parse import urlparse
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any, Union
 from pathlib import Path
 
 # Configure logging
@@ -21,7 +21,7 @@ try:
     from rich.highlighter import ReprHighlighter
     from rich.syntax import Syntax
     HAS_RICH = True
-    console = Console()
+    console: Optional[Console] = Console()
 except ImportError:
     HAS_RICH = False
     console = None
@@ -77,6 +77,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
 
         try:
             # Forward the request
+            # type: ignore[arg-type] # Ignore Mypy error for proxies dict with None values
+            proxies: Dict[Any, Any] = {"http": None, "https": None}
             response = requests.request(
                 method=method,
                 url=url,
@@ -85,7 +87,7 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
                 allow_redirects=False, # We want to pass redirects back to client
                 stream=True, # Stream response content
                 timeout=30,
-                proxies={"http": None, "https": None} # Bypass environment proxies
+                proxies=proxies # Bypass environment proxies
             )
 
             # Read full content to avoid Content-Length mismatches (decompression)
@@ -206,13 +208,16 @@ class ProxyLabManager:
     def __init__(self, port: int = 8080, host: str = "127.0.0.1"):
         self.port = port
         self.host = host
-        self.server = None
-        self.thread = None
+        self.server: Optional[ThreadedHTTPServer] = None
+        self.thread: Optional[threading.Thread] = None
 
     def start(self):
         """Starts the proxy server."""
         try:
             self.server = ThreadedHTTPServer((self.host, self.port), ProxyRequestHandler)
+            if self.port == 0:
+                self.port = self.server.server_address[1]
+
             print(f"✅ Proxy Lab listening on {self.host}:{self.port}")
             print("Configure your browser or tools to use this proxy.")
             print("Press Ctrl+C to stop.")

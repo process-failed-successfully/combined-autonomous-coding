@@ -229,7 +229,10 @@ class ProxyLabManager:
     def stop(self):
         """Stops the proxy server."""
         if self.server:
-            self.server.shutdown()
+            # Run shutdown in a separate thread to prevent hanging
+            t = threading.Thread(target=self.server.shutdown)
+            t.start()
+            t.join(timeout=2.0)
             self.server.server_close()
 
 def run_proxy_lab_logic(args):

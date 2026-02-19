@@ -65,9 +65,12 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_stop_all(self, mock_subprocess):
-        mock_proc = AsyncMock()
-        mock_proc.returncode = None
-        mock_subprocess.return_value = mock_proc
+        # Return distinct mocks to avoid shared state issues
+        mock_proc1 = AsyncMock()
+        mock_proc1.returncode = None
+        mock_proc2 = AsyncMock()
+        mock_proc2.returncode = None
+        mock_subprocess.side_effect = [mock_proc1, mock_proc2]
 
         await self.manager.start_process("p1", "echo 1")
         await self.manager.start_process("p2", "echo 2")
@@ -78,24 +81,25 @@ class TestProcLab(unittest.IsolatedAsyncioTestCase):
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
     async def test_start_processes_cli(self, mock_subprocess):
-        # Test CLI plural method
-        mock_proc = AsyncMock()
-        mock_proc.stdout.readline.return_value = b""
-        mock_proc.stderr.readline.return_value = b""
-        # returncode is None initially, then 0 after wait?
-        # The loop in start_processes waits for p.wait().
-        # We need mock_proc.wait() to eventually finish and we need the loop to exit.
-        # If wait returns, the loop continues unless returncode is set.
-        # But wait() doesn't set returncode on a mock automatically.
+        # Test CLI plural method with distinct processes
 
-        async def wait_side_effect():
-            mock_proc.returncode = 0
-            return None
+        # Helper to create a proc mock that finishes when waited on
+        def create_mock_proc():
+            p = AsyncMock()
+            p.stdout.readline.return_value = b""
+            p.stderr.readline.return_value = b""
+            p.returncode = None
 
-        mock_proc.wait.side_effect = wait_side_effect
-        mock_proc.returncode = None
+            async def wait_side_effect():
+                p.returncode = 0
+                return None
+            p.wait.side_effect = wait_side_effect
+            return p
 
-        mock_subprocess.return_value = mock_proc
+        mock_proc1 = create_mock_proc()
+        mock_proc2 = create_mock_proc()
+
+        mock_subprocess.side_effect = [mock_proc1, mock_proc2]
 
         # We can't easily wait forever, so we trust it starts and waits.
         # Since we mock wait to return immediately and set returncode, it should finish.

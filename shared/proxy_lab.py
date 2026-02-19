@@ -1,15 +1,11 @@
-import sys
 import http.server
 import socketserver
 import socket
 import select
-import threading
 import logging
 import time
 import requests
 from urllib.parse import urlparse
-from typing import Optional, List, Tuple
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -17,14 +13,12 @@ logger = logging.getLogger("proxy-lab")
 
 try:
     from rich.console import Console
-    from rich.text import Text
-    from rich.highlighter import ReprHighlighter
-    from rich.syntax import Syntax
     HAS_RICH = True
     console = Console()
 except ImportError:
     HAS_RICH = False
     console = None
+
 
 class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
     """
@@ -67,7 +61,7 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
         # Handle Host header
         parsed_url = urlparse(url)
         if parsed_url.netloc:
-             headers["Host"] = parsed_url.netloc
+            headers["Host"] = parsed_url.netloc
 
         # Read body if present
         content_length = int(self.headers.get('Content-Length', 0))
@@ -82,8 +76,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
                 url=url,
                 headers=headers,
                 data=body,
-                allow_redirects=False, # We want to pass redirects back to client
-                stream=True, # Stream response content
+                allow_redirects=False,  # We want to pass redirects back to client
+                stream=True,  # Stream response content
                 timeout=30
             )
 
@@ -162,7 +156,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
         sockets = [client_socket, remote_socket]
         try:
             while True:
-                readable, _, _ = select.select(sockets, [], [], 60)
+                # Reduced timeout to prevent hanging in tests or idle connections
+                readable, _, _ = select.select(sockets, [], [], 5)
                 if not readable:
                     break
 
@@ -197,9 +192,11 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
         else:
             logger.error(f"Error: {message}")
 
+
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     """Handle requests in a separate thread."""
     daemon_threads = True
+
 
 class ProxyLabManager:
     def __init__(self, port: int = 8080, host: str = "127.0.0.1"):
@@ -219,7 +216,7 @@ class ProxyLabManager:
             self.server.serve_forever()
         except OSError as e:
             print(f"❌ Error starting server: {e}")
-            sys.exit(1)
+            raise e
         except KeyboardInterrupt:
             print("\nStopping proxy...")
             self.stop()
@@ -229,6 +226,7 @@ class ProxyLabManager:
         if self.server:
             self.server.shutdown()
             self.server.server_close()
+
 
 def run_proxy_lab_logic(args):
     """CLI logic for Proxy Lab."""

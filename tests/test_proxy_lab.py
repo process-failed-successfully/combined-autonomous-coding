@@ -7,10 +7,12 @@ import unittest
 import socket
 from shared.proxy_lab import ProxyLabManager
 
+
 def get_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
+
 
 class MockOriginHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -26,6 +28,7 @@ class MockOriginHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(b"Received: " + body)
+
 
 class TestProxyLab(unittest.TestCase):
     @classmethod
@@ -48,14 +51,22 @@ class TestProxyLab(unittest.TestCase):
         cls.proxy_thread.start()
 
         # Give them a moment to start
-        time.sleep(1)
+        # Wait for the server to be initialized
+        start_time = time.time()
+        while time.time() - start_time < 2:
+            if cls.proxy_manager.server:
+                break
+            time.sleep(0.1)
+        else:
+            # Fallback if server init is slow or failed (thread died)
+            time.sleep(0.5)
 
     @classmethod
     def tearDownClass(cls):
-        if cls.origin_server:
+        if hasattr(cls, 'origin_server') and cls.origin_server:
             cls.origin_server.shutdown()
             cls.origin_server.server_close()
-        if cls.proxy_manager:
+        if hasattr(cls, 'proxy_manager') and cls.proxy_manager:
             cls.proxy_manager.stop()
 
     def test_proxy_get(self):
@@ -83,6 +94,7 @@ class TestProxyLab(unittest.TestCase):
             self.assertEqual(resp.text, "Received: test data")
         except requests.exceptions.RequestException as e:
             self.fail(f"Request failed: {e}")
+
 
 if __name__ == '__main__':
     unittest.main()

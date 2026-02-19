@@ -231,6 +231,7 @@ class ProxyLabManager:
         if self.server:
             # Run shutdown in a separate thread to prevent hanging
             t = threading.Thread(target=self.server.shutdown)
+            t.daemon = True
             t.start()
             t.join(timeout=2.0)
             self.server.server_close()

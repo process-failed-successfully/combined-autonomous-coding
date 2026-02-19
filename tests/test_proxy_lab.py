@@ -28,6 +28,13 @@ class MockOriginHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(b"Received: " + body)
 
 class TestProxyLab(unittest.TestCase):
+    origin_port: int
+    proxy_port: int
+    origin_server: socketserver.TCPServer
+    origin_thread: threading.Thread
+    proxy_manager: ProxyLabManager
+    proxy_thread: threading.Thread
+
     @classmethod
     def setUpClass(cls):
         # Find free ports

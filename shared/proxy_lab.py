@@ -1,30 +1,25 @@
-import sys
 import http.server
-import socketserver
-import socket
-import select
-import threading
 import logging
+import select
+import socketserver
 import time
-import requests
 from urllib.parse import urlparse
-from typing import Optional, List, Tuple
-from pathlib import Path
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
-logger = logging.getLogger("proxy-lab")
+import requests
 
 try:
     from rich.console import Console
-    from rich.text import Text
-    from rich.highlighter import ReprHighlighter
-    from rich.syntax import Syntax
     HAS_RICH = True
     console = Console()
 except ImportError:
     HAS_RICH = False
     console = None
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger("proxy-lab")
+
 
 class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
     """
@@ -67,7 +62,7 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
         # Handle Host header
         parsed_url = urlparse(url)
         if parsed_url.netloc:
-             headers["Host"] = parsed_url.netloc
+            headers["Host"] = parsed_url.netloc
 
         # Read body if present
         content_length = int(self.headers.get('Content-Length', 0))
@@ -82,8 +77,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
                 url=url,
                 headers=headers,
                 data=body,
-                allow_redirects=False, # We want to pass redirects back to client
-                stream=True, # Stream response content
+                allow_redirects=False,  # We want to pass redirects back to client
+                stream=True,  # Stream response content
                 timeout=30
             )
 
@@ -139,6 +134,8 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
 
         try:
             # Connect to destination
+            # We need socket for create_connection
+            import socket
             remote_socket = socket.create_connection((host, port), timeout=30)
 
             # Send 200 OK to client
@@ -197,9 +194,11 @@ class ProxyRequestHandler(http.server.BaseHTTPRequestHandler):
         else:
             logger.error(f"Error: {message}")
 
+
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     """Handle requests in a separate thread."""
     daemon_threads = True
+
 
 class ProxyLabManager:
     def __init__(self, port: int = 8080, host: str = "127.0.0.1"):
@@ -212,6 +211,9 @@ class ProxyLabManager:
         """Starts the proxy server."""
         try:
             self.server = ThreadedHTTPServer((self.host, self.port), ProxyRequestHandler)
+            # If port was 0, it's now assigned
+            self.port = self.server.server_address[1]
+
             print(f"✅ Proxy Lab listening on {self.host}:{self.port}")
             print("Configure your browser or tools to use this proxy.")
             print("Press Ctrl+C to stop.")
@@ -219,7 +221,8 @@ class ProxyLabManager:
             self.server.serve_forever()
         except OSError as e:
             print(f"❌ Error starting server: {e}")
-            sys.exit(1)
+            # Raise exception so tests or callers can handle it, don't exit process
+            raise
         except KeyboardInterrupt:
             print("\nStopping proxy...")
             self.stop()
@@ -229,6 +232,7 @@ class ProxyLabManager:
         if self.server:
             self.server.shutdown()
             self.server.server_close()
+
 
 def run_proxy_lab_logic(args):
     """CLI logic for Proxy Lab."""

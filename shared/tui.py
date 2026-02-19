@@ -106,6 +106,7 @@ from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
+from shared.tui_otp import OtpLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4003,6 +4004,8 @@ class AgentTUI(App):
                 yield ApiLabTab(self.project_dir)
             with TabPane("JWT Lab", id="tab-jwt"):
                 yield JwtLabTab()
+            with TabPane("OTP Lab", id="tab-otp"):
+                yield OtpLabTab()
             with TabPane("Sanitizer", id="tab-sanitizer"):
                 yield SanitizerTab(self.project_dir)
             with TabPane("Frontend", id="tab-frontend"):

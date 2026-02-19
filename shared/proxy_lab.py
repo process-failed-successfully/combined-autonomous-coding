@@ -219,7 +219,7 @@ class ProxyLabManager:
             self.server.serve_forever()
         except OSError as e:
             print(f"❌ Error starting server: {e}")
-            sys.exit(1)
+            raise e  # Propagate error instead of sys.exit
         except KeyboardInterrupt:
             print("\nStopping proxy...")
             self.stop()
@@ -233,4 +233,7 @@ class ProxyLabManager:
 def run_proxy_lab_logic(args):
     """CLI logic for Proxy Lab."""
     manager = ProxyLabManager(port=args.port, host=args.host)
-    manager.start()
+    try:
+        manager.start()
+    except OSError:
+        sys.exit(1)

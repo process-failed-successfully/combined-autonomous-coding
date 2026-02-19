@@ -16952,8 +16952,8 @@ async def main():
         return
 
     if args.command in ["proc-lab", "proc"]:
-        await run_proc_lab_logic(args)
-        return
+        success = await run_proc_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["geo-lab", "geo"]:
         run_geo_lab(args)

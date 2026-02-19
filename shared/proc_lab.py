@@ -189,41 +189,51 @@ class ProcLabManager:
         except FileNotFoundError:
             print(f"Procfile not found at {procfile_path}")
 
-async def run_proc_lab_logic(args):
+async def run_proc_lab_logic(args) -> bool:
+    """
+    Run the process lab logic.
+    Returns True on success, False on failure.
+    """
     manager = ProcLabManager(args.project_dir)
-    # Default to Procfile if not specified, but check for Procfile.dev etc?
-    # args.file will be handled in main.py argument parsing or we assume default here.
     filename = getattr(args, 'file', None) or "Procfile"
     procfile_path = args.project_dir / filename
 
     if args.action == "start":
         try:
             await manager.start_processes(procfile_path)
+            return True
         except (KeyboardInterrupt, asyncio.CancelledError):
             await manager.stop_all()
+            return True
         except FileNotFoundError:
             print(f"Error: {filename} not found in {args.project_dir}")
-            sys.exit(1)
+            return False
 
     elif args.action == "run":
         if not getattr(args, 'process', None):
             print("Error: --process name required.")
-            sys.exit(1)
+            return False
         try:
             await manager.start_processes(procfile_path, specific_process=args.process)
+            return True
         except (KeyboardInterrupt, asyncio.CancelledError):
             await manager.stop_all()
+            return True
         except FileNotFoundError:
             print(f"Error: {filename} not found.")
-            sys.exit(1)
+            return False
 
     elif args.action == "list":
         manager.list_processes(procfile_path)
+        return True
 
     elif args.action == "check":
         try:
             procs = manager.parse_procfile(procfile_path)
             print(f"✅ Valid Procfile with {len(procs)} process(es).")
+            return True
         except Exception as e:
             print(f"❌ Invalid Procfile: {e}")
-            sys.exit(1)
+            return False
+
+    return True

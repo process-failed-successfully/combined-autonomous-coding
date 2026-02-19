@@ -51,12 +51,52 @@ class UnitLabManager:
         "k": "kelvin", "kelvin": "kelvin",
     }
 
+    SPEED: Dict[str, Union[int, float]] = {
+        "m/s": 1, "mps": 1,
+        "km/h": 0.277778, "kph": 0.277778,
+        "mph": 0.44704, "mi/h": 0.44704,
+        "kn": 0.514444, "knot": 0.514444, "knots": 0.514444,
+    }
+
+    AREA: Dict[str, Union[int, float]] = {
+        "sqm": 1, "m2": 1, "sq_meter": 1,
+        "sqkm": 1000000, "km2": 1000000,
+        "sqft": 0.092903, "ft2": 0.092903, "sq_foot": 0.092903,
+        "ac": 4046.86, "acre": 4046.86, "acres": 4046.86,
+        "ha": 10000, "hectare": 10000, "hectares": 10000,
+    }
+
+    VOLUME: Dict[str, Union[int, float]] = {
+        "l": 1, "liter": 1, "liters": 1,
+        "ml": 0.001, "milliliter": 0.001,
+        "gal": 3.78541, "gallon": 3.78541, "gallons": 3.78541,
+        "qt": 0.946353, "quart": 0.946353,
+        "pt": 0.473176, "pint": 0.473176,
+        "cup": 0.236588, "cups": 0.236588,
+        "fl_oz": 0.0295735, "fluid_ounce": 0.0295735,
+    }
+
+    # Static rates for demo purposes (Base: USD)
+    CURRENCY: Dict[str, Union[int, float]] = {
+        "usd": 1, "dollar": 1,
+        "eur": 1.09, "euro": 1.09,
+        "gbp": 1.27, "pound": 1.27,
+        "jpy": 0.0067, "yen": 0.0067,
+        "cad": 0.74,
+        "aud": 0.66,
+        "inr": 0.012, "rupee": 0.012,
+    }
+
     CATEGORIES: Dict[str, Dict[str, Any]] = {
         "storage": STORAGE,
         "time": TIME,
         "length": LENGTH,
         "weight": WEIGHT,
         "temperature": TEMPERATURE,
+        "speed": SPEED,
+        "area": AREA,
+        "volume": VOLUME,
+        "currency": CURRENCY,
     }
 
     def _resolve_category(self, unit: str, other_unit: Optional[str] = None) -> Optional[Tuple[str, Dict[str, Any]]]:
@@ -90,7 +130,7 @@ class UnitLabManager:
 
             # Default logic if still ambiguous
             # Prioritize Length (meter) over Time (minute) for 'm' if no other context
-            if "length" in candidates:
+            if "length" in candidates and unit == "m":
                 return "length", self.LENGTH
 
             return candidates[0], self.CATEGORIES[candidates[0]]
@@ -121,18 +161,26 @@ class UnitLabManager:
             return self._convert_temperature(value, str(table[from_unit]), str(table[to_unit]))
 
         # Standard conversion via base unit
-        # Cast to float for division
-        from_factor = float(table[from_unit]) # type: ignore
-        to_factor = float(table[to_unit]) # type: ignore
+        try:
+            # Cast to float for division
+            from_factor = float(table[from_unit])
+            to_factor = float(table[to_unit])
 
-        # value * from_factor = base_value
-        # base_value / to_factor = target_value
-        result = (value * from_factor) / to_factor
+            # value * from_factor = base_value
+            # base_value / to_factor = target_value
+            result = (value * from_factor) / to_factor
 
-        # Formatting: if close to int, show int, else float
-        if result.is_integer():
-            return f"{int(result)}"
-        return f"{result:.4f}".rstrip('0').rstrip('.')
+            # Formatting: if close to int, show int, else float
+            if result.is_integer():
+                return f"{int(result)}"
+
+            # Smart formatting for small numbers
+            if abs(result) < 0.0001 and result != 0:
+                return f"{result:.6e}"
+
+            return f"{result:.4f}".rstrip('0').rstrip('.')
+        except (ValueError, TypeError) as e:
+            return f"Error converting {from_unit} to {to_unit}: {e}"
 
     def _convert_temperature(self, value: float, from_type: str, to_type: str) -> str:
         if from_type == to_type:
@@ -167,6 +215,14 @@ class UnitLabManager:
         for table in self.CATEGORIES.values():
             all_units.extend(table.keys())
         return sorted(list(set(all_units)))
+
+    def get_categories(self) -> List[str]:
+        return sorted(list(self.CATEGORIES.keys()))
+
+    def get_units_in_category(self, category: str) -> List[str]:
+        if category.lower() in self.CATEGORIES:
+            return sorted(list(self.CATEGORIES[category.lower()].keys()))
+        return []
 
 
 def run_unit_lab_logic(args) -> bool:

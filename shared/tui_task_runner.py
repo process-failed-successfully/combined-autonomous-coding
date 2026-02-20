@@ -47,7 +47,7 @@ class TaskRunnerTab(Container):
         table = self.query_one("#runner-table", DataTable)
         table.clear()
 
-        self.tasks_cache = self.manager.list_tasks()
+        self.tasks_cache: list[Task] = self.manager.list_tasks()
         self._update_table()
 
     def _update_table(self) -> None:

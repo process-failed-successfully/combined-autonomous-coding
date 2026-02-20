@@ -154,7 +154,7 @@ class TaskRunnerManager:
         try:
             process = subprocess.Popen(
                 cmd_to_run,
-                shell=True,
+                shell=True,  # nosec B602: Necessary for running user-defined tasks
                 cwd=cwd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,

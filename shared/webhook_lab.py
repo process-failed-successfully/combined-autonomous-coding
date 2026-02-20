@@ -1,15 +1,16 @@
 import json
 import sys
-import time
-import requests  # type: ignore
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Optional, Dict, List, Any
-from pathlib import Path
+import time
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import requests  # type: ignore
 from rich.console import Console
-from rich.table import Table
 from rich.syntax import Syntax
+from rich.table import Table
 
 
 class WebhookServer(ThreadingHTTPServer):

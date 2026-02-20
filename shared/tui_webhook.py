@@ -1,14 +1,17 @@
+import json
+import threading
 from pathlib import Path
 from typing import Optional
+
+import requests  # type: ignore
+from rich.syntax import Syntax
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Input, Label, ListView, ListItem, RichLog, TabbedContent, TabPane
-from textual import on
+from textual.widgets import (Button, Input, Label, ListItem, ListView, RichLog,
+                             TabbedContent, TabPane)
+
 from shared.webhook_lab import WebhookLabManager
-from rich.syntax import Syntax
-import json
-import requests  # type: ignore
-import threading
 
 
 class WebhookRequestItem(ListItem):

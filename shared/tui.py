@@ -68,8 +68,8 @@ from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
 from shared.tui_proxy import ProxyLabTab
-from shared.tui_ws import WsLabTab
 from shared.tui_webhook import WebhookLabTab
+from shared.tui_ws import WsLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab

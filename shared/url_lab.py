@@ -1,7 +1,8 @@
-import urllib.parse
 import json
 import sys
+import urllib.parse
 from typing import Any, Dict, List, Optional
+
 
 class UrlLabManager:
     """Manages URL parsing, manipulation, and normalization."""
@@ -89,6 +90,7 @@ class UrlLabManager:
 
         new_parsed = parsed._replace(scheme=scheme, netloc=netloc, query=sorted_query)
         return urllib.parse.urlunparse(new_parsed)
+
 
 def run_url_lab_logic(args):
     """CLI handler for URL Lab."""

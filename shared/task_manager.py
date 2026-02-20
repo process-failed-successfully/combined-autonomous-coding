@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 from shared.config_loader import load_config_from_file
 from shared.github_client import GitHubClient
@@ -18,6 +19,8 @@ class Task:
     status: str
     priority: str = "Medium"
     url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    due_date: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 class TaskManager:
@@ -63,6 +66,20 @@ class TaskManager:
                 elif "low" in labels:
                     priority = "Low"
 
+                created_at = None
+                if issue.get('created_at'):
+                    try:
+                        created_at = datetime.fromisoformat(issue['created_at'].replace('Z', '+00:00'))
+                    except ValueError:
+                        pass
+
+                due_date = None
+                if issue.get('milestone') and issue['milestone'].get('due_on'):
+                    try:
+                        due_date = datetime.fromisoformat(issue['milestone']['due_on'].replace('Z', '+00:00'))
+                    except ValueError:
+                        pass
+
                 tasks.append(Task(
                     id=f"GH-{issue['number']}",
                     source="github",
@@ -70,6 +87,8 @@ class TaskManager:
                     status=issue['state'],
                     priority=priority,
                     url=issue['html_url'],
+                    created_at=created_at,
+                    due_date=due_date,
                     metadata={"assignee": issue['assignee']['login'] if issue['assignee'] else None}
                 ))
             return tasks
@@ -90,16 +109,27 @@ class TaskManager:
         try:
             config = JiraConfig(url=url, email=email, token=token)
             client = JiraClient(config)
-            # Fetch assigned to me or open? Let's fetch open issues for the project?
-            # Or just "To Do"? Let's try a generic JQL.
-            # Assuming we want to see what's relevant.
-            # Maybe just assigned to current user? Or everything?
-            # Let's try fetching "To Do" and "In Progress"
+            # Fetch generic "To Do" / "In Progress" issues
             jql = 'statusCategory in ("To Do", "In Progress") ORDER BY updated DESC'
             issues = client.search_issues(jql, max_results=20)
 
             tasks = []
             for issue in issues:
+                created_at = None
+                if hasattr(issue.fields, "created") and issue.fields.created:
+                    try:
+                        created_at = datetime.fromisoformat(issue.fields.created.replace('Z', '+00:00'))
+                    except ValueError:
+                        pass
+
+                due_date = None
+                if hasattr(issue.fields, "duedate") and issue.fields.duedate:
+                    try:
+                        # Jira duedate is usually YYYY-MM-DD
+                        due_date = datetime.strptime(issue.fields.duedate, "%Y-%m-%d")
+                    except ValueError:
+                        pass
+
                 tasks.append(Task(
                     id=issue.key,
                     source="jira",
@@ -107,6 +137,8 @@ class TaskManager:
                     status=str(issue.fields.status),
                     priority=str(issue.fields.priority) if hasattr(issue.fields, "priority") else "Medium",
                     url=f"{url}/browse/{issue.key}",
+                    created_at=created_at,
+                    due_date=due_date,
                     metadata={"assignee": str(issue.fields.assignee) if issue.fields.assignee else None}
                 ))
             return tasks
@@ -190,8 +222,21 @@ class TaskManager:
             tasks = []
             for t in data.get("tasks", []):
                 status = t.get("status", "PENDING")
-                # Filter out completed if we want only active tasks?
-                # Let's keep all but maybe sort/filter in UI.
+
+                created_at = None
+                # Sprint tasks might not have created_at, but we can check
+                if t.get("created_at"):
+                    try:
+                        created_at = datetime.fromisoformat(t["created_at"])
+                    except ValueError:
+                        pass
+
+                due_date = None
+                if t.get("due_date"):
+                    try:
+                        due_date = datetime.fromisoformat(t["due_date"])
+                    except ValueError:
+                        pass
 
                 tasks.append(Task(
                     id=f"SPRINT-{t.get('id')}",
@@ -199,6 +244,8 @@ class TaskManager:
                     title=t.get("title", "No Title"),
                     status=status,
                     priority="High" if status == "IN_PROGRESS" else "Medium",
+                    created_at=created_at,
+                    due_date=due_date,
                     metadata={"description": t.get("description")}
                 ))
             return tasks

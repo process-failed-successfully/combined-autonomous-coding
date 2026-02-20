@@ -68,6 +68,7 @@ from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
 from shared.tui_proxy import ProxyLabTab
+from shared.tui_ws import WsLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
@@ -3823,6 +3824,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Disk Usage", "switch_tab_disk_usage"),
         PaletteCommand("Go to Logs", "switch_tab_logs"),
         PaletteCommand("Go to Live Logs", "switch_tab_live_logs"),
+        PaletteCommand("Go to WS Lab", "switch_tab_ws_lab"),
         PaletteCommand("Go to Chat", "switch_tab_interact"),
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
         PaletteCommand("Go to Git", "switch_tab_git"),
@@ -4016,6 +4018,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("WS Lab", id="tab-ws-lab"):
+                yield WsLabTab()
             with TabPane("Proxy Lab", id="tab-proxy"):
                 yield ProxyLabTab(self.project_dir)
             with TabPane("JWT Lab", id="tab-jwt"):

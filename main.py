@@ -232,7 +232,8 @@ KNOWN_COMMANDS = [
     "hex-lab", "hex",
     "speed-lab", "speed",
     "load-lab", "load",
-    "otp-lab", "otp", "totp", "mfa"
+    "otp-lab", "otp", "totp", "mfa",
+    "calendar-lab", "calendar", "cal"
 ]
 
 if FileSystemEventHandler:
@@ -246,6 +247,22 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_calendar_lab(args):
+    """Runs the Calendar Lab."""
+    from shared.calendar_lab import CalendarLabManager
+    from datetime import datetime
+
+    project_dir = args.project_dir.resolve()
+
+    # CLI Mode
+    manager = CalendarLabManager(project_dir)
+    now = datetime.now()
+    year = args.year if args.year else now.year
+    month = args.month if args.month else now.month
+
+    print(manager.render_ascii_calendar(year, month))
+    sys.exit(0)
 
 def run_port(args):
     """Manages network ports."""
@@ -13677,6 +13694,15 @@ def parse_args(argv=None):
     parser_otp_url.add_argument("--label", required=True, help="Account label (e.g. user@example.com).")
     parser_otp_url.add_argument("--issuer", help="Issuer name (e.g. MyApp).")
 
+    # --- New 'calendar-lab' command ---
+    parser_cal = subparsers.add_parser(
+        "calendar-lab",
+        aliases=["calendar", "cal"],
+        help="Project Calendar."
+    )
+    parser_cal.add_argument("--year", type=int, help="Year (default: current).")
+    parser_cal.add_argument("--month", type=int, help="Month (1-12) (default: current).")
+
 
     # --- Plugin Registration ---
     try:
@@ -17113,6 +17139,10 @@ async def main():
 
     if args.command in ["otp-lab", "otp", "totp", "mfa"]:
         run_otp_lab(args)
+        return
+
+    if args.command in ["calendar-lab", "calendar", "cal"]:
+        run_calendar_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

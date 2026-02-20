@@ -90,6 +90,9 @@ class TestTaskManager(unittest.TestCase):
         mock_issue.fields.assignee = None
         # Mock hasattr for priority by setting attribute
         mock_issue.fields.priority = "High"
+        # Set date fields to None or valid strings to avoid TypeError/ValueError in logic
+        mock_issue.fields.created = "2023-10-01T12:00:00Z"
+        mock_issue.fields.duedate = "2023-10-15"
 
         mock_jira.search_issues.return_value = [mock_issue]
 

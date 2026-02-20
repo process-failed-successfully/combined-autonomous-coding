@@ -94,6 +94,7 @@ from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_unit import UnitLabTab
 from shared.tui_color import ColorLabTab
+from shared.tui_calendar import CalendarTab
 from shared.tui_otp import OtpLabTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
@@ -4055,6 +4056,8 @@ class AgentTUI(App):
                 yield UnitLabTab()
             with TabPane("Color Lab", id="tab-color"):
                 yield ColorLabTab()
+            with TabPane("Calendar", id="tab-calendar"):
+                yield CalendarTab(self.project_dir)
             with TabPane("Notebooks", id="tab-notebooks"):
                 yield NotebookLabTab(self.project_dir)
             with TabPane("DevTools", id="tab-devtools"):

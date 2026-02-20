@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+
 class SshLabManager:
     """
     Manages SSH keys and configuration.
@@ -57,7 +58,7 @@ class SshLabManager:
             "-b", str(bits),
             "-C", comment,
             "-f", str(key_path),
-            "-N", "" # No passphrase for automation/lab purposes by default, though risky for real use
+            "-N", ""  # No passphrase for automation/lab purposes by default, though risky for real use
         ]
 
         try:
@@ -74,7 +75,7 @@ class SshLabManager:
         """
         key_path = self.ssh_dir / filename
         if not key_path.exists():
-             return {"success": False, "error": f"Key '{filename}' not found."}
+            return {"success": False, "error": f"Key '{filename}' not found."}
 
         cmd = ["ssh-keygen", "-l", "-f", str(key_path)]
 
@@ -141,11 +142,59 @@ class SshLabManager:
             print(f"Error writing to config: {e}", file=sys.stderr)
             return False
 
+    def read_public_key(self, filename: str) -> Optional[str]:
+        """
+        Reads the content of the public key corresponding to the given private key filename.
+        """
+        key_path = self.ssh_dir / filename
+        pub_path = key_path.with_suffix(".pub")
+
+        if not pub_path.exists():
+            # Fallback logic just in case user provides weird name
+            if filename.endswith(".pub"):
+                pub_path = self.ssh_dir / filename
+            else:
+                pub_path = self.ssh_dir / (filename + ".pub")
+
+        if pub_path.exists():
+            try:
+                return pub_path.read_text().strip()
+            except Exception:
+                return None
+        return None
+
+    def delete_key(self, filename: str) -> bool:
+        """
+        Deletes a private key and its public key.
+        """
+        key_path = self.ssh_dir / filename
+        pub_path = key_path.with_suffix(".pub")
+
+        # Adjust paths if they don't seem right or if filename was .pub
+        if not pub_path.exists() and not key_path.exists():
+            # Try appending .pub explicitly if strict suffix failed
+            if not filename.endswith(".pub"):
+                pub_path = self.ssh_dir / (filename + ".pub")
+
+        deleted = False
+        try:
+            if key_path.exists():
+                key_path.unlink()
+                deleted = True
+            if pub_path.exists():
+                pub_path.unlink()
+                deleted = True
+        except Exception:
+            return False
+
+        return deleted
+
+
 def run_ssh_lab_logic(args):
     """
     CLI entry point for SSH Lab.
     """
-    manager = SshLabManager() # Defaults to ~/.ssh
+    manager = SshLabManager()  # Defaults to ~/.ssh
 
     if args.action == "list":
         keys = manager.list_keys()
@@ -196,9 +245,12 @@ def run_ssh_lab_logic(args):
             print(f"--- SSH Hosts ({len(hosts)}) ---")
             for h in hosts:
                 print(f"Host: {h.get('Host')}")
-                if 'HostName' in h: print(f"  HostName: {h['HostName']}")
-                if 'User' in h: print(f"  User: {h['User']}")
-                if 'IdentityFile' in h: print(f"  IdentityFile: {h['IdentityFile']}")
+                if 'HostName' in h:
+                    print(f"  HostName: {h['HostName']}")
+                if 'User' in h:
+                    print(f"  User: {h['User']}")
+                if 'IdentityFile' in h:
+                    print(f"  IdentityFile: {h['IdentityFile']}")
                 print("")
 
         elif args.sub_action == "add":

@@ -65,13 +65,18 @@ class TestProcLab(unittest.TestCase):
     def test_list_processes(self):
         self.manager.list_processes(self.procfile)
 
+    @patch("os.killpg")
+    @patch("os.getpgid")
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    def test_start_stop_process(self, mock_subprocess):
+    def test_start_stop_process(self, mock_subprocess, mock_getpgid, mock_killpg):
         mock_proc = AsyncMock()
         mock_proc.pid = 1234
         mock_proc.stdout.readline.return_value = b""
         mock_proc.stderr.readline.return_value = b""
         mock_proc.returncode = None
+
+        # Setup mock for getpgid to return something valid-looking
+        mock_getpgid.return_value = 1234
 
         async def wait_side_effect():
             mock_proc.returncode = 0

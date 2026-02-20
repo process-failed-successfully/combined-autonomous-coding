@@ -1,13 +1,14 @@
 from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Input, Label, ListView, ListItem, RichLog, Static, TabbedContent, TabPane
+from textual.widgets import Button, Input, Label, ListView, ListItem, RichLog, TabbedContent, TabPane
 from textual import on
 from shared.webhook_lab import WebhookLabManager
 from rich.syntax import Syntax
 import json
-import requests
+import requests  # type: ignore
 import threading
+
 
 class WebhookLabTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:

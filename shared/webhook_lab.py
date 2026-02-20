@@ -1,10 +1,10 @@
 import json
 import sys
 import time
-import requests
+import requests  # type: ignore
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any, cast
 from pathlib import Path
 from datetime import datetime
 from rich.console import Console
@@ -12,11 +12,14 @@ from rich.table import Table
 from rich.syntax import Syntax
 
 
+class WebhookServer(ThreadingHTTPServer):
+    manager: "WebhookLabManager"
+
+
 class WebhookRequestHandler(BaseHTTPRequestHandler):
     """
     Handles incoming webhook requests.
     """
-    manager = None  # Set by server
 
     def _handle_request(self, method):
         # 1. Capture basic info
@@ -28,11 +31,13 @@ class WebhookRequestHandler(BaseHTTPRequestHandler):
         content_length = int(headers.get('Content-Length', 0))
         body = self.rfile.read(content_length).decode('utf-8', errors='replace')
 
+        server = cast(WebhookServer, self.server)
+
         # 3. Log request
-        self.server.manager.log_request(timestamp, method, path, headers, body)
+        server.manager.log_request(timestamp, method, path, headers, body)
 
         # 4. Forward if configured
-        forward_url = self.server.manager.forward_url
+        forward_url = server.manager.forward_url
         response_status = 200
         response_body = b"Webhook received."
         response_headers = {"Content-Type": "text/plain"}
@@ -57,10 +62,10 @@ class WebhookRequestHandler(BaseHTTPRequestHandler):
                 response_body = resp.content
                 response_headers = dict(resp.headers)
 
-                self.server.manager.log_message(f"[dim]Forwarded to {target}: {resp.status_code}[/dim]")
+                server.manager.log_message(f"[dim]Forwarded to {target}: {resp.status_code}[/dim]")
 
             except Exception as e:
-                self.server.manager.log_message(f"[red]Error forwarding to {forward_url}: {e}[/red]")
+                server.manager.log_message(f"[red]Error forwarding to {forward_url}: {e}[/red]")
                 response_status = 502
                 response_body = f"Error forwarding: {e}".encode('utf-8')
 
@@ -104,9 +109,9 @@ class WebhookLabManager:
         self.history_file = project_dir / ".webhook_history.jsonl"
         self.console = Console()
         self.forward_url: Optional[str] = None
-        self.server: Optional[ThreadingHTTPServer] = None
+        self.server: Optional[WebhookServer] = None
         self.server_thread: Optional[threading.Thread] = None
-        self.requests: List[Dict] = []  # In-memory cache
+        self.requests: List[Dict[str, Any]] = []  # In-memory cache
         self.quiet = quiet
         self.load_history()
 
@@ -131,7 +136,7 @@ class WebhookLabManager:
         self.forward_url = forward_url
 
         # Use localhost to avoid binding to all interfaces (Bandit security check)
-        self.server = ThreadingHTTPServer(('127.0.0.1', port), WebhookRequestHandler)
+        self.server = WebhookServer(('127.0.0.1', port), WebhookRequestHandler)
         self.server.manager = self  # Inject manager
 
         self.log_message(f"[bold green]Webhook Lab listening on 127.0.0.1:{port}...[/bold green]")
@@ -162,7 +167,7 @@ class WebhookLabManager:
                 self.server_thread = None
             self.log_message("Server stopped.")
 
-    def log_request(self, timestamp: str, method: str, path: str, headers: Dict, body: str) -> str:
+    def log_request(self, timestamp: str, method: str, path: str, headers: Dict[str, Any], body: str) -> str:
         """
         Logs request to console and file. Returns generated ID.
         """

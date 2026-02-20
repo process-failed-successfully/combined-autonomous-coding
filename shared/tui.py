@@ -117,6 +117,7 @@ from shared.tui_markdown import MarkdownLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
+from shared.tui_qr import QrLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
@@ -4088,6 +4089,8 @@ class AgentTUI(App):
                 yield DiffLabTab(self.project_dir)
             with TabPane("Image Lab", id="tab-image"):
                 yield ImageLabTab(self.project_dir)
+            with TabPane("QR Lab", id="tab-qr"):
+                yield QrLabTab(self.project_dir)
             with TabPane("PDF Lab", id="tab-pdf"):
                 yield PdfLabTab(self.project_dir)
             with TabPane("Mock Data", id="tab-mock-data"):

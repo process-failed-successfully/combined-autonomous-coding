@@ -94,6 +94,7 @@ from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_finance import FinanceLabTab
 from shared.tui_unit import UnitLabTab
+from shared.tui_url import UrlLabTab
 from shared.tui_color import ColorLabTab
 from shared.tui_calendar import CalendarTab
 from shared.tui_otp import OtpLabTab
@@ -4024,6 +4025,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("URL Lab", id="tab-url-lab"):
+                yield UrlLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):
                 yield WsLabTab()
             with TabPane("Proxy Lab", id="tab-proxy"):

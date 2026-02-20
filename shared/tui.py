@@ -93,6 +93,7 @@ from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_unit import UnitLabTab
+from shared.tui_color import ColorLabTab
 from shared.tui_otp import OtpLabTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
@@ -4052,6 +4053,8 @@ class AgentTUI(App):
                 yield MathLabTab()
             with TabPane("Unit Lab", id="tab-unit"):
                 yield UnitLabTab()
+            with TabPane("Color Lab", id="tab-color"):
+                yield ColorLabTab()
             with TabPane("Notebooks", id="tab-notebooks"):
                 yield NotebookLabTab(self.project_dir)
             with TabPane("DevTools", id="tab-devtools"):

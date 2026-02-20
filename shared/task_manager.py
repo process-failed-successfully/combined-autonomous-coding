@@ -11,6 +11,7 @@ from shared.jira_client import JiraClient
 from shared.todos import scan_todos
 from shared.config import JiraConfig
 
+
 @dataclass
 class Task:
     id: str
@@ -22,6 +23,7 @@ class Task:
     created_at: Optional[datetime] = None
     due_date: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+
 
 class TaskManager:
     """
@@ -60,7 +62,7 @@ class TaskManager:
             for issue in issues:
                 # Determine priority from labels
                 priority = "Medium"
-                labels = [l['name'].lower() for l in issue.get('labels', [])]
+                labels = [lbl['name'].lower() for lbl in issue.get('labels', [])]
                 if "high" in labels or "urgent" in labels:
                     priority = "High"
                 elif "low" in labels:
@@ -150,8 +152,8 @@ class TaskManager:
         if task_id.startswith("SPRINT-"):
             return self._update_sprint_task(task_id, new_status)
         elif "-" in task_id and not task_id.startswith("TODO-") and not task_id.startswith("GH-"):
-             # Assumption: Jira IDs are PROJECT-123
-             return self._update_jira_task(task_id, new_status)
+            # Assumption: Jira IDs are PROJECT-123
+            return self._update_jira_task(task_id, new_status)
 
         return False
 
@@ -191,7 +193,8 @@ class TaskManager:
         status_map = jira_cfg.get("status_map", {})
 
         key = new_status.lower()
-        if key == "pending": key = "todo"
+        if key == "pending":
+            key = "todo"
 
         if status_map and key in status_map:
             target_status = status_map[key]

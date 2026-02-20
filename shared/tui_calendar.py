@@ -1,14 +1,16 @@
 from datetime import date, datetime
 from pathlib import Path
+from typing import Dict, List
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Label, ListView, ListItem, Static, RichLog
+from textual.widgets import Button, Label, Static, RichLog
 from textual.reactive import reactive
-from textual import on
 from textual import work
 import calendar
 
 from shared.calendar_lab import CalendarLabManager
+from shared.task_manager import Task
+
 
 class CalendarDay(Button):
     """A button representing a day in the calendar."""
@@ -24,6 +26,7 @@ class CalendarDay(Button):
         self.has_events = has_events
         if has_events:
             self.add_class("has-events")
+
 
 class CalendarTab(Container):
     """Tab for Calendar View."""
@@ -93,7 +96,7 @@ class CalendarTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = CalendarLabManager(project_dir)
-        self.events_cache = {}
+        self.events_cache: Dict[int, List[Task]] = {}
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -181,7 +184,7 @@ class CalendarTab(Container):
         # Schedule update on main thread
         self.app.call_from_thread(self._render_grid, events, year, month)
 
-    def _render_grid(self, events: dict, year: int, month: int) -> None:
+    def _render_grid(self, events: Dict[int, List[Task]], year: int, month: int) -> None:
         # Verify we are still looking at the same month (in case user navigated away fast)
         if year != self.current_year or month != self.current_month:
             return
@@ -203,8 +206,8 @@ class CalendarTab(Container):
                     btn = CalendarDay(day, year, month, has_events=has_events)
 
                     if (year == today.year and
-                        month == today.month and
-                        day == today.day):
+                            month == today.month and
+                            day == today.day):
                         btn.add_class("today-cell")
 
                     grid.mount(btn)
@@ -237,16 +240,21 @@ class CalendarTab(Container):
 
         for task in tasks:
             source_color = "blue"
-            if task.source == "jira": source_color = "cyan"
-            elif task.source == "sprint": source_color = "magenta"
-            elif task.source == "github": source_color = "white"
+            if task.source == "jira":
+                source_color = "cyan"
+            elif task.source == "sprint":
+                source_color = "magenta"
+            elif task.source == "github":
+                source_color = "white"
 
             log.write(f"[{source_color}]{task.source.upper()}[/{source_color}] [bold]{task.id}[/bold]")
             log.write(f"  {task.title}")
             log.write(f"  Status: {task.status}")
             if task.priority:
                 p_color = "green"
-                if task.priority.lower() == "high": p_color = "red"
-                elif task.priority.lower() == "medium": p_color = "yellow"
+                if task.priority.lower() == "high":
+                    p_color = "red"
+                elif task.priority.lower() == "medium":
+                    p_color = "yellow"
                 log.write(f"  Priority: [{p_color}]{task.priority}[/{p_color}]")
             log.write("")

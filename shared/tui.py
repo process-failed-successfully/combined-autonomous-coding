@@ -118,6 +118,7 @@ from shared.tui_image import ImageLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
+from shared.tui_mock_data import MockDataTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4083,6 +4084,8 @@ class AgentTUI(App):
                 yield ImageLabTab(self.project_dir)
             with TabPane("PDF Lab", id="tab-pdf"):
                 yield PdfLabTab(self.project_dir)
+            with TabPane("Mock Data", id="tab-mock-data"):
+                yield MockDataTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

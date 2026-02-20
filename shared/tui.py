@@ -67,6 +67,7 @@ from shared.tui_k8s import K8sTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
+from shared.tui_task_runner import TaskRunnerTab
 from shared.tui_proxy import ProxyLabTab
 from shared.tui_ws import WsLabTab
 from shared.tui_webhook import WebhookLabTab
@@ -3920,6 +3921,8 @@ class AgentTUI(App):
                 yield ServicesTab(self.project_dir)
             with TabPane("Processes", id="tab-proc"):
                 yield ProcLabTab(self.project_dir)
+            with TabPane("Runner", id="tab-runner"):
+                yield TaskRunnerTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):
                 yield DockerTab(self.project_dir)
             with TabPane("K8s", id="tab-k8s"):

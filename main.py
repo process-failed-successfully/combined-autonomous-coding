@@ -234,7 +234,8 @@ KNOWN_COMMANDS = [
     "load-lab", "load",
     "otp-lab", "otp", "totp", "mfa",
     "calendar-lab", "calendar", "cal",
-    "finance-lab", "finance", "fin"
+    "finance-lab", "finance", "fin",
+    "runner-lab", "runner"
 ]
 
 if FileSystemEventHandler:
@@ -270,6 +271,40 @@ def run_finance_lab(args):
     from shared.finance_lab import run_finance_lab_logic
     success = run_finance_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_runner_lab(args):
+    """Runs the Task Runner Lab."""
+    from shared.task_runner_lab import TaskRunnerManager
+    project_dir = args.project_dir.resolve()
+    manager = TaskRunnerManager(project_dir)
+
+    if args.action == "list":
+        tasks = manager.list_tasks()
+        if not tasks:
+            print("No tasks found.")
+            sys.exit(0)
+
+        print(f"{'Source':<20} | {'Name':<30} | {'Command'}")
+        print("-" * 80)
+        for task in tasks:
+            print(f"{task.source:<20} | {task.name:<30} | {task.command}")
+        sys.exit(0)
+
+    elif args.action == "run":
+        if not args.task_name:
+            print("Error: --task-name required.", file=sys.stderr)
+            sys.exit(1)
+
+        tasks = manager.list_tasks()
+        target = next((t for t in tasks if t.name == args.task_name), None)
+
+        if not target:
+            print(f"Error: Task '{args.task_name}' not found.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Running task: {target.name} ({target.command})")
+        ret = manager.run_task(target, on_output=lambda x: print(x))
+        sys.exit(ret)
 
 def run_port(args):
     """Manages network ports."""
@@ -13796,6 +13831,25 @@ def parse_args(argv=None):
     parser_fin_inf.add_argument("--rate", type=float, help="Inflation rate (%).")
     parser_fin_inf.add_argument("--years", type=int, help="Number of years.")
 
+    # --- New 'runner-lab' command ---
+    parser_runner = subparsers.add_parser(
+        "runner-lab",
+        aliases=["runner"],
+        help="Task Runner (Makefile, package.json, etc)."
+    )
+    runner_subparsers = parser_runner.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # runner list
+    parser_runner_list = runner_subparsers.add_parser("list", help="List available tasks.")
+
+    # runner run
+    parser_runner_run = runner_subparsers.add_parser("run", help="Run a task.")
+    parser_runner_run.add_argument("task_name", help="Name of the task to run.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17240,6 +17294,10 @@ async def main():
 
     if args.command in ["finance-lab", "finance", "fin"]:
         run_finance_lab(args)
+        return
+
+    if args.command in ["runner-lab", "runner"]:
+        run_runner_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

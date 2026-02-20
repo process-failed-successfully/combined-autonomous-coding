@@ -478,3 +478,30 @@ def stash_apply(project_dir: Path, stash_ref: str) -> bool:
 def stash_drop(project_dir: Path, stash_ref: str) -> bool:
     """Drop a stash."""
     return run_git(["stash", "drop", stash_ref], project_dir)
+
+
+def get_git_graph_lines(project_dir: Path, limit: int = 100) -> list[str]:
+    """
+    Returns the raw output lines of 'git log --graph'.
+    Includes ANSI color codes for visualization.
+    """
+    try:
+        # --graph: text-based graph
+        # --all: all branches
+        # --color=always: keep ANSI codes for RichLog
+        # --pretty: custom format
+        cmd = [
+            "git", "log", "--graph", "--all", "--color=always",
+            f"-n{limit}", "--pretty=format:%h %d %s (%cr) <%an>"
+        ]
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.splitlines()
+    except Exception as e:
+        logger.error(f"Error getting git graph: {e}")
+        return [f"Error loading graph: {e}"]

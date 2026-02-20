@@ -24,7 +24,7 @@ class QRLabManager:
     """Manages QR code operations."""
 
     def __init__(self):
-        self._check_dependency()
+        pass
 
     def _check_dependency(self):
         if not HAS_QR:
@@ -64,6 +64,7 @@ class QRLabManager:
         return f.getvalue()
 
     def _create_qr(self, text: str, **kwargs):
+        self._check_dependency()
         qr = qrcode.QRCode(
             version=kwargs.get("version", 1),
             error_correction=kwargs.get("error_correction", qrcode.constants.ERROR_CORRECT_L),

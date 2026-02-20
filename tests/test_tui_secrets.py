@@ -43,6 +43,22 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
         self.patcher_dashboard = patch("shared.tui.DashboardTab", side_effect=lambda *args, **kwargs: Static("Mock Dashboard Tab"))
         self.patcher_dashboard.start()
 
+        # Mock other resource-intensive tabs to prevent CancelledError
+        self.patcher_logtail = patch("shared.tui.LogTailTab", side_effect=lambda *args, **kwargs: Static("Mock LogTail Tab"))
+        self.patcher_logtail.start()
+
+        self.patcher_proc = patch("shared.tui.ProcLabTab", side_effect=lambda *args, **kwargs: Static("Mock ProcLab Tab"))
+        self.patcher_proc.start()
+
+        self.patcher_monitor = patch("shared.tui.SystemMonitorTab", side_effect=lambda *args, **kwargs: Static("Mock SystemMonitor Tab"))
+        self.patcher_monitor.start()
+
+        self.patcher_calendar = patch("shared.tui.CalendarTab", side_effect=lambda *args, **kwargs: Static("Mock Calendar Tab"))
+        self.patcher_calendar.start()
+
+        self.patcher_net = patch("shared.tui.NetDiagTab", side_effect=lambda *args, **kwargs: Static("Mock NetDiag Tab"))
+        self.patcher_net.start()
+
     def tearDown(self):
         patch.stopall()
         shutil.rmtree(self.test_dir)

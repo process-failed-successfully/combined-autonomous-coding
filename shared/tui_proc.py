@@ -60,10 +60,18 @@ class ProcLabTab(Container):
 
         # Start a UI update timer? Or just rely on events.
         # Status updates (PID/Running) might change.
-        self.set_interval(1.0, self.refresh_table)
+        self.refresh_timer = self.set_interval(1.0, self.refresh_table)
+
+    def on_unmount(self) -> None:
+        if hasattr(self, 'refresh_timer'):
+            self.refresh_timer.stop()
 
     def refresh_table(self) -> None:
-        table = self.query_one("#proc-table", DataTable)
+        try:
+            table = self.query_one("#proc-table", DataTable)
+        except Exception:
+            # Widget might be unmounting
+            return
 
         # If config was empty, try reload (maybe file created)
         if not self.manager.process_defs:

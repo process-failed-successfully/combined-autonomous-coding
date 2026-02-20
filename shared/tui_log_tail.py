@@ -101,7 +101,10 @@ class LogTailTab(Container):
             if current_size < self.file_pos:
                 # File truncated
                 self.file_pos = 0
-                self.query_one("#log-tail-view", RichLog).write("[bold yellow]File truncated.[/bold yellow]")
+                try:
+                    self.query_one("#log-tail-view", RichLog).write("[bold yellow]File truncated.[/bold yellow]")
+                except Exception:
+                    pass
 
             if current_size > self.file_pos:
                 with open(self.current_file, "r", encoding="utf-8", errors="replace") as f:
@@ -122,8 +125,14 @@ class LogTailTab(Container):
                     log_view.write(line, scroll_end=auto_scroll)
 
         except Exception as e:
+            # Check if it's a widget lookup error (unmount)
+            if "No nodes match" in str(e):
+                return
             self.stop_tailing()
-            self.notify(f"Error reading file: {e}", severity="error")
+            try:
+                self.notify(f"Error reading file: {e}", severity="error")
+            except Exception:
+                pass
 
     def on_unmount(self) -> None:
         self.stop_tailing()

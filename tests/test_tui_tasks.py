@@ -40,16 +40,98 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         self.mock_tm_class = self.patcher_tm.start()
         self.mock_tm = self.mock_tm_class.return_value
 
-        # Mock ServicesTab to avoid mounting errors during unrelated tests
-        self.patcher_services = patch("shared.tui.ServicesTab", side_effect=MockServicesTab)
-        self.mock_services = self.patcher_services.start()
+        # Mock heavy tabs to avoid side effects and speed up tests
+        side_effect = lambda *args, **kwargs: Container()
+        self.patcher_tabs = patch.multiple("shared.tui",
+            ProcLabTab=MagicMock(side_effect=side_effect),
+            LogTailTab=MagicMock(side_effect=side_effect),
+            AnalyticsTab=MagicMock(side_effect=side_effect),
+            HealthTab=MagicMock(side_effect=side_effect),
+            TroubleshootTab=MagicMock(side_effect=side_effect),
+            DocumentationTab=MagicMock(side_effect=side_effect),
+            ConfigTab=MagicMock(side_effect=side_effect),
+            CostTab=MagicMock(side_effect=side_effect),
+            PromptLabTab=MagicMock(side_effect=side_effect),
+            RefactorTab=MagicMock(side_effect=side_effect),
+            SecretsTab=MagicMock(side_effect=side_effect),
+            SessionTab=MagicMock(side_effect=side_effect),
+            RecipesTab=MagicMock(side_effect=side_effect),
+            WorktreesTab=MagicMock(side_effect=side_effect),
+            ApiLabTab=MagicMock(side_effect=side_effect),
+            PlaygroundTab=MagicMock(side_effect=side_effect),
+            CodeReviewTab=MagicMock(side_effect=side_effect),
+            ReleaseTab=MagicMock(side_effect=side_effect),
+            TestGenTab=MagicMock(side_effect=side_effect),
+            GitTab=MagicMock(side_effect=side_effect),
+            PullRequestsTab=MagicMock(side_effect=side_effect),
+            ConflictTab=MagicMock(side_effect=side_effect),
+            BisectTab=MagicMock(side_effect=side_effect),
+            DependenciesTab=MagicMock(side_effect=side_effect),
+            SecurityTab=MagicMock(side_effect=side_effect),
+            GuardrailsTab=MagicMock(side_effect=side_effect),
+            ImpactTab=MagicMock(side_effect=side_effect),
+            SentinelTab=MagicMock(side_effect=side_effect),
+            DiskUsageTab=MagicMock(side_effect=side_effect),
+            CodeMapTab=MagicMock(side_effect=side_effect),
+            NetworkTab=MagicMock(side_effect=side_effect),
+            NetDiagTab=MagicMock(side_effect=side_effect),
+            SnippetsTab=MagicMock(side_effect=side_effect),
+            TimelineTab=MagicMock(side_effect=side_effect),
+            DataLabTab=MagicMock(side_effect=side_effect),
+            SemVerTab=MagicMock(side_effect=side_effect),
+            LogicLabTab=MagicMock(side_effect=side_effect),
+            DatabaseTab=MagicMock(side_effect=side_effect),
+            DatabaseDiagramTab=MagicMock(side_effect=side_effect),
+            EnvTab=MagicMock(side_effect=side_effect),
+            ProxyLabTab=MagicMock(side_effect=side_effect),
+            JwtLabTab=MagicMock(side_effect=side_effect),
+            SanitizerTab=MagicMock(side_effect=side_effect),
+            FrontendTab=MagicMock(side_effect=side_effect),
+            I18nTab=MagicMock(side_effect=side_effect),
+            PresentationTab=MagicMock(side_effect=side_effect),
+            QuizTab=MagicMock(side_effect=side_effect),
+            RegexLabTab=MagicMock(side_effect=side_effect),
+            CronLabTab=MagicMock(side_effect=side_effect),
+            TimeLabTab=MagicMock(side_effect=side_effect),
+            MathLabTab=MagicMock(side_effect=side_effect),
+            UnitLabTab=MagicMock(side_effect=side_effect),
+            NotebookLabTab=MagicMock(side_effect=side_effect),
+            DevToolsTab=MagicMock(side_effect=side_effect),
+            HexTab=MagicMock(side_effect=side_effect),
+            JsonLabTab=MagicMock(side_effect=side_effect),
+            YamlLabTab=MagicMock(side_effect=side_effect),
+            MarkdownLabTab=MagicMock(side_effect=side_effect),
+            CsvLabTab=MagicMock(side_effect=side_effect),
+            DiffLabTab=MagicMock(side_effect=side_effect),
+            ImageLabTab=MagicMock(side_effect=side_effect),
+            ServicesTab=MagicMock(side_effect=side_effect),
+            OtpLabTab=MagicMock(side_effect=side_effect),
+            SearchTab=MagicMock(side_effect=side_effect),
+            ScaffoldTab=MagicMock(side_effect=side_effect),
+            PlanTab=MagicMock(side_effect=side_effect),
+            ResearchTab=MagicMock(side_effect=side_effect),
+            GanttTab=MagicMock(side_effect=side_effect),
+            StandupTab=MagicMock(side_effect=side_effect),
+            SystemMonitorTab=MagicMock(side_effect=side_effect),
+            TerminalTab=MagicMock(side_effect=side_effect),
+            DockerTab=MagicMock(side_effect=side_effect),
+            K8sTab=MagicMock(side_effect=side_effect),
+            TerraformTab=MagicMock(side_effect=side_effect),
+            ChaosTab=MagicMock(side_effect=side_effect),
+            SchedulerTab=MagicMock(side_effect=side_effect),
+            IdeConfigTab=MagicMock(side_effect=side_effect),
+            ADRTab=MagicMock(side_effect=side_effect),
+            ProductivityTab=MagicMock(side_effect=side_effect),
+            ProfileTab=MagicMock(side_effect=side_effect),
+        )
+        self.patcher_tabs.start()
 
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
         self.patcher_ask.stop()
         self.patcher_tm.stop()
-        self.patcher_services.stop()
+        self.patcher_tabs.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_tasks_tab_structure(self):

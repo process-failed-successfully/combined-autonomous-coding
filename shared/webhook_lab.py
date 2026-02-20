@@ -1,10 +1,10 @@
 import json
 import sys
 import time
-import requests
+import requests  # type: ignore
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 from pathlib import Path
 from datetime import datetime
 from rich.console import Console
@@ -12,11 +12,15 @@ from rich.table import Table
 from rich.syntax import Syntax
 
 
+class WebhookServer(ThreadingHTTPServer):
+    manager: 'WebhookLabManager'
+
+
 class WebhookRequestHandler(BaseHTTPRequestHandler):
     """
     Handles incoming webhook requests.
     """
-    manager = None  # Set by server
+    server: WebhookServer
 
     def _handle_request(self, method):
         # 1. Capture basic info
@@ -104,9 +108,9 @@ class WebhookLabManager:
         self.history_file = project_dir / ".webhook_history.jsonl"
         self.console = Console()
         self.forward_url: Optional[str] = None
-        self.server: Optional[ThreadingHTTPServer] = None
+        self.server: Optional[WebhookServer] = None
         self.server_thread: Optional[threading.Thread] = None
-        self.requests: List[Dict] = []  # In-memory cache
+        self.requests: List[Dict[str, Any]] = []  # In-memory cache
         self.quiet = quiet
         self.load_history()
 
@@ -131,7 +135,7 @@ class WebhookLabManager:
         self.forward_url = forward_url
 
         # Use localhost to avoid binding to all interfaces (Bandit security check)
-        self.server = ThreadingHTTPServer(('127.0.0.1', port), WebhookRequestHandler)
+        self.server = WebhookServer(('127.0.0.1', port), WebhookRequestHandler)
         self.server.manager = self  # Inject manager
 
         self.log_message(f"[bold green]Webhook Lab listening on 127.0.0.1:{port}...[/bold green]")
@@ -142,14 +146,18 @@ class WebhookLabManager:
         if blocking:
             self.log_message("Press Ctrl+C to stop.\n")
             try:
-                self.server.serve_forever()
+                # assert self.server is not None # Mypy should know
+                if self.server:
+                    self.server.serve_forever()
             except KeyboardInterrupt:
                 self.log_message("\n[bold red]Stopping server...[/bold red]")
-                self.server.shutdown()
+                if self.server:
+                    self.server.shutdown()
         else:
-            self.server_thread = threading.Thread(target=self.server.serve_forever)
-            self.server_thread.daemon = True
-            self.server_thread.start()
+            if self.server:
+                self.server_thread = threading.Thread(target=self.server.serve_forever)
+                self.server_thread.daemon = True
+                self.server_thread.start()
 
     def stop_server(self):
         if self.server:
@@ -162,7 +170,7 @@ class WebhookLabManager:
                 self.server_thread = None
             self.log_message("Server stopped.")
 
-    def log_request(self, timestamp: str, method: str, path: str, headers: Dict, body: str) -> str:
+    def log_request(self, timestamp: str, method: str, path: str, headers: Dict[str, Any], body: str) -> str:
         """
         Logs request to console and file. Returns generated ID.
         """

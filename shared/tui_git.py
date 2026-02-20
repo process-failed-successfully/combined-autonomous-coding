@@ -13,6 +13,7 @@ from shared.git import (
     commit_changes, discard_changes, pull_changes, push_branch, get_file_diff,
     get_git_stash_list, get_stash_show, stash_push, stash_pop, stash_drop, stash_apply
 )
+from shared.tui_git_graph import GitGraphPane
 
 class GitTab(Container):
     """Tab for viewing and managing Git."""
@@ -91,6 +92,9 @@ class GitTab(Container):
                     with Vertical(id="git-details-container"):
                         yield Label("[bold]Commit Details[/bold]")
                         yield RichLog(id="git-details-view", wrap=True, highlight=True, markup=False)
+
+            with TabPane("Graph"):
+                yield GitGraphPane(self.project_dir)
 
     def on_mount(self) -> None:
         # History Table

@@ -66,7 +66,9 @@ class TestProcLab(unittest.TestCase):
         self.manager.list_processes(self.procfile)
 
     @patch("asyncio.create_subprocess_shell", new_callable=AsyncMock)
-    def test_start_stop_process(self, mock_subprocess):
+    @patch("os.killpg")
+    @patch("os.getpgid")
+    def test_start_stop_process(self, mock_getpgid, mock_killpg, mock_subprocess):
         mock_proc = AsyncMock()
         mock_proc.pid = 1234
         mock_proc.stdout.readline.return_value = b""
@@ -79,6 +81,10 @@ class TestProcLab(unittest.TestCase):
 
         mock_proc.wait.side_effect = wait_side_effect
         mock_subprocess.return_value = mock_proc
+
+        # Mock os calls
+        mock_getpgid.return_value = 1234
+        mock_killpg.return_value = None
 
         async def run():
             self.manager.load_config(self.procfile)

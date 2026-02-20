@@ -36,6 +36,34 @@ class QRLabManager:
         If output_path is provided, saves to file.
         Otherwise, prints ASCII representation to console.
         """
+        qr = self._create_qr(text, **kwargs)
+
+        if output_path:
+            # Image generation
+            img = self._create_image(qr, **kwargs)
+            img.save(output_path)
+            console.print(f"[green]✅ QR code saved to {output_path}[/green]")
+        else:
+            # ASCII generation
+            console.print(Panel(f"QR Code for: [bold]{text}[/bold]", title="QR Lab"))
+            qr.print_ascii(tty=True)
+
+    def generate_image(self, text: str, **kwargs):
+        """Generates a PIL image object for the QR code."""
+        qr = self._create_qr(text, **kwargs)
+        return self._create_image(qr, **kwargs)
+
+    def generate_ascii(self, text: str, **kwargs) -> str:
+        """Generates an ASCII string representation of the QR code."""
+        qr = self._create_qr(text, **kwargs)
+
+        # Capture stdout to string
+        import io
+        f = io.StringIO()
+        qr.print_ascii(out=f, tty=False)
+        return f.getvalue()
+
+    def _create_qr(self, text: str, **kwargs):
         qr = qrcode.QRCode(
             version=kwargs.get("version", 1),
             error_correction=kwargs.get("error_correction", qrcode.constants.ERROR_CORRECT_L),
@@ -44,18 +72,12 @@ class QRLabManager:
         )
         qr.add_data(text)
         qr.make(fit=True)
+        return qr
 
-        if output_path:
-            # Image generation
-            fill_color = kwargs.get("fill_color", "black")
-            back_color = kwargs.get("back_color", "white")
-            img = qr.make_image(fill_color=fill_color, back_color=back_color)
-            img.save(output_path)
-            console.print(f"[green]✅ QR code saved to {output_path}[/green]")
-        else:
-            # ASCII generation
-            console.print(Panel(f"QR Code for: [bold]{text}[/bold]", title="QR Lab"))
-            qr.print_ascii(tty=True)
+    def _create_image(self, qr, **kwargs):
+        fill_color = kwargs.get("fill_color", "black")
+        back_color = kwargs.get("back_color", "white")
+        return qr.make_image(fill_color=fill_color, back_color=back_color)
 
     def generate_wifi(self, ssid: str, password: Optional[str] = None, security_type: str = "WPA", hidden: bool = False) -> str:
         """Generates WiFi configuration string."""
@@ -73,6 +95,38 @@ class QRLabManager:
             security_type = "nopass"
 
         return f"WIFI:S:{esc_ssid};T:{security_type};P:{esc_pass};H:{str(hidden).lower()};;"
+
+    def generate_email(self, to: str, subject: str = "", body: str = "") -> str:
+        """Generates Email (mailto) string."""
+        # mailto:user@example.com?subject=foo&body=bar
+        from urllib.parse import quote
+
+        uri = f"mailto:{to}"
+        params = []
+        if subject:
+            params.append(f"subject={quote(subject)}")
+        if body:
+            params.append(f"body={quote(body)}")
+
+        if params:
+            uri += "?" + "&".join(params)
+
+        return uri
+
+    def generate_sms(self, phone: str, message: str = "") -> str:
+        """Generates SMS string."""
+        # sms:+1234567890:Message
+        # Note: formatting varies by OS (iOS uses &body=, Android often just :body)
+        # Using common format: sms:number?body=message
+        from urllib.parse import quote
+        uri = f"sms:{phone}"
+        if message:
+            uri += f"?body={quote(message)}"
+        return uri
+
+    def generate_geo(self, lat: float, lon: float) -> str:
+        """Generates Geo URI."""
+        return f"geo:{lat},{lon}"
 
 def run_qr_lab_logic(args):
     """Entry point for QR lab CLI."""

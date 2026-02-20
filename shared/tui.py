@@ -125,6 +125,7 @@ from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
+from shared.tui_archive import ArchiveLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4105,6 +4106,8 @@ class AgentTUI(App):
                 yield MockDataTab(self.project_dir)
             with TabPane("SSH Lab", id="tab-ssh"):
                 yield SshLabTab()
+            with TabPane("Archive Lab", id="tab-archive"):
+                yield ArchiveLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

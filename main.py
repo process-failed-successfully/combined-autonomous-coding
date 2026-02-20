@@ -233,7 +233,8 @@ KNOWN_COMMANDS = [
     "speed-lab", "speed",
     "load-lab", "load",
     "otp-lab", "otp", "totp", "mfa",
-    "calendar-lab", "calendar", "cal"
+    "calendar-lab", "calendar", "cal",
+    "finance-lab", "finance", "fin"
 ]
 
 if FileSystemEventHandler:
@@ -263,6 +264,12 @@ def run_calendar_lab(args):
 
     print(manager.render_ascii_calendar(year, month))
     sys.exit(0)
+
+def run_finance_lab(args):
+    """Runs the Finance Lab."""
+    from shared.finance_lab import run_finance_lab_logic
+    success = run_finance_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_port(args):
     """Manages network ports."""
@@ -13703,6 +13710,53 @@ def parse_args(argv=None):
     parser_cal.add_argument("--year", type=int, help="Year (default: current).")
     parser_cal.add_argument("--month", type=int, help="Month (1-12) (default: current).")
 
+    # --- New 'finance-lab' command ---
+    parser_fin = subparsers.add_parser(
+        "finance-lab",
+        aliases=["finance", "fin"],
+        help="Financial calculators (loan, compound, npv, roi, break-even, inflation)."
+    )
+    fin_subparsers = parser_fin.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # loan
+    parser_fin_loan = fin_subparsers.add_parser("loan", help="Calculate loan payments.")
+    parser_fin_loan.add_argument("--principal", type=float, help="Loan amount.")
+    parser_fin_loan.add_argument("--rate", type=float, help="Annual interest rate (%).")
+    parser_fin_loan.add_argument("--term", type=int, help="Loan term in years.")
+
+    # compound
+    parser_fin_compound = fin_subparsers.add_parser("compound", help="Calculate compound interest.")
+    parser_fin_compound.add_argument("--principal", type=float, help="Principal amount.")
+    parser_fin_compound.add_argument("--rate", type=float, help="Annual interest rate (%).")
+    parser_fin_compound.add_argument("--time", type=int, help="Time in years.")
+    parser_fin_compound.add_argument("--frequency", type=int, default=1, help="Compounding frequency per year (default: 1).")
+
+    # npv
+    parser_fin_npv = fin_subparsers.add_parser("npv", help="Calculate Net Present Value.")
+    parser_fin_npv.add_argument("--rate", type=float, help="Discount rate (%).")
+    parser_fin_npv.add_argument("--flows", help="Comma-separated cash flows (e.g., -1000,200,300).")
+
+    # roi
+    parser_fin_roi = fin_subparsers.add_parser("roi", help="Calculate Return on Investment.")
+    parser_fin_roi.add_argument("--initial", type=float, help="Initial investment.")
+    parser_fin_roi.add_argument("--final", type=float, help="Final value.")
+
+    # break-even
+    parser_fin_be = fin_subparsers.add_parser("break-even", help="Calculate Break-Even Point.")
+    parser_fin_be.add_argument("--fixed", type=float, help="Fixed costs.")
+    parser_fin_be.add_argument("--variable", type=float, help="Variable cost per unit.")
+    parser_fin_be.add_argument("--price", type=float, help="Price per unit.")
+
+    # inflation
+    parser_fin_inf = fin_subparsers.add_parser("inflation", help="Calculate inflation effect.")
+    parser_fin_inf.add_argument("--value", type=float, help="Initial value.")
+    parser_fin_inf.add_argument("--rate", type=float, help="Inflation rate (%).")
+    parser_fin_inf.add_argument("--years", type=int, help="Number of years.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17143,6 +17197,10 @@ async def main():
 
     if args.command in ["calendar-lab", "calendar", "cal"]:
         run_calendar_lab(args)
+        return
+
+    if args.command in ["finance-lab", "finance", "fin"]:
+        run_finance_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

@@ -1,11 +1,22 @@
-from pathlib import Path
-from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
-from textual.widgets import Button, Label, ListView, ListItem, RichLog, Header, Footer
-from textual import on
-from rich.syntax import Syntax
-from shared.notebook_lab import NotebookLabManager
 import asyncio
+from pathlib import Path
+
+from rich.syntax import Syntax
+from textual import on
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Button, Label, ListItem, ListView, RichLog
+
+from shared.notebook_lab import NotebookLabManager
+
+
+class NotebookListItem(ListItem):
+    """Custom ListItem that holds a notebook path."""
+
+    def __init__(self, *children, notebook_path: Path, **kwargs) -> None:
+        super().__init__(*children, **kwargs)
+        self.notebook_path = notebook_path
+
 
 class NotebookLabTab(Container):
     """Tab for managing Jupyter Notebooks."""
@@ -56,16 +67,12 @@ class NotebookLabTab(Container):
             except ValueError:
                 rel_path = nb
 
-            # Store full path in item name/id or custom attribute if possible
-            # Textual ListItems don't support custom data easily, so we use a custom class or just index match
-            # For simplicity, we'll store the path as the name attribute if it's unique enough (it is)
-            item = ListItem(Label(str(rel_path)))
-            item.notebook_path = nb
+            item = NotebookListItem(Label(str(rel_path)), notebook_path=nb)
             list_view.append(item)
 
     @on(ListView.Selected, "#notebook-list")
     def on_notebook_selected(self, event: ListView.Selected) -> None:
-        if hasattr(event.item, "notebook_path"):
+        if isinstance(event.item, NotebookListItem):
             self.selected_notebook = event.item.notebook_path
             self.update_header()
             self.enable_buttons()

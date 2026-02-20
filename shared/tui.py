@@ -58,6 +58,7 @@ from shared.tui_sentinel import SentinelTab
 from shared.tui_impact import ImpactTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
+from shared.tui_log_tail import LogTailTab
 from shared.tui_services import ServicesTab
 from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_docker import DockerTab
@@ -3819,6 +3820,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
         PaletteCommand("Go to Disk Usage", "switch_tab_disk_usage"),
         PaletteCommand("Go to Logs", "switch_tab_logs"),
+        PaletteCommand("Go to Live Logs", "switch_tab_live_logs"),
         PaletteCommand("Go to Chat", "switch_tab_interact"),
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
         PaletteCommand("Go to Git", "switch_tab_git"),
@@ -3992,6 +3994,8 @@ class AgentTUI(App):
                 yield TimelineTab(self.project_dir)
             with TabPane("Log Explorer", id="tab-logs"):
                 yield LogExplorerTab(self.project_dir)
+            with TabPane("Live Logs", id="tab-live-logs"):
+                yield LogTailTab(self.project_dir)
             with TabPane("Data Lab", id="tab-datalab"):
                 yield DataLabTab(self.project_dir)
             with TabPane("SemVer Lab", id="tab-semver"):

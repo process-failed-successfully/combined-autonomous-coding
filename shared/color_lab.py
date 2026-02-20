@@ -8,12 +8,10 @@ blindness simulation, and format conversion.
 
 import sys
 import colorsys
-import math
 from pathlib import Path
-from typing import List, Tuple, Dict, Optional, Union
+from typing import List, Tuple, Union
 from rich.console import Console
 from rich.table import Table
-from rich.text import Text
 from rich.panel import Panel
 
 try:
@@ -23,6 +21,7 @@ except ImportError:
     HAS_PIL = False
 
 console = Console()
+
 
 class Color:
     """Represents a color and provides conversion/utility methods."""
@@ -36,21 +35,21 @@ class Color:
         if value.startswith("#"):
             value = value.lstrip("#")
             if len(value) == 3:
-                value = "".join([c*2 for c in value])
+                value = "".join([c * 2 for c in value])
             if len(value) != 6:
                 raise ValueError(f"Invalid hex color: #{value}")
-            return tuple(int(value[i:i+2], 16) for i in (0, 2, 4)) # type: ignore
+            return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore
         elif value.startswith("rgb"):
             # extremely basic rgb parsing
             parts = value.replace("rgb(", "").replace(")", "").split(",")
             if len(parts) != 3:
                 raise ValueError("Invalid RGB format")
-            return tuple(int(p.strip()) for p in parts) # type: ignore
+            return tuple(int(p.strip()) for p in parts)  # type: ignore
         else:
             # try interpreting as hex without hash
             try:
                 if len(value) == 6:
-                    return tuple(int(value[i:i+2], 16) for i in (0, 2, 4)) # type: ignore
+                    return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore
             except ValueError:
                 pass
             raise ValueError(f"Unknown color format: {value}")
@@ -66,8 +65,8 @@ class Color:
     @property
     def hsl(self) -> Tuple[float, float, float]:
         # colorsys uses 0-1 for RGB, and returns 0-1 for HSL
-        h, l, s = colorsys.rgb_to_hls(self.r/255, self.g/255, self.b/255)
-        return (h * 360, s * 100, l * 100)
+        h, lum, s = colorsys.rgb_to_hls(self.r / 255, self.g / 255, self.b / 255)
+        return (h * 360, s * 100, lum * 100)
 
     @property
     def cmyk(self) -> Tuple[int, int, int, int]:
@@ -117,7 +116,7 @@ class Color:
         b = remove_gamma(self.b / 255.0)
 
         # Matrices from online resources adapting Brettel et al / Viénot et al
-        if type == "protanopia": # Red-blind
+        if type == "protanopia":  # Red-blind
             # Protanopia projection
             # 0.567, 0.433, 0
             # 0.558, 0.442, 0
@@ -125,7 +124,7 @@ class Color:
             nr = 0.567 * r + 0.433 * g + 0.0 * b
             ng = 0.558 * r + 0.442 * g + 0.0 * b
             nb = 0.0 * r + 0.242 * g + 0.758 * b
-        elif type == "deuteranopia": # Green-blind
+        elif type == "deuteranopia":  # Green-blind
             # Deuteranopia projection
             # 0.625, 0.375, 0
             # 0.7, 0.3, 0
@@ -133,7 +132,7 @@ class Color:
             nr = 0.625 * r + 0.375 * g + 0.0 * b
             ng = 0.7 * r + 0.3 * g + 0.0 * b
             nb = 0.0 * r + 0.3 * g + 0.7 * b
-        elif type == "tritanopia": # Blue-blind
+        elif type == "tritanopia":  # Blue-blind
             # Tritanopia projection
             # 0.95, 0.05, 0
             # 0, 0.433, 0.567
@@ -157,43 +156,43 @@ class Color:
 
     def palette(self, type: str) -> List['Color']:
         """Generates a palette based on this color."""
-        h, s, l = self.hsl
+        h, s, lum = self.hsl
         # H is 0-360, S, L are 0-100
 
         # Helper to create Color from HSL
-        def from_hsl(h, s, l):
+        def from_hsl(h, s, l_val):
             h = h % 360
-            r, g, b = colorsys.hls_to_rgb(h/360, l/100, s/100)
-            return Color(f"rgb({int(r*255)},{int(g*255)},{int(b*255)})")
+            r, g, b = colorsys.hls_to_rgb(h / 360, l_val / 100, s / 100)
+            return Color(f"rgb({int(r * 255)},{int(g * 255)},{int(b * 255)})")
 
         if type == "complementary":
-            return [self, from_hsl(h + 180, s, l)]
+            return [self, from_hsl(h + 180, s, lum)]
         elif type == "analogous":
             return [
-                from_hsl(h - 30, s, l),
+                from_hsl(h - 30, s, lum),
                 self,
-                from_hsl(h + 30, s, l)
+                from_hsl(h + 30, s, lum)
             ]
         elif type == "triadic":
             return [
                 self,
-                from_hsl(h + 120, s, l),
-                from_hsl(h + 240, s, l)
+                from_hsl(h + 120, s, lum),
+                from_hsl(h + 240, s, lum)
             ]
         elif type == "tetradic":
             return [
                 self,
-                from_hsl(h + 90, s, l),
-                from_hsl(h + 180, s, l),
-                from_hsl(h + 270, s, l)
+                from_hsl(h + 90, s, lum),
+                from_hsl(h + 180, s, lum),
+                from_hsl(h + 270, s, lum)
             ]
         elif type == "monochromatic":
             return [
-                from_hsl(h, s, max(0, l - 30)),
-                from_hsl(h, s, max(0, l - 15)),
+                from_hsl(h, s, max(0, lum - 30)),
+                from_hsl(h, s, max(0, lum - 15)),
                 self,
-                from_hsl(h, s, min(100, l + 15)),
-                from_hsl(h, s, min(100, l + 30)),
+                from_hsl(h, s, min(100, lum + 15)),
+                from_hsl(h, s, min(100, lum + 30)),
             ]
         return [self]
 
@@ -207,7 +206,8 @@ def extract_palette_from_image(image_path: Union[str, Path], limit: int = 5) -> 
     if not path.exists():
         raise FileNotFoundError(f"Image not found: {path}")
 
-    with Image.open(path) as img:
+    with Image.open(path) as img_file:
+        img: Image.Image = img_file
         # Check for transparency/alpha and handle it by flattening on white
         if img.mode != "RGB":
             img = img.convert("RGBA")
@@ -226,22 +226,27 @@ def extract_palette_from_image(image_path: Union[str, Path], limit: int = 5) -> 
         # But getpalette always returns 768 entries (256 colors).
         # We need to find which colors are actually used and prominent.
         # getcolors returns list of (count, index)
-        colors_count = q_img.getcolors(maxcolors=limit+1) # +1 safety margin
+        colors_count = q_img.getcolors(maxcolors=limit + 1)  # +1 safety margin
 
         if not colors_count:
-             # Should not happen if image is not empty
-             return []
+            # Should not happen if image is not empty
+            return []
 
         # Sort by count descending (most frequent first)
         colors_count.sort(key=lambda x: x[0], reverse=True)
 
         palette_data = q_img.getpalette()
+        if palette_data is None:
+            return []
+
         extracted_colors = []
 
         for count, index in colors_count[:limit]:
-            r = palette_data[index*3]
-            g = palette_data[index*3+1]
-            b = palette_data[index*3+2]
+            if not isinstance(index, int):
+                continue
+            r = palette_data[index * 3]
+            g = palette_data[index * 3 + 1]
+            b = palette_data[index * 3 + 2]
             extracted_colors.append(Color(f"rgb({r},{g},{b})"))
 
         return extracted_colors
@@ -267,7 +272,7 @@ def run_color_lab_logic(action: str, **kwargs):
             c2 = Color(kwargs["color2"])
             ratio = c1.contrast_ratio(c2)
 
-            console.print(Panel(f"[bold]Contrast Check[/bold]"))
+            console.print(Panel("[bold]Contrast Check[/bold]"))
             _print_color_swatch(c1, "Foreground")
             _print_color_swatch(c2, "Background")
 
@@ -277,8 +282,10 @@ def run_color_lab_logic(action: str, **kwargs):
             def grade(r, size="normal"):
                 aa = 4.5 if size == "normal" else 3.0
                 aaa = 7.0 if size == "normal" else 4.5
-                if r >= aaa: return "[green]AAA (Pass)[/green]"
-                if r >= aa: return "[green]AA (Pass)[/green]"
+                if r >= aaa:
+                    return "[green]AAA (Pass)[/green]"
+                if r >= aa:
+                    return "[green]AA (Pass)[/green]"
                 return "[red]Fail[/red]"
 
             table = Table(title="WCAG 2.1 Compliance")
@@ -299,11 +306,11 @@ def run_color_lab_logic(action: str, **kwargs):
             console.print(Panel(f"[bold]Palette: {algo.capitalize()}[/bold]"))
             for i, c in enumerate(palette):
                 marker = "(Base)" if c.hex == base.hex else ""
-                _print_color_swatch(c, f"Color {i+1} {marker}")
+                _print_color_swatch(c, f"Color {i + 1} {marker}")
 
         elif action == "simulate":
             c = Color(kwargs["color"])
-            console.print(Panel(f"[bold]Color Blindness Simulation[/bold]"))
+            console.print(Panel("[bold]Color Blindness Simulation[/bold]"))
 
             _print_color_swatch(c, "Original")
 
@@ -313,7 +320,7 @@ def run_color_lab_logic(action: str, **kwargs):
 
         elif action == "convert":
             c = Color(kwargs["color"])
-            console.print(Panel(f"[bold]Color Conversion[/bold]"))
+            console.print(Panel("[bold]Color Conversion[/bold]"))
             _print_color_swatch(c, "Swatch")
 
             table = Table()
@@ -322,8 +329,8 @@ def run_color_lab_logic(action: str, **kwargs):
 
             table.add_row("HEX", c.hex)
             table.add_row("RGB", str(c.rgb))
-            h, s, l = c.hsl
-            table.add_row("HSL", f"hsl({h:.1f}, {s:.1f}%, {l:.1f}%)")
+            h, s, lum = c.hsl
+            table.add_row("HSL", f"hsl({h:.1f}, {s:.1f}%, {lum:.1f}%)")
             cmyk = c.cmyk
             table.add_row("CMYK", f"cmyk({cmyk[0]}%, {cmyk[1]}%, {cmyk[2]}%, {cmyk[3]}%)")
 
@@ -333,11 +340,15 @@ def run_color_lab_logic(action: str, **kwargs):
             image_path = kwargs.get("image")
             limit = int(kwargs.get("limit", 5))
 
+            if not image_path:
+                console.print("[red]Error: Image path required for extract action[/red]")
+                sys.exit(1)
+
             try:
-                palette = extract_palette_from_image(image_path, limit)
-                console.print(Panel(f"[bold]Extracted Palette from {Path(image_path).name}[/bold]"))
+                palette = extract_palette_from_image(str(image_path), limit)
+                console.print(Panel(f"[bold]Extracted Palette from {Path(str(image_path)).name}[/bold]"))
                 for i, c in enumerate(palette):
-                    _print_color_swatch(c, f"Color {i+1}")
+                    _print_color_swatch(c, f"Color {i + 1}")
             except ImportError as e:
                 console.print(f"[red]Error: {e}[/red]")
                 sys.exit(1)

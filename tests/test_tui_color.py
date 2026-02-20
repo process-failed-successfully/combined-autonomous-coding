@@ -1,10 +1,10 @@
 import unittest
 from textual.app import App, ComposeResult
 from shared.tui_color import ColorLabTab
-from textual.widgets import RichLog, Input
+from textual.widgets import RichLog, Input, TabbedContent
 
 
-class ColorLabApp(App):
+class ColorLabApp(App[None]):
     def compose(self) -> ComposeResult:
         yield ColorLabTab()
 
@@ -31,7 +31,7 @@ class TestColorLabTab(unittest.IsolatedAsyncioTestCase):
         app = ColorLabApp()
         async with app.run_test() as pilot:
             # Activate Converter Tab
-            tabbed = app.query_one("TabbedContent")
+            tabbed = app.query_one("TabbedContent", TabbedContent)
             tabbed.active = "cl-tab-converter"
             await pilot.pause()  # Wait for tab switch animation/render
 

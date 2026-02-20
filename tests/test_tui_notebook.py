@@ -1,17 +1,21 @@
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 from textual.app import App, ComposeResult
-from textual.widgets import ListView, ListItem, Button, RichLog, Label
+from textual.widgets import Button, Label, ListView
+
 from shared.tui_notebook import NotebookLabTab
 
-class NotebookApp(App):
+
+class NotebookApp(App[None]):
     def __init__(self, project_dir):
         super().__init__()
         self.project_dir = project_dir
 
     def compose(self) -> ComposeResult:
         yield NotebookLabTab(self.project_dir)
+
 
 class TestNotebookLabTab(unittest.IsolatedAsyncioTestCase):
     @patch("shared.tui_notebook.NotebookLabManager")
@@ -21,7 +25,7 @@ class TestNotebookLabTab(unittest.IsolatedAsyncioTestCase):
         manager.list_notebooks.return_value = [Path("notebook1.ipynb"), Path("notebook2.ipynb")]
 
         app = NotebookApp(Path("."))
-        async with app.run_test(size=(800, 600)) as pilot:
+        async with app.run_test(size=(800, 600)):
             tab = app.query_one(NotebookLabTab)
             list_view = tab.query_one("#notebook-list", ListView)
 
@@ -76,7 +80,6 @@ class TestNotebookLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(tab.query_one("#btn-notebook-inspect", Button).disabled)
 
             # Check Inspect output
-            log = tab.query_one("#notebook-log", RichLog)
             # We can't easily read RichLog content in tests (it's internal), but we can verify manager call
             manager.inspect_notebook.assert_called_with(nb_path)
 
@@ -111,6 +114,7 @@ class TestNotebookLabTab(unittest.IsolatedAsyncioTestCase):
             # Test Audit
             await pilot.click("#btn-notebook-audit")
             manager.audit_notebook.assert_called_with(nb_path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,7 @@ class WebhookLabTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = WebhookLabManager(project_dir, quiet=True)
-        self.is_running = False
+        self.server_running = False
         self.selected_request_id = None
 
     def compose(self) -> ComposeResult:
@@ -80,7 +80,7 @@ class WebhookLabTab(Container):
 
         try:
             self.manager.start_server(port, forward_url, blocking=False)
-            self.is_running = True
+            self.server_running = True
             self.update_ui_state(True)
             self.notify(f"Server started on port {port}.")
         except Exception as e:
@@ -89,7 +89,7 @@ class WebhookLabTab(Container):
     def stop_server(self) -> None:
         try:
             self.manager.stop_server()
-            self.is_running = False
+            self.server_running = False
             self.update_ui_state(False)
             self.notify("Server stopped.")
         except Exception as e:
@@ -97,7 +97,7 @@ class WebhookLabTab(Container):
 
     def on_unmount(self) -> None:
         # Ensure server is stopped when tab is closed/unmounted
-        if self.is_running:
+        if self.server_running:
             self.manager.stop_server()
 
     def update_ui_state(self, running: bool) -> None:

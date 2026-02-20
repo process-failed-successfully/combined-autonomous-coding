@@ -9,6 +9,7 @@ from rich.syntax import Syntax
 import json
 import requests  # type: ignore
 import threading
+from textual.css.query import NoMatches
 
 
 class WebhookRequestItem(ListItem):
@@ -77,14 +78,21 @@ class WebhookLabTab(Container):
             self.replay_request()
 
     def start_server(self) -> None:
-        port_str = self.query_one("#wh-port", Input).value
+        try:
+            port_str = self.query_one("#wh-port", Input).value
+        except NoMatches:
+            return
+
         try:
             port = int(port_str)
         except ValueError:
             self.notify("Invalid port.", severity="error")
             return
 
-        forward_url = self.query_one("#wh-forward", Input).value or None
+        try:
+            forward_url = self.query_one("#wh-forward", Input).value or None
+        except NoMatches:
+            forward_url = None
 
         try:
             self.manager.start_server(port, forward_url, blocking=False)
@@ -109,29 +117,41 @@ class WebhookLabTab(Container):
             self.manager.stop_server()
 
     def update_ui_state(self, running: bool) -> None:
-        self.query_one("#btn-wh-start").disabled = running
-        self.query_one("#btn-wh-stop").disabled = not running
-        self.query_one("#wh-port").disabled = running
-        self.query_one("#wh-forward").disabled = running
+        try:
+            self.query_one("#btn-wh-start").disabled = running
+            self.query_one("#btn-wh-stop").disabled = not running
+            self.query_one("#wh-port").disabled = running
+            self.query_one("#wh-forward").disabled = running
 
-        lbl = self.query_one("#lbl-wh-status", Label)
-        if running:
-            lbl.update("Running")
-            lbl.remove_class("status-disconnected")
-            lbl.add_class("status-connected")
-        else:
-            lbl.update("Stopped")
-            lbl.remove_class("status-connected")
-            lbl.add_class("status-disconnected")
+            lbl = self.query_one("#lbl-wh-status", Label)
+            if running:
+                lbl.update("Running")
+                lbl.remove_class("status-disconnected")
+                lbl.add_class("status-connected")
+            else:
+                lbl.update("Stopped")
+                lbl.remove_class("status-connected")
+                lbl.add_class("status-disconnected")
+        except NoMatches:
+            pass
 
     def poll_requests(self) -> None:
         # Check if list needs update
-        current_count = len(self.query_one("#wh-list", ListView).children)
+        try:
+            list_view = self.query_one("#wh-list", ListView)
+        except NoMatches:
+            return
+
+        current_count = len(list_view.children)
         if len(self.manager.requests) != current_count:
             self.refresh_list()
 
     def refresh_list(self) -> None:
-        list_view = self.query_one("#wh-list", ListView)
+        try:
+            list_view = self.query_one("#wh-list", ListView)
+        except NoMatches:
+            return
+
         list_view.clear()
 
         # Latest on top
@@ -152,7 +172,10 @@ class WebhookLabTab(Container):
         if isinstance(event.item, WebhookRequestItem):
             self.selected_request_id = event.item.request_id
             self.show_details(self.selected_request_id)
-            self.query_one("#btn-wh-replay").disabled = False
+            try:
+                self.query_one("#btn-wh-replay").disabled = False
+            except NoMatches:
+                pass
 
     def show_details(self, req_id: Optional[str]) -> None:
         if not req_id:
@@ -162,47 +185,57 @@ class WebhookLabTab(Container):
         if not req:
             return
 
-        # Summary
-        summary = self.query_one("#wh-summary-log", RichLog)
-        summary.clear()
-        summary.write(f"[bold]ID:[/bold] {req['id']}")
-        summary.write(f"[bold]Time:[/bold] {req['timestamp']}")
-        summary.write(f"[bold]Method:[/bold] {req['method']}")
-        summary.write(f"[bold]Path:[/bold] {req['path']}")
+        try:
+            # Summary
+            summary = self.query_one("#wh-summary-log", RichLog)
+            summary.clear()
+            summary.write(f"[bold]ID:[/bold] {req['id']}")
+            summary.write(f"[bold]Time:[/bold] {req['timestamp']}")
+            summary.write(f"[bold]Method:[/bold] {req['method']}")
+            summary.write(f"[bold]Path:[/bold] {req['path']}")
 
-        # Headers
-        headers = self.query_one("#wh-headers-log", RichLog)
-        headers.clear()
-        for k, v in req['headers'].items():
-            headers.write(f"[cyan]{k}[/cyan]: {v}")
+            # Headers
+            headers = self.query_one("#wh-headers-log", RichLog)
+            headers.clear()
+            for k, v in req['headers'].items():
+                headers.write(f"[cyan]{k}[/cyan]: {v}")
 
-        # Body
-        body_log = self.query_one("#wh-body-log", RichLog)
-        body_log.clear()
-        body = req.get('body', '')
-        if body:
-            try:
-                # Try format JSON
-                json_obj = json.loads(body)
-                body_log.write(Syntax(json.dumps(json_obj, indent=2), "json"))
-            except Exception:
-                body_log.write(body)
-        else:
-            body_log.write("[dim](empty)[/dim]")
+            # Body
+            body_log = self.query_one("#wh-body-log", RichLog)
+            body_log.clear()
+            body = req.get('body', '')
+            if body:
+                try:
+                    # Try format JSON
+                    json_obj = json.loads(body)
+                    body_log.write(Syntax(json.dumps(json_obj, indent=2), "json"))
+                except Exception:
+                    body_log.write(body)
+            else:
+                body_log.write("[dim](empty)[/dim]")
+        except NoMatches:
+            pass
 
     def clear_history(self) -> None:
         self.manager.requests = []
         self.refresh_list()
-        self.query_one("#wh-summary-log", RichLog).clear()
-        self.query_one("#wh-headers-log", RichLog).clear()
-        self.query_one("#wh-body-log", RichLog).clear()
-        self.query_one("#btn-wh-replay").disabled = True
+        try:
+            self.query_one("#wh-summary-log", RichLog).clear()
+            self.query_one("#wh-headers-log", RichLog).clear()
+            self.query_one("#wh-body-log", RichLog).clear()
+            self.query_one("#btn-wh-replay").disabled = True
+        except NoMatches:
+            pass
 
     def replay_request(self) -> None:
         if not self.selected_request_id:
             return
 
-        target = self.query_one("#wh-replay-target", Input).value
+        try:
+            target = self.query_one("#wh-replay-target", Input).value
+        except NoMatches:
+            return
+
         if not target:
             self.notify("Replay target required.", severity="error")
             return

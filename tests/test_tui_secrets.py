@@ -59,6 +59,9 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
         self.patcher_net = patch("shared.tui.NetDiagTab", side_effect=lambda *args, **kwargs: Static("Mock NetDiag Tab"))
         self.patcher_net.start()
 
+        self.patcher_webhook = patch("shared.tui.WebhookLabTab", side_effect=lambda *args, **kwargs: Static("Mock Webhook Tab"))
+        self.patcher_webhook.start()
+
     def tearDown(self):
         patch.stopall()
         shutil.rmtree(self.test_dir)

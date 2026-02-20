@@ -84,7 +84,12 @@ class ColorLabTab(Container):
     @on(Button.Pressed, "#btn-cl-palette")
     def on_palette(self) -> None:
         base_str = self.query_one("#cl-palette-base", Input).value
-        algo = self.query_one("#cl-palette-algo", Select).value or "complementary"
+        algo_val = self.query_one("#cl-palette-algo", Select).value
+        if algo_val == Select.BLANK:
+            algo = "complementary"
+        else:
+            algo = str(algo_val)
+
         log = self.query_one("#cl-palette-result", RichLog)
         log.clear()
 

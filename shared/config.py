@@ -66,7 +66,9 @@ class Config:
     # Notification Configuration
     slack_webhook_url: Optional[str] = None
     discord_webhook_url: Optional[str] = None
-    # Map event_type -> "slack"|"discord" -> bool
+    telegram_bot_token: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+    # Map event_type -> "slack"|"discord"|"telegram" -> bool
     notification_settings: Optional[dict[str, Any]] = None
 
     # Docker-in-Docker

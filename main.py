@@ -1555,6 +1555,17 @@ def run_validate():
         if not isinstance(url, str) or not url.startswith("https://discord.com/api/webhooks/"):
             errors.append(f"Invalid Discord webhook URL format in {config_path}.")
 
+    # Telegram Validation
+    if 'telegram_bot_token' in config_data and config_data.get('telegram_bot_token'):
+        token = config_data['telegram_bot_token']
+        if not isinstance(token, str):
+            errors.append(f"Telegram bot token must be a string in {config_path}.")
+
+    if 'telegram_chat_id' in config_data and config_data.get('telegram_chat_id'):
+        chat_id = config_data['telegram_chat_id']
+        if not isinstance(chat_id, str):
+            errors.append(f"Telegram chat ID must be a string in {config_path}.")
+
     # Type checks for other common keys
     type_checks = {
         'model': str, 'max_iterations': int, 'manager_frequency': int,
@@ -1676,6 +1687,28 @@ def run_doctor(args):
                 error_messages.append(f"{service} webhook connection error: {e}")
         else:
             print(f"  - {service} not configured, skipping check.")
+
+    # Telegram Connectivity
+    telegram_token = config_data.get('telegram_bot_token')
+    if telegram_token:
+        print("  - Checking Telegram bot...")
+        try:
+            # We call getMe to verify the token
+            tg_url = f"https://api.telegram.org/bot{telegram_token}/getMe"
+            response = requests.get(tg_url, timeout=5)
+            if response.status_code == 200:
+                bot_info = response.json().get('result', {})
+                print(f"    ✅ Telegram bot connected: {bot_info.get('username')}")
+            else:
+                print(f"    ❌ Telegram bot check failed: {response.status_code} {response.reason}")
+                all_checks_passed = False
+                error_messages.append(f"Telegram check failed: {response.status_code}")
+        except requests.RequestException as e:
+            print(f"    ❌ Could not connect to Telegram API: {e}")
+            all_checks_passed = False
+            error_messages.append(f"Telegram connection error: {e}")
+    else:
+        print("  - Telegram not configured, skipping check.")
 
     # 4. Permissions Check
     print("\n[4] Checking File System Permissions...")
@@ -1848,11 +1881,17 @@ def run_configure():
     print("\n--- Notifications (optional) ---")
     slack_url = get_input("Slack Webhook URL", existing_config.get('slack_webhook_url'))
     discord_url = get_input("Discord Webhook URL", existing_config.get('discord_webhook_url'))
+    telegram_token = get_input("Telegram Bot Token", existing_config.get('telegram_bot_token'))
+    telegram_chat_id = get_input("Telegram Chat ID", existing_config.get('telegram_chat_id'))
 
     if slack_url:
         existing_config['slack_webhook_url'] = slack_url
     if discord_url:
         existing_config['discord_webhook_url'] = discord_url
+    if telegram_token:
+        existing_config['telegram_bot_token'] = telegram_token
+    if telegram_chat_id:
+        existing_config['telegram_chat_id'] = telegram_chat_id
 
     # Clean up empty keys
     final_config = {k: v for k, v in existing_config.items() if v}

@@ -41,7 +41,9 @@ class TestConfigureCommand(unittest.TestCase):
             "github_token_123",           # GitHub Token
             "github.enterprise.com",      # GitHub Host
             "https://hooks.slack.com/...",  # Slack Webhook
-            "https://discord.com/..."      # Discord Webhook
+            "https://discord.com/...",     # Discord Webhook
+            "123:ABC",                    # Telegram Bot Token
+            "456"                         # Telegram Chat ID
         ]
 
         # --- Run the function ---
@@ -71,7 +73,9 @@ class TestConfigureCommand(unittest.TestCase):
             'github_token': 'github_token_123',
             'github_host': 'github.enterprise.com',
             'slack_webhook_url': 'https://hooks.slack.com/...',
-            'discord_webhook_url': 'https://discord.com/...'
+            'discord_webhook_url': 'https://discord.com/...',
+            'telegram_bot_token': '123:ABC',
+            'telegram_chat_id': '456'
         }
 
         self.assertEqual(written_data, expected_data)

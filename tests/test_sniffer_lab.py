@@ -3,7 +3,8 @@ import struct
 import socket
 import time
 from unittest.mock import MagicMock, patch
-from shared.sniffer_lab import PacketParser, SnifferManager, Packet
+from shared.sniffer_lab import PacketParser, SnifferManager
+
 
 class TestPacketParser(unittest.TestCase):
     def setUp(self):
@@ -14,7 +15,7 @@ class TestPacketParser(unittest.TestCase):
         # Ethernet Header (14 bytes)
         # Dst MAC (6), Src MAC (6), Type (2)
         # Type 0x0800 = IPv4
-        eth = struct.pack('!6s6sH', b'\xAA'*6, b'\xBB'*6, 2048)
+        eth = struct.pack('!6s6sH', b'\xAA' * 6, b'\xBB' * 6, 2048)
 
         # IP Header (20 bytes)
         # Ver=4, IHL=5 -> 0x45
@@ -33,7 +34,7 @@ class TestPacketParser(unittest.TestCase):
 
         packet = self.parser.parse(raw_data)
 
-        self.assertIn(packet.proto_l2, [8, 2048]) # ntohs result depends on endianness
+        self.assertIn(packet.proto_l2, [8, 2048])  # ntohs result depends on endianness
         self.assertEqual(packet.src_mac, "bb:bb:bb:bb:bb:bb")
         self.assertEqual(packet.dst_mac, "aa:aa:aa:aa:aa:aa")
         self.assertEqual(packet.src_ip, "192.168.1.1")
@@ -48,6 +49,7 @@ class TestPacketParser(unittest.TestCase):
         raw_data = b'\x00' * 10
         packet = self.parser.parse(raw_data)
         self.assertIn("Truncated", packet.info)
+
 
 class TestSnifferManager(unittest.TestCase):
     def setUp(self):
@@ -67,7 +69,7 @@ class TestSnifferManager(unittest.TestCase):
 
         # Ensure AF_PACKET exists on socket module (mock it if needed)
         with patch.object(socket, 'AF_PACKET', create=True, new=1):
-             with patch.object(socket, 'SOCK_RAW', create=True, new=2):
+            with patch.object(socket, 'SOCK_RAW', create=True, new=2):
                 callback = MagicMock()
                 self.manager.start_capture('eth0', callback)
 
@@ -93,6 +95,7 @@ class TestSnifferManager(unittest.TestCase):
         # Depending on timing/random, it might be called 0 or more times.
         # But we verify it didn't crash.
         pass
+
 
 if __name__ == '__main__':
     unittest.main()

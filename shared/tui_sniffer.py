@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from typing import Optional, List
 from datetime import datetime
@@ -11,14 +10,15 @@ from rich.text import Text
 
 from shared.sniffer_lab import SnifferManager, Packet
 
+
 class SnifferLabTab(Container):
     """Tab for Network Packet Sniffing."""
 
-    def __init__(self, project_dir: Path = None, **kwargs) -> None:
+    def __init__(self, project_dir: Optional[Path] = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = SnifferManager()
-        self.packets: List[Packet] = [] # Store packet objects
+        self.packets: List[Packet] = []  # Store packet objects
         self.is_capturing = False
 
     def compose(self) -> ComposeResult:
@@ -35,8 +35,8 @@ class SnifferLabTab(Container):
                 yield Checkbox("Demo Mode", id="chk-sniff-demo", value=False)
 
             with Horizontal(classes="stat-box"):
-                 yield Label("Filter:", classes="label")
-                 yield Input(placeholder="Filter by IP, Port, or Protocol...", id="sniff-filter")
+                yield Label("Filter:", classes="label")
+                yield Input(placeholder="Filter by IP, Port, or Protocol...", id="sniff-filter")
 
             # Packet List
             with Vertical(id="sniff-list-container"):
@@ -71,7 +71,13 @@ class SnifferLabTab(Container):
 
     @on(Button.Pressed, "#btn-sniff-start")
     def on_start(self) -> None:
-        interface = self.query_one("#sniff-interface", Select).value
+        interface_val = self.query_one("#sniff-interface", Select).value
+        # Handle Select.BLANK or None
+        if interface_val == Select.BLANK or interface_val is None:
+            interface = ""
+        else:
+            interface = str(interface_val)
+
         demo_mode = self.query_one("#chk-sniff-demo", Checkbox).value
 
         if not interface and not demo_mode:
@@ -81,7 +87,7 @@ class SnifferLabTab(Container):
         self.is_capturing = True
         self.query_one("#btn-sniff-start").disabled = True
         self.query_one("#btn-sniff-stop").disabled = False
-        self.query_one("#chk-sniff-demo").disabled = True
+        self.query_one("#chk-sniff-demo", Checkbox).disabled = True
         self.query_one("#sniff-interface").disabled = True
 
         try:
@@ -94,7 +100,7 @@ class SnifferLabTab(Container):
         except PermissionError:
             self.notify("Permission Denied: Root required for raw sockets.", severity="error")
             self.notify("Switching to Demo Mode automatically.", severity="warning")
-            self.query_one("#chk-sniff-demo").value = True
+            self.query_one("#chk-sniff-demo", Checkbox).value = True
             # Retry with demo
             try:
                 self.manager.start_demo_capture(self.handle_packet)
@@ -112,7 +118,7 @@ class SnifferLabTab(Container):
 
         self.query_one("#btn-sniff-start").disabled = False
         self.query_one("#btn-sniff-stop").disabled = True
-        self.query_one("#chk-sniff-demo").disabled = False
+        self.query_one("#chk-sniff-demo", Checkbox).disabled = False
         self.query_one("#sniff-interface").disabled = False
 
         self.notify("Capture stopped.")
@@ -140,7 +146,7 @@ class SnifferLabTab(Container):
                 return
 
         self.packets.append(packet)
-        idx = len(self.packets) - 1 # 0-based index
+        idx = len(self.packets) - 1  # 0-based index
 
         table = self.query_one("#sniff-table", DataTable)
 
@@ -149,10 +155,14 @@ class SnifferLabTab(Container):
 
         # Protocol Name
         proto = "IP"
-        if packet.proto_l3 == 6: proto = "TCP"
-        elif packet.proto_l3 == 17: proto = "UDP"
-        elif packet.proto_l3 == 1: proto = "ICMP"
-        elif packet.proto_l2 != 8 and packet.proto_l2 != 2048: proto = "ARP/Other"
+        if packet.proto_l3 == 6:
+            proto = "TCP"
+        elif packet.proto_l3 == 17:
+            proto = "UDP"
+        elif packet.proto_l3 == 1:
+            proto = "ICMP"
+        elif packet.proto_l2 != 8 and packet.proto_l2 != 2048:
+            proto = "ARP/Other"
 
         table.add_row(
             str(idx + 1),
@@ -162,7 +172,7 @@ class SnifferLabTab(Container):
             proto,
             str(packet.payload_len),
             packet.info,
-            key=str(idx) # Use index as key
+            key=str(idx)  # Use index as key
         )
 
         # Auto-scroll (only if near bottom? Textual does this automatically usually)
@@ -206,8 +216,8 @@ class SnifferLabTab(Container):
         FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)])
         lines = []
         for c in range(0, len(src), length):
-            chars = src[c:c+length]
+            chars = src[c:c + length]
             hex_part = ' '.join(f"{x:02x}" for x in chars)
             printable = ''.join(FILTER[x] for x in chars)
-            lines.append(f"{c:04x}  {hex_part:<{length*3}}  {printable}")
+            lines.append(f"{c:04x}  {hex_part:<{length * 3}}  {printable}")
         return '\n'.join(lines)

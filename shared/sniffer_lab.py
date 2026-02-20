@@ -2,9 +2,11 @@ import socket
 import struct
 import threading
 import time
+import random
 import psutil
-from dataclasses import dataclass, field
-from typing import List, Dict, Callable, Optional, Tuple
+from dataclasses import dataclass
+from typing import List, Callable, Optional
+
 
 @dataclass
 class Packet:
@@ -20,6 +22,7 @@ class Packet:
     payload_len: int
     info: str
     raw_data: bytes
+
 
 class PacketParser:
     """Parses raw Ethernet frames."""
@@ -62,11 +65,10 @@ class PacketParser:
                 iph = struct.unpack('!BBHHHBBH4s4s', ip_header)
 
                 version_ihl = iph[0]
-                version = version_ihl >> 4
                 ihl = version_ihl & 0xF
                 iph_length = ihl * 4
 
-                ttl = iph[5]
+                # ttl = iph[5]  <-- unused
                 proto_l3 = iph[6]
                 src_ip = socket.inet_ntoa(iph[8])
                 dst_ip = socket.inet_ntoa(iph[9])
@@ -74,7 +76,7 @@ class PacketParser:
                 # Protocol Handling
                 if proto_l3 == 6:  # TCP
                     if len(raw_data) >= 14 + iph_length + 20:
-                        tcp_header = raw_data[14+iph_length : 14+iph_length+20]
+                        tcp_header = raw_data[14 + iph_length: 14 + iph_length + 20]
                         tcph = struct.unpack('!HHLLBBHHH', tcp_header)
                         src_port = tcph[0]
                         dst_port = tcph[1]
@@ -84,17 +86,17 @@ class PacketParser:
 
                 elif proto_l3 == 17:  # UDP
                     if len(raw_data) >= 14 + iph_length + 8:
-                        udp_header = raw_data[14+iph_length : 14+iph_length+8]
+                        udp_header = raw_data[14 + iph_length: 14 + iph_length + 8]
                         udph = struct.unpack('!HHHH', udp_header)
                         src_port = udph[0]
                         dst_port = udph[1]
                         info = f"UDP {src_port} -> {dst_port} Len={udph[2]}"
                     else:
-                         info = "UDP (Truncated)"
+                        info = "UDP (Truncated)"
 
                 elif proto_l3 == 1:  # ICMP
                     if len(raw_data) >= 14 + iph_length + 4:
-                        icmp_header = raw_data[14+iph_length : 14+iph_length+4]
+                        icmp_header = raw_data[14 + iph_length: 14 + iph_length + 4]
                         icmph = struct.unpack('!BBH', icmp_header)
                         icmp_type = icmph[0]
                         code = icmph[1]
@@ -186,7 +188,7 @@ class SnifferManager:
             try:
                 self.thread.join(timeout=1.0)
             except RuntimeError:
-                pass # Can happen if join is called from same thread
+                pass  # Can happen if join is called from same thread
 
     def _capture_loop(self, callback: Callable[[Packet], None]) -> None:
         while self.running and self.sock:
@@ -201,19 +203,17 @@ class SnifferManager:
 
     def _demo_loop(self, callback: Callable[[Packet], None]) -> None:
         """Generates random fake packets."""
-        import random
-
         while self.running:
             time.sleep(random.uniform(0.1, 1.0))
 
             # Pack 0x0800 (IPv4)
             # struct.pack('!H', 2048) -> b'\x08\x00'
-            eth = struct.pack('!6s6sH', b'\x00'*6, b'\xff'*6, 2048)
+            eth = struct.pack('!6s6sH', b'\x00' * 6, b'\xff' * 6, 2048)
 
             # IP Header
             src_ip = socket.inet_aton(f"192.168.1.{random.randint(1, 254)}")
             dst_ip = socket.inet_aton(f"10.0.0.{random.randint(1, 254)}")
-            proto = random.choice([6, 17, 1]) # TCP, UDP, ICMP
+            proto = random.choice([6, 17, 1])  # TCP, UDP, ICMP
 
             # Version 4, IHL 5 -> 0x45 (69)
             ip = struct.pack('!BBHHHBBH4s4s', 69, 0, 40, 54321, 0, 64, proto, 0, src_ip, dst_ip)
@@ -222,14 +222,14 @@ class SnifferManager:
 
             raw_data = eth + ip
 
-            if proto == 6: # TCP
-                tcp = struct.pack('!HHLLBBHHH', random.randint(1024, 65535), 80, 0, 0, 80, 0, 0, 0)
+            if proto == 6:  # TCP
+                tcp = struct.pack('!HHLLBBHHH', random.randint(1024, 65535), 80, 0, 0, 80, 0, 8192, 0, 0)
                 raw_data += tcp + payload
-            elif proto == 17: # UDP
+            elif proto == 17:  # UDP
                 udp = struct.pack('!HHHH', random.randint(1024, 65535), 53, 0, 0)
                 raw_data += udp + payload
-            else: # ICMP
-                icmp = struct.pack('!BBH', 8, 0, 0) # Echo Request
+            else:  # ICMP
+                icmp = struct.pack('!BBH', 8, 0, 0)  # Echo Request
                 raw_data += icmp + payload
 
             packet = self.parser.parse(raw_data)

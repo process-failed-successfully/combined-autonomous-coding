@@ -118,12 +118,21 @@ class WebhookLabTab(Container):
 
     def poll_requests(self) -> None:
         # Check if list needs update
-        current_count = len(self.query_one("#wh-list", ListView).children)
+        try:
+            list_view = self.query_one("#wh-list", ListView)
+        except Exception:
+            return
+
+        current_count = len(list_view.children)
         if len(self.manager.requests) != current_count:
             self.refresh_list()
 
     def refresh_list(self) -> None:
-        list_view = self.query_one("#wh-list", ListView)
+        try:
+            list_view = self.query_one("#wh-list", ListView)
+        except Exception:
+            return
+
         list_view.clear()
 
         # Latest on top

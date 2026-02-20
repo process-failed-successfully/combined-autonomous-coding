@@ -9,7 +9,8 @@ import json
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.task_manager import TaskManager, Task
+from shared.task_manager import TaskManager  # noqa: E402
+
 
 class TestTaskManager(unittest.TestCase):
     def setUp(self):
@@ -100,6 +101,7 @@ class TestTaskManager(unittest.TestCase):
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0].id, "PROJ-1")
         self.assertEqual(tasks[0].source, "jira")
+
 
 if __name__ == "__main__":
     unittest.main()

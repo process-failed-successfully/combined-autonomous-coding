@@ -1,15 +1,16 @@
 import calendar
-from datetime import datetime, date
+from datetime import date
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 from shared.task_manager import TaskManager, Task
+
 
 class CalendarLabManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
         self.task_manager = TaskManager(project_dir)
         self.tasks_cache: List[Task] = []
-        self.cal = calendar.Calendar(firstweekday=0) # Monday is 0
+        self.cal = calendar.Calendar(firstweekday=0)  # Monday is 0
 
     def refresh_tasks(self) -> None:
         """Refreshes the task cache."""
@@ -62,7 +63,7 @@ class CalendarLabManager:
             line = ""
             for day in week:
                 if day is None:
-                    line += "   " # 3 spaces
+                    line += "   "  # 3 spaces
                 else:
                     # Check if there are events
                     count = len(events.get(day, []))

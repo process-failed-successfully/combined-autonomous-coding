@@ -3,10 +3,11 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from unittest.mock import MagicMock, patch
-from datetime import datetime
-from shared.calendar_lab import CalendarLabManager
-from shared.task_manager import Task
+from unittest.mock import patch  # noqa: E402
+from datetime import datetime  # noqa: E402
+from shared.calendar_lab import CalendarLabManager  # noqa: E402
+from shared.task_manager import Task  # noqa: E402
+
 
 class TestCalendarLab(unittest.TestCase):
     def setUp(self):
@@ -39,7 +40,7 @@ class TestCalendarLab(unittest.TestCase):
         t1 = Task(id="1", source="todo", title="Task 1", status="open", due_date=datetime(2023, 10, 5))
         t2 = Task(id="2", source="todo", title="Task 2", status="open", due_date=datetime(2023, 10, 5))
         t3 = Task(id="3", source="todo", title="Task 3", status="open", due_date=datetime(2023, 10, 10))
-        t4 = Task(id="4", source="todo", title="Task 4", status="open", due_date=datetime(2023, 11, 1)) # Diff month
+        t4 = Task(id="4", source="todo", title="Task 4", status="open", due_date=datetime(2023, 11, 1))  # Diff month
 
         self.mock_tm.fetch_all_tasks.return_value = [t1, t2, t3, t4]
 
@@ -49,7 +50,7 @@ class TestCalendarLab(unittest.TestCase):
         self.assertEqual(len(events[5]), 2)
         self.assertIn(10, events)
         self.assertEqual(len(events[10]), 1)
-        self.assertNotIn(1, events) # Nov 1st shouldn't be in Oct events
+        self.assertNotIn(1, events)  # Nov 1st shouldn't be in Oct events
 
     def test_render_ascii_calendar(self):
         t1 = Task(id="1", source="todo", title="Task 1", status="open", due_date=datetime(2023, 10, 1))
@@ -60,6 +61,7 @@ class TestCalendarLab(unittest.TestCase):
         # Should contain "*1" or "1*" depending on implementation
         # Implementation: f"{day:>2}*" if events
         self.assertIn(" 1*", output)
+
 
 if __name__ == '__main__':
     unittest.main()

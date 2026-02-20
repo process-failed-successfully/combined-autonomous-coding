@@ -103,6 +103,7 @@ from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
+from shared.tui_ssh import SshLabTab
 from shared.tui_i18n import I18nTab
 from shared.tui_sanitizer import SanitizerTab
 from shared.tui_gantt import GanttTab
@@ -4095,6 +4096,8 @@ class AgentTUI(App):
                 yield PdfLabTab(self.project_dir)
             with TabPane("Mock Data", id="tab-mock-data"):
                 yield MockDataTab(self.project_dir)
+            with TabPane("SSH Lab", id="tab-ssh"):
+                yield SshLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

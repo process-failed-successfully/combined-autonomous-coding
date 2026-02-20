@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 from shared.ssh_lab import SshLabManager
 
+
 class TestSshLabManager(unittest.TestCase):
     def setUp(self):
         self.ssh_dir = Path("/tmp/mock_ssh")
@@ -101,7 +102,7 @@ Host github.com
 
     @patch("pathlib.Path.exists")
     def test_add_host(self, mock_exists):
-        mock_exists.return_value = True # for ensure_ssh_dir
+        mock_exists.return_value = True  # for ensure_ssh_dir
 
         m_open = mock_open()
         with patch("builtins.open", m_open):
@@ -114,6 +115,39 @@ Host github.com
         self.assertIn("HostName 10.0.0.1", written)
         self.assertIn("User root", written)
         self.assertIn("IdentityFile", written)
+
+    @patch("pathlib.Path.read_text")
+    @patch("pathlib.Path.exists")
+    def test_read_public_key(self, mock_exists, mock_read_text):
+        # Case 1: Standard key
+        mock_exists.return_value = True
+        mock_read_text.return_value = "ssh-rsa AAAA..."
+
+        content = self.manager.read_public_key("id_rsa")
+        self.assertEqual(content, "ssh-rsa AAAA...")
+
+        # Case 2: .pub missing
+        mock_exists.return_value = False
+        content = self.manager.read_public_key("id_missing")
+        self.assertIsNone(content)
+
+    @patch("pathlib.Path.unlink")
+    @patch("pathlib.Path.exists")
+    def test_delete_key(self, mock_exists, mock_unlink):
+        # Case 1: Both exist
+        mock_exists.return_value = True
+        result = self.manager.delete_key("id_rsa")
+        self.assertTrue(result)
+        self.assertEqual(mock_unlink.call_count, 2)  # private + public
+
+        # Case 2: Neither exist (but exists() called multiple times internally)
+        # reset mocks
+        mock_unlink.reset_mock()
+        mock_exists.return_value = False
+        result = self.manager.delete_key("id_gone")
+        self.assertFalse(result)
+        mock_unlink.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

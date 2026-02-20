@@ -1,11 +1,11 @@
 import unittest
-import requests
+import requests  # type: ignore
 import time
 import shutil
 import tempfile
-import threading
 from pathlib import Path
 from shared.webhook_lab import WebhookLabManager
+
 
 class TestWebhookLab(unittest.TestCase):
     def setUp(self):
@@ -19,7 +19,7 @@ class TestWebhookLab(unittest.TestCase):
 
     def test_start_stop_server(self):
         self.manager.start_server(self.port, blocking=False)
-        time.sleep(1) # Wait for startup
+        time.sleep(1)  # Wait for startup
 
         # Check if running
         try:
@@ -42,7 +42,7 @@ class TestWebhookLab(unittest.TestCase):
         payload = {"test": "data"}
         requests.post(f"http://127.0.0.1:{self.port}/api/test", json=payload)
 
-        time.sleep(0.5) # Wait for processing
+        time.sleep(0.5)  # Wait for processing
 
         self.assertEqual(len(self.manager.requests), 1)
         req = self.manager.requests[0]
@@ -68,6 +68,7 @@ class TestWebhookLab(unittest.TestCase):
         # Mock requests.request?
         # For now just call it and ensure no exception
         self.manager.replay_request(req_id, f"http://127.0.0.1:{self.port}")
+
 
 if __name__ == "__main__":
     unittest.main()

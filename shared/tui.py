@@ -123,6 +123,7 @@ from shared.tui_pdf import PdfLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
+from shared.tui_sniffer import SnifferLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3828,6 +3829,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Focus", "switch_tab_focus"),
         PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
+        PaletteCommand("Go to Sniffer", "switch_tab_sniffer"),
         PaletteCommand("Go to K8s", "switch_tab_k8s"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
         PaletteCommand("Go to Disk Usage", "switch_tab_disk_usage"),
@@ -4000,6 +4002,8 @@ class AgentTUI(App):
                 yield NetworkTab(self.project_dir)
             with TabPane("Net Diag", id="tab-net-diag"):
                 yield NetDiagTab(self.project_dir)
+            with TabPane("Sniffer", id="tab-sniffer"):
+                yield SnifferLabTab(self.project_dir)
             with TabPane("Snippets", id="tab-snippets"):
                 yield SnippetsTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):

@@ -2,8 +2,9 @@ import json
 import sys
 import time
 import requests
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from pathlib import Path
 from datetime import datetime
 from rich.console import Console
@@ -39,13 +40,9 @@ class WebhookRequestHandler(BaseHTTPRequestHandler):
         if forward_url:
             try:
                 # Construct target URL
-                # If path is just /, use forward_url directly
-                # If path has suffix, append it?
-                # For simplicity, we just forward payload to the target URL as is.
                 target = forward_url
 
                 # Forward request
-                # We filter headers to avoid issues (e.g. Host)
                 forward_headers = {k: v for k, v in headers.items() if k.lower() not in ['host', 'content-length']}
 
                 resp = requests.request(
@@ -58,13 +55,12 @@ class WebhookRequestHandler(BaseHTTPRequestHandler):
 
                 response_status = resp.status_code
                 response_body = resp.content
-                # Forward response headers? Maybe some.
                 response_headers = dict(resp.headers)
 
-                self.server.manager.console.print(f"[dim]Forwarded to {target}: {resp.status_code}[/dim]")
+                self.server.manager.log_message(f"[dim]Forwarded to {target}: {resp.status_code}[/dim]")
 
             except Exception as e:
-                self.server.manager.console.print(f"[red]Error forwarding to {forward_url}: {e}[/red]")
+                self.server.manager.log_message(f"[red]Error forwarding to {forward_url}: {e}[/red]")
                 response_status = 502
                 response_body = f"Error forwarding: {e}".encode('utf-8')
 
@@ -103,30 +99,68 @@ class WebhookRequestHandler(BaseHTTPRequestHandler):
 
 
 class WebhookLabManager:
-    def __init__(self, project_dir: Path):
+    def __init__(self, project_dir: Path, quiet: bool = False):
         self.project_dir = project_dir
         self.history_file = project_dir / ".webhook_history.jsonl"
         self.console = Console()
         self.forward_url: Optional[str] = None
+        self.server: Optional[ThreadingHTTPServer] = None
+        self.server_thread: Optional[threading.Thread] = None
+        self.requests: List[Dict] = []  # In-memory cache
+        self.quiet = quiet
+        self.load_history()
 
-    def start_server(self, port: int, forward_url: Optional[str] = None):
+    def log_message(self, message: str):
+        if not self.quiet:
+            self.console.print(message)
+
+    def load_history(self):
+        """Loads recent history from file into memory."""
+        if not self.history_file.exists():
+            return
+
+        try:
+            with open(self.history_file, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        self.requests.append(json.loads(line))
+        except Exception as e:
+            self.log_message(f"[red]Error reading history: {e}[/red]")
+
+    def start_server(self, port: int, forward_url: Optional[str] = None, blocking: bool = True):
         self.forward_url = forward_url
 
         # Use localhost to avoid binding to all interfaces (Bandit security check)
-        server = ThreadingHTTPServer(('127.0.0.1', port), WebhookRequestHandler)
-        server.manager = self  # Inject manager
+        self.server = ThreadingHTTPServer(('127.0.0.1', port), WebhookRequestHandler)
+        self.server.manager = self  # Inject manager
 
-        self.console.print(f"[bold green]Webhook Lab listening on 127.0.0.1:{port}...[/bold green]")
+        self.log_message(f"[bold green]Webhook Lab listening on 127.0.0.1:{port}...[/bold green]")
         if forward_url:
-            self.console.print(f"[cyan]Forwarding requests to: {forward_url}[/cyan]")
-        self.console.print(f"[dim]Saving requests to: {self.history_file}[/dim]")
-        self.console.print("Press Ctrl+C to stop.\n")
+            self.log_message(f"[cyan]Forwarding requests to: {forward_url}[/cyan]")
+        self.log_message(f"[dim]Saving requests to: {self.history_file}[/dim]")
 
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            self.console.print("\n[bold red]Stopping server...[/bold red]")
-            server.shutdown()
+        if blocking:
+            self.log_message("Press Ctrl+C to stop.\n")
+            try:
+                self.server.serve_forever()
+            except KeyboardInterrupt:
+                self.log_message("\n[bold red]Stopping server...[/bold red]")
+                self.server.shutdown()
+        else:
+            self.server_thread = threading.Thread(target=self.server.serve_forever)
+            self.server_thread.daemon = True
+            self.server_thread.start()
+
+    def stop_server(self):
+        if self.server:
+            self.log_message("Stopping server...")
+            self.server.shutdown()
+            self.server.server_close()
+            self.server = None
+            if self.server_thread:
+                self.server_thread.join()
+                self.server_thread = None
+            self.log_message("Server stopped.")
 
     def log_request(self, timestamp: str, method: str, path: str, headers: Dict, body: str) -> str:
         """
@@ -144,8 +178,10 @@ class WebhookLabManager:
             "body": body
         }
 
+        self.requests.append(entry)
+
         # Console Output
-        self.console.print(f"[bold]{method} {path}[/bold] (ID: {req_id})")
+        self.log_message(f"[bold]{method} {path}[/bold] (ID: {req_id})")
 
         # Save to file
         with open(self.history_file, 'a') as f:
@@ -154,22 +190,9 @@ class WebhookLabManager:
         return req_id
 
     def list_requests(self, limit: int = 10):
-        if not self.history_file.exists():
-            self.console.print("No history found.")
-            return
-
-        entries = []
-        try:
-            with open(self.history_file, 'r') as f:
-                for line in f:
-                    if line.strip():
-                        entries.append(json.loads(line))
-        except Exception as e:
-            self.console.print(f"[red]Error reading history: {e}[/red]")
-            return
-
-        # Show last N
-        entries = entries[-limit:]
+        # Use in-memory cache if available, otherwise reload
+        # But we keep cache synced.
+        entries = self.requests[-limit:]
 
         table = Table(title=f"Recent Webhooks (Last {len(entries)})")
         table.add_column("ID", style="cyan")
@@ -191,22 +214,7 @@ class WebhookLabManager:
         self.console.print(table)
 
     def show_request(self, req_id: str):
-        if not self.history_file.exists():
-            self.console.print("No history found.")
-            return
-
-        target = None
-        try:
-            with open(self.history_file, 'r') as f:
-                for line in f:
-                    if line.strip():
-                        e = json.loads(line)
-                        if e['id'] == req_id:
-                            target = e
-                            break  # Found
-        except Exception as e:
-            self.console.print(f"[red]Error reading history: {e}[/red]")
-            return
+        target = next((r for r in self.requests if r['id'] == req_id), None)
 
         if not target:
             self.console.print(f"[red]Request {req_id} not found.[/red]")
@@ -238,21 +246,7 @@ class WebhookLabManager:
                 self.console.print(body)
 
     def replay_request(self, req_id: str, target_url: str):
-        if not self.history_file.exists():
-            self.console.print("No history found.")
-            return
-
-        target = None
-        try:
-            with open(self.history_file, 'r') as f:
-                for line in f:
-                    if line.strip():
-                        e = json.loads(line)
-                        if e['id'] == req_id:
-                            target = e
-                            break
-        except Exception:
-            pass
+        target = next((r for r in self.requests if r['id'] == req_id), None)
 
         if not target:
             self.console.print(f"[red]Request {req_id} not found.[/red]")

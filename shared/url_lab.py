@@ -1,11 +1,12 @@
 import urllib.parse
 import json
 import sys
+from typing import Any, Dict, List, Optional
 
 class UrlLabManager:
     """Manages URL parsing, manipulation, and normalization."""
 
-    def parse(self, url: str) -> dict:
+    def parse(self, url: str) -> Dict[str, Any]:
         parsed = urllib.parse.urlparse(url)
         query_params = urllib.parse.parse_qs(parsed.query)
         return {
@@ -24,13 +25,13 @@ class UrlLabManager:
     def decode(self, text: str) -> str:
         return urllib.parse.unquote(text)
 
-    def join(self, base: str, paths: list) -> str:
+    def join(self, base: str, paths: List[str]) -> str:
         url = base
         for path in paths:
             url = urllib.parse.urljoin(url, path)
         return url
 
-    def params(self, url: str, mode: str, key: str = None, value: str = None) -> str:
+    def params(self, url: str, mode: str, key: Optional[str] = None, value: Optional[str] = None) -> str:
         parsed = urllib.parse.urlparse(url)
         query_params = urllib.parse.parse_qs(parsed.query)
 

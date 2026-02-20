@@ -78,6 +78,28 @@ class NotificationManager:
         except Exception as e:
             logger.error(f"Failed to send Discord notification: {e}")
 
+    def send_telegram(self, message: str) -> None:
+        """Send a message to Telegram."""
+        token = self.config.telegram_bot_token
+        chat_id = self.config.telegram_chat_id
+        if not token or not chat_id:
+            return
+
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        try:
+            payload = {
+                "chat_id": chat_id,
+                "text": message
+            }
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=5
+            )
+            response.raise_for_status()
+        except Exception as e:
+            logger.error(f"Failed to send Telegram notification: {e}")
+
     def notify(self, event_type: str, message: str, **kwargs) -> None:
         """
         Send notification to all enabled platforms.
@@ -94,3 +116,6 @@ class NotificationManager:
 
         if self._should_notify(event_type, "discord"):
             self.send_discord(full_message)
+
+        if self._should_notify(event_type, "telegram"):
+            self.send_telegram(full_message)

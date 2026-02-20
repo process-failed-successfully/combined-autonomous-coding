@@ -10,6 +10,8 @@ class TestNotificationManager(unittest.TestCase):
         self.config.notification_settings = {}
         self.config.slack_webhook_url = None
         self.config.discord_webhook_url = None
+        self.config.telegram_bot_token = None
+        self.config.telegram_chat_id = None
         self.manager = NotificationManager(self.config)
 
     def test_should_notify_default(self):
@@ -63,6 +65,21 @@ class TestNotificationManager(unittest.TestCase):
         self.manager.notify("agent_start", "Hello")
 
         self.assertEqual(mock_post.call_count, 2)
+
+    @patch("requests.post")
+    def test_notify_telegram(self, mock_post):
+        self.config.telegram_bot_token = "123:ABC"
+        self.config.telegram_chat_id = "456"
+        # Enable explicitly for telegram
+        self.config.notification_settings = {"agent_start": {"telegram": True}}
+
+        self.manager.notify("agent_start", "Hello")
+
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], "https://api.telegram.org/bot123:ABC/sendMessage")
+        self.assertIn("[AGENT START] Hello", kwargs['json']['text'])
+        self.assertEqual(kwargs['json']['chat_id'], "456")
 
 
 if __name__ == "__main__":

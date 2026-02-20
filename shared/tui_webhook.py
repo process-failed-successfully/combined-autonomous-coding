@@ -1,13 +1,21 @@
 from pathlib import Path
+from typing import Optional
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Input, Label, ListView, ListItem, RichLog, Static, TabbedContent, TabPane
+from textual.widgets import Button, Input, Label, ListView, ListItem, RichLog, TabbedContent, TabPane
 from textual import on
 from shared.webhook_lab import WebhookLabManager
 from rich.syntax import Syntax
 import json
-import requests
+import requests  # type: ignore
 import threading
+
+
+class WebhookRequestItem(ListItem):
+    def __init__(self, *children, request_id: str, **kwargs) -> None:
+        super().__init__(*children, **kwargs)
+        self.request_id = request_id
+
 
 class WebhookLabTab(Container):
     def __init__(self, project_dir: Path, **kwargs) -> None:
@@ -15,7 +23,7 @@ class WebhookLabTab(Container):
         self.project_dir = project_dir
         self.manager = WebhookLabManager(project_dir, quiet=True)
         self.server_running = False
-        self.selected_request_id = None
+        self.selected_request_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -136,18 +144,20 @@ class WebhookLabTab(Container):
                 time_str = time_str.split("T")[1][:8]
 
             label = f"[{time_str}] {method} {path}"
-            item = ListItem(Label(label))
-            item.request_id = req['id']
+            item = WebhookRequestItem(Label(label), request_id=req['id'])
             list_view.append(item)
 
     @on(ListView.Selected, "#wh-list")
     def on_request_selected(self, event: ListView.Selected) -> None:
-        if hasattr(event.item, "request_id"):
+        if isinstance(event.item, WebhookRequestItem):
             self.selected_request_id = event.item.request_id
             self.show_details(self.selected_request_id)
             self.query_one("#btn-wh-replay").disabled = False
 
-    def show_details(self, req_id: str) -> None:
+    def show_details(self, req_id: Optional[str]) -> None:
+        if not req_id:
+            return
+
         req = next((r for r in self.manager.requests if r['id'] == req_id), None)
         if not req:
             return

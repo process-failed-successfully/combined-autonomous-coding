@@ -69,6 +69,7 @@ from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
 from shared.tui_proxy import ProxyLabTab
 from shared.tui_ws import WsLabTab
+from shared.tui_webhook import WebhookLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
@@ -4029,6 +4030,8 @@ class AgentTUI(App):
                 yield UrlLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):
                 yield WsLabTab()
+            with TabPane("Webhook Lab", id="tab-webhook"):
+                yield WebhookLabTab(self.project_dir)
             with TabPane("Proxy Lab", id="tab-proxy"):
                 yield ProxyLabTab(self.project_dir)
             with TabPane("JWT Lab", id="tab-jwt"):

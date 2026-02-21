@@ -1,6 +1,7 @@
 import unittest
 from shared.text_lab import TextLabManager
 
+
 class TestTextLab(unittest.TestCase):
     def setUp(self):
         self.manager = TextLabManager()
@@ -32,6 +33,67 @@ class TestTextLab(unittest.TestCase):
 
         # Constant
         self.assertEqual(self.manager.transform("helloWorld", "constant"), "HELLO_WORLD")
+
+    def test_new_case_transforms(self):
+        # Dot
+        self.assertEqual(self.manager.transform("hello_world", "dot"), "hello.world")
+        self.assertEqual(self.manager.transform("Hello World", "dot"), "hello.world")
+
+        # Path
+        self.assertEqual(self.manager.transform("hello_world", "path"), "hello/world")
+        self.assertEqual(self.manager.transform("Hello World", "path"), "hello/world")
+
+    def test_line_operations(self):
+        # Sort
+        text = "c\na\nb"
+        self.assertEqual(self.manager.sort_lines(text), "a\nb\nc")
+        self.assertEqual(self.manager.sort_lines(text, reverse=True), "c\nb\na")
+
+        # Unique
+        text = "a\nb\na"
+        self.assertEqual(self.manager.unique_lines(text), "a\nb")
+
+        # Reverse
+        text = "a\nb\nc"
+        self.assertEqual(self.manager.reverse_lines(text), "c\nb\na")
+
+        # Shuffle (just check length and content preservation)
+        text = "a\nb\nc"
+        shuffled = self.manager.shuffle_lines(text)
+        self.assertEqual(len(shuffled), len(text))
+        self.assertIn("a", shuffled)
+        self.assertIn("b", shuffled)
+        self.assertIn("c", shuffled)
+
+        # Number
+        text = "foo\nbar"
+        self.assertEqual(self.manager.number_lines(text), "1. foo\n2. bar")
+
+    def test_whitespace_operations(self):
+        # Trim
+        text = "  foo  \n  bar  "
+        self.assertEqual(self.manager.trim_lines(text), "foo\nbar")
+
+        # Remove Empty
+        text = "foo\n\nbar\n   "
+        self.assertEqual(self.manager.remove_empty_lines(text), "foo\nbar")
+
+        # Collapse Spaces
+        text = "foo    bar   baz"
+        self.assertEqual(self.manager.collapse_spaces(text), "foo bar baz")
+
+    def test_filter_lines(self):
+        text = "apple\nbanana\ncherry"
+
+        # Include
+        self.assertEqual(self.manager.filter_lines(text, "a"), "apple\nbanana")
+        self.assertEqual(self.manager.filter_lines(text, "cherry"), "cherry")
+
+        # Exclude
+        self.assertEqual(self.manager.filter_lines(text, "a", exclude=True), "cherry")
+
+        # Invalid Regex
+        self.assertTrue(self.manager.filter_lines(text, "[").startswith("Error:"))
 
     def test_encode_decode_base64(self):
         original = "hello world"
@@ -67,7 +129,7 @@ class TestTextLab(unittest.TestCase):
         self.assertEqual(info['length'], 17)
         self.assertEqual(info['lines'], 2)
         self.assertEqual(info['words'], 3)
-        self.assertEqual(info['chars_no_space'], 15) # 17 - 1 space - 1 newline = 15
+        self.assertEqual(info['chars_no_space'], 15)  # 17 - 1 space - 1 newline = 15
         # h:2, e:2, l:5, o:3, w:1, r:1, d:1
         # Top 5 should include l, o, h, e (order might vary for equal counts)
         top_chars = [x[0] for x in info['frequency']]
@@ -80,6 +142,7 @@ class TestTextLab(unittest.TestCase):
         diff = self.manager.diff(t1, t2)
         self.assertIn("-bar", diff)
         self.assertIn("+baz", diff)
+
 
 if __name__ == '__main__':
     unittest.main()

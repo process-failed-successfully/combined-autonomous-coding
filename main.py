@@ -238,7 +238,8 @@ KNOWN_COMMANDS = [
     "calendar-lab", "calendar", "cal",
     "cheatsheet-lab", "cheatsheet", "cheat",
     "finance-lab", "finance", "fin",
-    "runner-lab", "runner"
+    "runner-lab", "runner",
+    "gitignore-lab", "gitignore", "gi"
 ]
 
 if FileSystemEventHandler:
@@ -344,6 +345,11 @@ def run_runner_lab(args):
         print(f"Running task: {target.name} ({target.command})")
         ret = manager.run_task(target, on_output=lambda x: print(x))
         sys.exit(ret)
+
+def run_gitignore_lab(args):
+    """Runs the Gitignore Lab."""
+    from shared.gitignore_lab import run_gitignore_lab_logic
+    run_gitignore_lab_logic(args)
 
 def run_port(args):
     """Manages network ports."""
@@ -13925,6 +13931,33 @@ def parse_args(argv=None):
     parser_runner_run = runner_subparsers.add_parser("run", help="Run a task.")
     parser_runner_run.add_argument("task_name", help="Name of the task to run.")
 
+    # --- New 'gitignore-lab' command ---
+    parser_gi = subparsers.add_parser(
+        "gitignore-lab",
+        aliases=["gitignore", "gi"],
+        help="Generate and check .gitignore files."
+    )
+    gi_subparsers = parser_gi.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # gi list
+    parser_gi_list = gi_subparsers.add_parser("list", help="List available templates.")
+
+    # gi generate
+    parser_gi_gen = gi_subparsers.add_parser("generate", help="Generate .gitignore content.")
+    parser_gi_gen.add_argument("--templates", required=True, help="Comma-separated list of templates.")
+
+    # gi check
+    parser_gi_check = gi_subparsers.add_parser("check", help="Check if a file is ignored.")
+    parser_gi_check.add_argument("path", help="Path to file to check.")
+
+    # gi append
+    parser_gi_append = gi_subparsers.add_parser("append", help="Append templates to .gitignore.")
+    parser_gi_append.add_argument("--templates", required=True, help="Comma-separated list of templates.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17381,6 +17414,10 @@ async def main():
 
     if args.command in ["runner-lab", "runner"]:
         run_runner_lab(args)
+        return
+
+    if args.command in ["gitignore-lab", "gitignore", "gi"]:
+        run_gitignore_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

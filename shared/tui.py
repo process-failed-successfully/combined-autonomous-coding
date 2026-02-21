@@ -127,6 +127,7 @@ from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
 from shared.tui_archive import ArchiveLabTab
+from shared.tui_dns import DnsLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3846,6 +3847,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Config", "switch_tab_config"),
         PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
+        PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4111,6 +4113,8 @@ class AgentTUI(App):
                 yield SshLabTab()
             with TabPane("Archive Lab", id="tab-archive"):
                 yield ArchiveLabTab(self.project_dir)
+            with TabPane("DNS Lab", id="tab-dns"):
+                yield DnsLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

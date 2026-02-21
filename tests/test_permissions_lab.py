@@ -1,8 +1,8 @@
-import unittest
-from unittest.mock import MagicMock, patch
-from pathlib import Path
-import stat
 import os
+import stat
+import unittest
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 from shared.permissions_lab import PermissionsManager
 
 class TestPermissionsManager(unittest.TestCase):

@@ -72,7 +72,8 @@ class TestPermissionsLabTab(unittest.IsolatedAsyncioTestCase):
 
         self.tab.on_load_file()
 
-        self.mock_manager.get_permissions.assert_called_with("/tmp/test")
+        # Input sanitization expects relative path
+        self.mock_manager.get_permissions.assert_called_with("tmp/test")
         self.assertEqual(mocks["#input-perm-octal"].value, "644")
         self.assertEqual(mocks["#input-perm-symbolic"].value, "rw-r--r--")
 
@@ -91,7 +92,8 @@ class TestPermissionsLabTab(unittest.IsolatedAsyncioTestCase):
 
         self.tab.on_apply_file()
 
-        self.mock_manager.set_permissions.assert_called_with("/tmp/test", "777")
+        # Input sanitization expects relative path
+        self.mock_manager.set_permissions.assert_called_with("tmp/test", "777")
         self.tab.notify.assert_called()
 
 if __name__ == "__main__":

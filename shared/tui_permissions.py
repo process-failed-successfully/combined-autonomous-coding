@@ -138,6 +138,9 @@ class PermissionsLabTab(Container):
             self.notify("Path is empty.", severity="warning")
             return
 
+        # Sanitize input: enforce relative path
+        path = path.lstrip("/")
+
         res = self.manager.get_permissions(path)
         status_lbl = self.query_one("#lbl-perm-status", Label)
 
@@ -175,6 +178,9 @@ class PermissionsLabTab(Container):
         if not path:
             self.notify("Path is empty.", severity="error")
             return
+
+        # Sanitize input: enforce relative path
+        path = path.lstrip("/")
 
         status_lbl = self.query_one("#lbl-perm-status", Label)
 

@@ -56,6 +56,7 @@ from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_sentinel import SentinelTab
 from shared.tui_impact import ImpactTab
+from shared.tui_email import EmailLabTab
 from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_log_tail import LogTailTab
@@ -3961,6 +3962,8 @@ class AgentTUI(App):
                 yield IdeConfigTab(self.project_dir)
             with TabPane("Docs", id="tab-docs"):
                 yield DocumentationTab(self.project_dir)
+            with TabPane("Email Lab", id="tab-email"):
+                yield EmailLabTab(self.project_dir)
             with TabPane("ADRs", id="tab-adr"):
                 yield ADRTab(self.project_dir)
             with TabPane("Test Gen", id="tab-test-gen"):

@@ -139,6 +139,7 @@ from shared.tui_sniffer import SnifferLabTab
 from shared.tui_archive import ArchiveLabTab
 from shared.tui_dns import DnsLabTab
 from shared.tui_speed import SpeedLabTab
+from shared.tui_sql import SqlLabTab
 from shared.tui_cert import CertLabTab
 from shared.plugin_manager import PluginManager
 
@@ -3862,6 +3863,7 @@ class AgentTUI(App):
         PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
+        PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4052,6 +4054,8 @@ class AgentTUI(App):
                 yield DatabaseTab(self.project_dir)
             with TabPane("Redis", id="tab-redis"):
                 yield RedisLabTab(self.project_dir)
+            with TabPane("SQL Lab", id="tab-sql"):
+                yield SqlLabTab(self.project_dir)
             with TabPane("DB Diagram", id="tab-db-diag"):
                 yield DatabaseDiagramTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):

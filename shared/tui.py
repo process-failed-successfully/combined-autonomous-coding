@@ -96,6 +96,7 @@ from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
+from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_finance import FinanceLabTab
@@ -3851,6 +3852,7 @@ class AgentTUI(App):
         PaletteCommand("Go to WS Lab", "switch_tab_ws_lab"),
         PaletteCommand("Go to Chat", "switch_tab_interact"),
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
+        PaletteCommand("Go to Text Lab", "switch_tab_text"),
         PaletteCommand("Go to Finance Lab", "switch_tab_finance"),
         PaletteCommand("Go to Git", "switch_tab_git"),
         PaletteCommand("Go to Config", "switch_tab_config"),
@@ -4089,6 +4091,8 @@ class AgentTUI(App):
                 yield RssLabTab(self.project_dir)
             with TabPane("Cron Lab", id="tab-cron"):
                 yield CronLabTab(self.project_dir)
+            with TabPane("Text Lab", id="tab-text"):
+                yield TextLabTab()
             with TabPane("Codec Lab", id="tab-codec"):
                 yield CodecLabTab()
             with TabPane("Crypto Lab", id="tab-crypto"):

@@ -7,6 +7,7 @@ import sys
 from typing import Dict, Any
 from collections import Counter
 
+
 class TextLabManager:
     """Manages text transformation, encoding, analysis, and diffing."""
 
@@ -27,8 +28,70 @@ class TextLabManager:
             return self._to_pascal(text)
         elif type == "constant":
             return self._to_constant(text)
+        elif type == "dot":
+            return self._to_dot(text)
+        elif type == "path":
+            return self._to_path(text)
         else:
             raise ValueError(f"Unknown transform type: {type}")
+
+    def sort_lines(self, text: str, reverse: bool = False) -> str:
+        lines = text.splitlines()
+        lines.sort(reverse=reverse)
+        return "\n".join(lines)
+
+    def unique_lines(self, text: str) -> str:
+        lines = text.splitlines()
+        seen = set()
+        result = []
+        for line in lines:
+            if line not in seen:
+                result.append(line)
+                seen.add(line)
+        return "\n".join(result)
+
+    def reverse_lines(self, text: str) -> str:
+        lines = text.splitlines()
+        return "\n".join(reversed(lines))
+
+    def shuffle_lines(self, text: str) -> str:
+        import random
+        lines = text.splitlines()
+        random.shuffle(lines)
+        return "\n".join(lines)
+
+    def number_lines(self, text: str) -> str:
+        lines = text.splitlines()
+        return "\n".join(f"{i+1}. {line}" for i, line in enumerate(lines))
+
+    def trim_lines(self, text: str) -> str:
+        lines = text.splitlines()
+        return "\n".join(line.strip() for line in lines)
+
+    def remove_empty_lines(self, text: str) -> str:
+        lines = text.splitlines()
+        return "\n".join(line for line in lines if line.strip())
+
+    def collapse_spaces(self, text: str) -> str:
+        return re.sub(r'\s+', ' ', text)
+
+    def filter_lines(self, text: str, pattern: str, exclude: bool = False) -> str:
+        lines = text.splitlines()
+        try:
+            regex = re.compile(pattern)
+        except re.error:
+            return f"Error: Invalid Regex: {pattern}"
+
+        result = []
+        for line in lines:
+            match = regex.search(line)
+            if exclude:
+                if not match:
+                    result.append(line)
+            else:
+                if match:
+                    result.append(line)
+        return "\n".join(result)
 
     def encode(self, text: str, type: str, decode: bool = False) -> str:
         if type == "base64":
@@ -76,8 +139,9 @@ class TextLabManager:
     def _to_camel(self, text: str) -> str:
         # split by space, underscore, hyphen
         words = re.split(r'[\s_\-]+', text)
-        words = [w for w in words if w] # remove empty
-        if not words: return ""
+        words = [w for w in words if w]  # remove empty
+        if not words:
+            return ""
         return words[0].lower() + "".join(w.capitalize() for w in words[1:])
 
     def _to_snake(self, text: str) -> str:
@@ -95,6 +159,13 @@ class TextLabManager:
 
     def _to_constant(self, text: str) -> str:
         return self._to_snake(text).upper()
+
+    def _to_dot(self, text: str) -> str:
+        return self._to_snake(text).replace('_', '.')
+
+    def _to_path(self, text: str) -> str:
+        return self._to_snake(text).replace('_', '/')
+
 
 def run_text_lab_logic(args):
     """CLI handler for Text Lab."""

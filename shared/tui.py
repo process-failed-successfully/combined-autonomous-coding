@@ -131,6 +131,7 @@ from shared.tui_image import ImageLabTab
 from shared.tui_qr import QrLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
+from shared.tui_permissions import PermissionsLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
@@ -4109,6 +4110,8 @@ class AgentTUI(App):
                 yield FinanceLabTab()
             with TabPane("Unit Lab", id="tab-unit"):
                 yield UnitLabTab()
+            with TabPane("Permissions", id="tab-permissions"):
+                yield PermissionsLabTab()
             with TabPane("Color Lab", id="tab-color"):
                 yield ColorLabTab()
             with TabPane("Calendar", id="tab-calendar"):

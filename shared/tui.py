@@ -75,6 +75,7 @@ from shared.tui_regex import RegexLabTab
 from shared.tui_rss import RssLabTab
 from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
+from shared.tui_graphql import GraphQLLabTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
@@ -3865,6 +3866,7 @@ class AgentTUI(App):
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
         PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
+        PaletteCommand("Go to GraphQL Lab", "switch_tab_graphql"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4067,6 +4069,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("GraphQL Lab", id="tab-graphql"):
+                yield GraphQLLabTab()
             with TabPane("URL Lab", id="tab-url-lab"):
                 yield UrlLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):

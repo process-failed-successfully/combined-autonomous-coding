@@ -72,6 +72,7 @@ from shared.tui_proxy import ProxyLabTab
 from shared.tui_ws import WsLabTab
 from shared.tui_webhook import WebhookLabTab
 from shared.tui_regex import RegexLabTab
+from shared.tui_rss import RssLabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
@@ -4079,6 +4080,8 @@ class AgentTUI(App):
                 yield QuizTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("RSS Lab", id="tab-rss"):
+                yield RssLabTab(self.project_dir)
             with TabPane("Cron Lab", id="tab-cron"):
                 yield CronLabTab(self.project_dir)
             with TabPane("Codec Lab", id="tab-codec"):

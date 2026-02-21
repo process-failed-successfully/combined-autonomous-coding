@@ -87,6 +87,7 @@ from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
 from shared.tui_net_diag import NetDiagTab
 from shared.tui_cidr import CidrLabTab
+from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_conflict import ConflictTab
@@ -3856,6 +3857,7 @@ class AgentTUI(App):
         PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
+        PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4023,6 +4025,8 @@ class AgentTUI(App):
                 yield SnifferLabTab(self.project_dir)
             with TabPane("Snippets", id="tab-snippets"):
                 yield SnippetsTab(self.project_dir)
+            with TabPane("Cheatsheet", id="tab-cheatsheet"):
+                yield CheatsheetTab(self.project_dir)
             with TabPane("Profiler", id="tab-profile"):
                 yield ProfileTab(self.project_dir)
             with TabPane("Sessions", id="tab-sessions"):

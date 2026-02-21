@@ -234,6 +234,7 @@ KNOWN_COMMANDS = [
     "load-lab", "load",
     "otp-lab", "otp", "totp", "mfa",
     "calendar-lab", "calendar", "cal",
+    "cheatsheet-lab", "cheatsheet", "cheat",
     "finance-lab", "finance", "fin",
     "runner-lab", "runner"
 ]
@@ -249,6 +250,42 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_cheatsheet(args):
+    """Runs the Cheatsheet Lab."""
+    from shared.cheatsheet_lab import CheatsheetManager
+    project_dir = args.project_dir.resolve()
+    manager = CheatsheetManager(project_dir)
+
+    if args.topic:
+        content = manager.get_content(args.topic)
+        if content:
+            from rich.console import Console
+            from rich.markdown import Markdown
+            console = Console()
+            console.print(Markdown(content))
+        else:
+            print(f"Cheat sheet '{args.topic}' not found.")
+            # Suggest similar
+            matches = manager.search(args.topic)
+            if matches:
+                print(f"Did you mean: {', '.join(matches)}?")
+            sys.exit(1)
+    elif args.search:
+        results = manager.search(args.search)
+        if results:
+            print(f"--- Search results for '{args.search}' ---")
+            for r in results:
+                print(f"  - {r}")
+        else:
+            print(f"No results found for '{args.search}'.")
+    else:
+        # List all
+        print("--- Available Cheat Sheets ---")
+        for topic in manager.list_topics():
+            print(f"  - {topic}")
+        print("\nUsage: cheatsheet <topic> OR cheatsheet --search <query>")
+    sys.exit(0)
 
 def run_calendar_lab(args):
     """Runs the Calendar Lab."""
@@ -13775,6 +13812,15 @@ def parse_args(argv=None):
     parser_otp_url.add_argument("--label", required=True, help="Account label (e.g. user@example.com).")
     parser_otp_url.add_argument("--issuer", help="Issuer name (e.g. MyApp).")
 
+    # --- New 'cheatsheet-lab' command ---
+    parser_cheat = subparsers.add_parser(
+        "cheatsheet-lab",
+        aliases=["cheatsheet", "cheat"],
+        help="Developer cheat sheets."
+    )
+    parser_cheat.add_argument("topic", nargs="?", help="Topic to view.")
+    parser_cheat.add_argument("--search", help="Search for topics.")
+
     # --- New 'calendar-lab' command ---
     parser_cal = subparsers.add_parser(
         "calendar-lab",
@@ -17286,6 +17332,10 @@ async def main():
 
     if args.command in ["otp-lab", "otp", "totp", "mfa"]:
         run_otp_lab(args)
+        return
+
+    if args.command in ["cheatsheet-lab", "cheatsheet", "cheat"]:
+        run_cheatsheet(args)
         return
 
     if args.command in ["calendar-lab", "calendar", "cal"]:

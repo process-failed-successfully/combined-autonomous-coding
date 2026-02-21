@@ -116,6 +116,7 @@ from shared.tui_notebook import NotebookLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_markdown import MarkdownLabTab
+from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
@@ -4074,6 +4075,8 @@ class AgentTUI(App):
                 yield RegexLabTab(self.project_dir)
             with TabPane("Cron Lab", id="tab-cron"):
                 yield CronLabTab(self.project_dir)
+            with TabPane("Crypto Lab", id="tab-crypto"):
+                yield CryptoLabTab()
             with TabPane("Time Lab", id="tab-time"):
                 yield TimeLabTab()
             with TabPane("Math Lab", id="tab-math"):

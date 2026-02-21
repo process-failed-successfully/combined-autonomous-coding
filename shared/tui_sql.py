@@ -145,7 +145,7 @@ class SqlLabTab(Container):
             await self.show_schema(table_name)
 
             # Simple select query
-            self.query_one("#sql-query-editor", TextArea).text = f"SELECT * FROM {table_name} LIMIT 10;"
+            self.query_one("#sql-query-editor", TextArea).text = f"SELECT * FROM {table_name} LIMIT 10;"  # nosec B608
 
     async def show_schema(self, table_name: str) -> None:
         if not self.manager:

@@ -115,6 +115,7 @@ from shared.tui_hex import HexTab
 from shared.tui_notebook import NotebookLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_yaml import YamlLabTab
+from shared.tui_xml import XmlLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
@@ -4099,6 +4100,8 @@ class AgentTUI(App):
                 yield JsonLabTab(self.project_dir)
             with TabPane("YAML Lab", id="tab-yaml"):
                 yield YamlLabTab(self.project_dir)
+            with TabPane("XML Lab", id="tab-xml"):
+                yield XmlLabTab(self.project_dir)
             with TabPane("Markdown Lab", id="tab-markdown"):
                 yield MarkdownLabTab(self.project_dir)
             with TabPane("CSV Lab", id="tab-csv"):

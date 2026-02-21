@@ -120,6 +120,7 @@ from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_qr import QrLabTab
+from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
@@ -4028,6 +4029,8 @@ class AgentTUI(App):
                 yield LogicLabTab()
             with TabPane("Database", id="tab-database"):
                 yield DatabaseTab(self.project_dir)
+            with TabPane("Redis", id="tab-redis"):
+                yield RedisLabTab(self.project_dir)
             with TabPane("DB Diagram", id="tab-db-diag"):
                 yield DatabaseDiagramTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):

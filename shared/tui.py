@@ -126,13 +126,13 @@ from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
+from shared.tui_database import DatabaseTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_qr import QrLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
-from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab

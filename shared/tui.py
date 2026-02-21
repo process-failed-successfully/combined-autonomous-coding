@@ -141,6 +141,7 @@ from shared.tui_dns import DnsLabTab
 from shared.tui_speed import SpeedLabTab
 from shared.tui_sql import SqlLabTab
 from shared.tui_cert import CertLabTab
+from shared.tui_ast import ASTExplorerTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4022,6 +4023,8 @@ class AgentTUI(App):
                 yield DiskUsageTab(self.project_dir)
             with TabPane("Code Map", id="tab-codemap"):
                 yield CodeMapTab(self.project_dir)
+            with TabPane("AST Explorer", id="tab-ast"):
+                yield ASTExplorerTab()
             with TabPane("Network", id="tab-network"):
                 yield NetworkTab(self.project_dir)
             with TabPane("Net Diag", id="tab-net-diag"):

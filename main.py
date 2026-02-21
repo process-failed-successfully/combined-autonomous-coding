@@ -152,6 +152,7 @@ from shared.ansible_lab import run_ansible_lab_logic
 from shared.hex_lab import run_hex_lab_logic
 from shared.speed_lab import run_speed_lab_logic
 from shared.load_lab import run_load_lab_logic
+from shared.ast_lab import run_ast_lab_logic
 import json
 import yaml
 import platformdirs
@@ -232,6 +233,7 @@ KNOWN_COMMANDS = [
     "hex-lab", "hex",
     "speed-lab", "speed",
     "load-lab", "load",
+    "ast-lab", "ast",
     "otp-lab", "otp", "totp", "mfa",
     "calendar-lab", "calendar", "cal",
     "cheatsheet-lab", "cheatsheet", "cheat",
@@ -446,6 +448,11 @@ def run_speed_lab(args):
 async def run_load_lab(args):
     """Runs the Load Lab."""
     await run_load_lab_logic(args)
+    sys.exit(0)
+
+def run_ast_lab(args):
+    """Runs the AST Lab."""
+    run_ast_lab_logic(args)
     sys.exit(0)
 
 def run_otp_lab(args):
@@ -13778,6 +13785,28 @@ def parse_args(argv=None):
     parser_load.add_argument("--body", help="Request body.")
     parser_load.add_argument("--headers", help="Request headers (Key:Value,Key2:Value2).")
 
+    # --- New 'ast-lab' command ---
+    parser_ast = subparsers.add_parser(
+        "ast-lab",
+        aliases=["ast"],
+        help="Inspect Python AST."
+    )
+    ast_subparsers = parser_ast.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ast parse
+    parser_ast_parse = ast_subparsers.add_parser("parse", help="Dump AST for code.")
+    parser_ast_parse.add_argument("--code", help="Python code string.")
+    parser_ast_parse.add_argument("--file", help="Python file path.")
+
+    # ast check
+    parser_ast_check = ast_subparsers.add_parser("check", help="Check syntax.")
+    parser_ast_check.add_argument("--code", help="Python code string.")
+    parser_ast_check.add_argument("--file", help="Python file path.")
+
     # --- New 'otp-lab' command ---
     parser_otp = subparsers.add_parser(
         "otp-lab",
@@ -17328,6 +17357,10 @@ async def main():
 
     if args.command in ["load-lab", "load"]:
         await run_load_lab(args)
+        return
+
+    if args.command in ["ast-lab", "ast"]:
+        run_ast_lab(args)
         return
 
     if args.command in ["otp-lab", "otp", "totp", "mfa"]:

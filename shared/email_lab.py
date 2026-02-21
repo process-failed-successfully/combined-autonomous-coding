@@ -195,10 +195,9 @@ class EmailLabManager:
         except Exception as e:
             self.console.print(f"[red]Error saving email: {e}[/red]")
 
-    def list_emails(self, limit: int = 10):
+    def get_emails(self, limit: int = 10) -> List[Dict]:
         if not self.history_file.exists():
-            self.console.print("No email history found.")
-            return
+            return []
 
         entries = []
         try:
@@ -206,11 +205,31 @@ class EmailLabManager:
                 for line in f:
                     if line.strip():
                         entries.append(json.loads(line))
-        except Exception as e:
-            self.console.print(f"[red]Error reading history: {e}[/red]")
-            return
+        except Exception:
+            return []
 
-        entries = entries[-limit:]
+        return entries[-limit:]
+
+    def get_email(self, req_id: str) -> Optional[Dict]:
+        if not self.history_file.exists():
+            return None
+
+        try:
+            with open(self.history_file, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        e = json.loads(line)
+                        if e['id'] == req_id:
+                            return e
+        except Exception:
+            pass
+        return None
+
+    def list_emails(self, limit: int = 10):
+        entries = self.get_emails(limit)
+        if not entries:
+            self.console.print("No email history found.")
+            return
 
         table = Table(title=f"Recent Emails (Last {len(entries)})")
         table.add_column("ID", style="cyan")
@@ -235,21 +254,7 @@ class EmailLabManager:
         self.console.print(table)
 
     def show_email(self, req_id: str):
-        if not self.history_file.exists():
-            self.console.print("No email history found.")
-            return
-
-        target = None
-        try:
-            with open(self.history_file, 'r') as f:
-                for line in f:
-                    if line.strip():
-                        e = json.loads(line)
-                        if e['id'] == req_id:
-                            target = e
-                            break
-        except Exception:
-            pass
+        target = self.get_email(req_id)
 
         if not target:
             self.console.print(f"[red]Email {req_id} not found.[/red]")
@@ -299,7 +304,7 @@ class EmailLabManager:
             self.console.print(f"✅ Email sent to {', '.join(recipients)}")
         except Exception as e:
             self.console.print(f"[red]Error sending email: {e}[/red]")
-            sys.exit(1)
+            raise e
 
 async def run_email_lab_logic(args):
     """
@@ -318,14 +323,17 @@ async def run_email_lab_logic(args):
             sys.exit(1)
 
     elif args.action == "send":
-        manager.send_email(
-            host=args.host,
-            port=args.port,
-            sender=args.sender,
-            recipients=args.to,
-            subject=args.subject,
-            body=args.body
-        )
+        try:
+            manager.send_email(
+                host=args.host,
+                port=args.port,
+                sender=args.sender,
+                recipients=args.to,
+                subject=args.subject,
+                body=args.body
+            )
+        except Exception:
+            sys.exit(1)
 
     elif args.action == "list":
         manager.list_emails(args.limit)

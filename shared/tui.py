@@ -142,6 +142,7 @@ from shared.tui_dns import DnsLabTab
 from shared.tui_speed import SpeedLabTab
 from shared.tui_sql import SqlLabTab
 from shared.tui_cert import CertLabTab
+from shared.tui_graphql import GraphQLLabTab
 from shared.tui_ast import ASTExplorerTab
 from shared.plugin_manager import PluginManager
 
@@ -4070,6 +4071,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("GraphQL", id="tab-graphql"):
+                yield GraphQLLabTab(self.project_dir)
             with TabPane("URL Lab", id="tab-url-lab"):
                 yield UrlLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):

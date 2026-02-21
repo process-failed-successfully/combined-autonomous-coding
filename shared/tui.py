@@ -73,6 +73,7 @@ from shared.tui_ws import WsLabTab
 from shared.tui_webhook import WebhookLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_rss import RssLabTab
+from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
@@ -4130,6 +4131,8 @@ class AgentTUI(App):
                 yield SshLabTab()
             with TabPane("Archive Lab", id="tab-archive"):
                 yield ArchiveLabTab(self.project_dir)
+            with TabPane("S3 Lab", id="tab-s3"):
+                yield S3LabTab()
             with TabPane("DNS Lab", id="tab-dns"):
                 yield DnsLabTab()
             with TabPane("Speed Lab", id="tab-speed"):

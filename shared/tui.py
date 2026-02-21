@@ -123,6 +123,7 @@ from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
+from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
@@ -3854,6 +3855,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
         PaletteCommand("Go to Text Lab", "switch_tab_text"),
         PaletteCommand("Go to Finance Lab", "switch_tab_finance"),
+        PaletteCommand("Go to Converter Lab", "switch_tab_converter"),
         PaletteCommand("Go to Git", "switch_tab_git"),
         PaletteCommand("Go to Config", "switch_tab_config"),
         PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
@@ -4095,6 +4097,8 @@ class AgentTUI(App):
                 yield TextLabTab()
             with TabPane("Codec Lab", id="tab-codec"):
                 yield CodecLabTab()
+            with TabPane("Converter Lab", id="tab-converter"):
+                yield ConverterLabTab(self.project_dir)
             with TabPane("Crypto Lab", id="tab-crypto"):
                 yield CryptoLabTab()
             with TabPane("Time Lab", id="tab-time"):

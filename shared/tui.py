@@ -128,6 +128,7 @@ from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
 from shared.tui_archive import ArchiveLabTab
 from shared.tui_dns import DnsLabTab
+from shared.tui_speed import SpeedLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4115,6 +4116,8 @@ class AgentTUI(App):
                 yield ArchiveLabTab(self.project_dir)
             with TabPane("DNS Lab", id="tab-dns"):
                 yield DnsLabTab()
+            with TabPane("Speed Lab", id="tab-speed"):
+                yield SpeedLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

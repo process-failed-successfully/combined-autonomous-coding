@@ -70,6 +70,7 @@ from shared.tui_proc import ProcLabTab
 from shared.tui_task_runner import TaskRunnerTab
 from shared.tui_proxy import ProxyLabTab
 from shared.tui_ws import WsLabTab
+from shared.tui_xml import XmlLabTab
 from shared.tui_webhook import WebhookLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_git import GitTab
@@ -4099,6 +4100,8 @@ class AgentTUI(App):
                 yield JsonLabTab(self.project_dir)
             with TabPane("YAML Lab", id="tab-yaml"):
                 yield YamlLabTab(self.project_dir)
+            with TabPane("XML Lab", id="tab-xml"):
+                yield XmlLabTab(self.project_dir)
             with TabPane("Markdown Lab", id="tab-markdown"):
                 yield MarkdownLabTab(self.project_dir)
             with TabPane("CSV Lab", id="tab-csv"):

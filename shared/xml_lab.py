@@ -3,7 +3,7 @@ import json
 import defusedxml.ElementTree as DetusedET
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 class XmlLabManager:
     """
@@ -68,9 +68,9 @@ class XmlLabManager:
             count += 1
         return count
 
-    def to_json(self, element: ET.Element) -> Dict[str, Any]:
+    def to_json(self, element: ET.Element) -> Union[Dict[str, Any], str]:
         """Converts XML Element to a dictionary (naive conversion)."""
-        result = {}
+        result: Dict[str, Any] = {}
 
         # Attributes
         if element.attrib:

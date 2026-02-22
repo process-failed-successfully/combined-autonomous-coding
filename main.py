@@ -247,7 +247,8 @@ KNOWN_COMMANDS = [
     "mqtt-lab", "mqtt", "mq",
     "path-lab", "path",
     "systemd-lab", "systemd", "service",
-    "http-server-lab", "httpd", "server"
+    "http-server-lab", "httpd", "server",
+    "ascii-lab", "ascii"
 ]
 
 if FileSystemEventHandler:
@@ -261,6 +262,12 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_ascii_lab(args):
+    """Runs the Ascii Lab."""
+    from shared.ascii_lab import run_ascii_lab_logic
+    run_ascii_lab_logic(args)
+    sys.exit(0)
 
 def run_path_lab(args):
     """Runs the Path Lab."""
@@ -14195,6 +14202,33 @@ def parse_args(argv=None):
         parser_systemd_ctrl = systemd_subparsers.add_parser(action, help=f"{action.capitalize()} a service.")
         parser_systemd_ctrl.add_argument("name", help="Service name.")
 
+    # --- New 'ascii-lab' command ---
+    parser_ascii = subparsers.add_parser(
+        "ascii-lab",
+        aliases=["ascii"],
+        help="ASCII Art Generator (Image, GIF)."
+    )
+    ascii_subparsers = parser_ascii.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ascii image
+    parser_ascii_img = ascii_subparsers.add_parser("image", help="Convert image to ASCII.")
+    parser_ascii_img.add_argument("--file", "-f", required=True, help="Input image file.")
+    parser_ascii_img.add_argument("--width", type=int, default=100, help="Output width.")
+    parser_ascii_img.add_argument("--charset", default="standard", choices=["standard", "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
+    parser_ascii_img.add_argument("--inverse", action="store_true", help="Inverse brightness.")
+
+    # ascii play
+    parser_ascii_play = ascii_subparsers.add_parser("play", help="Play GIF as ASCII animation.")
+    parser_ascii_play.add_argument("--file", "-f", required=True, help="Input GIF file.")
+    parser_ascii_play.add_argument("--width", type=int, default=100, help="Output width.")
+    parser_ascii_play.add_argument("--charset", default="standard", choices=["standard", "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
+    parser_ascii_play.add_argument("--inverse", action="store_true", help="Inverse brightness.")
+    parser_ascii_play.add_argument("--fps", type=float, help="Override FPS.")
+
     # --- New 'http-server-lab' command ---
     parser_http_server = subparsers.add_parser(
         "http-server-lab",
@@ -17822,6 +17856,10 @@ async def main():
 
     if args.command in ["http-server-lab", "httpd", "server"]:
         await run_http_server_lab_logic(args)
+        return
+
+    if args.command in ["ascii-lab", "ascii"]:
+        run_ascii_lab(args)
         return
 
     # Initialize Agent Client

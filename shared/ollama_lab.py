@@ -72,7 +72,8 @@ class OllamaLabManager:
                 self._get_url("/api/pull"),
                 json={"name": name},
                 stream=True,
-                timeout=None # Pulling can take a long time
+                # Connect timeout 10s, Read timeout 300s (5 min) for potentially slow chunks
+                timeout=(10, 300)
             ) as response:
                 if response.status_code != 200:
                     yield {"error": f"Status {response.status_code}: {response.text}"}
@@ -102,7 +103,7 @@ class OllamaLabManager:
                 self._get_url("/api/chat"),
                 json=payload,
                 stream=True,
-                timeout=60
+                timeout=(10, 120)
             ) as response:
                 if response.status_code != 200:
                     yield f"Error: Status {response.status_code}"

@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from shared.ollama_lab import OllamaLabManager
+import requests
 
 class TestOllamaLabManager(unittest.TestCase):
 
@@ -18,7 +19,6 @@ class TestOllamaLabManager(unittest.TestCase):
 
     @patch('requests.get')
     def test_check_connection_failure(self, mock_get):
-        import requests
         mock_get.side_effect = requests.RequestException("Connection refused")
         self.assertFalse(self.manager.check_connection())
 
@@ -47,7 +47,11 @@ class TestOllamaLabManager(unittest.TestCase):
 
         info = self.manager.show_model_info("llama3")
         self.assertEqual(info['modelfile'], "FROM llama3")
-        mock_post.assert_called()
+        mock_post.assert_called_with(
+            f"{self.manager.base_url}/api/show",
+            json={"name": "llama3"},
+            timeout=5
+        )
 
     @patch('requests.delete')
     def test_delete_model(self, mock_delete):
@@ -56,22 +60,54 @@ class TestOllamaLabManager(unittest.TestCase):
         mock_delete.return_value = mock_response
 
         self.assertTrue(self.manager.delete_model("llama3"))
+        mock_delete.assert_called_with(
+            f"{self.manager.base_url}/api/delete",
+            json={"name": "llama3"},
+            timeout=10
+        )
 
     @patch('requests.post')
-    def test_chat(self, mock_post):
-        # Mock streaming response
+    def test_pull_model(self, mock_post):
         mock_response = MagicMock()
         mock_response.status_code = 200
-        # iter_lines returns bytes
         mock_response.iter_lines.return_value = [
-            b'{"message": {"content": "Hello"}, "done": false}',
-            b'{"message": {"content": " World"}, "done": true}'
+            b'{"status": "pulling manifest"}',
+            b'{"status": "downloading", "completed": 10, "total": 100}'
         ]
         # Context manager
         mock_post.return_value.__enter__.return_value = mock_response
 
+        updates = list(self.manager.pull_model("llama3"))
+        self.assertEqual(len(updates), 2)
+        self.assertEqual(updates[0]['status'], "pulling manifest")
+
+        mock_post.assert_called_with(
+            f"{self.manager.base_url}/api/pull",
+            json={"name": "llama3"},
+            stream=True,
+            timeout=(10, 300)
+        )
+
+    @patch('requests.post')
+    def test_chat(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.iter_lines.return_value = [
+            b'{"message": {"content": "Hello"}, "done": false}',
+            b'{"message": {"content": " World"}, "done": true}'
+        ]
+        mock_post.return_value.__enter__.return_value = mock_response
+
         chunks = list(self.manager.chat("llama3", "Hi"))
         self.assertEqual("".join(chunks), "Hello World")
+
+        # Verify call arguments including timeout
+        mock_post.assert_called_with(
+            f"{self.manager.base_url}/api/chat",
+            json={"model": "llama3", "messages": [{"role": "user", "content": "Hi"}], "stream": True},
+            stream=True,
+            timeout=(10, 120)
+        )
 
 if __name__ == '__main__':
     unittest.main()

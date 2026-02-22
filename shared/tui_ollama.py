@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 import asyncio
 from textual.app import ComposeResult
 from textual.widgets import Label, Button, DataTable, Input, RichLog, TabbedContent, TabPane, Select, Static
@@ -158,10 +158,11 @@ class OllamaLabTab(Container):
         if not self.selected_model:
             return
 
+        model_name = self.selected_model
         async def do_delete():
-            success = await asyncio.to_thread(self.manager.delete_model, self.selected_model)
+            success = await asyncio.to_thread(self.manager.delete_model, model_name)
             if success:
-                self.notify(f"Deleted {self.selected_model}")
+                self.notify(f"Deleted {model_name}")
                 self.selected_model = None
                 self.load_models()
                 self.query_one("#ollama-details-log", RichLog).clear()
@@ -214,7 +215,7 @@ class OllamaLabTab(Container):
         finally:
             self.query_one("#btn-ollama-pull").disabled = False
 
-    def _handle_pull_update(self, update: dict, log: RichLog) -> None:
+    def _handle_pull_update(self, update: dict[str, Any], log: RichLog) -> None:
         if "error" in update:
             log.write(f"[red]{update['error']}[/red]")
             return

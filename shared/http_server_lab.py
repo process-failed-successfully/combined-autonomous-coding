@@ -1,8 +1,8 @@
-import asyncio
-from aiohttp import web
-import logging
-from typing import Optional, Callable, Any
+from typing import Callable, Optional
 from pathlib import Path
+
+from aiohttp import web
+
 
 class HttpServerManager:
     def __init__(self):

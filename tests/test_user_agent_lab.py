@@ -1,5 +1,7 @@
 import unittest
+
 from shared.user_agent_lab import UserAgentManager
+
 
 class TestUserAgentManager(unittest.TestCase):
     def setUp(self):
@@ -40,6 +42,7 @@ class TestUserAgentManager(unittest.TestCase):
     def test_is_bot(self):
         self.assertTrue(self.manager.is_bot("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"))
         self.assertFalse(self.manager.is_bot("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"))
+
 
 if __name__ == "__main__":
     unittest.main()

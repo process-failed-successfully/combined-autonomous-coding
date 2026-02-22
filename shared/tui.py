@@ -136,6 +136,7 @@ from shared.tui_qr import QrLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
+from shared.tui_port import PortLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
@@ -3948,6 +3949,8 @@ class AgentTUI(App):
                 yield ServicesTab(self.project_dir)
             with TabPane("Processes", id="tab-proc"):
                 yield ProcLabTab(self.project_dir)
+            with TabPane("Port Lab", id="tab-ports"):
+                yield PortLabTab()
             with TabPane("Runner", id="tab-runner"):
                 yield TaskRunnerTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):

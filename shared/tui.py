@@ -120,6 +120,7 @@ from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
+from shared.tui_http_server import HttpServerLabTab
 from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
@@ -3865,6 +3866,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Chat", "switch_tab_interact"),
         PaletteCommand("Go to Tasks", "switch_tab_tasks"),
         PaletteCommand("Go to Text Lab", "switch_tab_text"),
+        PaletteCommand("Go to HTTP Server Lab", "switch_tab_http_server"),
         PaletteCommand("Go to Finance Lab", "switch_tab_finance"),
         PaletteCommand("Go to Converter Lab", "switch_tab_converter"),
         PaletteCommand("Go to Git", "switch_tab_git"),
@@ -4151,6 +4153,8 @@ class AgentTUI(App):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):
                 yield HexTab(self.project_dir)
+            with TabPane("HTTP Server Lab", id="tab-http-server"):
+                yield HttpServerLabTab(self.project_dir)
             with TabPane("Hash Lab", id="tab-hash"):
                 yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):

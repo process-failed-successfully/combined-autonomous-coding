@@ -2,9 +2,8 @@ from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Label, Input, Button, RichLog, Select, ListView, ListItem
 from textual.containers import Container, Horizontal, Vertical
-from textual import on
 from shared.mqtt_lab import MqttLabManager
-import json
+
 
 class MqttLabTab(Container):
     """
@@ -40,9 +39,9 @@ class MqttLabTab(Container):
                     yield Input(placeholder="password", id="mqtt-pass", password=True)
 
                 with Vertical():
-                     yield Label("Action:")
-                     yield Button("Connect", id="btn-mqtt-connect", variant="primary")
-                     yield Button("Disconnect", id="btn-mqtt-disconnect", variant="error", disabled=True)
+                    yield Label("Action:")
+                    yield Button("Connect", id="btn-mqtt-connect", variant="primary")
+                    yield Button("Disconnect", id="btn-mqtt-disconnect", variant="error", disabled=True)
 
             with Horizontal():
                 # Left Pane: Subscribe & Publish

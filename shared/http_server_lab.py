@@ -1,8 +1,8 @@
-import asyncio
-from aiohttp import web
-import logging
-from typing import Optional, Callable, Any
+from typing import Callable, Optional
 from pathlib import Path
+
+from aiohttp import web
+
 
 class HttpServerManager:
     def __init__(self):
@@ -39,7 +39,7 @@ class HttpServerManager:
 
         self.runner = web.AppRunner(app)
         await self.runner.setup()
-        self.site = web.TCPSite(self.runner, '0.0.0.0', port)
+        self.site = web.TCPSite(self.runner, '127.0.0.1', port)
         await self.site.start()
         self.port = port
         self.type = "static"
@@ -69,7 +69,7 @@ class HttpServerManager:
 
         self.runner = web.AppRunner(app)
         await self.runner.setup()
-        self.site = web.TCPSite(self.runner, '0.0.0.0', port)
+        self.site = web.TCPSite(self.runner, '127.0.0.1', port)
         await self.site.start()
         self.port = port
         self.type = "echo"

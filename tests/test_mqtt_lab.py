@@ -1,10 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import sys
-import threading
-import time
 
 from shared.mqtt_lab import MqttLabManager
+
 
 class TestMqttLabManager(unittest.TestCase):
     def setUp(self):
@@ -36,8 +34,8 @@ class TestMqttLabManager(unittest.TestCase):
         mock_instance = self.mock_mqtt.Client.return_value
 
         def connect_side_effect(host, port, keepalive):
-             if mock_instance.on_connect:
-                 mock_instance.on_connect(mock_instance, None, None, 0)
+            if mock_instance.on_connect:
+                mock_instance.on_connect(mock_instance, None, None, 0)
 
         mock_instance.connect.side_effect = connect_side_effect
 
@@ -47,7 +45,7 @@ class TestMqttLabManager(unittest.TestCase):
         mock_instance.connect.assert_called_with("test", 1883, 60)
 
     def test_subscribe(self):
-        self.mock_client.subscribe.return_value = (0, 1) # (result, mid)
+        self.mock_client.subscribe.return_value = (0, 1)  # (result, mid)
 
         result = self.manager.subscribe("test/topic", 1)
 
@@ -100,6 +98,7 @@ class TestMqttLabManager(unittest.TestCase):
 
         # Restart patcher for tearDown (optional but good practice if tearDown relied on it)
         self.patcher.start()
+
 
 if __name__ == "__main__":
     unittest.main()

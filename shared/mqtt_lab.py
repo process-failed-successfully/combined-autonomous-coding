@@ -2,6 +2,7 @@ import sys
 import threading
 import time
 import json
+from datetime import datetime
 from typing import Optional, List, Dict, Any, Callable
 
 try:
@@ -136,3 +137,64 @@ class MqttLabManager:
     def clear_messages(self):
         with self.lock:
             self.messages = []
+
+def run_mqtt_lab_logic(args):
+    """CLI logic for MQTT Lab."""
+    manager = MqttLabManager()
+    if not manager.is_available():
+        print("❌ Error: 'paho-mqtt' library not found. Please install it with 'pip install paho-mqtt'.", file=sys.stderr)
+        return False
+
+    # Common connect args
+    host = args.host
+    port = args.port
+    username = args.username
+    password = args.password
+
+    # Connect
+    if not manager.connect(host, port, username=username, password=password):
+        print(f"❌ Failed to connect to {host}:{port}")
+        return False
+
+    if args.action == "check":
+        print(f"✅ Successfully connected to {host}:{port}")
+        manager.disconnect()
+        return True
+
+    elif args.action == "pub":
+        if manager.publish(args.topic, args.message, qos=args.qos, retain=args.retain):
+            print(f"✅ Published to '{args.topic}': {args.message}")
+            manager.disconnect()
+            return True
+        else:
+            print(f"❌ Failed to publish to '{args.topic}'")
+            manager.disconnect()
+            return False
+
+    elif args.action == "sub":
+        if manager.subscribe(args.topic, qos=args.qos):
+            print(f"✅ Subscribed to '{args.topic}'. Listening for messages (Ctrl+C to stop)...")
+            try:
+                last_count = 0
+                while True:
+                    messages = manager.get_messages()
+                    if len(messages) > last_count:
+                        # New messages
+                        for i in range(last_count, len(messages)):
+                            msg = messages[i]
+                            ts = datetime.fromtimestamp(msg['timestamp']).strftime('%H:%M:%S')
+                            print(f"[{ts}] {msg['topic']}: {msg['payload']}")
+                        last_count = len(messages)
+                    time.sleep(0.1)
+            except KeyboardInterrupt:
+                print("\nStopping subscription...")
+                manager.disconnect()
+                return True
+        else:
+            print(f"❌ Failed to subscribe to '{args.topic}'")
+            manager.disconnect()
+            return False
+
+    # Default fallback
+    manager.disconnect()
+    return True

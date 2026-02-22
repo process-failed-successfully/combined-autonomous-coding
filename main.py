@@ -243,6 +243,7 @@ KNOWN_COMMANDS = [
     "gitignore-lab", "gitignore", "gi",
     "permissions-lab", "perm", "chmod",
     "ollama-lab", "ollama", "ol",
+    "mqtt-lab", "mqtt", "mq",
     "path-lab", "path",
     "systemd-lab", "systemd", "service"
 ]
@@ -397,6 +398,12 @@ def run_ollama_lab(args):
     """Runs the Ollama Lab."""
     from shared.ollama_lab import run_ollama_lab_logic
     run_ollama_lab_logic(args)
+    sys.exit(0)
+
+def run_mqtt_lab(args):
+    """Runs the MQTT Lab."""
+    from shared.mqtt_lab import run_mqtt_lab_logic
+    run_mqtt_lab_logic(args)
     sys.exit(0)
 
 def run_permissions_lab(args):
@@ -14079,6 +14086,39 @@ def parse_args(argv=None):
     parser_ollama_chat.add_argument("name", help="Model name.")
     parser_ollama_chat.add_argument("message", help="Message to send.")
 
+    # --- New 'mqtt-lab' command ---
+    parser_mqtt = subparsers.add_parser(
+        "mqtt-lab",
+        aliases=["mqtt", "mq"],
+        help="MQTT Client (Publish, Subscribe, Check)."
+    )
+    # Global MQTT args
+    parser_mqtt.add_argument("--host", default="localhost", help="MQTT Broker Host.")
+    parser_mqtt.add_argument("--port", type=int, default=1883, help="MQTT Broker Port.")
+    parser_mqtt.add_argument("--username", help="Username.")
+    parser_mqtt.add_argument("--password", help="Password.")
+
+    mqtt_subparsers = parser_mqtt.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # mqtt check
+    parser_mqtt_check = mqtt_subparsers.add_parser("check", help="Check connection to broker.")
+
+    # mqtt pub
+    parser_mqtt_pub = mqtt_subparsers.add_parser("pub", help="Publish a message.")
+    parser_mqtt_pub.add_argument("--topic", "-t", required=True, help="Topic to publish to.")
+    parser_mqtt_pub.add_argument("--message", "-m", required=True, help="Message payload.")
+    parser_mqtt_pub.add_argument("--qos", type=int, default=0, choices=[0, 1, 2], help="Quality of Service.")
+    parser_mqtt_pub.add_argument("--retain", action="store_true", help="Retain message.")
+
+    # mqtt sub
+    parser_mqtt_sub = mqtt_subparsers.add_parser("sub", help="Subscribe to a topic.")
+    parser_mqtt_sub.add_argument("--topic", "-t", required=True, help="Topic to subscribe to.")
+    parser_mqtt_sub.add_argument("--qos", type=int, default=0, choices=[0, 1, 2], help="Quality of Service.")
+
     # --- New 'path-lab' command ---
     parser_path = subparsers.add_parser(
         "path-lab",
@@ -17617,6 +17657,10 @@ async def main():
 
     if args.command in ["ollama-lab", "ollama", "ol"]:
         run_ollama_lab(args)
+        return
+
+    if args.command in ["mqtt-lab", "mqtt", "mq"]:
+        run_mqtt_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

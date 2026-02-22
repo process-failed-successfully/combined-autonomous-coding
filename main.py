@@ -241,6 +241,7 @@ KNOWN_COMMANDS = [
     "finance-lab", "finance", "fin",
     "runner-lab", "runner",
     "gitignore-lab", "gitignore", "gi",
+    "permissions-lab", "perm", "chmod",
     "ollama-lab", "ollama", "ol",
     "systemd-lab", "systemd", "service"
 ]
@@ -358,6 +359,12 @@ def run_ollama_lab(args):
     """Runs the Ollama Lab."""
     from shared.ollama_lab import run_ollama_lab_logic
     run_ollama_lab_logic(args)
+    sys.exit(0)
+
+def run_permissions_lab(args):
+    """Runs the Permissions Lab."""
+    from shared.permissions_lab import run_permissions_lab_logic
+    run_permissions_lab_logic(args)
     sys.exit(0)
 
 def run_systemd_lab(args):
@@ -13972,6 +13979,35 @@ def parse_args(argv=None):
     # gi append
     parser_gi_append = gi_subparsers.add_parser("append", help="Append templates to .gitignore.")
     parser_gi_append.add_argument("--templates", required=True, help="Comma-separated list of templates.")
+
+    # --- New 'permissions-lab' command ---
+    parser_perm = subparsers.add_parser(
+        "permissions-lab",
+        aliases=["permissions", "perm", "chmod"],
+        help="Manage and calculate Unix permissions."
+    )
+    perm_subparsers = parser_perm.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # perm check
+    parser_perm_check = perm_subparsers.add_parser("check", help="Check permissions of a file.")
+    parser_perm_check.add_argument("file", help="Path to file.")
+
+    # perm calc
+    parser_perm_calc = perm_subparsers.add_parser("calc", help="Calculate permissions (octal <-> symbolic).")
+    parser_perm_calc.add_argument("value", help="Octal (755) or Symbolic (rwxr-xr-x) string.")
+
+    # perm set
+    parser_perm_set = perm_subparsers.add_parser("set", help="Set permissions of a file.")
+    parser_perm_set.add_argument("value", help="Octal string (e.g. 755).")
+    parser_perm_set.add_argument("file", help="Path to file.")
+
+    # perm explain
+    parser_perm_explain = perm_subparsers.add_parser("explain", help="Explain permission string.")
+    parser_perm_explain.add_argument("value", help="Octal (755) or Symbolic (rwxr-xr-x) string.")
 
     # --- New 'ollama-lab' command ---
     parser_ollama = subparsers.add_parser(

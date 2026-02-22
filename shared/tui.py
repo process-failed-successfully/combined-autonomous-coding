@@ -151,6 +151,7 @@ from shared.tui_sql import SqlLabTab
 from shared.tui_cert import CertLabTab
 from shared.tui_ast import ASTExplorerTab
 from shared.tui_graphql import GraphQLLabTab
+from shared.tui_struct import StructLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3875,6 +3876,7 @@ class AgentTUI(App):
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
         PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
+        PaletteCommand("Go to Struct Lab", "switch_tab_struct"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4079,6 +4081,8 @@ class AgentTUI(App):
                 yield MqttLabTab(self.project_dir)
             with TabPane("SQL Lab", id="tab-sql"):
                 yield SqlLabTab(self.project_dir)
+            with TabPane("Struct Lab", id="tab-struct"):
+                yield StructLabTab(self.project_dir)
             with TabPane("DB Diagram", id="tab-db-diag"):
                 yield DatabaseDiagramTab(self.project_dir)
             with TabPane("Secrets", id="tab-secrets"):

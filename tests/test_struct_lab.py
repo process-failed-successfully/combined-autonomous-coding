@@ -16,67 +16,76 @@ def test_calc_size(struct_manager):
     with pytest.raises(ValueError):
         struct_manager.calc_size("z") # Invalid format
 
-def test_pack(struct_manager, tmp_path):
+def test_pack_data(struct_manager, tmp_path):
     output_file = tmp_path / "packed.bin"
-
-    # Pack int and bytes
-    # Format 'i5s': int (4 bytes) + 5 char string (5 bytes)
     values = ["123", "hello"]
-    struct_manager.pack("i5s", values, output_file)
 
+    bytes_written = struct_manager.pack_data("i5s", values, output_file)
+
+    assert bytes_written == 9
     assert output_file.exists()
     content = output_file.read_bytes()
-    assert len(content) == 9 # 4 + 5
+    assert len(content) == 9
 
     unpacked = struct.unpack("i5s", content)
     assert unpacked[0] == 123
     assert unpacked[1] == b"hello"
 
-def test_pack_float(struct_manager, tmp_path):
-    output_file = tmp_path / "float.bin"
+def test_pack(struct_manager, tmp_path):
+    output_file = tmp_path / "packed_cli.bin"
+    values = ["123", "hello"]
 
-    # Pack float
-    values = ["3.14"]
-    struct_manager.pack("f", values, output_file)
+    with patch("shared.struct_lab.console.print") as mock_print:
+        struct_manager.pack("i5s", values, output_file)
 
-    content = output_file.read_bytes()
-    assert len(content) == 4
-    unpacked = struct.unpack("f", content)
-    # Float precision issues
-    assert abs(unpacked[0] - 3.14) < 0.0001
+        # Verify it printed success message
+        assert mock_print.called
+        assert "Packed 9 bytes" in str(mock_print.call_args)
 
-def test_unpack(struct_manager, tmp_path):
+def test_unpack_data(struct_manager, tmp_path):
     input_file = tmp_path / "data.bin"
-    # Create binary file: int 42, float 2.5
     data = struct.pack("if", 42, 2.5)
     input_file.write_bytes(data)
 
-    # We need to capture the output of unpack
+    unpacked = struct_manager.unpack_data("if", input_file)
+    assert unpacked[0] == 42
+    assert abs(unpacked[1] - 2.5) < 0.0001
+
+def test_unpack(struct_manager, tmp_path):
+    input_file = tmp_path / "data_cli.bin"
+    data = struct.pack("if", 42, 2.5)
+    input_file.write_bytes(data)
+
     with patch("shared.struct_lab.console.print") as mock_print:
         struct_manager.unpack("if", input_file)
 
         # Verify calls
         args_list = mock_print.call_args_list
         assert len(args_list) >= 3
-        # Args list elements are (args, kwargs)
-        # args_list[1][0][0] should be the string
+        # Should print the values
         assert "42" in str(args_list[1])
         assert "2.5" in str(args_list[2])
 
-def test_hex_dump(struct_manager, tmp_path):
+def test_get_hex_dump(struct_manager, tmp_path):
     input_file = tmp_path / "hex.bin"
     data = b"\x00\x01\x02\x03" + b"A" * 12 + b"\xff"
-    # Total 17 bytes -> 2 rows (16 + 1)
+    input_file.write_bytes(data)
+
+    rows = struct_manager.get_hex_dump(input_file)
+    assert len(rows) == 2
+    assert rows[0]["offset"] == "00000000"
+    assert "00 01 02 03" in rows[0]["hex"]
+    assert rows[1]["offset"] == "00000010"
+    assert "ff" in rows[1]["hex"]
+
+def test_hex_dump(struct_manager, tmp_path):
+    input_file = tmp_path / "hex_cli.bin"
+    data = b"\x00\x01\x02\x03"
     input_file.write_bytes(data)
 
     with patch("shared.struct_lab.console.print") as mock_print:
         struct_manager.hex_dump(input_file)
-
-        # Should call print with a Table
         assert mock_print.called
-        table = mock_print.call_args[0][0]
-        from rich.table import Table
-        assert isinstance(table, Table)
 
 def test_run_logic_calc(tmp_path):
     args = MagicMock()

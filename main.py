@@ -239,7 +239,8 @@ KNOWN_COMMANDS = [
     "cheatsheet-lab", "cheatsheet", "cheat",
     "finance-lab", "finance", "fin",
     "runner-lab", "runner",
-    "gitignore-lab", "gitignore", "gi"
+    "gitignore-lab", "gitignore", "gi",
+    "ollama-lab", "ollama", "ol"
 ]
 
 if FileSystemEventHandler:
@@ -350,6 +351,12 @@ def run_gitignore_lab(args):
     """Runs the Gitignore Lab."""
     from shared.gitignore_lab import run_gitignore_lab_logic
     run_gitignore_lab_logic(args)
+
+def run_ollama_lab(args):
+    """Runs the Ollama Lab."""
+    from shared.ollama_lab import run_ollama_lab_logic
+    run_ollama_lab_logic(args)
+    sys.exit(0)
 
 def run_port(args):
     """Manages network ports."""
@@ -13958,6 +13965,38 @@ def parse_args(argv=None):
     parser_gi_append = gi_subparsers.add_parser("append", help="Append templates to .gitignore.")
     parser_gi_append.add_argument("--templates", required=True, help="Comma-separated list of templates.")
 
+    # --- New 'ollama-lab' command ---
+    parser_ollama = subparsers.add_parser(
+        "ollama-lab",
+        aliases=["ollama", "ol"],
+        help="Manage local Ollama models."
+    )
+    ollama_subparsers = parser_ollama.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ollama list
+    parser_ollama_list = ollama_subparsers.add_parser("list", help="List installed models.")
+
+    # ollama pull
+    parser_ollama_pull = ollama_subparsers.add_parser("pull", help="Pull a model.")
+    parser_ollama_pull.add_argument("name", help="Model name.")
+
+    # ollama delete
+    parser_ollama_delete = ollama_subparsers.add_parser("delete", help="Delete a model.")
+    parser_ollama_delete.add_argument("name", help="Model name.")
+
+    # ollama show
+    parser_ollama_show = ollama_subparsers.add_parser("show", help="Show model info.")
+    parser_ollama_show.add_argument("name", help="Model name.")
+
+    # ollama chat
+    parser_ollama_chat = ollama_subparsers.add_parser("chat", help="Chat with a model.")
+    parser_ollama_chat.add_argument("name", help="Model name.")
+    parser_ollama_chat.add_argument("message", help="Message to send.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17418,6 +17457,10 @@ async def main():
 
     if args.command in ["gitignore-lab", "gitignore", "gi"]:
         run_gitignore_lab(args)
+        return
+
+    if args.command in ["ollama-lab", "ollama", "ol"]:
+        run_ollama_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

@@ -30,7 +30,7 @@ class TestHttpServerManager(unittest.IsolatedAsyncioTestCase):
         mock_app.router.add_static.assert_called_with('/', '/fake/path', show_index=True)
         mock_web.AppRunner.assert_called_with(mock_app)
         mock_runner.setup.assert_called_once()
-        mock_web.TCPSite.assert_called_with(mock_runner, '0.0.0.0', 8000)
+        mock_web.TCPSite.assert_called_with(mock_runner, '127.0.0.1', 8000)
         mock_site.start.assert_called_once()
 
         self.assertEqual(self.manager.port, 8000)
@@ -52,7 +52,7 @@ class TestHttpServerManager(unittest.IsolatedAsyncioTestCase):
         mock_app.router.add_route.assert_called()
         mock_web.AppRunner.assert_called_with(mock_app)
         mock_runner.setup.assert_called_once()
-        mock_web.TCPSite.assert_called_with(mock_runner, '0.0.0.0', 8001)
+        mock_web.TCPSite.assert_called_with(mock_runner, '127.0.0.1', 8001)
         mock_site.start.assert_called_once()
 
         self.assertEqual(self.manager.port, 8001)

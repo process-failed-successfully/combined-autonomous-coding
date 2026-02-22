@@ -1,4 +1,5 @@
 import os
+import sys
 import stat
 from pathlib import Path
 from typing import Dict, Any, Tuple
@@ -92,3 +93,142 @@ class PermissionsManager:
             return True
         except Exception:
             return False
+
+def run_permissions_lab_logic(args):
+    """CLI logic for Permissions Lab."""
+    manager = PermissionsManager()
+
+    if args.action == "check":
+        if not args.file:
+            print("Error: --file argument is required for 'check'.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.get_permissions(args.file)
+        if "error" in result:
+            print(f"❌ Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"File: {result['path']}")
+        print(f"Octal: {result['octal']}")
+        print(f"Symbolic: {result['symbolic']}")
+        print(f"Owner: {result['owner_digit']}")
+        print(f"Group: {result['group_digit']}")
+        print(f"Other: {result['other_digit']}")
+        sys.exit(0)
+
+    elif args.action == "calc":
+        if not args.value:
+            print("Error: --value argument (octal or symbolic) is required for 'calc'.", file=sys.stderr)
+            sys.exit(1)
+
+        val = args.value
+
+        # Determine if octal or symbolic
+        if val.isdigit() and len(val) == 3:
+            # Octal -> Symbolic
+            try:
+                owner = int(val[0])
+                group = int(val[1])
+                other = int(val[2])
+
+                def get_sym(digit):
+                    r, w, x = manager.from_octal(digit)
+                    return manager.to_symbolic(r, w, x)
+
+                sym = f"{get_sym(owner)}{get_sym(group)}{get_sym(other)}"
+                print(f"Octal: {val}")
+                print(f"Symbolic: {sym}")
+                sys.exit(0)
+            except Exception as e:
+                print(f"❌ Error parsing octal: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif len(val) == 9 and all(c in "rwx-" for c in val):
+            # Symbolic -> Octal
+            try:
+                # rwxrwxrwx
+                def get_oct(s):
+                    r = s[0] == 'r'
+                    w = s[1] == 'w'
+                    x = s[2] == 'x'
+                    return manager.to_octal(r, w, x)
+
+                o1 = get_oct(val[0:3])
+                o2 = get_oct(val[3:6])
+                o3 = get_oct(val[6:9])
+
+                octal = f"{o1}{o2}{o3}"
+                print(f"Symbolic: {val}")
+                print(f"Octal: {octal}")
+                sys.exit(0)
+            except Exception as e:
+                print(f"❌ Error parsing symbolic: {e}", file=sys.stderr)
+                sys.exit(1)
+        else:
+             print("Error: Invalid format. Use 3-digit octal (e.g., 755) or 9-char symbolic (e.g., rwxr-xr-x).", file=sys.stderr)
+             sys.exit(1)
+
+    elif args.action == "set":
+        if not args.file or not args.value:
+             print("Error: --file and --value (octal) are required for 'set'.", file=sys.stderr)
+             sys.exit(1)
+
+        if manager.set_permissions(args.file, args.value):
+            print(f"✅ Permissions for '{args.file}' set to {args.value}.")
+            sys.exit(0)
+        else:
+            print(f"❌ Failed to set permissions for '{args.file}'. Check if file exists and value is valid octal.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "explain":
+        if not args.value:
+            print("Error: --value argument (octal or symbolic) is required for 'explain'.", file=sys.stderr)
+            sys.exit(1)
+
+        val = args.value
+        octal = ""
+        symbolic = ""
+
+        if val.isdigit() and len(val) == 3:
+            octal = val
+            try:
+                o1, o2, o3 = int(val[0]), int(val[1]), int(val[2])
+                s1 = manager.to_symbolic(*manager.from_octal(o1))
+                s2 = manager.to_symbolic(*manager.from_octal(o2))
+                s3 = manager.to_symbolic(*manager.from_octal(o3))
+                symbolic = f"{s1}{s2}{s3}"
+            except Exception:
+                print("Error: Invalid octal string.", file=sys.stderr)
+                sys.exit(1)
+        elif len(val) == 9:
+            symbolic = val
+            try:
+                def get_oct(s):
+                    return manager.to_octal(s[0]=='r', s[1]=='w', s[2]=='x')
+                o1 = get_oct(val[0:3])
+                o2 = get_oct(val[3:6])
+                o3 = get_oct(val[6:9])
+                octal = f"{o1}{o2}{o3}"
+            except Exception:
+                print("Error: Invalid symbolic string.", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print("Error: Invalid format.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Octal: {octal}")
+        print(f"Symbolic: {symbolic}\n")
+
+        def describe(perm_str):
+            parts = []
+            if perm_str[0] == 'r': parts.append("Read")
+            if perm_str[1] == 'w': parts.append("Write")
+            if perm_str[2] == 'x': parts.append("Execute")
+            if not parts: return "None"
+            return ", ".join(parts)
+
+        print(f"Owner: {describe(symbolic[0:3])}")
+        print(f"Group: {describe(symbolic[3:6])}")
+        print(f"Other: {describe(symbolic[6:9])}")
+        sys.exit(0)
+
+    sys.exit(0)

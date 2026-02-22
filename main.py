@@ -154,6 +154,7 @@ from shared.speed_lab import run_speed_lab_logic
 from shared.load_lab import run_load_lab_logic
 from shared.ast_lab import run_ast_lab_logic
 from shared.systemd_lab import run_systemd_lab_logic
+from shared.http_server_lab import run_http_server_lab_logic
 import json
 import yaml
 import platformdirs
@@ -245,7 +246,8 @@ KNOWN_COMMANDS = [
     "ollama-lab", "ollama", "ol",
     "mqtt-lab", "mqtt", "mq",
     "path-lab", "path",
-    "systemd-lab", "systemd", "service"
+    "systemd-lab", "systemd", "service",
+    "http-server-lab", "httpd", "server"
 ]
 
 if FileSystemEventHandler:
@@ -14193,6 +14195,33 @@ def parse_args(argv=None):
         parser_systemd_ctrl = systemd_subparsers.add_parser(action, help=f"{action.capitalize()} a service.")
         parser_systemd_ctrl.add_argument("name", help="Service name.")
 
+    # --- New 'http-server-lab' command ---
+    parser_http_server = subparsers.add_parser(
+        "http-server-lab",
+        aliases=["httpd", "server"],
+        help="HTTP Server (Static, Echo, Upload)."
+    )
+    http_server_subparsers = parser_http_server.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # httpd serve (static)
+    parser_http_serve = http_server_subparsers.add_parser("serve", aliases=["static"], help="Serve static files.")
+    parser_http_serve.add_argument("--dir", default=".", help="Directory to serve.")
+    parser_http_serve.add_argument("--port", type=int, default=8000, help="Port to listen on.")
+    parser_http_serve.add_argument("--cors", action="store_true", help="Enable CORS.")
+
+    # httpd echo
+    parser_http_echo = http_server_subparsers.add_parser("echo", help="Start echo server.")
+    parser_http_echo.add_argument("--port", type=int, default=8080, help="Port to listen on.")
+
+    # httpd upload
+    parser_http_upload = http_server_subparsers.add_parser("upload", help="Start upload server.")
+    parser_http_upload.add_argument("--dir", default="uploads", help="Upload directory.")
+    parser_http_upload.add_argument("--port", type=int, default=8081, help="Port to listen on.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17789,6 +17818,10 @@ async def main():
 
     if args.command in ["path-lab", "path"]:
         run_path_lab(args)
+        return
+
+    if args.command in ["http-server-lab", "httpd", "server"]:
+        await run_http_server_lab_logic(args)
         return
 
     # Initialize Agent Client

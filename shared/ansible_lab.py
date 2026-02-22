@@ -34,10 +34,12 @@ class AnsibleManager:
             print(f"Error executing command {' '.join(cmd)}: {e}", file=sys.stderr)
             raise
 
-    def run_playbook(self, playbook: str, inventory: Optional[str] = None, check_mode: bool = False, diff_mode: bool = False, limit: Optional[str] = None, extra_vars: Optional[str] = None) -> bool:
+    def run_playbook(self, playbook: str, inventory: Optional[str] = None, check_mode: bool = False, diff_mode: bool = False, limit: Optional[str] = None, extra_vars: Optional[str] = None, capture_output: bool = False) -> Any:
         """Runs an ansible playbook."""
         if not self.playbook_cmd:
-             print("Error: ansible-playbook not found. Please install ansible.", file=sys.stderr)
+             msg = "Error: ansible-playbook not found. Please install ansible."
+             if capture_output: return (False, msg)
+             print(msg, file=sys.stderr)
              return False
 
         args = [self.playbook_cmd, playbook]
@@ -52,20 +54,34 @@ class AnsibleManager:
         if extra_vars:
             args.extend(["--extra-vars", extra_vars])
 
-        print(f"Running: {' '.join(args)}")
-        result = self._run_command(args)
+        if not capture_output:
+            print(f"Running: {' '.join(args)}")
+
+        result = self._run_command(args, capture_output=capture_output)
+
+        if capture_output:
+            output = (result.stdout or "") + (result.stderr or "")
+            return (result.returncode == 0, output)
         return result.returncode == 0
 
-    def lint(self, path: Optional[str] = None) -> bool:
+    def lint(self, path: Optional[str] = None, capture_output: bool = False) -> Any:
         """Runs ansible-lint."""
         if not self.lint_cmd:
-             print("Error: ansible-lint not found. Please install it (pip install ansible-lint).", file=sys.stderr)
+             msg = "Error: ansible-lint not found. Please install it (pip install ansible-lint)."
+             if capture_output: return (False, msg)
+             print(msg, file=sys.stderr)
              return False
 
         target = path if path else "."
         args = [self.lint_cmd, target]
-        print(f"Running ansible-lint on {target}...")
-        result = self._run_command(args)
+        if not capture_output:
+            print(f"Running ansible-lint on {target}...")
+
+        result = self._run_command(args, capture_output=capture_output)
+
+        if capture_output:
+            output = (result.stdout or "") + (result.stderr or "")
+            return (result.returncode == 0, output)
         return result.returncode == 0
 
     def list_inventory(self, inventory: Optional[str] = None) -> Optional[str]:

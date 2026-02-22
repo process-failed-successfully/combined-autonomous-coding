@@ -144,6 +144,7 @@ from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
+from shared.tui_ansible import AnsibleLabTab
 from shared.tui_archive import ArchiveLabTab
 from shared.tui_dns import DnsLabTab
 from shared.tui_speed import SpeedLabTab
@@ -3969,6 +3970,8 @@ class AgentTUI(App):
                 yield K8sTab(self.project_dir)
             with TabPane("Terraform", id="tab-terraform"):
                 yield TerraformTab(self.project_dir)
+            with TabPane("Ansible", id="tab-ansible"):
+                yield AnsibleLabTab(self.project_dir)
             with TabPane("Chaos", id="tab-chaos"):
                 yield ChaosTab(self.project_dir)
             with TabPane("Scheduler", id="tab-scheduler"):

@@ -240,7 +240,8 @@ KNOWN_COMMANDS = [
     "finance-lab", "finance", "fin",
     "runner-lab", "runner",
     "gitignore-lab", "gitignore", "gi",
-    "ollama-lab", "ollama", "ol"
+    "ollama-lab", "ollama", "ol",
+    "path-lab", "path", "pl"
 ]
 
 if FileSystemEventHandler:
@@ -254,6 +255,51 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_path_lab(args):
+    """Runs the Path Lab."""
+    from shared.path_lab import PathLabManager
+    project_dir = args.project_dir.resolve()
+    manager = PathLabManager(project_dir)
+
+    if args.action == "inspect":
+        if not args.path:
+            print("Error: --path required for inspect.", file=sys.stderr)
+            sys.exit(1)
+        info = manager.inspect_path(args.path)
+        import json
+        print(json.dumps(info, indent=2, default=str))
+
+    elif args.action == "calc":
+        if args.op == "relative":
+            if not args.target or not args.start:
+                print("Error: --target and --start required for relative calculation.", file=sys.stderr)
+                sys.exit(1)
+            print(manager.calculate_relative(args.target, args.start))
+        elif args.op == "join":
+            if not args.paths:
+                print("Error: --paths required for join.", file=sys.stderr)
+                sys.exit(1)
+            print(manager.join_paths(args.paths))
+        elif args.op == "resolve":
+            if not args.path:
+                print("Error: --path required for resolve.", file=sys.stderr)
+                sys.exit(1)
+            print(manager.resolve_path(args.path))
+        else:
+            print(f"Unknown operation: {args.op}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "glob":
+        if not args.pattern:
+            print("Error: --pattern required for glob.", file=sys.stderr)
+            sys.exit(1)
+        base = args.base or str(project_dir)
+        results = manager.glob_search(base, args.pattern)
+        for r in results:
+            print(r)
+
+    sys.exit(0)
 
 def run_cheatsheet(args):
     """Runs the Cheatsheet Lab."""
@@ -13997,6 +14043,35 @@ def parse_args(argv=None):
     parser_ollama_chat.add_argument("name", help="Model name.")
     parser_ollama_chat.add_argument("message", help="Message to send.")
 
+    # --- New 'path-lab' command ---
+    parser_path = subparsers.add_parser(
+        "path-lab",
+        aliases=["path", "pl"],
+        help="Inspect and manipulate file paths."
+    )
+    path_subparsers = parser_path.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # path inspect
+    parser_path_inspect = path_subparsers.add_parser("inspect", help="Inspect a path.")
+    parser_path_inspect.add_argument("path", help="Path to inspect.")
+
+    # path calc
+    parser_path_calc = path_subparsers.add_parser("calc", help="Calculate path operations.")
+    parser_path_calc.add_argument("op", choices=["relative", "join", "resolve"], help="Operation.")
+    parser_path_calc.add_argument("--target", help="Target path (for relative).")
+    parser_path_calc.add_argument("--start", help="Start path (for relative).")
+    parser_path_calc.add_argument("--paths", nargs="+", help="Paths to join.")
+    parser_path_calc.add_argument("--path", help="Path to resolve.")
+
+    # path glob
+    parser_path_glob = path_subparsers.add_parser("glob", help="Test glob pattern.")
+    parser_path_glob.add_argument("pattern", help="Glob pattern.")
+    parser_path_glob.add_argument("--base", help="Base directory.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17461,6 +17536,10 @@ async def main():
 
     if args.command in ["ollama-lab", "ollama", "ol"]:
         run_ollama_lab(args)
+        return
+
+    if args.command in ["path-lab", "path", "pl"]:
+        run_path_lab(args)
         return
 
     if args.command in ["fuzz-lab", "fuzz"]:

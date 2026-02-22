@@ -153,6 +153,7 @@ from shared.hex_lab import run_hex_lab_logic
 from shared.speed_lab import run_speed_lab_logic
 from shared.load_lab import run_load_lab_logic
 from shared.ast_lab import run_ast_lab_logic
+from shared.systemd_lab import run_systemd_lab_logic
 import json
 import yaml
 import platformdirs
@@ -240,7 +241,8 @@ KNOWN_COMMANDS = [
     "finance-lab", "finance", "fin",
     "runner-lab", "runner",
     "gitignore-lab", "gitignore", "gi",
-    "ollama-lab", "ollama", "ol"
+    "ollama-lab", "ollama", "ol",
+    "systemd-lab", "systemd", "service"
 ]
 
 if FileSystemEventHandler:
@@ -356,6 +358,12 @@ def run_ollama_lab(args):
     """Runs the Ollama Lab."""
     from shared.ollama_lab import run_ollama_lab_logic
     run_ollama_lab_logic(args)
+    sys.exit(0)
+
+def run_systemd_lab(args):
+    """Runs the Systemd Lab."""
+    from shared.systemd_lab import run_systemd_lab_logic
+    run_systemd_lab_logic(args)
     sys.exit(0)
 
 def run_port(args):
@@ -13997,6 +14005,48 @@ def parse_args(argv=None):
     parser_ollama_chat.add_argument("name", help="Model name.")
     parser_ollama_chat.add_argument("message", help="Message to send.")
 
+    # --- New 'systemd-lab' command ---
+    parser_systemd = subparsers.add_parser(
+        "systemd-lab",
+        aliases=["systemd", "service"],
+        help="Manage systemd units (generate, list, status)."
+    )
+    systemd_subparsers = parser_systemd.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # systemd generate
+    parser_systemd_gen = systemd_subparsers.add_parser("generate", help="Generate a .service file.")
+    parser_systemd_gen.add_argument("--name", required=True, help="Service name.")
+    parser_systemd_gen.add_argument("--cmd", required=True, help="Command to run.")
+    parser_systemd_gen.add_argument("--user", default="root", help="User to run as.")
+    parser_systemd_gen.add_argument("--workdir", help="Working directory.")
+    parser_systemd_gen.add_argument("--description", help="Service description.")
+    parser_systemd_gen.add_argument("--env", help="Environment variables (key=value,key=value).")
+    parser_systemd_gen.add_argument("--restart", default="always", help="Restart policy.")
+    parser_systemd_gen.add_argument("--type", default="simple", help="Service type.")
+    parser_systemd_gen.add_argument("--output", help="Output file path.")
+
+    # systemd list
+    parser_systemd_list = systemd_subparsers.add_parser("list", help="List active units.")
+    parser_systemd_list.add_argument("pattern", nargs="?", help="Pattern to match.")
+
+    # systemd status
+    parser_systemd_status = systemd_subparsers.add_parser("status", help="Get service status.")
+    parser_systemd_status.add_argument("name", help="Service name.")
+
+    # systemd logs
+    parser_systemd_logs = systemd_subparsers.add_parser("logs", help="Get service logs.")
+    parser_systemd_logs.add_argument("name", help="Service name.")
+    parser_systemd_logs.add_argument("--lines", type=int, default=50, help="Number of lines.")
+
+    # systemd control
+    for action in ["start", "stop", "restart", "enable", "disable"]:
+        parser_systemd_ctrl = systemd_subparsers.add_parser(action, help=f"{action.capitalize()} a service.")
+        parser_systemd_ctrl.add_argument("name", help="Service name.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17581,6 +17631,10 @@ async def main():
 
     if args.command in ["cq", "code-query"]:
         run_code_query_cli(args)
+        return
+
+    if args.command in ["systemd-lab", "systemd", "service"]:
+        run_systemd_lab(args)
         return
 
     # Initialize Agent Client

@@ -77,6 +77,7 @@ from shared.tui_regex import RegexLabTab
 from shared.tui_rss import RssLabTab
 from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
+from shared.tui_gitignore import GitignoreTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
@@ -4202,6 +4203,8 @@ class AgentTUI(App):
                 yield PathLabTab()
             with TabPane("Pattern Lab", id="tab-pattern-lab"):
                 yield PatternLabTab()
+            with TabPane("Gitignore Lab", id="tab-gitignore-lab"):
+                yield GitignoreTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

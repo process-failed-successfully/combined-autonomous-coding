@@ -6,9 +6,6 @@ from textual.widgets import Input
 from shared.tui_kafka import KafkaLabTab
 import sys
 
-# Mock kafka module to allow importing shared.kafka_lab
-sys.modules["kafka"] = MagicMock()
-
 class KafkaTestApp(App):
     def compose(self) -> ComposeResult:
         yield KafkaLabTab()
@@ -43,21 +40,6 @@ class TestKafkaLabTab(unittest.IsolatedAsyncioTestCase):
                 sidebar = app.query_one("#kafka-sidebar")
                 self.assertIsNotNone(sidebar)
 
-                # Check topics loaded
-                # list_topics is called in background via asyncio.to_thread
-                # wait for it
-                await pilot.pause()
-
-                list_view = app.query_one("#kafka-topic-list")
-                # Textual ListView children might take a moment
-                # But we mocked list_topics to return immediately.
-                # to_thread might still delay.
-
-                # We can't easily wait for background tasks without hooks,
-                # but pilot.pause() usually pumps events.
-
-                # Verify topics (checking internal children structure depends on Textual version)
-                # We can verify the manager method was called
                 instance.list_topics.assert_called()
 
     async def test_create_topic(self):
@@ -88,8 +70,6 @@ class TestKafkaLabTab(unittest.IsolatedAsyncioTestCase):
                 # Select a topic first (simulate selection)
                 tab = app.query_one(KafkaLabTab)
                 # Manually trigger selection logic
-                # We can't easily mock ListView selection programmatically via pilot without knowing indices/ids
-                # But we can update the label directly to simulate state
                 tab.query_one("#lbl-kafka-target-topic").update("topic1")
                 # Also enable the button, as the listener would
                 tab.query_one("#btn-kafka-send").disabled = False
@@ -99,11 +79,9 @@ class TestKafkaLabTab(unittest.IsolatedAsyncioTestCase):
                 await pilot.click("#kafka-produce-value")
                 await pilot.press("v")
 
-                # Enable button (logic does this on selection, which we skipped, so force it)
-                app.query_one("#btn-kafka-send").disabled = False
-
                 await pilot.click("#btn-kafka-send")
                 await pilot.pause()
+                await asyncio.sleep(0.1)
 
                 instance.produce.assert_called_with("topic1", "v", "k")
 

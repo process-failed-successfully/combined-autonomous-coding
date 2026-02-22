@@ -10,6 +10,11 @@ try:
     from kafka.errors import KafkaError
 except ImportError:
     kafka = None
+    KafkaConsumer = None
+    KafkaProducer = None
+    KafkaAdminClient = None
+    NewTopic = None
+    KafkaError = None
 
 class KafkaLabManager:
     """

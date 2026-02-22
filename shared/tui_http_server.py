@@ -24,7 +24,8 @@ class HttpServerLabTab(Container):
         try:
             log = self.query_one("#http-server-log", RichLog)
             log.write(message)
-        except Exception:
+        except Exception:  # nosec B110
+            # Widget might not be mounted yet or app is closing
             pass
 
     def compose(self) -> ComposeResult:

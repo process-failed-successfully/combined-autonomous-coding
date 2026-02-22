@@ -123,6 +123,7 @@ from shared.tui_hex import HexTab
 from shared.tui_notebook import NotebookLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_kafka import KafkaLabTab
+from shared.tui_mqtt import MqttLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_markdown import MarkdownLabTab
@@ -4069,6 +4070,8 @@ class AgentTUI(App):
                 yield RedisLabTab(self.project_dir)
             with TabPane("Kafka", id="tab-kafka"):
                 yield KafkaLabTab(project_dir=self.project_dir)
+            with TabPane("MQTT Lab", id="tab-mqtt"):
+                yield MqttLabTab(self.project_dir)
             with TabPane("SQL Lab", id="tab-sql"):
                 yield SqlLabTab(self.project_dir)
             with TabPane("DB Diagram", id="tab-db-diag"):

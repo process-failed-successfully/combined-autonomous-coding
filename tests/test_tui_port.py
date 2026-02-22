@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import patch
+
 from textual.app import App, ComposeResult
+from textual.widgets import Button, DataTable, Input
+
 from shared.tui_port import PortLabTab
-from textual.widgets import DataTable, Button, Input
 
 
 class PortLabApp(App):

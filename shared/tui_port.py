@@ -1,7 +1,8 @@
-from textual.app import ComposeResult
-from textual.containers import Container, Vertical, Horizontal
-from textual.widgets import Label, DataTable, Button, Input
 from textual import on
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Button, DataTable, Input, Label
+
 from shared.port_manager import PortManager
 
 

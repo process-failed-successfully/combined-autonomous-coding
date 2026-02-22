@@ -54,6 +54,7 @@ from shared.scaffold import ScaffoldManager
 from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
+from shared.tui_hash import HashLabTab
 from shared.tui_sentinel import SentinelTab
 from shared.tui_impact import ImpactTab
 from shared.tui_email import EmailLabTab
@@ -4132,6 +4133,8 @@ class AgentTUI(App):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):
                 yield HexTab(self.project_dir)
+            with TabPane("Hash Lab", id="tab-hash"):
+                yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):
                 yield JsonLabTab(self.project_dir)
             with TabPane("YAML Lab", id="tab-yaml"):

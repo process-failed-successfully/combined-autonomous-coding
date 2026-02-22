@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
@@ -37,7 +38,7 @@ class TestApp(App):
 
 class TestHttpServerLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.tab = HttpServerLabTab(Path("/tmp"))
+        self.tab = HttpServerLabTab(Path(tempfile.gettempdir()))
         self.tab.notify = MagicMock()
         self.app = TestApp(self.tab)
 

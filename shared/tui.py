@@ -121,6 +121,7 @@ from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
 from shared.tui_notebook import NotebookLabTab
+from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_yaml import YamlLabTab
@@ -3947,6 +3948,8 @@ class AgentTUI(App):
                 yield TerminalTab(self.project_dir)
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
+            with TabPane("Ollama Lab", id="tab-ollama"):
+                yield OllamaLabTab()
             with TabPane("Processes", id="tab-proc"):
                 yield ProcLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):

@@ -1,7 +1,7 @@
 import sys
 import json
 import time
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Generator
 
 try:
     import kafka
@@ -20,9 +20,12 @@ class KafkaLabManager:
 
     def _check_kafka(self) -> bool:
         if kafka is None:
-            print("Error: 'kafka-python' library not installed. Please run 'pip install kafka-python'.", file=sys.stderr)
+            # Only print error if running from CLI directly or if caller expects output
             return False
         return True
+
+    def is_available(self) -> bool:
+        return self._check_kafka()
 
     def list_topics(self) -> List[str]:
         """Lists all topics."""
@@ -34,6 +37,7 @@ class KafkaLabManager:
             consumer.close()
             return sorted(list(topics))
         except Exception as e:
+            # Use sys.stderr for errors so they can be captured if needed, but don't crash
             print(f"Error listing topics: {e}", file=sys.stderr)
             return []
 
@@ -99,23 +103,21 @@ class KafkaLabManager:
             future = producer.send(topic, value=value, key=key)
             result = future.get(timeout=10) # Block until sent
             producer.close()
-
-            print(f"Sent message to {topic} (partition: {result.partition}, offset: {result.offset})")
             return True
         except Exception as e:
             print(f"Error producing message: {e}", file=sys.stderr)
             return False
 
-    def consume(self, topic: str, group_id: Optional[str] = None, from_beginning: bool = False, limit: int = 0, follow: bool = False):
-        """Consumes messages from a topic."""
+    def consume_messages(self, topic: str, group_id: Optional[str] = None, from_beginning: bool = False, limit: int = 0, follow: bool = False) -> Generator[Optional[Dict[str, Any]], None, None]:
+        """
+        Yields messages from a topic.
+        Yields dict: {'partition': int, 'offset': int, 'key': str|None, 'value': str}
+        Yields None if no messages are available within timeout (heartbeat), only if follow=True.
+        """
         if not self._check_kafka(): return
 
         try:
             auto_offset_reset = 'earliest' if from_beginning else 'latest'
-
-            # If no group_id is provided, we use a random one to avoid committing offsets or interfering with others
-            # or None if we just want to subscribe?
-            # kafka-python consumer needs a group_id for auto-commit, but can work without it.
 
             consumer = KafkaConsumer(
                 topic,
@@ -125,27 +127,57 @@ class KafkaLabManager:
                 enable_auto_commit=bool(group_id),
                 value_deserializer=lambda x: x.decode('utf-8', errors='replace'),
                 key_deserializer=lambda x: x.decode('utf-8', errors='replace') if x else None,
-                consumer_timeout_ms=10000 if not follow else float('inf') # 10s timeout if not following
+                # We use poll manually, so consumer_timeout_ms doesn't matter much unless we use iterator
             )
 
-            print(f"Consuming from {topic}...")
             count = 0
 
             try:
-                for message in consumer:
-                    key_str = f"Key: {message.key} | " if message.key else ""
-                    print(f"[{message.partition}:{message.offset}] {key_str}{message.value}")
+                while True:
+                    # Poll for 1 second
+                    records = consumer.poll(timeout_ms=1000)
 
-                    count += 1
+                    if not records:
+                        if not follow:
+                            break
+                        yield None # Heartbeat to allow caller to check stop flags
+                        continue
+
+                    for tp, msgs in records.items():
+                        for message in msgs:
+                            yield {
+                                'partition': message.partition,
+                                'offset': message.offset,
+                                'key': message.key,
+                                'value': message.value,
+                                'timestamp': message.timestamp
+                            }
+                            count += 1
+
+                            if limit > 0 and count >= limit:
+                                break
+                        if limit > 0 and count >= limit:
+                            break
+
                     if limit > 0 and count >= limit:
                         break
+
             except KeyboardInterrupt:
-                print("\nStopped.")
+                pass
             finally:
                 consumer.close()
 
         except Exception as e:
             print(f"Error consuming messages: {e}", file=sys.stderr)
+
+    def consume(self, topic: str, group_id: Optional[str] = None, from_beginning: bool = False, limit: int = 0, follow: bool = False):
+        """CLI wrapper for consume_messages that prints to stdout."""
+        print(f"Consuming from {topic}...")
+        for msg in self.consume_messages(topic, group_id, from_beginning, limit, follow):
+            if msg is None: continue
+            key_str = f"Key: {msg['key']} | " if msg['key'] else ""
+            print(f"[{msg['partition']}:{msg['offset']}] {key_str}{msg['value']}")
+
 
 def run_kafka_lab_logic(args):
     """CLI logic for Kafka Lab."""
@@ -156,6 +188,10 @@ def run_kafka_lab_logic(args):
         bootstrap += ":9092"
 
     manager = KafkaLabManager(bootstrap_servers=bootstrap)
+
+    if not manager.is_available():
+        print("Error: 'kafka-python' library not installed. Please run 'pip install kafka-python'.", file=sys.stderr)
+        sys.exit(1)
 
     if args.action == "list":
         topics = manager.list_topics()
@@ -213,11 +249,13 @@ def run_kafka_lab_logic(args):
                 for line in sys.stdin:
                     line = line.strip()
                     if line:
-                        manager.produce(args.topic, line, args.key)
+                        if manager.produce(args.topic, line, args.key):
+                            print(f"Sent: {line}")
             except KeyboardInterrupt:
                 pass
         else:
-            manager.produce(args.topic, args.value, args.key)
+            if manager.produce(args.topic, args.value, args.key):
+                print(f"Sent to {args.topic}")
 
     elif args.action == "consume":
         if not args.topic:

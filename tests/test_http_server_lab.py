@@ -1,80 +1,90 @@
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
+import shutil
+from pathlib import Path
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from aiohttp import FormData
 from shared.http_server_lab import HttpServerManager
 
-class TestHttpServerManager(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
+class TestEchoServer(AioHTTPTestCase):
+    async def get_application(self):
         self.manager = HttpServerManager()
+        return self.manager.create_echo_app()
 
-    @patch('shared.http_server_lab.web')
-    async def test_start_static(self, mock_web):
-        # Mock web.Application and runner
-        mock_app = MagicMock()
-        mock_web.Application.return_value = mock_app
-        mock_runner = AsyncMock()
-        mock_web.AppRunner.return_value = mock_runner
-        mock_site = AsyncMock()
-        mock_web.TCPSite.return_value = mock_site
+    @unittest_run_loop
+    async def test_echo(self):
+        async with self.client.request("POST", "/foo", data="bar") as resp:
+            self.assertEqual(resp.status, 200)
+            data = await resp.json()
+            self.assertEqual(data["method"], "POST")
+            self.assertEqual(data["body"], "bar")
+            self.assertIn("/foo", data["url"])
 
-        # We need to mock Path to avoid "Invalid directory" error since we pass a fake path
-        with patch('shared.http_server_lab.Path') as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.is_dir.return_value = True
-            # str(p) needs to return the path string
-            mock_path.return_value.__str__.return_value = '/fake/path'
+class TestUploadServer(AioHTTPTestCase):
+    def setUp(self):
+        self.temp_dir = Path("./test_http_lab_upload_temp")
+        self.temp_dir.mkdir(exist_ok=True)
+        super().setUp()
 
-            await self.manager.start_static('/fake/path', 8000)
+    def tearDown(self):
+        if self.temp_dir.exists():
+            shutil.rmtree(self.temp_dir)
+        super().tearDown()
 
-        # Verify calls
-        mock_web.Application.assert_called_once()
-        mock_app.router.add_static.assert_called_with('/', '/fake/path', show_index=True)
-        mock_web.AppRunner.assert_called_with(mock_app)
-        mock_runner.setup.assert_called_once()
-        mock_web.TCPSite.assert_called_with(mock_runner, '127.0.0.1', 8000)
-        mock_site.start.assert_called_once()
+    async def get_application(self):
+        self.manager = HttpServerManager()
+        return self.manager.create_upload_app(self.temp_dir)
 
-        self.assertEqual(self.manager.port, 8000)
-        self.assertEqual(self.manager.type, "static")
+    @unittest_run_loop
+    async def test_upload_file(self):
+        data = FormData()
+        data.add_field('file', b'test-content', filename='test.txt')
 
-    @patch('shared.http_server_lab.web')
-    async def test_start_echo(self, mock_web):
-        mock_app = MagicMock()
-        mock_web.Application.return_value = mock_app
-        mock_runner = AsyncMock()
-        mock_web.AppRunner.return_value = mock_runner
-        mock_site = AsyncMock()
-        mock_web.TCPSite.return_value = mock_site
+        async with self.client.request("POST", "/", data=data) as resp:
+            self.assertEqual(resp.status, 200)
+            json_resp = await resp.json()
+            self.assertEqual(len(json_resp['files']), 1)
+            self.assertEqual(json_resp['files'][0]['filename'], 'test.txt')
+            self.assertEqual(json_resp['files'][0]['size'], 12)
 
-        await self.manager.start_echo(8001)
+        file_path = self.temp_dir / 'test.txt'
+        self.assertTrue(file_path.exists())
+        self.assertEqual(file_path.read_bytes(), b'test-content')
 
-        # Verify calls
-        mock_web.Application.assert_called_once()
-        mock_app.router.add_route.assert_called()
-        mock_web.AppRunner.assert_called_with(mock_app)
-        mock_runner.setup.assert_called_once()
-        mock_web.TCPSite.assert_called_with(mock_runner, '127.0.0.1', 8001)
-        mock_site.start.assert_called_once()
+    @unittest_run_loop
+    async def test_upload_invalid_content_type(self):
+        async with self.client.request("POST", "/", data="raw data") as resp:
+            self.assertEqual(resp.status, 400)
 
-        self.assertEqual(self.manager.port, 8001)
-        self.assertEqual(self.manager.type, "echo")
+class TestStaticServer(AioHTTPTestCase):
+    def setUp(self):
+        self.temp_dir = Path("./test_http_lab_static_temp")
+        self.temp_dir.mkdir(exist_ok=True)
+        (self.temp_dir / "index.html").write_text("<html>Index</html>")
+        (self.temp_dir / "other.txt").write_text("Text content")
+        super().setUp()
 
-    @patch('shared.http_server_lab.web')
-    async def test_stop(self, mock_web):
-        # Setup fake running server
-        mock_runner = AsyncMock()
-        mock_site = AsyncMock()
+    def tearDown(self):
+        if self.temp_dir.exists():
+            shutil.rmtree(self.temp_dir)
+        super().tearDown()
 
-        self.manager.runner = mock_runner
-        self.manager.site = mock_site
-        self.manager.port = 9000
+    async def get_application(self):
+        self.manager = HttpServerManager()
+        return self.manager.create_static_app(self.temp_dir)
 
-        await self.manager.stop()
+    @unittest_run_loop
+    async def test_get_index(self):
+        async with self.client.request("GET", "/") as resp:
+            self.assertEqual(resp.status, 200)
+            text = await resp.text()
+            self.assertIn("Index", text)
 
-        mock_site.stop.assert_called_once()
-        mock_runner.cleanup.assert_called_once()
-        self.assertIsNone(self.manager.site)
-        self.assertIsNone(self.manager.runner)
-        self.assertIsNone(self.manager.port)
+    @unittest_run_loop
+    async def test_get_file(self):
+        async with self.client.request("GET", "/other.txt") as resp:
+            self.assertEqual(resp.status, 200)
+            text = await resp.text()
+            self.assertEqual(text, "Text content")
 
 if __name__ == '__main__':
     unittest.main()

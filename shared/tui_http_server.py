@@ -1,10 +1,13 @@
-import asyncio
 from pathlib import Path
-from textual.app import ComposeResult
-from textual.widgets import Label, Button, Input, RichLog, TabbedContent, TabPane
-from textual.containers import Container, Horizontal, Vertical
+
 from textual import on
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import (Button, Input, Label, RichLog, TabbedContent,
+                             TabPane)
+
 from shared.http_server_lab import HttpServerManager
+
 
 class HttpServerLabTab(Container):
     """Tab for HTTP Server (Static & Echo)."""

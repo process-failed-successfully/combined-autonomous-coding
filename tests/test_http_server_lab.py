@@ -1,6 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from shared.http_server_lab import HttpServerManager
+
 
 class TestHttpServerManager(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -75,6 +77,7 @@ class TestHttpServerManager(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(self.manager.site)
         self.assertIsNone(self.manager.runner)
         self.assertIsNone(self.manager.port)
+
 
 if __name__ == '__main__':
     unittest.main()

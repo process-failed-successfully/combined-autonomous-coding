@@ -77,6 +77,7 @@ from shared.tui_regex import RegexLabTab
 from shared.tui_rss import RssLabTab
 from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
+from shared.tui_gitignore import GitignoreLabTab
 from shared.tui_quiz import QuizTab
 from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
@@ -4009,6 +4010,8 @@ class AgentTUI(App):
                 yield StandupTab(self.project_dir)
             with TabPane("Git", id="tab-git"):
                 yield GitTab(self.project_dir)
+            with TabPane("Gitignore", id="tab-gitignore"):
+                yield GitignoreLabTab(self.project_dir)
             with TabPane("Pull Requests", id="tab-pr"):
                 yield PullRequestsTab(self.project_dir)
             with TabPane("Conflicts", id="tab-conflicts"):

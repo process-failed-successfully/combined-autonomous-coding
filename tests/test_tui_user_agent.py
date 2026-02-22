@@ -1,10 +1,14 @@
 import unittest
+
 from textual.app import App, ComposeResult
+
 from shared.tui_user_agent import UserAgentLabTab
+
 
 class UserAgentLabApp(App):
     def compose(self) -> ComposeResult:
         yield UserAgentLabTab()
+
 
 class TestUserAgentLabTab(unittest.IsolatedAsyncioTestCase):
     async def test_parse_flow(self):

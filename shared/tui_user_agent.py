@@ -1,8 +1,11 @@
-from textual.app import ComposeResult
-from textual.containers import Container, Vertical, Horizontal
-from textual.widgets import Label, Button, Input, Select, TabbedContent, TabPane, RichLog, DataTable
 from textual import on
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import (Button, DataTable, Input, Label, RichLog, Select,
+                             TabbedContent, TabPane)
+
 from shared.user_agent_lab import UserAgentManager
+
 
 class UserAgentLabTab(Container):
     """Tab for User Agent parsing and generation."""

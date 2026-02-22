@@ -1,5 +1,6 @@
 import re
-from typing import Dict, Optional, List
+from typing import Dict, Optional
+
 
 class UserAgentManager:
     """Manages User Agent parsing and generation."""
@@ -51,7 +52,7 @@ class UserAgentManager:
             "browser": "Unknown",
             "version": "Unknown",
             "os": "Unknown",
-            "device": "Desktop", # Default to Desktop
+            "device": "Desktop",  # Default to Desktop
             "engine": "Unknown",
             "is_bot": "Yes" if self.is_bot(ua_string) else "No"
         }
@@ -78,31 +79,36 @@ class UserAgentManager:
         if "Edg/" in ua_string:
             result["browser"] = "Edge"
             match = re.search(r"Edg/([\d.]+)", ua_string)
-            if match: result["version"] = match.group(1)
+            if match:
+                result["version"] = match.group(1)
             result["engine"] = "Blink"
         # Chrome (must be checked after Edge because Edge contains Chrome)
         elif "Chrome" in ua_string or "CriOS" in ua_string:
             result["browser"] = "Chrome"
             match = re.search(r"(?:Chrome|CriOS)/([\d.]+)", ua_string)
-            if match: result["version"] = match.group(1)
+            if match:
+                result["version"] = match.group(1)
             result["engine"] = "Blink"
         # Firefox
         elif "Firefox" in ua_string or "FxiOS" in ua_string:
             result["browser"] = "Firefox"
             match = re.search(r"(?:Firefox|FxiOS)/([\d.]+)", ua_string)
-            if match: result["version"] = match.group(1)
+            if match:
+                result["version"] = match.group(1)
             result["engine"] = "Gecko"
         # Safari (must be checked after Chrome because Chrome contains Safari)
         elif "Safari" in ua_string:
             result["browser"] = "Safari"
             match = re.search(r"Version/([\d.]+)", ua_string)
-            if match: result["version"] = match.group(1)
+            if match:
+                result["version"] = match.group(1)
             result["engine"] = "WebKit"
         # IE
         elif "MSIE" in ua_string or "Trident" in ua_string:
             result["browser"] = "Internet Explorer"
             match = re.search(r"(?:MSIE |rv:)([\d.]+)", ua_string)
-            if match: result["version"] = match.group(1)
+            if match:
+                result["version"] = match.group(1)
             result["engine"] = "Trident"
 
         return result

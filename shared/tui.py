@@ -152,6 +152,7 @@ from shared.tui_cert import CertLabTab
 from shared.tui_ast import ASTExplorerTab
 from shared.tui_graphql import GraphQLLabTab
 from shared.tui_struct import StructLabTab
+from shared.tui_path import PathLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4193,6 +4194,8 @@ class AgentTUI(App):
                 yield SpeedLabTab(self.project_dir)
             with TabPane("Cert Lab", id="tab-cert"):
                 yield CertLabTab(self.project_dir)
+            with TabPane("Path Lab", id="tab-path-lab"):
+                yield PathLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

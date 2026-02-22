@@ -243,6 +243,7 @@ KNOWN_COMMANDS = [
     "gitignore-lab", "gitignore", "gi",
     "permissions-lab", "perm", "chmod",
     "ollama-lab", "ollama", "ol",
+    "path-lab", "path",
     "systemd-lab", "systemd", "service"
 ]
 
@@ -257,6 +258,43 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_path_lab(args):
+    """Runs the Path Lab."""
+    from shared.path_lab import PathLabManager
+    manager = PathLabManager()
+
+    if args.action == "analyze":
+        info = manager.analyze_path(args.path)
+        print(f"--- Analysis of '{args.path}' ---")
+        for k, v in info.items():
+            if k == "stat" and isinstance(v, dict):
+                print("Stat:")
+                for sk, sv in v.items():
+                    print(f"  {sk}: {sv}")
+            else:
+                print(f"{k}: {v}")
+
+    elif args.action == "relative":
+        res = manager.calculate_relative(args.target, args.start)
+        if res["success"]:
+            print(res["result"])
+        else:
+            print(f"Error: {res['error']}")
+            sys.exit(1)
+
+    elif args.action == "join":
+        print(manager.join_paths(args.base, args.parts))
+
+    elif args.action == "glob":
+        matches = manager.glob_path(args.root, args.pattern, args.recursive)
+        if not matches:
+            print("No matches found.")
+        else:
+            for m in matches:
+                print(m)
+
+    sys.exit(0)
 
 def run_cheatsheet(args):
     """Runs the Cheatsheet Lab."""
@@ -14041,6 +14079,38 @@ def parse_args(argv=None):
     parser_ollama_chat.add_argument("name", help="Model name.")
     parser_ollama_chat.add_argument("message", help="Message to send.")
 
+    # --- New 'path-lab' command ---
+    parser_path = subparsers.add_parser(
+        "path-lab",
+        aliases=["path"],
+        help="Path manipulation and analysis."
+    )
+    path_subparsers = parser_path.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # path analyze
+    parser_path_analyze = path_subparsers.add_parser("analyze", help="Analyze a path.")
+    parser_path_analyze.add_argument("path", help="Path to analyze.")
+
+    # path relative
+    parser_path_rel = path_subparsers.add_parser("relative", help="Calculate relative path.")
+    parser_path_rel.add_argument("target", help="Target path.")
+    parser_path_rel.add_argument("start", help="Start path.")
+
+    # path join
+    parser_path_join = path_subparsers.add_parser("join", help="Join path components.")
+    parser_path_join.add_argument("base", help="Base path.")
+    parser_path_join.add_argument("parts", nargs="+", help="Path components.")
+
+    # path glob
+    parser_path_glob = path_subparsers.add_parser("glob", help="Glob pattern.")
+    parser_path_glob.add_argument("root", help="Root directory.")
+    parser_path_glob.add_argument("pattern", help="Glob pattern.")
+    parser_path_glob.add_argument("--recursive", "-r", action="store_true", help="Recursive glob.")
+
     # --- New 'systemd-lab' command ---
     parser_systemd = subparsers.add_parser(
         "systemd-lab",
@@ -17671,6 +17741,10 @@ async def main():
 
     if args.command in ["systemd-lab", "systemd", "service"]:
         run_systemd_lab(args)
+        return
+
+    if args.command in ["path-lab", "path"]:
+        run_path_lab(args)
         return
 
     # Initialize Agent Client

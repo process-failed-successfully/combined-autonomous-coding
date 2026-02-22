@@ -248,7 +248,8 @@ KNOWN_COMMANDS = [
     "path-lab", "path",
     "systemd-lab", "systemd", "service",
     "http-server-lab", "httpd", "server",
-    "ascii-lab", "ascii"
+    "ascii-lab", "ascii",
+    "pattern-lab", "pattern", "design"
 ]
 
 if FileSystemEventHandler:
@@ -262,6 +263,12 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_pattern_lab(args):
+    """Runs the Pattern Lab."""
+    from shared.pattern_lab import run_pattern_lab_logic
+    run_pattern_lab_logic(args)
+    sys.exit(0)
 
 def run_ascii_lab(args):
     """Runs the Ascii Lab."""
@@ -14229,6 +14236,32 @@ def parse_args(argv=None):
     parser_ascii_play.add_argument("--inverse", action="store_true", help="Inverse brightness.")
     parser_ascii_play.add_argument("--fps", type=float, help="Override FPS.")
 
+    # --- New 'pattern-lab' command ---
+    parser_pattern = subparsers.add_parser(
+        "pattern-lab",
+        aliases=["pattern", "design"],
+        help="Design Pattern Generator."
+    )
+    pattern_subparsers = parser_pattern.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # pattern list
+    pattern_subparsers.add_parser("list", help="List available patterns.")
+
+    # pattern show
+    parser_pattern_show = pattern_subparsers.add_parser("show", help="Show pattern code.")
+    parser_pattern_show.add_argument("--pattern", "-p", required=True, help="Pattern name.")
+    parser_pattern_show.add_argument("--lang", "-l", required=True, help="Language.")
+
+    # pattern generate
+    parser_pattern_gen = pattern_subparsers.add_parser("generate", help="Generate pattern file.")
+    parser_pattern_gen.add_argument("--pattern", "-p", required=True, help="Pattern name.")
+    parser_pattern_gen.add_argument("--lang", "-l", required=True, help="Language.")
+    parser_pattern_gen.add_argument("--output", "-o", required=True, help="Output file path.")
+
     # --- New 'http-server-lab' command ---
     parser_http_server = subparsers.add_parser(
         "http-server-lab",
@@ -17860,6 +17893,10 @@ async def main():
 
     if args.command in ["ascii-lab", "ascii"]:
         run_ascii_lab(args)
+        return
+
+    if args.command in ["pattern-lab", "pattern", "design"]:
+        run_pattern_lab(args)
         return
 
     # Initialize Agent Client

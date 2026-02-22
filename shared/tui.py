@@ -113,6 +113,7 @@ from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
 from shared.tui_ssh import SshLabTab
+from shared.tui_http_server import HttpServerLabTab
 from shared.tui_i18n import I18nTab
 from shared.tui_sanitizer import SanitizerTab
 from shared.tui_gantt import GanttTab
@@ -3949,6 +3950,8 @@ class AgentTUI(App):
                 yield TerminalTab(self.project_dir)
             with TabPane("Services", id="tab-services"):
                 yield ServicesTab(self.project_dir)
+            with TabPane("HTTP Server", id="tab-http-server"):
+                yield HttpServerLabTab(self.project_dir)
             with TabPane("Ollama Lab", id="tab-ollama"):
                 yield OllamaLabTab()
             with TabPane("Processes", id="tab-proc"):

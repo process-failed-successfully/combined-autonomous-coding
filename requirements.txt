@@ -34,3 +34,4 @@ Jinja2
 redis
 boto3
 aiohttp
+paho-mqtt

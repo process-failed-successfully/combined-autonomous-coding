@@ -252,7 +252,8 @@ KNOWN_COMMANDS = [
     "pattern-lab", "pattern", "design",
     "weather-lab", "weather", "w",
     "bandwidth-lab", "bandwidth", "bw",
-    "typing-lab", "type"
+    "typing-lab", "type",
+    "sound-lab", "sound", "audio"
 ]
 
 if FileSystemEventHandler:
@@ -279,6 +280,12 @@ def run_typing_lab(args):
     print("Launching Typing Lab...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-typing")
     app.run()
+    sys.exit(0)
+
+def run_sound_lab(args):
+    """Runs the Sound Lab."""
+    from shared.sound_lab import run_sound_lab_logic
+    run_sound_lab_logic(args)
     sys.exit(0)
 
 def run_weather_lab(args):
@@ -14361,6 +14368,43 @@ def parse_args(argv=None):
         help="Interactive Code Typing Tutor."
     )
 
+    # --- New 'sound-lab' command ---
+    parser_sound = subparsers.add_parser(
+        "sound-lab",
+        aliases=["sound", "audio"],
+        help="Sound Generation (Tone, Noise, DTMF, Morse)."
+    )
+    sound_subparsers = parser_sound.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # sound tone
+    parser_sound_tone = sound_subparsers.add_parser("tone", help="Generate a simple tone.")
+    parser_sound_tone.add_argument("--freq", type=float, default=440.0, help="Frequency in Hz.")
+    parser_sound_tone.add_argument("--duration", type=float, default=1.0, help="Duration in seconds.")
+    parser_sound_tone.add_argument("--wave", default="sine", choices=["sine", "square", "triangle", "sawtooth"], help="Waveform type.")
+    parser_sound_tone.add_argument("--output", default="tone.wav", help="Output file path.")
+
+    # sound noise
+    parser_sound_noise = sound_subparsers.add_parser("noise", help="Generate noise.")
+    parser_sound_noise.add_argument("--type", default="white", choices=["white"], help="Noise type.")
+    parser_sound_noise.add_argument("--duration", type=float, default=1.0, help="Duration in seconds.")
+    parser_sound_noise.add_argument("--output", default="noise.wav", help="Output file path.")
+
+    # sound dtmf
+    parser_sound_dtmf = sound_subparsers.add_parser("dtmf", help="Generate DTMF tones.")
+    parser_sound_dtmf.add_argument("sequence", help="Sequence of digits/chars to generate.")
+    parser_sound_dtmf.add_argument("--output", default="dtmf.wav", help="Output file path.")
+
+    # sound morse
+    parser_sound_morse = sound_subparsers.add_parser("morse", help="Generate Morse code.")
+    parser_sound_morse.add_argument("text", help="Text to convert to Morse.")
+    parser_sound_morse.add_argument("--wpm", type=int, default=20, help="Words per minute.")
+    parser_sound_morse.add_argument("--freq", type=float, default=600.0, help="Tone frequency.")
+    parser_sound_morse.add_argument("--output", default="morse.wav", help="Output file path.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -17976,6 +18020,10 @@ async def main():
 
     if args.command in ["typing-lab", "type"]:
         run_typing_lab(args)
+        return
+
+    if args.command in ["sound-lab", "sound", "audio"]:
+        run_sound_lab(args)
         return
 
     # Initialize Agent Client

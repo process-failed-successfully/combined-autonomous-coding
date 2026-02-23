@@ -251,7 +251,8 @@ KNOWN_COMMANDS = [
     "ascii-lab", "ascii",
     "pattern-lab", "pattern", "design",
     "weather-lab", "weather", "w",
-    "bandwidth-lab", "bandwidth", "bw"
+    "bandwidth-lab", "bandwidth", "bw",
+    "typing-lab", "type"
 ]
 
 if FileSystemEventHandler:
@@ -270,6 +271,14 @@ def run_bandwidth_lab(args):
     """Runs the Bandwidth Lab."""
     from shared.bandwidth_lab import run_bandwidth_lab_logic
     run_bandwidth_lab_logic(args)
+    sys.exit(0)
+
+def run_typing_lab(args):
+    """Runs the Typing Lab."""
+    from shared.tui import AgentTUI
+    print("Launching Typing Lab...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-typing")
+    app.run()
     sys.exit(0)
 
 def run_weather_lab(args):
@@ -14345,6 +14354,12 @@ def parse_args(argv=None):
     parser_bw_mon.add_argument("--interface", "-i", help="Comma-separated list of interfaces to monitor.")
     parser_bw_mon.add_argument("--interval", type=float, default=1.0, help="Update interval in seconds.")
 
+    # --- New 'typing-lab' command ---
+    parser_typing = subparsers.add_parser(
+        "typing-lab",
+        aliases=["type"],
+        help="Interactive Code Typing Tutor."
+    )
 
     # --- Plugin Registration ---
     try:
@@ -17957,6 +17972,10 @@ async def main():
 
     if args.command in ["bandwidth-lab", "bandwidth", "bw"]:
         run_bandwidth_lab(args)
+        return
+
+    if args.command in ["typing-lab", "type"]:
+        run_typing_lab(args)
         return
 
     # Initialize Agent Client

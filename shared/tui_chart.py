@@ -5,8 +5,8 @@ import asyncio
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Label, Button, Input, TextArea, Select, RichLog
-from textual import on
 from shared.chart_lab import ChartLabManager
+
 
 class ChartLabTab(Container):
     """Tab for visualizing data with ASCII charts."""

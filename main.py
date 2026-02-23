@@ -249,7 +249,8 @@ KNOWN_COMMANDS = [
     "systemd-lab", "systemd", "service",
     "http-server-lab", "httpd", "server",
     "ascii-lab", "ascii",
-    "pattern-lab", "pattern", "design"
+    "pattern-lab", "pattern", "design",
+    "weather-lab", "weather", "w"
 ]
 
 if FileSystemEventHandler:
@@ -263,6 +264,12 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_weather_lab(args):
+    """Runs the Weather Lab."""
+    from shared.weather_lab import run_weather_lab_logic
+    run_weather_lab_logic(args)
+    sys.exit(0)
 
 def run_pattern_lab(args):
     """Runs the Pattern Lab."""
@@ -14235,6 +14242,28 @@ def parse_args(argv=None):
     parser_ascii_play.add_argument("--charset", default="standard", choices=["standard", "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
     parser_ascii_play.add_argument("--inverse", action="store_true", help="Inverse brightness.")
     parser_ascii_play.add_argument("--fps", type=float, help="Override FPS.")
+
+    # --- New 'weather-lab' command ---
+    parser_weather = subparsers.add_parser(
+        "weather-lab",
+        aliases=["weather", "w"],
+        help="Weather Information (Current, Forecast)."
+    )
+    weather_subparsers = parser_weather.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # weather current
+    parser_weather_curr = weather_subparsers.add_parser("current", help="Get current weather.")
+    parser_weather_curr.add_argument("--city", help="City name (or empty for auto).")
+    parser_weather_curr.add_argument("--units", default="metric", choices=["metric", "imperial"], help="Units (metric/imperial).")
+
+    # weather forecast
+    parser_weather_fore = weather_subparsers.add_parser("forecast", help="Get weather forecast.")
+    parser_weather_fore.add_argument("--city", help="City name (or empty for auto).")
+    parser_weather_fore.add_argument("--units", default="metric", choices=["metric", "imperial"], help="Units (metric/imperial).")
 
     # --- New 'pattern-lab' command ---
     parser_pattern = subparsers.add_parser(

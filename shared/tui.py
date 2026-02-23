@@ -158,6 +158,7 @@ from shared.tui_grpc import GrpcLabTab
 from shared.tui_struct import StructLabTab
 from shared.tui_path import PathLabTab
 from shared.tui_pattern import PatternLabTab
+from shared.tui_weather import WeatherLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4209,6 +4210,8 @@ class AgentTUI(App):
                 yield PathLabTab()
             with TabPane("Pattern Lab", id="tab-pattern-lab"):
                 yield PatternLabTab()
+            with TabPane("Weather Lab", id="tab-weather-lab"):
+                yield WeatherLabTab()
             with TabPane("Gitignore Lab", id="tab-gitignore-lab"):
                 yield GitignoreTab(self.project_dir)
 

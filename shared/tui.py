@@ -159,6 +159,7 @@ from shared.tui_struct import StructLabTab
 from shared.tui_path import PathLabTab
 from shared.tui_pattern import PatternLabTab
 from shared.tui_weather import WeatherLabTab
+from shared.tui_bandwidth import BandwidthLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4214,6 +4215,8 @@ class AgentTUI(App):
                 yield WeatherLabTab()
             with TabPane("Gitignore Lab", id="tab-gitignore-lab"):
                 yield GitignoreTab(self.project_dir)
+            with TabPane("Bandwidth Lab", id="tab-bandwidth-lab"):
+                yield BandwidthLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

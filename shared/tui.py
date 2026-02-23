@@ -164,6 +164,7 @@ from shared.tui_typing import TypingLabTab
 from shared.tui_browser import BrowserLabTab
 from shared.tui_maze import MazeLabTab
 from shared.tui_ascii import AsciiLabTab
+from shared.tui_license import LicenseLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3892,6 +3893,7 @@ class AgentTUI(App):
         PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
         PaletteCommand("Go to Struct Lab", "switch_tab_struct"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
+        PaletteCommand("Go to License Lab", "switch_tab_license"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4232,6 +4234,8 @@ class AgentTUI(App):
                 yield MazeLabTab()
             with TabPane("Ascii Lab", id="tab-ascii"):
                 yield AsciiLabTab(self.project_dir)
+            with TabPane("License Lab", id="tab-license"):
+                yield LicenseLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -151,6 +151,7 @@ from shared.tui_dns import DnsLabTab
 from shared.tui_speed import SpeedLabTab
 from shared.tui_sql import SqlLabTab
 from shared.tui_cert import CertLabTab
+from shared.tui_chart import ChartLabTab
 from shared.tui_ast import ASTExplorerTab
 from shared.tui_graphql import GraphQLLabTab
 from shared.tui_struct import StructLabTab
@@ -4087,6 +4088,8 @@ class AgentTUI(App):
                 yield MqttLabTab(self.project_dir)
             with TabPane("SQL Lab", id="tab-sql"):
                 yield SqlLabTab(self.project_dir)
+            with TabPane("Chart Lab", id="tab-chart"):
+                yield ChartLabTab()
             with TabPane("Struct Lab", id="tab-struct"):
                 yield StructLabTab(self.project_dir)
             with TabPane("DB Diagram", id="tab-db-diag"):

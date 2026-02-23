@@ -89,5 +89,21 @@ class TestJsonLabManager(unittest.TestCase):
         self.assertIn("-", diff)
         self.assertIn("+", diff)
 
+    def test_query(self):
+        # Basic access
+        self.assertEqual(self.manager.query(self.sample_data, "data['store']['bicycle']['color']"), "red")
+
+        # Filtering
+        result = self.manager.query(self.sample_data, "[b['title'] for b in data['store']['book'] if b['price'] < 10]")
+        self.assertEqual(result, ["Sayings of the Century"])
+
+        # Aggregation
+        total_price = self.manager.query(self.sample_data, "sum(b['price'] for b in data['store']['book'])")
+        self.assertAlmostEqual(total_price, 21.94)
+
+        # Safety check (should fail if using banned builtins)
+        with self.assertRaises(NameError):
+            self.manager.query(self.sample_data, "__import__('os')")
+
 if __name__ == '__main__':
     unittest.main()

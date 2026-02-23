@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Optional, List, Union
 from textual.app import ComposeResult
-from textual.widgets import Label, DirectoryTree, Tree, Input, Button, RichLog
+from textual.widgets import Label, DirectoryTree, Tree, Input, Button, RichLog, TabbedContent, TabPane, DataTable
 from textual.widgets.tree import TreeNode
 from textual.containers import Container, Horizontal, Vertical
 from textual import on
@@ -20,6 +20,7 @@ class JsonLabTab(Container):
         self.current_file: Optional[Path] = None
         self.current_data: Any = None
         self.selected_path: Optional[List[Union[str, int]]] = None
+        self.filter_text: str = ""
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -31,31 +32,51 @@ class JsonLabTab(Container):
             # Center: JSON Tree
             with Vertical(id="json-main", classes="stat-box"):
                 yield Label("[bold]Structure[/bold]", id="lbl-json-structure")
+                yield Input(placeholder="Filter nodes...", id="json-tree-filter")
                 yield Tree("Root", id="json-tree")
 
-            # Right: Editor
+            # Right: Editor & Query
             with Vertical(id="json-editor-pane", classes="stat-box"):
-                yield Label("[bold]Editor[/bold]")
+                with TabbedContent():
+                    with TabPane("Edit", id="tab-json-edit"):
+                        yield Label("[bold]Editor[/bold]")
 
-                yield Label("Path:")
-                yield Input(id="json-path-input", disabled=True)
+                        yield Label("Path:")
+                        yield Input(id="json-path-input", disabled=True)
 
-                yield Label("Value (JSON format):")
-                yield Input(id="json-value-input")
+                        yield Label("Value (JSON format):")
+                        yield Input(id="json-value-input")
 
-                with Horizontal():
-                    yield Button("Update", id="btn-json-update", variant="primary", disabled=True)
-                    yield Button("Delete", id="btn-json-delete", variant="error", disabled=True)
+                        with Horizontal():
+                            yield Button("Update", id="btn-json-update", variant="primary", disabled=True)
+                            yield Button("Delete", id="btn-json-delete", variant="error", disabled=True)
 
-                yield Label("Add Item (to Object/List):")
-                yield Input(placeholder="Key (if dict)...", id="json-add-key")
-                yield Input(placeholder="Value (JSON)...", id="json-add-value")
-                yield Button("Add", id="btn-json-add", variant="success", disabled=True)
+                        yield Label("Add Item (to Object/List):")
+                        yield Input(placeholder="Key (if dict)...", id="json-add-key")
+                        yield Input(placeholder="Value (JSON)...", id="json-add-value")
+                        yield Button("Add", id="btn-json-add", variant="success", disabled=True)
 
-                yield Label("[bold]File Actions[/bold]")
-                yield Button("Save File", id="btn-json-save", variant="warning", disabled=True)
+                        yield Label("[bold]File Actions[/bold]")
+                        yield Button("Save File", id="btn-json-save", variant="warning", disabled=True)
+
+                    with TabPane("Query", id="tab-json-query"):
+                        yield Label("[bold]Advanced Query[/bold]")
+                        yield Label("Python Expression (use 'data'):")
+                        yield Input(placeholder="[x for x in data['items'] if x['id'] > 10]", id="json-query-input")
+                        yield Button("Run Query", id="btn-json-run-query", variant="success")
+
+                        yield Label("[bold]Result[/bold]")
+                        with TabbedContent():
+                            with TabPane("Table"):
+                                yield DataTable(id="json-query-table")
+                            with TabPane("JSON"):
+                                yield RichLog(id="json-query-log", wrap=True, highlight=True, markup=True)
 
                 yield RichLog(id="json-log", wrap=True, highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        table = self.query_one("#json-query-table", DataTable)
+        table.cursor_type = "row"
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         path = event.path
@@ -77,6 +98,11 @@ class JsonLabTab(Container):
             self.current_data = None
             self.query_one("#json-tree", Tree).clear()
 
+    @on(Input.Changed, "#json-tree-filter")
+    def on_filter_changed(self, event: Input.Changed) -> None:
+        self.filter_text = event.value
+        self.build_tree()
+
     def build_tree(self) -> None:
         tree = self.query_one("#json-tree", Tree)
         tree.clear()
@@ -92,15 +118,35 @@ class JsonLabTab(Container):
         self._add_nodes(tree.root, self.current_data, [])
 
     def _add_nodes(self, parent_node: TreeNode, data: Any, current_path: List[Union[str, int]]) -> None:
+        def matches_filter(text: str) -> bool:
+            if not self.filter_text:
+                return True
+            return self.filter_text.lower() in text.lower()
+
         if isinstance(data, dict):
             for key, value in data.items():
                 path = current_path + [key]
                 is_leaf = not isinstance(value, (dict, list))
-                label = f"[bold]{key}[/bold]"
-                if is_leaf:
-                    label += f": {json.dumps(value)}"
 
-                node = parent_node.add(label, data=path, expand=False)
+                label = f"[bold]{key}[/bold]"
+                plain_text = str(key)
+
+                if is_leaf:
+                    val_str = json.dumps(value)
+                    label += f": {val_str}"
+                    plain_text += f": {val_str}"
+
+                # Filter Logic:
+                # 1. If leaf node: show only if matches filter.
+                # 2. If container node: always show (to allow traversing to matching children),
+                #    unless we implement deep search which is expensive.
+                if is_leaf and not matches_filter(plain_text):
+                    continue
+
+                # Expand containers if filtering is active to reveal matches deeper down
+                expanded = bool(self.filter_text)
+
+                node = parent_node.add(label, data=path, expand=expanded)
                 if not is_leaf:
                     self._add_nodes(node, value, path)
 
@@ -108,11 +154,20 @@ class JsonLabTab(Container):
             for i, value in enumerate(data):
                 path = current_path + [i]
                 is_leaf = not isinstance(value, (dict, list))
-                label = f"[{i}]"
-                if is_leaf:
-                    label += f": {json.dumps(value)}"
 
-                node = parent_node.add(label, data=path, expand=False)
+                label = f"[{i}]"
+                plain_text = f"[{i}]"
+
+                if is_leaf:
+                    val_str = json.dumps(value)
+                    label += f": {val_str}"
+                    plain_text += f": {val_str}"
+
+                if is_leaf and not matches_filter(plain_text):
+                    continue
+
+                expanded = bool(self.filter_text)
+                node = parent_node.add(label, data=path, expand=expanded)
                 if not is_leaf:
                     self._add_nodes(node, value, path)
 
@@ -230,6 +285,41 @@ class JsonLabTab(Container):
             self.log_message(f"[green]Saved to {self.current_file.name}[/green]")
         except Exception as e:
             self.log_message(f"[red]Save failed: {e}[/red]")
+
+    @on(Button.Pressed, "#btn-json-run-query")
+    def on_run_query(self) -> None:
+        if self.current_data is None:
+            self.notify("No JSON loaded.", severity="warning")
+            return
+
+        expr = self.query_one("#json-query-input", Input).value
+        if not expr:
+            self.notify("Query expression required.", severity="error")
+            return
+
+        log = self.query_one("#json-query-log", RichLog)
+        log.clear()
+
+        table = self.query_one("#json-query-table", DataTable)
+        table.clear(columns=True)
+
+        try:
+            result = self.manager.query(self.current_data, expr)
+
+            # Check if result is list of dicts -> populate table
+            if isinstance(result, list) and result and isinstance(result[0], dict):
+                keys = list(result[0].keys())
+                table.add_columns(*keys)
+                for item in result:
+                    # Handle missing keys or different structure partially
+                    row = [str(item.get(k, "")) for k in keys]
+                    table.add_row(*row)
+                log.write(f"Displaying {len(result)} rows in Table.")
+            else:
+                log.write(json.dumps(result, indent=2, default=str))
+
+        except Exception as e:
+            log.write(f"[bold red]Query Error:[/bold red] {e}")
 
     def refresh_ui(self) -> None:
         # Rebuild tree

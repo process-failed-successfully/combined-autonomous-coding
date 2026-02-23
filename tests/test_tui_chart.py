@@ -6,9 +6,11 @@ import tempfile
 import os
 import shutil
 
+
 class ChartTestApp(App):
     def compose(self) -> ComposeResult:
         yield ChartLabTab()
+
 
 class TestChartLabTab(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -65,10 +67,11 @@ class TestChartLabTab(unittest.IsolatedAsyncioTestCase):
                 tab.manager.plot_bar.assert_called_with(sample_data, "X", "Y")
 
     async def test_initial_state(self):
-        async with self.app.run_test(size=(120, 40)) as pilot:
+        async with self.app.run_test(size=(120, 40)):
             tab = self.app.query_one(ChartLabTab)
             self.assertEqual(tab.current_data, [])
             self.assertTrue(tab.query_one("#btn-chart-plot").disabled)
+
 
 if __name__ == "__main__":
     unittest.main()

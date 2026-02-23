@@ -147,13 +147,13 @@ from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
 from shared.tui_ansible import AnsibleLabTab
 from shared.tui_archive import ArchiveLabTab
-from shared.tui_dns import DnsLabTab
-from shared.tui_speed import SpeedLabTab
-from shared.tui_sql import SqlLabTab
+from shared.tui_ast import ASTExplorerTab
 from shared.tui_cert import CertLabTab
 from shared.tui_chart import ChartLabTab
-from shared.tui_ast import ASTExplorerTab
+from shared.tui_dns import DnsLabTab
 from shared.tui_graphql import GraphQLLabTab
+from shared.tui_speed import SpeedLabTab
+from shared.tui_sql import SqlLabTab
 from shared.tui_struct import StructLabTab
 from shared.tui_path import PathLabTab
 from shared.tui_pattern import PatternLabTab

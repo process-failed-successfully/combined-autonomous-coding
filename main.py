@@ -255,7 +255,8 @@ KNOWN_COMMANDS = [
     "typing-lab", "type",
     "sound-lab", "sound", "audio",
     "maze-lab", "maze",
-    "license-lab", "lic", "license"
+    "license-lab", "lic", "license",
+    "rfc-lab", "rfc"
 ]
 
 if FileSystemEventHandler:
@@ -301,6 +302,12 @@ def run_license_lab(args):
     from shared.license_lab import run_license_lab_logic
     success = run_license_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_rfc_lab(args):
+    """Runs the RFC Lab."""
+    from shared.rfc_lab import run_rfc_lab_logic
+    run_rfc_lab_logic(args)
+    sys.exit(0)
 
 def run_weather_lab(args):
     """Runs the Weather Lab."""
@@ -14445,6 +14452,29 @@ def parse_args(argv=None):
     parser_lic_check.add_argument("--allow", help="Comma-separated list of allowed licenses.")
     parser_lic_check.add_argument("--deny", help="Comma-separated list of denied licenses.")
 
+    # --- New 'rfc-lab' command ---
+    parser_rfc = subparsers.add_parser(
+        "rfc-lab",
+        aliases=["rfc"],
+        help="RFC Search and Viewer."
+    )
+    rfc_subparsers = parser_rfc.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # rfc search
+    parser_rfc_search = rfc_subparsers.add_parser("search", help="Search RFCs.")
+    parser_rfc_search.add_argument("query", help="Search query.")
+
+    # rfc read
+    parser_rfc_read = rfc_subparsers.add_parser("read", help="Read an RFC.")
+    parser_rfc_read.add_argument("number", help="RFC Number (e.g. 7231).")
+
+    # rfc update
+    rfc_subparsers.add_parser("update", help="Update RFC Index.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18077,6 +18107,10 @@ async def main():
 
     if args.command in ["license-lab", "lic", "license"]:
         run_license_lab(args)
+        return
+
+    if args.command in ["rfc-lab", "rfc"]:
+        run_rfc_lab(args)
         return
 
     # Initialize Agent Client

@@ -166,6 +166,7 @@ from shared.tui_browser import BrowserLabTab
 from shared.tui_maze import MazeLabTab
 from shared.tui_ascii import AsciiLabTab
 from shared.tui_license import LicenseLabTab
+from shared.tui_rfc import RFCLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4239,6 +4240,8 @@ class AgentTUI(App):
                 yield AsciiLabTab(self.project_dir)
             with TabPane("License Lab", id="tab-license"):
                 yield LicenseLabTab(self.project_dir)
+            with TabPane("RFC Lab", id="tab-rfc"):
+                yield RFCLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

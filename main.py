@@ -10237,7 +10237,7 @@ def parse_args(argv=None):
     )
     parser_regex.add_argument(
         "action",
-        choices=["match", "explain", "generate"],
+        choices=["match", "explain", "generate", "game"],
         help="Action to perform."
     )
     parser_regex.add_argument(
@@ -15026,6 +15026,15 @@ async def run_regex(args):
             model=args.model
         )
         sys.exit(0 if success else 1)
+
+    elif args.action == "game":
+        from shared.regex_lab import run_regex_game_cli
+        await run_regex_game_cli(
+            project_dir=project_dir,
+            agent_type=args.agent,
+            model=args.model
+        )
+        sys.exit(0)
 
     sys.exit(0)
 

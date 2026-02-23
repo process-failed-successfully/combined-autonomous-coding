@@ -250,7 +250,8 @@ KNOWN_COMMANDS = [
     "http-server-lab", "httpd", "server",
     "ascii-lab", "ascii",
     "pattern-lab", "pattern", "design",
-    "weather-lab", "weather", "w"
+    "weather-lab", "weather", "w",
+    "bandwidth-lab", "bandwidth", "bw"
 ]
 
 if FileSystemEventHandler:
@@ -264,6 +265,12 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_bandwidth_lab(args):
+    """Runs the Bandwidth Lab."""
+    from shared.bandwidth_lab import run_bandwidth_lab_logic
+    run_bandwidth_lab_logic(args)
+    sys.exit(0)
 
 def run_weather_lab(args):
     """Runs the Weather Lab."""
@@ -14318,6 +14325,26 @@ def parse_args(argv=None):
     parser_http_upload.add_argument("--dir", default="uploads", help="Upload directory.")
     parser_http_upload.add_argument("--port", type=int, default=8081, help="Port to listen on.")
 
+    # --- New 'bandwidth-lab' command ---
+    parser_bw = subparsers.add_parser(
+        "bandwidth-lab",
+        aliases=["bandwidth", "bw"],
+        help="Bandwidth Monitor (List, Monitor)."
+    )
+    bw_subparsers = parser_bw.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # bw list
+    bw_subparsers.add_parser("list", help="List network interfaces and total usage.")
+
+    # bw monitor
+    parser_bw_mon = bw_subparsers.add_parser("monitor", help="Monitor bandwidth usage in real-time.")
+    parser_bw_mon.add_argument("--interface", "-i", help="Comma-separated list of interfaces to monitor.")
+    parser_bw_mon.add_argument("--interval", type=float, default=1.0, help="Update interval in seconds.")
+
 
     # --- Plugin Registration ---
     try:
@@ -17926,6 +17953,10 @@ async def main():
 
     if args.command in ["pattern-lab", "pattern", "design"]:
         run_pattern_lab(args)
+        return
+
+    if args.command in ["bandwidth-lab", "bandwidth", "bw"]:
+        run_bandwidth_lab(args)
         return
 
     # Initialize Agent Client

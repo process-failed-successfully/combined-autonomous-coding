@@ -161,6 +161,7 @@ from shared.tui_pattern import PatternLabTab
 from shared.tui_weather import WeatherLabTab
 from shared.tui_bandwidth import BandwidthLabTab
 from shared.tui_typing import TypingLabTab
+from shared.tui_maze import MazeLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4222,6 +4223,8 @@ class AgentTUI(App):
                 yield BandwidthLabTab()
             with TabPane("Typing Lab", id="tab-typing"):
                 yield TypingLabTab(self.project_dir)
+            with TabPane("Maze Lab", id="tab-maze"):
+                yield MazeLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

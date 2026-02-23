@@ -194,7 +194,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "math-lab", "math", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
@@ -270,6 +270,12 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_calc_lab(args):
+    """Runs the Calc Lab (Programmer's Calculator)."""
+    from shared.calc_lab import run_calc_lab_logic
+    run_calc_lab_logic(args)
+    sys.exit(0)
 
 def run_bandwidth_lab(args):
     """Runs the Bandwidth Lab."""
@@ -11668,6 +11674,14 @@ def parse_args(argv=None):
     parser_math_prime.add_argument("subaction", choices=["check", "next", "factors"], help="Operation: check, next, factors.")
     parser_math_prime.add_argument("number", help="The integer to process.")
 
+    # --- New 'calc-lab' command ---
+    parser_calc = subparsers.add_parser(
+        "calc-lab",
+        aliases=["calc"],
+        help="Programmer's Calculator."
+    )
+    parser_calc.add_argument("expression", nargs="*", help="Mathematical expression to evaluate (or start REPL).")
+
     # --- New 'unit-lab' command ---
     parser_unit = subparsers.add_parser(
         "unit-lab",
@@ -17995,6 +18009,10 @@ async def main():
 
     if args.command in ["math-lab", "math"]:
         run_math_lab(args)
+        return
+
+    if args.command in ["calc-lab", "calc"]:
+        run_calc_lab(args)
         return
 
     if args.command in ["unit-lab", "unit"]:

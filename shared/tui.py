@@ -154,6 +154,7 @@ from shared.tui_cert import CertLabTab
 from shared.tui_chart import ChartLabTab
 from shared.tui_ast import ASTExplorerTab
 from shared.tui_graphql import GraphQLLabTab
+from shared.tui_grpc import GrpcLabTab
 from shared.tui_struct import StructLabTab
 from shared.tui_path import PathLabTab
 from shared.tui_pattern import PatternLabTab
@@ -4102,6 +4103,8 @@ class AgentTUI(App):
                 yield ApiLabTab(self.project_dir)
             with TabPane("GraphQL Lab", id="tab-graphql"):
                 yield GraphQLLabTab()
+            with TabPane("gRPC Lab", id="tab-grpc"):
+                yield GrpcLabTab()
             with TabPane("URL Lab", id="tab-url-lab"):
                 yield UrlLabTab()
             with TabPane("User Agent Lab", id="tab-user-agent"):

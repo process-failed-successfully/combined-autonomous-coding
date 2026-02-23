@@ -161,6 +161,7 @@ from shared.tui_pattern import PatternLabTab
 from shared.tui_weather import WeatherLabTab
 from shared.tui_bandwidth import BandwidthLabTab
 from shared.tui_typing import TypingLabTab
+from shared.tui_browser import BrowserLabTab
 from shared.tui_maze import MazeLabTab
 from shared.plugin_manager import PluginManager
 
@@ -3866,6 +3867,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
         PaletteCommand("Go to Focus", "switch_tab_focus"),
         PaletteCommand("Go to Typing Lab", "switch_tab_typing"),
+        PaletteCommand("Go to Browser Lab", "switch_tab_browser"),
         PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
         PaletteCommand("Go to Sniffer", "switch_tab_sniffer"),
@@ -4223,6 +4225,8 @@ class AgentTUI(App):
                 yield BandwidthLabTab()
             with TabPane("Typing Lab", id="tab-typing"):
                 yield TypingLabTab(self.project_dir)
+            with TabPane("Browser Lab", id="tab-browser"):
+                yield BrowserLabTab(self.project_dir)
             with TabPane("Maze Lab", id="tab-maze"):
                 yield MazeLabTab()
 

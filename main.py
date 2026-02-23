@@ -253,7 +253,8 @@ KNOWN_COMMANDS = [
     "weather-lab", "weather", "w",
     "bandwidth-lab", "bandwidth", "bw",
     "typing-lab", "type",
-    "sound-lab", "sound", "audio"
+    "sound-lab", "sound", "audio",
+    "maze-lab", "maze"
 ]
 
 if FileSystemEventHandler:
@@ -286,6 +287,12 @@ def run_sound_lab(args):
     """Runs the Sound Lab."""
     from shared.sound_lab import run_sound_lab_logic
     run_sound_lab_logic(args)
+    sys.exit(0)
+
+def run_maze_lab(args):
+    """Runs the Maze Lab."""
+    from shared.maze_lab import run_maze_lab_logic
+    run_maze_lab_logic(args)
     sys.exit(0)
 
 def run_weather_lab(args):
@@ -14405,6 +14412,25 @@ def parse_args(argv=None):
     parser_sound_morse.add_argument("--freq", type=float, default=600.0, help="Tone frequency.")
     parser_sound_morse.add_argument("--output", default="morse.wav", help="Output file path.")
 
+    # --- New 'maze-lab' command ---
+    parser_maze = subparsers.add_parser(
+        "maze-lab",
+        aliases=["maze"],
+        help="Maze Generator and Solver."
+    )
+    maze_subparsers = parser_maze.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # maze generate
+    parser_maze_gen = maze_subparsers.add_parser("generate", help="Generate a maze.")
+    parser_maze_gen.add_argument("--width", type=int, default=21, help="Width (odd number).")
+    parser_maze_gen.add_argument("--height", type=int, default=21, help="Height (odd number).")
+    parser_maze_gen.add_argument("--algo", default="dfs", choices=["dfs", "prim"], help="Generation algorithm.")
+    parser_maze_gen.add_argument("--solve", action="store_true", help="Solve the generated maze immediately.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18024,6 +18050,10 @@ async def main():
 
     if args.command in ["sound-lab", "sound", "audio"]:
         run_sound_lab(args)
+        return
+
+    if args.command in ["maze-lab", "maze"]:
+        run_maze_lab(args)
         return
 
     # Initialize Agent Client

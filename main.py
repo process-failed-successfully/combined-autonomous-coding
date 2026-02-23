@@ -254,7 +254,8 @@ KNOWN_COMMANDS = [
     "bandwidth-lab", "bandwidth", "bw",
     "typing-lab", "type",
     "sound-lab", "sound", "audio",
-    "maze-lab", "maze"
+    "maze-lab", "maze",
+    "license-lab", "lic", "license"
 ]
 
 if FileSystemEventHandler:
@@ -294,6 +295,12 @@ def run_maze_lab(args):
     from shared.maze_lab import run_maze_lab_logic
     run_maze_lab_logic(args)
     sys.exit(0)
+
+def run_license_lab(args):
+    """Runs the License Lab."""
+    from shared.license_lab import run_license_lab_logic
+    success = run_license_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_weather_lab(args):
     """Runs the Weather Lab."""
@@ -9466,32 +9473,7 @@ def parse_args(argv=None):
         help="Output format (default: text)."
     )
 
-    # --- New 'license' command ---
-    parser_license = subparsers.add_parser(
-        "license",
-        help="Check dependency license compliance."
-    )
-    parser_license.add_argument(
-        "action",
-        choices=["check", "list"],
-        help="Action to perform."
-    )
-    parser_license.add_argument(
-        "--allow",
-        type=str,
-        help="Comma-separated list of allowed licenses (e.g., 'MIT,Apache-2.0')."
-    )
-    parser_license.add_argument(
-        "--deny",
-        type=str,
-        help="Comma-separated list of denied licenses (e.g., 'GPL-3.0')."
-    )
-    parser_license.add_argument(
-        "-p", "--project-dir",
-        type=Path,
-        default=Path("."),
-        help="The project directory.",
-    )
+    # --- New 'license' command (replaced by license-lab) ---
 
     # --- New 'bisect' command ---
     parser_bisect = subparsers.add_parser(
@@ -14431,6 +14413,38 @@ def parse_args(argv=None):
     parser_maze_gen.add_argument("--algo", default="dfs", choices=["dfs", "prim"], help="Generation algorithm.")
     parser_maze_gen.add_argument("--solve", action="store_true", help="Solve the generated maze immediately.")
 
+    # --- New 'license-lab' command ---
+    parser_lic = subparsers.add_parser(
+        "license-lab",
+        aliases=["lic", "license"],
+        help="License Management (Generate, Check, Explain)."
+    )
+    lic_subparsers = parser_lic.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # lic list
+    lic_subparsers.add_parser("list", help="List available license templates.")
+
+    # lic explain
+    parser_lic_explain = lic_subparsers.add_parser("explain", help="Explain a license.")
+    parser_lic_explain.add_argument("type", help="License type (e.g. mit, apache-2.0).")
+
+    # lic generate
+    parser_lic_gen = lic_subparsers.add_parser("generate", help="Generate a LICENSE file.")
+    parser_lic_gen.add_argument("--type", "-t", required=True, help="License type.")
+    parser_lic_gen.add_argument("--holder", required=True, help="Copyright holder name.")
+    parser_lic_gen.add_argument("--year", help="Year (default: current).")
+    parser_lic_gen.add_argument("--output", "-o", help="Output path (default: LICENSE).")
+    parser_lic_gen.add_argument("--force", "-f", action="store_true", help="Overwrite existing file.")
+
+    # lic check (dependency check)
+    parser_lic_check = lic_subparsers.add_parser("check", help="Check dependency licenses.")
+    parser_lic_check.add_argument("--allow", help="Comma-separated list of allowed licenses.")
+    parser_lic_check.add_argument("--deny", help="Comma-separated list of denied licenses.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -17491,10 +17505,6 @@ async def main():
         run_a11y(args)
         return
 
-    if args.command == "license":
-        run_license(args)
-        return
-
     if args.command == "bisect":
         await run_bisect(args)
         return
@@ -18054,6 +18064,10 @@ async def main():
 
     if args.command in ["maze-lab", "maze"]:
         run_maze_lab(args)
+        return
+
+    if args.command in ["license-lab", "lic", "license"]:
+        run_license_lab(args)
         return
 
     # Initialize Agent Client

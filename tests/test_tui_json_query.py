@@ -30,7 +30,7 @@ class TestTuiJsonQuery(unittest.IsolatedAsyncioTestCase):
             app.tab.build_tree()
 
             # Switch to Query tab
-            tabbed_content = app.tab.query_one("TabbedContent")
+            tabbed_content = app.tab.query_one("#json-mode-tabs")
             tabbed_content.active = "tab-json-query"
 
             # Wait for tab switch

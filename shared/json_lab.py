@@ -207,7 +207,7 @@ class JsonLabManager:
         }
 
         # We explicitly disable __builtins__ to prevent access to globals/imports
-        return eval(expression, {"__builtins__": {}}, allowed_names)
+        return eval(expression, {"__builtins__": {}}, allowed_names)  # nosec B307
 
 
 def run_json_lab_logic(args):

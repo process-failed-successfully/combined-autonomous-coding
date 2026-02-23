@@ -37,7 +37,7 @@ class JsonLabTab(Container):
 
             # Right: Editor & Query
             with Vertical(id="json-editor-pane", classes="stat-box"):
-                with TabbedContent():
+                with TabbedContent(id="json-mode-tabs"):
                     with TabPane("Edit", id="tab-json-edit"):
                         yield Label("[bold]Editor[/bold]")
 

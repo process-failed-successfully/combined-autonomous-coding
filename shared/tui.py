@@ -160,6 +160,7 @@ from shared.tui_path import PathLabTab
 from shared.tui_pattern import PatternLabTab
 from shared.tui_weather import WeatherLabTab
 from shared.tui_bandwidth import BandwidthLabTab
+from shared.tui_typing import TypingLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3863,6 +3864,7 @@ class AgentTUI(App):
     PALETTE_COMMANDS = [
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
         PaletteCommand("Go to Focus", "switch_tab_focus"),
+        PaletteCommand("Go to Typing Lab", "switch_tab_typing"),
         PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
         PaletteCommand("Go to Sniffer", "switch_tab_sniffer"),
@@ -3893,9 +3895,10 @@ class AgentTUI(App):
         PaletteCommand("Quit", "quit"),
     ]
 
-    def __init__(self, project_dir: Path, **kwargs) -> None:
+    def __init__(self, project_dir: Path, start_tab: str = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.start_tab = start_tab
         self.plugin_manager = PluginManager(project_dir)
         self.plugin_manager.load_plugins()
 
@@ -3950,7 +3953,7 @@ class AgentTUI(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with TabbedContent(id="main-tabs"):
+        with TabbedContent(id="main-tabs", initial=self.start_tab):
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
             with TabPane("Focus", id="tab-focus"):
@@ -4217,6 +4220,8 @@ class AgentTUI(App):
                 yield GitignoreTab(self.project_dir)
             with TabPane("Bandwidth Lab", id="tab-bandwidth-lab"):
                 yield BandwidthLabTab()
+            with TabPane("Typing Lab", id="tab-typing"):
+                yield TypingLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.exc import SQLAlchemyError
 from rich.console import Console
 from rich.table import Table
+from shared.sql_game import run_sql_game_cli
 
 class SqlLabManager:
     """
@@ -152,10 +153,18 @@ def detect_connection_string(project_dir: Path) -> str:
     # Default fallback
     return f"sqlite:///{project_dir}/agent_lab.db"
 
-def run_sql_lab_logic(args):
+async def run_sql_lab_logic(args):
     """
     CLI entry point for SQL Lab.
     """
+    if args.action == "game":
+        await run_sql_game_cli(
+            project_dir=args.project_dir,
+            agent_type=args.agent if hasattr(args, 'agent') else "gemini",
+            model=args.model if hasattr(args, 'model') else None
+        )
+        sys.exit(0)
+
     # Determine connection string
     conn_str = args.url
     if not conn_str:

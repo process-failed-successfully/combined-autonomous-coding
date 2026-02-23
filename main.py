@@ -854,9 +854,9 @@ def run_log_lab(args):
     run_log_lab_logic(args)
     sys.exit(0)
 
-def run_sql_lab(args):
+async def run_sql_lab(args):
     """Runs the SQL Lab."""
-    run_sql_lab_logic(args)
+    await run_sql_lab_logic(args)
     sys.exit(0)
 
 def run_csv_lab(args):
@@ -11835,6 +11835,9 @@ def parse_args(argv=None):
     parser_sql_export.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format.")
     parser_sql_export.add_argument("--output", "-o", required=True, help="Output file path.")
 
+    # sql-lab game
+    parser_sql_game = sql_subparsers.add_parser("game", help="Play the SQL Learning Game.")
+
     # --- New 'csv-lab' command ---
     parser_csv = subparsers.add_parser(
         "csv-lab",
@@ -18032,7 +18035,7 @@ async def main():
         return
 
     if args.command in ["sql-lab", "sql"]:
-        run_sql_lab(args)
+        await run_sql_lab(args)
         return
 
     if args.command in ["json-lab", "json"]:

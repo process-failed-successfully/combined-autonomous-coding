@@ -163,6 +163,7 @@ from shared.tui_bandwidth import BandwidthLabTab
 from shared.tui_typing import TypingLabTab
 from shared.tui_browser import BrowserLabTab
 from shared.tui_maze import MazeLabTab
+from shared.tui_ascii import AsciiLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4229,6 +4230,8 @@ class AgentTUI(App):
                 yield BrowserLabTab(self.project_dir)
             with TabPane("Maze Lab", id="tab-maze"):
                 yield MazeLabTab()
+            with TabPane("Ascii Lab", id="tab-ascii"):
+                yield AsciiLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

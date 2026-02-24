@@ -227,4 +227,53 @@ def run_text_lab_logic(args):
             return False
         print(manager.diff(args.text1, args.text2))
 
+    elif args.action == "sort-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.sort_lines(text_input, reverse=args.reverse))
+
+    elif args.action == "unique-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.unique_lines(text_input))
+
+    elif args.action == "reverse-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.reverse_lines(text_input))
+
+    elif args.action == "shuffle-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.shuffle_lines(text_input))
+
+    elif args.action == "number-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.number_lines(text_input))
+
+    elif args.action == "trim-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.trim_lines(text_input))
+
+    elif args.action == "filter-lines":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        print(manager.filter_lines(text_input, args.pattern, exclude=args.exclude))
+
     return True

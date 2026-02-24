@@ -268,7 +268,8 @@ KNOWN_COMMANDS = [
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
-    "host-lab", "hosts", "host"
+    "host-lab", "hosts", "host",
+    "clipboard-lab", "clip", "cp", "copy"
 ]
 
 if FileSystemEventHandler:
@@ -314,6 +315,12 @@ def run_host_lab(args):
     """Runs the Host Lab."""
     from shared.host_lab import run_host_lab_logic
     run_host_lab_logic(args)
+    sys.exit(0)
+
+def run_clipboard_lab(args):
+    """Runs the Clipboard Lab."""
+    from shared.clipboard_lab import run_clipboard_lab_logic
+    run_clipboard_lab_logic(args)
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -14786,6 +14793,16 @@ def parse_args(argv=None):
     parser_host.add_argument("--comment", help="Comment (for add).")
     parser_host.add_argument("--file", help="Path to hosts file (default: /etc/hosts).")
 
+    # --- New 'clipboard-lab' command ---
+    parser_clipboard = subparsers.add_parser(
+        "clipboard-lab",
+        aliases=["clip", "cp", "copy"],
+        help="Clipboard Manager."
+    )
+    parser_clipboard.add_argument("action", choices=["add", "list", "get", "clear", "tui"], default="list", nargs="?", help="Action to perform.")
+    parser_clipboard.add_argument("content", nargs="?", help="Content to add (for add action).")
+    parser_clipboard.add_argument("--index", "-i", type=int, default=0, help="Index to get (default: 0).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18501,6 +18518,10 @@ async def main():
 
     if args.command in ["host-lab", "hosts", "host"]:
         run_host_lab(args)
+        return
+
+    if args.command in ["clipboard-lab", "clip", "cp", "copy"]:
+        run_clipboard_lab(args)
         return
 
     # Initialize Agent Client

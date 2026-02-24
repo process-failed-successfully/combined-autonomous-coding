@@ -172,6 +172,7 @@ from shared.tui_sound import SoundLabTab
 from shared.tui_diagram import DiagramLabTab
 from shared.tui_find import FindLabTab
 from shared.tui_html import HtmlLabTab
+from shared.tui_clipboard import ClipboardTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3901,6 +3902,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Struct Lab", "switch_tab_struct"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
         PaletteCommand("Go to License Lab", "switch_tab_license"),
+        PaletteCommand("Go to Clipboard Lab", "switch_tab_clipboard"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4257,6 +4259,8 @@ class AgentTUI(App):
                 yield DiagramLabTab(self.project_dir)
             with TabPane("HTML Lab", id="tab-html"):
                 yield HtmlLabTab(self.project_dir)
+            with TabPane("Clipboard Lab", id="tab-clipboard"):
+                yield ClipboardTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

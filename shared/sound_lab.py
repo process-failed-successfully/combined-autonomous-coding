@@ -35,8 +35,8 @@ class SoundLabManager:
             data = struct.pack('<' + 'h' * len(int_samples), *int_samples)
             wav_file.writeframes(data)
 
-    def generate_tone(self, frequency: float, duration: float, waveform: str = "sine", output_path: str = "tone.wav", sample_rate: int = 44100, amplitude: float = 0.5):
-        """Generates a tone."""
+    def get_tone_samples(self, frequency: float, duration: float, waveform: str = "sine", sample_rate: int = 44100, amplitude: float = 0.5) -> List[float]:
+        """Generates samples for a tone."""
         num_samples = int(duration * sample_rate)
         samples = []
 
@@ -56,13 +56,17 @@ class SoundLabManager:
                 value = 2.0 * abs(2.0 * (t * frequency - math.floor(t * frequency + 0.5))) - 1.0
 
             samples.append(value * amplitude)
+        return samples
 
+    def generate_tone(self, frequency: float, duration: float, waveform: str = "sine", output_path: str = "tone.wav", sample_rate: int = 44100, amplitude: float = 0.5):
+        """Generates a tone and saves to file."""
+        samples = self.get_tone_samples(frequency, duration, waveform, sample_rate, amplitude)
         out = Path(output_path)
         self._write_wav(out, samples, sample_rate)
         return out
 
-    def generate_noise(self, noise_type: str = "white", duration: float = 1.0, output_path: str = "noise.wav", sample_rate: int = 44100, amplitude: float = 0.5):
-        """Generates noise."""
+    def get_noise_samples(self, noise_type: str = "white", duration: float = 1.0, sample_rate: int = 44100, amplitude: float = 0.5) -> List[float]:
+        """Generates samples for noise."""
         num_samples = int(duration * sample_rate)
         samples = []
 
@@ -75,13 +79,17 @@ class SoundLabManager:
             for _ in range(num_samples):
                 value = random.uniform(-1.0, 1.0)
                 samples.append(value * amplitude)
+        return samples
 
+    def generate_noise(self, noise_type: str = "white", duration: float = 1.0, output_path: str = "noise.wav", sample_rate: int = 44100, amplitude: float = 0.5):
+        """Generates noise and saves to file."""
+        samples = self.get_noise_samples(noise_type, duration, sample_rate, amplitude)
         out = Path(output_path)
         self._write_wav(out, samples, sample_rate)
         return out
 
-    def generate_dtmf(self, sequence: str, output_path: str = "dtmf.wav", tone_duration: float = 0.2, space_duration: float = 0.1, sample_rate: int = 44100, amplitude: float = 0.5):
-        """Generates DTMF tones for a sequence of characters."""
+    def get_dtmf_samples(self, sequence: str, tone_duration: float = 0.2, space_duration: float = 0.1, sample_rate: int = 44100, amplitude: float = 0.5) -> List[float]:
+        """Generates samples for DTMF tones."""
         dtmf_freqs = {
             '1': (697, 1209), '2': (697, 1336), '3': (697, 1477), 'A': (697, 1633),
             '4': (770, 1209), '5': (770, 1336), '6': (770, 1477), 'B': (770, 1633),
@@ -114,13 +122,17 @@ class SoundLabManager:
             else:
                 # Ignore unknown chars or treat as pause
                 pass
+        return samples
 
+    def generate_dtmf(self, sequence: str, output_path: str = "dtmf.wav", tone_duration: float = 0.2, space_duration: float = 0.1, sample_rate: int = 44100, amplitude: float = 0.5):
+        """Generates DTMF tones and saves to file."""
+        samples = self.get_dtmf_samples(sequence, tone_duration, space_duration, sample_rate, amplitude)
         out = Path(output_path)
         self._write_wav(out, samples, sample_rate)
         return out
 
-    def generate_morse(self, text: str, output_path: str = "morse.wav", wpm: int = 20, frequency: float = 600.0, sample_rate: int = 44100, amplitude: float = 0.5):
-        """Generates Morse code audio."""
+    def get_morse_samples(self, text: str, wpm: int = 20, frequency: float = 600.0, sample_rate: int = 44100, amplitude: float = 0.5) -> List[float]:
+        """Generates samples for Morse code."""
         # Standard timing:
         # Dot = 1 unit
         # Dash = 3 units
@@ -192,7 +204,11 @@ class SoundLabManager:
             # Space between words
             if i < len(words) - 1:
                 add_silence(7)
+        return samples
 
+    def generate_morse(self, text: str, output_path: str = "morse.wav", wpm: int = 20, frequency: float = 600.0, sample_rate: int = 44100, amplitude: float = 0.5):
+        """Generates Morse code and saves to file."""
+        samples = self.get_morse_samples(text, wpm, frequency, sample_rate, amplitude)
         out = Path(output_path)
         self._write_wav(out, samples, sample_rate)
         return out

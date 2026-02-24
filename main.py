@@ -302,6 +302,13 @@ def run_typing_lab(args):
 
 def run_sound_lab(args):
     """Runs the Sound Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Sound Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-sound")
+        app.run()
+        sys.exit(0)
+
     from shared.sound_lab import run_sound_lab_logic
     run_sound_lab_logic(args)
     sys.exit(0)
@@ -14426,6 +14433,9 @@ def parse_args(argv=None):
     parser_sound_morse.add_argument("--wpm", type=int, default=20, help="Words per minute.")
     parser_sound_morse.add_argument("--freq", type=float, default=600.0, help="Tone frequency.")
     parser_sound_morse.add_argument("--output", default="morse.wav", help="Output file path.")
+
+    # sound tui
+    sound_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
     # --- New 'maze-lab' command ---
     parser_maze = subparsers.add_parser(

@@ -168,6 +168,7 @@ from shared.tui_ascii import AsciiLabTab
 from shared.tui_license import LicenseLabTab
 from shared.tui_rfc import RFCLabTab
 from shared.tui_rename import RenameLabTab
+from shared.tui_sound import SoundLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4243,6 +4244,8 @@ class AgentTUI(App):
                 yield LicenseLabTab(self.project_dir)
             with TabPane("RFC Lab", id="tab-rfc"):
                 yield RFCLabTab(self.project_dir)
+            with TabPane("Sound Lab", id="tab-sound"):
+                yield SoundLabTab(self.project_dir)
             with TabPane("Rename Lab", id="tab-rename"):
                 yield RenameLabTab(self.project_dir)
 

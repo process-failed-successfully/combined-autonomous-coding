@@ -954,6 +954,13 @@ def run_template_lab(args):
 
 def run_json_lab(args):
     """Runs the JSON Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching JSON Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-json")
+        app.run()
+        sys.exit(0)
+
     run_json_lab_logic(args)
     sys.exit(0)
 
@@ -12081,13 +12088,21 @@ def parse_args(argv=None):
     parser_json = subparsers.add_parser(
         "json-lab",
         aliases=["json"],
-        help="JSON utilities (get, set, del, minify, diff)."
+        help="JSON utilities (get, set, del, minify, diff, query, tui)."
     )
     json_subparsers = parser_json.add_subparsers(
         dest="action",
         required=True,
         help="Action to perform."
     )
+
+    # json-lab tui
+    json_subparsers.add_parser("tui", help="Launch JSON Lab TUI.")
+
+    # json-lab query
+    parser_json_query = json_subparsers.add_parser("query", help="Query JSON with Python expression.")
+    parser_json_query.add_argument("input", help="JSON string or file path.")
+    parser_json_query.add_argument("path", help="Python expression (e.g. data['items'][0]).")
 
     # json-lab get
     parser_json_get = json_subparsers.add_parser("get", help="Get value from JSON.")

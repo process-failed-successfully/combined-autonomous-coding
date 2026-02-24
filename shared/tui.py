@@ -172,6 +172,7 @@ from shared.tui_sound import SoundLabTab
 from shared.tui_diagram import DiagramLabTab
 from shared.tui_find import FindLabTab
 from shared.tui_html import HtmlLabTab
+from shared.tui_pipeline import PipelineLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4123,6 +4124,8 @@ class AgentTUI(App):
                 yield EnvTab(self.project_dir)
             with TabPane("API Lab", id="tab-api-lab"):
                 yield ApiLabTab(self.project_dir)
+            with TabPane("Pipeline Lab", id="tab-pipeline"):
+                yield PipelineLabTab()
             with TabPane("GraphQL Lab", id="tab-graphql"):
                 yield GraphQLLabTab()
             with TabPane("gRPC Lab", id="tab-grpc"):

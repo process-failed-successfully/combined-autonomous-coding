@@ -208,11 +208,15 @@ class PipelineLabManager:
         # This is a mini-pipeline for each item
         return [self.process(item, [op]) for item in data]
 
-    def _grep(self, data: List[str], pattern: str) -> List[str]:
+    def _grep(self, data: Union[List[str], str], pattern: str) -> List[str]:
+        if isinstance(data, str):
+            data = data.splitlines()
         regex = re.compile(pattern)
         return [item for item in data if regex.search(str(item))]
 
-    def _exclude(self, data: List[str], pattern: str) -> List[str]:
+    def _exclude(self, data: Union[List[str], str], pattern: str) -> List[str]:
+        if isinstance(data, str):
+            data = data.splitlines()
         regex = re.compile(pattern)
         return [item for item in data if not regex.search(str(item))]
 

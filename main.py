@@ -331,6 +331,13 @@ def run_diagram_lab(args):
 
 def run_pipeline_lab(args):
     """Runs the Pipeline Lab."""
+    if args.input == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Pipeline Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pipeline")
+        app.run()
+        sys.exit(0)
+
     from shared.pipeline_lab import run_pipeline_lab_logic
     run_pipeline_lab_logic(args)
     sys.exit(0)

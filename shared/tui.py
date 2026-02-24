@@ -167,6 +167,7 @@ from shared.tui_maze import MazeLabTab
 from shared.tui_ascii import AsciiLabTab
 from shared.tui_license import LicenseLabTab
 from shared.tui_rfc import RFCLabTab
+from shared.tui_rename import RenameLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4242,6 +4243,8 @@ class AgentTUI(App):
                 yield LicenseLabTab(self.project_dir)
             with TabPane("RFC Lab", id="tab-rfc"):
                 yield RFCLabTab(self.project_dir)
+            with TabPane("Rename Lab", id="tab-rename"):
+                yield RenameLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

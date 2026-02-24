@@ -158,6 +158,7 @@ from shared.http_server_lab import run_http_server_lab_logic
 from shared.productivity_lab import run_productivity_lab_logic
 from shared.rename_lab import run_rename_lab_logic
 from shared.dict_lab import run_dict_lab_logic
+from shared.emoji_lab import run_emoji_lab_logic
 import json
 import yaml
 import platformdirs
@@ -265,7 +266,8 @@ KNOWN_COMMANDS = [
     "diagram-lab", "diagram", "draw",
     "pipe-lab", "pipe", "stream",
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
-    "find-lab", "find", "locate"
+    "find-lab", "find", "locate",
+    "emoji-lab", "emoji", "emoj"
 ]
 
 if FileSystemEventHandler:
@@ -300,6 +302,11 @@ def run_find_lab(args):
 def run_dict_lab(args):
     """Runs the Dictionary Lab."""
     run_dict_lab_logic(args)
+    sys.exit(0)
+
+def run_emoji_lab(args):
+    """Runs the Emoji Lab."""
+    run_emoji_lab_logic(args)
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -14721,6 +14728,16 @@ def parse_args(argv=None):
     parser_dict.add_argument("word", help="Word to lookup.")
     parser_dict.add_argument("action", nargs="?", choices=["define", "synonym", "antonym"], default="define", help="Action to perform (default: define).")
 
+    # --- New 'emoji-lab' command ---
+    parser_emoji = subparsers.add_parser(
+        "emoji-lab",
+        aliases=["emoji", "emoj"],
+        help="Emoji Search and Discovery Tool."
+    )
+    parser_emoji.add_argument("action", choices=["search", "list", "random"], help="Action to perform.")
+    parser_emoji.add_argument("query", nargs="?", help="Search query (for 'search').")
+    parser_emoji.add_argument("--limit", "-l", type=int, default=50, help="Limit results (for 'list').")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18405,6 +18422,10 @@ async def main():
                  args.action = "define"
 
         run_dict_lab(args)
+        return
+
+    if args.command in ["emoji-lab", "emoji", "emoj"]:
+        run_emoji_lab(args)
         return
 
     # Initialize Agent Client

@@ -10328,12 +10328,16 @@ def parse_args(argv=None):
     )
     parser_regex.add_argument(
         "action",
-        choices=["match", "explain", "generate", "game"],
+        choices=["match", "explain", "generate", "game", "replace"],
         help="Action to perform."
     )
     parser_regex.add_argument(
         "--pattern",
         help="The regex pattern."
+    )
+    parser_regex.add_argument(
+        "--replacement",
+        help="The replacement string (for 'replace' action)."
     )
     parser_regex.add_argument(
         "--text",
@@ -15293,6 +15297,12 @@ async def run_regex(args):
     project_dir = args.project_dir.resolve()
     manager = RegexLabManager()
 
+    flags = 0
+    if args.flags:
+        if 'i' in args.flags: flags |= re.IGNORECASE
+        if 'm' in args.flags: flags |= re.MULTILINE
+        if 's' in args.flags: flags |= re.DOTALL
+
     if args.action == "match":
         if not args.pattern:
             print("Error: --pattern is required for 'match' action.", file=sys.stderr)
@@ -15300,12 +15310,6 @@ async def run_regex(args):
         if args.text is None:
              print("Error: --text is required for 'match' action.", file=sys.stderr)
              sys.exit(1)
-
-        flags = 0
-        if args.flags:
-            if 'i' in args.flags: flags |= re.IGNORECASE
-            if 'm' in args.flags: flags |= re.MULTILINE
-            if 's' in args.flags: flags |= re.DOTALL
 
         result = manager.match_regex(args.pattern, args.text, flags)
 
@@ -15317,6 +15321,29 @@ async def run_regex(args):
                      print(f"    Groups: {m['groups']}")
                 if m['group_dict']:
                      print(f"    Named Groups: {m['group_dict']}")
+        else:
+            print(f"❌ Regex Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "replace":
+        if not args.pattern:
+            print("Error: --pattern is required for 'replace' action.", file=sys.stderr)
+            sys.exit(1)
+        if args.text is None:
+             print("Error: --text is required for 'replace' action.", file=sys.stderr)
+             sys.exit(1)
+        if args.replacement is None:
+             print("Error: --replacement is required for 'replace' action.", file=sys.stderr)
+             sys.exit(1)
+
+        result = manager.replace_regex(args.pattern, args.replacement, args.text, flags)
+
+        if result["success"]:
+            print(f"✅ Replaced {result['count']} occurrences.")
+            print("\n--- Original ---")
+            print(result['original_text'])
+            print("\n--- Modified ---")
+            print(result['modified_text'])
         else:
             print(f"❌ Regex Error: {result['error']}", file=sys.stderr)
             sys.exit(1)

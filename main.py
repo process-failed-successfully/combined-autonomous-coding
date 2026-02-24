@@ -268,7 +268,8 @@ KNOWN_COMMANDS = [
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
-    "host-lab", "hosts", "host"
+    "host-lab", "hosts", "host",
+    "clipboard-lab", "clip", "cp", "copy"
 ]
 
 if FileSystemEventHandler:
@@ -298,6 +299,19 @@ def run_find_lab(args):
     """Runs the Find Lab."""
     from shared.find_lab import run_find_lab_logic
     run_find_lab_logic(args)
+    sys.exit(0)
+
+def run_clipboard_lab(args):
+    """Runs the Clipboard Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Clipboard Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-clipboard")
+        app.run()
+        sys.exit(0)
+
+    from shared.clipboard_lab import run_clipboard_lab_logic
+    run_clipboard_lab_logic(args)
     sys.exit(0)
 
 def run_dict_lab(args):
@@ -14786,6 +14800,16 @@ def parse_args(argv=None):
     parser_host.add_argument("--comment", help="Comment (for add).")
     parser_host.add_argument("--file", help="Path to hosts file (default: /etc/hosts).")
 
+    # --- New 'clipboard-lab' command ---
+    parser_clip = subparsers.add_parser(
+        "clipboard-lab",
+        aliases=["clip", "cp", "copy"],
+        help="Clipboard Manager."
+    )
+    parser_clip.add_argument("action", choices=["copy", "paste", "history", "clear", "tui"], default="tui", nargs="?", help="Action to perform.")
+    parser_clip.add_argument("--text", help="Text to copy.")
+    parser_clip.add_argument("--file", help="File to copy.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18501,6 +18525,10 @@ async def main():
 
     if args.command in ["host-lab", "hosts", "host"]:
         run_host_lab(args)
+        return
+
+    if args.command in ["clipboard-lab", "clip", "cp", "copy"]:
+        run_clipboard_lab(args)
         return
 
     # Initialize Agent Client

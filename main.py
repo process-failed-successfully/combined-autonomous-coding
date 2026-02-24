@@ -260,7 +260,8 @@ KNOWN_COMMANDS = [
     "license-lab", "lic", "license",
     "rfc-lab", "rfc",
     "productivity-lab", "prod", "focus",
-    "rename-lab", "rename"
+    "rename-lab", "rename",
+    "diagram-lab", "diagram", "draw"
 ]
 
 if FileSystemEventHandler:
@@ -284,6 +285,19 @@ def run_calc_lab(args):
 def run_rename_lab(args):
     """Runs the Rename Lab."""
     run_rename_lab_logic(args)
+    sys.exit(0)
+
+def run_diagram_lab(args):
+    """Runs the Diagram Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Diagram Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-diagram")
+        app.run()
+        sys.exit(0)
+
+    from shared.diagram_lab import run_diagram_lab_logic
+    run_diagram_lab_logic(args)
     sys.exit(0)
 
 def run_bandwidth_lab(args):
@@ -14566,6 +14580,15 @@ def parse_args(argv=None):
     parser_rename.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt.")
     parser_rename.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
 
+    # --- New 'diagram-lab' command ---
+    parser_diagram = subparsers.add_parser(
+        "diagram-lab",
+        aliases=["diagram", "draw"],
+        help="Interactive ASCII Diagram Editor."
+    )
+    # Default action is TUI for now, but we can support others later
+    parser_diagram.add_argument("action", nargs="?", choices=["tui", "demo"], default="tui", help="Action to perform.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18214,6 +18237,10 @@ async def main():
 
     if args.command in ["rename-lab", "rename"]:
         run_rename_lab(args)
+        return
+
+    if args.command in ["diagram-lab", "diagram", "draw"]:
+        run_diagram_lab(args)
         return
 
     # Initialize Agent Client

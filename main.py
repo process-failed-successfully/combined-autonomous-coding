@@ -194,7 +194,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "password-lab", "pwd-lab",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "media-lab", "media", "xml-lab", "xml",
@@ -816,6 +816,12 @@ def run_jwt_lab(args):
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_uuid_lab(args):
+    """Runs the UUID Lab."""
+    from shared.uuid_lab import run_uuid_lab_logic
+    run_uuid_lab_logic(args)
+    sys.exit(0)
 
 def run_password_lab(args):
     """Runs the Password Lab."""
@@ -11487,6 +11493,37 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+    # --- New 'uuid-lab' command ---
+    parser_uuid = subparsers.add_parser(
+        "uuid-lab",
+        aliases=["uuid"],
+        help="UUID Generator and Inspector."
+    )
+    uuid_subparsers = parser_uuid.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # uuid generate
+    parser_uuid_gen = uuid_subparsers.add_parser("generate", aliases=["gen"], help="Generate UUIDs.")
+    parser_uuid_gen.add_argument("--version", "-v", type=int, choices=[1, 3, 4, 5], default=4, help="UUID version (default: 4).")
+    parser_uuid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of UUIDs to generate.")
+    parser_uuid_gen.add_argument("--namespace", "-ns", help="Namespace for v3/v5 (DNS, URL, OID, X500, or UUID).")
+    parser_uuid_gen.add_argument("--name", "-n", help="Name for v3/v5.")
+
+    # uuid inspect
+    parser_uuid_inspect = uuid_subparsers.add_parser("inspect", aliases=["info", "decode"], help="Inspect a UUID.")
+    parser_uuid_inspect.add_argument("uuid", help="The UUID to inspect.")
+
+    # uuid validate
+    parser_uuid_validate = uuid_subparsers.add_parser("validate", aliases=["check"], help="Validate a UUID.")
+    parser_uuid_validate.add_argument("uuid", help="The UUID to validate.")
+
+    # uuid bulk
+    parser_uuid_bulk = uuid_subparsers.add_parser("bulk", help="Generate bulk v4 UUIDs.")
+    parser_uuid_bulk.add_argument("count", type=int, help="Number of UUIDs.")
+
     # --- New 'password-lab' command ---
     parser_pwd = subparsers.add_parser(
         "password-lab",
@@ -18081,6 +18118,10 @@ async def main():
 
     if args.command == "jwt-lab":
         run_jwt_lab(args)
+        return
+
+    if args.command in ["uuid-lab", "uuid"]:
+        run_uuid_lab(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

@@ -11594,6 +11594,37 @@ def parse_args(argv=None):
     parser_tl_diff.add_argument("text1", help="First text.")
     parser_tl_diff.add_argument("text2", help="Second text.")
 
+    # text-lab sort-lines
+    parser_tl_sort = text_lab_subparsers.add_parser("sort-lines", aliases=["sort"], help="Sort lines.")
+    parser_tl_sort.add_argument("--reverse", "-r", action="store_true", help="Sort in reverse order.")
+    parser_tl_sort.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab unique-lines
+    parser_tl_unique = text_lab_subparsers.add_parser("unique-lines", aliases=["unique", "uniq"], help="Remove duplicate lines.")
+    parser_tl_unique.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab reverse-lines
+    parser_tl_reverse = text_lab_subparsers.add_parser("reverse-lines", aliases=["reverse", "rev"], help="Reverse lines.")
+    parser_tl_reverse.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab shuffle-lines
+    parser_tl_shuffle = text_lab_subparsers.add_parser("shuffle-lines", aliases=["shuffle"], help="Shuffle lines.")
+    parser_tl_shuffle.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab number-lines
+    parser_tl_number = text_lab_subparsers.add_parser("number-lines", aliases=["number", "num"], help="Number lines.")
+    parser_tl_number.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab trim-lines
+    parser_tl_trim = text_lab_subparsers.add_parser("trim-lines", aliases=["trim"], help="Trim lines.")
+    parser_tl_trim.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
+    # text-lab filter-lines
+    parser_tl_filter = text_lab_subparsers.add_parser("filter-lines", aliases=["filter", "grep"], help="Filter lines by regex.")
+    parser_tl_filter.add_argument("pattern", help="Regex pattern.")
+    parser_tl_filter.add_argument("--exclude", "-v", action="store_true", help="Exclude matches.")
+    parser_tl_filter.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
     # --- New 'html-lab' command ---
     parser_html = subparsers.add_parser(
         "html-lab",

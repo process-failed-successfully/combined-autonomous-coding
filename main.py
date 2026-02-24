@@ -157,6 +157,7 @@ from shared.systemd_lab import run_systemd_lab_logic
 from shared.http_server_lab import run_http_server_lab_logic
 from shared.productivity_lab import run_productivity_lab_logic
 from shared.rename_lab import run_rename_lab_logic
+from shared.dict_lab import run_dict_lab_logic
 import json
 import yaml
 import platformdirs
@@ -262,7 +263,8 @@ KNOWN_COMMANDS = [
     "productivity-lab", "prod", "focus",
     "rename-lab", "rename",
     "diagram-lab", "diagram", "draw",
-    "pipe-lab", "pipe", "stream"
+    "pipe-lab", "pipe", "stream",
+    "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus"
 ]
 
 if FileSystemEventHandler:
@@ -286,6 +288,11 @@ def run_calc_lab(args):
 def run_rename_lab(args):
     """Runs the Rename Lab."""
     run_rename_lab_logic(args)
+    sys.exit(0)
+
+def run_dict_lab(args):
+    """Runs the Dictionary Lab."""
+    run_dict_lab_logic(args)
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -14673,6 +14680,23 @@ def parse_args(argv=None):
     parser_pipe.add_argument("input", nargs="?", help="Input string or file path (optional).")
     parser_pipe.add_argument("--do", "-d", action="append", help="Operation to perform (e.g. 'upper', 'json-parse', 'grep foo').")
 
+    # --- New 'dict-lab' command ---
+    parser_dict = subparsers.add_parser(
+        "dict-lab",
+        aliases=["dict", "define", "synonym", "antonym", "thesaurus"],
+        help="Dictionary and Thesaurus Utility."
+    )
+    # If using aliases like 'define word', the 'action' might be implicit or we need to handle it.
+    # But argparse aliases map the command name.
+    # So 'main.py define foo' -> command='define', args=['foo']
+    # We need to handle this mapping in the logic or setup arguments carefully.
+
+    # Actually, aliases in add_parser mainly work if we use that name.
+    # But we want 'define' to be the action if called as 'dict-lab define'.
+
+    parser_dict.add_argument("word", help="Word to lookup.")
+    parser_dict.add_argument("action", nargs="?", choices=["define", "synonym", "antonym"], default="define", help="Action to perform (default: define).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18333,6 +18357,26 @@ async def main():
 
     if args.command in ["pipe-lab", "pipe", "stream"]:
         run_pipeline_lab(args)
+        return
+
+    if args.command in ["dict-lab", "dict", "define", "synonym", "antonym", "thesaurus"]:
+        # If the command itself is one of the actions, we need to adjust args.
+        # e.g. "define hello" -> args.command="define", args.word="hello", args.action="define"
+        if args.command in ["define", "synonym", "antonym", "thesaurus"]:
+             # If the user typed 'define hello', argparse parsed 'define' as command and 'hello' as word.
+             # We want args.action to be 'define'.
+             # However, our parser definition for dict-lab expects "word" and "action".
+             # If we used aliases, 'define' maps to dict-lab parser.
+             # So 'main.py define hello' parses 'hello' as word, and action defaults to 'define' or consumes next arg?
+             # Let's fix action if needed.
+             if args.command == "synonym" or args.command == "thesaurus":
+                 args.action = "synonym"
+             elif args.command == "antonym":
+                 args.action = "antonym"
+             else:
+                 args.action = "define"
+
+        run_dict_lab(args)
         return
 
     # Initialize Agent Client

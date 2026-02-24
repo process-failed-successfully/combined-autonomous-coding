@@ -2,7 +2,19 @@ import sys
 import json
 import csv
 from html.parser import HTMLParser
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
+from dataclasses import dataclass, field
+
+@dataclass
+class HTMLNode:
+    tag: str
+    attrs: Dict[str, str] = field(default_factory=dict)
+    text: str = ""
+    children: List['HTMLNode'] = field(default_factory=list)
+    parent: Optional['HTMLNode'] = None
+
+    def __repr__(self):
+        return f"HTMLNode(tag={self.tag}, attrs={self.attrs}, children={len(self.children)})"
 
 class HTMLExtractor(HTMLParser):
     def __init__(self, tag: Optional[str] = None, attr: Optional[str] = None, id: Optional[str] = None, class_name: Optional[str] = None):
@@ -154,6 +166,39 @@ class HTMLValidator(HTMLParser):
                 self.errors.append(f"Unclosed tag: <{tag}>")
         return self.errors
 
+class HTMLTreeBuilder(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.root = HTMLNode(tag="root")
+        self.current = self.root
+        # Void elements that don't need closing tags
+        self.void_elements = {
+            'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+            'link', 'meta', 'param', 'source', 'track', 'wbr'
+        }
+
+    def handle_starttag(self, tag, attrs):
+        node = HTMLNode(tag=tag, attrs=dict(attrs), parent=self.current)
+        self.current.children.append(node)
+        if tag not in self.void_elements:
+            self.current = node
+
+    def handle_endtag(self, tag):
+        # Walk up the tree to find the matching tag
+        # If not found, ignore (unmatched closing tag)
+        node = self.current
+        while node.tag != "root":
+            if node.tag == tag:
+                self.current = node.parent
+                return
+            node = node.parent
+
+    def handle_data(self, data):
+        # Only append non-whitespace text or if it matters
+        # For visualization, we keep it but strip whitespace for cleaner tree usually
+        if data:
+            self.current.text += data
+
 class HTMLLabManager:
     def extract(self, html_content: str, tag: str = None, attr: str = None, id: str = None, class_name: str = None) -> List[str]:
         parser = HTMLExtractor(tag, attr, id, class_name)
@@ -174,6 +219,11 @@ class HTMLLabManager:
         parser = HTMLValidator()
         parser.feed(html_content)
         return parser.validate()
+
+    def tree(self, html_content: str) -> HTMLNode:
+        parser = HTMLTreeBuilder()
+        parser.feed(html_content)
+        return parser.root
 
 def run_html_lab_logic(args):
     manager = HTMLLabManager()

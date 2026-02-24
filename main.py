@@ -870,6 +870,13 @@ def run_markdown_lab(args):
 
 def run_html_lab(args):
     """Runs the HTML Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching HTML Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-html")
+        app.run()
+        sys.exit(0)
+
     from shared.html_lab import run_html_lab_logic
     run_html_lab_logic(args)
     sys.exit(0)
@@ -11677,6 +11684,9 @@ def parse_args(argv=None):
 
     # html-lab validate
     parser_html_validate = html_subparsers.add_parser("validate", help="Validate HTML structure.")
+
+    # html-lab tui
+    parser_html_tui = html_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
     # --- New 'url-lab' command ---
     parser_url_lab = subparsers.add_parser(

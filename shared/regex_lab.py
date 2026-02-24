@@ -57,6 +57,33 @@ class RegexLabManager:
                 "error": str(e)
             }
 
+    def replace_regex(self, pattern: str, replacement: str, text: str, flags: int = 0) -> Dict[str, Any]:
+        """
+        Replaces text matching a regex pattern.
+
+        Args:
+            pattern: The regex pattern.
+            replacement: The replacement string.
+            text: The text to search.
+            flags: Regex flags (e.g. re.IGNORECASE).
+
+        Returns:
+            Dict containing replacement results.
+        """
+        try:
+            new_text, count = re.subn(pattern, replacement, text, flags=flags)
+            return {
+                "success": True,
+                "original_text": text,
+                "modified_text": new_text,
+                "count": count
+            }
+        except re.error as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
     async def explain_regex(self, pattern: str, project_dir: Path, agent_type: str = "gemini", model: Optional[str] = None) -> bool:
         """
         Explains a regex pattern using AI.

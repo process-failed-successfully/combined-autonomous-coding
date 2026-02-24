@@ -264,7 +264,8 @@ KNOWN_COMMANDS = [
     "rename-lab", "rename",
     "diagram-lab", "diagram", "draw",
     "pipe-lab", "pipe", "stream",
-    "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus"
+    "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
+    "find-lab", "find", "locate"
 ]
 
 if FileSystemEventHandler:
@@ -288,6 +289,12 @@ def run_calc_lab(args):
 def run_rename_lab(args):
     """Runs the Rename Lab."""
     run_rename_lab_logic(args)
+    sys.exit(0)
+
+def run_find_lab(args):
+    """Runs the Find Lab."""
+    from shared.find_lab import run_find_lab_logic
+    run_find_lab_logic(args)
     sys.exit(0)
 
 def run_dict_lab(args):
@@ -14662,6 +14669,23 @@ def parse_args(argv=None):
     parser_rename.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt.")
     parser_rename.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
 
+    # --- New 'find-lab' command ---
+    parser_find = subparsers.add_parser(
+        "find-lab",
+        aliases=["find", "locate"],
+        help="Advanced File Finder (Name, Size, Time, Type)."
+    )
+    parser_find.add_argument("name", nargs="?", help="Glob pattern for filename.")
+    parser_find.add_argument("--root", help="Root directory (default: current).")
+    parser_find.add_argument("--regex", "-r", help="Regex pattern for filename/path.")
+    parser_find.add_argument("--size", "-s", help="Size filter (e.g. '>1M', '<10k').")
+    parser_find.add_argument("--time", "-t", help="Time filter (e.g. '>1d' (older), '<1h' (newer)).")
+    parser_find.add_argument("--type", choices=["f", "d", "l"], help="File type (f=file, d=dir, l=link).")
+    parser_find.add_argument("--ext", "-e", help="Extensions (comma-separated, e.g. 'py,txt').")
+    parser_find.add_argument("--delete", action="store_true", help="Delete found files (interactive unless --yes).")
+    parser_find.add_argument("--yes", "-y", action="store_true", help="Skip confirmation.")
+    parser_find.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
+
     # --- New 'diagram-lab' command ---
     parser_diagram = subparsers.add_parser(
         "diagram-lab",
@@ -18349,6 +18373,10 @@ async def main():
 
     if args.command in ["rename-lab", "rename"]:
         run_rename_lab(args)
+        return
+
+    if args.command in ["find-lab", "find", "locate"]:
+        run_find_lab(args)
         return
 
     if args.command in ["diagram-lab", "diagram", "draw"]:

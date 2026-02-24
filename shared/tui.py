@@ -170,6 +170,7 @@ from shared.tui_rfc import RFCLabTab
 from shared.tui_rename import RenameLabTab
 from shared.tui_sound import SoundLabTab
 from shared.tui_diagram import DiagramLabTab
+from shared.tui_find import FindLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4023,6 +4024,8 @@ class AgentTUI(App):
                 yield CodeReviewTab(self.project_dir)
             with TabPane("Search", id="tab-search"):
                 yield SearchTab(self.project_dir)
+            with TabPane("Find Lab", id="tab-find"):
+                yield FindLabTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):
                 yield TasksTab(self.project_dir)
             with TabPane("Gantt", id="tab-gantt"):

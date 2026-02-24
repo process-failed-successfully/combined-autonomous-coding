@@ -261,7 +261,8 @@ KNOWN_COMMANDS = [
     "rfc-lab", "rfc",
     "productivity-lab", "prod", "focus",
     "rename-lab", "rename",
-    "diagram-lab", "diagram", "draw"
+    "diagram-lab", "diagram", "draw",
+    "pipe-lab", "pipe", "stream"
 ]
 
 if FileSystemEventHandler:
@@ -298,6 +299,12 @@ def run_diagram_lab(args):
 
     from shared.diagram_lab import run_diagram_lab_logic
     run_diagram_lab_logic(args)
+    sys.exit(0)
+
+def run_pipeline_lab(args):
+    """Runs the Pipeline Lab."""
+    from shared.pipeline_lab import run_pipeline_lab_logic
+    run_pipeline_lab_logic(args)
     sys.exit(0)
 
 def run_bandwidth_lab(args):
@@ -14626,6 +14633,15 @@ def parse_args(argv=None):
     # Default action is TUI for now, but we can support others later
     parser_diagram.add_argument("action", nargs="?", choices=["tui", "demo"], default="tui", help="Action to perform.")
 
+    # --- New 'pipe-lab' command ---
+    parser_pipe = subparsers.add_parser(
+        "pipe-lab",
+        aliases=["pipe", "stream"],
+        help="Chainable Text/Data Pipeline."
+    )
+    parser_pipe.add_argument("input", nargs="?", help="Input string or file path (optional).")
+    parser_pipe.add_argument("--do", "-d", action="append", help="Operation to perform (e.g. 'upper', 'json-parse', 'grep foo').")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18282,6 +18298,10 @@ async def main():
 
     if args.command in ["diagram-lab", "diagram", "draw"]:
         run_diagram_lab(args)
+        return
+
+    if args.command in ["pipe-lab", "pipe", "stream"]:
+        run_pipeline_lab(args)
         return
 
     # Initialize Agent Client

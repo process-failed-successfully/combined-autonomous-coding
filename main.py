@@ -267,7 +267,8 @@ KNOWN_COMMANDS = [
     "pipe-lab", "pipe", "stream",
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
     "find-lab", "find", "locate",
-    "emoji-lab", "emoji", "emoj"
+    "emoji-lab", "emoji", "emoj",
+    "host-lab", "hosts", "host"
 ]
 
 if FileSystemEventHandler:
@@ -307,6 +308,12 @@ def run_dict_lab(args):
 def run_emoji_lab(args):
     """Runs the Emoji Lab."""
     run_emoji_lab_logic(args)
+    sys.exit(0)
+
+def run_host_lab(args):
+    """Runs the Host Lab."""
+    from shared.host_lab import run_host_lab_logic
+    run_host_lab_logic(args)
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -14748,6 +14755,18 @@ def parse_args(argv=None):
     parser_emoji.add_argument("query", nargs="?", help="Search query (for 'search').")
     parser_emoji.add_argument("--limit", "-l", type=int, default=50, help="Limit results (for 'list').")
 
+    # --- New 'host-lab' command ---
+    parser_host = subparsers.add_parser(
+        "host-lab",
+        aliases=["hosts", "host"],
+        help="Manage /etc/hosts entries."
+    )
+    parser_host.add_argument("action", choices=["list", "add", "remove", "toggle", "backup", "check"], default="list", nargs="?", help="Action to perform.")
+    parser_host.add_argument("--ip", help="IP address (for add).")
+    parser_host.add_argument("--host", help="Hostname (for add, remove, toggle, check).")
+    parser_host.add_argument("--comment", help="Comment (for add).")
+    parser_host.add_argument("--file", help="Path to hosts file (default: /etc/hosts).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18436,6 +18455,10 @@ async def main():
 
     if args.command in ["emoji-lab", "emoji", "emoj"]:
         run_emoji_lab(args)
+        return
+
+    if args.command in ["host-lab", "hosts", "host"]:
+        run_host_lab(args)
         return
 
     # Initialize Agent Client

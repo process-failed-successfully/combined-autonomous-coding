@@ -156,6 +156,7 @@ from shared.ast_lab import run_ast_lab_logic
 from shared.systemd_lab import run_systemd_lab_logic
 from shared.http_server_lab import run_http_server_lab_logic
 from shared.productivity_lab import run_productivity_lab_logic
+from shared.rename_lab import run_rename_lab_logic
 import json
 import yaml
 import platformdirs
@@ -258,7 +259,8 @@ KNOWN_COMMANDS = [
     "maze-lab", "maze",
     "license-lab", "lic", "license",
     "rfc-lab", "rfc",
-    "productivity-lab", "prod", "focus"
+    "productivity-lab", "prod", "focus",
+    "rename-lab", "rename"
 ]
 
 if FileSystemEventHandler:
@@ -277,6 +279,11 @@ def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
     from shared.calc_lab import run_calc_lab_logic
     run_calc_lab_logic(args)
+    sys.exit(0)
+
+def run_rename_lab(args):
+    """Runs the Rename Lab."""
+    run_rename_lab_logic(args)
     sys.exit(0)
 
 def run_bandwidth_lab(args):
@@ -14527,6 +14534,27 @@ def parse_args(argv=None):
     # prod history
     prod_subparsers.add_parser("history", help="Show session history.")
 
+    # --- New 'rename-lab' command ---
+    parser_rename = subparsers.add_parser(
+        "rename-lab",
+        aliases=["rename"],
+        help="Batch Rename Utility (Regex, Transform, Sequence)."
+    )
+    # rename pattern
+    # We make pattern optional if we use --search/--replace
+    parser_rename.add_argument("pattern", nargs="?", default="*", help="Glob pattern to find files (default: *).")
+
+    parser_rename.add_argument("--root", help="Root directory (default: current).")
+    parser_rename.add_argument("--recursive", "-r", action="store_true", help="Recursive search.")
+
+    parser_rename.add_argument("--search", "-s", help="Regex pattern to search for.")
+    parser_rename.add_argument("--replace", "-R", help="Replacement string (can use groups like \\1).")
+    parser_rename.add_argument("--transform", "-t", choices=["upper", "lower", "title", "camel", "snake", "kebab", "dot", "path", "constant"], help="Apply text transformation.")
+
+    parser_rename.add_argument("--dry-run", action="store_true", default=True, help="Simulate rename (default).")
+    parser_rename.add_argument("--no-dry-run", dest="dry_run", action="store_false", help="Execute rename.")
+    parser_rename.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18171,6 +18199,10 @@ async def main():
 
     if args.command in ["productivity-lab", "prod", "focus"]:
         run_productivity_lab_logic(args)
+        return
+
+    if args.command in ["rename-lab", "rename"]:
+        run_rename_lab(args)
         return
 
     # Initialize Agent Client

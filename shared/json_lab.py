@@ -280,6 +280,18 @@ def run_json_lab_logic(args):
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
+    elif args.action == "query":
+        try:
+            data = manager.load_json(args.input)
+            result = manager.query(data, args.path)
+            if isinstance(result, (dict, list)):
+                print(json.dumps(result, indent=2, default=str))
+            else:
+                print(result)
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)
         sys.exit(1)

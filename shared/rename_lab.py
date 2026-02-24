@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 from pathlib import Path
@@ -12,6 +11,7 @@ try:
 except ImportError:
     HAS_RICH = False
     Console = None
+
 
 class RenameLabManager:
     """Manages file renaming operations: regex replace, transform, sequence."""
@@ -128,8 +128,17 @@ class RenameLabManager:
             print(f"❌ Error during rename: {e}", file=sys.stderr)
             return False
 
+
 def run_rename_lab_logic(args):
     """CLI handler for Rename Lab."""
+    if hasattr(args, "tui") and args.tui:
+        from shared.tui import AgentTUI
+        print("Launching Rename Lab TUI...")
+        root = Path(args.root).resolve() if getattr(args, 'root', None) else Path.cwd()
+        app = AgentTUI(project_dir=root, start_tab="tab-rename")
+        app.run()
+        return
+
     manager = RenameLabManager()
 
     root = Path(args.root).resolve() if getattr(args, 'root', None) else Path.cwd()
@@ -156,7 +165,7 @@ def run_rename_lab_logic(args):
     is_dry_run = args.dry_run
     if not is_dry_run and not args.yes:
         # If not explicit yes, force confirmation
-        manager.apply_renames(renames, dry_run=True) # Show plan first
+        manager.apply_renames(renames, dry_run=True)  # Show plan first
         confirm = input("\nProceed with renaming? [y/N]: ").strip().lower()
         if confirm != 'y':
             print("Aborted.")

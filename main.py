@@ -14554,6 +14554,7 @@ def parse_args(argv=None):
     parser_rename.add_argument("--dry-run", action="store_true", default=True, help="Simulate rename (default).")
     parser_rename.add_argument("--no-dry-run", dest="dry_run", action="store_false", help="Execute rename.")
     parser_rename.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt.")
+    parser_rename.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
 
     # --- Plugin Registration ---
     try:

@@ -155,6 +155,7 @@ from shared.load_lab import run_load_lab_logic
 from shared.ast_lab import run_ast_lab_logic
 from shared.systemd_lab import run_systemd_lab_logic
 from shared.http_server_lab import run_http_server_lab_logic
+from shared.productivity_lab import run_productivity_lab_logic
 import json
 import yaml
 import platformdirs
@@ -256,7 +257,8 @@ KNOWN_COMMANDS = [
     "sound-lab", "sound", "audio",
     "maze-lab", "maze",
     "license-lab", "lic", "license",
-    "rfc-lab", "rfc"
+    "rfc-lab", "rfc",
+    "productivity-lab", "prod", "focus"
 ]
 
 if FileSystemEventHandler:
@@ -14492,6 +14494,39 @@ def parse_args(argv=None):
     # rfc update
     rfc_subparsers.add_parser("update", help="Update RFC Index.")
 
+    # --- New 'productivity-lab' command ---
+    parser_prod = subparsers.add_parser(
+        "productivity-lab",
+        aliases=["prod", "focus"],
+        help="Productivity Tracking (Focus Timer, Distraction Logger)."
+    )
+    prod_subparsers = parser_prod.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # prod start
+    parser_prod_start = prod_subparsers.add_parser("start", help="Start a focus session.")
+    parser_prod_start.add_argument("type", choices=["work", "break"], help="Session type.")
+    parser_prod_start.add_argument("--task", "-t", help="Task ID or description.")
+
+    # prod stop
+    prod_subparsers.add_parser("stop", help="Stop the current session.")
+
+    # prod status
+    prod_subparsers.add_parser("status", help="Show current session status.")
+
+    # prod stats
+    prod_subparsers.add_parser("stats", help="Show today's statistics.")
+
+    # prod log
+    parser_prod_log = prod_subparsers.add_parser("log", help="Log a distraction.")
+    parser_prod_log.add_argument("message", help="Distraction description.")
+
+    # prod history
+    prod_subparsers.add_parser("history", help="Show session history.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18132,6 +18167,10 @@ async def main():
 
     if args.command in ["rfc-lab", "rfc"]:
         run_rfc_lab(args)
+        return
+
+    if args.command in ["productivity-lab", "prod", "focus"]:
+        run_productivity_lab_logic(args)
         return
 
     # Initialize Agent Client

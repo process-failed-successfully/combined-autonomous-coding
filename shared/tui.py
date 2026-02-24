@@ -171,6 +171,7 @@ from shared.tui_rename import RenameLabTab
 from shared.tui_sound import SoundLabTab
 from shared.tui_diagram import DiagramLabTab
 from shared.tui_find import FindLabTab
+from shared.tui_html import HtmlLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4254,6 +4255,8 @@ class AgentTUI(App):
                 yield RenameLabTab(self.project_dir)
             with TabPane("Diagram Lab", id="tab-diagram"):
                 yield DiagramLabTab(self.project_dir)
+            with TabPane("HTML Lab", id="tab-html"):
+                yield HtmlLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

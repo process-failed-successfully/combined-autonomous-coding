@@ -8,6 +8,7 @@ try:
     import pyperclip
     HAS_PYPERCLIP = True
 except ImportError:
+    pyperclip = None
     HAS_PYPERCLIP = False
 
 

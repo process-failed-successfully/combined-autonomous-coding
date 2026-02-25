@@ -58,6 +58,30 @@ class TestTimeLabManager(unittest.TestCase):
         self.assertIn("UTC", common)
         self.assertIn("America/Los_Angeles", common)
 
+    def test_parse_duration(self):
+        # Seconds
+        self.assertEqual(self.manager.parse_duration("30s"), 30)
+        self.assertEqual(self.manager.parse_duration("10"), 10)
+
+        # Minutes
+        self.assertEqual(self.manager.parse_duration("5m"), 300)
+
+        # Hours
+        self.assertEqual(self.manager.parse_duration("1h"), 3600)
+
+        # Combinations
+        self.assertEqual(self.manager.parse_duration("1h 30m"), 5400)
+        self.assertEqual(self.manager.parse_duration("1m 30s"), 90)
+        self.assertEqual(self.manager.parse_duration("1h 1m 1s"), 3661)
+
+        # Colon format
+        self.assertEqual(self.manager.parse_duration("1:30"), 90) # 1m 30s
+        self.assertEqual(self.manager.parse_duration("01:01:01"), 3661) # 1h 1m 1s
+
+        # Invalid
+        self.assertEqual(self.manager.parse_duration("invalid"), 0)
+        self.assertEqual(self.manager.parse_duration(""), 0)
+
 class TestTimeLabTab(unittest.TestCase):
     def test_instantiation(self):
         # Just check if we can create the widget without error

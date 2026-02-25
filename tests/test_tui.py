@@ -10,7 +10,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, DirectoryTree, RichLog, TabbedContent, DataTable, Input, Select, ListView, Checkbox
 from textual.containers import Container
-from shared.tui import AgentTUI, DashboardTab, InteractTab, KnowledgeTab
+from shared.tui import AgentTUI, DashboardTab, InteractTab
+from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_log_explorer import LogExplorerTab
 
@@ -24,18 +25,27 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         self.patcher_db = patch("shared.tui.init_db")
         self.mock_init_db = self.patcher_db.start()
 
-        # Mock KnowledgeManager
+        # Mock KnowledgeManager in tui and tui_knowledge_graph
         self.patcher_km = patch("shared.tui.KnowledgeManager")
         self.mock_km = self.patcher_km.start()
+
+        self.patcher_km_graph = patch("shared.tui_knowledge_graph.KnowledgeManager")
+        self.mock_km_graph = self.patcher_km_graph.start()
 
         # Mock run_ask_logic to avoid API calls
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
         self.mock_ask = self.patcher_ask.start()
 
+        # Also mock run_ask_logic in tui_knowledge_graph
+        self.patcher_ask_graph = patch("shared.tui_knowledge_graph.run_ask_logic", new_callable=AsyncMock)
+        self.mock_ask_graph = self.patcher_ask_graph.start()
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
+        self.patcher_km_graph.stop()
         self.patcher_ask.stop()
+        self.patcher_ask_graph.stop()
         shutil.rmtree(self.test_dir)
 
     @patch("shared.tui.OtpLabTab")
@@ -169,18 +179,18 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             tabbed_content.active = "tab-knowledge"
             await pilot.pause()
 
-            knowledge = app.query_one(KnowledgeTab)
+            knowledge = app.query_one(KnowledgeGraphTab)
             self.assertIsNotNone(knowledge)
 
-            self.assertIsInstance(knowledge.query_one("#knowledge-table"), DataTable)
-            self.assertIsInstance(knowledge.query_one("#knowledge-input"), Input)
+            # KnowledgeGraphTab uses different widgets than the old KnowledgeTab
+            # It uses #kg-node-list (ListView) instead of #knowledge-table (DataTable)
+            # and #kg-search-input instead of #knowledge-input
+            self.assertIsInstance(knowledge.query_one("#kg-node-list"), ListView)
+            self.assertIsInstance(knowledge.query_one("#kg-search-input"), Input)
 
-            # Verify DB was initialized on mount (implicit in InteractTab mount which happens on startup for all tabs in Textual?)
-            # Wait, TabPane content might be lazy loaded or not. But on_mount of the widget itself happens.
-            # TabbedContent mounts all children? Usually.
-
-            # Let's verify KM list_knowledge was called
-            self.mock_km.return_value.list_knowledge.assert_called()
+            # Verify KM list_knowledge was called
+            # We check the mock from tui_knowledge_graph
+            self.mock_km_graph.return_value.list_knowledge.assert_called()
 
 
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
@@ -217,10 +227,9 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(call_args["query"], "Hello agent")
         self.assertEqual(call_args["agent_type"], "gemini")
 
-    @patch("shared.tui.KnowledgeManager")
-    @patch("shared.tui.init_db")
-    def test_knowledge_tab_load(self, mock_init_db, MockKnowledgeManager):
-        """Test that KnowledgeTab loads data on mount."""
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    def test_knowledge_tab_load(self, MockKnowledgeManager):
+        """Test that KnowledgeGraphTab loads data on mount."""
         mock_manager = MockKnowledgeManager.return_value
         mock_item = MagicMock()
         mock_item.id = 1
@@ -229,16 +238,22 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
         mock_item.source_agent = "User"
         mock_manager.list_knowledge.return_value = [mock_item]
 
-        tab = KnowledgeTab(self.project_dir)
+        tab = KnowledgeGraphTab(self.project_dir)
 
-        mock_table = MagicMock(spec=DataTable)
-        tab.query_one = MagicMock(return_value=mock_table)
+        mock_list = MagicMock(spec=ListView)
+        # Mock query_one to return correct widget based on selector
+        def side_effect(selector, type=None):
+            if selector == "#kg-node-list":
+                return mock_list
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=side_effect)
 
         tab.on_mount()
 
-        mock_init_db.assert_called_once()
         mock_manager.list_knowledge.assert_called_once()
-        mock_table.add_row.assert_called_with("1", "Test", "Content", "User")
+        # Verify item added to list
+        mock_list.append.assert_called()
 
     @patch("main.sys.exit")
     @patch("shared.tui.AgentTUI")

@@ -9,6 +9,8 @@ try:
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
+    Image = None
+    ImageSequence = None
 
 class AsciiLabManager:
     """

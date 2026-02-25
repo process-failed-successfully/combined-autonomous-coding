@@ -3,10 +3,7 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 import sys
 
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
+# Removed global sys.modules patching for PIL
 
 from shared.ascii_lab import AsciiLabManager
 
@@ -20,71 +17,72 @@ class TestAsciiLab(unittest.TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    @patch('shared.ascii_lab.Image.open')
-    def test_convert_image_to_ascii(self, mock_open):
-        # Mock Image object
-        mock_img = MagicMock()
-        mock_open.return_value.__enter__.return_value = mock_img
+    def test_convert_image_to_ascii(self):
+        with patch('shared.ascii_lab.HAS_PIL', True), \
+             patch('shared.ascii_lab.Image') as mock_image:
 
-        # Setup image properties
-        mock_img.width = 100
-        mock_img.height = 100
+            # Mock Image object
+            mock_img = MagicMock()
+            mock_image.open.return_value.__enter__.return_value = mock_img
 
-        # Mock resized image
-        mock_resized = MagicMock()
-        mock_img.resize.return_value = mock_resized
+            # Setup image properties
+            mock_img.width = 100
+            mock_img.height = 100
 
-        # Mock grayscale image
-        mock_gray = MagicMock()
-        mock_resized.convert.return_value = mock_gray
+            # Mock resized image
+            mock_resized = MagicMock()
+            mock_img.resize.return_value = mock_resized
 
-        # Mock pixel data (simple gradient)
-        # 100x50 pixels (since aspect ratio correction applies)
-        # width=100
-        # height = 100 * (100/100) * 0.5 = 50
+            # Mock grayscale image
+            mock_gray = MagicMock()
+            mock_resized.convert.return_value = mock_gray
 
-        mock_gray.getdata.return_value = [0, 255] * 2500 # 5000 pixels
+            # Mock pixel data (simple gradient)
+            mock_gray.getdata.return_value = [0, 255] * 2500 # 5000 pixels
 
-        result = self.manager.convert_image_to_ascii(Path("test.png"), width=100)
+            result = self.manager.convert_image_to_ascii(Path("test.png"), width=100)
 
-        self.assertTrue(len(result) > 0)
-        self.assertIn("@", result) # Should match 0
-        self.assertIn(" ", result) # Should match 255 (if space is last char)
+            self.assertTrue(len(result) > 0)
+            self.assertIn("@", result) # Should match 0
+            self.assertIn(" ", result) # Should match 255
 
-    @patch('shared.ascii_lab.Image.open')
-    @patch('shared.ascii_lab.ImageSequence.Iterator')
-    @patch('time.sleep')
-    @patch('builtins.print')
-    def test_play_gif(self, mock_print, mock_sleep, mock_iterator, mock_open):
-        # Mock Image object
-        mock_img = MagicMock()
-        mock_img.is_animated = True
-        mock_open.return_value.__enter__.return_value = mock_img
+    def test_play_gif(self):
+        with patch('shared.ascii_lab.HAS_PIL', True), \
+             patch('shared.ascii_lab.Image') as mock_image, \
+             patch('shared.ascii_lab.ImageSequence') as mock_image_sequence, \
+             patch('time.sleep') as mock_sleep, \
+             patch('builtins.print') as mock_print:
 
-        # Mock Iterator to return a few frames
-        frame1 = MagicMock()
-        frame1.width = 10
-        frame1.height = 10
-        frame1.info = {'duration': 100}
-        frame1.resize.return_value.convert.return_value.getdata.return_value = [0]*50
+            # Mock Image object
+            mock_img = MagicMock()
+            mock_img.is_animated = True
+            mock_image.open.return_value.__enter__.return_value = mock_img
 
-        frame2 = MagicMock()
-        frame2.width = 10
-        frame2.height = 10
-        frame2.info = {'duration': 100}
-        frame2.resize.return_value.convert.return_value.getdata.return_value = [255]*50
+            # Mock Iterator to return a few frames
+            frame1 = MagicMock()
+            frame1.width = 10
+            frame1.height = 10
+            frame1.info = {'duration': 100}
+            frame1.resize.return_value.convert.return_value.getdata.return_value = [0]*50
 
-        mock_iterator.return_value = [frame1, frame2]
+            frame2 = MagicMock()
+            frame2.width = 10
+            frame2.height = 10
+            frame2.info = {'duration': 100}
+            frame2.resize.return_value.convert.return_value.getdata.return_value = [255]*50
 
-        # Mock sleep to raise exception to break infinite loop
-        mock_sleep.side_effect = KeyboardInterrupt
+            # mock_image_sequence.Iterator should return the list of frames
+            mock_image_sequence.Iterator.return_value = [frame1, frame2]
 
-        self.manager.play_gif(Path("test.gif"), width=10)
+            # Mock sleep to raise exception to break infinite loop
+            mock_sleep.side_effect = KeyboardInterrupt
 
-        # Verify print was called (clearing screen and printing frame)
-        self.assertTrue(mock_print.called)
-        # Verify sleep was called
-        self.assertTrue(mock_sleep.called)
+            self.manager.play_gif(Path("test.gif"), width=10)
+
+            # Verify print was called
+            self.assertTrue(mock_print.called)
+            # Verify sleep was called
+            self.assertTrue(mock_sleep.called)
 
 if __name__ == '__main__':
     unittest.main()

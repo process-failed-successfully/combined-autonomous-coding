@@ -5,12 +5,12 @@ from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Label, Button, Tree, DataTable, Static
+from textual.widgets import Label, Button, Tree, DataTable
 from textual import on
-from textual.binding import Binding
 
 from shared.disk_usage import scan_disk_usage, format_size, get_largest_files
 from shared.trash import TrashManager
+
 
 class DiskUsageTab(Container):
     """Tab for visualizing disk usage."""
@@ -18,7 +18,7 @@ class DiskUsageTab(Container):
     def __init__(self, project_dir: Path, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.scan_data: dict = {}
+        self.scan_data: dict[str, Any] = {}
         self.selected_path: Path | None = None
         self.trash_manager = TrashManager(project_dir)
 
@@ -68,7 +68,7 @@ class DiskUsageTab(Container):
         self.query_one("#btn-du-refresh").disabled = False
         self.notify("Scan complete.")
 
-    def _update_tree(self, data: dict) -> None:
+    def _update_tree(self, data: dict[str, Any]) -> None:
         tree = self.query_one("#du-tree", Tree)
         tree.clear()
 
@@ -85,9 +85,9 @@ class DiskUsageTab(Container):
         tree.root.expand()
 
         # Add immediate children of root
-        self._add_children(tree.root, data.get("children", []))
+        self._populate_tree_children(tree.root, data.get("children", []))
 
-    def _add_children(self, node: Any, children: list) -> None:
+    def _populate_tree_children(self, node: Any, children: list[dict[str, Any]]) -> None:
         """Adds immediate children to the tree node."""
         for child in children:
             size_str = format_size(child["size"])
@@ -104,7 +104,7 @@ class DiskUsageTab(Container):
             node.add(label, data=child, expand=False, allow_expand=allow_expand)
 
     @on(Tree.NodeExpanded, "#du-tree")
-    def on_tree_node_expanded(self, event: Tree.NodeExpanded) -> None:
+    def on_tree_node_expanded(self, event: Tree.NodeExpanded[Any]) -> None:
         node = event.node
         # If node already has children in the UI, don't add them again
         if node.children:
@@ -116,9 +116,9 @@ class DiskUsageTab(Container):
 
         children_data = node_data.get("children", [])
         if children_data:
-            self._add_children(node, children_data)
+            self._populate_tree_children(node, children_data)
 
-    def _update_table(self, files: list) -> None:
+    def _update_table(self, files: list[dict[str, Any]]) -> None:
         table = self.query_one("#du-table", DataTable)
         table.clear()
 
@@ -130,7 +130,7 @@ class DiskUsageTab(Container):
             table.add_row(f["formatted_size"], str(rel_path), key=str(f["path"]))
 
     @on(Tree.NodeSelected, "#du-tree")
-    def on_tree_selected(self, event: Tree.NodeSelected) -> None:
+    def on_tree_selected(self, event: Tree.NodeSelected[Any]) -> None:
         node_data = event.node.data
         if not node_data:
             return

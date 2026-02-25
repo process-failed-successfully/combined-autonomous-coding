@@ -272,6 +272,7 @@ KNOWN_COMMANDS = [
     "clipboard-lab", "clip", "cp", "copy",
     "slides-lab", "slides", "present",
     "test-lab",
+    "stats-lab", "stats", "codestats",
     "disk-usage", "du", "usage",
     "knowledge-lab", "kg", "graph",
     "dash-lab"
@@ -340,6 +341,19 @@ def run_test_lab(args):
     print("Launching Test Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
     app.run()
+    sys.exit(0)
+
+def run_stats_lab(args):
+    """Runs the Code Stats Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Stats Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-stats")
+        app.run()
+        sys.exit(0)
+
+    from shared.stats_lab import run_stats_lab_logic
+    run_stats_lab_logic(args)
     sys.exit(0)
 
 def run_disk_usage(args):
@@ -14861,6 +14875,15 @@ def parse_args(argv=None):
         help="Interactive Test Lab TUI."
     )
 
+    # --- New 'stats-lab' command ---
+    parser_stats_lab = subparsers.add_parser(
+        "stats-lab",
+        aliases=["stats", "codestats"],
+        help="Codebase Statistics (LOC, Languages)."
+    )
+    parser_stats_lab.add_argument("--format", choices=["text", "json"], default="text", help="Output format.")
+    parser_stats_lab.add_argument("--action", choices=["cli", "tui"], default="cli", help="Run mode (cli or tui). Defaults to cli.")
+
     # --- New 'disk-usage' command ---
     parser_disk_usage = subparsers.add_parser(
         "disk-usage",
@@ -18616,6 +18639,10 @@ async def main():
 
     if args.command in ["test-lab"]:
         run_test_lab(args)
+        return
+
+    if args.command in ["stats-lab", "stats", "codestats"]:
+        run_stats_lab(args)
         return
 
     if args.command in ["disk-usage", "du", "usage"]:

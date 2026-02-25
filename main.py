@@ -271,7 +271,8 @@ KNOWN_COMMANDS = [
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
     "slides-lab", "slides", "present",
-    "test-lab"
+    "test-lab",
+    "knowledge-lab", "kg", "graph"
 ]
 
 if FileSystemEventHandler:
@@ -336,6 +337,14 @@ def run_test_lab(args):
     from shared.tui import AgentTUI
     print("Launching Test Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
+    app.run()
+    sys.exit(0)
+
+def run_knowledge_lab(args):
+    """Runs the Knowledge Graph Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Knowledge Graph Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-knowledge")
     app.run()
     sys.exit(0)
 
@@ -14834,6 +14843,13 @@ def parse_args(argv=None):
         help="Interactive Test Lab TUI."
     )
 
+    # --- New 'knowledge-lab' command ---
+    parser_kg = subparsers.add_parser(
+        "knowledge-lab",
+        aliases=["kg", "graph"],
+        help="Interactive Knowledge Graph Lab TUI."
+    )
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18557,6 +18573,10 @@ async def main():
 
     if args.command in ["slides-lab", "slides", "present"]:
         run_slides_lab(args)
+        return
+
+    if args.command in ["knowledge-lab", "kg", "graph"]:
+        run_knowledge_lab(args)
         return
 
     # Initialize Agent Client

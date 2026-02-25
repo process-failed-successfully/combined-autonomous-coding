@@ -46,3 +46,12 @@ class KeyValueStore(Base):
 
     key = Column(String, primary_key=True, index=True)
     value = Column(Text)
+
+class KnowledgeLink(Base):
+    __tablename__ = "knowledge_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_id = Column(Integer, index=True) # FK to AgentKnowledge.id
+    target_id = Column(Integer, index=True) # FK to AgentKnowledge.id
+    relation_type = Column(String, default="related_to") # related_to, depends_on, parent_of
+    created_at = Column(DateTime, default=datetime.utcnow)

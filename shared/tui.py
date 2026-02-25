@@ -175,6 +175,7 @@ from shared.tui_html import HtmlLabTab
 from shared.tui_clipboard import ClipboardTab
 from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
+from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4070,7 +4071,7 @@ class AgentTUI(App):
             with TabPane("Sentinel", id="tab-sentinel"):
                 yield SentinelTab(self.project_dir)
             with TabPane("Knowledge", id="tab-knowledge"):
-                yield KnowledgeTab(self.project_dir)
+                yield KnowledgeGraphTab(self.project_dir)
             with TabPane("Explorer", id="tab-explorer"):
                 yield FileExplorerTab(self.project_dir)
             with TabPane("Disk Usage", id="tab-disk-usage"):

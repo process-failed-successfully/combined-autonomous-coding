@@ -103,6 +103,23 @@ class TestClipboardManager(unittest.TestCase):
         self.assertTrue(self.manager.sync_system())
         self.assertEqual(self.manager.get(0), "forced content")
 
+    @patch.dict(os.environ, {"CI": "true", "FORCE_CLIPBOARD": ""})
+    @patch("shared.clipboard_lab.pyperclip")
+    @patch("shared.clipboard_lab.HAS_PYPERCLIP", True)
+    def test_add_skips_in_ci(self, mock_pyperclip):
+        # Ensure fresh history to avoid deduplication skipping copy attempt
+        self.manager.clear()
+        self.manager.add("test ci skip")
+        mock_pyperclip.copy.assert_not_called()
+
+    @patch.dict(os.environ, {"CI": "true", "FORCE_CLIPBOARD": "1"})
+    @patch("shared.clipboard_lab.pyperclip")
+    @patch("shared.clipboard_lab.HAS_PYPERCLIP", True)
+    def test_add_runs_in_ci_force(self, mock_pyperclip):
+        self.manager.clear()
+        self.manager.add("test ci force")
+        mock_pyperclip.copy.assert_called_with("test ci force")
+
 
 if __name__ == "__main__":
     unittest.main()

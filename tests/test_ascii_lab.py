@@ -4,7 +4,12 @@ from pathlib import Path
 import sys
 
 # Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
+# We must include __version__ because pypdf accesses PIL.__version__ at import time,
+# and this mock might leak into other tests if not careful (though unittest.mock should handle it if done right,
+# sys.modules patching is global).
+mock_pil = MagicMock()
+mock_pil.__version__ = "1.0.0"
+sys.modules['PIL'] = mock_pil
 sys.modules['PIL.Image'] = MagicMock()
 sys.modules['PIL.ImageSequence'] = MagicMock()
 

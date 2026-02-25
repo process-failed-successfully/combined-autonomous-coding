@@ -3,9 +3,10 @@ from unittest.mock import MagicMock, patch
 from pathlib import Path
 from shared.test_lab import TestLabManager
 
+
 class TestTestLabManager(unittest.TestCase):
     def setUp(self):
-        self.project_dir = Path("/tmp/test_project")
+        self.project_dir = Path("/mock/project")
         self.manager = TestLabManager(self.project_dir)
 
     @patch("subprocess.run")
@@ -102,6 +103,7 @@ class TestTestLabManager(unittest.TestCase):
         command = args[0]
         # Should not contain any specific node path, just flags
         self.assertNotIn("::", str(command))
+
 
 if __name__ == "__main__":
     unittest.main()

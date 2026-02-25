@@ -1,9 +1,9 @@
 import subprocess  # nosec B404
 import sys
-import json
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, cast
+
 
 class TestLabManager:
     """
@@ -44,7 +44,7 @@ class TestLabManager:
         Converts a list of node IDs into a tree structure.
         Node ID format: path/to/file.py::ClassName::test_method
         """
-        tree = {"name": "root", "children": [], "type": "directory"}
+        tree: Dict[str, Any] = {"name": "root", "children": [], "type": "directory"}
 
         for node_id in node_ids:
             parts = node_id.split("::")
@@ -53,14 +53,16 @@ class TestLabManager:
 
             # 1. Handle File Path
             path_segments = file_path.split(os.sep)
-            current_level = tree
+            current_level: Dict[str, Any] = tree
 
             for i, segment in enumerate(path_segments):
                 # Find existing child
-                found = next((c for c in current_level["children"] if c["name"] == segment), None)
+                # Cast current_level["children"] to List[Dict[str, Any]] to satisfy MyPy
+                children = cast(List[Dict[str, Any]], current_level["children"])
+                found = next((c for c in children if c["name"] == segment), None)
                 if not found:
                     is_file = (i == len(path_segments) - 1)
-                    new_node = {
+                    new_node: Dict[str, Any] = {
                         "name": segment,
                         "children": [],
                         "type": "file" if is_file else "directory",
@@ -70,19 +72,20 @@ class TestLabManager:
                     if is_file:
                         new_node["id"] = file_path
 
-                    current_level["children"].append(new_node)
+                    children.append(new_node)
                     current_level = new_node
                 else:
                     current_level = found
 
             # 2. Handle Test Parts (Class / Method)
             # current_level is now the file node
-            parent_node = current_level
+            parent_node: Dict[str, Any] = current_level
             current_id = file_path
 
             for part in test_parts:
                 current_id += f"::{part}"
-                found = next((c for c in parent_node["children"] if c["name"] == part), None)
+                children = cast(List[Dict[str, Any]], parent_node["children"])
+                found = next((c for c in children if c["name"] == part), None)
                 if not found:
                     # Guess type: usually starts with Test -> Class, test_ -> Function
                     # But simpler: leaf is test, intermediate is suite/class
@@ -93,7 +96,7 @@ class TestLabManager:
                         "type": "test" if is_leaf else "suite",
                         "id": current_id
                     }
-                    parent_node["children"].append(new_node)
+                    children.append(new_node)
                     parent_node = new_node
                 else:
                     parent_node = found

@@ -1,10 +1,12 @@
 from pathlib import Path
+from typing import Dict, Any, Optional
+
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
-from textual.widgets import Label, Tree, Button, RichLog, Input, Header, Footer
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Label, Tree, Button, RichLog, Input
 from textual import on
-from rich.syntax import Syntax
 from shared.test_lab import TestLabManager
+
 
 class TestLabTab(Container):
     """Tab for interactive Unit Testing."""
@@ -13,8 +15,8 @@ class TestLabTab(Container):
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.manager = TestLabManager(project_dir)
-        self.test_data = {}
-        self.selected_node_id = None
+        self.test_data: Dict[str, Any] = {}
+        self.selected_node_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -84,29 +86,30 @@ class TestLabTab(Container):
                 new_node.expand()
 
     @on(Tree.NodeSelected, "#testlab-tree")
-    def on_node_selected(self, event: Tree.NodeSelected) -> None:
+    def on_node_selected(self, event: Tree.NodeSelected[Dict[str, Any]]) -> None:
         data = event.node.data
         if not data:
             return
 
-        self.selected_node_id = data.get("id") # Might be None for directories
+        self.selected_node_id = data.get("id")  # Might be None for directories
 
         if self.selected_node_id:
             self.query_one("#btn-testlab-run").disabled = False
-            self.query_one("#lbl-testlab-status").update(f"Selected: {data['name']}")
+            self.query_one("#lbl-testlab-status", Label).update(f"Selected: {data['name']}")
         else:
             self.query_one("#btn-testlab-run").disabled = True
-            self.query_one("#lbl-testlab-status").update(f"Selected: {data['name']}")
+            self.query_one("#lbl-testlab-status", Label).update(f"Selected: {data['name']}")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-testlab-refresh":
             self.load_tests()
         elif event.button.id == "btn-testlab-run":
-            await self.run_tests(self.selected_node_id)
+            if self.selected_node_id:
+                await self.run_tests(self.selected_node_id)
         elif event.button.id == "btn-testlab-run-all":
             await self.run_tests(None)
 
-    async def run_tests(self, node_id: str) -> None:
+    async def run_tests(self, node_id: Optional[str]) -> None:
         log = self.query_one("#testlab-log", RichLog)
         status = self.query_one("#lbl-testlab-status", Label)
 

@@ -273,7 +273,8 @@ KNOWN_COMMANDS = [
     "slides-lab", "slides", "present",
     "test-lab",
     "disk-usage", "du", "usage",
-    "knowledge-lab", "kg", "graph"
+    "knowledge-lab", "kg", "graph",
+    "dash-lab"
 ]
 
 if FileSystemEventHandler:
@@ -14874,6 +14875,12 @@ def parse_args(argv=None):
         help="Interactive Knowledge Graph Lab TUI."
     )
 
+    # --- New 'dash-lab' command ---
+    parser_dash_lab = subparsers.add_parser(
+        "dash-lab",
+        help="Interactive Dash Lab TUI (Dashboard Builder)."
+    )
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -16762,6 +16769,14 @@ def run_mock(args):
             print(output_content)
         sys.exit(0)
 
+def run_dash_lab(args):
+    """Runs the Dash Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Dash Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-dash-lab")
+    app.run()
+    sys.exit(0)
+
 
 async def run_commit(args):
     """Handles the git commit command with safety checks."""
@@ -18609,6 +18624,10 @@ async def main():
 
     if args.command in ["knowledge-lab", "kg", "graph"]:
         run_knowledge_lab(args)
+        return
+
+    if args.command == "dash-lab":
+        run_dash_lab(args)
         return
 
     # Initialize Agent Client

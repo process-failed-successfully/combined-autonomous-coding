@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-from textual.app import App, ComposeResult
 from shared.tui_disk_usage import DiskUsageTab
+
 
 class TestDiskUsageTab(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -49,6 +49,7 @@ class TestDiskUsageTab(unittest.IsolatedAsyncioTestCase):
             mock_update_tree.assert_called_once()
             mock_update_table.assert_called_once()
             mock_notify.assert_called_with("Scan complete.")
+
 
 if __name__ == "__main__":
     unittest.main()

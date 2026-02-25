@@ -5,6 +5,8 @@ import sys
 
 # Mock Pillow before importing AsciiLabManager
 sys.modules['PIL'] = MagicMock()
+# pypdf accesses PIL.__version__, so we need to mock it
+sys.modules['PIL'].__version__ = "10.0.0"
 sys.modules['PIL.Image'] = MagicMock()
 sys.modules['PIL.ImageSequence'] = MagicMock()
 

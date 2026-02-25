@@ -1,10 +1,11 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Label, Button, Input, TextArea, ListView, ListItem, RichLog
+from textual.widgets import Label, Button, Input, TextArea, ListView, ListItem
 from textual import on
 from shared.clipboard_lab import ClipboardManager
 import json
 import base64
+
 
 class ClipboardTab(Container):
     """Tab for Clipboard Manager."""

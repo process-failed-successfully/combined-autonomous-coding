@@ -43,6 +43,13 @@ dependencies = [
     "feedparser",
     "websockets",
     "qrcode",
+    "pyperclip",
+    "defusedxml",
+    "pypdf",
+    "redis",
+    "boto3",
+    "aiohttp",
+    "paho-mqtt",
 ]
 requires-python = ">=3.11"
 

@@ -33,7 +33,7 @@ class TestEnvTab(unittest.IsolatedAsyncioTestCase):
 
             # Verify status label
             lbl = tab.query_one("#lbl-env-status")
-            self.assertIn("Files missing", str(lbl.renderable))
+            self.assertIn("Files missing", str(lbl.render()))
 
             # Verify Init button enabled
             btn_init = tab.query_one("#btn-env-init", Button)
@@ -66,7 +66,7 @@ class TestEnvTab(unittest.IsolatedAsyncioTestCase):
 
             # Verify status label
             lbl = tab.query_one("#lbl-env-status")
-            self.assertIn("Out of Sync", str(lbl.renderable))
+            self.assertIn("Out of Sync", str(lbl.render()))
 
             # Verify Sync button enabled
             btn_sync = tab.query_one("#btn-env-sync", Button)

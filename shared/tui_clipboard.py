@@ -6,6 +6,13 @@ from shared.clipboard_lab import ClipboardManager
 import json
 import base64
 
+try:
+    import pyperclip
+    HAS_PYPERCLIP = True
+except ImportError:
+    pyperclip = None  # type: ignore
+    HAS_PYPERCLIP = False
+
 
 class ClipboardTab(Container):
     """Tab for Clipboard Manager."""
@@ -152,12 +159,13 @@ class ClipboardTab(Container):
 
     def copy_to_system(self) -> None:
         text = self.query_one("#clip-preview", TextArea).text
+        if not HAS_PYPERCLIP or not pyperclip:
+            self.notify("pyperclip not installed.", severity="error")
+            return
+
         try:
-            import pyperclip
             pyperclip.copy(text)
             self.notify("Copied to system clipboard.")
-        except ImportError:
-            self.notify("pyperclip not installed.", severity="error")
         except Exception as e:
             self.notify(f"Error copying: {e}", severity="error")
 

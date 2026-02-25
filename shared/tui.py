@@ -178,6 +178,7 @@ from shared.tui_clipboard import ClipboardTab
 from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
 from shared.tui_knowledge_graph import KnowledgeGraphTab
+from shared.tui_dash import DashLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3910,6 +3911,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Clipboard Lab", "switch_tab_clipboard"),
         PaletteCommand("Go to Host Lab", "switch_tab_host_lab"),
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
+        PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4276,6 +4278,8 @@ class AgentTUI(App):
                 yield HostLabTab(self.project_dir)
             with TabPane("Test Lab", id="tab-test-lab"):
                 yield TestLabTab(self.project_dir)
+            with TabPane("Dash Lab", id="tab-dash-lab"):
+                yield DashLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -93,7 +93,7 @@ class GrpcLabTab(Container):
             # Fallback if name attribute fails (Textual < 0.29 might handle name differently on append)
             # Try to get label
             label = event.item.query_one(Label)
-            service = str(label.renderable)
+            service = str(label.render())
             self.selected_service = service
 
         await self.list_methods(service)
@@ -140,7 +140,7 @@ class GrpcLabTab(Container):
         method = event.item.name
         if not method:
             label = event.item.query_one(Label)
-            method = str(label.renderable)
+            method = str(label.render())
 
         self.selected_method = method
         self.query_one("#btn-grpc-call").disabled = False

@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 
 class TrashManager:
     def __init__(self, project_dir: Path):
@@ -55,11 +55,11 @@ class TrashManager:
 
         return f"trash-{timestamp}"
 
-    def list_trash(self) -> List[Dict]:
+    def list_trash(self) -> List[Dict[str, Any]]:
         """
         Returns a list of trash items.
         """
-        items = []
+        items: List[Dict[str, Any]] = []
         if not self.trash_dir.exists():
             return items
 

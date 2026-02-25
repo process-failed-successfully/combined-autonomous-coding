@@ -26,7 +26,7 @@ class TestStructLabTab(unittest.IsolatedAsyncioTestCase):
 
             # Check result
             lbl = app.query_one("#struct-calc-result")
-            assert "8 bytes" in str(lbl.renderable)
+            assert "8 bytes" in str(lbl.render())
             tab.manager.calc_size.assert_called_with("ii")
 
     async def test_hex_dump(self):
@@ -83,7 +83,7 @@ class TestStructLabTab(unittest.IsolatedAsyncioTestCase):
 
             # Check result
             lbl = app.query_one("#struct-pack-result")
-            assert "Packed 10 bytes" in str(lbl.renderable)
+            assert "Packed 10 bytes" in str(lbl.render())
             tab.manager.pack_data.assert_called()
 
 if __name__ == "__main__":

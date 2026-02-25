@@ -98,7 +98,7 @@ class S3LabTab(Container):
             return
 
         label = event.item.query_one(Label)
-        bucket_name = str(label.renderable)
+        bucket_name = str(label.render())
 
         self.current_bucket = bucket_name
         self.current_prefix = ""
@@ -187,7 +187,7 @@ class S3LabTab(Container):
 
     @on(Button.Pressed, "#btn-s3-presign")
     def on_presign(self) -> None:
-        key = str(self.query_one("#s3-selected-lbl", Label).renderable)
+        key = str(self.query_one("#s3-selected-lbl", Label).render())
         if not key or key == "None":
             return
 
@@ -206,7 +206,7 @@ class S3LabTab(Container):
 
     @on(Button.Pressed, "#btn-s3-download")
     def on_download(self) -> None:
-        key = str(self.query_one("#s3-selected-lbl", Label).renderable)
+        key = str(self.query_one("#s3-selected-lbl", Label).render())
         if not key or key == "None":
             return
 
@@ -246,7 +246,7 @@ class S3LabTab(Container):
 
     @on(Button.Pressed, "#btn-s3-delete")
     def on_delete(self) -> None:
-        key = str(self.query_one("#s3-selected-lbl", Label).renderable)
+        key = str(self.query_one("#s3-selected-lbl", Label).render())
         if not key or key == "None":
             return
 

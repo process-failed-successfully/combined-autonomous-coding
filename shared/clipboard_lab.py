@@ -16,10 +16,12 @@ except (ImportError, OSError):
 class ClipboardManager:
     """Manages clipboard history and operations."""
 
-    def __init__(self, project_dir: Optional[Path] = None):
+    def __init__(self, project_dir: Optional[Path] = None, clipboard_module: Optional[Any] = None, has_clipboard: Optional[bool] = None):
         self.project_dir = project_dir or Path(".")
         self.history_file = self.project_dir / ".clipboard_history.json"
         self.history: List[Dict[str, Any]] = self._load_history()
+        self.clipboard = clipboard_module or pyperclip
+        self.has_clipboard = has_clipboard if has_clipboard is not None else HAS_PYPERCLIP
 
     def _load_history(self) -> List[Dict[str, Any]]:
         if not self.history_file.exists():
@@ -62,13 +64,13 @@ class ClipboardManager:
         self._save_history()
 
         # Try to sync to system clipboard
-        if HAS_PYPERCLIP:
+        if self.has_clipboard and self.clipboard and source != "system":
             # Avoid hanging in CI/headless environments unless forced
             if os.environ.get("CI") and not os.environ.get("FORCE_CLIPBOARD"):
                 return
 
             try:
-                pyperclip.copy(content)
+                self.clipboard.copy(content)
             except Exception:
                 pass  # Ignore system clipboard errors
 
@@ -109,7 +111,7 @@ class ClipboardManager:
         Reads from system clipboard and adds to history if new.
         Returns True if something new was added.
         """
-        if not HAS_PYPERCLIP:
+        if not self.has_clipboard or not self.clipboard:
             return False
 
         # Avoid hanging in CI/headless environments unless forced
@@ -117,7 +119,7 @@ class ClipboardManager:
             return False
 
         try:
-            content = pyperclip.paste()
+            content = self.clipboard.paste()
             if content:
                 # Check if it's already the latest
                 if not self.history or self.history[0]["content"] != content:

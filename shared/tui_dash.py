@@ -4,7 +4,8 @@ from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Label, Button, Input, Select, Static, RichLog, DataTable
 from textual import on, work
 from textual.timer import Timer
-from typing import Optional
+from textual.widget import Widget
+from typing import Optional, cast
 
 from shared.dash_lab import DashLabManager, DashboardConfig, WidgetConfig
 
@@ -126,6 +127,7 @@ class DashboardRunner(Container):
     def compose(self) -> ComposeResult:
         for i, w_conf in enumerate(self.dashboard_config.widgets):
             widget_id = f"widget-{i}"
+            w: Widget
             if w_conf.type == "metric":
                 w = MetricWidget(w_conf, self.manager, id=widget_id)
             elif w_conf.type == "log":
@@ -137,10 +139,10 @@ class DashboardRunner(Container):
             # Apply grid positioning
             # Note: Textual uses 1-based indexing for column/row start usually, but let's verify.
             # Actually, css is 1-based. Our config is likely 0-based.
-            w.styles.grid_column_start = w_conf.col + 1
-            w.styles.grid_row_start = w_conf.row + 1
-            w.styles.grid_column_span = w_conf.col_span
-            w.styles.grid_row_span = w_conf.row_span
+            w.styles.grid_column_start = w_conf.col + 1  # type: ignore
+            w.styles.grid_row_start = w_conf.row + 1  # type: ignore
+            w.styles.grid_column_span = w_conf.col_span  # type: ignore
+            w.styles.grid_row_span = w_conf.row_span  # type: ignore
 
             yield w
 
@@ -212,7 +214,9 @@ class DashEditor(Container):
 
     @on(DataTable.RowSelected, "#dash-widgets-table")
     def on_widget_selected(self, event: DataTable.RowSelected) -> None:
-        idx = int(event.row_key.value)
+        if event.row_key.value is None:
+            return
+        idx = int(cast(str, event.row_key.value))
         widget = self.config.widgets[idx]
 
         self.query_one("#inp-w-title", Input).value = widget.title
@@ -264,8 +268,14 @@ class DashEditor(Container):
         w = self.config.widgets[idx]
 
         w.title = self.query_one("#inp-w-title", Input).value
-        w.type = self.query_one("#sel-w-type", Select).value
-        w.source = self.query_one("#sel-w-source", Select).value
+
+        sel_type = self.query_one("#sel-w-type", Select).value
+        if sel_type != Select.BLANK:
+            w.type = str(sel_type)
+
+        sel_source = self.query_one("#sel-w-source", Select).value
+        if sel_source != Select.BLANK:
+            w.source = str(sel_source)
 
         cmd_val = self.query_one("#inp-w-cmd", Input).value
         if w.source == "command":

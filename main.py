@@ -270,7 +270,8 @@ KNOWN_COMMANDS = [
     "emoji-lab", "emoji", "emoj",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
-    "slides-lab", "slides", "present"
+    "slides-lab", "slides", "present",
+    "test-lab"
 ]
 
 if FileSystemEventHandler:
@@ -328,6 +329,14 @@ def run_slides_lab(args):
     """Runs the Slides Lab."""
     from shared.tui_slides import run_slides_lab_logic
     run_slides_lab_logic(args)
+    sys.exit(0)
+
+def run_test_lab(args):
+    """Runs the Test Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Test Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
+    app.run()
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -14818,6 +14827,12 @@ def parse_args(argv=None):
     )
     parser_slides.add_argument("file", nargs="?", default="presentation.md", help="Markdown file to present (default: presentation.md).")
     parser_slides.add_argument("--theme", default="default", help="Presentation theme (default: default).")
+
+    # --- New 'test-lab' command ---
+    parser_test_lab = subparsers.add_parser(
+        "test-lab",
+        help="Interactive Test Lab TUI."
+    )
 
     # --- Plugin Registration ---
     try:

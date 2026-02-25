@@ -5,11 +5,12 @@ from typing import Any, Dict, List
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Label, Button, Tree, DataTable, Static
+from textual.widgets import Label, Button, Tree, DataTable
 from textual import on
 
 from shared.disk_usage import scan_disk_usage, format_size, get_largest_files
 from shared.trash import TrashManager
+
 
 class DiskUsageTab(Container):
     """Tab for visualizing disk usage."""

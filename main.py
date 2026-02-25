@@ -269,7 +269,8 @@ KNOWN_COMMANDS = [
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
     "host-lab", "hosts", "host",
-    "clipboard-lab", "clip", "cp", "copy"
+    "clipboard-lab", "clip", "cp", "copy",
+    "slides-lab", "slides", "present"
 ]
 
 if FileSystemEventHandler:
@@ -321,6 +322,12 @@ def run_clipboard_lab(args):
     """Runs the Clipboard Lab."""
     from shared.clipboard_lab import run_clipboard_lab_logic
     run_clipboard_lab_logic(args)
+    sys.exit(0)
+
+def run_slides_lab(args):
+    """Runs the Slides Lab."""
+    from shared.tui_slides import run_slides_lab_logic
+    run_slides_lab_logic(args)
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -14803,6 +14810,15 @@ def parse_args(argv=None):
     parser_clipboard.add_argument("content", nargs="?", help="Content to add (for add action).")
     parser_clipboard.add_argument("--index", "-i", type=int, default=0, help="Index to get (default: 0).")
 
+    # --- New 'slides-lab' command ---
+    parser_slides = subparsers.add_parser(
+        "slides-lab",
+        aliases=["slides", "present"],
+        help="Markdown Slides Presentation TUI."
+    )
+    parser_slides.add_argument("file", nargs="?", default="presentation.md", help="Markdown file to present (default: presentation.md).")
+    parser_slides.add_argument("--theme", default="default", help="Presentation theme (default: default).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18522,6 +18538,10 @@ async def main():
 
     if args.command in ["clipboard-lab", "clip", "cp", "copy"]:
         run_clipboard_lab(args)
+        return
+
+    if args.command in ["slides-lab", "slides", "present"]:
+        run_slides_lab(args)
         return
 
     # Initialize Agent Client

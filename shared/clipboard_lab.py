@@ -8,7 +8,7 @@ try:
     import pyperclip
     HAS_PYPERCLIP = True
 except ImportError:
-    pyperclip = None
+    pyperclip = None  # type: ignore
     HAS_PYPERCLIP = False
 
 
@@ -61,7 +61,7 @@ class ClipboardManager:
         self._save_history()
 
         # Try to sync to system clipboard
-        if HAS_PYPERCLIP:
+        if HAS_PYPERCLIP and pyperclip:
             try:
                 pyperclip.copy(content)
             except Exception:
@@ -104,7 +104,7 @@ class ClipboardManager:
         Reads from system clipboard and adds to history if new.
         Returns True if something new was added.
         """
-        if not HAS_PYPERCLIP:
+        if not HAS_PYPERCLIP or not pyperclip:
             return False
 
         try:

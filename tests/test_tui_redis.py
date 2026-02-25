@@ -32,7 +32,7 @@ class TestRedisLabTab(unittest.IsolatedAsyncioTestCase):
                 # Check status label
                 status_lbl = app.query_one("#lbl-redis-status", Label)
                 # renderable might be Rich text, convert to str
-                assert "Connected" in str(status_lbl.renderable)
+                assert "Connected" in str(status_lbl.render())
 
                 # Verify scan keys called
                 mock_instance.scan_keys.assert_called()
@@ -59,8 +59,8 @@ class TestRedisLabTab(unittest.IsolatedAsyncioTestCase):
                 assert editor.text == "initial_value"
 
                 # Verify Labels
-                assert str(app.query_one("#lbl-redis-type", Label).renderable) == "string"
-                assert str(app.query_one("#lbl-redis-ttl", Label).renderable) == "100"
+                assert str(app.query_one("#lbl-redis-type", Label).render()) == "string"
+                assert str(app.query_one("#lbl-redis-ttl", Label).render()) == "100"
 
                 # Modify and Save
                 editor.text = "new_value"

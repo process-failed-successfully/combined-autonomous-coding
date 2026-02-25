@@ -1,10 +1,9 @@
 import shutil
 import json
-import os
-import time
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Any
+
 
 class TrashManager:
     def __init__(self, project_dir: Path):
@@ -55,11 +54,11 @@ class TrashManager:
 
         return f"trash-{timestamp}"
 
-    def list_trash(self) -> List[Dict]:
+    def list_trash(self) -> List[Dict[str, Any]]:
         """
         Returns a list of trash items.
         """
-        items = []
+        items: List[Dict[str, Any]] = []
         if not self.trash_dir.exists():
             return items
 
@@ -78,7 +77,7 @@ class TrashManager:
                         "filename": data.get("filename"),
                         "time": data.get("trash_time"),
                         "is_dir": data.get("is_dir", False),
-                        "path": item # Path to the trash container
+                        "path": item  # Path to the trash container
                     })
                 except Exception:
                     continue
@@ -96,7 +95,7 @@ class TrashManager:
 
         manifest_path = trash_path / "manifest.json"
         if not manifest_path.exists():
-             raise FileNotFoundError("Manifest not found.")
+            raise FileNotFoundError("Manifest not found.")
 
         with open(manifest_path, "r") as f:
             data = json.load(f)

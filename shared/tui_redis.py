@@ -183,7 +183,7 @@ class RedisLabTab(Container):
         editor = self.query_one("#redis-value-editor", TextArea)
         new_val = editor.text
 
-        k_type = self.query_one("#lbl-redis-type", Label).renderable
+        k_type = self.query_one("#lbl-redis-type", Label).render()
 
         if str(k_type) == "string":
             success = await asyncio.to_thread(self.manager.set, self.current_key, new_val)

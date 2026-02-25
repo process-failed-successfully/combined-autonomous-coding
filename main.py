@@ -720,6 +720,13 @@ async def run_trace_lab(args):
 
 def run_http_lab(args):
     """Runs the HTTP Lab."""
+    if args.tui or not args.url:
+        from shared.tui import AgentTUI
+        print("Launching HTTP Client TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-http-client")
+        app.run()
+        sys.exit(0)
+
     run_http_lab_logic(args)
     sys.exit(0)
 
@@ -12645,10 +12652,11 @@ def parse_args(argv=None):
     parser_http = subparsers.add_parser(
         "http-lab",
         aliases=["http", "req"],
-        help="HTTP Client (get, post, put, delete, etc)."
+        help="HTTP Client Lab."
     )
-    parser_http.add_argument("method", choices=["get", "post", "put", "delete", "patch", "head", "options"], type=str.lower, help="HTTP Method.")
-    parser_http.add_argument("url", help="Target URL.")
+    parser_http.add_argument("method", nargs="?", default="GET", help="HTTP Method (GET, POST, etc).")
+    parser_http.add_argument("url", nargs="?", help="Target URL.")
+    parser_http.add_argument("--tui", action="store_true", help="Launch TUI mode.")
     parser_http.add_argument("--header", "-H", action="append", help="HTTP Header (e.g. 'Content-Type: application/json').")
     parser_http.add_argument("--data", "-d", help="Request body (form data).")
     parser_http.add_argument("--json", "-j", help="Request body (JSON string).")

@@ -123,6 +123,7 @@ from shared.tui_ide_config import IdeConfigTab
 from shared.tui_command_palette import AgentCommandPalette, PaletteCommand
 from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
+from shared.tui_http import HttpLabTab
 from shared.tui_http_server import HttpServerLabTab
 from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
@@ -4203,6 +4204,8 @@ class AgentTUI(App):
                 yield HexTab(self.project_dir)
             with TabPane("HTTP Server Lab", id="tab-http-server"):
                 yield HttpServerLabTab(self.project_dir)
+            with TabPane("HTTP Client", id="tab-http-client"):
+                yield HttpLabTab()
             with TabPane("Hash Lab", id="tab-hash"):
                 yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):

@@ -5,6 +5,5 @@ types-requests
 pytest
 pytest-cov
 types-PyYAML
-textual==0.64.0
 watchdog
 pytest-asyncio

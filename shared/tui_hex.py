@@ -160,7 +160,7 @@ class HexTab(Container):
             try:
                 byte_val = self.manager.read_chunk(file_offset, 1)[0]
                 status_lbl = self.query_one("#hex-status", Label)
-                current_text = str(status_lbl.renderable)
+                current_text = str(status_lbl.render())
                 inspector = f" | Cursor: {file_offset:08X} | Val: {byte_val} (0x{byte_val:02X}) '{chr(byte_val) if 32 <= byte_val < 127 else '.'}'"
                 # Avoid appending multiple times if called repeatedly (not optimal but simple)
                 if "|" in current_text:

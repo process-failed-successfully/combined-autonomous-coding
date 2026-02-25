@@ -77,7 +77,8 @@ class TestS3LabTab(unittest.IsolatedAsyncioTestCase):
         # Simulate selection event
         mock_event = MagicMock()
         mock_item = MagicMock()
-        mock_item.query_one.return_value.renderable = "my-bucket"
+        # Mock render() instead of renderable
+        mock_item.query_one.return_value.render.return_value = "my-bucket"
         mock_event.item = mock_item
 
         tab.on_bucket_selected(mock_event)
@@ -102,7 +103,8 @@ class TestS3LabTab(unittest.IsolatedAsyncioTestCase):
         tab.current_bucket = "my-bucket"
 
         mock_lbl = MagicMock(spec=Label)
-        mock_lbl.renderable = "file.txt"
+        # Mock render() instead of renderable
+        mock_lbl.render.return_value = "file.txt"
         mock_btn = MagicMock(spec=Button)
 
         tab.query_one = MagicMock(side_effect=lambda s, t=None: {

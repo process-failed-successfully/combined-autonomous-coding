@@ -1223,7 +1223,7 @@ class SecretsTab(Container):
 
         item = secrets_list.children[secrets_list.index]
         label = item.query_one(Label)
-        name = str(label.renderable)
+        name = str(label.render())
 
         try:
             if self.manager.delete_secret(name):
@@ -1613,7 +1613,7 @@ class SessionTab(Container):
              item = files_list.children[files_list.index]
              # Extract text from Label inside ListItem
              label = item.query_one(Label)
-             path = str(label.renderable)
+             path = str(label.render())
 
              try:
                  self.manager.remove_file(self.current_session_name, path)

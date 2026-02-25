@@ -1,4 +1,4 @@
-import subprocess
+import subprocess  # nosec B404
 import sys
 import json
 import os
@@ -23,7 +23,7 @@ class TestLabManager:
             # We use --collect-only and -q to get a flat list of node ids
             # Alternatively, we could try to parse the output more robustly
             cmd = [sys.executable, "-m", "pytest", "--collect-only", "-q"]
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 cmd,
                 cwd=str(self.project_dir),
                 capture_output=True,
@@ -115,7 +115,7 @@ class TestLabManager:
         cmd.append("-rA")
 
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 cmd,
                 cwd=str(self.project_dir),
                 capture_output=True,

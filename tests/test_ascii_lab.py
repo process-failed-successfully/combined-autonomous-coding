@@ -1,14 +1,10 @@
 import unittest
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 from pathlib import Path
-import sys
-
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
 
 from shared.ascii_lab import AsciiLabManager
+import shared.ascii_lab
+
 
 class TestAsciiLab(unittest.TestCase):
     def setUp(self):
@@ -17,8 +13,25 @@ class TestAsciiLab(unittest.TestCase):
         self.patcher = patch('pathlib.Path.exists', return_value=True)
         self.mock_exists = self.patcher.start()
 
+        # Handle case where PIL is not installed or mocked globally
+        self.cleanup_pil = False
+        if not shared.ascii_lab.HAS_PIL:
+            self.cleanup_pil = True
+            shared.ascii_lab.HAS_PIL = True
+            # Create mocks for Image and ImageSequence if not present
+            if not hasattr(shared.ascii_lab, 'Image'):
+                shared.ascii_lab.Image = MagicMock()
+            if not hasattr(shared.ascii_lab, 'ImageSequence'):
+                shared.ascii_lab.ImageSequence = MagicMock()
+
     def tearDown(self):
         self.patcher.stop()
+        if self.cleanup_pil:
+            shared.ascii_lab.HAS_PIL = False
+            if hasattr(shared.ascii_lab, 'Image') and isinstance(shared.ascii_lab.Image, MagicMock):
+                del shared.ascii_lab.Image
+            if hasattr(shared.ascii_lab, 'ImageSequence') and isinstance(shared.ascii_lab.ImageSequence, MagicMock):
+                del shared.ascii_lab.ImageSequence
 
     @patch('shared.ascii_lab.Image.open')
     def test_convert_image_to_ascii(self, mock_open):
@@ -43,13 +56,13 @@ class TestAsciiLab(unittest.TestCase):
         # width=100
         # height = 100 * (100/100) * 0.5 = 50
 
-        mock_gray.getdata.return_value = [0, 255] * 2500 # 5000 pixels
+        mock_gray.getdata.return_value = [0, 255] * 2500  # 5000 pixels
 
         result = self.manager.convert_image_to_ascii(Path("test.png"), width=100)
 
         self.assertTrue(len(result) > 0)
-        self.assertIn("@", result) # Should match 0
-        self.assertIn(" ", result) # Should match 255 (if space is last char)
+        self.assertIn("@", result)  # Should match 0
+        self.assertIn(" ", result)  # Should match 255 (if space is last char)
 
     @patch('shared.ascii_lab.Image.open')
     @patch('shared.ascii_lab.ImageSequence.Iterator')
@@ -66,13 +79,13 @@ class TestAsciiLab(unittest.TestCase):
         frame1.width = 10
         frame1.height = 10
         frame1.info = {'duration': 100}
-        frame1.resize.return_value.convert.return_value.getdata.return_value = [0]*50
+        frame1.resize.return_value.convert.return_value.getdata.return_value = [0] * 50
 
         frame2 = MagicMock()
         frame2.width = 10
         frame2.height = 10
         frame2.info = {'duration': 100}
-        frame2.resize.return_value.convert.return_value.getdata.return_value = [255]*50
+        frame2.resize.return_value.convert.return_value.getdata.return_value = [255] * 50
 
         mock_iterator.return_value = [frame1, frame2]
 
@@ -85,6 +98,7 @@ class TestAsciiLab(unittest.TestCase):
         self.assertTrue(mock_print.called)
         # Verify sleep was called
         self.assertTrue(mock_sleep.called)
+
 
 if __name__ == '__main__':
     unittest.main()

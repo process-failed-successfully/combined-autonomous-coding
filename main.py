@@ -272,6 +272,7 @@ KNOWN_COMMANDS = [
     "clipboard-lab", "clip", "cp", "copy",
     "slides-lab", "slides", "present",
     "test-lab",
+    "disk-usage", "du", "usage",
     "knowledge-lab", "kg", "graph"
 ]
 
@@ -337,6 +338,14 @@ def run_test_lab(args):
     from shared.tui import AgentTUI
     print("Launching Test Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
+    app.run()
+    sys.exit(0)
+
+def run_disk_usage(args):
+    """Runs the Disk Usage TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Disk Usage TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-disk-usage")
     app.run()
     sys.exit(0)
 
@@ -14843,6 +14852,13 @@ def parse_args(argv=None):
         help="Interactive Test Lab TUI."
     )
 
+    # --- New 'disk-usage' command ---
+    parser_disk_usage = subparsers.add_parser(
+        "disk-usage",
+        aliases=["du", "usage"],
+        help="Interactive Disk Usage TUI."
+    )
+
     # --- New 'knowledge-lab' command ---
     parser_kg = subparsers.add_parser(
         "knowledge-lab",
@@ -18573,6 +18589,14 @@ async def main():
 
     if args.command in ["slides-lab", "slides", "present"]:
         run_slides_lab(args)
+        return
+
+    if args.command in ["test-lab"]:
+        run_test_lab(args)
+        return
+
+    if args.command in ["disk-usage", "du", "usage"]:
+        run_disk_usage(args)
         return
 
     if args.command in ["knowledge-lab", "kg", "graph"]:

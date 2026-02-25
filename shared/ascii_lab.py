@@ -8,6 +8,8 @@ try:
     from PIL import Image, ImageSequence
     HAS_PIL = True
 except ImportError:
+    Image = None
+    ImageSequence = None
     HAS_PIL = False
 
 class AsciiLabManager:

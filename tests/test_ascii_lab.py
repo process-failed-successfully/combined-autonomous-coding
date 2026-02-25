@@ -3,11 +3,6 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 import sys
 
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
-
 from shared.ascii_lab import AsciiLabManager
 
 class TestAsciiLab(unittest.TestCase):
@@ -20,8 +15,12 @@ class TestAsciiLab(unittest.TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    @patch('shared.ascii_lab.Image.open')
-    def test_convert_image_to_ascii(self, mock_open):
+    @patch('shared.ascii_lab.HAS_PIL', True)
+    @patch('shared.ascii_lab.Image')
+    def test_convert_image_to_ascii(self, MockImage):
+        # Setup mock_open
+        mock_open = MockImage.open
+
         # Mock Image object
         mock_img = MagicMock()
         mock_open.return_value.__enter__.return_value = mock_img
@@ -51,11 +50,16 @@ class TestAsciiLab(unittest.TestCase):
         self.assertIn("@", result) # Should match 0
         self.assertIn(" ", result) # Should match 255 (if space is last char)
 
-    @patch('shared.ascii_lab.Image.open')
-    @patch('shared.ascii_lab.ImageSequence.Iterator')
+    @patch('shared.ascii_lab.HAS_PIL', True)
+    @patch('shared.ascii_lab.Image')
+    @patch('shared.ascii_lab.ImageSequence')
     @patch('time.sleep')
     @patch('builtins.print')
-    def test_play_gif(self, mock_print, mock_sleep, mock_iterator, mock_open):
+    def test_play_gif(self, mock_print, mock_sleep, MockImageSequence, MockImage):
+        # Setup mocks
+        mock_open = MockImage.open
+        mock_iterator = MockImageSequence.Iterator
+
         # Mock Image object
         mock_img = MagicMock()
         mock_img.is_animated = True

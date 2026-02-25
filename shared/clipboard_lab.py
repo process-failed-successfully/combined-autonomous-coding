@@ -1,13 +1,14 @@
 import json
 import time
 import sys
+import os
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
 try:
     import pyperclip
     HAS_PYPERCLIP = True
-except ImportError:
+except (ImportError, OSError):
     pyperclip = None
     HAS_PYPERCLIP = False
 
@@ -105,6 +106,10 @@ class ClipboardManager:
         Returns True if something new was added.
         """
         if not HAS_PYPERCLIP:
+            return False
+
+        # Avoid hanging in CI/headless environments unless forced
+        if os.environ.get("CI") and not os.environ.get("FORCE_CLIPBOARD"):
             return False
 
         try:

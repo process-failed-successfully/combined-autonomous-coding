@@ -274,7 +274,8 @@ KNOWN_COMMANDS = [
     "test-lab",
     "disk-usage", "du", "usage",
     "knowledge-lab", "kg", "graph",
-    "dash-lab"
+    "dash-lab",
+    "process-explorer", "pex", "htop", "top"
 ]
 
 if FileSystemEventHandler:
@@ -339,6 +340,14 @@ def run_test_lab(args):
     from shared.tui import AgentTUI
     print("Launching Test Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
+    app.run()
+    sys.exit(0)
+
+def run_process_explorer(args):
+    """Runs the Process Explorer TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Process Explorer TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-proc-explorer")
     app.run()
     sys.exit(0)
 
@@ -14881,6 +14890,13 @@ def parse_args(argv=None):
         help="Interactive Dash Lab TUI (Dashboard Builder)."
     )
 
+    # --- New 'process-explorer' command ---
+    parser_pex = subparsers.add_parser(
+        "process-explorer",
+        aliases=["pex", "htop", "top"],
+        help="Interactive Process Explorer (htop-like)."
+    )
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18628,6 +18644,10 @@ async def main():
 
     if args.command == "dash-lab":
         run_dash_lab(args)
+        return
+
+    if args.command in ["process-explorer", "pex", "htop", "top"]:
+        run_process_explorer(args)
         return
 
     # Initialize Agent Client

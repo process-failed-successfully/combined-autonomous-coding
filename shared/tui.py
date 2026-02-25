@@ -101,6 +101,7 @@ from shared.tui_research import ResearchTab
 from shared.tui_terminal import TerminalTab
 from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
+from shared.tui_process_explorer import ProcessExplorerTab
 from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
@@ -3992,6 +3993,8 @@ class AgentTUI(App):
                 yield OllamaLabTab()
             with TabPane("Processes", id="tab-proc"):
                 yield ProcLabTab(self.project_dir)
+            with TabPane("Sys Procs", id="tab-proc-explorer"):
+                yield ProcessExplorerTab()
             with TabPane("Systemd", id="tab-systemd"):
                 yield SystemdLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):

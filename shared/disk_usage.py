@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 def format_size(size: int) -> str:
     """Converts bytes to human-readable strings (KB, MB, GB)."""
@@ -44,31 +44,35 @@ def scan_disk_usage(root: Path) -> Dict[str, Any]:
         # Use os.scandir for better performance
         with os.scandir(root) as it:
             for entry in it:
-                # Skip symlinks to avoid loops/double counting
-                if entry.is_symlink():
+                try:
+                    # Skip symlinks to avoid loops/double counting
+                    if entry.is_symlink():
+                        continue
+
+                    entry_path = Path(entry.path)
+
+                    if entry.is_file():
+                        try:
+                            size = entry.stat().st_size
+                            total_size += size
+                            children.append({
+                                "name": entry.name,
+                                "path": entry_path,
+                                "size": size,
+                                "type": "file",
+                                "children": []
+                            })
+                        except OSError:
+                            # Permission denied or disappeared
+                            pass
+
+                    elif entry.is_dir():
+                        child_node = scan_disk_usage(entry_path)
+                        total_size += child_node["size"]
+                        children.append(child_node)
+                except OSError:
+                    # Error accessing entry (e.g. permission)
                     continue
-
-                entry_path = Path(entry.path)
-
-                if entry.is_file():
-                    try:
-                        size = entry.stat().st_size
-                        total_size += size
-                        children.append({
-                            "name": entry.name,
-                            "path": entry_path,
-                            "size": size,
-                            "type": "file",
-                            "children": []
-                        })
-                    except OSError:
-                        # Permission denied or disappeared
-                        pass
-
-                elif entry.is_dir():
-                    child_node = scan_disk_usage(entry_path)
-                    total_size += child_node["size"]
-                    children.append(child_node)
 
         # Sort children by size descending
         children.sort(key=lambda x: x["size"], reverse=True)
@@ -95,6 +99,7 @@ def get_largest_files(root: Path, limit: int = 20) -> List[Dict[str, Any]]:
         for dirpath, _, filenames in os.walk(root):
             for f in filenames:
                 fp = Path(dirpath) / f
+                # Explicitly check for symlink to be safe
                 if fp.is_symlink():
                     continue
                 try:

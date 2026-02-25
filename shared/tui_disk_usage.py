@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -37,6 +38,7 @@ class DiskUsageTab(Container):
                     yield Label("[bold]Actions[/bold]")
                     yield Label("Select an item to see actions.", id="du-selected-lbl")
                     yield Button("Move to Trash", id="btn-du-delete", variant="warning", disabled=True)
+                    yield Button("Delete Permanently", id="btn-du-perm-delete", variant="error", disabled=True)
 
     def on_mount(self) -> None:
         table = self.query_one("#du-table", DataTable)
@@ -46,7 +48,11 @@ class DiskUsageTab(Container):
         self.start_scan()
 
     def start_scan(self) -> None:
-        self.query_one("#du-tree", Tree).root.label = "Scanning..."
+        tree = self.query_one("#du-tree", Tree)
+        tree.clear()
+        tree.root.label = "Scanning..."
+        # Disable buttons during scan
+        self.query_one("#btn-du-refresh").disabled = True
         self.notify("Scanning disk usage...")
         asyncio.create_task(self._scan_task())
 
@@ -58,40 +64,66 @@ class DiskUsageTab(Container):
         # Update UI
         self._update_tree(self.scan_data)
         self._update_table(largest_files)
+        self.query_one("#btn-du-refresh").disabled = False
         self.notify("Scan complete.")
 
     def _update_tree(self, data: Dict[str, Any]) -> None:
         tree = self.query_one("#du-tree", Tree)
         tree.clear()
 
+        if not data:
+            tree.root.label = "Scan failed or empty."
+            return
+
         root_size = format_size(data.get("size", 0))
         root_label = f"{self.project_dir.name} ({root_size})"
         tree.root.label = root_label
         tree.root.data = data
+
+        # We expand the root by default
         tree.root.expand()
 
+        # Add immediate children of root
         self._populate_tree_children(tree.root, data.get("children", []))
 
     def _populate_tree_children(self, node: Any, children: List[Dict[str, Any]]) -> None:
+        """Adds immediate children to the tree node."""
         for child in children:
             size_str = format_size(child["size"])
             label = f"{child['name']} ({size_str})"
 
-            # Allow expanding directories
-            allow_expand = child["type"] == "dir"
+            is_dir = child["type"] == "dir"
 
-            child_node = node.add(label, data=child, expand=False, allow_expand=allow_expand)
+            # Check if directory has children to determine allow_expand
+            has_children = bool(child.get("children"))
+            allow_expand = is_dir and has_children
 
-            # Recursively add children if it's a directory
-            if child.get("children"):
-                self._populate_tree_children(child_node, child["children"])
+            node.add(label, data=child, expand=False, allow_expand=allow_expand)
+
+    @on(Tree.NodeExpanded, "#du-tree")
+    def on_tree_node_expanded(self, event: Tree.NodeExpanded[Any]) -> None:
+        node = event.node
+        # If node already has children in the UI, don't add them again
+        if node.children:
+            return
+
+        node_data = node.data
+        if not node_data:
+            return
+
+        children_data = node_data.get("children", [])
+        if children_data:
+            self._populate_tree_children(node, children_data)
 
     def _update_table(self, files: List[Dict[str, Any]]) -> None:
         table = self.query_one("#du-table", DataTable)
         table.clear()
 
         for f in files:
-            rel_path = f["path"].relative_to(self.project_dir)
+            try:
+                rel_path = f["path"].relative_to(self.project_dir)
+            except ValueError:
+                rel_path = f["path"]
             table.add_row(f["formatted_size"], str(rel_path), key=str(f["path"]))
 
     @on(Tree.NodeSelected, "#du-tree")
@@ -121,7 +153,10 @@ class DiskUsageTab(Container):
             rel_path = self.selected_path
 
         lbl.update(f"Selected: [bold]{rel_path}[/bold]")
-        self.query_one("#btn-du-delete").disabled = False
+
+        is_root = self.selected_path == self.project_dir
+        self.query_one("#btn-du-delete").disabled = is_root
+        self.query_one("#btn-du-perm-delete").disabled = is_root
 
     @on(Button.Pressed, "#btn-du-refresh")
     def on_refresh(self) -> None:
@@ -145,12 +180,40 @@ class DiskUsageTab(Container):
             # Use TrashManager instead of deletion
             trash_id = self.trash_manager.trash(path)
             self.notify(f"Moved to trash: {path.name} ({trash_id})")
-
-            # Refresh
-            self.selected_path = None
-            self.query_one("#btn-du-delete").disabled = True
-            self.query_one("#du-selected-lbl", Label).update("Moved to trash.")
-            self.start_scan()
+            self._on_action_complete()
 
         except Exception as e:
             self.notify(f"Error moving to trash: {e}", severity="error")
+
+    @on(Button.Pressed, "#btn-du-perm-delete")
+    async def on_perm_delete(self) -> None:
+        if not self.selected_path:
+            return
+
+        path = self.selected_path
+        if not path.exists():
+            self.notify("File not found.", severity="error")
+            return
+
+        if path == self.project_dir:
+            self.notify("Cannot delete project root.", severity="error")
+            return
+
+        try:
+            if path.is_file() or path.is_symlink():
+                await asyncio.to_thread(path.unlink)
+            elif path.is_dir():
+                await asyncio.to_thread(shutil.rmtree, path)
+
+            self.notify(f"Permanently deleted: {path.name}")
+            self._on_action_complete()
+        except Exception as e:
+            self.notify(f"Error deleting: {e}", severity="error")
+
+    def _on_action_complete(self) -> None:
+        """Reset selection and refresh scan."""
+        self.selected_path = None
+        self.query_one("#btn-du-delete").disabled = True
+        self.query_one("#btn-du-perm-delete").disabled = True
+        self.query_one("#du-selected-lbl", Label).update("Action complete.")
+        self.start_scan()

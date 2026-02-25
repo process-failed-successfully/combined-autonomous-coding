@@ -158,9 +158,9 @@ def run_clipboard_lab_logic(args):
             print(f"[{i}] {preview}")
 
     elif args.action == "get":
-        item = manager.get(args.index)
-        if item is not None:
-            print(item)
+        content_item = manager.get(args.index)
+        if content_item is not None:
+            print(content_item)
         else:
             print(f"Error: Index {args.index} out of range.", file=sys.stderr)
 

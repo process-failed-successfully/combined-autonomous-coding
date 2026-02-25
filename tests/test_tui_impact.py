@@ -102,7 +102,7 @@ class TestImpactTab(unittest.IsolatedAsyncioTestCase):
 
             # Check log (via status label)
             status = tab.query_one("#impact-status-lbl", Label)
-            self.assertIn("Tests Passed", str(status.renderable))
+            self.assertIn("Tests Passed", str(status.render()))
 
 if __name__ == "__main__":
     unittest.main()

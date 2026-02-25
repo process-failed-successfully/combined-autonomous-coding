@@ -39,12 +39,12 @@ class TestDiskUsage(unittest.TestCase):
         self.file4.write_text("d" * 40)
 
         # Symlink
-        self.link = self.test_dir / "link_to_file1"
+        link_path = self.test_dir / "link_to_file1"
         try:
-            self.link.symlink_to(self.file1)
+            link_path.symlink_to(self.file1)
         except OSError:
             # Skip symlink creation if not supported (e.g. Windows without admin)
-            self.link = None
+            pass
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
@@ -71,13 +71,13 @@ class TestDiskUsage(unittest.TestCase):
 
         # Find dir2 (should be largest: 30+40 = 70)
         dir2_node = next((c for c in children if c["name"] == "dir2"), None)
-        self.assertIsNotNone(dir2_node)
+        assert dir2_node is not None
         self.assertEqual(dir2_node["size"], 70)
 
         # Check dir2 children
         dir2_children = dir2_node["children"]
         subdir_node = next((c for c in dir2_children if c["name"] == "subdir"), None)
-        self.assertIsNotNone(subdir_node)
+        assert subdir_node is not None
         self.assertEqual(subdir_node["size"], 40)
 
     def test_get_largest_files(self):
@@ -94,3 +94,6 @@ class TestDiskUsage(unittest.TestCase):
         self.assertEqual(format_size(100), "100.0 B")
         self.assertEqual(format_size(1024), "1.0 KB")
         self.assertEqual(format_size(1024 * 1024), "1.0 MB")
+
+if __name__ == "__main__":
+    unittest.main()

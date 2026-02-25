@@ -156,8 +156,8 @@ class ClipboardTab(Container):
             import pyperclip
             pyperclip.copy(text)
             self.notify("Copied to system clipboard.")
-        except ImportError:
-            self.notify("pyperclip not installed.", severity="error")
+        except (ImportError, OSError):
+            self.notify("pyperclip not installed or system error.", severity="error")
         except Exception as e:
             self.notify(f"Error copying: {e}", severity="error")
 

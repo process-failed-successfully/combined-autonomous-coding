@@ -1,5 +1,6 @@
 import unittest
 import shutil
+import os
 from pathlib import Path
 from unittest.mock import patch
 from shared.clipboard_lab import ClipboardManager
@@ -64,6 +65,7 @@ class TestClipboardManager(unittest.TestCase):
         self.assertEqual(len(self.manager.list_history()), 0)
         self.assertFalse(self.history_file.exists())
 
+    @patch.dict(os.environ, {"CI": "", "FORCE_CLIPBOARD": ""})
     @patch("shared.clipboard_lab.pyperclip")
     @patch("shared.clipboard_lab.HAS_PYPERCLIP", True)
     def test_system_sync(self, mock_pyperclip):
@@ -82,6 +84,24 @@ class TestClipboardManager(unittest.TestCase):
         # Sync again (no change)
         added = self.manager.sync_system()
         self.assertFalse(added)
+
+    @patch("shared.clipboard_lab.HAS_PYPERCLIP", False)
+    def test_sync_system_no_pyperclip(self):
+        self.assertFalse(self.manager.sync_system())
+
+    @patch.dict(os.environ, {"CI": "true", "FORCE_CLIPBOARD": ""})
+    @patch("shared.clipboard_lab.HAS_PYPERCLIP", True)
+    def test_sync_system_ci_skip(self):
+        # Even with HAS_PYPERCLIP=True, CI env should prevent sync
+        self.assertFalse(self.manager.sync_system())
+
+    @patch.dict(os.environ, {"CI": "true", "FORCE_CLIPBOARD": "1"})
+    @patch("shared.clipboard_lab.pyperclip")
+    @patch("shared.clipboard_lab.HAS_PYPERCLIP", True)
+    def test_sync_system_ci_force(self, mock_pyperclip):
+        mock_pyperclip.paste.return_value = "forced content"
+        self.assertTrue(self.manager.sync_system())
+        self.assertEqual(self.manager.get(0), "forced content")
 
 
 if __name__ == "__main__":

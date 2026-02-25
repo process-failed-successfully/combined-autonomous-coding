@@ -37,10 +37,10 @@ class DataLabTab(Container):
     @on(DirectoryTree.FileSelected, "#datalab-tree")
     def on_file_selected(self, event: DirectoryTree.FileSelected):
         path = event.path
-        if path.suffix in [".csv", ".json"]:
+        if path.suffix in [".csv", ".json", ".xlsx"]:
             self.load_data(path)
         else:
-            self.notify("Unsupported file type. Select .csv or .json", severity="warning")
+            self.notify("Unsupported file type. Select .csv, .json, or .xlsx", severity="warning")
 
     def load_data(self, path: Path):
         self.current_data = self.manager.load_file(path)

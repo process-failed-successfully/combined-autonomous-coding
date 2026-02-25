@@ -63,6 +63,10 @@ class ClipboardManager:
 
         # Try to sync to system clipboard
         if HAS_PYPERCLIP:
+            # Avoid hanging in CI/headless environments unless forced
+            if os.environ.get("CI") and not os.environ.get("FORCE_CLIPBOARD"):
+                return
+
             try:
                 pyperclip.copy(content)
             except Exception:
@@ -163,9 +167,9 @@ def run_clipboard_lab_logic(args):
             print(f"[{i}] {preview}")
 
     elif args.action == "get":
-        item = manager.get(args.index)
-        if item is not None:
-            print(item)
+        retrieved_content = manager.get(args.index)
+        if retrieved_content is not None:
+            print(retrieved_content)
         else:
             print(f"Error: Index {args.index} out of range.", file=sys.stderr)
 

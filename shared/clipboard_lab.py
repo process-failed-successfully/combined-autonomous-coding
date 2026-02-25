@@ -10,6 +10,7 @@ try:
 except ImportError:
     HAS_PYPERCLIP = False
 
+
 class ClipboardManager:
     """Manages clipboard history and operations."""
 
@@ -63,7 +64,7 @@ class ClipboardManager:
             try:
                 pyperclip.copy(content)
             except Exception:
-                pass # Ignore system clipboard errors
+                pass  # Ignore system clipboard errors
 
     def get(self, index: int) -> Optional[str]:
         """Gets content at specific index (0 is latest)."""
@@ -116,6 +117,7 @@ class ClipboardManager:
             pass
         return False
 
+
 def run_clipboard_lab_logic(args):
     """CLI Handler for Clipboard Lab."""
     # Ensure project_dir is available from args, defaulting to .
@@ -148,7 +150,7 @@ def run_clipboard_lab_logic(args):
             return
 
         print(f"--- Clipboard History ({len(history)} items) ---")
-        for i, item in enumerate(history[:10]): # Show top 10
+        for i, item in enumerate(history[:10]):  # Show top 10
             preview = item['content'].replace('\n', '\\n')
             if len(preview) > 60:
                 preview = preview[:57] + "..."

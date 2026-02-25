@@ -1,9 +1,9 @@
 import unittest
 import shutil
-import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from shared.clipboard_lab import ClipboardManager
+
 
 class TestClipboardManager(unittest.TestCase):
     def setUp(self):
@@ -42,7 +42,7 @@ class TestClipboardManager(unittest.TestCase):
 
     def test_delete_and_update(self):
         self.manager.add("item 2")
-        self.manager.add("item 1") # index 0
+        self.manager.add("item 1")  # index 0
 
         # Test update
         updated = self.manager.update(0, "item 1 updated")
@@ -82,6 +82,7 @@ class TestClipboardManager(unittest.TestCase):
         # Sync again (no change)
         added = self.manager.sync_system()
         self.assertFalse(added)
+
 
 if __name__ == "__main__":
     unittest.main()

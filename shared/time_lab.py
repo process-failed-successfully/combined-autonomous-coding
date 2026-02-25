@@ -103,6 +103,39 @@ class TimeLabManager:
         available = zoneinfo.available_timezones()
         return [z for z in common_zones if z in available]
 
+    def parse_duration(self, duration_str: str) -> int:
+        """Parses a duration string (e.g. '1h 30m', '5m', '10s') into seconds."""
+        if not duration_str:
+            return 0
+
+        total_seconds = 0
+        # Normalize: remove commas, lowercase
+        cleaned = duration_str.lower().replace(",", "")
+        parts = cleaned.split()
+
+        try:
+            for part in parts:
+                if part.endswith("h"):
+                    total_seconds += int(float(part[:-1]) * 3600)
+                elif part.endswith("m"):
+                    total_seconds += int(float(part[:-1]) * 60)
+                elif part.endswith("s"):
+                    total_seconds += int(float(part[:-1]))
+                elif ":" in part:
+                    # mm:ss or hh:mm:ss
+                    subparts = part.split(":")
+                    if len(subparts) == 2: # mm:ss
+                        total_seconds += int(subparts[0]) * 60 + int(subparts[1])
+                    elif len(subparts) == 3: # hh:mm:ss
+                        total_seconds += int(subparts[0]) * 3600 + int(subparts[1]) * 60 + int(subparts[2])
+                elif part.isdigit():
+                    # Assume seconds if pure number
+                    total_seconds += int(part)
+
+            return total_seconds
+        except ValueError:
+            return 0
+
 def run_time_lab_logic(args) -> bool:
     """CLI handler for Time Lab."""
     manager = TimeLabManager()

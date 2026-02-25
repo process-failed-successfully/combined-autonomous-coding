@@ -6,6 +6,173 @@ from datetime import datetime, timezone
 import zoneinfo
 from shared.time_lab import TimeLabManager
 
+class TimerWidget(Container):
+    """A countdown timer and stopwatch widget."""
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="stat-box"):
+            yield Label("[bold]Timer & Stopwatch[/bold]")
+
+            # Display
+            yield Label("00:00:00", id="lbl-timer-display", classes="timer-display")
+
+            # Controls
+            with Horizontal():
+                yield Input(placeholder="Duration (e.g. 5m, 10s)", id="input-timer-duration")
+                yield Button("Set", id="btn-timer-set", variant="primary")
+
+            with Horizontal():
+                yield Button("Start", id="btn-timer-start", variant="success")
+                yield Button("Stop", id="btn-timer-stop", variant="error", disabled=True)
+                yield Button("Reset", id="btn-timer-reset", variant="warning")
+
+            with Horizontal():
+                yield Button("Pomodoro (25m)", id="btn-timer-pomo", variant="default")
+                yield Button("Short Break (5m)", id="btn-timer-short", variant="default")
+                yield Button("Stopwatch Mode", id="btn-timer-mode", variant="default")
+
+    def on_mount(self) -> None:
+        self.timer_active = False
+        self.timer_mode = "countdown" # or "stopwatch"
+        self.start_time = 0.0
+        self.end_time = 0.0
+        self.paused_at = 0.0
+        self.duration = 0
+        self.remaining = 0
+
+        self.manager = TimeLabManager()
+        self.set_interval(0.1, self.update_timer)
+
+    def update_timer(self) -> None:
+        if not self.timer_active:
+            return
+
+        now = datetime.now(timezone.utc).timestamp()
+
+        if self.timer_mode == "countdown":
+            left = self.end_time - now
+            if left <= 0:
+                self.timer_active = False
+                self.query_one("#lbl-timer-display", Label).update("[bold red]00:00:00[/bold red]")
+                self.query_one("#btn-timer-start").disabled = False
+                self.query_one("#btn-timer-stop").disabled = True
+                self.notify("Timer Finished!", severity="warning")
+                return
+
+            self.display_time(left)
+
+        elif self.timer_mode == "stopwatch":
+            elapsed = now - self.start_time
+            self.display_time(elapsed)
+
+    def display_time(self, seconds: float) -> None:
+        m, s = divmod(int(seconds), 60)
+        h, m = divmod(m, 60)
+        # Show deciseconds? No, simple seconds is fine.
+        text = f"{h:02d}:{m:02d}:{s:02d}"
+
+        if self.timer_mode == "countdown" and seconds < 10:
+             text = f"[red]{text}[/red]"
+
+        self.query_one("#lbl-timer-display", Label).update(text)
+
+    @on(Button.Pressed, "#btn-timer-set")
+    def on_set(self) -> None:
+        val = self.query_one("#input-timer-duration", Input).value
+        if not val:
+            return
+
+        seconds = self.manager.parse_duration(val)
+        if seconds > 0:
+            self.duration = seconds
+            self.remaining = seconds
+            self.timer_mode = "countdown"
+            self.display_time(seconds)
+            self.stop_timer()
+        else:
+            self.notify("Invalid duration.", severity="error")
+
+    @on(Button.Pressed, "#btn-timer-start")
+    def on_start(self) -> None:
+        if self.timer_active:
+            return
+
+        now = datetime.now(timezone.utc).timestamp()
+
+        if self.timer_mode == "countdown":
+            if self.remaining <= 0:
+                self.notify("Set duration first.", severity="warning")
+                return
+
+            self.end_time = now + self.remaining
+
+        elif self.timer_mode == "stopwatch":
+            if self.start_time == 0:
+                self.start_time = now
+            else:
+                if self.paused_at > 0:
+                    pause_duration = now - self.paused_at
+                    self.start_time += pause_duration
+                    self.paused_at = 0
+
+        self.timer_active = True
+        self.query_one("#btn-timer-start").disabled = True
+        self.query_one("#btn-timer-stop").disabled = False
+        self.query_one("#input-timer-duration").disabled = True
+
+    @on(Button.Pressed, "#btn-timer-stop")
+    def on_stop(self) -> None:
+        self.stop_timer()
+        self.paused_at = datetime.now(timezone.utc).timestamp()
+
+        if self.timer_mode == "countdown":
+            self.remaining = self.end_time - self.paused_at
+
+    def stop_timer(self) -> None:
+        self.timer_active = False
+        self.query_one("#btn-timer-start").disabled = False
+        self.query_one("#btn-timer-stop").disabled = True
+        self.query_one("#input-timer-duration").disabled = False
+
+    @on(Button.Pressed, "#btn-timer-reset")
+    def on_reset(self) -> None:
+        self.stop_timer()
+        self.paused_at = 0
+        self.start_time = 0
+        if self.timer_mode == "countdown":
+            self.remaining = self.duration
+            self.display_time(self.duration)
+        else:
+            self.display_time(0)
+
+    @on(Button.Pressed, "#btn-timer-pomo")
+    def on_pomo(self) -> None:
+        self.set_preset(25 * 60)
+
+    @on(Button.Pressed, "#btn-timer-short")
+    def on_short(self) -> None:
+        self.set_preset(5 * 60)
+
+    def set_preset(self, seconds: int) -> None:
+        self.duration = seconds
+        self.remaining = seconds
+        self.timer_mode = "countdown"
+        self.display_time(seconds)
+        self.stop_timer()
+
+    @on(Button.Pressed, "#btn-timer-mode")
+    def on_switch_mode(self) -> None:
+        self.stop_timer()
+        if self.timer_mode == "countdown":
+            self.timer_mode = "stopwatch"
+            self.query_one("#btn-timer-mode", Button).label = "Countdown Mode"
+            self.display_time(0)
+            self.start_time = 0
+        else:
+            self.timer_mode = "countdown"
+            self.query_one("#btn-timer-mode", Button).label = "Stopwatch Mode"
+            self.display_time(self.duration)
+
 class TimeLabTab(Container):
     """Tab for Time operations."""
 
@@ -87,6 +254,10 @@ class TimeLabTab(Container):
 
                         yield Label("[bold]Difference:[/bold]")
                         yield Static(id="lbl-time-diff-result", classes="result-box")
+
+                # Timer
+                with TabPane("Timer"):
+                    yield TimerWidget()
 
     def on_mount(self) -> None:
         table = self.query_one("#time-world-table", DataTable)

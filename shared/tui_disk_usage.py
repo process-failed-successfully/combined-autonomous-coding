@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
@@ -16,7 +16,7 @@ class DiskUsageTab(Container):
     def __init__(self, project_dir: Path, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
-        self.scan_data: dict = {}
+        self.scan_data: Dict[str, Any] = {}
         self.selected_path: Path | None = None
         self.trash_manager = TrashManager(project_dir)
 
@@ -60,7 +60,7 @@ class DiskUsageTab(Container):
         self._update_table(largest_files)
         self.notify("Scan complete.")
 
-    def _update_tree(self, data: dict) -> None:
+    def _update_tree(self, data: Dict[str, Any]) -> None:
         tree = self.query_one("#du-tree", Tree)
         tree.clear()
 
@@ -70,9 +70,9 @@ class DiskUsageTab(Container):
         tree.root.data = data
         tree.root.expand()
 
-        self._add_children(tree.root, data.get("children", []))
+        self._populate_tree_children(tree.root, data.get("children", []))
 
-    def _add_children(self, node: Any, children: list) -> None:
+    def _populate_tree_children(self, node: Any, children: List[Dict[str, Any]]) -> None:
         for child in children:
             size_str = format_size(child["size"])
             label = f"{child['name']} ({size_str})"
@@ -84,9 +84,9 @@ class DiskUsageTab(Container):
 
             # Recursively add children if it's a directory
             if child.get("children"):
-                self._add_children(child_node, child["children"])
+                self._populate_tree_children(child_node, child["children"])
 
-    def _update_table(self, files: list) -> None:
+    def _update_table(self, files: List[Dict[str, Any]]) -> None:
         table = self.query_one("#du-table", DataTable)
         table.clear()
 
@@ -95,7 +95,7 @@ class DiskUsageTab(Container):
             table.add_row(f["formatted_size"], str(rel_path), key=str(f["path"]))
 
     @on(Tree.NodeSelected, "#du-tree")
-    def on_tree_selected(self, event: Tree.NodeSelected) -> None:
+    def on_tree_selected(self, event: Tree.NodeSelected[Any]) -> None:
         node_data = event.node.data
         if not node_data:
             return

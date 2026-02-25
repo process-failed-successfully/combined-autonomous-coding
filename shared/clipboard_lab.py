@@ -60,8 +60,8 @@ class ClipboardManager:
 
         self._save_history()
 
-        # Try to sync to system clipboard
-        if HAS_PYPERCLIP and pyperclip:
+        # Try to sync to system clipboard (unless it came from system)
+        if HAS_PYPERCLIP and pyperclip and source != "system":
             try:
                 pyperclip.copy(content)
             except Exception:

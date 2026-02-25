@@ -4,11 +4,12 @@ from typing import List, Dict, Any, Tuple
 
 def format_size(size: int) -> str:
     """Converts bytes to human-readable strings (KB, MB, GB)."""
+    human_size = float(size)
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024.0:
-            return f"{size:.1f} {unit}"
-        size /= 1024.0
-    return f"{size:.1f} PB"
+        if human_size < 1024.0:
+            return f"{human_size:.1f} {unit}"
+        human_size /= 1024.0
+    return f"{human_size:.1f} PB"
 
 def scan_disk_usage(root: Path) -> Dict[str, Any]:
     """
@@ -38,7 +39,7 @@ def scan_disk_usage(root: Path) -> Dict[str, Any]:
             }
 
         total_size = 0
-        children = []
+        children: List[Dict[str, Any]] = []
 
         # Use os.scandir for better performance
         with os.scandir(root) as it:
@@ -87,7 +88,7 @@ def scan_disk_usage(root: Path) -> Dict[str, Any]:
 
 def get_largest_files(root: Path, limit: int = 20) -> List[Dict[str, Any]]:
     """Returns a flat list of the largest files for quick identification."""
-    files = []
+    files: List[Dict[str, Any]] = []
 
     # Use os.walk for flat scanning
     try:

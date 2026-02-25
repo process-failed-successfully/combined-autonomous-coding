@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from shared.disk_usage import scan_disk_usage, get_largest_files, format_size
 
+
 class TestDiskUsage(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory
@@ -94,6 +95,7 @@ class TestDiskUsage(unittest.TestCase):
         self.assertEqual(format_size(100), "100.0 B")
         self.assertEqual(format_size(1024), "1.0 KB")
         self.assertEqual(format_size(1024 * 1024), "1.0 MB")
+
 
 if __name__ == "__main__":
     unittest.main()

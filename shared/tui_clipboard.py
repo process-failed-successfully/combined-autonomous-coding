@@ -6,6 +6,11 @@ from shared.clipboard_lab import ClipboardManager
 import json
 import base64
 
+class HistoryListItem(ListItem):
+    """ListItem that holds a history index."""
+    def __init__(self, *args, history_index: int = -1, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.history_index = history_index
 
 class ClipboardTab(Container):
     """Tab for Clipboard Manager."""
@@ -69,13 +74,12 @@ class ClipboardTab(Container):
                 preview = preview[:37] + "..."
 
             label = f"[{i}] {preview}"
-            list_item = ListItem(Label(label))
-            list_item.history_index = i
+            list_item = HistoryListItem(Label(label), history_index=i)
             list_view.append(list_item)
 
     @on(ListView.Selected, "#clip-list")
     def on_item_selected(self, event: ListView.Selected) -> None:
-        if not hasattr(event.item, "history_index"):
+        if not isinstance(event.item, HistoryListItem):
             return
 
         index = event.item.history_index

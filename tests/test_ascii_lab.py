@@ -3,11 +3,6 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 import sys
 
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
-
 from shared.ascii_lab import AsciiLabManager
 
 class TestAsciiLab(unittest.TestCase):

@@ -69,6 +69,7 @@ from shared.tui_k8s import K8sTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
+from shared.tui_systemd import SystemdLabTab
 from shared.tui_task_runner import TaskRunnerTab
 from shared.tui_proxy import ProxyLabTab
 from shared.tui_ws import WsLabTab
@@ -3988,6 +3989,8 @@ class AgentTUI(App):
                 yield OllamaLabTab()
             with TabPane("Processes", id="tab-proc"):
                 yield ProcLabTab(self.project_dir)
+            with TabPane("Systemd", id="tab-systemd"):
+                yield SystemdLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):
                 yield PortLabTab()
             with TabPane("Runner", id="tab-runner"):

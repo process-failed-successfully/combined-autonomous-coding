@@ -3,13 +3,19 @@ import csv
 from pathlib import Path
 from typing import List, Dict, Any, Union
 
+# Try importing ExcelLabManager
+try:
+    from shared.excel_lab import ExcelLabManager
+except ImportError:
+    ExcelLabManager = None
+
 class DataLabManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
 
     def list_data_files(self) -> List[Path]:
-        """Lists CSV and JSON files in the project directory."""
-        extensions = ["*.csv", "*.json"]
+        """Lists CSV, JSON, and Excel files in the project directory."""
+        extensions = ["*.csv", "*.json", "*.xlsx"]
         files = []
         for ext in extensions:
             files.extend(list(self.project_dir.glob(f"**/{ext}")))
@@ -50,6 +56,18 @@ class DataLabManager:
                     # We need to handle potential errors with delimiters etc
                     reader = csv.DictReader(f)
                     return list(reader)
+            elif filepath.suffix == ".xlsx":
+                if ExcelLabManager:
+                    try:
+                        # Instantiate manager (it requires openpyxl)
+                        excel_mgr = ExcelLabManager(self.project_dir)
+                        # Read active sheet
+                        return excel_mgr.read_sheet(filepath)
+                    except Exception:
+                        return []
+                else:
+                    return []
+
         except Exception:
             # Return empty list on error
             return []

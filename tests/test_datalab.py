@@ -4,6 +4,10 @@ import json
 import csv
 import tempfile
 import shutil
+try:
+    import openpyxl
+except ImportError:
+    openpyxl = None
 from shared.datalab import DataLabManager
 
 class TestDataLabManager(unittest.TestCase):
@@ -18,6 +22,7 @@ class TestDataLabManager(unittest.TestCase):
         # Create some files
         (self.test_dir / "data1.csv").touch()
         (self.test_dir / "data2.json").touch()
+        (self.test_dir / "data3.xlsx").touch()
         (self.test_dir / "ignore.txt").touch()
 
         # Create a hidden dir
@@ -35,6 +40,7 @@ class TestDataLabManager(unittest.TestCase):
 
         self.assertIn("data1.csv", filenames)
         self.assertIn("data2.json", filenames)
+        self.assertIn("data3.xlsx", filenames)
         self.assertNotIn("ignore.txt", filenames)
         self.assertNotIn("hidden.csv", filenames)
         self.assertNotIn("venv.json", filenames)
@@ -91,6 +97,23 @@ class TestDataLabManager(unittest.TestCase):
 
         self.assertNotIn("name", stats)
         self.assertNotIn("empty", stats)
+
+    def test_load_file_excel(self):
+        if not openpyxl:
+            self.skipTest("openpyxl not installed")
+
+        xlsx_file = self.test_dir / "test.xlsx"
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["name", "age"])
+        ws.append(["Charlie", 40])
+        ws.append(["Dave", 35])
+        wb.save(xlsx_file)
+
+        data = self.manager.load_file(xlsx_file)
+        self.assertEqual(len(data), 2)
+        self.assertEqual(data[0]["name"], "Charlie")
+        self.assertEqual(data[0]["age"], 40)
 
 if __name__ == "__main__":
     unittest.main()

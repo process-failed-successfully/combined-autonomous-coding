@@ -4,6 +4,7 @@ import tempfile
 import shutil
 from shared.slides_lab import SlideDeck
 
+
 class TestSlideDeck(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
@@ -51,6 +52,7 @@ class TestSlideDeck(unittest.TestCase):
         deck = SlideDeck(f)
         with self.assertRaises(FileNotFoundError):
             deck.load()
+
 
 if __name__ == '__main__':
     unittest.main()

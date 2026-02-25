@@ -324,6 +324,7 @@ def run_clipboard_lab(args):
     run_clipboard_lab_logic(args)
     sys.exit(0)
 
+
 def run_slides_lab(args):
     """Runs the Slides Lab."""
     from shared.tui_slides import run_slides_lab_logic

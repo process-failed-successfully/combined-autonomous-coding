@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List, Dict, Any
-import yaml  # type: ignore
+import yaml
 
 
 class SlideDeck:

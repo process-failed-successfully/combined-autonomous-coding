@@ -175,7 +175,7 @@ from shared.tui_html import HtmlLabTab
 from shared.tui_clipboard import ClipboardTab
 from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
-from shared.tui_knowledge_graph import KnowledgeGraphTab
+from shared.tui_knowledge_graph import KnowledgeGraphTab, KnowledgeTab
 from shared.plugin_manager import PluginManager
 
 

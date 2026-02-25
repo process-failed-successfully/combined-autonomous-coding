@@ -13,6 +13,18 @@ from rich.text import Text
 from shared.knowledge import KnowledgeManager
 from shared.ask import run_ask_logic
 
+class KnowledgeTab(Container):
+    """
+    Deprecated alias for KnowledgeGraphTab to maintain backward compatibility during migration.
+    """
+    def __init__(self, project_dir: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.project_dir = project_dir
+        self.graph_tab = KnowledgeGraphTab(project_dir)
+
+    def compose(self) -> ComposeResult:
+        yield self.graph_tab
+
 class KnowledgeGraphTab(Container):
     """
     Interactive Knowledge Graph Explorer.

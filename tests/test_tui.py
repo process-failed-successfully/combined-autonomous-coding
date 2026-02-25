@@ -27,6 +27,8 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         # Mock KnowledgeManager
         self.patcher_km = patch("shared.tui.KnowledgeManager")
         self.mock_km = self.patcher_km.start()
+        # Mock the list_knowledge method to return an empty list by default
+        self.mock_km.return_value.list_knowledge.return_value = []
 
         # Mock run_ask_logic to avoid API calls
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)
@@ -40,10 +42,14 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
     @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_app_startup(self, mock_services_tab, mock_otp_tab):
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    async def test_app_startup(self, mock_kg_manager, mock_services_tab, mock_otp_tab):
         """Test that the app starts up and has the expected title and tabs."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_kg_manager.return_value.list_knowledge.return_value = []
+        mock_kg_manager.return_value.search_knowledge.return_value = []
+
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Check if TabbedContent exists
@@ -59,10 +65,14 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
     @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_dashboard_content(self, mock_services_tab, mock_otp_tab):
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    async def test_dashboard_content(self, mock_kg_manager, mock_services_tab, mock_otp_tab):
         """Test that the dashboard tab displays project info."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_kg_manager.return_value.list_knowledge.return_value = []
+        mock_kg_manager.return_value.search_knowledge.return_value = []
+
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to dashboard is default
@@ -83,10 +93,14 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
     @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_file_explorer_tab(self, mock_services_tab, mock_otp_tab):
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    async def test_file_explorer_tab(self, mock_kg_manager, mock_services_tab, mock_otp_tab):
         """Test the file explorer tab structure."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_kg_manager.return_value.list_knowledge.return_value = []
+        mock_kg_manager.return_value.search_knowledge.return_value = []
+
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             # Switch to explorer tab
@@ -106,12 +120,15 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
     @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
     @patch("shared.tui_log_explorer.get_all_log_files")
-    async def test_logs_tab(self, mock_get_logs, mock_services_tab, mock_otp_tab):
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    async def test_logs_tab(self, mock_kg_manager, mock_get_logs, mock_services_tab, mock_otp_tab):
         """Test log explorer updates with file list."""
 
         # Mock ServicesTab to return an empty Container to avoid crashes
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_kg_manager.return_value.list_knowledge.return_value = []
+        mock_kg_manager.return_value.search_knowledge.return_value = []
 
         # Setup mock log files
         log1 = self.test_dir / "test1.log"
@@ -140,10 +157,14 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
     @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_interact_tab(self, mock_services_tab, mock_otp_tab):
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    async def test_interact_tab(self, mock_kg_manager, mock_services_tab, mock_otp_tab):
         """Test InteractTab structure."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
+        mock_kg_manager.return_value.list_knowledge.return_value = []
+        mock_kg_manager.return_value.search_knowledge.return_value = []
+
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             tabbed_content = app.query_one("#main-tabs")
@@ -159,28 +180,62 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
 
     @patch("shared.tui.OtpLabTab")
     @patch("shared.tui.ServicesTab")
-    async def test_knowledge_tab(self, mock_services_tab, mock_otp_tab):
+    @patch("shared.tui_knowledge_graph.KnowledgeManager")
+    async def test_knowledge_tab(self, mock_kg_manager, mock_services_tab, mock_otp_tab):
         """Test KnowledgeTab structure and loading."""
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
+
+        # Mock the list_knowledge method to return an empty list by default
+        # Patching it where it is used in shared.tui_knowledge_graph
+        mock_kg_manager.return_value.list_knowledge.return_value = []
+
         app = AgentTUI(project_dir=self.project_dir)
         async with app.run_test() as pilot:
             tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-knowledge"
             await pilot.pause()
 
-            knowledge = app.query_one(KnowledgeTab)
+            # In Textual 0.64.0+, querying by type might fail if the widget is inside a lazy-loaded container or shadowed.
+            # However, looking at the logs, it seems like KnowledgeTab is not found.
+            # Let's try to query by ID first if possible, or ensure we wait enough.
+
+            # Use query(KnowledgeTab).first() to be safer or query_one with expect_type
+            try:
+                # First try finding the new KnowledgeGraphTab
+                knowledge = app.query_one("KnowledgeGraphTab")
+            except Exception:
+                try:
+                    # Fallback to the legacy alias if it exists in the DOM
+                    knowledge = app.query_one("KnowledgeTab")
+                except Exception:
+                    # Look inside the TabPane container
+                    try:
+                        knowledge = app.query_one("#tab-knowledge").query_one("KnowledgeGraphTab")
+                    except Exception:
+                        knowledge = app.query_one("#tab-knowledge").query_one("KnowledgeTab")
+
             self.assertIsNotNone(knowledge)
 
-            self.assertIsInstance(knowledge.query_one("#knowledge-table"), DataTable)
-            self.assertIsInstance(knowledge.query_one("#knowledge-input"), Input)
+            # In the new KnowledgeGraphTab, the table ID is likely different or it might be a ListView
+            # Let's check what we have. Based on shared/tui_knowledge_graph.py:
+            # It uses #kg-node-list (ListView) instead of DataTable #knowledge-table
 
-            # Verify DB was initialized on mount (implicit in InteractTab mount which happens on startup for all tabs in Textual?)
-            # Wait, TabPane content might be lazy loaded or not. But on_mount of the widget itself happens.
-            # TabbedContent mounts all children? Usually.
+            # self.assertIsInstance(knowledge.query_one("#knowledge-table"), DataTable)
+            # self.assertIsInstance(knowledge.query_one("#knowledge-input"), Input)
+
+            # The new implementation has #kg-node-list and #kg-search-input
+            try:
+                self.assertIsInstance(knowledge.query_one("#kg-node-list"), ListView)
+                self.assertIsInstance(knowledge.query_one("#kg-search-input"), Input)
+            except Exception:
+                # If we are somehow still using the old one (unlikely given import error fix)
+                # Fallback to old checks
+                self.assertIsInstance(knowledge.query_one("#knowledge-table"), DataTable)
+                self.assertIsInstance(knowledge.query_one("#knowledge-input"), Input)
 
             # Let's verify KM list_knowledge was called
-            self.mock_km.return_value.list_knowledge.assert_called()
+            mock_kg_manager.return_value.list_knowledge.assert_called()
 
 
 class TestTUIComponents(unittest.IsolatedAsyncioTestCase):

@@ -146,6 +146,7 @@ from shared.tui_permissions import PermissionsLabTab
 from shared.tui_port import PortLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
+from shared.tui_uuid import UuidLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
 from shared.tui_ansible import AnsibleLabTab
@@ -4153,6 +4154,8 @@ class AgentTUI(App):
                 yield ProxyLabTab(self.project_dir)
             with TabPane("JWT Lab", id="tab-jwt"):
                 yield JwtLabTab()
+            with TabPane("UUID Lab", id="tab-uuid"):
+                yield UuidLabTab()
             with TabPane("OTP Lab", id="tab-otp"):
                 yield OtpLabTab()
             with TabPane("Sanitizer", id="tab-sanitizer"):

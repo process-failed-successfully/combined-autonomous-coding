@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 
+
 def format_size(size: int) -> str:
     """Converts bytes to human-readable strings (KB, MB, GB)."""
     human_size = float(size)
@@ -10,6 +11,7 @@ def format_size(size: int) -> str:
             return f"{human_size:.1f} {unit}"
         human_size /= 1024.0
     return f"{human_size:.1f} PB"
+
 
 def scan_disk_usage(root: Path) -> Dict[str, Any]:
     """
@@ -89,6 +91,7 @@ def scan_disk_usage(root: Path) -> Dict[str, Any]:
         return {"name": root.name, "path": root, "size": 0, "type": "dir", "children": []}
     except Exception as e:
         return {"name": root.name, "path": root, "size": 0, "type": "error", "error": str(e), "children": []}
+
 
 def get_largest_files(root: Path, limit: int = 20) -> List[Dict[str, Any]]:
     """Returns a flat list of the largest files for quick identification."""

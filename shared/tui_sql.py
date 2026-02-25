@@ -4,10 +4,11 @@ import contextlib
 import io
 from typing import Optional, List, Dict, Any
 from textual.app import ComposeResult
-from textual.widgets import Label, Input, Button, ListView, ListItem, TextArea, RichLog, DataTable, TabbedContent, TabPane
+from textual.widgets import Label, Input, Button, ListView, ListItem, TextArea, RichLog, DataTable, TabbedContent, TabPane, Select
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual import on
 from shared.sql_lab import SqlLabManager, detect_connection_string
+from shared.db_query import generate_sql
 
 class SqlLabTab(Container):
     """
@@ -32,6 +33,12 @@ class SqlLabTab(Container):
                 yield Input(placeholder="sqlite:///agent_lab.db", id="sql-url-input")
                 yield Button("Connect", id="btn-sql-connect", variant="primary")
                 yield Label("Not Connected", id="lbl-sql-status", classes="status-text")
+
+                # AI Assistant
+                yield Label("[bold]AI Assistant[/bold]")
+                yield Input(placeholder="Ask a question...", id="sql-ai-input")
+                yield Select.from_values(["gemini", "cursor", "local"], id="sql-ai-agent", value="gemini")
+                yield Button("Generate SQL", id="btn-sql-ai-generate", variant="warning", disabled=True)
 
                 # Tables
                 yield Label("[bold]Tables[/bold]")
@@ -78,6 +85,8 @@ class SqlLabTab(Container):
             await self.execute_query()
         elif event.button.id == "btn-sql-clear":
             self.query_one("#sql-query-editor", TextArea).text = ""
+        elif event.button.id == "btn-sql-ai-generate":
+            await self.generate_ai_query()
 
     async def connect_db(self) -> None:
         url = self.query_one("#sql-url-input", Input).value
@@ -111,6 +120,7 @@ class SqlLabTab(Container):
                 # Enable buttons
                 self.query_one("#btn-sql-refresh-tables").disabled = False
                 self.query_one("#btn-sql-execute").disabled = False
+                self.query_one("#btn-sql-ai-generate").disabled = False
 
                 await self.load_tables()
             else:
@@ -212,6 +222,47 @@ class SqlLabTab(Container):
         except Exception as e:
              self.notify(f"Execution error: {e}", severity="error")
              self.log_message(f"[red]Exception: {e}[/red]")
+
+    async def generate_ai_query(self) -> None:
+        if not self.manager:
+            self.notify("Not connected.", severity="warning")
+            return
+
+        question = self.query_one("#sql-ai-input", Input).value
+        if not question:
+            self.notify("Please ask a question.", severity="warning")
+            return
+
+        agent_type = self.query_one("#sql-ai-agent", Select).value or "gemini"
+
+        self.notify(f"Asking {agent_type}...", severity="information")
+        self.log_message(f"Generating SQL for: {question}")
+
+        try:
+            # 1. Get Schema
+            # We need to format the schema for the AI
+            schema_dict = await asyncio.to_thread(self.manager.get_schema)
+            schema_str = ""
+            for table, columns in schema_dict.items():
+                schema_str += f"Table: {table}\n"
+                for col in columns:
+                    schema_str += f"  - {col['name']} ({col['type']})\n"
+                schema_str += "\n"
+
+            # 2. Call AI
+            sql = await generate_sql(question, schema_str, self.project_dir, agent_type=agent_type)
+
+            if sql.startswith("ERROR:"):
+                self.log_message(f"[red]{sql}[/red]")
+                self.notify("AI failed to generate SQL.", severity="error")
+            else:
+                self.query_one("#sql-query-editor", TextArea).text = sql
+                self.notify("SQL Generated.")
+                self.log_message("[green]SQL generated from natural language.[/green]")
+
+        except Exception as e:
+            self.notify(f"AI Error: {e}", severity="error")
+            self.log_message(f"[red]AI Error: {e}[/red]")
 
     def display_results(self, result: Dict[str, Any]) -> None:
         table = self.query_one("#sql-results-table", DataTable)

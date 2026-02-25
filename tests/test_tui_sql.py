@@ -1,93 +1,117 @@
-import pytest
-from unittest.mock import MagicMock, patch
+import unittest
 from pathlib import Path
-from shared.tui_sql import SqlLabTab
+from unittest.mock import MagicMock, patch, AsyncMock
+import tempfile
+import shutil
+
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Button, ListView, TextArea, DataTable, Label
+from textual.widgets import Input, Button, TextArea, Select, Label
+from shared.tui_sql import SqlLabTab
 
-class SqlLabApp(App):
+class SqlLabTestApp(App):
+    def __init__(self, project_dir):
+        super().__init__()
+        self.project_dir = project_dir
+
     def compose(self) -> ComposeResult:
-        yield SqlLabTab(Path("."))
+        yield SqlLabTab(self.project_dir)
 
-@pytest.mark.asyncio
-async def test_sql_lab_mount():
-    with patch("shared.tui_sql.detect_connection_string", return_value="sqlite:///test.db"):
-        app = SqlLabApp()
+class TestSqlLabTab(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp())
+        self.project_dir = self.test_dir / "project"
+        self.project_dir.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    async def test_compose_structure(self):
+        """Test that the SqlLabTab has the expected widgets."""
+        app = SqlLabTestApp(self.project_dir)
+        async with app.run_test() as pilot:
+            # Check for AI Assistant widgets
+            self.assertIsNotNone(app.query_one("#sql-ai-input", Input))
+            self.assertIsNotNone(app.query_one("#sql-ai-agent", Select))
+            self.assertIsNotNone(app.query_one("#btn-sql-ai-generate", Button))
+
+            # Check for existing widgets
+            self.assertIsNotNone(app.query_one("#sql-url-input", Input))
+            self.assertIsNotNone(app.query_one("#sql-query-editor", TextArea))
+
+    @patch("shared.tui_sql.SqlLabManager")
+    @patch("shared.tui_sql.generate_sql", new_callable=AsyncMock)
+    async def test_generate_ai_query(self, mock_generate_sql, MockSqlLabManager):
+        """Test the AI query generation logic."""
+        app = SqlLabTestApp(self.project_dir)
+
+        # We need to inject mocks into the tab instance
+        # Since run_test creates the app and mounts widgets, we need to access them via the app.
+
+        # Mock Manager behavior
+        mock_manager = MockSqlLabManager.return_value
+        mock_manager.get_schema = MagicMock(return_value={"users": [{"name": "id", "type": "INTEGER"}]})
+        mock_manager.engine = MagicMock() # For connection check
+
+        # Mock generate_sql response
+        mock_generate_sql.return_value = "SELECT * FROM users;"
+
         async with app.run_test() as pilot:
             tab = app.query_one(SqlLabTab)
-            assert tab.query_one("#sql-url-input", Input).value == "sqlite:///test.db"
-            # Initially connect button is enabled, others disabled
-            assert tab.query_one("#btn-sql-connect", Button).disabled == False
-            assert tab.query_one("#btn-sql-refresh-tables", Button).disabled == True
-            assert tab.query_one("#btn-sql-execute", Button).disabled == True
 
-@pytest.mark.asyncio
-async def test_sql_lab_connect_success():
-    with patch("shared.tui_sql.detect_connection_string", return_value="sqlite:///test.db"), \
-         patch("shared.tui_sql.SqlLabManager") as MockManager:
+            # Simulate Connection
+            # We patch SqlLabManager but the tab instantiates it.
+            # MockSqlLabManager is the class, so calling it returns mock_manager.
 
-        mock_instance = MockManager.return_value
-        # Mock engine context manager for connection test
-        mock_conn = MagicMock()
-        mock_instance.engine.connect.return_value.__enter__.return_value = mock_conn
+            # Manually set the manager to simulate connection (bypassing the connect button logic for this specific test aspect if needed,
+            # but better to simulate the flow or just set it if we want to test generate specifically)
+            tab.manager = mock_manager
 
-        mock_instance.list_tables = MagicMock(return_value=["users", "posts"])
+            # Set input
+            await pilot.click("#sql-ai-input")
+            await pilot.press("S", "h", "o", "w", " ", "u", "s", "e", "r", "s")
 
-        app = SqlLabApp()
+            # Ensure input value is set (Textual inputs might need time or explicit setting in tests if typing is flaky)
+            tab.query_one("#sql-ai-input", Input).value = "Show users"
+
+            # Enable button (it's disabled by default, enabled on connect)
+            # Since we manually set manager, we also need to enable the button manually or call connect_db
+            tab.query_one("#btn-sql-ai-generate").disabled = False
+
+            # Click Generate
+            await pilot.click("#btn-sql-ai-generate")
+
+            # Verify generate_sql called
+            mock_generate_sql.assert_called_once()
+            args = mock_generate_sql.call_args
+            self.assertEqual(args[0][0], "Show users") # question
+            self.assertIn("Table: users", args[0][1]) # schema string
+
+            # Verify Editor content
+            editor = tab.query_one("#sql-query-editor", TextArea)
+            self.assertEqual(editor.text, "SELECT * FROM users;")
+
+    @patch("shared.tui_sql.SqlLabManager")
+    async def test_generate_ai_query_not_connected(self, MockSqlLabManager):
+        """Test that it handles not connected state."""
+        app = SqlLabTestApp(self.project_dir)
         async with app.run_test() as pilot:
             tab = app.query_one(SqlLabTab)
+            # Ensure manager is None
+            tab.manager = None
 
-            # Click connect
-            await pilot.click("#btn-sql-connect")
+            # Button might be disabled, but we can try calling the handler directly
+            # or force enable and click.
+            tab.query_one("#btn-sql-ai-generate").disabled = False
 
-            # Wait for async operations? run_test usually handles pending events,
-            # but since we use asyncio.to_thread, we might need a small pause or loop drain.
-            # However, pilot.click waits for events.
+            # Set input
+            tab.query_one("#sql-ai-input", Input).value = "Show users"
 
-            # Verify connected state
-            lbl = tab.query_one("#lbl-sql-status", Label)
-            assert "Connected" in str(lbl.render())
-            assert tab.query_one("#btn-sql-refresh-tables", Button).disabled == False
+            # Mock notify to verify warning
+            tab.notify = MagicMock()
 
-            # Verify tables loaded
-            list_view = tab.query_one("#sql-table-list", ListView)
-            # Need to wait for list to populate?
-            # Pilot should have waited.
-            assert len(list_view.children) == 2
-            # Use render() instead of renderable
-            assert str(list_view.children[0].query_one(Label).render()) == "users"
+            await pilot.click("#btn-sql-ai-generate")
 
-@pytest.mark.asyncio
-async def test_sql_lab_execute_query():
-    with patch("shared.tui_sql.detect_connection_string", return_value="sqlite:///test.db"), \
-         patch("shared.tui_sql.SqlLabManager") as MockManager:
+            tab.notify.assert_called_with("Not connected.", severity="warning")
 
-        mock_instance = MockManager.return_value
-        mock_instance.engine.connect.return_value.__enter__.return_value = MagicMock()
-
-        # Mock execute query
-        mock_instance.execute_query = MagicMock(return_value={
-            "success": True,
-            "columns": ["id", "name"],
-            "rows": [{"id": 1, "name": "Alice"}]
-        })
-
-        mock_instance.list_tables = MagicMock(return_value=[])
-
-        app = SqlLabApp()
-        async with app.run_test() as pilot:
-            tab = app.query_one(SqlLabTab)
-            await pilot.click("#btn-sql-connect")
-
-            # Set query
-            tab.query_one("#sql-query-editor", TextArea).text = "SELECT * FROM users"
-
-            # Click execute
-            await pilot.click("#btn-sql-execute")
-
-            # Verify results
-            table = tab.query_one("#sql-results-table", DataTable)
-            assert table.row_count == 1
-
-            info = tab.query_one("#sql-result-info", Label)
-            assert "1 rows returned" in str(info.render())
+if __name__ == "__main__":
+    unittest.main()

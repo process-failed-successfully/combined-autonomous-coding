@@ -274,6 +274,7 @@ KNOWN_COMMANDS = [
     "test-lab",
     "stats-lab", "stats", "codestats",
     "disk-usage", "du", "usage",
+    "process-explorer", "pex", "htop", "top",
     "knowledge-lab", "kg", "graph",
     "dash-lab",
     "rebase-lab", "rebase",
@@ -372,6 +373,14 @@ def run_disk_usage(args):
     from shared.tui import AgentTUI
     print("Launching Disk Usage TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-disk-usage")
+    app.run()
+    sys.exit(0)
+
+def run_process_explorer(args):
+    """Runs the Interactive Process Explorer TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Process Explorer TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-process-explorer")
     app.run()
     sys.exit(0)
 
@@ -14929,6 +14938,13 @@ def parse_args(argv=None):
         help="Interactive Disk Usage TUI."
     )
 
+    # --- New 'process-explorer' command ---
+    parser_pex = subparsers.add_parser(
+        "process-explorer",
+        aliases=["pex", "htop", "top"],
+        help="Interactive Process Explorer TUI."
+    )
+
     # --- New 'knowledge-lab' command ---
     parser_kg = subparsers.add_parser(
         "knowledge-lab",
@@ -18715,6 +18731,10 @@ async def main():
 
     if args.command in ["disk-usage", "du", "usage"]:
         run_disk_usage(args)
+        return
+
+    if args.command in ["process-explorer", "pex", "htop", "top"]:
+        run_process_explorer(args)
         return
 
     if args.command in ["knowledge-lab", "kg", "graph"]:

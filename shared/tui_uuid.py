@@ -1,8 +1,10 @@
+from typing import cast
 from textual.app import ComposeResult
 from textual.widgets import Label, Button, Input, Select, RichLog, TabbedContent, TabPane, Static
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical
 from textual import on
 from shared.uuid_lab import UuidLabManager
+
 
 class UuidLabTab(Container):
     """Tab for UUID operations (Generate, Inspect, Validate)."""
@@ -79,7 +81,12 @@ class UuidLabTab(Container):
 
     @on(Button.Pressed, "#btn-uuid-generate")
     def on_generate(self) -> None:
-        ver = self.query_one("#select-uuid-version", Select).value
+        ver_val = self.query_one("#select-uuid-version", Select).value
+        if ver_val == Select.BLANK:
+            self.notify("Please select a version.", severity="error")
+            return
+        ver = cast(int, ver_val)
+
         count_val = self.query_one("#input-uuid-count", Input).value
         count = int(count_val) if count_val.isdigit() else 1
 
@@ -124,7 +131,7 @@ class UuidLabTab(Container):
         log.write(f"Hex: {info['hex']}")
 
         if info.get("version") == 1:
-            log.write(f"\n[bold]v1 Specifics:[/bold]")
+            log.write("\n[bold]v1 Specifics:[/bold]")
             log.write(f"Time: {info.get('timestamp_iso', info.get('time'))}")
             log.write(f"Node (MAC): {info.get('mac')}")
             log.write(f"Clock Seq: {info.get('clock_seq')}")
@@ -141,6 +148,6 @@ class UuidLabTab(Container):
             return
 
         if self.manager.validate(val):
-            lbl.update(f"[bold green]✅ Valid UUID[/bold green]")
+            lbl.update("[bold green]✅ Valid UUID[/bold green]")
         else:
-            lbl.update(f"[bold red]❌ Invalid UUID[/bold red]")
+            lbl.update("[bold red]❌ Invalid UUID[/bold red]")

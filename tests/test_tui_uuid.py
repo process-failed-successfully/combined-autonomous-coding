@@ -1,13 +1,14 @@
+import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-import sys
+from unittest.mock import MagicMock
 
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Label, Button, Input, Select, RichLog, Static
-from shared.tui_uuid import UuidLabTab
+from textual.widgets import Input, Select, RichLog, Static  # noqa: E402
+from shared.tui_uuid import UuidLabTab  # noqa: E402
+
 
 class TestUuidLabTab(unittest.IsolatedAsyncioTestCase):
     async def test_uuid_generation(self):
@@ -99,6 +100,7 @@ class TestUuidLabTab(unittest.IsolatedAsyncioTestCase):
         mock_input.value = "not-a-uuid"
         tab.on_validate()
         mock_lbl.update.assert_called_with("[bold red]❌ Invalid UUID[/bold red]")
+
 
 if __name__ == "__main__":
     unittest.main()

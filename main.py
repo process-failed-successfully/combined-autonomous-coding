@@ -275,7 +275,8 @@ KNOWN_COMMANDS = [
     "stats-lab", "stats", "codestats",
     "disk-usage", "du", "usage",
     "knowledge-lab", "kg", "graph",
-    "dash-lab"
+    "dash-lab",
+    "rebase-lab", "rebase"
 ]
 
 if FileSystemEventHandler:
@@ -362,6 +363,12 @@ def run_disk_usage(args):
     print("Launching Disk Usage TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-disk-usage")
     app.run()
+    sys.exit(0)
+
+def run_rebase_lab(args):
+    """Runs the Interactive Git Rebase Lab."""
+    from shared.rebase_lab import run_rebase_lab_logic
+    run_rebase_lab_logic(args)
     sys.exit(0)
 
 def run_knowledge_lab(args):
@@ -14917,6 +14924,15 @@ def parse_args(argv=None):
         help="Interactive Dash Lab TUI (Dashboard Builder)."
     )
 
+    # --- New 'rebase-lab' command ---
+    parser_rebase = subparsers.add_parser(
+        "rebase-lab",
+        aliases=["rebase"],
+        help="Interactive Git Rebase Lab."
+    )
+    parser_rebase.add_argument("target", nargs="?", default="HEAD~3", help="Rebase target (e.g. HEAD~3, main).")
+    parser_rebase.add_argument("--editor", help="Internal: path to rebase todo file.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18675,6 +18691,10 @@ async def main():
 
     if args.command == "dash-lab":
         run_dash_lab(args)
+        return
+
+    if args.command in ["rebase-lab", "rebase"]:
+        run_rebase_lab(args)
         return
 
     # Initialize Agent Client

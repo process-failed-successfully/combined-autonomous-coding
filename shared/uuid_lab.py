@@ -5,10 +5,10 @@ from typing import List, Dict, Any, Optional
 class UuidLabManager:
     """Manages UUID operations (generation, inspection, validation)."""
 
-    def generate(self, version: int = 4, count: int = 1, namespace: str = None, name: str = None) -> List[str]:
+    def generate(self, version: int = 4, count: int = 1, namespace: Optional[str] = None, name: Optional[str] = None) -> List[str]:
         """Generates UUIDs."""
         results = []
-        ns_uuid = None
+        ns_uuid: Optional[uuid.UUID] = None
 
         if version in [3, 5]:
             if not name:
@@ -31,10 +31,18 @@ class UuidLabManager:
             if version == 1:
                 u = uuid.uuid1()
             elif version == 3:
+                if ns_uuid is None:
+                    raise ValueError("Namespace UUID is required for version 3")
+                if name is None:
+                    raise ValueError("Name is required for version 3")
                 u = uuid.uuid3(ns_uuid, name)
             elif version == 4:
                 u = uuid.uuid4()
             elif version == 5:
+                if ns_uuid is None:
+                    raise ValueError("Namespace UUID is required for version 5")
+                if name is None:
+                    raise ValueError("Name is required for version 5")
                 u = uuid.uuid5(ns_uuid, name)
             else:
                 raise ValueError(f"Unsupported UUID version: {version}")
@@ -75,7 +83,7 @@ class UuidLabManager:
                 ts = (u.time - 0x01b21dd213814000) / 1e7
                 from datetime import datetime
                 info["timestamp_iso"] = datetime.fromtimestamp(ts).isoformat()
-            except Exception:
+            except (ValueError, OSError, OverflowError):
                 pass
 
         return info

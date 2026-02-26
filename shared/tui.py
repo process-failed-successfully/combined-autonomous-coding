@@ -185,6 +185,7 @@ from shared.tui_stats import StatsTab
 from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.tui_dash import DashLabTab
 from shared.tui_cicd import CicdLabTab
+from shared.tui_pre_commit import PreCommitLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4298,6 +4299,8 @@ class AgentTUI(App):
                 yield DashLabTab(self.project_dir)
             with TabPane("CI/CD Lab", id="tab-cicd"):
                 yield CicdLabTab(self.project_dir)
+            with TabPane("Pre-commit Lab", id="tab-pre-commit"):
+                yield PreCommitLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

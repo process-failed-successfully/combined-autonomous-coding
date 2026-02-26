@@ -159,6 +159,7 @@ from shared.productivity_lab import run_productivity_lab_logic
 from shared.rename_lab import run_rename_lab_logic
 from shared.dict_lab import run_dict_lab_logic
 from shared.emoji_lab import run_emoji_lab_logic
+from shared.cq_lab import run_cq_lab_logic
 import json
 import yaml
 import platformdirs
@@ -14997,6 +14998,15 @@ def parse_args(argv=None):
         help="Interactive Flashcards Lab (Spaced Repetition Learning)."
     )
 
+    # --- New 'cq-lab' command ---
+    parser_cq = subparsers.add_parser(
+        "cq-lab",
+        aliases=["quality", "cql"],
+        help="Interactive Code Quality Lab (Complexity, Duplication, Security, Debt)."
+    )
+    parser_cq.add_argument("--json", action="store_true", help="Output results as JSON")
+    parser_cq.add_argument("--action", choices=["tui"], default=None, nargs="?", help="Action to perform (default: report)")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18775,6 +18785,10 @@ async def main():
 
     if args.command in ["flashcards-lab", "flash", "learn"]:
         run_flashcards_lab(args)
+        return
+
+    if args.command in ["cq-lab", "quality", "cql"]:
+        run_cq_lab_logic(args)
         return
 
     # Initialize Agent Client

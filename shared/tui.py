@@ -186,6 +186,7 @@ from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.tui_dash import DashLabTab
 from shared.tui_cicd import CicdLabTab
 from shared.tui_pre_commit import PreCommitLabTab
+from shared.tui_cq import CodeQualityTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3919,6 +3920,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Host Lab", "switch_tab_host_lab"),
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
+        PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4081,6 +4083,8 @@ class AgentTUI(App):
                 yield GuardrailsTab(self.project_dir)
             with TabPane("Health", id="tab-health"):
                 yield HealthTab(self.project_dir)
+            with TabPane("Code Quality", id="tab-cq-lab"):
+                yield CodeQualityTab(self.project_dir)
             with TabPane("Impact", id="tab-impact"):
                 yield ImpactTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):

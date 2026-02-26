@@ -184,6 +184,7 @@ from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
 from shared.tui_stats import StatsTab
 from shared.tui_knowledge_graph import KnowledgeGraphTab
+from shared.tui_day_planner import DayPlannerTab
 from shared.tui_dash import DashLabTab
 from shared.tui_cicd import CicdLabTab
 from shared.tui_pre_commit import PreCommitLabTab
@@ -3923,6 +3924,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
+        PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4057,6 +4059,8 @@ class AgentTUI(App):
                 yield FindLabTab(self.project_dir)
             with TabPane("Tasks", id="tab-tasks"):
                 yield TasksTab(self.project_dir)
+            with TabPane("Day Planner", id="tab-day-planner"):
+                yield DayPlannerTab(self.project_dir)
             with TabPane("Gantt", id="tab-gantt"):
                 yield GanttTab(self.project_dir)
             with TabPane("Standup", id="tab-standup"):

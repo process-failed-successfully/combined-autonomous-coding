@@ -137,6 +137,7 @@ from shared.tui_xml import XmlLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
+from shared.tui_transpiler import TranspilerTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_diff_lab import DiffLabTab
@@ -4209,6 +4210,8 @@ class AgentTUI(App):
                 yield CodecLabTab()
             with TabPane("Converter Lab", id="tab-converter"):
                 yield ConverterLabTab(self.project_dir)
+            with TabPane("Transpiler Lab", id="tab-transpiler"):
+                yield TranspilerTab(self.project_dir)
             with TabPane("Crypto Lab", id="tab-crypto"):
                 yield CryptoLabTab()
             with TabPane("Time Lab", id="tab-time"):

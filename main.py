@@ -205,7 +205,7 @@ KNOWN_COMMANDS = [
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proxy-lab", "proxy",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
-    "enc-lab", "enc", "encode", "rss-lab", "rss", "fs-lab", "fs", "files",
+    "enc-lab", "enc", "encode", "pcap-lab", "pcap", "rss-lab", "rss", "fs-lab", "fs", "files",
     "ws-lab", "ws", "webhook-lab", "webhook", "hook", "hash-lab", "hash", "random-lab", "rand", "random",
     "browser-lab", "browser", "web",
     "npm-lab", "npm",
@@ -799,6 +799,12 @@ def run_enc_lab(args):
     """Runs the Encoding Lab."""
     success = run_enc_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_pcap_lab(args):
+    """Runs the PCAP Lab."""
+    from shared.pcap_lab import run_pcap_lab_logic
+    run_pcap_lab_logic(args)
+    sys.exit(0)
 
 def run_rss_lab(args):
     """Runs the RSS Lab."""
@@ -12911,6 +12917,19 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # --- New 'pcap-lab' command ---
+    parser_pcap = subparsers.add_parser(
+        "pcap-lab",
+        aliases=["pcap"],
+        help="Analyze and inspect PCAP files."
+    )
+    parser_pcap.add_argument("action", choices=["analyze", "list", "filter"], help="Action to perform")
+    parser_pcap.add_argument("--file", "-f", required=True, help="Path to PCAP file")
+    parser_pcap.add_argument("--limit", "-n", type=int, default=20, help="Number of packets to list/filter")
+    parser_pcap.add_argument("--proto", help="Filter by protocol (tcp, udp, icmp)")
+    parser_pcap.add_argument("--src", help="Filter by source IP")
+    parser_pcap.add_argument("--dst", help="Filter by destination IP")
+
     # Common args for enc-lab
     def add_enc_args(p):
         p.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
@@ -18334,6 +18353,10 @@ async def main():
 
     if args.command in ["enc-lab", "enc", "encode"]:
         run_enc_lab(args)
+        return
+
+    if args.command in ["pcap-lab", "pcap"]:
+        run_pcap_lab(args)
         return
 
     if args.command in ["rss-lab", "rss"]:

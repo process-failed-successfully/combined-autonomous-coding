@@ -270,6 +270,7 @@ KNOWN_COMMANDS = [
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
+    "go-lab", "go", "golang",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
     "slides-lab", "slides", "present",
@@ -330,6 +331,12 @@ def run_emoji_lab(args):
     """Runs the Emoji Lab."""
     run_emoji_lab_logic(args)
     sys.exit(0)
+
+def run_go_lab(args):
+    """Runs the Go Lab."""
+    from shared.go_lab import run_go_lab_logic
+    success = run_go_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_host_lab(args):
     """Runs the Host Lab."""
@@ -18778,6 +18785,10 @@ async def main():
 
     if args.command in ["emoji-lab", "emoji", "emoj"]:
         run_emoji_lab(args)
+        return
+
+    if args.command in ["go-lab", "go", "golang"]:
+        run_go_lab(args)
         return
 
     if args.command in ["host-lab", "hosts", "host"]:

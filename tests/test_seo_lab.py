@@ -87,6 +87,14 @@ class TestSeoLabManager(unittest.TestCase):
         self.assertTrue(stats["title"]["exists"])
         self.assertEqual(stats["title"]["text"], "Test")
 
+    def test_analyze_url_invalid_scheme(self):
+        # Verify that SystemExit is raised for invalid schemes
+        with self.assertRaises(SystemExit) as cm:
+            # We suppress stderr to avoid cluttering test output
+            with patch('sys.stderr', new=StringIO()):
+                self.manager.analyze_url("file:///etc/passwd")
+        self.assertEqual(cm.exception.code, 1)
+
     def test_generate_report_json(self):
         stats = {
             "title": {"exists": True, "length": 4, "text": "Test"},

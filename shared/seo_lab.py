@@ -2,6 +2,7 @@ import sys
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
 from html.parser import HTMLParser
 from typing import List, Dict, Any, Optional
 
@@ -133,6 +134,11 @@ class SeoLabManager:
             sys.exit(1)
 
     def analyze_url(self, url: str) -> Dict[str, Any]:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ['http', 'https']:
+            print(f"Error: URL scheme '{parsed.scheme}' not supported. Only http and https are allowed.", file=sys.stderr)
+            sys.exit(1)
+
         try:
             req = urllib.request.Request(
                 url,

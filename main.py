@@ -160,6 +160,7 @@ from shared.rename_lab import run_rename_lab_logic
 from shared.dict_lab import run_dict_lab_logic
 from shared.emoji_lab import run_emoji_lab_logic
 from shared.cq_lab import run_cq_lab_logic
+from shared.transpiler_lab import run_transpiler_lab_logic
 import json
 import yaml
 import platformdirs
@@ -15032,6 +15033,16 @@ def parse_args(argv=None):
     )
     parser_cq.add_argument("--json", action="store_true", help="Output results as JSON")
     parser_cq.add_argument("--action", choices=["tui"], default=None, nargs="?", help="Action to perform (default: report)")
+
+    # --- Transpiler Lab ---
+    parser_transpiler = subparsers.add_parser("transpiler-lab", aliases=["transpile"], help="AI Code Transpiler")
+    parser_transpiler.set_defaults(func=run_transpiler_lab_logic)
+    parser_transpiler.add_argument("--action", choices=["tui", "cli"], default="cli", nargs="?", help="Action (tui/cli)")
+    parser_transpiler.add_argument("--file", help="Input file to transpile")
+    parser_transpiler.add_argument("--code", help="Input code string")
+    parser_transpiler.add_argument("--source", help="Source language (default: auto)")
+    parser_transpiler.add_argument("--target", help="Target language (required for CLI)")
+    parser_transpiler.add_argument("--agent", choices=["gemini", "cursor", "local"], default="gemini", help="AI Agent to use")
 
     # --- Plugin Registration ---
     try:

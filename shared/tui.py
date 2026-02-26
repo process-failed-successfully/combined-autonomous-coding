@@ -183,6 +183,7 @@ from shared.tui_clipboard import ClipboardTab
 from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
 from shared.tui_stats import StatsTab
+from shared.tui_matrix import MatrixLabTab
 from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.tui_day_planner import DayPlannerTab
 from shared.tui_dash import DashLabTab
@@ -3923,6 +3924,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Clipboard Lab", "switch_tab_clipboard"),
         PaletteCommand("Go to Host Lab", "switch_tab_host_lab"),
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
+        PaletteCommand("Go to Matrix Lab", "switch_tab_matrix_lab"),
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
@@ -4309,6 +4311,8 @@ class AgentTUI(App):
                 yield HostLabTab(self.project_dir)
             with TabPane("Test Lab", id="tab-test-lab"):
                 yield TestLabTab(self.project_dir)
+            with TabPane("Matrix Lab", id="tab-matrix-lab"):
+                yield MatrixLabTab()
             with TabPane("Stats Lab", id="tab-stats"):
                 yield StatsTab(self.project_dir)
             with TabPane("Dash Lab", id="tab-dash-lab"):

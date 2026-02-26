@@ -275,6 +275,7 @@ KNOWN_COMMANDS = [
     "clipboard-lab", "clip", "cp", "copy",
     "slides-lab", "slides", "present",
     "test-lab",
+    "matrix-lab", "matrix",
     "stats-lab", "stats", "codestats",
     "disk-usage", "du", "usage",
     "process-explorer", "pex", "htop", "top",
@@ -361,6 +362,14 @@ def run_test_lab(args):
     from shared.tui import AgentTUI
     print("Launching Test Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
+    app.run()
+    sys.exit(0)
+
+def run_matrix_lab(args):
+    """Runs the Matrix Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Matrix Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-matrix-lab")
     app.run()
     sys.exit(0)
 
@@ -18805,6 +18814,10 @@ async def main():
 
     if args.command in ["test-lab"]:
         run_test_lab(args)
+        return
+
+    if args.command in ["matrix-lab", "matrix"]:
+        run_matrix_lab(args)
         return
 
     if args.command in ["stats-lab", "stats", "codestats"]:

@@ -276,7 +276,8 @@ KNOWN_COMMANDS = [
     "disk-usage", "du", "usage",
     "knowledge-lab", "kg", "graph",
     "dash-lab",
-    "rebase-lab", "rebase"
+    "rebase-lab", "rebase",
+    "cicd-lab", "ci", "actions"
 ]
 
 if FileSystemEventHandler:
@@ -369,6 +370,14 @@ def run_rebase_lab(args):
     """Runs the Interactive Git Rebase Lab."""
     from shared.rebase_lab import run_rebase_lab_logic
     run_rebase_lab_logic(args)
+    sys.exit(0)
+
+def run_cicd_lab(args):
+    """Runs the CI/CD Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching CI/CD Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-cicd")
+    app.run()
     sys.exit(0)
 
 def run_knowledge_lab(args):
@@ -14933,6 +14942,13 @@ def parse_args(argv=None):
     parser_rebase.add_argument("target", nargs="?", default="HEAD~3", help="Rebase target (e.g. HEAD~3, main).")
     parser_rebase.add_argument("--editor", help="Internal: path to rebase todo file.")
 
+    # --- New 'cicd-lab' command ---
+    parser_cicd = subparsers.add_parser(
+        "cicd-lab",
+        aliases=["ci", "actions"],
+        help="Interactive CI/CD Lab TUI (GitHub Actions)."
+    )
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18695,6 +18711,10 @@ async def main():
 
     if args.command in ["rebase-lab", "rebase"]:
         run_rebase_lab(args)
+        return
+
+    if args.command in ["cicd-lab", "ci", "actions"]:
+        run_cicd_lab(args)
         return
 
     # Initialize Agent Client

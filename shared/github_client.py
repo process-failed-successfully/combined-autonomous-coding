@@ -68,6 +68,73 @@ class GitHubClient:
         else:
             response.raise_for_status()
 
+    def list_workflows(self, project_dir):
+        """Lists GitHub Actions workflows."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/actions/workflows"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def list_workflow_runs(self, project_dir, workflow_id, per_page=20):
+        """Lists runs for a specific workflow."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs"
+        headers = self._get_headers()
+        params = {"per_page": per_page}
+
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def get_workflow_run_jobs(self, project_dir, run_id):
+        """Gets jobs for a workflow run."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
+        headers = self._get_headers()
+
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response.raise_for_status()
+
+    def trigger_workflow_dispatch(self, project_dir, workflow_id, ref, inputs=None):
+        """Triggers a workflow dispatch event."""
+        owner, repo = self._get_repo_owner_and_name(project_dir)
+        if not owner or not repo:
+            raise ValueError("Could not determine the repository owner and name from the git remote URL.")
+
+        url = f"{self.api_base_url}/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
+        headers = self._get_headers()
+        data = {
+            "ref": ref
+        }
+        if inputs:
+            data["inputs"] = inputs
+
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+        # 204 No Content is success
+        if response.status_code == 204:
+            return True
+        else:
+            response.raise_for_status()
+
     def get_issues(self, project_dir, state="open", assignee=None):
         """Fetches issues from GitHub."""
         owner, repo = self._get_repo_owner_and_name(project_dir)

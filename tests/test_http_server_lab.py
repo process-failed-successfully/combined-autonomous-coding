@@ -1,10 +1,23 @@
 import unittest
 import shutil
 from pathlib import Path
-from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
-from aiohttp import FormData
-from shared.http_server_lab import HttpServerManager
+from shared.http_server_lab import HttpServerManager, AIOHTTP_AVAILABLE
 
+# Conditionally import aiohttp test utils
+if AIOHTTP_AVAILABLE:
+    from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+    from aiohttp import FormData
+else:
+    # Dummy classes/decorators to allow class definition but skip execution
+    class AioHTTPTestCase(unittest.TestCase):
+        pass
+
+    def unittest_run_loop(func):
+        return func
+
+    FormData = None
+
+@unittest.skipUnless(AIOHTTP_AVAILABLE, "aiohttp not installed")
 class TestEchoServer(AioHTTPTestCase):
     async def get_application(self):
         self.manager = HttpServerManager()
@@ -19,8 +32,11 @@ class TestEchoServer(AioHTTPTestCase):
             self.assertEqual(data["body"], "bar")
             self.assertIn("/foo", data["url"])
 
+@unittest.skipUnless(AIOHTTP_AVAILABLE, "aiohttp not installed")
 class TestUploadServer(AioHTTPTestCase):
     def setUp(self):
+        if not AIOHTTP_AVAILABLE:
+            self.skipTest("aiohttp not installed")
         self.temp_dir = Path("./test_http_lab_upload_temp")
         self.temp_dir.mkdir(exist_ok=True)
         super().setUp()
@@ -55,8 +71,11 @@ class TestUploadServer(AioHTTPTestCase):
         async with self.client.request("POST", "/", data="raw data") as resp:
             self.assertEqual(resp.status, 400)
 
+@unittest.skipUnless(AIOHTTP_AVAILABLE, "aiohttp not installed")
 class TestStaticServer(AioHTTPTestCase):
     def setUp(self):
+        if not AIOHTTP_AVAILABLE:
+            self.skipTest("aiohttp not installed")
         self.temp_dir = Path("./test_http_lab_static_temp")
         self.temp_dir.mkdir(exist_ok=True)
         (self.temp_dir / "index.html").write_text("<html>Index</html>")

@@ -26,6 +26,7 @@ class HttpServerManager:
         if self._log_callback:
             self._log_callback(message)
 
+    @web.middleware
     async def _logging_middleware(self, request, handler):
         self._log(f"Request: {request.method} {request.path}")
         try:

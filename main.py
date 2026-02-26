@@ -802,6 +802,13 @@ def run_enc_lab(args):
 
 def run_pcap_lab(args):
     """Runs the PCAP Lab."""
+    if args.tui:
+        from shared.tui import AgentTUI
+        print("Launching PCAP Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pcap")
+        app.run()
+        sys.exit(0)
+
     from shared.pcap_lab import run_pcap_lab_logic
     run_pcap_lab_logic(args)
     sys.exit(0)

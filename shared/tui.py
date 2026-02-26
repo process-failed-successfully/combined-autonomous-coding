@@ -182,6 +182,7 @@ from shared.tui_test import TestLabTab
 from shared.tui_stats import StatsTab
 from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.tui_dash import DashLabTab
+from shared.tui_cicd import CicdLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4289,6 +4290,8 @@ class AgentTUI(App):
                 yield StatsTab(self.project_dir)
             with TabPane("Dash Lab", id="tab-dash-lab"):
                 yield DashLabTab(self.project_dir)
+            with TabPane("CI/CD Lab", id="tab-cicd"):
+                yield CicdLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

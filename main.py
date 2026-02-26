@@ -917,6 +917,13 @@ def run_jwt_lab(args):
 
 def run_uuid_lab(args):
     """Runs the UUID Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching UUID Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-uuid")
+        app.run()
+        sys.exit(0)
+
     from shared.uuid_lab import run_uuid_lab_logic
     run_uuid_lab_logic(args)
     sys.exit(0)
@@ -11631,6 +11638,9 @@ def parse_args(argv=None):
     # uuid inspect
     parser_uuid_inspect = uuid_subparsers.add_parser("inspect", aliases=["info", "decode"], help="Inspect a UUID.")
     parser_uuid_inspect.add_argument("uuid", help="The UUID to inspect.")
+
+    # uuid tui
+    parser_uuid_tui = uuid_subparsers.add_parser("tui", help="Launch UUID Lab TUI.")
 
     # uuid validate
     parser_uuid_validate = uuid_subparsers.add_parser("validate", aliases=["check"], help="Validate a UUID.")

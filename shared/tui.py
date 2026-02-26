@@ -145,6 +145,7 @@ from shared.tui_qr import QrLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
+from shared.tui_pcap import PcapLabTab
 from shared.tui_port import PortLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
@@ -3895,6 +3896,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Monitor", "switch_tab_monitor"),
         PaletteCommand("Go to Terminal", "switch_tab_terminal"),
         PaletteCommand("Go to Sniffer", "switch_tab_sniffer"),
+        PaletteCommand("Go to PCAP Lab", "switch_tab_pcap"),
         PaletteCommand("Go to K8s", "switch_tab_k8s"),
         PaletteCommand("Go to Explorer", "switch_tab_explorer"),
         PaletteCommand("Go to Disk Usage", "switch_tab_disk_usage"),
@@ -4109,6 +4111,8 @@ class AgentTUI(App):
                 yield CidrLabTab(self.project_dir)
             with TabPane("Sniffer", id="tab-sniffer"):
                 yield SnifferLabTab(self.project_dir)
+            with TabPane("PCAP Lab", id="tab-pcap"):
+                yield PcapLabTab(self.project_dir)
             with TabPane("Snippets", id="tab-snippets"):
                 yield SnippetsTab(self.project_dir)
             with TabPane("Cheatsheet", id="tab-cheatsheet"):

@@ -1,14 +1,28 @@
 import asyncio
-from aiohttp import web
 import logging
 from typing import Optional, Callable, Any
 from pathlib import Path
 import sys
 
+try:
+    from aiohttp import web
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    web = None
+    AIOHTTP_AVAILABLE = False
+
+# Define a dummy middleware decorator if aiohttp is missing
+# to prevent AttributeError during class definition
+if not AIOHTTP_AVAILABLE:
+    def middleware(func):
+        return func
+else:
+    middleware = web.middleware
+
 class HttpServerManager:
     def __init__(self):
-        self.runner: Optional[web.AppRunner] = None
-        self.site: Optional[web.TCPSite] = None
+        self.runner: Any = None
+        self.site: Any = None
         self.port: Optional[int] = None
         self.type: Optional[str] = None  # "static", "echo", or "upload"
         self._log_callback: Optional[Callable[[str], None]] = None
@@ -20,7 +34,7 @@ class HttpServerManager:
         if self._log_callback:
             self._log_callback(message)
 
-    @web.middleware
+    @middleware
     async def _logging_middleware(self, request, handler):
         self._log(f"Request: {request.method} {request.path}")
         try:
@@ -31,8 +45,12 @@ class HttpServerManager:
             self._log(f"Error handling request: {e}")
             raise
 
-    def create_static_app(self, path: Path) -> web.Application:
+    def create_static_app(self, path: Path) -> Any:
+        if not AIOHTTP_AVAILABLE:
+            raise ImportError("aiohttp is required for this feature")
+
         app = web.Application()
+        # With @web.middleware, the method is already a middleware factory/handler
         app.middlewares.append(self._logging_middleware)
         try:
             app.router.add_static('/', str(path), show_index=True)
@@ -42,6 +60,10 @@ class HttpServerManager:
         return app
 
     async def start_static(self, path: str, port: int):
+        if not AIOHTTP_AVAILABLE:
+            self._log("Error: aiohttp not installed")
+            return
+
         await self.stop()
         p = Path(path)
         if not p.exists() or not p.is_dir():
@@ -57,7 +79,10 @@ class HttpServerManager:
         self.type = "static"
         self._log(f"Static server started on port {port} serving {path}")
 
-    def create_echo_app(self) -> web.Application:
+    def create_echo_app(self) -> Any:
+        if not AIOHTTP_AVAILABLE:
+            raise ImportError("aiohttp is required for this feature")
+
         async def echo_handler(request):
             text = await request.text()
             data = {
@@ -77,6 +102,10 @@ class HttpServerManager:
         return app
 
     async def start_echo(self, port: int):
+        if not AIOHTTP_AVAILABLE:
+            self._log("Error: aiohttp not installed")
+            return
+
         await self.stop()
         app = self.create_echo_app()
 
@@ -88,7 +117,10 @@ class HttpServerManager:
         self.type = "echo"
         self._log(f"Echo server started on port {port}")
 
-    def create_upload_app(self, path: Path) -> web.Application:
+    def create_upload_app(self, path: Path) -> Any:
+        if not AIOHTTP_AVAILABLE:
+            raise ImportError("aiohttp is required for this feature")
+
         # Ensure directory exists
         path.mkdir(parents=True, exist_ok=True)
 
@@ -132,6 +164,10 @@ class HttpServerManager:
         return app
 
     async def start_upload(self, path: str, port: int):
+        if not AIOHTTP_AVAILABLE:
+            self._log("Error: aiohttp not installed")
+            return
+
         await self.stop()
         p = Path(path)
         app = self.create_upload_app(p)
@@ -159,6 +195,11 @@ class HttpServerManager:
             self.type = None
 
 async def run_http_server_lab_logic(args):
+    if not AIOHTTP_AVAILABLE:
+        print("Error: aiohttp module is required for HTTP Server Lab.", file=sys.stderr)
+        print("Please install it: pip install aiohttp", file=sys.stderr)
+        sys.exit(1)
+
     manager = HttpServerManager()
     manager.set_log_callback(lambda msg: print(f"[HTTP-LAB] {msg}"))
 

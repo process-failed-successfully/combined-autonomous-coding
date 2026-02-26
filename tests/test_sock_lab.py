@@ -1,78 +1,58 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
 import asyncio
-import sys
-from pathlib import Path
+from shared.sock_lab import SockLabManager
 
-# Add repo root to path
-sys.path.append(str(Path(__file__).parent.parent))
+class TestSockLabManager(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.manager = SockLabManager()
 
-from shared.sock_lab import SockLabManager, run_sock_lab_logic
+    async def test_start_client_success(self):
+        mock_reader = AsyncMock()
+        mock_reader.read.side_effect = [b"hello", b""] # Data then EOF
+        mock_writer = MagicMock()
 
-class TestSockLab(unittest.IsolatedAsyncioTestCase):
-    async def test_start_client(self):
-        with patch("asyncio.open_connection", new_callable=AsyncMock) as mock_open:
-            mock_reader = AsyncMock()
-            mock_writer = AsyncMock()
-            mock_open.return_value = (mock_reader, mock_writer)
+        on_data = MagicMock()
+        on_error = MagicMock()
+        on_connect = MagicMock()
 
-            manager = SockLabManager()
+        with patch("asyncio.open_connection", return_value=(mock_reader, mock_writer)) as mock_open:
+            await self.manager.start_client("localhost", 8080, on_data, on_error, on_connect)
 
-            # Patching _interactive_loop to return immediately
-            with patch.object(manager, '_interactive_loop', new_callable=AsyncMock) as mock_loop:
-                await manager.start_client("localhost", 9000)
+            mock_open.assert_called_with("localhost", 8080)
+            on_connect.assert_called_once()
+            on_data.assert_called_with(b"hello")
+            # Should error/notify on EOF
+            on_error.assert_called_with("Connection closed by remote host.")
 
-                mock_open.assert_called_with("localhost", 9000)
-                mock_loop.assert_called_with(mock_reader, mock_writer)
+    async def test_start_client_fail(self):
+        on_data = MagicMock()
+        on_error = MagicMock()
 
-    async def test_start_server(self):
-        with patch("asyncio.start_server", new_callable=AsyncMock) as mock_start:
-            mock_server = AsyncMock()
-            mock_sock = MagicMock()
-            mock_sock.getsockname.return_value = ("127.0.0.1", 9000)
-            mock_server.sockets = [mock_sock]
+        with patch("asyncio.open_connection", side_effect=OSError("Connect failed")):
+            await self.manager.start_client("localhost", 8080, on_data, on_error)
 
-            mock_server.__aenter__.return_value = mock_server
-            mock_server.__aexit__.return_value = None
+            on_error.assert_called()
+            self.assertIn("Connect failed", on_error.call_args[0][0])
 
-            mock_start.return_value = mock_server
+    async def test_send_data(self):
+        self.manager.writer = MagicMock()
+        # Mock drain to be awaitable
+        self.manager.writer.drain = AsyncMock()
 
-            manager = SockLabManager()
+        await self.manager.send_data(b"test")
 
-            # Mock the future to complete immediately to avoid hanging
-            future = asyncio.Future()
-            future.set_result(True)
+        self.manager.writer.write.assert_called_with(b"test")
+        self.manager.writer.drain.assert_called_once()
 
-            with patch("asyncio.get_running_loop") as mock_loop:
-                mock_loop.return_value.create_future.return_value = future
+    async def test_stop(self):
+        self.manager.stop_event = asyncio.Event()
+        self.manager.writer = MagicMock()
 
-                await manager.start_server("0.0.0.0", 9000)
+        self.manager.stop()
 
-                mock_start.assert_called()
-                args, _ = mock_start.call_args
-                self.assertEqual(args[1], "0.0.0.0")
-                self.assertEqual(args[2], 9000)
-
-    async def test_interactive_loop_exit(self):
-        manager = SockLabManager()
-        reader = AsyncMock()
-        writer = MagicMock()
-
-        manager.stop_event.set()
-
-        await manager._interactive_loop(reader, writer)
-
-    async def test_cli_logic_connect(self):
-        # We need to patch SockLabManager.start_client to ensure it's called
-        with patch("shared.sock_lab.SockLabManager.start_client", new_callable=AsyncMock) as mock_client:
-            args = MagicMock()
-            args.action = "connect"
-            args.host = "example.com"
-            args.port = 8080
-
-            await run_sock_lab_logic(args)
-
-            mock_client.assert_awaited_with("example.com", 8080)
+        self.assertTrue(self.manager.stop_event.is_set())
+        self.manager.writer.close.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()

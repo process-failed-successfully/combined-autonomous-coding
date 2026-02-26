@@ -2,6 +2,7 @@ import uuid
 import sys
 from typing import List, Dict, Any, Optional
 
+
 class UuidLabManager:
     """Manages UUID operations (generation, inspection, validation)."""
 
@@ -15,17 +16,17 @@ class UuidLabManager:
                 raise ValueError("Name is required for UUID v3 and v5.")
 
             if namespace:
-                 # Check for predefined namespaces
-                 upper_ns = namespace.upper()
-                 if hasattr(uuid, f"NAMESPACE_{upper_ns}"):
-                     ns_uuid = getattr(uuid, f"NAMESPACE_{upper_ns}")
-                 else:
-                     try:
-                         ns_uuid = uuid.UUID(namespace)
-                     except ValueError:
-                         raise ValueError(f"Invalid namespace UUID: {namespace}")
+                # Check for predefined namespaces
+                upper_ns = namespace.upper()
+                if hasattr(uuid, f"NAMESPACE_{upper_ns}"):
+                    ns_uuid = getattr(uuid, f"NAMESPACE_{upper_ns}")
+                else:
+                    try:
+                        ns_uuid = uuid.UUID(namespace)
+                    except ValueError:
+                        raise ValueError(f"Invalid namespace UUID: {namespace}")
             else:
-                 ns_uuid = uuid.NAMESPACE_DNS # Default to DNS
+                ns_uuid = uuid.NAMESPACE_DNS  # Default to DNS
 
         for _ in range(count):
             if version == 1:
@@ -96,6 +97,7 @@ class UuidLabManager:
         except ValueError:
             return False
 
+
 def run_uuid_lab_logic(args):
     """CLI handler for UUID Lab."""
     manager = UuidLabManager()
@@ -132,12 +134,12 @@ def run_uuid_lab_logic(args):
         print(f"  URN:     {info['urn']}")
 
         if info.get("version") == 1:
-             print(f"  Time:    {info['time']} (100-ns intervals since 1582-10-15)")
-             if "timestamp_iso" in info:
-                 print(f"  Date:    {info['timestamp_iso']}")
-             print(f"  Clock:   {info['clock_seq']}")
-             print(f"  Node:    {info['node']}")
-             print(f"  MAC:     {info['mac']}")
+            print(f"  Time:    {info['time']} (100-ns intervals since 1582-10-15)")
+            if "timestamp_iso" in info:
+                print(f"  Date:    {info['timestamp_iso']}")
+            print(f"  Clock:   {info['clock_seq']}")
+            print(f"  Node:    {info['node']}")
+            print(f"  MAC:     {info['mac']}")
 
     elif args.action == "validate":
         if manager.validate(args.uuid):
@@ -149,9 +151,9 @@ def run_uuid_lab_logic(args):
 
     elif args.action == "bulk":
         try:
-             results = manager.generate(version=version, count=args.count)
-             for res in results:
-                 print(res)
+            results = manager.generate(version=version, count=args.count)
+            for res in results:
+                print(res)
         except Exception as e:
-             print(f"Error: {e}", file=sys.stderr)
-             sys.exit(1)
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)

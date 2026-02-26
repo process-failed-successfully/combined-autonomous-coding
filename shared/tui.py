@@ -149,6 +149,7 @@ from shared.tui_jwt import JwtLabTab
 from shared.tui_uuid import UuidLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
+from shared.tui_sock import SockLabTab
 from shared.tui_ansible import AnsibleLabTab
 from shared.tui_archive import ArchiveLabTab
 from shared.tui_dns import DnsLabTab
@@ -3998,6 +3999,8 @@ class AgentTUI(App):
                 yield SystemdLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):
                 yield PortLabTab()
+            with TabPane("Socket Lab", id="tab-sock"):
+                yield SockLabTab()
             with TabPane("Runner", id="tab-runner"):
                 yield TaskRunnerTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):

@@ -13544,6 +13544,9 @@ def parse_args(argv=None):
     parser_sock_listen.add_argument("port", type=int, help="Port to listen on.")
     parser_sock_listen.add_argument("--host", default="0.0.0.0", help="Interface to bind (default: 0.0.0.0).")  # nosec
 
+    # sock-lab tui
+    sock_subparsers.add_parser("tui", help="Launch TUI.")
+
     # --- New 'ssh-lab' command ---
     parser_ssh = subparsers.add_parser(
         "ssh-lab",
@@ -18304,6 +18307,13 @@ async def main():
         return
 
     if args.command in ["sock-lab", "sock", "nc", "netcat"]:
+        if args.action == "tui":
+            from shared.tui import AgentTUI
+            print("Launching Socket Lab TUI...")
+            app = AgentTUI(project_dir=args.project_dir, start_tab="tab-sock")
+            app.run()
+            sys.exit(0)
+
         await run_sock_lab_logic(args)
         return
 

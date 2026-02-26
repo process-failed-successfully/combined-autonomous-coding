@@ -198,7 +198,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
@@ -990,6 +990,12 @@ def run_html_lab(args):
 
     from shared.html_lab import run_html_lab_logic
     run_html_lab_logic(args)
+    sys.exit(0)
+
+def run_seo_lab(args):
+    """Runs the SEO Lab."""
+    from shared.seo_lab import run_seo_lab_logic
+    run_seo_lab_logic(args)
     sys.exit(0)
 
 def run_xml_lab(args):
@@ -11813,6 +11819,16 @@ def parse_args(argv=None):
     # html-lab tui
     parser_html_tui = html_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
+    # --- 'seo-lab' command ---
+    parser_seo = subparsers.add_parser(
+        "seo-lab",
+        aliases=["seo"],
+        help="SEO Analysis Lab."
+    )
+    parser_seo.add_argument("--url", help="URL to analyze")
+    parser_seo.add_argument("--file", help="Local file to analyze")
+    parser_seo.add_argument("--format", choices=["text", "json"], default="text", help="Output report format")
+
     # --- New 'url-lab' command ---
     parser_url_lab = subparsers.add_parser(
         "url-lab",
@@ -18527,6 +18543,10 @@ async def main():
 
     if args.command in ["html-lab", "html"]:
         run_html_lab(args)
+        return
+
+    if args.command in ["seo-lab", "seo"]:
+        run_seo_lab(args)
         return
 
     if args.command in ["url-lab", "url"]:

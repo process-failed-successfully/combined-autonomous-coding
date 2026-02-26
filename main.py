@@ -11640,7 +11640,7 @@ def parse_args(argv=None):
     parser_uuid_inspect.add_argument("uuid", help="The UUID to inspect.")
 
     # uuid tui
-    parser_uuid_tui = uuid_subparsers.add_parser("tui", help="Launch UUID Lab TUI.")
+    uuid_subparsers.add_parser("tui", help="Launch UUID Lab TUI.")
 
     # uuid validate
     parser_uuid_validate = uuid_subparsers.add_parser("validate", aliases=["check"], help="Validate a UUID.")

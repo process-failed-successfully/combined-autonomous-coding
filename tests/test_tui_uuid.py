@@ -1,12 +1,13 @@
-import unittest
 import sys
+import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Ensure shared module is available
 sys.path.append(str(Path(__file__).parent.parent))
 
-from textual.widgets import Input, Select, RichLog, Static  # noqa: E402
+from textual.widgets import Input, RichLog, Select, Static  # noqa: E402
+
 from shared.tui_uuid import UuidLabTab  # noqa: E402
 
 
@@ -32,11 +33,11 @@ class TestUuidLabTab(unittest.IsolatedAsyncioTestCase):
                 "#select-uuid-version": mock_ver,
                 "#input-uuid-count": mock_count,
                 "#input-uuid-namespace": mock_ns,
-                "#input-uuid-name": mock_name
+                "#input-uuid-name": mock_name,
             }.get(selector)
 
-        with patch.object(tab, 'query_one', side_effect=side_effect):
-            with patch.object(tab, 'notify'):
+        with patch.object(tab, "query_one", side_effect=side_effect):
+            with patch.object(tab, "notify"):
                 # Trigger generate
                 tab.on_generate()
 
@@ -56,11 +57,11 @@ class TestUuidLabTab(unittest.IsolatedAsyncioTestCase):
         def side_effect(selector, type=None):
             return {
                 "#log-uuid-inspect": mock_log,
-                "#input-uuid-inspect": mock_input
+                "#input-uuid-inspect": mock_input,
             }.get(selector)
 
-        with patch.object(tab, 'query_one', side_effect=side_effect):
-            with patch.object(tab, 'notify'):
+        with patch.object(tab, "query_one", side_effect=side_effect):
+            with patch.object(tab, "notify"):
                 tab.on_inspect()
 
         # Check output
@@ -83,18 +84,22 @@ class TestUuidLabTab(unittest.IsolatedAsyncioTestCase):
         def side_effect(selector, type=None):
             return {
                 "#lbl-uuid-validate-result": mock_lbl,
-                "#input-uuid-validate": mock_input
+                "#input-uuid-validate": mock_input,
             }.get(selector)
 
-        with patch.object(tab, 'query_one', side_effect=side_effect):
-            with patch.object(tab, 'notify'):
+        with patch.object(tab, "query_one", side_effect=side_effect):
+            with patch.object(tab, "notify"):
                 tab.on_validate()
-                mock_lbl.update.assert_called_with("[bold green]✅ Valid UUID[/bold green]")
+                mock_lbl.update.assert_called_with(
+                    "[bold green]✅ Valid UUID[/bold green]"
+                )
 
                 # Invalid
                 mock_input.value = "not-a-uuid"
                 tab.on_validate()
-                mock_lbl.update.assert_called_with("[bold red]❌ Invalid UUID[/bold red]")
+                mock_lbl.update.assert_called_with(
+                    "[bold red]❌ Invalid UUID[/bold red]"
+                )
 
 
 if __name__ == "__main__":

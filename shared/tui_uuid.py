@@ -1,8 +1,19 @@
-from typing import cast, Optional
-from textual.app import ComposeResult
-from textual.widgets import Label, Button, Input, Select, RichLog, TabbedContent, TabPane, Static
-from textual.containers import Container, Horizontal, Vertical
+from typing import Optional, cast
+
 from textual import on
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import (
+    Button,
+    Input,
+    Label,
+    RichLog,
+    Select,
+    Static,
+    TabbedContent,
+    TabPane,
+)
+
 from shared.uuid_lab import UuidLabManager
 
 
@@ -25,42 +36,76 @@ class UuidLabTab(Container):
 
                         with Horizontal():
                             yield Label("Version:")
-                            yield Select.from_values([1, 3, 4, 5], id="select-uuid-version", value=4)
+                            yield Select.from_values(
+                                [1, 3, 4, 5], id="select-uuid-version", value=4
+                            )
                             yield Label("Count:")
-                            yield Input(placeholder="1", id="input-uuid-count", type="integer", value="1")
+                            yield Input(
+                                placeholder="1",
+                                id="input-uuid-count",
+                                type="integer",
+                                value="1",
+                            )
 
                         # Inputs for v3/v5
                         with Vertical(id="container-uuid-ns-name", classes="hidden"):
                             yield Label("Namespace (UUID, DNS, URL, OID, X500):")
-                            yield Input(placeholder="e.g. DNS or a UUID string", id="input-uuid-namespace")
+                            yield Input(
+                                placeholder="e.g. DNS or a UUID string",
+                                id="input-uuid-namespace",
+                            )
                             yield Label("Name:")
-                            yield Input(placeholder="e.g. example.com", id="input-uuid-name")
+                            yield Input(
+                                placeholder="e.g. example.com", id="input-uuid-name"
+                            )
 
-                        yield Button("Generate", id="btn-uuid-generate", variant="primary")
+                        yield Button(
+                            "Generate", id="btn-uuid-generate", variant="primary"
+                        )
 
                         yield Label("[bold]Output:[/bold]")
-                        yield RichLog(id="log-uuid-generate", wrap=True, highlight=True, markup=True)
+                        yield RichLog(
+                            id="log-uuid-generate",
+                            wrap=True,
+                            highlight=True,
+                            markup=True,
+                        )
 
                 # Inspect Tab
                 with TabPane("Inspect"):
                     with Vertical(classes="stat-box"):
                         yield Label("[bold]Inspect UUID[/bold]")
                         with Horizontal():
-                            yield Input(placeholder="Enter UUID...", id="input-uuid-inspect")
-                            yield Button("Inspect", id="btn-uuid-inspect", variant="warning")
+                            yield Input(
+                                placeholder="Enter UUID...", id="input-uuid-inspect"
+                            )
+                            yield Button(
+                                "Inspect", id="btn-uuid-inspect", variant="warning"
+                            )
 
                         yield Label("[bold]Details:[/bold]")
-                        yield RichLog(id="log-uuid-inspect", wrap=True, highlight=True, markup=True)
+                        yield RichLog(
+                            id="log-uuid-inspect",
+                            wrap=True,
+                            highlight=True,
+                            markup=True,
+                        )
 
                 # Validate Tab
                 with TabPane("Validate"):
                     with Vertical(classes="stat-box"):
                         yield Label("[bold]Validate UUID[/bold]")
                         with Horizontal():
-                            yield Input(placeholder="Enter UUID...", id="input-uuid-validate")
-                            yield Button("Validate", id="btn-uuid-validate", variant="success")
+                            yield Input(
+                                placeholder="Enter UUID...", id="input-uuid-validate"
+                            )
+                            yield Button(
+                                "Validate", id="btn-uuid-validate", variant="success"
+                            )
 
-                        yield Static(id="lbl-uuid-validate-result", classes="result-box")
+                        yield Static(
+                            id="lbl-uuid-validate-result", classes="result-box"
+                        )
 
     def on_mount(self) -> None:
         # Initial UI state check
@@ -101,10 +146,7 @@ class UuidLabTab(Container):
             name_arg: Optional[str] = name if ver in [3, 5] else None
 
             results = self.manager.generate(
-                version=ver,
-                count=count,
-                namespace=ns_arg,
-                name=name_arg
+                version=ver, count=count, namespace=ns_arg, name=name_arg
             )
             for u in results:
                 log.write(f"[green]{u}[/green]")

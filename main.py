@@ -277,7 +277,8 @@ KNOWN_COMMANDS = [
     "knowledge-lab", "kg", "graph",
     "dash-lab",
     "rebase-lab", "rebase",
-    "cicd-lab", "ci", "actions"
+    "cicd-lab", "ci", "actions",
+    "flashcards-lab", "flash", "learn"
 ]
 
 if FileSystemEventHandler:
@@ -296,6 +297,14 @@ def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
     from shared.calc_lab import run_calc_lab_logic
     run_calc_lab_logic(args)
+    sys.exit(0)
+
+def run_flashcards_lab(args):
+    """Runs the Flashcards Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Flashcards Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-flashcards")
+    app.run()
     sys.exit(0)
 
 def run_rename_lab(args):
@@ -14949,6 +14958,13 @@ def parse_args(argv=None):
         help="Interactive CI/CD Lab TUI (GitHub Actions)."
     )
 
+    # --- New 'flashcards-lab' command ---
+    parser_flash = subparsers.add_parser(
+        "flashcards-lab",
+        aliases=["flash", "learn"],
+        help="Interactive Flashcards Lab (Spaced Repetition Learning)."
+    )
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -18715,6 +18731,10 @@ async def main():
 
     if args.command in ["cicd-lab", "ci", "actions"]:
         run_cicd_lab(args)
+        return
+
+    if args.command in ["flashcards-lab", "flash", "learn"]:
+        run_flashcards_lab(args)
         return
 
     # Initialize Agent Client

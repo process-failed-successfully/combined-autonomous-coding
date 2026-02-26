@@ -11,6 +11,14 @@ except ImportError:
     web = None
     AIOHTTP_AVAILABLE = False
 
+# Define a dummy middleware decorator if aiohttp is missing
+# to prevent AttributeError during class definition
+if not AIOHTTP_AVAILABLE:
+    def middleware(func):
+        return func
+else:
+    middleware = web.middleware
+
 class HttpServerManager:
     def __init__(self):
         self.runner: Any = None
@@ -26,7 +34,7 @@ class HttpServerManager:
         if self._log_callback:
             self._log_callback(message)
 
-    @web.middleware
+    @middleware
     async def _logging_middleware(self, request, handler):
         self._log(f"Request: {request.method} {request.path}")
         try:
@@ -42,6 +50,7 @@ class HttpServerManager:
             raise ImportError("aiohttp is required for this feature")
 
         app = web.Application()
+        # With @web.middleware, the method is already a middleware factory/handler
         app.middlewares.append(self._logging_middleware)
         try:
             app.router.add_static('/', str(path), show_index=True)

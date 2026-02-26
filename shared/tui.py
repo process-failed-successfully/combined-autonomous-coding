@@ -80,6 +80,7 @@ from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
 from shared.tui_gitignore import GitignoreTab
 from shared.tui_quiz import QuizTab
+from shared.tui_flashcards import FlashcardsTab
 from shared.tui_cron import CronLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_semver import SemVerTab
@@ -4178,6 +4179,8 @@ class AgentTUI(App):
                 yield PresentationTab(self.project_dir)
             with TabPane("Quiz", id="tab-quiz"):
                 yield QuizTab(self.project_dir)
+            with TabPane("Flashcards", id="tab-flashcards"):
+                yield FlashcardsTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
             with TabPane("RSS Lab", id="tab-rss"):

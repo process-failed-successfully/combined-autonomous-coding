@@ -189,6 +189,7 @@ from shared.tui_dash import DashLabTab
 from shared.tui_cicd import CicdLabTab
 from shared.tui_pre_commit import PreCommitLabTab
 from shared.tui_cq import CodeQualityTab
+from shared.tui_transpiler import TranspilerLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3924,6 +3925,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
+        PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4091,6 +4093,8 @@ class AgentTUI(App):
                 yield HealthTab(self.project_dir)
             with TabPane("Code Quality", id="tab-cq-lab"):
                 yield CodeQualityTab(self.project_dir)
+            with TabPane("Transpiler", id="tab-transpiler"):
+                yield TranspilerLabTab(self.project_dir)
             with TabPane("Impact", id="tab-impact"):
                 yield ImpactTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):

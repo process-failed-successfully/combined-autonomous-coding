@@ -1,6 +1,7 @@
 import unittest
 from shared.matrix_lab import MatrixLabManager
 
+
 class TestMatrixLabManager(unittest.TestCase):
     def setUp(self):
         self.manager = MatrixLabManager()
@@ -81,6 +82,7 @@ class TestMatrixLabManager(unittest.TestCase):
         # = 6(-54) - 18 + 36
         # = -324 - 18 + 36 = -306
         self.assertEqual(self.manager.determinant(A), -306)
+
 
 if __name__ == '__main__':
     unittest.main()

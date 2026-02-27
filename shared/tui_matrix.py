@@ -1,9 +1,8 @@
-from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Label, Button, TextArea, DataTable, RichLog
-from textual import on
 from shared.matrix_lab import MatrixLabManager
+
 
 class MatrixLabTab(Container):
     """Tab for Matrix Arithmetic."""
@@ -44,7 +43,7 @@ class MatrixLabTab(Container):
 
     def on_mount(self) -> None:
         table = self.query_one("#matrix-result-table", DataTable)
-        table.cursor_type = "none" # Read-only view
+        table.cursor_type = "none"  # Read-only view
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id

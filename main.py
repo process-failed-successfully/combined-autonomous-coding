@@ -161,6 +161,7 @@ from shared.dict_lab import run_dict_lab_logic
 from shared.emoji_lab import run_emoji_lab_logic
 from shared.cq_lab import run_cq_lab_logic
 from shared.transpiler_lab import run_transpiler_lab_logic
+from shared.user_agent_lab import run_user_agent_lab_logic
 import json
 import yaml
 import platformdirs
@@ -268,6 +269,7 @@ KNOWN_COMMANDS = [
     "diagram-lab", "diagram", "draw",
     "pipe-lab", "pipe", "stream",
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
+    "user-agent-lab", "ua",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
     "go-lab", "go", "golang",
@@ -15032,6 +15034,14 @@ def parse_args(argv=None):
         help="Interactive Flashcards Lab (Spaced Repetition Learning)."
     )
 
+    # --- User Agent Lab ---
+    parser_ua = subparsers.add_parser("user-agent-lab", aliases=["ua"], help="Manage User Agent strings")
+    parser_ua.add_argument("action", choices=["parse", "generate", "list", "tui"], default="tui", nargs="?")
+    parser_ua.add_argument("--ua-string", help="User Agent string to parse")
+    parser_ua.add_argument("--os", help="Operating System for generation")
+    parser_ua.add_argument("--browser", help="Browser for generation")
+    parser_ua.add_argument("--version", help="Version for generation")
+
     # --- New 'cq-lab' command ---
     parser_cq = subparsers.add_parser(
         "cq-lab",
@@ -18781,6 +18791,10 @@ async def main():
                  args.action = "define"
 
         run_dict_lab(args)
+        return
+
+    if args.command in ["user-agent-lab", "ua"]:
+        run_user_agent_lab_logic(args)
         return
 
     if args.command in ["emoji-lab", "emoji", "emoj"]:

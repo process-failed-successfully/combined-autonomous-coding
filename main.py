@@ -163,6 +163,7 @@ from shared.cq_lab import run_cq_lab_logic
 from shared.transpiler_lab import run_transpiler_lab_logic
 from shared.user_agent_lab import run_user_agent_lab_logic
 from shared.parquet_lab import run_parquet_lab_logic
+from shared.chemistry_lab import run_chemistry_lab_logic
 import json
 import yaml
 import platformdirs
@@ -290,7 +291,8 @@ KNOWN_COMMANDS = [
     "flashcards-lab", "flash", "learn",
     "parquet-lab", "parquet", "pq",
     "subtitle-lab", "sub",
-    "shell-lab"
+    "shell-lab",
+    "chemistry-lab", "chem", "periodic"
 ]
 
 if FileSystemEventHandler:
@@ -439,6 +441,11 @@ def run_shell_lab(args):
     print("Launching Shell Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-shell-lab")
     app.run()
+    sys.exit(0)
+
+def run_chemistry_lab(args):
+    """Runs the Chemistry Lab."""
+    run_chemistry_lab_logic(args)
     sys.exit(0)
 
 def run_cicd_lab(args):
@@ -18922,6 +18929,10 @@ async def main():
 
     if args.command == "shell-lab":
         run_shell_lab(args)
+        return
+
+    if args.command in ["chemistry-lab", "chem", "periodic"]:
+        run_chemistry_lab(args)
         return
 
     # Initialize Agent Client

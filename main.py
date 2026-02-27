@@ -274,6 +274,7 @@ KNOWN_COMMANDS = [
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
     "go-lab", "go", "golang",
+    "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
     "slides-lab", "slides", "present",
@@ -342,6 +343,19 @@ def run_go_lab(args):
     from shared.go_lab import run_go_lab_logic
     success = run_go_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_matrix_lab(args):
+    """Runs the Matrix Lab."""
+    if hasattr(args, 'action') and args.action == "tui" or not hasattr(args, 'action'):
+        from shared.tui import AgentTUI
+        print("Launching Matrix Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-matrix")
+        app.run()
+        sys.exit(0)
+
+    from shared.matrix_lab import run_matrix_lab_logic
+    run_matrix_lab_logic(args)
+    sys.exit(0)
 
 def run_host_lab(args):
     """Runs the Host Lab."""
@@ -18830,6 +18844,10 @@ async def main():
 
     if args.command in ["go-lab", "go", "golang"]:
         run_go_lab(args)
+        return
+
+    if args.command in ["matrix-lab", "matrix"]:
+        run_matrix_lab(args)
         return
 
     if args.command in ["host-lab", "hosts", "host"]:

@@ -191,6 +191,7 @@ from shared.tui_cicd import CicdLabTab
 from shared.tui_pre_commit import PreCommitLabTab
 from shared.tui_cq import CodeQualityTab
 from shared.tui_transpiler import TranspilerLabTab
+from shared.tui_subtitle import SubtitleLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4320,6 +4321,8 @@ class AgentTUI(App):
                 yield CicdLabTab(self.project_dir)
             with TabPane("Pre-commit Lab", id="tab-pre-commit"):
                 yield PreCommitLabTab(self.project_dir)
+            with TabPane("Subtitle Lab", id="tab-subtitle"):
+                yield SubtitleLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

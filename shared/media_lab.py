@@ -18,13 +18,11 @@ class MediaLabManager:
 
     def _check_ffmpeg(self):
         if not self.ffmpeg_bin:
-            print("❌ Error: 'ffmpeg' not found. Please install ffmpeg.", file=sys.stderr)
-            sys.exit(1)
+            raise RuntimeError("ffmpeg not found. Please install ffmpeg.")
 
     def _check_ffprobe(self):
         if not self.ffprobe_bin:
-            print("❌ Error: 'ffprobe' not found. Please install ffmpeg.", file=sys.stderr)
-            sys.exit(1)
+            raise RuntimeError("ffprobe not found. Please install ffmpeg.")
 
     def get_info(self, filepath: Path) -> Dict[str, Any]:
         """

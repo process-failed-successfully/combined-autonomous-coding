@@ -1,4 +1,5 @@
 import re
+import sys
 from typing import Dict, Optional, List
 
 class UserAgentManager:
@@ -126,3 +127,46 @@ class UserAgentManager:
             if bot.lower() in lower_ua:
                 return True
         return False
+
+def run_user_agent_lab_logic(args):
+    """CLI logic for User Agent Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching User Agent Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-user-agent")
+        app.run()
+        sys.exit(0)
+
+    manager = UserAgentManager()
+
+    if args.action == "parse":
+        if not args.ua_string:
+            print("Error: --ua-string required for parse action.", file=sys.stderr)
+            sys.exit(1)
+
+        details = manager.parse(args.ua_string)
+        print("--- User Agent Details ---")
+        for k, v in details.items():
+            print(f"{k.capitalize()}: {v}")
+
+    elif args.action == "generate":
+        if not args.os or not args.browser:
+            print("Error: --os and --browser required for generate action.", file=sys.stderr)
+            sys.exit(1)
+
+        ua = manager.generate(args.os, args.browser, args.version)
+        if ua:
+            print(ua)
+        else:
+            print(f"Error: Could not generate UA for OS='{args.os}', Browser='{args.browser}'.", file=sys.stderr)
+            print("Run 'list' to see available options.", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "list":
+        print("--- Available Templates ---")
+        for os_name, browsers in manager.templates.items():
+            print(f"{os_name}:")
+            for browser in browsers:
+                print(f"  - {browser}")
+
+    sys.exit(0)

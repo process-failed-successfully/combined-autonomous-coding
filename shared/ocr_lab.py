@@ -9,6 +9,8 @@ try:
     from PIL import Image
     HAS_OCR = True
 except ImportError:
+    pytesseract = None
+    Image = None
     HAS_OCR = False
 
 class OcrLabManager:

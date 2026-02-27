@@ -30,6 +30,8 @@ async def run_do_logic(
     model: Optional[str] = None,
     verbose: bool = False,
     yes: bool = False,
+    retry: bool = False,
+    max_retries: int = 3,
 ) -> bool:
     """
     Executes the 'do' logic.
@@ -41,6 +43,8 @@ async def run_do_logic(
         model: The model to use.
         verbose: Enable verbose logging.
         yes: If True, execute without confirmation.
+        retry: If True, retry on failure by asking the agent to correct it.
+        max_retries: The maximum number of retries.
 
     Returns:
         True if successful, False otherwise.
@@ -103,61 +107,93 @@ async def run_do_logic(
 
     logger.info(f"Asking {agent_type} agent to translate: {instruction}")
 
-    try:
-        # We reuse run_agent_session but we expect it might try to execute actions
-        # if the prompt wasn't strict enough. The prompt says "No Execution" (implicitly via "Return ONLY...").
-        # Note: run_agent_session returns (status, response, actions)
-        status, response, actions = await agent.run_agent_session(formatted_prompt)
+    current_prompt = formatted_prompt
+    attempts = 0
+    max_attempts = max_retries + 1 if retry else 1
 
-        # Clean the response (sometimes models wrap in ```bash ... ```)
-        command = response.strip()
-        if command.startswith("```"):
-            lines = command.splitlines()
-            if len(lines) >= 3:
-                # Remove first and last line
-                command = "\n".join(lines[1:-1])
+    while attempts < max_attempts:
+        try:
+            # We reuse run_agent_session but we expect it might try to execute actions
+            # if the prompt wasn't strict enough. The prompt says "No Execution" (implicitly via "Return ONLY...").
+            # Note: run_agent_session returns (status, response, actions)
+            status, response, actions = await agent.run_agent_session(current_prompt)
 
-        # Remove language identifier if present (e.g. "bash")
-        if command.startswith("bash") or command.startswith("sh"):
-             # This is risky if the command actually starts with bash, but usually it's the markdown block info
-             # Better: check if it was inside a block
-             pass
+            # Clean the response (sometimes models wrap in ```bash ... ```)
+            command = response.strip()
+            if command.startswith("```"):
+                lines = command.splitlines()
+                if len(lines) >= 3:
+                    # Remove first and last line
+                    command = "\n".join(lines[1:-1])
 
-        command = command.strip()
+            # Remove language identifier if present (e.g. "bash")
+            if command.startswith("bash") or command.startswith("sh"):
+                 # This is risky if the command actually starts with bash, but usually it's the markdown block info
+                 # Better: check if it was inside a block
+                 pass
 
-        if command.startswith("ERROR:"):
-            print(f"\n❌ Agent Error: {command[6:].strip()}")
+            command = command.strip()
+
+            if command.startswith("ERROR:"):
+                print(f"\n❌ Agent Error: {command[6:].strip()}")
+                return False
+
+            if attempts == 0:
+                print(f"\n--- Suggested Command ---")
+            else:
+                print(f"\n--- Suggested Command (Retry {attempts}/{max_retries}) ---")
+
+            print(f"\033[1m{command}\033[0m") # Bold
+            print("-------------------------")
+
+            if yes:
+                should_run = True
+            else:
+                confirm = input("Run this command? [y/N]: ").strip().lower()
+                should_run = (confirm == 'y')
+
+            if should_run:
+                print(f"\nRunning: {command}")
+                try:
+                    # Use shell=True to allow pipes, etc.
+                    # B602: subprocess_popen_with_shell_equals_true - Valid here as we are building a shell tool
+                    result = subprocess.run(command, shell=True, cwd=cwd, text=True, capture_output=True)  # nosec B602
+
+                    if result.stdout:
+                        sys.stdout.write(result.stdout)
+                    if result.stderr:
+                        sys.stderr.write(result.stderr)
+
+                    if result.returncode == 0:
+                        print("✅ Command executed successfully.")
+                        return True
+                    else:
+                        print(f"❌ Command failed with exit code {result.returncode}.")
+                        if retry and attempts < max_retries:
+                            print("Requesting agent to correct the command...")
+                            current_prompt = f"""The previous command failed.
+Original Instruction: {instruction}
+Failed Command: {command}
+Exit Code: {result.returncode}
+Standard Output:
+{result.stdout}
+Standard Error:
+{result.stderr}
+
+Please provide a corrected command that fixes the issue. Return ONLY the shell command."""
+                        else:
+                            return False
+                except Exception as e:
+                    print(f"❌ Error executing command: {e}")
+                    return False
+            else:
+                print("Aborted.")
+                return True
+
+        except Exception as e:
+            logger.error(f"Error during 'do' session: {e}")
             return False
 
-        print(f"\n--- Suggested Command ---")
-        print(f"\033[1m{command}\033[0m") # Bold
-        print("-------------------------")
+        attempts += 1
 
-        if yes:
-            should_run = True
-        else:
-            confirm = input("Run this command? [y/N]: ").strip().lower()
-            should_run = (confirm == 'y')
-
-        if should_run:
-            print(f"\nRunning: {command}")
-            try:
-                # Use shell=True to allow pipes, etc.
-                # B602: subprocess_popen_with_shell_equals_true - Valid here as we are building a shell tool
-                result = subprocess.run(command, shell=True, cwd=cwd)  # nosec B602
-                if result.returncode == 0:
-                    print("✅ Command executed successfully.")
-                    return True
-                else:
-                    print(f"❌ Command failed with exit code {result.returncode}.")
-                    return False
-            except Exception as e:
-                print(f"❌ Error executing command: {e}")
-                return False
-        else:
-            print("Aborted.")
-            return True
-
-    except Exception as e:
-        logger.error(f"Error during 'do' session: {e}")
-        return False
+    return False

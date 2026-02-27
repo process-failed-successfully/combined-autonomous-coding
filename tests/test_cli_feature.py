@@ -45,7 +45,11 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
         mock_agent_instance = MockAgent.return_value
         mock_agent_instance.run_agent_session = AsyncMock(return_value=(True, "echo 'hello'", []))
 
-        mock_subprocess.return_value.returncode = 0
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = ""
+        mock_result.stderr = ""
+        mock_subprocess.return_value = mock_result
 
         with patch("sys.stdout", new=io.StringIO()) as fake_out:
             success = await run_do_logic(
@@ -58,7 +62,7 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
             output = fake_out.getvalue()
             self.assertIn("Running: echo 'hello'", output)
             self.assertTrue(success)
-            mock_subprocess.assert_called_with("echo 'hello'", shell=True, cwd=unittest.mock.ANY)
+            mock_subprocess.assert_called_with("echo 'hello'", shell=True, cwd=unittest.mock.ANY, text=True, capture_output=True)
 
     @patch("shared.cli.GeminiAgent")
     async def test_run_do_logic_error_response(self, MockAgent):
@@ -85,7 +89,11 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
         mock_agent_instance = MockAgent.return_value
         mock_agent_instance.run_agent_session = AsyncMock(return_value=(True, "ls -la", []))
 
-        mock_subprocess.return_value.returncode = 0
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = ""
+        mock_result.stderr = ""
+        mock_subprocess.return_value = mock_result
 
         with patch("sys.stdout", new=io.StringIO()) as fake_out:
             success = await run_do_logic(
@@ -120,6 +128,87 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
             # Should not contain backticks
             self.assertIn("echo 'hello'", output)
             self.assertNotIn("```", output)
+
+    @patch("shared.cli.GeminiAgent")
+    @patch("subprocess.run")
+    async def test_run_do_logic_retry_success(self, mock_subprocess, MockAgent):
+        """Test retry logic succeeds on second attempt."""
+        mock_agent_instance = MockAgent.return_value
+
+        # Agent returns bad command first, then good command
+        mock_agent_instance.run_agent_session = AsyncMock(side_effect=[
+            (True, "bad_command", []),
+            (True, "echo 'hello'", [])
+        ])
+
+        # Subprocess fails first, then succeeds
+        mock_failed_result = MagicMock()
+        mock_failed_result.returncode = 1
+        mock_failed_result.stdout = "some output"
+        mock_failed_result.stderr = "command not found"
+
+        mock_success_result = MagicMock()
+        mock_success_result.returncode = 0
+        mock_success_result.stdout = "hello\n"
+        mock_success_result.stderr = ""
+
+        mock_subprocess.side_effect = [mock_failed_result, mock_success_result]
+
+        with patch("sys.stdout", new=io.StringIO()) as fake_out:
+            success = await run_do_logic(
+                instruction="say hello",
+                project_dir=self.project_dir,
+                agent_type="gemini",
+                yes=True,
+                retry=True,
+                max_retries=1
+            )
+
+            output = fake_out.getvalue()
+            self.assertIn("Running: bad_command", output)
+            self.assertIn("Command failed with exit code 1", output)
+            self.assertIn("Requesting agent to correct the command...", output)
+            self.assertIn("Running: echo 'hello'", output)
+            self.assertIn("Command executed successfully", output)
+            self.assertTrue(success)
+            self.assertEqual(mock_agent_instance.run_agent_session.call_count, 2)
+            self.assertEqual(mock_subprocess.call_count, 2)
+
+    @patch("shared.cli.GeminiAgent")
+    @patch("subprocess.run")
+    async def test_run_do_logic_retry_failure(self, mock_subprocess, MockAgent):
+        """Test retry logic fails after max retries."""
+        mock_agent_instance = MockAgent.return_value
+
+        # Agent keeps returning bad command
+        mock_agent_instance.run_agent_session = AsyncMock(return_value=(True, "bad_command", []))
+
+        # Subprocess always fails
+        mock_failed_result = MagicMock()
+        mock_failed_result.returncode = 1
+        mock_failed_result.stdout = ""
+        mock_failed_result.stderr = "command not found"
+
+        mock_subprocess.return_value = mock_failed_result
+
+        with patch("sys.stdout", new=io.StringIO()) as fake_out:
+            success = await run_do_logic(
+                instruction="say hello",
+                project_dir=self.project_dir,
+                agent_type="gemini",
+                yes=True,
+                retry=True,
+                max_retries=2
+            )
+
+            output = fake_out.getvalue()
+            self.assertIn("Running: bad_command", output)
+            self.assertIn("Command failed with exit code 1", output)
+            self.assertIn("Requesting agent to correct the command...", output)
+            self.assertFalse(success)
+            # 1 initial attempt + 2 retries = 3 total attempts
+            self.assertEqual(mock_agent_instance.run_agent_session.call_count, 3)
+            self.assertEqual(mock_subprocess.call_count, 3)
 
 if __name__ == "__main__":
     unittest.main()

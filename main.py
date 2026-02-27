@@ -4730,7 +4730,9 @@ async def run_do(args):
         agent_type=args.agent,
         model=args.model,
         verbose=args.verbose,
-        yes=args.yes
+        yes=args.yes,
+        retry=getattr(args, 'retry', False),
+        max_retries=getattr(args, 'max_retries', 3)
     )
     sys.exit(0 if success else 1)
 
@@ -9010,6 +9012,17 @@ def parse_args(argv=None):
         "-y", "--yes",
         action="store_true",
         help="Execute the suggested command without confirmation."
+    )
+    parser_do.add_argument(
+        "--retry",
+        action="store_true",
+        help="Automatically retry and ask the agent to correct the command if it fails."
+    )
+    parser_do.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="Maximum number of retries when --retry is enabled (default: 3)."
     )
     parser_do.add_argument(
         "-v", "--verbose",

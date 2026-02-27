@@ -38,3 +38,4 @@ paho-mqtt
 pyperclip
 pandas
 pyarrow
+pytesseract

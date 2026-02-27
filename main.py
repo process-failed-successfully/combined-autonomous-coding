@@ -761,6 +761,13 @@ def run_speed_lab(args):
 
 async def run_load_lab(args):
     """Runs the Load Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Load Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-load-lab")
+        app.run()
+        sys.exit(0)
+
     await run_load_lab_logic(args)
     sys.exit(0)
 

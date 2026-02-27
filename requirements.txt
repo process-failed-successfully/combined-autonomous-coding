@@ -36,3 +36,5 @@ boto3
 aiohttp
 paho-mqtt
 pyperclip
+pandas
+pyarrow

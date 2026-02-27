@@ -192,6 +192,7 @@ from shared.tui_pre_commit import PreCommitLabTab
 from shared.tui_cq import CodeQualityTab
 from shared.tui_transpiler import TranspilerLabTab
 from shared.tui_subtitle import SubtitleLabTab
+from shared.tui_matrix import MatrixLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4323,6 +4324,8 @@ class AgentTUI(App):
                 yield PreCommitLabTab(self.project_dir)
             with TabPane("Subtitle Lab", id="tab-subtitle"):
                 yield SubtitleLabTab(self.project_dir)
+            with TabPane("Matrix", id="tab-matrix"):
+                yield MatrixLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

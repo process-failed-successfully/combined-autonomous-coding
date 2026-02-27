@@ -194,6 +194,7 @@ from shared.tui_transpiler import TranspilerLabTab
 from shared.tui_subtitle import SubtitleLabTab
 from shared.tui_matrix import MatrixLabTab
 from shared.tui_shell import ShellLabTab
+from shared.tui_pipeline import PipelineLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3931,6 +3932,7 @@ class AgentTUI(App):
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
+        PaletteCommand("Go to Pipeline Lab", "switch_tab_pipeline"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4329,6 +4331,8 @@ class AgentTUI(App):
                 yield MatrixLabTab()
             with TabPane("Shell Lab", id="tab-shell-lab"):
                 yield ShellLabTab(self.project_dir)
+            with TabPane("Pipeline", id="tab-pipeline"):
+                yield PipelineLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

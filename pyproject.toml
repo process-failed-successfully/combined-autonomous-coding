@@ -43,6 +43,8 @@ dependencies = [
     "feedparser",
     "websockets",
     "qrcode",
+    "pandas",
+    "pyarrow",
 ]
 requires-python = ">=3.11"
 

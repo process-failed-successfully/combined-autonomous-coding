@@ -9,13 +9,19 @@ try:
 except ImportError:
     ExcelLabManager = None
 
+# Try importing ParquetLabManager
+try:
+    from shared.parquet_lab import ParquetLabManager
+except ImportError:
+    ParquetLabManager = None
+
 class DataLabManager:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
 
     def list_data_files(self) -> List[Path]:
-        """Lists CSV, JSON, and Excel files in the project directory."""
-        extensions = ["*.csv", "*.json", "*.xlsx"]
+        """Lists CSV, JSON, Excel, and Parquet files in the project directory."""
+        extensions = ["*.csv", "*.json", "*.xlsx", "*.parquet"]
         files = []
         for ext in extensions:
             files.extend(list(self.project_dir.glob(f"**/{ext}")))
@@ -63,6 +69,15 @@ class DataLabManager:
                         excel_mgr = ExcelLabManager(self.project_dir)
                         # Read active sheet
                         return excel_mgr.read_sheet(filepath)
+                    except Exception:
+                        return []
+                else:
+                    return []
+            elif filepath.suffix == ".parquet":
+                if ParquetLabManager:
+                    try:
+                        parquet_mgr = ParquetLabManager(self.project_dir)
+                        return parquet_mgr.read_parquet(filepath)
                     except Exception:
                         return []
                 else:

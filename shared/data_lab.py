@@ -6,10 +6,16 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Union
 
+# Try importing ParquetLabManager
+try:
+    from shared.parquet_lab import ParquetLabManager
+except ImportError:
+    ParquetLabManager = None
+
 class DataLabManager:
     """
     Manages data format conversion, validation, and analysis.
-    Supported formats: JSON, YAML, CSV (limited), XML (limited).
+    Supported formats: JSON, YAML, CSV, XML, Parquet.
     """
 
     def __init__(self, project_dir: Optional[Path] = None):
@@ -25,19 +31,27 @@ class DataLabManager:
         ext = file_path.suffix.lower()
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                if ext == '.json':
+            if ext == '.json':
+                with open(file_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-                elif ext in ['.yaml', '.yml']:
+            elif ext in ['.yaml', '.yml']:
+                with open(file_path, 'r', encoding='utf-8') as f:
                     return yaml.safe_load(f)
-                elif ext == '.csv':
+            elif ext == '.csv':
+                with open(file_path, 'r', encoding='utf-8') as f:
                     reader = csv.DictReader(f)
                     return list(reader)
-                elif ext == '.xml':
+            elif ext == '.xml':
+                with open(file_path, 'r', encoding='utf-8') as f:
                     tree = ET.parse(f)
                     return self._xml_to_dict(tree.getroot())
+            elif ext == '.parquet':
+                if ParquetLabManager:
+                    return ParquetLabManager(self.project_dir).read_parquet(file_path)
                 else:
-                    raise ValueError(f"Unsupported file extension: {ext}")
+                    raise ValueError("Parquet support not available. Install pandas and pyarrow.")
+            else:
+                raise ValueError(f"Unsupported file extension: {ext}")
         except Exception as e:
             raise ValueError(f"Error loading {file_path}: {e}")
 
@@ -47,30 +61,39 @@ class DataLabManager:
         """
         format = format.lower()
         try:
-            with open(file_path, 'w', encoding='utf-8', newline='') as f:
-                if format == 'json':
-                    json.dump(data, f, indent=2)
-                elif format == 'yaml':
-                    yaml.dump(data, f, sort_keys=False)
-                elif format == 'csv':
-                    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-                        writer = csv.DictWriter(f, fieldnames=data[0].keys())
-                        writer.writeheader()
-                        writer.writerows(data)
+            if format == 'parquet':
+                if ParquetLabManager:
+                    if isinstance(data, list) and (not data or isinstance(data[0], dict)):
+                        ParquetLabManager(self.project_dir).save_parquet(data, file_path)
                     else:
-                        raise ValueError("Data must be a list of dictionaries for CSV export.")
-                elif format == 'xml':
-                    if isinstance(data, dict):
-                        root_name = list(data.keys())[0] if len(data) == 1 else "root"
-                        content = data[root_name] if len(data) == 1 else data
-                        root = ET.Element(root_name)
-                        self._dict_to_xml(root, content)
-                        tree = ET.ElementTree(root)
-                        tree.write(f, encoding='unicode', xml_declaration=True)
-                    else:
-                        raise ValueError("Data must be a dictionary for XML export.")
+                        raise ValueError("Data must be a list of dictionaries for Parquet export.")
                 else:
-                    raise ValueError(f"Unsupported format: {format}")
+                    raise ValueError("Parquet support not available. Install pandas and pyarrow.")
+            else:
+                with open(file_path, 'w', encoding='utf-8', newline='') as f:
+                    if format == 'json':
+                        json.dump(data, f, indent=2)
+                    elif format == 'yaml':
+                        yaml.dump(data, f, sort_keys=False)
+                    elif format == 'csv':
+                        if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                            writer = csv.DictWriter(f, fieldnames=data[0].keys())
+                            writer.writeheader()
+                            writer.writerows(data)
+                        else:
+                            raise ValueError("Data must be a list of dictionaries for CSV export.")
+                    elif format == 'xml':
+                        if isinstance(data, dict):
+                            root_name = list(data.keys())[0] if len(data) == 1 else "root"
+                            content = data[root_name] if len(data) == 1 else data
+                            root = ET.Element(root_name)
+                            self._dict_to_xml(root, content)
+                            tree = ET.ElementTree(root)
+                            tree.write(f, encoding='unicode', xml_declaration=True)
+                        else:
+                            raise ValueError("Data must be a dictionary for XML export.")
+                    else:
+                        raise ValueError(f"Unsupported format: {format}")
         except Exception as e:
             raise ValueError(f"Error saving to {file_path}: {e}")
 
@@ -108,14 +131,11 @@ class DataLabManager:
                     content = data[root_name] if len(data) == 1 else data
                     root = ET.Element(root_name)
                     self._dict_to_xml(root, content)
-                    # Use standard library tostring, but it returns bytes or string depending on encoding
-                    # We want string
-                    # Use standard library tostring, but it returns bytes or string depending on encoding
-                    # We want string
-                    # defusedxml does not have tostring, so we use the safe ET we imported
                     return ET.tostring(root, encoding='unicode')
                 else:
                     raise ValueError("Data must be a dictionary for XML conversion.")
+            elif target_format == 'parquet':
+                raise ValueError("Parquet conversion requires an output file (binary format).")
             else:
                 raise ValueError(f"Unsupported format: {target_format}")
 

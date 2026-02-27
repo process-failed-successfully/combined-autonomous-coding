@@ -162,6 +162,7 @@ from shared.emoji_lab import run_emoji_lab_logic
 from shared.cq_lab import run_cq_lab_logic
 from shared.transpiler_lab import run_transpiler_lab_logic
 from shared.user_agent_lab import run_user_agent_lab_logic
+from shared.parquet_lab import run_parquet_lab_logic
 import json
 import yaml
 import platformdirs
@@ -284,7 +285,8 @@ KNOWN_COMMANDS = [
     "dash-lab",
     "rebase-lab", "rebase",
     "cicd-lab", "ci", "actions",
-    "flashcards-lab", "flash", "learn"
+    "flashcards-lab", "flash", "learn",
+    "parquet-lab", "parquet", "pq"
 ]
 
 if FileSystemEventHandler:
@@ -14928,6 +14930,17 @@ def parse_args(argv=None):
     parser_dict.add_argument("word", help="Word to lookup.")
     parser_dict.add_argument("action", nargs="?", choices=["define", "synonym", "antonym"], default="define", help="Action to perform (default: define).")
 
+    # --- New 'parquet-lab' command ---
+    parser_parquet = subparsers.add_parser(
+        "parquet-lab",
+        aliases=["parquet", "pq"],
+        help="Parquet File Utilities"
+    )
+    parser_parquet.add_argument("action", choices=["read", "info", "schema", "convert"], help="Action to perform")
+    parser_parquet.add_argument("file", help="Path to the Parquet file")
+    parser_parquet.add_argument("--output", help="Output file path (for read/convert)")
+    parser_parquet.add_argument("--format", choices=["table", "json", "csv", "parquet"], default="table", help="Output format")
+
     # --- New 'emoji-lab' command ---
     parser_emoji = subparsers.add_parser(
         "emoji-lab",
@@ -18855,6 +18868,10 @@ async def main():
 
     if args.command in ["cq-lab", "quality", "cql"]:
         run_cq_lab_logic(args)
+        return
+
+    if args.command in ["parquet-lab", "parquet", "pq"]:
+        run_parquet_lab_logic(args)
         return
 
     # Initialize Agent Client

@@ -286,7 +286,8 @@ KNOWN_COMMANDS = [
     "rebase-lab", "rebase",
     "cicd-lab", "ci", "actions",
     "flashcards-lab", "flash", "learn",
-    "parquet-lab", "parquet", "pq"
+    "parquet-lab", "parquet", "pq",
+    "subtitle-lab", "sub"
 ]
 
 if FileSystemEventHandler:
@@ -401,6 +402,19 @@ def run_rebase_lab(args):
     """Runs the Interactive Git Rebase Lab."""
     from shared.rebase_lab import run_rebase_lab_logic
     run_rebase_lab_logic(args)
+    sys.exit(0)
+
+def run_subtitle_lab(args):
+    """Runs the Subtitle Lab."""
+    if hasattr(args, 'tui') and args.tui:
+        from shared.tui import AgentTUI
+        print("Launching Subtitle Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-subtitle")
+        app.run()
+        sys.exit(0)
+
+    from shared.subtitle_lab import run_subtitle_lab_logic
+    run_subtitle_lab_logic(args)
     sys.exit(0)
 
 def run_cicd_lab(args):
@@ -18872,6 +18886,10 @@ async def main():
 
     if args.command in ["parquet-lab", "parquet", "pq"]:
         run_parquet_lab_logic(args)
+        return
+
+    if args.command in ["subtitle-lab", "sub"]:
+        run_subtitle_lab(args)
         return
 
     # Initialize Agent Client

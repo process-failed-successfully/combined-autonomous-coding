@@ -205,6 +205,7 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
+    "parquet-lab", "parquet", "pq",
     "proxy-lab", "proxy",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "pcap-lab", "pcap", "rss-lab", "rss", "fs-lab", "fs", "files",
@@ -1106,6 +1107,12 @@ def run_yaml_lab(args):
 def run_toml_lab(args):
     """Runs the TOML Lab."""
     run_toml_lab_logic(args)
+    sys.exit(0)
+
+def run_parquet_lab(args):
+    """Runs the Parquet Lab."""
+    from shared.parquet_lab import run_parquet_lab_logic
+    run_parquet_lab_logic(args)
     sys.exit(0)
 
 def run_semver_lab(args):
@@ -8244,6 +8251,14 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # --- Parquet Lab ---
+    parser_parquet = subparsers.add_parser("parquet-lab", aliases=["parquet", "pq"], help="Parquet tools")
+    parser_parquet.add_argument("action", choices=["read", "schema", "convert"], help="Action to perform")
+    parser_parquet.add_argument("--file", help="Input file")
+    parser_parquet.add_argument("--output", help="Output file (for convert)")
+    parser_parquet.add_argument("--format", choices=["csv", "json"], default="csv", help="Output format")
+    parser_parquet.add_argument("--limit", type=int, help="Limit number of rows to read")
 
     # Hooks 'install' action
     parser_hooks_install = hooks_subparsers.add_parser(
@@ -18667,6 +18682,10 @@ async def main():
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)
+        return
+
+    if args.command in ["parquet-lab", "parquet", "pq"]:
+        run_parquet_lab(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

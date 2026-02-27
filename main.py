@@ -289,7 +289,8 @@ KNOWN_COMMANDS = [
     "cicd-lab", "ci", "actions",
     "flashcards-lab", "flash", "learn",
     "parquet-lab", "parquet", "pq",
-    "subtitle-lab", "sub"
+    "subtitle-lab", "sub",
+    "shell-lab"
 ]
 
 if FileSystemEventHandler:
@@ -430,6 +431,14 @@ def run_subtitle_lab(args):
 
     from shared.subtitle_lab import run_subtitle_lab_logic
     run_subtitle_lab_logic(args)
+    sys.exit(0)
+
+def run_shell_lab(args):
+    """Runs the Shell Lab TUI."""
+    from shared.tui import AgentTUI
+    print("Launching Shell Lab TUI...")
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-shell-lab")
+    app.run()
     sys.exit(0)
 
 def run_cicd_lab(args):
@@ -18909,6 +18918,10 @@ async def main():
 
     if args.command in ["subtitle-lab", "sub"]:
         run_subtitle_lab(args)
+        return
+
+    if args.command == "shell-lab":
+        run_shell_lab(args)
         return
 
     # Initialize Agent Client

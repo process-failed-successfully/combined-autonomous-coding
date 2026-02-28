@@ -906,13 +906,13 @@ def run_npm_lab(args):
     success = run_npm_lab_logic(args)
     sys.exit(0 if success else 1)
 
-def run_pypi_lab(args):
+async def run_pypi_lab(args):
     """Runs the PyPI Lab."""
     if args.action == "tui":
         from shared.tui import AgentTUI
         print("Launching PyPI Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pypi")
-        app.run()
+        await app.run_async()
         sys.exit(0)
 
     success = run_pypi_lab_logic(args)
@@ -18526,7 +18526,7 @@ async def main():
         return
 
     if args.command in ["pypi-lab", "pypi"]:
-        run_pypi_lab(args)
+        await run_pypi_lab(args)
         return
 
     if args.command in ["docker-lab", "docker", "container"]:

@@ -162,6 +162,7 @@ from shared.tui_sql import SqlLabTab
 from shared.tui_cert import CertLabTab
 from shared.tui_chart import ChartLabTab
 from shared.tui_ast import ASTExplorerTab
+from shared.tui_pypi import PypiLabTab
 from shared.tui_graphql import GraphQLLabTab
 from shared.tui_grpc import GrpcLabTab
 from shared.tui_struct import StructLabTab
@@ -3920,6 +3921,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Config", "switch_tab_config"),
         PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
+        PaletteCommand("Go to PyPI Lab", "switch_tab_pypi"),
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
         PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
         PaletteCommand("Go to Struct Lab", "switch_tab_struct"),
@@ -4274,6 +4276,8 @@ class AgentTUI(App):
                 yield ArchiveLabTab(self.project_dir)
             with TabPane("S3 Lab", id="tab-s3"):
                 yield S3LabTab()
+            with TabPane("PyPI Lab", id="tab-pypi"):
+                yield PypiLabTab()
             with TabPane("DNS Lab", id="tab-dns"):
                 yield DnsLabTab()
             with TabPane("Speed Lab", id="tab-speed"):

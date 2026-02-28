@@ -196,6 +196,7 @@ from shared.tui_subtitle import SubtitleLabTab
 from shared.tui_matrix import MatrixLabTab
 from shared.tui_shell import ShellLabTab
 from shared.tui_chemistry import ChemistryLabTab
+from shared.tui_physics import PhysicsLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4336,6 +4337,8 @@ class AgentTUI(App):
                 yield ShellLabTab(self.project_dir)
             with TabPane("Chemistry", id="tab-chemistry"):
                 yield ChemistryLabTab()
+            with TabPane("Physics", id="tab-physics"):
+                yield PhysicsLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

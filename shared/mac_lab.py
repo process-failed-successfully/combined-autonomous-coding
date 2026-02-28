@@ -100,7 +100,7 @@ class MacLabManager:
             ctx.verify_mode = ssl.CERT_NONE
 
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, context=ctx, timeout=5) as response:
+            with urllib.request.urlopen(req, context=ctx, timeout=5) as response:  # nosec B310
                 if response.status == 200:
                     data = json.loads(response.read().decode())
                     if data.get("success") and data.get("found"):

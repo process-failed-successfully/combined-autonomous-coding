@@ -11678,6 +11678,9 @@ def parse_args(argv=None):
     parser_sl_infer.add_argument("file", help="Input data file (JSON/YAML).")
     parser_sl_infer.add_argument("-o", "--output", help="Output schema file (default: stdout).")
 
+    # schema-lab tui
+    parser_sl_tui = schema_lab_subparsers.add_parser("tui", help="Launch Schema Lab TUI.")
+
     # schema-lab convert
     parser_sl_convert = schema_lab_subparsers.add_parser("convert", help="Convert JSON Schema to other formats.")
     parser_sl_convert.add_argument("file", help="Input JSON Schema file.")

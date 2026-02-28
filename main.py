@@ -164,6 +164,7 @@ from shared.transpiler_lab import run_transpiler_lab_logic
 from shared.user_agent_lab import run_user_agent_lab_logic
 from shared.parquet_lab import run_parquet_lab_logic
 from shared.chemistry_lab import run_chemistry_lab_logic
+from shared.mac_lab import run_mac_lab_logic
 import json
 import yaml
 import platformdirs
@@ -292,7 +293,8 @@ KNOWN_COMMANDS = [
     "parquet-lab", "parquet", "pq",
     "subtitle-lab", "sub",
     "shell-lab",
-    "chemistry-lab", "chem", "periodic"
+    "chemistry-lab", "chem", "periodic",
+    "mac-lab", "mac"
 ]
 
 if FileSystemEventHandler:
@@ -446,6 +448,11 @@ def run_shell_lab(args):
 def run_chemistry_lab(args):
     """Runs the Chemistry Lab."""
     run_chemistry_lab_logic(args)
+    sys.exit(0)
+
+def run_mac_lab(args):
+    """Runs the MAC Lab."""
+    run_mac_lab_logic(args)
     sys.exit(0)
 
 def run_cicd_lab(args):
@@ -11747,6 +11754,37 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+    # --- New 'mac-lab' command ---
+    parser_mac = subparsers.add_parser(
+        "mac-lab",
+        aliases=["mac"],
+        help="MAC address utilities (generate, format, validate, lookup)."
+    )
+    mac_subparsers = parser_mac.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # mac generate
+    parser_mac_gen = mac_subparsers.add_parser("generate", aliases=["gen"], help="Generate random MAC addresses.")
+    parser_mac_gen.add_argument("--count", "-c", type=int, default=1, help="Number of MAC addresses to generate.")
+    parser_mac_gen.add_argument("--prefix", "-p", help="OUI prefix (e.g., '00:1A:2B').")
+    parser_mac_gen.add_argument("--format", "-f", choices=["colon", "hyphen", "dot", "plain"], default="colon", help="Output format.")
+
+    # mac format
+    parser_mac_format = mac_subparsers.add_parser("format", aliases=["fmt"], help="Reformat a MAC address.")
+    parser_mac_format.add_argument("mac", help="The MAC address to format.")
+    parser_mac_format.add_argument("--format", "-f", choices=["colon", "hyphen", "dot", "plain"], default="colon", help="Output format.")
+
+    # mac validate
+    parser_mac_validate = mac_subparsers.add_parser("validate", aliases=["check"], help="Validate a MAC address.")
+    parser_mac_validate.add_argument("mac", help="The MAC address to validate.")
+
+    # mac lookup
+    parser_mac_lookup = mac_subparsers.add_parser("lookup", aliases=["info"], help="Look up the vendor of a MAC address.")
+    parser_mac_lookup.add_argument("mac", help="The MAC address to look up.")
+
     # --- New 'uuid-lab' command ---
     parser_uuid = subparsers.add_parser(
         "uuid-lab",
@@ -18956,6 +18994,10 @@ async def main():
 
     if args.command in ["chemistry-lab", "chem", "periodic"]:
         run_chemistry_lab(args)
+        return
+
+    if args.command in ["mac-lab", "mac"]:
+        run_mac_lab(args)
         return
 
     # Initialize Agent Client

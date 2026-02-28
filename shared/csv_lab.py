@@ -1,6 +1,7 @@
 import csv
 import sys
 import argparse
+import sqlite3
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Union
 
@@ -153,6 +154,96 @@ class CsvLabManager:
 
         return [{k: row[k] for k in columns} for row in data]
 
+    def query_sql(self, data: List[Dict[str, Any]], query: str, table_name: str = "data") -> List[Dict[str, Any]]:
+        """
+        Executes a SQL query on the CSV data using an in-memory SQLite database.
+        Automatically infers column types to support numeric operations.
+        """
+        if not data:
+            return []
+
+        conn = sqlite3.connect(':memory:')
+        conn.row_factory = sqlite3.Row
+
+        headers = self.get_headers(data)
+
+        # 1. Infer Types
+        types = {}
+        for h in headers:
+            can_be_int = True
+            can_be_float = True
+
+            # Check up to first 100 rows to guess type
+            for row in data[:100]:
+                val = row.get(h)
+                if not val: # skip empty string or None
+                    continue
+                if can_be_int:
+                    try:
+                        int(val)
+                    except ValueError:
+                        can_be_int = False
+                if can_be_float:
+                    try:
+                        float(val)
+                    except ValueError:
+                        can_be_float = False
+
+                if not can_be_int and not can_be_float:
+                    break
+
+            if can_be_int:
+                types[h] = "INTEGER"
+            elif can_be_float:
+                types[h] = "REAL"
+            else:
+                types[h] = "TEXT"
+
+        # 2. Create Table
+        # Quote column names to handle spaces or reserved words
+        cols = [f'"{h}" {types[h]}' for h in headers]
+        create_stmt = f"CREATE TABLE {table_name} ({', '.join(cols)})"
+        conn.execute(create_stmt)  # nosec B608
+
+        # 3. Insert Data
+        placeholders = ", ".join(["?"] * len(headers))
+        insert_stmt = f"INSERT INTO {table_name} ({', '.join(['\"'+h+'\"' for h in headers])}) VALUES ({placeholders})"  # nosec B608
+
+        # Prepare rows for insertion (convert types so SQLite stores them correctly)
+        insert_data = []
+        for row in data:
+            r = []
+            for h in headers:
+                val = row.get(h)
+                if not val:
+                    r.append(None)
+                elif types[h] == "INTEGER":
+                    try:
+                        r.append(int(val))
+                    except ValueError:
+                        r.append(None)
+                elif types[h] == "REAL":
+                    try:
+                        r.append(float(val))
+                    except ValueError:
+                        r.append(None)
+                else:
+                    r.append(val)
+            insert_data.append(r)
+
+        conn.executemany(insert_stmt, insert_data)
+
+        # 4. Execute Query
+        try:
+            cursor = conn.execute(query)
+            result = [dict(row) for row in cursor.fetchall()]
+        except sqlite3.Error as e:
+            conn.close()
+            raise ValueError(f"SQL Error: {e}")
+
+        conn.close()
+        return result
+
 
 def run_csv_lab_logic(args):
     """CLI logic for CSV Lab."""
@@ -263,6 +354,41 @@ def run_csv_lab_logic(args):
                     writer.writerows(result)
         except ValueError as e:
             print(f"❌ Select error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "query":
+        try:
+            result = manager.query_sql(data, args.query)
+            if args.output:
+                manager.save_csv(result, args.output)
+                print(f"✅ Query results saved to {args.output}")
+            else:
+                if result:
+                    try:
+                        from rich.console import Console
+                        from rich.table import Table
+                        console = Console()
+                        table = Table(show_header=True, header_style="bold magenta")
+
+                        headers = list(result[0].keys())
+                        for h in headers:
+                            table.add_column(h)
+
+                        limit = getattr(args, 'limit', 50)
+                        for row in result[:limit]:
+                            table.add_row(*[str(row.get(h, "")) for h in headers])
+
+                        console.print(table)
+                        if len(result) > limit:
+                            console.print(f"[dim]Showing first {limit} of {len(result)} rows.[/dim]")
+                    except ImportError:
+                        writer = csv.DictWriter(sys.stdout, fieldnames=result[0].keys())
+                        writer.writeheader()
+                        writer.writerows(result)
+                else:
+                    print("No results returned.")
+        except ValueError as e:
+            print(f"❌ Query error: {e}", file=sys.stderr)
             sys.exit(1)
 
     sys.exit(0)

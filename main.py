@@ -12210,7 +12210,7 @@ def parse_args(argv=None):
     parser_csv = subparsers.add_parser(
         "csv-lab",
         aliases=["csv"],
-        help="CSV utilities (read, stats, filter, sort, select)."
+        help="CSV utilities (read, stats, filter, sort, select, query)."
     )
     parser_csv.add_argument("--file", "-f", help="Input CSV file.")
     csv_subparsers = parser_csv.add_subparsers(
@@ -12218,6 +12218,11 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # csv-lab query
+    parser_csv_query = csv_subparsers.add_parser("query", help="Run SQL queries on the CSV data.")
+    parser_csv_query.add_argument("--query", "-q", required=True, help="SQL query to execute (table name is 'data').")
+    parser_csv_query.add_argument("--output", "-o", help="Output file (default stdout).")
 
     # csv-lab read
     parser_csv_read = csv_subparsers.add_parser("read", help="Read and pretty print CSV.")

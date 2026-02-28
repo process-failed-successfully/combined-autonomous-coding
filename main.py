@@ -907,6 +907,13 @@ def run_npm_lab(args):
 
 def run_pypi_lab(args):
     """Runs the PyPI Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching PyPI Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pypi")
+        app.run()
+        sys.exit(0)
+
     success = run_pypi_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -13327,6 +13334,9 @@ def parse_args(argv=None):
     parser_pypi_download.add_argument("package", help="Package name.")
     parser_pypi_download.add_argument("--version", help="Specific version (optional).")
     parser_pypi_download.add_argument("--dest", help="Destination directory (default: current).")
+
+    # pypi-lab tui
+    parser_pypi_tui = pypi_subparsers.add_parser("tui", help="Launch PyPI Lab TUI.")
 
     # --- New 'docker-lab' command ---
     parser_docker = subparsers.add_parser(

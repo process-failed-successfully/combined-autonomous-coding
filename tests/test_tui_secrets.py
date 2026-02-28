@@ -10,10 +10,13 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from textual.widgets import Label, Button, ListView, Input, RichLog, Static
 from shared.tui import AgentTUI, SecretsTab
+from shared.database import init_db
 
 class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.test_dir = Path(tempfile.mkdtemp())
+        # Init DB to avoid SQLAlchemy errors when AgentTUI loads database-dependent tabs
+        init_db(self.test_dir / ".agent_db.sqlite")
         self.project_dir = self.test_dir / "project"
         self.project_dir.mkdir()
 
@@ -49,6 +52,9 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
 
         self.patcher_proc = patch("shared.tui.ProcLabTab", side_effect=lambda *args, **kwargs: Static("Mock ProcLab Tab"))
         self.patcher_proc.start()
+
+        self.patcher_pex = patch("shared.tui.ProcessExplorerTab", side_effect=lambda *args, **kwargs: Static("Mock ProcessExplorer Tab"))
+        self.patcher_pex.start()
 
         self.patcher_monitor = patch("shared.tui.SystemMonitorTab", side_effect=lambda *args, **kwargs: Static("Mock SystemMonitor Tab"))
         self.patcher_monitor.start()

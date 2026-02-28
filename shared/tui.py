@@ -140,6 +140,7 @@ from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_toml import TomlLabTab
+from shared.tui_set import SetLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_media import MediaLabTab
@@ -4258,6 +4259,8 @@ class AgentTUI(App):
                 yield XmlLabTab(self.project_dir)
             with TabPane("TOML Lab", id="tab-toml"):
                 yield TomlLabTab(self.project_dir)
+            with TabPane("Set Lab", id="tab-set"):
+                yield SetLabTab()
             with TabPane("Markdown Lab", id="tab-markdown"):
                 yield MarkdownLabTab(self.project_dir)
             with TabPane("CSV Lab", id="tab-csv"):

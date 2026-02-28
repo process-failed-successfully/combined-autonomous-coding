@@ -296,7 +296,8 @@ KNOWN_COMMANDS = [
     "shell-lab",
     "chemistry-lab", "chem", "periodic",
     "mac-lab", "mac",
-    "physics-lab", "phys"
+    "physics-lab", "phys",
+    "set-lab", "sets"
 ]
 
 if FileSystemEventHandler:
@@ -455,6 +456,20 @@ def run_chemistry_lab(args):
 def run_physics_lab(args):
     """Runs the Physics Lab."""
     run_physics_lab_logic(args)
+    sys.exit(0)
+
+
+def run_set_lab(args):
+    """Runs the Set Lab."""
+    if getattr(args, "action", None) == "tui" or (getattr(args, "tui", False)):
+        from shared.tui import AgentTUI
+        print("Launching Set Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-set")
+        app.run()
+        sys.exit(0)
+
+    from shared.set_lab import run_set_lab_logic
+    run_set_lab_logic(args)
     sys.exit(0)
 
 def run_mac_lab(args):
@@ -11779,6 +11794,25 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+
+    # Set Lab Command
+    set_lab_parser = subparsers.add_parser(
+        "set-lab", aliases=["sets"],
+        help="Perform set operations on lists (union, intersection, etc.)"
+    )
+    set_lab_parser.add_argument("--set1", type=str, help="Comma-separated list for Set 1")
+    set_lab_parser.add_argument("--set2", type=str, help="Comma-separated list for Set 2")
+    set_lab_parser.add_argument("--file1", type=str, help="File containing Set 1 (one item per line)")
+    set_lab_parser.add_argument("--file2", type=str, help="File containing Set 2 (one item per line)")
+    set_lab_parser.add_argument(
+        "--operation", type=str, default="union",
+        choices=["union", "intersection", "difference", "symmetric_difference", "subset", "superset"],
+        help="Operation to perform"
+    )
+    set_lab_parser.add_argument("--ignore-case", action="store_true", help="Perform case-insensitive matching")
+    set_lab_parser.add_argument("--trim-whitespace", action="store_true", help="Trim whitespace from items")
+    set_lab_parser.add_argument("--tui", action="store_true", help="Launch the Set Lab TUI")
+
     # --- New 'mac-lab' command ---
     parser_mac = subparsers.add_parser(
         "mac-lab",
@@ -19053,6 +19087,11 @@ async def main():
 
     if args.command in ["chemistry-lab", "chem", "periodic"]:
         run_chemistry_lab(args)
+        return
+
+
+    if args.command in ["set-lab", "sets"]:
+        run_set_lab(args)
         return
 
     if args.command in ["mac-lab", "mac"]:

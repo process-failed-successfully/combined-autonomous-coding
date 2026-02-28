@@ -455,6 +455,12 @@ def run_mac_lab(args):
     run_mac_lab_logic(args)
     sys.exit(0)
 
+def run_physics_lab(args):
+    """Runs the Physics Lab."""
+    from shared.physics_lab import run_physics_lab_logic
+    run_physics_lab_logic(args)
+    sys.exit(0)
+
 def run_cicd_lab(args):
     """Runs the CI/CD Lab TUI."""
     from shared.tui import AgentTUI
@@ -11766,6 +11772,21 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    parser_physics_lab = subparsers.add_parser(
+        "physics-lab",
+        aliases=["phys"],
+        help="Run Physics Lab utilities"
+    )
+    parser_physics_lab.add_argument("action", choices=["velocity", "acceleration", "force", "kinetic-energy", "potential-energy", "tui"], help="Physics action to perform")
+    parser_physics_lab.add_argument("--distance", type=float, help="Distance in meters")
+    parser_physics_lab.add_argument("--time", type=float, help="Time in seconds")
+    parser_physics_lab.add_argument("--v-initial", type=float, help="Initial velocity in m/s")
+    parser_physics_lab.add_argument("--v-final", type=float, help="Final velocity in m/s")
+    parser_physics_lab.add_argument("--mass", type=float, help="Mass in kg")
+    parser_physics_lab.add_argument("--acceleration", type=float, help="Acceleration in m/s²")
+    parser_physics_lab.add_argument("--velocity", type=float, help="Velocity in m/s")
+    parser_physics_lab.add_argument("--height", type=float, help="Height in meters")
+
     # mac generate
     parser_mac_gen = mac_subparsers.add_parser("generate", aliases=["gen"], help="Generate random MAC addresses.")
     parser_mac_gen.add_argument("--count", "-c", type=int, default=1, help="Number of MAC addresses to generate.")
@@ -19003,6 +19024,10 @@ async def main():
 
     if args.command in ["mac-lab", "mac"]:
         run_mac_lab(args)
+        return
+
+    if args.command in ["physics-lab", "phys"]:
+        run_physics_lab(args)
         return
 
     # Initialize Agent Client

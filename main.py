@@ -162,6 +162,7 @@ from shared.emoji_lab import run_emoji_lab_logic
 from shared.cq_lab import run_cq_lab_logic
 from shared.transpiler_lab import run_transpiler_lab_logic
 from shared.user_agent_lab import run_user_agent_lab_logic
+from shared.mac_lab import run_mac_lab_logic
 from shared.parquet_lab import run_parquet_lab_logic
 from shared.chemistry_lab import run_chemistry_lab_logic
 import json
@@ -271,7 +272,7 @@ KNOWN_COMMANDS = [
     "diagram-lab", "diagram", "draw",
     "pipe-lab", "pipe", "stream",
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
-    "user-agent-lab", "ua",
+    "user-agent-lab", "ua", "mac-lab", "mac",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
@@ -905,13 +906,13 @@ def run_npm_lab(args):
     success = run_npm_lab_logic(args)
     sys.exit(0 if success else 1)
 
-def run_pypi_lab(args):
+async def run_pypi_lab(args):
     """Runs the PyPI Lab."""
     if args.action == "tui":
         from shared.tui import AgentTUI
         print("Launching PyPI Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pypi")
-        app.run()
+        await app.run_async()
         sys.exit(0)
 
     success = run_pypi_lab_logic(args)
@@ -15123,6 +15124,27 @@ def parse_args(argv=None):
     parser_ua.add_argument("--browser", help="Browser for generation")
     parser_ua.add_argument("--version", help="Version for generation")
 
+    # --- MAC Address Lab ---
+    parser_mac = subparsers.add_parser("mac-lab", aliases=["mac"], help="MAC Address utilities")
+    mac_subparsers = parser_mac.add_subparsers(dest="action", required=True, help="Action to perform")
+
+    parser_mac_gen = mac_subparsers.add_parser("generate", help="Generate random MAC addresses")
+    parser_mac_gen.add_argument("--count", type=int, default=1, help="Number of MAC addresses to generate")
+    parser_mac_gen.add_argument("--prefix", help="OUI prefix (e.g. 00:1A:2B)")
+    parser_mac_gen.add_argument("--upper", action="store_true", help="Output in uppercase")
+    parser_mac_gen.add_argument("--separator", default=":", help="Separator character (default: :)")
+
+    parser_mac_format = mac_subparsers.add_parser("format", help="Format a MAC address")
+    parser_mac_format.add_argument("--mac", required=True, help="The MAC address to format")
+    parser_mac_format.add_argument("--upper", action="store_true", help="Output in uppercase")
+    parser_mac_format.add_argument("--separator", default=":", help="Separator character (default: :)")
+
+    parser_mac_val = mac_subparsers.add_parser("validate", help="Validate a MAC address")
+    parser_mac_val.add_argument("--mac", required=True, help="The MAC address to validate")
+
+    parser_mac_lookup = mac_subparsers.add_parser("lookup", help="Look up the vendor of a MAC address")
+    parser_mac_lookup.add_argument("--mac", required=True, help="The MAC address to look up")
+
     # --- New 'cq-lab' command ---
     parser_cq = subparsers.add_parser(
         "cq-lab",
@@ -18504,7 +18526,7 @@ async def main():
         return
 
     if args.command in ["pypi-lab", "pypi"]:
-        run_pypi_lab(args)
+        await run_pypi_lab(args)
         return
 
     if args.command in ["docker-lab", "docker", "container"]:
@@ -18876,6 +18898,10 @@ async def main():
 
     if args.command in ["user-agent-lab", "ua"]:
         run_user_agent_lab_logic(args)
+        return
+
+    if args.command in ["mac-lab", "mac"]:
+        run_mac_lab_logic(args)
         return
 
     if args.command in ["emoji-lab", "emoji", "emoj"]:

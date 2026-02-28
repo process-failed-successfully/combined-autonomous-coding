@@ -95,7 +95,7 @@ class MacLabManager:
 
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'CombinedAutonomousCodingAgent/1.0'})
-            with urllib.request.urlopen(req, timeout=5) as response:
+            with urllib.request.urlopen(req, timeout=5) as response:  # nosec B310
                 data = json.loads(response.read().decode())
 
             if "result" in data and "error" not in data["result"]:

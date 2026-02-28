@@ -166,6 +166,7 @@ from shared.parquet_lab import run_parquet_lab_logic
 from shared.chemistry_lab import run_chemistry_lab_logic
 from shared.mac_lab import run_mac_lab_logic
 from shared.physics_lab import run_physics_lab_logic
+from shared.set_lab import run_set_lab_logic
 import json
 import yaml
 import platformdirs
@@ -296,7 +297,8 @@ KNOWN_COMMANDS = [
     "shell-lab",
     "chemistry-lab", "chem", "periodic",
     "mac-lab", "mac",
-    "physics-lab", "phys"
+    "physics-lab", "phys",
+    "set-lab", "sets"
 ]
 
 if FileSystemEventHandler:
@@ -456,6 +458,11 @@ def run_physics_lab(args):
     """Runs the Physics Lab."""
     run_physics_lab_logic(args)
     sys.exit(0)
+
+def run_set_lab(args):
+    """Runs the Set Lab."""
+    success = run_set_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_mac_lab(args):
     """Runs the MAC Lab."""
@@ -15229,6 +15236,14 @@ def parse_args(argv=None):
     parser_cq.add_argument("--json", action="store_true", help="Output results as JSON")
     parser_cq.add_argument("--action", choices=["tui"], default=None, nargs="?", help="Action to perform (default: report)")
 
+    # --- Set Lab ---
+    parser_set = subparsers.add_parser("set-lab", aliases=["sets"], help="Set Operations Lab")
+    parser_set.add_argument("action", choices=["union", "intersect", "difference", "sym_diff", "is_subset", "is_superset", "tui"], default="tui", nargs="?", help="Action to perform")
+    parser_set.add_argument("--list-a", help="First list (comma-separated or file path)")
+    parser_set.add_argument("--list-b", help="Second list (comma-separated or file path)")
+    parser_set.add_argument("--ignore-case", action="store_true", help="Ignore case during operation")
+    parser_set.add_argument("--trim", action="store_true", help="Trim whitespace from items")
+
     # --- Transpiler Lab ---
     parser_transpiler = subparsers.add_parser("transpiler-lab", aliases=["transpile"], help="AI Code Transpiler")
     parser_transpiler.set_defaults(func=run_transpiler_lab_logic)
@@ -19061,6 +19076,10 @@ async def main():
 
     if args.command in ["physics-lab", "phys"]:
         run_physics_lab(args)
+        return
+
+    if args.command in ["set-lab", "sets"]:
+        run_set_lab(args)
         return
 
     # Initialize Agent Client

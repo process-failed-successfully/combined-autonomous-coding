@@ -35,8 +35,10 @@ class TomlLabManager:
         """Dumps data to a TOML string."""
         return tomlkit.dumps(data)
 
-    def _parse_path(self, path: str) -> List[Union[str, int]]:
+    def _parse_path(self, path: Union[str, List[Union[str, int]]]) -> List[Union[str, int]]:
         """Parses a path string into keys and indices (dot notation)."""
+        if isinstance(path, list):
+            return path
         normalized = path.replace('[', '.').replace(']', '')
         parts = []
         for p in normalized.split('.'):

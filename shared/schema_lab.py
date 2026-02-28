@@ -258,6 +258,13 @@ def run_schema_lab_logic(args):
     """
     CLI entry point for Schema Lab.
     """
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Schema Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-schema")
+        app.run()
+        sys.exit(0)
+
     manager = SchemaLabManager(args.project_dir)
 
     if args.action == "infer":

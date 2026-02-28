@@ -134,6 +134,7 @@ from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_schema import SchemaLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
@@ -3933,6 +3934,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
+        PaletteCommand("Go to Schema Lab", "switch_tab_schema"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
@@ -4339,6 +4341,8 @@ class AgentTUI(App):
                 yield ChemistryLabTab()
             with TabPane("Physics", id="tab-physics"):
                 yield PhysicsLabTab()
+            with TabPane("Schema Lab", id="tab-schema"):
+                yield SchemaLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

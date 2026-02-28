@@ -165,6 +165,7 @@ from shared.user_agent_lab import run_user_agent_lab_logic
 from shared.parquet_lab import run_parquet_lab_logic
 from shared.chemistry_lab import run_chemistry_lab_logic
 from shared.mac_lab import run_mac_lab_logic
+from shared.physics_lab import run_physics_lab_logic
 import json
 import yaml
 import platformdirs
@@ -294,7 +295,8 @@ KNOWN_COMMANDS = [
     "subtitle-lab", "sub",
     "shell-lab",
     "chemistry-lab", "chem", "periodic",
-    "mac-lab", "mac"
+    "mac-lab", "mac",
+    "physics-lab", "phys"
 ]
 
 if FileSystemEventHandler:
@@ -448,6 +450,11 @@ def run_shell_lab(args):
 def run_chemistry_lab(args):
     """Runs the Chemistry Lab."""
     run_chemistry_lab_logic(args)
+    sys.exit(0)
+
+def run_physics_lab(args):
+    """Runs the Physics Lab."""
+    run_physics_lab_logic(args)
     sys.exit(0)
 
 def run_mac_lab(args):
@@ -11785,6 +11792,35 @@ def parse_args(argv=None):
     parser_mac_lookup = mac_subparsers.add_parser("lookup", aliases=["info"], help="Look up the vendor of a MAC address.")
     parser_mac_lookup.add_argument("mac", help="The MAC address to look up.")
 
+    # --- New 'physics-lab' command ---
+    parser_physics = subparsers.add_parser(
+        "physics-lab",
+        aliases=["phys"],
+        help="Physics calculations (velocity, acceleration, force, energy)."
+    )
+    physics_subparsers = parser_physics.add_subparsers(
+        dest="action",
+        required=True,
+        help="Physics calculation to perform."
+    )
+    parser_phys_vel = physics_subparsers.add_parser("velocity", aliases=["v"], help="Calculate velocity")
+    parser_phys_vel.add_argument("--distance", "-d", type=float, required=True, help="Distance (m)")
+    parser_phys_vel.add_argument("--time", "-t", type=float, required=True, help="Time (s)")
+    parser_phys_acc = physics_subparsers.add_parser("acceleration", aliases=["a"], help="Calculate acceleration")
+    parser_phys_acc.add_argument("--v-initial", "-vi", type=float, required=True, help="Initial Velocity (m/s)")
+    parser_phys_acc.add_argument("--v-final", "-vf", type=float, required=True, help="Final Velocity (m/s)")
+    parser_phys_acc.add_argument("--time", "-t", type=float, required=True, help="Time (s)")
+    parser_phys_force = physics_subparsers.add_parser("force", aliases=["f"], help="Calculate force")
+    parser_phys_force.add_argument("--mass", "-m", type=float, required=True, help="Mass (kg)")
+    parser_phys_force.add_argument("--acceleration", "-a", type=float, required=True, help="Acceleration (m/s²)")
+    parser_phys_ke = physics_subparsers.add_parser("ke", help="Calculate kinetic energy")
+    parser_phys_ke.add_argument("--mass", "-m", type=float, required=True, help="Mass (kg)")
+    parser_phys_ke.add_argument("--velocity", "-v", type=float, required=True, help="Velocity (m/s)")
+    parser_phys_pe = physics_subparsers.add_parser("pe", help="Calculate potential energy")
+    parser_phys_pe.add_argument("--mass", "-m", type=float, required=True, help="Mass (kg)")
+    parser_phys_pe.add_argument("--height", "-ht", type=float, required=True, help="Height (m)")
+    parser_phys_pe.add_argument("--gravity", "-g", type=float, default=9.81, help="Gravity")
+
     # --- New 'uuid-lab' command ---
     parser_uuid = subparsers.add_parser(
         "uuid-lab",
@@ -18998,6 +19034,10 @@ async def main():
 
     if args.command in ["mac-lab", "mac"]:
         run_mac_lab(args)
+        return
+
+    if args.command in ["physics-lab", "phys"]:
+        run_physics_lab(args)
         return
 
     # Initialize Agent Client

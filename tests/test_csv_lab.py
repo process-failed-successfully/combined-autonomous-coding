@@ -99,3 +99,40 @@ def test_empty_file(csv_manager, tmp_path):
 def test_invalid_file(csv_manager, tmp_path):
     with pytest.raises(FileNotFoundError):
         csv_manager.load_csv(tmp_path / "non_existent.csv")
+
+def test_query_sql(csv_manager):
+    # Test type inference and basic SQL execution
+    data = [
+        {"id": "1", "name": "Alice", "age": "30", "score": "95.5"},
+        {"id": "2", "name": "Bob", "age": "25", "score": "80.0"},
+        {"id": "3", "name": "Charlie", "age": "35", "score": "92.5"},
+        {"id": "4", "name": "David", "age": "", "score": "null"}, # Missing/invalid data
+    ]
+
+    # Simple SELECT
+    res = csv_manager.query_sql(data, "SELECT name, age FROM data WHERE age > 25")
+    assert len(res) == 2
+    names = [r["name"] for r in res]
+    assert "Alice" in names
+    assert "Charlie" in names
+
+    # Aggregation
+    res = csv_manager.query_sql(data, "SELECT AVG(score) as avg_score FROM data WHERE score != 'null'")
+    assert len(res) == 1
+    # (95.5 + 80.0 + 92.5) / 3 = 89.333...
+    assert round(res[0]["avg_score"], 2) == 89.33
+
+    # Order By
+    res = csv_manager.query_sql(data, "SELECT name FROM data ORDER BY age DESC")
+    assert len(res) == 4
+    assert res[0]["name"] == "Charlie" # age 35
+
+def test_query_sql_empty_data(csv_manager):
+    res = csv_manager.query_sql([], "SELECT * FROM data")
+    assert res == []
+
+def test_query_sql_invalid_sql(csv_manager):
+    data = [{"id": "1", "name": "Alice"}]
+    with pytest.raises(ValueError) as excinfo:
+        csv_manager.query_sql(data, "SELECT * FROM non_existent_table")
+    assert "SQL Error" in str(excinfo.value)

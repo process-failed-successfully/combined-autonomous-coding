@@ -4992,6 +4992,19 @@ def run_replace(args):
 
 def run_todos(args):
     """Scans the project for TODO comments."""
+    if hasattr(args, 'tui') and args.tui:
+        from textual.app import App, ComposeResult
+        from shared.tui_todos import TodosLabTab
+
+        class TodosLabApp(App):
+            CSS = "TodosLabTab { height: 100%; width: 100%; }"
+            def compose(self) -> ComposeResult:
+                yield TodosLabTab(args.project_dir.resolve())
+
+        app = TodosLabApp()
+        app.run()
+        return
+
     from shared.todos import scan_todos, get_todo_blame
 
     project_dir = args.project_dir.resolve()
@@ -9756,6 +9769,11 @@ def parse_args(argv=None):
         "--json",
         action="store_true",
         help="Output results in JSON format."
+    )
+    parser_todos.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch interactive Todos Lab TUI."
     )
 
     # --- New 'a11y' command ---

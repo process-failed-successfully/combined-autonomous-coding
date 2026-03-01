@@ -31,7 +31,6 @@ class TestImageLabManager(unittest.TestCase):
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")
-    @patch.dict("shared.image_lab.TAGS", {271: "Make"}, clear=True)
     def test_read_exif(self, mock_image):
         mock_img_instance = MagicMock()
 
@@ -42,9 +41,11 @@ class TestImageLabManager(unittest.TestCase):
 
         input_path = Path("test_exif.jpg")
         with patch.object(Path, "exists", return_value=True):
-            exif_data = self.manager.read_exif(input_path)
-            self.assertIn("Make", exif_data)
-            self.assertEqual(exif_data["Make"], "Apple")
+            # Patch TAGS so it doesn't fail when Pillow is missing
+            with patch("shared.image_lab.TAGS", {271: "Make"}, create=True):
+                exif_data = self.manager.read_exif(input_path)
+                self.assertIn("Make", exif_data)
+                self.assertEqual(exif_data["Make"], "Apple")
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")

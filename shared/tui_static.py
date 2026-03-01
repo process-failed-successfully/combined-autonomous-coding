@@ -26,7 +26,7 @@ class StaticLabTab(Container):
 
                 with Vertical():
                     yield Label("Host:", classes="label")
-                    yield Input(placeholder="0.0.0.0", value="0.0.0.0", id="static-host")
+                    yield Input(placeholder="0.0.0.0", value="0.0.0.0", id="static-host")  # nosec B104
 
                 with Vertical():
                     yield Label("Port:", classes="label")

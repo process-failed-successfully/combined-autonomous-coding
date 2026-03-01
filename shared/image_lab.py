@@ -7,19 +7,20 @@ Utilities for image processing using Pillow (PIL).
 
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple, Union
+from typing import Dict, Any, Optional
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    from PIL import Image, ImageDraw, ImageFont
     from PIL.ExifTags import TAGS
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
 
 console = Console()
+
 
 class ImageLabManager:
     """Manages image operations."""
@@ -143,8 +144,10 @@ class ImageLabManager:
                     return output_path
 
             # Fallback for explicit dimensions or calculated ones
-            if target_width is None: target_width = original_width
-            if target_height is None: target_height = original_height
+            if target_width is None:
+                target_width = original_width
+            if target_height is None:
+                target_height = original_height
 
             resized_img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
             resized_img.save(output_path)
@@ -158,15 +161,15 @@ class ImageLabManager:
         try:
             img = Image.new("RGB", (width, height), color)
         except ValueError:
-             # Fallback for named colors or invalid hex
-             img = Image.new("RGB", (width, height), color)
+            # Fallback for named colors or invalid hex
+            img = Image.new("RGB", (width, height), color)
 
         if text:
             draw = ImageDraw.Draw(img)
             # Try to load a default font, otherwise use simple
             try:
                 # Basic scaling attempt
-                fontsize = int(min(width, height) / 5)
+                # fontsize = int(min(width, height) / 5)
                 # This depends on system fonts, might fail. Fallback to default.
                 # font = ImageFont.truetype("arial.ttf", fontsize)
                 font = ImageFont.load_default()

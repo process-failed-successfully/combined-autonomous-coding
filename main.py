@@ -167,6 +167,7 @@ from shared.chemistry_lab import run_chemistry_lab_logic
 from shared.mac_lab import run_mac_lab_logic
 from shared.physics_lab import run_physics_lab_logic
 from shared.set_lab import run_set_lab_logic
+from shared.ip_lab import run_ip_lab_logic
 import json
 import yaml
 import platformdirs
@@ -300,7 +301,8 @@ KNOWN_COMMANDS = [
     "chemistry-lab", "chem", "periodic",
     "mac-lab", "mac",
     "physics-lab", "phys",
-    "set-lab", "sets"
+    "set-lab", "sets",
+    "ip-lab", "ip"
 ]
 
 if FileSystemEventHandler:
@@ -476,6 +478,11 @@ def run_mac_lab(args):
     """Runs the MAC Lab."""
     run_mac_lab_logic(args)
     sys.exit(0)
+
+def run_ip_lab(args):
+    """Runs the IP Lab."""
+    success = run_ip_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_cicd_lab(args):
     """Runs the CI/CD Lab TUI."""
@@ -11838,6 +11845,26 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+    # --- New 'ip-lab' command ---
+    parser_ip = subparsers.add_parser(
+        "ip-lab",
+        aliases=["ip"],
+        help="IP Address utilities (public, geo, info)."
+    )
+    ip_subparsers = parser_ip.add_subparsers(
+        dest="action",
+        help="Action to perform",
+        required=True
+    )
+
+    parser_ip_public = ip_subparsers.add_parser("public", help="Get public IP address.")
+
+    parser_ip_geo = ip_subparsers.add_parser("geo", help="Geolocate an IP address.")
+    parser_ip_geo.add_argument("ip", nargs="?", help="The IP address to geolocate. Defaults to public IP.")
+
+    parser_ip_info = ip_subparsers.add_parser("info", help="Get information about an IP address.")
+    parser_ip_info.add_argument("ip", help="The IP address to inspect.")
+
     # --- New 'mac-lab' command ---
     parser_mac = subparsers.add_parser(
         "mac-lab",
@@ -19184,6 +19211,10 @@ async def main():
 
     if args.command in ["mac-lab", "mac"]:
         run_mac_lab(args)
+        return
+
+    if args.command in ["ip-lab", "ip"]:
+        run_ip_lab(args)
         return
 
     if args.command in ["physics-lab", "phys"]:

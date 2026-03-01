@@ -171,7 +171,7 @@ class ImageLabManager:
             try:
                 # Basic scaling attempt
                 # This depends on system fonts, might fail. Fallback to default.
-                # font = ImageFont.truetype("arial.ttf", fontsize)
+                # font = ImageFont.truetype("arial.ttf", int(min(width, height) / 5))
                 font = ImageFont.load_default()
             except IOError:
                 font = ImageFont.load_default()

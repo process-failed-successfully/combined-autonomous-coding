@@ -31,6 +31,56 @@ class TestImageLabManager(unittest.TestCase):
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")
+    def test_read_exif(self, mock_image):
+        mock_img_instance = MagicMock()
+
+        # We simulate getexif returning a dict mapping tag id -> value
+        # In EXIF, 271 is Make.
+        mock_img_instance.getexif.return_value = {271: "Apple"}
+        mock_image.open.return_value.__enter__.return_value = mock_img_instance
+
+        input_path = Path("test_exif.jpg")
+        with patch.object(Path, "exists", return_value=True):
+            # Patch TAGS so it doesn't fail when Pillow is missing
+            with patch("shared.image_lab.TAGS", {271: "Make"}, create=True):
+                exif_data = self.manager.read_exif(input_path)
+                self.assertIn("Make", exif_data)
+                self.assertEqual(exif_data["Make"], "Apple")
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
+    def test_read_exif_no_exif(self, mock_image):
+        mock_img_instance = MagicMock()
+        # Simulate image with getexif returning None or empty
+        mock_img_instance.getexif.return_value = {}
+        mock_image.open.return_value.__enter__.return_value = mock_img_instance
+
+        input_path = Path("test_no_exif.jpg")
+        with patch.object(Path, "exists", return_value=True):
+            exif_data = self.manager.read_exif(input_path)
+            self.assertEqual(exif_data, {})
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
+    def test_remove_exif(self, mock_image):
+        mock_input_img = MagicMock()
+        mock_input_img.mode = "RGB"
+        mock_input_img.size = (100, 100)
+        mock_input_img.format = "JPEG"
+        mock_input_img.info = {"exif": b"dummy_exif_data", "icc_profile": b"dummy_icc"}
+
+        mock_image.open.return_value.__enter__.return_value = mock_input_img
+
+        input_path = Path("test_with_exif.jpg")
+        output_path = Path("test_no_exif.jpg")
+
+        with patch.object(Path, "exists", return_value=True):
+            self.manager.remove_exif(input_path, output_path)
+
+            mock_input_img.save.assert_called_with(output_path, format="JPEG", icc_profile=b"dummy_icc")
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
     def test_convert(self, mock_image):
         mock_img_instance = MagicMock()
         mock_image.open.return_value.__enter__.return_value = mock_img_instance

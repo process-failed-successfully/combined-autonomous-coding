@@ -5,7 +5,9 @@ import csv
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import MagicMock, patch
 from shared.data_lab import DataLabManager
+from main import run_data_lab
 
 class TestDataLabManager(unittest.TestCase):
     def setUp(self):
@@ -82,6 +84,23 @@ class TestDataLabManager(unittest.TestCase):
         source_file.touch()
         with self.assertRaises(ValueError):
             self.manager.convert(source_file, "json")
+
+class TestRunDataLab(unittest.TestCase):
+    @patch("main.sys.exit")
+    @patch("shared.tui.AgentTUI")
+    def test_run_data_lab_tui(self, mock_agent_tui, mock_exit):
+        args = MagicMock()
+        args.action = "tui"
+        args.project_dir = Path("/tmp")
+
+        mock_app = MagicMock()
+        mock_agent_tui.return_value = mock_app
+
+        run_data_lab(args)
+
+        mock_agent_tui.assert_called_once_with(project_dir=Path("/tmp"), start_tab="tab-datalab")
+        mock_app.run.assert_called_once()
+        mock_exit.assert_called_once_with(0)
 
 if __name__ == "__main__":
     unittest.main()

@@ -168,6 +168,7 @@ from shared.mac_lab import run_mac_lab_logic
 from shared.physics_lab import run_physics_lab_logic
 from shared.set_lab import run_set_lab_logic
 from shared.ip_lab import run_ip_lab_logic
+from shared import __version__
 import json
 import yaml
 import platformdirs
@@ -190,7 +191,7 @@ KNOWN_COMMANDS = [
     "plan", "estimate", "config", "configure", "validate", "doctor", "clean", "prune",
     "archive", "empty-trash", "restore", "trash", "revert", "rewind", "discard", "undo",
     "archives", "artifacts", "worktrees", "snapshot", "list-agents", "models", "glance",
-    "status", "dashboard", "summary", "suggest", "tour", "history", "last", "last-run-id",
+    "status", "dashboard", "summary", "suggest", "tour", "history", "last", "last-run-id", "version",
     "diff-summary", "diff", "log", "logs", "workflow", "cost", "benchmark", "sprint",
     "branch", "mutate", "test", "lint", "format", "hooks", "replay", "recipes", "macro",
     "git", "history-graph", "tree", "report", "push", "pull", "patch", "issues", "pr",
@@ -7277,6 +7278,12 @@ def parse_args(argv=None):
     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")
     core_group.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Print the agent version and exit."
+    )
+    core_group.add_argument(
         "--profile",
         type=str,
         help="Select a configuration profile from agent_config.yaml.",
@@ -7427,6 +7434,7 @@ def parse_args(argv=None):
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
+    parser_version = subparsers.add_parser("version", help="Print the version of the agent and exit")
 
     # Subparser for 'models'
     parser_models = subparsers.add_parser("models", help="List recommended models for each agent")
@@ -17954,6 +17962,11 @@ async def main():
         else:
             args.run_plugin_func(args)
         return
+
+    if args.command == "version":
+        from shared import __version__
+        print(f"Combined Autonomous Coding Agent v{__version__}")
+        sys.exit(0)
 
     # Handle `shell` command
     if args.command == "shell":

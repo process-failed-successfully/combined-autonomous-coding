@@ -1,6 +1,6 @@
 import sys
-import re
 from typing import Dict, Any, List, Optional
+
 
 class HttpStatusLabManager:
     """Manages HTTP Status Code information."""
@@ -98,6 +98,7 @@ class HttpStatusLabManager:
                 query in details["category"].lower()):
                 results.append({"code": code, **details})
         return results
+
 
 def run_http_status_lab_logic(args) -> bool:
     """CLI handler for HTTP Status Lab."""

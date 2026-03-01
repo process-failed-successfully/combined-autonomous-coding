@@ -39,11 +39,13 @@ class TestImageLabManager(unittest.TestCase):
         mock_img_instance.getexif.return_value = {271: "Apple"}
         mock_image.open.return_value.__enter__.return_value = mock_img_instance
 
-        input_path = Path("test_exif.jpg")
-        with patch.object(Path, "exists", return_value=True):
-            exif_data = self.manager.read_exif(input_path)
-            self.assertIn("Make", exif_data)
-            self.assertEqual(exif_data["Make"], "Apple")
+        # Mock TAGS directly on the shared.image_lab module to match implementation
+        with patch("shared.image_lab.TAGS", {271: "Make"}, create=True):
+            input_path = Path("test_exif.jpg")
+            with patch.object(Path, "exists", return_value=True):
+                exif_data = self.manager.read_exif(input_path)
+                self.assertIn("Make", exif_data)
+                self.assertEqual(exif_data["Make"], "Apple")
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")

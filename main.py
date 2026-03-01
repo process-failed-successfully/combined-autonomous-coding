@@ -1027,8 +1027,15 @@ def run_color_lab(args):
 
 def run_data_lab(args):
     """Runs the Data Lab utilities."""
-    run_data_lab_logic(args)
-    sys.exit(0)
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Data Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-datalab")
+        app.run()
+        sys.exit(0)
+    else:
+        run_data_lab_logic(args)
+        sys.exit(0)
 
 def run_badges(args):
     """Runs the badges command."""
@@ -11680,6 +11687,9 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # data-lab tui
+    parser_dl_tui = data_lab_subparsers.add_parser("tui", help="Launch Data Lab TUI.")
 
     # data-lab convert
     parser_dl_convert = data_lab_subparsers.add_parser("convert", help="Convert data file format.")

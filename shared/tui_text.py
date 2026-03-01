@@ -91,6 +91,13 @@ class TextLabTab(Container):
                             yield Button("Keep Matches", id="btn-filter-keep", variant="primary")
                             yield Button("Remove Matches", id="btn-filter-remove", variant="error")
 
+                    with TabPane("Hash"):
+                        with Horizontal():
+                            yield Button("MD5", id="btn-hash-md5")
+                            yield Button("SHA1", id="btn-hash-sha1")
+                            yield Button("SHA256", id="btn-hash-sha256")
+                            yield Button("SHA512", id="btn-hash-sha512")
+
                     with TabPane("Stats"):
                         yield Button("Analyze", id="btn-text-stats", variant="primary")
                         yield Label("Stats will appear here...", id="lbl-text-stats")
@@ -167,6 +174,16 @@ class TextLabTab(Container):
                 pattern = self.query_one("#text-filter-pattern", Input).value
                 exclude = (btn_id == "btn-filter-remove")
                 result = self.manager.filter_lines(text, pattern, exclude=exclude)
+
+            # Hash
+            elif btn_id == "btn-hash-md5":
+                result = self.manager.hash_text(text, "md5")
+            elif btn_id == "btn-hash-sha1":
+                result = self.manager.hash_text(text, "sha1")
+            elif btn_id == "btn-hash-sha256":
+                result = self.manager.hash_text(text, "sha256")
+            elif btn_id == "btn-hash-sha512":
+                result = self.manager.hash_text(text, "sha512")
 
             self.query_one("#text-output", TextArea).text = result
 

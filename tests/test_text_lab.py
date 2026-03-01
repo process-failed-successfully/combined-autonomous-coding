@@ -143,6 +143,21 @@ class TestTextLab(unittest.TestCase):
         self.assertIn("-bar", diff)
         self.assertIn("+baz", diff)
 
+    def test_hash_text(self):
+        text = "hello"
+        md5_hash = self.manager.hash_text(text, "md5")
+        sha1_hash = self.manager.hash_text(text, "sha1")
+        sha256_hash = self.manager.hash_text(text, "sha256")
+        sha512_hash = self.manager.hash_text(text, "sha512")
+
+        self.assertEqual(md5_hash, "5d41402abc4b2a76b9719d911017c592")
+        self.assertEqual(sha1_hash, "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d")
+        self.assertEqual(sha256_hash, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
+        self.assertEqual(sha512_hash, "9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043")
+
+        with self.assertRaises(ValueError):
+            self.manager.hash_text(text, "unknown_algo")
+
 
 if __name__ == '__main__':
     unittest.main()

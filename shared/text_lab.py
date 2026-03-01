@@ -4,6 +4,7 @@ import urllib.parse
 import re
 import difflib
 import sys
+import hashlib
 from typing import Dict, Any
 from collections import Counter
 
@@ -125,6 +126,15 @@ class TextLabManager:
             "chars_no_space": len(text.replace(" ", "").replace("\n", "").replace("\t", "")),
             "frequency": Counter(text).most_common(5)
         }
+
+    def hash_text(self, text: str, algorithm: str) -> str:
+        algo = algorithm.lower()
+        if algo not in hashlib.algorithms_available:
+            raise ValueError(f"Unknown hash algorithm: {algo}")
+
+        h = hashlib.new(algo)
+        h.update(text.encode('utf-8'))
+        return h.hexdigest()
 
     def diff(self, text1: str, text2: str) -> str:
         diff = difflib.unified_diff(
@@ -275,5 +285,16 @@ def run_text_lab_logic(args):
             print("Error: Input text required (argument or stdin).", file=sys.stderr)
             return False
         print(manager.filter_lines(text_input, args.pattern, exclude=args.exclude))
+
+    elif args.action == "hash":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        try:
+            print(manager.hash_text(text_input, args.algo))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return False
 
     return True

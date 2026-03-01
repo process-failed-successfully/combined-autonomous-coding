@@ -12042,6 +12042,11 @@ def parse_args(argv=None):
     parser_tl_filter.add_argument("--exclude", "-v", action="store_true", help="Exclude matches.")
     parser_tl_filter.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
 
+    # text-lab hash
+    parser_tl_hash = text_lab_subparsers.add_parser("hash", help="Hash text.")
+    parser_tl_hash.add_argument("--algo", "-a", choices=["md5", "sha1", "sha256", "sha512"], default="sha256", help="Hashing algorithm.")
+    parser_tl_hash.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
     # --- New 'html-lab' command ---
     parser_html = subparsers.add_parser(
         "html-lab",

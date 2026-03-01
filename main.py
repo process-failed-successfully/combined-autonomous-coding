@@ -279,6 +279,7 @@ KNOWN_COMMANDS = [
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
     "go-lab", "go", "golang",
+    "base64-lab", "base64", "b64",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
@@ -347,6 +348,12 @@ def run_emoji_lab(args):
     """Runs the Emoji Lab."""
     run_emoji_lab_logic(args)
     sys.exit(0)
+
+def run_base64_lab(args):
+    """Runs the Base64 Lab."""
+    from shared.base64_lab import run_base64_lab_logic
+    success = run_base64_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_go_lab(args):
     """Runs the Go Lab."""
@@ -13286,6 +13293,15 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # base64-lab
+    parser_b64 = subparsers.add_parser(
+        "base64-lab", aliases=["base64", "b64"],
+        help="Base64 encode and decode strings."
+    )
+    b64_group = parser_b64.add_mutually_exclusive_group(required=True)
+    b64_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    b64_group.add_argument("--decode", "-d", type=str, help="Base64 text to decode.")
+
     # random-lab int
     parser_random_int = random_subparsers.add_parser("int", help="Random integers.")
     parser_random_int.add_argument("min", type=int, help="Minimum value.")
@@ -18999,6 +19015,10 @@ async def main():
 
     if args.command in ["emoji-lab", "emoji", "emoj"]:
         run_emoji_lab(args)
+        return
+
+    if args.command in ["base64-lab", "base64", "b64"]:
+        run_base64_lab(args)
         return
 
     if args.command in ["go-lab", "go", "golang"]:

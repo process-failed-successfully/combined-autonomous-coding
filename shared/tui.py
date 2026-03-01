@@ -140,6 +140,7 @@ from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
+from shared.tui_base64 import Base64LabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
@@ -4256,6 +4257,8 @@ class AgentTUI(App):
                 yield HttpServerLabTab(self.project_dir)
             with TabPane("HTTP Client", id="tab-http-client"):
                 yield HttpLabTab()
+            with TabPane("Base64 Lab", id="tab-base64"):
+                yield Base64LabTab()
             with TabPane("Hash Lab", id="tab-hash"):
                 yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):

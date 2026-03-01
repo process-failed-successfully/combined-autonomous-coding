@@ -1069,6 +1069,13 @@ def run_password_lab(args):
 
 def run_text_lab(args):
     """Runs the Text Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Text Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-text")
+        app.run()
+        sys.exit(0)
+
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
     sys.exit(0 if success else 1)

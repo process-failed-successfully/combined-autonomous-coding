@@ -1,18 +1,19 @@
 import unittest
 from textual.app import App, ComposeResult
-from textual.widgets import Input, DataTable, Label, Static
+from textual.widgets import Input, DataTable, Label
 from textual.containers import Vertical
-from textual.coordinate import Coordinate
 from shared.tui_http_status import HttpStatusLabTab
+
 
 class DummyApp(App):
     def compose(self) -> ComposeResult:
         yield HttpStatusLabTab()
 
+
 class TestHttpStatusLabTui(unittest.IsolatedAsyncioTestCase):
     async def test_tui_initial_render(self):
         app = DummyApp()
-        async with app.run_test() as pilot:
+        async with app.run_test():
             tab = app.query_one(HttpStatusLabTab)
 
             # Verify input exists
@@ -56,6 +57,7 @@ class TestHttpStatusLabTui(unittest.IsolatedAsyncioTestCase):
             code_label = tab.query_one("#detail-code-message", Label)
             self.assertIn("418", str(code_label.render()))
             self.assertIn("teapot", str(code_label.render()))
+
 
 if __name__ == "__main__":
     unittest.main()

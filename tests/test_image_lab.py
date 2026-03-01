@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from shared.image_lab import ImageLabManager
+
 
 class TestImageLabManager(unittest.TestCase):
     def setUp(self):
@@ -193,7 +194,7 @@ class TestImageLabManager(unittest.TestCase):
     def test_hide_message(self, mock_image):
         # Mock input image
         mock_input_img = MagicMock()
-        mock_input_img.size = (10, 1) # 10 pixels -> 30 values -> 30 bits capacity
+        mock_input_img.size = (10, 1)  # 10 pixels -> 30 values -> 30 bits capacity
         mock_input_img.mode = "RGB"
         # 10 pixels: (100, 100, 100)
         mock_input_img.getdata.return_value = [(100, 100, 100)] * 10
@@ -209,7 +210,7 @@ class TestImageLabManager(unittest.TestCase):
 
         input_path = Path("input.png")
         output_path = Path("output.png")
-        message = "A" # 'A' -> 65 -> 01000001. Plus null terminator (00000000). Total 16 bits.
+        message = "A"  # 'A' -> 65 -> 01000001. Plus null terminator (00000000). Total 16 bits.
         # 16 bits < 30 bits capacity. OK.
 
         with patch.object(Path, "exists", return_value=True):
@@ -261,7 +262,8 @@ class TestImageLabManager(unittest.TestCase):
         for i in range(0, len(bits), 3):
             chunk = bits[i:i+3]
             # pad chunk with 0 if needed (though logic handles exact match)
-            while len(chunk) < 3: chunk += "0"
+            while len(chunk) < 3:
+                chunk += "0"
 
             r = 100 | int(chunk[0])
             g = 100 | int(chunk[1])
@@ -281,7 +283,7 @@ class TestImageLabManager(unittest.TestCase):
     @patch("shared.image_lab.Image")
     def test_hide_message_capacity_error(self, mock_image):
         mock_input_img = MagicMock()
-        mock_input_img.size = (1, 1) # 1 pixel = 3 bits
+        mock_input_img.size = (1, 1)  # 1 pixel = 3 bits
         # Make convert return self
         mock_input_img.convert.return_value = mock_input_img
         mock_input_img.getdata.return_value = [(100, 100, 100)]
@@ -303,7 +305,7 @@ class TestImageLabManager(unittest.TestCase):
     def test_hide_message_utf8(self, mock_image):
         # Mock input image
         mock_input_img = MagicMock()
-        mock_input_img.size = (20, 1) # Enough space
+        mock_input_img.size = (20, 1)  # Enough space
         mock_input_img.mode = "RGB"
         mock_input_img.getdata.return_value = [(100, 100, 100)] * 20
 
@@ -318,7 +320,7 @@ class TestImageLabManager(unittest.TestCase):
 
         input_path = Path("input.png")
         output_path = Path("output.png")
-        message = "ñ" # 2 bytes in UTF-8: 0xC3 0xB1 -> 11000011 10110001. + null (00000000)
+        message = "ñ"  # 2 bytes in UTF-8: 0xC3 0xB1 -> 11000011 10110001. + null (00000000)
 
         with patch.object(Path, "exists", return_value=True):
             self.manager.hide_message(input_path, output_path, message)
@@ -341,6 +343,7 @@ class TestImageLabManager(unittest.TestCase):
             # P2: 11 1  (1 from byte 2 start) -> (101, 101, 101)
 
             self.assertEqual(new_pixels[2], (101, 101, 101))
+
 
 if __name__ == "__main__":
     unittest.main()

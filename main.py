@@ -1159,8 +1159,15 @@ def run_cert_lab(args):
 
 def run_time_lab(args):
     """Runs the Time Lab."""
-    success = run_time_lab_logic(args)
-    sys.exit(0 if success else 1)
+    if hasattr(args, 'action') and args.action == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Time Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-time")
+        app.run()
+        sys.exit(0)
+    else:
+        success = run_time_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_math_lab(args):
     """Runs the Math Lab."""
@@ -12176,6 +12183,9 @@ def parse_args(argv=None):
     # time-lab zones
     parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")
     parser_time_zones.add_argument("search", nargs="?", help="Search term.")
+
+    # time-lab tui
+    parser_time_tui = time_subparsers.add_parser("tui", help="Launch Time Lab TUI.")
 
     # --- New 'math-lab' command ---
     parser_math = subparsers.add_parser(

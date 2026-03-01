@@ -168,6 +168,7 @@ from shared.mac_lab import run_mac_lab_logic
 from shared.physics_lab import run_physics_lab_logic
 from shared.set_lab import run_set_lab_logic
 from shared.ip_lab import run_ip_lab_logic
+from shared.stego_lab import run_stego_lab_logic
 import json
 import yaml
 import platformdirs
@@ -302,7 +303,8 @@ KNOWN_COMMANDS = [
     "mac-lab", "mac",
     "physics-lab", "phys",
     "set-lab", "sets",
-    "ip-lab", "ip"
+    "ip-lab", "ip",
+    "stego-lab", "stego"
 ]
 
 if FileSystemEventHandler:
@@ -482,6 +484,11 @@ def run_mac_lab(args):
 def run_ip_lab(args):
     """Runs the IP Lab."""
     success = run_ip_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_stego_lab(args):
+    """Runs the Stego Lab."""
+    success = run_stego_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_cicd_lab(args):
@@ -19225,6 +19232,10 @@ async def main():
 
     if args.command in ["ip-lab", "ip"]:
         run_ip_lab(args)
+        return
+
+    if args.command in ["stego-lab", "stego"]:
+        run_stego_lab(args)
         return
 
     if args.command in ["physics-lab", "phys"]:

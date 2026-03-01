@@ -203,6 +203,7 @@ from shared.tui_shell import ShellLabTab
 from shared.tui_chemistry import ChemistryLabTab
 from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
+from shared.tui_stego import StegoLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4358,6 +4359,8 @@ class AgentTUI(App):
                 yield PhysicsLabTab()
             with TabPane("Set Lab", id="tab-set"):
                 yield SetLabTab(self.project_dir)
+            with TabPane("Stego Lab", id="tab-stego"):
+                yield StegoLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

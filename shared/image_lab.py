@@ -14,6 +14,7 @@ from rich.panel import Panel
 
 try:
     from PIL import Image, ImageDraw, ImageFont, ImageOps
+    from PIL.ExifTags import TAGS
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -45,6 +46,52 @@ class ImageLabManager:
                 "height": img.height,
                 "info": img.info
             }
+
+    def read_exif(self, filepath: Path) -> Dict[str, Any]:
+        """Reads EXIF data from an image."""
+        self._check_pil()
+        if not filepath.exists():
+            raise FileNotFoundError(f"File not found: {filepath}")
+
+        exif_data = {}
+        with Image.open(filepath) as img:
+            # getexif() is available in newer Pillow versions
+            if hasattr(img, "getexif"):
+                exif = img.getexif()
+                if exif:
+                    for tag_id, value in exif.items():
+                        tag = TAGS.get(tag_id, tag_id)
+                        exif_data[tag] = value
+
+        return exif_data
+
+    def remove_exif(self, input_path: Path, output_path: Path) -> Path:
+        """Removes EXIF data from an image and saves it without massive memory overhead."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        with Image.open(input_path) as img:
+            # Copy all info except EXIF to preserve ICC profiles and other metadata
+            info = img.info.copy()
+            info.pop('exif', None)
+
+            # Convert to RGB if needed to save to JPEG
+            fmt = img.format if img.format else output_path.suffix.lstrip(".").upper()
+            if fmt == "JPG":
+                fmt = "JPEG"
+
+            if fmt == "JPEG" and img.mode in ("RGBA", "P"):
+                # Saving as JPEG doesn't support RGBA or P
+                out_img = img.convert("RGB")
+            else:
+                out_img = img
+
+            # Save the image without EXIF, but preserving other metadata
+            # For most formats in PIL, omit the 'exif' kwarg or explicitly pass None
+            out_img.save(output_path, format=fmt, **info)
+
+        return output_path
 
     def convert(self, input_path: Path, output_path: Path, format: Optional[str] = None, **kwargs) -> Path:
         """Converts an image to a different format."""
@@ -274,6 +321,29 @@ def run_image_lab_logic(args):
                 text_color=args.text_color
             )
             console.print(f"[green]✅ Placeholder saved to {output}[/green]")
+
+        elif args.action == "exif":
+            exif_data = manager.read_exif(Path(args.file))
+            if not exif_data:
+                console.print("[yellow]No EXIF data found in this image.[/yellow]")
+            else:
+                console.print(Panel(f"[bold]EXIF Data: {Path(args.file).name}[/bold]"))
+                table = Table(show_header=False)
+                for key, value in exif_data.items():
+                    # Handle overly long binary values or tuples gracefully
+                    if isinstance(value, bytes) and len(value) > 50:
+                        val_str = f"<{len(value)} bytes>"
+                    elif isinstance(value, tuple) and len(value) > 10:
+                        val_str = f"<{len(value)} items>"
+                    else:
+                        val_str = str(value)
+                    table.add_row(str(key), val_str)
+                console.print(table)
+
+        elif args.action == "remove-exif":
+            output = Path(args.output)
+            manager.remove_exif(Path(args.input), output)
+            console.print(f"[green]✅ Image without EXIF saved to {output}[/green]")
 
         elif args.action == "hide":
             output = Path(args.output)

@@ -12667,6 +12667,15 @@ def parse_args(argv=None):
     parser_image_placeholder.add_argument("--text", help="Text to overlay.")
     parser_image_placeholder.add_argument("--text-color", default="black", help="Text color.")
 
+    # image-lab exif
+    parser_image_exif = image_subparsers.add_parser("exif", help="Read EXIF data from an image.")
+    parser_image_exif.add_argument("file", help="Image file path.")
+
+    # image-lab remove-exif
+    parser_image_remove_exif = image_subparsers.add_parser("remove-exif", help="Remove EXIF data from an image.")
+    parser_image_remove_exif.add_argument("input", help="Input image file.")
+    parser_image_remove_exif.add_argument("output", help="Output image file.")
+
     # image-lab hide
     parser_img_hide = image_subparsers.add_parser("hide", help="Hide a secret message in an image.")
     parser_img_hide.add_argument("input", help="Input image path.")

@@ -48,6 +48,7 @@ class TestTUIPattern(unittest.IsolatedAsyncioTestCase):
         start_patch('shared.tui.DocstringManager')
         start_patch('shared.tui.LinkChecker')
         start_patch('shared.tui.OpenAPIGenerator')
+        start_patch('shared.tui_knowledge_graph.KnowledgeManager')
 
         # Capture the specific mock we need
         self.mock_pattern_cls = start_patch('shared.tui_pattern.PatternLabManager')

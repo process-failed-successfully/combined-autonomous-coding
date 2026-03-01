@@ -31,7 +31,7 @@ class TestImageLabManager(unittest.TestCase):
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")
-    @patch("shared.image_lab.TAGS", {271: "Make"})
+    @patch.dict("shared.image_lab.TAGS", {271: "Make"}, clear=True)
     def test_read_exif(self, mock_image):
         mock_img_instance = MagicMock()
 

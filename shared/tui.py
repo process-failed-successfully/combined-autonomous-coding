@@ -193,6 +193,7 @@ from shared.tui_cicd import CicdLabTab
 from shared.tui_pre_commit import PreCommitLabTab
 from shared.tui_cq import CodeQualityTab
 from shared.tui_transpiler import TranspilerLabTab
+from shared.tui_http_status import HttpStatusLabTab
 from shared.tui_subtitle import SubtitleLabTab
 from shared.tui_matrix import MatrixLabTab
 from shared.tui_shell import ShellLabTab
@@ -4180,6 +4181,8 @@ class AgentTUI(App):
                 yield GrpcLabTab()
             with TabPane("URL Lab", id="tab-url-lab"):
                 yield UrlLabTab()
+            with TabPane("HTTP Status Lab", id="tab-http-status"):
+                yield HttpStatusLabTab()
             with TabPane("User Agent Lab", id="tab-user-agent"):
                 yield UserAgentLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):

@@ -206,6 +206,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
+    "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
@@ -1085,6 +1086,19 @@ def run_text_lab(args):
 
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_http_status_lab(args):
+    """Runs the HTTP Status Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching HTTP Status Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-http-status")
+        app.run()
+        sys.exit(0)
+
+    from shared.http_status_lab import run_http_status_lab_logic
+    success = run_http_status_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_markdown_lab(args):
@@ -11926,6 +11940,22 @@ def parse_args(argv=None):
     parser_pwd_hash.add_argument("--salt", help="Optional salt (random if omitted).")
 
     # --- New 'text-lab' command ---
+    parser_http_status_lab = subparsers.add_parser(
+        "http-status-lab",
+        aliases=["http-status", "status-code"],
+        help="HTTP Status Code utilities."
+    )
+    http_status_lab_subparsers = parser_http_status_lab.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+    parser_http_status_lab_get = http_status_lab_subparsers.add_parser("get", help="Get HTTP status code details.")
+    parser_http_status_lab_get.add_argument("query", help="The HTTP status code to lookup.")
+    parser_http_status_lab_search = http_status_lab_subparsers.add_parser("search", help="Search HTTP status codes.")
+    parser_http_status_lab_search.add_argument("query", help="The search query.")
+    http_status_lab_subparsers.add_parser("tui", help="Launch the HTTP Status Code TUI.")
+
     parser_text_lab = subparsers.add_parser(
         "text-lab",
         aliases=["txt"],
@@ -18819,6 +18849,10 @@ async def main():
 
     if args.command in ["password-lab", "pwd-lab"]:
         run_password_lab(args)
+        return
+
+    if args.command in ["http-status-lab", "http-status", "status-code"]:
+        run_http_status_lab(args)
         return
 
     if args.command in ["text-lab", "txt"]:

@@ -135,6 +135,7 @@ from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
@@ -4221,6 +4222,8 @@ class AgentTUI(App):
                 yield FlashcardsTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("Random Lab", id="tab-random"):
+                yield RandomLabTab()
             with TabPane("RSS Lab", id="tab-rss"):
                 yield RssLabTab(self.project_dir)
             with TabPane("Cron Lab", id="tab-cron"):

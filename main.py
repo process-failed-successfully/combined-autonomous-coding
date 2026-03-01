@@ -921,6 +921,13 @@ def run_hash_lab(args):
 
 def run_random_lab(args):
     """Runs the Random Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Random Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-random")
+        app.run()
+        sys.exit(0)
+
     run_random_lab_logic(args)
     sys.exit(0)
 
@@ -13387,6 +13394,9 @@ def parse_args(argv=None):
     parser_random_dice = random_subparsers.add_parser("dice", help="Roll a dice.")
     parser_random_dice.add_argument("--sides", "-s", type=int, default=6, help="Number of sides.")
     parser_random_dice.add_argument("--count", "-c", type=int, default=1, help="Number of rolls.")
+
+    # random-lab tui
+    random_subparsers.add_parser("tui", help="Launch the Random Lab TUI.")
 
     # --- New 'browser-lab' command ---
     parser_browser = subparsers.add_parser(

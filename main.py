@@ -10940,6 +10940,9 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # mock tui
+    mock_subparsers.add_parser("tui", help="Launch Mock Data Lab TUI.")
+
     # mock generate
     parser_mock_gen = mock_subparsers.add_parser("generate", help="Generate mock data based on a JSON schema.")
     parser_mock_gen.add_argument(
@@ -17222,7 +17225,14 @@ def run_frontend(args):
 
 def run_mock(args):
     """Manages mock data tools (generate, serve)."""
-    if args.action == "serve":
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Mock Data Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-mock-data")
+        app.run()
+        sys.exit(0)
+
+    elif args.action == "serve":
         from shared.mock_server import run_mock_server
         run_mock_server(
             project_dir=args.project_dir,

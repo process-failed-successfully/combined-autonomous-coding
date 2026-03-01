@@ -11950,10 +11950,8 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
-    parser_http_status_lab_get = http_status_lab_subparsers.add_parser("get", help="Get HTTP status code details.")
-    parser_http_status_lab_get.add_argument("query", help="The HTTP status code to lookup.")
-    parser_http_status_lab_search = http_status_lab_subparsers.add_parser("search", help="Search HTTP status codes.")
-    parser_http_status_lab_search.add_argument("query", help="The search query.")
+    http_status_lab_subparsers.add_parser("get", help="Get HTTP status code details.").add_argument("query", help="The HTTP status code to lookup.")
+    http_status_lab_subparsers.add_parser("search", help="Search HTTP status codes.").add_argument("query", help="The search query.")
     http_status_lab_subparsers.add_parser("tui", help="Launch the HTTP Status Code TUI.")
 
     parser_text_lab = subparsers.add_parser(

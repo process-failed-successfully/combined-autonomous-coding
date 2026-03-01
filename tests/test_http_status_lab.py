@@ -4,6 +4,7 @@ import io
 import argparse
 from shared.http_status_lab import HttpStatusLabManager, run_http_status_lab_logic
 
+
 class TestHttpStatusLabManager(unittest.TestCase):
     def setUp(self):
         self.manager = HttpStatusLabManager()
@@ -32,6 +33,7 @@ class TestHttpStatusLabManager(unittest.TestCase):
     def test_search_status_no_match(self):
         res = self.manager.search_status("unobtainium")
         self.assertEqual(len(res), 0)
+
 
 class TestHttpStatusLabCLI(unittest.TestCase):
     def setUp(self):
@@ -82,6 +84,7 @@ class TestHttpStatusLabCLI(unittest.TestCase):
         result = run_http_status_lab_logic(args)
         self.assertFalse(result)
         self.assertIn("Search query required", self.held_err.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

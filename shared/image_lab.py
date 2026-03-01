@@ -59,8 +59,9 @@ class ImageLabManager:
             if hasattr(img, "getexif"):
                 exif = img.getexif()
                 if exif:
+                    tags_dict = getattr(sys.modules[__name__], 'TAGS', {})
                     for tag_id, value in exif.items():
-                        tag = TAGS.get(tag_id, tag_id)
+                        tag = tags_dict.get(tag_id, tag_id)
                         exif_data[tag] = value
 
         return exif_data

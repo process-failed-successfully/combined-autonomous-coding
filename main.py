@@ -14358,6 +14358,7 @@ def parse_args(argv=None):
     parser_static.add_argument("--upload", help="Directory to allow file uploads to.")
     parser_static.add_argument("--spa", action="store_true", help="Enable SPA mode (rewrite 404 to index.html).")
     parser_static.add_argument("--ssl", action="store_true", help="Enable HTTPS (self-signed).")
+    parser_static.add_argument("--tui", action="store_true", help="Launch the interactive TUI for Static Server Lab.")
 
     # --- New 'contract-lab' command ---
     parser_contract = subparsers.add_parser(
@@ -18828,6 +18829,12 @@ async def main():
         return
 
     if args.command in ["static-lab", "static", "serve-static"]:
+        if hasattr(args, "tui") and args.tui:
+            from shared.tui import AgentTUI
+            print("Launching Static Server Lab TUI...")
+            app = AgentTUI(project_dir=args.project_dir, start_tab="tab-static")
+            app.run()
+            sys.exit(0)
         run_static_lab_logic(args)
         return
 

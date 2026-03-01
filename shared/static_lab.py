@@ -20,6 +20,22 @@ class StaticLabHandler(http.server.SimpleHTTPRequestHandler):
         # directory argument is available in Python 3.7+
         super().__init__(*args, directory=self.config.get("directory", "."), **kwargs)
 
+    def log_message(self, format, *args):
+        """Override to redirect HTTP logs."""
+        message = format % args
+        msg = f"{self.command} {self.path} {message}"
+
+        on_log = self.config.get("on_log")
+        if on_log:
+            # Determine level
+            level = "error" if "500" in msg or "404" in msg else "info"
+            on_log(msg, level)
+        else:
+            sys.stderr.write("%s - - [%s] %s\n" %
+                             (self.address_string(),
+                              self.log_date_time_string(),
+                              message))
+
     def do_OPTIONS(self):
         """Handle CORS preflight."""
         if self.config.get("cors"):
@@ -183,22 +199,30 @@ class StaticLabManager:
         if self.config.get("ssl"):
             self._setup_ssl()
 
-        print(f"--- Static Lab Server ---")
-        print(f"Serving: {self.config.get('directory', '.')}")
-        print(f"URL: {'https' if self.config.get('ssl') else 'http'}://{host}:{port}")
+        on_log = self.config.get("on_log")
+
+        def _log(msg):
+            if on_log:
+                on_log(msg, "info")
+            else:
+                print(msg)
+
+        _log(f"--- Static Lab Server ---")
+        _log(f"Serving: {self.config.get('directory', '.')}")
+        _log(f"URL: {'https' if self.config.get('ssl') else 'http'}://{host}:{port}")
 
         if self.config.get("cors"):
-            print("CORS: Enabled")
+            _log("CORS: Enabled")
         if self.config.get("delay"):
-            print(f"Latency: {self.config['delay']}s")
+            _log(f"Latency: {self.config['delay']}s")
         if self.config.get("error_rate"):
-            print(f"Error Rate: {self.config['error_rate']:.1%}")
+            _log(f"Error Rate: {self.config['error_rate']:.1%}")
         if self.config.get("auth"):
-            print("Auth: Enabled")
+            _log("Auth: Enabled")
         if self.config.get("upload_dir"):
-            print(f"Uploads: {self.config['upload_dir']}")
+            _log(f"Uploads: {self.config['upload_dir']}")
         if self.config.get("spa"):
-            print("SPA Mode: Enabled")
+            _log("SPA Mode: Enabled")
 
         try:
             if self.httpd:
@@ -249,7 +273,12 @@ class StaticLabManager:
         if self.httpd:
             self.httpd.shutdown()
             self.httpd.server_close()
-            print("\nServer stopped.")
+
+            on_log = self.config.get("on_log")
+            if on_log:
+                on_log("Server stopped.", "info")
+            else:
+                print("\nServer stopped.")
 
 
 def run_static_lab_logic(args):

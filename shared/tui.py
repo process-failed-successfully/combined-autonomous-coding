@@ -127,6 +127,7 @@ from shared.tui_explorer import FileExplorerTab
 from shared.tui_hex import HexTab
 from shared.tui_http import HttpLabTab
 from shared.tui_http_server import HttpServerLabTab
+from shared.tui_static import StaticLabTab
 from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
@@ -4005,6 +4006,8 @@ class AgentTUI(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with TabbedContent(id="main-tabs", initial=self.start_tab):
+            with TabPane("Static Lab", id="tab-static"):
+                yield StaticLabTab(project_dir=self.project_dir)
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
             with TabPane("Focus", id="tab-focus"):

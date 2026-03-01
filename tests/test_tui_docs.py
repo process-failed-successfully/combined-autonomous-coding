@@ -36,6 +36,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DependencyUpdater'),
             patch('shared.tui.TaskManager'),
             patch('shared.tui.KnowledgeManager'),
+            patch('shared.tui_knowledge_graph.KnowledgeManager'),
             patch('shared.tui.init_db'), # prevent db init
             patch('shared.tui.ApiLabManager'),
             patch('shared.tui.PlaygroundManager'),

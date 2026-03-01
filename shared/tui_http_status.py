@@ -5,6 +5,7 @@ from textual.widget import Widget
 
 from shared.http_status_lab import HttpStatusLabManager
 
+
 class HttpStatusLabTab(Widget):
     """A tab for searching and viewing HTTP status codes."""
 
@@ -52,7 +53,6 @@ class HttpStatusLabTab(Widget):
             self._populate_table(event.value)
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        table = self.query_one("#http-status-table", DataTable)
         row_key = event.row_key.value
         if not row_key:
             return

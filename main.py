@@ -303,7 +303,8 @@ KNOWN_COMMANDS = [
     "mac-lab", "mac",
     "physics-lab", "phys",
     "set-lab", "sets",
-    "ip-lab", "ip"
+    "ip-lab", "ip",
+    "pack"
 ]
 
 if FileSystemEventHandler:
@@ -473,6 +474,12 @@ def run_physics_lab(args):
 def run_set_lab(args):
     """Runs the Set Lab."""
     success = run_set_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_pack_lab(args):
+    """Runs the Pack Lab to bundle the codebase."""
+    from shared.pack_lab import run_pack_logic
+    success = run_pack_logic(args)
     sys.exit(0 if success else 1)
 
 def run_mac_lab(args):
@@ -12239,6 +12246,16 @@ def parse_args(argv=None):
     # time-lab tui
     parser_time_tui = time_subparsers.add_parser("tui", help="Launch Time Lab TUI.")
 
+    # --- New 'pack' command ---
+    parser_pack = subparsers.add_parser(
+        "pack",
+        help="Pack the codebase into a single file for LLM context."
+    )
+    parser_pack.add_argument("--output", "-o", help="Output file path (default: stdout).")
+    parser_pack.add_argument("--include", "-i", help="Comma-separated list of glob patterns to include (e.g. '*.py,*.md').")
+    parser_pack.add_argument("--exclude", "-e", help="Comma-separated list of glob patterns to exclude (e.g. 'tests/*').")
+    parser_pack.add_argument("--format", "-f", choices=["markdown", "xml"], default="markdown", help="Output format (default: markdown).")
+
     # --- New 'math-lab' command ---
     parser_math = subparsers.add_parser(
         "math-lab",
@@ -19255,6 +19272,10 @@ async def main():
 
     if args.command in ["set-lab", "sets"]:
         run_set_lab(args)
+        return
+
+    if args.command == "pack":
+        run_pack_lab(args)
         return
 
     # Initialize Agent Client

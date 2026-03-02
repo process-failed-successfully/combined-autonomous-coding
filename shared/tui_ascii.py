@@ -172,11 +172,21 @@ class AsciiLabTab(Container):
         if not self._animation_frames:
             return
 
-        preview = self.query_one("#ascii-preview-text", Static)
-        frame_text, _ = self._animation_frames[self._current_frame_index]
-        preview.update(frame_text)
+        try:
+            preview = self.query_one("#ascii-preview-text", Static)
+            frame_text, _ = self._animation_frames[self._current_frame_index]
+            preview.update(frame_text)
+        except Exception:
+            # Handle the case where the tab has been unmounted and the widget is gone
+            if self._animation_timer:
+                self._animation_timer.stop()
+            return
 
         self._current_frame_index = (self._current_frame_index + 1) % len(self._animation_frames)
+
+    def on_unmount(self) -> None:
+        if self._animation_timer:
+            self._animation_timer.stop()
 
     def _extract_frames(self, gif_path: Path, width: int, charset: str, inverse: bool) -> List[Tuple[str, float]]:
         self.manager._check_pil()

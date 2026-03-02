@@ -1107,9 +1107,22 @@ def run_uuid_lab(args):
 
 def run_password_lab(args):
     """Runs the Password Lab."""
-    from shared.password_lab import run_password_lab_logic
-    run_password_lab_logic(args)
-    sys.exit(0)
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        import asyncio
+        app = AgentTUI(initial_tab="tab-password-lab")
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+    else:
+        from shared.password_lab import run_password_lab_logic
+        run_password_lab_logic(args)
+        sys.exit(0)
 
 def run_text_lab(args):
     """Runs the Text Lab."""
@@ -12029,6 +12042,9 @@ def parse_args(argv=None):
     parser_pwd_hash.add_argument("password", nargs="?", help="Password to hash (prompts if omitted).")
     parser_pwd_hash.add_argument("--algo", choices=["scrypt", "pbkdf2"], default="scrypt", help="Hashing algorithm.")
     parser_pwd_hash.add_argument("--salt", help="Optional salt (random if omitted).")
+
+    # password-lab tui
+    pwd_subparsers.add_parser("tui", help="Launch interactive TUI for Password Lab.")
 
     # --- New 'text-lab' command ---
     parser_http_status_lab = subparsers.add_parser(

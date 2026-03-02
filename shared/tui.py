@@ -71,6 +71,7 @@ from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
 from shared.tui_process_explorer import ProcessExplorerTab
+from shared.tui_password import PasswordLabTab
 from shared.tui_systemd import SystemdLabTab
 from shared.tui_task_runner import TaskRunnerTab
 from shared.tui_proxy import ProxyLabTab
@@ -4027,6 +4028,8 @@ class AgentTUI(App):
                 yield ProcLabTab(self.project_dir)
             with TabPane("Process Explorer", id="tab-process-explorer"):
                 yield ProcessExplorerTab(self.project_dir)
+            with TabPane("Password Lab", id="tab-password-lab"):
+                yield PasswordLabTab()
             with TabPane("Systemd", id="tab-systemd"):
                 yield SystemdLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):

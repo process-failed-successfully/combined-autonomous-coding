@@ -207,7 +207,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit",
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
@@ -1179,6 +1179,19 @@ def run_cert_lab(args):
     success = run_cert_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+def run_converter_lab(args):
+    """Runs the Converter Lab."""
+    if hasattr(args, 'action') and args.action == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Converter Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-converter")
+        app.run()
+        sys.exit(0)
+    else:
+        from shared.converter_lab import run_converter_lab_logic
+        success = run_converter_lab_logic(args)
+        sys.exit(0 if success else 1)
 def run_time_lab(args):
     """Runs the Time Lab."""
     if hasattr(args, 'action') and args.action == 'tui':
@@ -12247,6 +12260,38 @@ def parse_args(argv=None):
     parser_time_tui = time_subparsers.add_parser("tui", help="Launch Time Lab TUI.")
 
     # --- New 'pack' command ---
+
+    # --- New 'converter-lab' command ---
+    parser_converter = subparsers.add_parser(
+        "converter-lab",
+        aliases=["convert"],
+        help="Code & Format Converter (JSON/YAML/TOML/XML, CURL, Types)."
+    )
+    converter_subparsers = parser_converter.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # converter-lab format
+    parser_converter_format = converter_subparsers.add_parser("format", help="Convert format.")
+    parser_converter_format.add_argument("input", nargs="?", help="Input content (or via stdin).")
+    parser_converter_format.add_argument("--from", "-f", dest="from_fmt", default="json", help="Input format (json, yaml, toml, xml).")
+    parser_converter_format.add_argument("--to", "-t", dest="to_fmt", default="yaml", help="Output format (json, yaml, toml, xml).")
+
+    # converter-lab curl
+    parser_converter_curl = converter_subparsers.add_parser("curl", help="Convert CURL to code.")
+    parser_converter_curl.add_argument("input", nargs="?", help="CURL command (or via stdin).")
+    parser_converter_curl.add_argument("--target", "-t", default="python", help="Target language (python, node).")
+
+    # converter-lab types
+    parser_converter_types = converter_subparsers.add_parser("types", help="Generate types from JSON.")
+    parser_converter_types.add_argument("input", nargs="?", help="JSON input (or via stdin).")
+    parser_converter_types.add_argument("--target", "-t", default="pydantic", help="Target type (pydantic, typescript).")
+    parser_converter_types.add_argument("--name", "-n", default="Root", help="Root interface/model name.")
+
+    # converter-lab tui
+    parser_converter_tui = converter_subparsers.add_parser("tui", help="Launch Converter Lab TUI.")
     parser_pack = subparsers.add_parser(
         "pack",
         help="Pack the codebase into a single file for LLM context."
@@ -19002,6 +19047,10 @@ async def main():
         run_cert_lab(args)
         return
 
+
+    if args.command in ["converter-lab", "convert"]:
+        run_converter_lab(args)
+        return
     if args.command in ["time-lab", "time"]:
         run_time_lab(args)
         return

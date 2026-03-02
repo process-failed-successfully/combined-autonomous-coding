@@ -63,3 +63,55 @@ class TestConverterManager:
         assert "interface User {" in code
         assert "name: string;" in code
         assert "scores: number[];" in code
+
+import argparse
+import sys
+from io import StringIO
+from unittest.mock import patch
+from shared.converter_lab import run_converter_lab_logic
+
+class TestConverterLabCLI:
+    def setup_method(self):
+        pass
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_format(self, mock_stdout):
+        args = argparse.Namespace(
+            action="format",
+            input='{"a": 1}',
+            from_fmt="json",
+            to_fmt="yaml"
+        )
+        success = run_converter_lab_logic(args)
+        assert success is True
+        assert "a: 1" in mock_stdout.getvalue()
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_curl(self, mock_stdout):
+        args = argparse.Namespace(
+            action="curl",
+            input="curl https://api.example.com",
+            target="python"
+        )
+        success = run_converter_lab_logic(args)
+        assert success is True
+        assert "requests.get" in mock_stdout.getvalue()
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_types(self, mock_stdout):
+        args = argparse.Namespace(
+            action="types",
+            input='{"a": 1}',
+            target="typescript",
+            name="MyIface"
+        )
+        success = run_converter_lab_logic(args)
+        assert success is True
+        assert "interface MyIface {" in mock_stdout.getvalue()
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_cli_no_action(self, mock_stdout):
+        args = argparse.Namespace(action=None)
+        success = run_converter_lab_logic(args)
+        assert success is False
+        assert "Error: No action specified" in mock_stdout.getvalue()

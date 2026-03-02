@@ -3,9 +3,9 @@ import yaml
 import tomlkit
 import defusedxml.ElementTree as DetusedET
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict
 import shlex
-import re
+
 
 class ConverterManager:
     """
@@ -78,8 +78,8 @@ class ConverterManager:
                 # Ignore other flags
                 i += 1
                 if i < len(tokens) and not tokens[i].startswith("-"):
-                     # Skip value if it looks like an argument (heuristic)
-                     i += 1
+                    # Skip value if it looks like an argument (heuristic)
+                    i += 1
                 continue
 
             else:
@@ -89,7 +89,7 @@ class ConverterManager:
                 i += 1
 
         if not result["url"]:
-             raise ValueError("No URL found")
+            raise ValueError("No URL found")
 
         return result
 
@@ -129,7 +129,7 @@ class ConverterManager:
                 # or data= string. `requests` usually prefers data=string for exact raw body or json=dict.
                 # Let's use data=string to be safe with raw curl data.
                 args.append("data=data")
-            except:
+            except Exception:
                 code += f"data = {repr(data)}\n\n"
                 args.append("data=data")
 
@@ -186,13 +186,13 @@ class ConverterManager:
         if headers:
             opts_str += "  headers: {\n"
             for k, v in headers.items():
-                 opts_str += f'    "{k}": "{v}",\n'
+                opts_str += f'    "{k}": "{v}",\n'
             opts_str += "  },\n"
 
         if data:
-             # If looks like JSON, maybe pretty print?
-             # For now, just raw string
-             opts_str += f'  body: {json.dumps(data)},\n'
+            # If looks like JSON, maybe pretty print?
+            # For now, just raw string
+            opts_str += f'  body: {json.dumps(data)},\n'
 
         opts_str += "}"
 
@@ -211,16 +211,23 @@ class ConverterManager:
         except json.JSONDecodeError as e:
             return f"# Error parsing JSON: {e}"
 
-        models = {} # name -> code
+        models = {}  # name -> code
 
         def get_type_name(val: Any) -> str:
-            if isinstance(val, str): return "str"
-            if isinstance(val, bool): return "bool"
-            if isinstance(val, int): return "int"
-            if isinstance(val, float): return "float"
-            if val is None: return "Optional[Any]"
-            if isinstance(val, list): return "List[Any]" # refined later
-            if isinstance(val, dict): return "Dict[str, Any]" # refined later
+            if isinstance(val, str):
+                return "str"
+            if isinstance(val, bool):
+                return "bool"
+            if isinstance(val, int):
+                return "int"
+            if isinstance(val, float):
+                return "float"
+            if val is None:
+                return "Optional[Any]"
+            if isinstance(val, list):
+                return "List[Any]"  # refined later
+            if isinstance(val, dict):
+                return "Dict[str, Any]"  # refined later
             return "Any"
 
         def generate_model(name: str, obj: Dict[str, Any]) -> str:
@@ -272,7 +279,7 @@ class ConverterManager:
             generate_model(model_name, data)
         elif isinstance(data, list):
             if data and isinstance(data[0], dict):
-                sub = generate_model(f"{model_name}Item", data[0])
+                _ = generate_model(f"{model_name}Item", data[0])
                 # We need a root container or just return the item model?
                 # User usually expects the object model.
                 # If root is list, we can't make a Pydantic model representing a list directly as a class.
@@ -308,10 +315,14 @@ class ConverterManager:
         interfaces = {}
 
         def get_ts_type(val: Any) -> str:
-            if isinstance(val, str): return "string"
-            if isinstance(val, bool): return "boolean"
-            if isinstance(val, (int, float)): return "number"
-            if val is None: return "null"
+            if isinstance(val, str):
+                return "string"
+            if isinstance(val, bool):
+                return "boolean"
+            if isinstance(val, (int, float)):
+                return "number"
+            if val is None:
+                return "null"
             return "any"
 
         def generate_interface(name: str, obj: Dict[str, Any]) -> str:
@@ -353,9 +364,9 @@ class ConverterManager:
             if data and isinstance(data[0], dict):
                 generate_interface(f"{interface_name}Item", data[0])
             else:
-                 return "// Root is list of primitives"
+                return "// Root is list of primitives"
         else:
-             return "// Root is primitive"
+            return "// Root is primitive"
 
         code = ""
         for name, iface_code in interfaces.items():
@@ -413,7 +424,7 @@ class ConverterManager:
         elif fmt == "yaml":
             # PyYAML dump doesn't handle tomlkit objects well sometimes, convert to dict first
             if hasattr(data, "unwrap"):
-                 data = data.unwrap()
+                data = data.unwrap()
             return yaml.dump(data, sort_keys=False)
         elif fmt == "toml":
             if not isinstance(data, dict):
@@ -493,3 +504,85 @@ class ConverterManager:
             elem.text = str(data)
 
         return elem
+
+
+def run_converter_lab_logic(args) -> bool:
+    """CLI handler for Converter Lab."""
+    manager = ConverterManager()
+
+    import sys
+
+    def get_input(arg_val):
+        if arg_val:
+            return arg_val
+        if not sys.stdin.isatty():
+            try:
+                return sys.stdin.read()
+            except Exception:
+                pass
+        return None
+
+    try:
+        action = getattr(args, "action", None)
+        if not action:
+            print("Error: No action specified.")
+            return False
+
+        if action == "format":
+            content = get_input(getattr(args, "input", None))
+            if not content:
+                print("Error: Input content required via arg or stdin.")
+                return False
+
+            from_fmt = getattr(args, "from_fmt", "json")
+            to_fmt = getattr(args, "to_fmt", "yaml")
+
+            result = manager.convert_format(content, from_fmt, to_fmt)
+            print(result)
+            return True
+
+        elif action == "curl":
+            content = get_input(getattr(args, "input", None))
+            if not content:
+                print("Error: Input CURL command required via arg or stdin.")
+                return False
+
+            target = getattr(args, "target", "python").lower()
+            if target == "python":
+                result = manager.curl_to_python(content)
+            elif target == "node":
+                result = manager.curl_to_node(content)
+            else:
+                print(f"Error: Unknown target {target}")
+                return False
+
+            print(result)
+            return True
+
+        elif action == "types":
+            content = get_input(getattr(args, "input", None))
+            if not content:
+                print("Error: Input JSON required via arg or stdin.")
+                return False
+
+            target = getattr(args, "target", "pydantic").lower()
+            name = getattr(args, "name", "Root")
+
+            if target == "pydantic":
+                result = manager.json_to_pydantic(content, name)
+            elif target == "typescript" or target == "ts":
+                result = manager.json_to_typescript(content, name)
+            else:
+                print(f"Error: Unknown target {target}")
+                return False
+
+            print(result)
+            return True
+
+        else:
+            print(f"Error: Unknown action {action}")
+            return False
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return False

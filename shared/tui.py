@@ -55,6 +55,7 @@ from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_hash import HashLabTab
+from shared.tui_ip import IpLabTab
 from shared.tui_sentinel import SentinelTab
 from shared.tui_impact import ImpactTab
 from shared.tui_email import EmailLabTab
@@ -4030,6 +4031,8 @@ class AgentTUI(App):
                 yield SystemdLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):
                 yield PortLabTab()
+            with TabPane("IP Lab", id="tab-ip"):
+                yield IpLabTab()
             with TabPane("Socket Lab", id="tab-sock"):
                 yield SockLabTab()
             with TabPane("Runner", id="tab-runner"):

@@ -482,6 +482,13 @@ def run_mac_lab(args):
 
 def run_ip_lab(args):
     """Runs the IP Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching IP Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-ip")
+        app.run()
+        sys.exit(0)
+
     success = run_ip_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -11875,6 +11882,8 @@ def parse_args(argv=None):
 
     parser_ip_info = ip_subparsers.add_parser("info", help="Get information about an IP address.")
     parser_ip_info.add_argument("ip", help="The IP address to inspect.")
+
+    parser_ip_tui = ip_subparsers.add_parser("tui", help="Launch the IP Lab TUI.")
 
     # --- New 'mac-lab' command ---
     parser_mac = subparsers.add_parser(

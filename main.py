@@ -7835,11 +7835,6 @@ def parse_args(argv=None):
         default="text",
         help="Output format (default: text)."
     )
-    parser_a11y.add_argument(
-        "--tui",
-        action="store_true",
-        help="Launch the interactive TUI for accessibility scanning."
-    )
     parser_dashboard.add_argument(
         "-o", "--output",
         default="dashboard.html",
@@ -10202,6 +10197,11 @@ def parse_args(argv=None):
         choices=["text", "json"],
         default="text",
         help="Output format (default: text)."
+    )
+    parser_a11y.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the interactive TUI for accessibility scanning."
     )
 
     # --- New 'license' command (replaced by license-lab) ---

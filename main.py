@@ -11786,9 +11786,10 @@ def parse_args(argv=None):
     parser_schema_lab.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
     schema_lab_subparsers = parser_schema_lab.add_subparsers(
         dest="action",
-        required=True,
+        required=False,
         help="Action to perform."
     )
+    parser_sl_tui = schema_lab_subparsers.add_parser("tui", help="Launch Schema Lab TUI.")
 
     # schema-lab infer
     parser_sl_infer = schema_lab_subparsers.add_parser("infer", help="Infer JSON Schema from a data file.")

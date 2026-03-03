@@ -260,6 +260,13 @@ def run_schema_lab_logic(args):
     """
     manager = SchemaLabManager(args.project_dir)
 
+    if args.action == "tui" or args.action is None:
+        from shared.tui import AgentTUI
+        print("Launching Schema Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-schema")
+        app.run()
+        sys.exit(0)
+
     if args.action == "infer":
         source_file = Path(args.file)
         if not source_file.exists():

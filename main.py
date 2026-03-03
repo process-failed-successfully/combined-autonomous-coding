@@ -478,6 +478,13 @@ def run_set_lab(args):
 
 def run_pack_lab(args):
     """Runs the Pack Lab to bundle the codebase."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Pack Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pack")
+        app.run()
+        sys.exit(0)
+
     from shared.pack_lab import run_pack_logic
     success = run_pack_logic(args)
     sys.exit(0 if success else 1)
@@ -12312,6 +12319,12 @@ def parse_args(argv=None):
         "pack",
         help="Pack the codebase into a single file for LLM context."
     )
+    pack_subparsers = parser_pack.add_subparsers(
+        dest="action",
+        help="Action to perform (default: CLI mode if no action provided)."
+    )
+    pack_tui_parser = pack_subparsers.add_parser("tui", help="Launch Pack Lab TUI.")
+
     parser_pack.add_argument("--output", "-o", help="Output file path (default: stdout).")
     parser_pack.add_argument("--include", "-i", help="Comma-separated list of glob patterns to include (e.g. '*.py,*.md').")
     parser_pack.add_argument("--exclude", "-e", help="Comma-separated list of glob patterns to exclude (e.g. 'tests/*').")

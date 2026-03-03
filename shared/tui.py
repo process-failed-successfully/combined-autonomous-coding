@@ -137,6 +137,7 @@ from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_schema import SchemaLabTab
 from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
@@ -4364,6 +4365,8 @@ class AgentTUI(App):
                 yield PhysicsLabTab()
             with TabPane("Set Lab", id="tab-set"):
                 yield SetLabTab(self.project_dir)
+            with TabPane("Schema Lab", id="tab-schema"):
+                yield SchemaLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

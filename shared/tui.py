@@ -202,6 +202,7 @@ from shared.tui_transpiler import TranspilerLabTab
 from shared.tui_http_status import HttpStatusLabTab
 from shared.tui_subtitle import SubtitleLabTab
 from shared.tui_matrix import MatrixLabTab
+from shared.tui_a11y import A11yLabTab
 from shared.tui_shell import ShellLabTab
 from shared.tui_chemistry import ChemistryLabTab
 from shared.tui_physics import PhysicsLabTab
@@ -3942,6 +3943,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Test Lab", "switch_tab_test_lab"),
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
+        PaletteCommand("Go to A11y Lab", "switch_tab_a11y"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
@@ -4370,6 +4372,8 @@ class AgentTUI(App):
                 yield PhysicsLabTab()
             with TabPane("Set Lab", id="tab-set"):
                 yield SetLabTab(self.project_dir)
+            with TabPane("A11y Lab", id="tab-a11y"):
+                yield A11yLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

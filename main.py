@@ -4774,6 +4774,21 @@ def run_impact(args):
 
 def run_a11y(args):
     """Runs the accessibility scanner."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching A11y Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-a11y")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.a11y import _run_a11y_logic
     _run_a11y_logic(
         project_dir=args.project_dir,
@@ -11947,6 +11962,11 @@ def parse_args(argv=None):
         choices=["text", "json"],
         default="text",
         help="Output format."
+    )
+    parser_a11y.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the interactive A11y Lab TUI."
     )
 
     # --- New 'port' command ---

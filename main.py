@@ -211,7 +211,7 @@ KNOWN_COMMANDS = [
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
     "proxy-lab", "proxy",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
@@ -1492,6 +1492,28 @@ def run_json_lab(args):
 
     run_json_lab_logic(args)
     sys.exit(0)
+
+def run_ini_lab(args):
+    """Runs the INI Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching INI Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-ini")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+    else:
+        from shared.ini_lab import run_ini_lab_logic
+        success = run_ini_lab_logic(args)
+        if not success:
+            sys.exit(1)
+
 
 def run_yaml_lab(args):
     """Runs the YAML Lab."""
@@ -12901,6 +12923,50 @@ def parse_args(argv=None):
     parser_json_diff.add_argument("file1", help="First file.")
     parser_json_diff.add_argument("file2", help="Second file.")
 
+    # --- New 'ini-lab' command ---
+    parser_ini = subparsers.add_parser(
+        "ini-lab",
+        aliases=["ini"],
+        help="INI utilities (get, set, del, sections, keys, to-json, from-json, tui)."
+    )
+    ini_subparsers = parser_ini.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    ini_subparsers.add_parser("tui", help="Launch INI Lab TUI.")
+
+    parser_ini_get = ini_subparsers.add_parser("get", help="Get value from INI.")
+    parser_ini_get.add_argument("file", help="INI file path.")
+    parser_ini_get.add_argument("section", help="Section name.")
+    parser_ini_get.add_argument("key", help="Key name.")
+
+    parser_ini_set = ini_subparsers.add_parser("set", help="Set value in INI.")
+    parser_ini_set.add_argument("file", help="INI file path.")
+    parser_ini_set.add_argument("section", help="Section name.")
+    parser_ini_set.add_argument("key", help="Key name.")
+    parser_ini_set.add_argument("value", help="Value to set.")
+
+    parser_ini_del = ini_subparsers.add_parser("del", help="Delete key or section from INI.")
+    parser_ini_del.add_argument("file", help="INI file path.")
+    parser_ini_del.add_argument("section", help="Section name.")
+    parser_ini_del.add_argument("--key", help="Key name (optional, if missing deletes section).", default=None)
+
+    parser_ini_sections = ini_subparsers.add_parser("sections", help="List sections in INI.")
+    parser_ini_sections.add_argument("file", help="INI file path.")
+
+    parser_ini_keys = ini_subparsers.add_parser("keys", help="List keys in a section.")
+    parser_ini_keys.add_argument("file", help="INI file path.")
+    parser_ini_keys.add_argument("section", help="Section name.")
+
+    parser_ini_to_json = ini_subparsers.add_parser("to-json", help="Convert INI to JSON.")
+    parser_ini_to_json.add_argument("file", help="INI file path.")
+
+    parser_ini_from_json = ini_subparsers.add_parser("from-json", help="Convert JSON to INI.")
+    parser_ini_from_json.add_argument("file", help="Output INI file path.")
+    parser_ini_from_json.add_argument("--json-input", help="JSON string input (or use piped stdin).", default=None)
+
     # --- New 'yaml-lab' command ---
     parser_yaml = subparsers.add_parser(
         "yaml-lab",
@@ -19386,6 +19452,10 @@ async def main():
 
     if args.command in ["json-lab", "json"]:
         run_json_lab(args)
+        return
+
+    if args.command in ["ini-lab", "ini"]:
+        run_ini_lab(args)
         return
 
     if args.command in ["yaml-lab", "yaml"]:

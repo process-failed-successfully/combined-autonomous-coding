@@ -4275,6 +4275,9 @@ class AgentTUI(App):
                 yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):
                 yield JsonLabTab(self.project_dir)
+            with TabPane("INI Lab", id="tab-ini"):
+                from shared.tui_ini import IniLabTab
+                yield IniLabTab(self.project_dir)
             with TabPane("YAML Lab", id="tab-yaml"):
                 yield YamlLabTab(self.project_dir)
             with TabPane("XML Lab", id="tab-xml"):

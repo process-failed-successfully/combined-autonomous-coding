@@ -197,6 +197,7 @@ from shared.tui_dash import DashLabTab
 from shared.tui_cicd import CicdLabTab
 from shared.tui_pre_commit import PreCommitLabTab
 from shared.tui_cq import CodeQualityTab
+from shared.tui_pack import PackLabTab
 from shared.tui_transpiler import TranspilerLabTab
 from shared.tui_http_status import HttpStatusLabTab
 from shared.tui_subtitle import SubtitleLabTab
@@ -4118,6 +4119,8 @@ class AgentTUI(App):
                 yield CodeQualityTab(self.project_dir)
             with TabPane("Transpiler", id="tab-transpiler"):
                 yield TranspilerLabTab(self.project_dir)
+            with TabPane("Pack", id="tab-pack"):
+                yield PackLabTab(self.project_dir)
             with TabPane("Impact", id="tab-impact"):
                 yield ImpactTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):

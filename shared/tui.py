@@ -207,6 +207,7 @@ from shared.tui_shell import ShellLabTab
 from shared.tui_chemistry import ChemistryLabTab
 from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
+from shared.tui_schema import SchemaLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4372,6 +4373,8 @@ class AgentTUI(App):
                 yield PhysicsLabTab()
             with TabPane("Set Lab", id="tab-set"):
                 yield SetLabTab(self.project_dir)
+            with TabPane("Schema Lab", id="tab-schema"):
+                yield SchemaLabTab(self.project_dir)
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
 

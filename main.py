@@ -12079,6 +12079,9 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # schema-lab tui
+    schema_lab_subparsers.add_parser("tui", help="Launch Schema Lab TUI.")
+
     # schema-lab infer
     parser_sl_infer = schema_lab_subparsers.add_parser("infer", help="Infer JSON Schema from a data file.")
     parser_sl_infer.add_argument("file", help="Input data file (JSON/YAML).")

@@ -137,6 +137,7 @@ from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_a11y import A11yTab
 from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
@@ -4201,6 +4202,8 @@ class AgentTUI(App):
                 yield UserAgentLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):
                 yield WsLabTab()
+            with TabPane("A11y Scanner", id="tab-a11y"):
+                yield A11yTab()
             with TabPane("Webhook Lab", id="tab-webhook"):
                 yield WebhookLabTab(self.project_dir)
             with TabPane("Proxy Lab", id="tab-proxy"):

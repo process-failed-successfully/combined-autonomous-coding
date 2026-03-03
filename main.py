@@ -330,7 +330,15 @@ def run_flashcards_lab(args):
     from shared.tui import AgentTUI
     print("Launching Flashcards Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-flashcards")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_rename_lab(args):
@@ -372,7 +380,15 @@ def run_matrix_lab(args):
         from shared.tui import AgentTUI
         print("Launching Matrix Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-matrix")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.matrix_lab import run_matrix_lab_logic
@@ -402,7 +418,15 @@ def run_test_lab(args):
     from shared.tui import AgentTUI
     print("Launching Test Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-test-lab")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_stats_lab(args):
@@ -411,7 +435,15 @@ def run_stats_lab(args):
         from shared.tui import AgentTUI
         print("Launching Stats Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-stats")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.stats_lab import run_stats_lab_logic
@@ -423,7 +455,15 @@ def run_disk_usage(args):
     from shared.tui import AgentTUI
     print("Launching Disk Usage TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-disk-usage")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_process_explorer(args):
@@ -431,7 +471,15 @@ def run_process_explorer(args):
     from shared.tui import AgentTUI
     print("Launching Process Explorer TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-process-explorer")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_rebase_lab(args):
@@ -446,7 +494,15 @@ def run_subtitle_lab(args):
         from shared.tui import AgentTUI
         print("Launching Subtitle Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-subtitle")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.subtitle_lab import run_subtitle_lab_logic
@@ -458,7 +514,15 @@ def run_shell_lab(args):
     from shared.tui import AgentTUI
     print("Launching Shell Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-shell-lab")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_chemistry_lab(args):
@@ -493,7 +557,15 @@ def run_ip_lab(args):
         from shared.tui import AgentTUI
         print("Launching IP Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-ip")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     success = run_ip_lab_logic(args)
@@ -504,7 +576,15 @@ def run_cicd_lab(args):
     from shared.tui import AgentTUI
     print("Launching CI/CD Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-cicd")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_knowledge_lab(args):
@@ -512,7 +592,15 @@ def run_knowledge_lab(args):
     from shared.tui import AgentTUI
     print("Launching Knowledge Graph Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-knowledge")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_diagram_lab(args):
@@ -521,7 +609,15 @@ def run_diagram_lab(args):
         from shared.tui import AgentTUI
         print("Launching Diagram Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-diagram")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.diagram_lab import run_diagram_lab_logic
@@ -545,7 +641,15 @@ def run_typing_lab(args):
     from shared.tui import AgentTUI
     print("Launching Typing Lab...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-typing")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 def run_sound_lab(args):
@@ -554,7 +658,15 @@ def run_sound_lab(args):
         from shared.tui import AgentTUI
         print("Launching Sound Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-sound")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.sound_lab import run_sound_lab_logic
@@ -882,7 +994,15 @@ def run_http_lab(args):
         from shared.tui import AgentTUI
         print("Launching HTTP Client TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-http-client")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     run_http_lab_logic(args)
@@ -914,7 +1034,15 @@ def run_pcap_lab(args):
         from shared.tui import AgentTUI
         print("Launching PCAP Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pcap")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.pcap_lab import run_pcap_lab_logic
@@ -947,7 +1075,15 @@ def run_random_lab(args):
         from shared.tui import AgentTUI
         print("Launching Random Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-random")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     run_random_lab_logic(args)
@@ -969,7 +1105,15 @@ def run_pypi_lab(args):
         from shared.tui import AgentTUI
         print("Launching PyPI Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pypi")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     success = run_pypi_lab_logic(args)
@@ -1060,7 +1204,15 @@ def run_data_lab(args):
         from shared.tui import AgentTUI
         print("Launching Data Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-datalab")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
     else:
         run_data_lab_logic(args)
@@ -1098,7 +1250,15 @@ def run_uuid_lab(args):
         from shared.tui import AgentTUI
         print("Launching UUID Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-uuid")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.uuid_lab import run_uuid_lab_logic
@@ -1118,7 +1278,15 @@ def run_password_lab(args):
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
         else:
-            app.run()
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
     else:
         from shared.password_lab import run_password_lab_logic
         run_password_lab_logic(args)
@@ -1130,7 +1298,15 @@ def run_text_lab(args):
         from shared.tui import AgentTUI
         print("Launching Text Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-text")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.text_lab import run_text_lab_logic
@@ -1143,7 +1319,15 @@ def run_http_status_lab(args):
         from shared.tui import AgentTUI
         print("Launching HTTP Status Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-http-status")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.http_status_lab import run_http_status_lab_logic
@@ -1161,7 +1345,15 @@ def run_html_lab(args):
         from shared.tui import AgentTUI
         print("Launching HTML Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-html")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     from shared.html_lab import run_html_lab_logic
@@ -1199,7 +1391,15 @@ def run_converter_lab(args):
         from shared.tui import AgentTUI
         print("Launching Converter Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-converter")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
     else:
         from shared.converter_lab import run_converter_lab_logic
@@ -1211,7 +1411,15 @@ def run_time_lab(args):
         from shared.tui import AgentTUI
         print("Launching Time Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-time")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
     else:
         success = run_time_lab_logic(args)
@@ -1264,7 +1472,15 @@ def run_json_lab(args):
         from shared.tui import AgentTUI
         print("Launching JSON Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-json")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     run_json_lab_logic(args)
@@ -1385,7 +1601,15 @@ def run_quiz(args):
         from shared.tui import AgentTUI
         print("Launching TUI... Navigate to 'Quiz' tab.")
         app = AgentTUI(project_dir=project_dir)
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         return
 
     # CLI Mode
@@ -5106,7 +5330,15 @@ def run_todos(args):
                 yield TodosLabTab(args.project_dir.resolve())
 
         app = TodosLabApp()
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         return
 
     from shared.todos import scan_todos, get_todo_blame
@@ -6090,7 +6322,15 @@ def run_tui(args):
     try:
         from shared.tui import AgentTUI
         app = AgentTUI(project_dir=args.project_dir)
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
     except ImportError as e:
         print("Error: Could not import TUI dependencies. Please run 'pip install -r requirements-dev.txt'", file=sys.stderr)
@@ -17324,7 +17564,15 @@ def run_mock(args):
         from shared.tui import AgentTUI
         print("Launching Mock Data Lab TUI...")
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-mock-data")
-        app.run()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
         sys.exit(0)
 
     elif args.action == "serve":
@@ -17377,7 +17625,15 @@ def run_dash_lab(args):
     from shared.tui import AgentTUI
     print("Launching Dash Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-dash-lab")
-    app.run()
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()
     sys.exit(0)
 
 
@@ -18887,7 +19143,15 @@ async def main():
             from shared.tui import AgentTUI
             print("Launching Socket Lab TUI...")
             app = AgentTUI(project_dir=args.project_dir, start_tab="tab-sock")
-            app.run()
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
             sys.exit(0)
 
         await run_sock_lab_logic(args)
@@ -19014,7 +19278,15 @@ async def main():
             from shared.tui import AgentTUI
             print("Launching Static Server Lab TUI...")
             app = AgentTUI(project_dir=args.project_dir, start_tab="tab-static")
-            app.run()
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
             sys.exit(0)
         run_static_lab_logic(args)
         return

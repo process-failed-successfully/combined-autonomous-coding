@@ -9,3 +9,4 @@ textual==0.64.0
 watchdog
 pytest-asyncio
 pre-commit
+jsonpath-ng

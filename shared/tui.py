@@ -203,6 +203,7 @@ from shared.tui_transpiler import TranspilerLabTab
 from shared.tui_http_status import HttpStatusLabTab
 from shared.tui_subtitle import SubtitleLabTab
 from shared.tui_matrix import MatrixLabTab
+from shared.tui_load import LoadLabTab
 from shared.tui_a11y import A11yLabTab
 from shared.tui_shell import ShellLabTab
 from shared.tui_chemistry import ChemistryLabTab
@@ -4384,6 +4385,8 @@ class AgentTUI(App):
                 yield JsonPathLabTab(self.project_dir)
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
+            with TabPane("Load Lab", id="tab-load"):
+                yield LoadLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

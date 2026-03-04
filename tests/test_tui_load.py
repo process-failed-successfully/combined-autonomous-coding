@@ -16,7 +16,9 @@ class TestLoadLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(LoadLabTab)
             self.assertIsNotNone(tab)
 
-            # Use AsyncMock for run_load_test since it's defined as an async method in LoadLabManager
+            # Since the worker is a thread worker running an event loop internally now,
+            # we need to mock it in a way that doesn't explode in the isolated loop.
+            # But the easiest way is to mock run_load_test as an AsyncMock
             tab.manager.run_load_test = AsyncMock(return_value={
                 "total_requests": 15, "duration": 2.5, "rps": 6.0, "success_count": 15, "error_count": 0,
                 "latency": {"min": 0.1, "max": 0.5, "avg": 0.2, "p95": 0.4, "p99": 0.45}
@@ -29,7 +31,7 @@ class TestLoadLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#start-btn").press()
 
             # Wait for the worker to finish
-            await pilot.pause(0.2)
+            await pilot.pause(0.3)
 
             # Check if run_load_test was called with the correct args
             tab.manager.run_load_test.assert_called_once_with(

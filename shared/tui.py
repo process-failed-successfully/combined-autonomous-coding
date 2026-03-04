@@ -211,6 +211,7 @@ from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
 from shared.tui_schema import SchemaLabTab
 from shared.tui_jsonpath import JsonPathLabTab
+from shared.tui_token import TokenLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3952,6 +3953,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
+        PaletteCommand("Go to Token Lab", "switch_tab_token"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4383,6 +4385,8 @@ class AgentTUI(App):
                 yield SchemaLabTab(self.project_dir)
             with TabPane("JSONPath Lab", id="tab-jsonpath"):
                 yield JsonPathLabTab(self.project_dir)
+            with TabPane("Token Lab", id="tab-token"):
+                yield TokenLabTab()
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
             with TabPane("Load Lab", id="tab-load"):

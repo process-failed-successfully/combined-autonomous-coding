@@ -40,3 +40,4 @@ pandas
 pyarrow
 pytesseract
 jsonpath-ng
+tiktoken

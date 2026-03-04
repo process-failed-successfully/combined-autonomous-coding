@@ -306,7 +306,7 @@ KNOWN_COMMANDS = [
     "physics-lab", "phys",
     "set-lab", "sets",
     "ip-lab", "ip",
-    "pack", "jsonpath-lab", "jpath"
+    "pack", "jsonpath-lab", "jpath", "token-lab", "tokens"
 ]
 
 if FileSystemEventHandler:
@@ -579,6 +579,27 @@ def run_ip_lab(args):
 
     success = run_ip_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_token_lab(args):
+    """Runs the Token Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Token Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-token")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.token_lab import run_token_lab_logic
+        run_token_lab_logic(args)
+        sys.exit(0)
 
 def run_jsonpath_lab(args):
     """Runs the JSONPath Lab."""
@@ -15929,6 +15950,22 @@ def parse_args(argv=None):
     parser_set.add_argument("--ignore-case", action="store_true", help="Ignore case during operation")
     parser_set.add_argument("--trim", action="store_true", help="Trim whitespace from items")
 
+    parser_token_lab = subparsers.add_parser("token-lab", aliases=["tokens"], help="Run the Token Lab")
+    token_lab_subparsers = parser_token_lab.add_subparsers(dest="action", help="Token Lab actions")
+
+    parser_token_lab_tui = token_lab_subparsers.add_parser('tui', help="Launch the Token Lab TUI")
+
+    parser_token_lab_count = token_lab_subparsers.add_parser('count', help="Count tokens")
+    parser_token_lab_count.add_argument("--text", "-t", help="Text to count tokens for")
+    parser_token_lab_count.add_argument("--file", "-f", help="File to read text from")
+    parser_token_lab_count.add_argument("--model", "-m", default="gpt-4o", help="Model to use for encoding")
+    parser_token_lab_count.add_argument("--encoding", "-e", help="Encoding to use directly")
+
+    parser_token_lab_tokenize = token_lab_subparsers.add_parser('tokenize', help="Get token IDs")
+    parser_token_lab_tokenize.add_argument("--text", "-t", help="Text to tokenize")
+    parser_token_lab_tokenize.add_argument("--file", "-f", help="File to read text from")
+    parser_token_lab_tokenize.add_argument("--model", "-m", default="gpt-4o", help="Model to use for encoding")
+
     # --- Transpiler Lab ---
     parser_transpiler = subparsers.add_parser("transpiler-lab", aliases=["transpile"], help="AI Code Transpiler")
     parser_transpiler.set_defaults(func=run_transpiler_lab_logic)
@@ -19847,6 +19884,10 @@ async def main():
 
     if args.command in ["jsonpath-lab", "jpath"]:
         run_jsonpath_lab(args)
+        return
+
+    if args.command in ["token-lab", "tokens"]:
+        run_token_lab(args)
         return
 
     # Initialize Agent Client

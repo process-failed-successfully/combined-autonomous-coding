@@ -39,3 +39,4 @@ pyperclip
 pandas
 pyarrow
 pytesseract
+jsonpath-ng

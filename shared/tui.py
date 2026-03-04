@@ -208,6 +208,7 @@ from shared.tui_chemistry import ChemistryLabTab
 from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
 from shared.tui_schema import SchemaLabTab
+from shared.tui_jsonpath import JsonPathLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3948,6 +3949,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
+        PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4375,6 +4377,8 @@ class AgentTUI(App):
                 yield SetLabTab(self.project_dir)
             with TabPane("Schema Lab", id="tab-schema"):
                 yield SchemaLabTab(self.project_dir)
+            with TabPane("JSONPath Lab", id="tab-jsonpath"):
+                yield JsonPathLabTab(self.project_dir)
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
 

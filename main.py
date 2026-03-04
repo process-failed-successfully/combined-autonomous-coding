@@ -169,6 +169,7 @@ from shared.physics_lab import run_physics_lab_logic
 from shared.set_lab import run_set_lab_logic
 from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
+from shared.mime_lab import run_mime_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -306,7 +307,8 @@ KNOWN_COMMANDS = [
     "physics-lab", "phys",
     "set-lab", "sets",
     "ip-lab", "ip",
-    "pack", "jsonpath-lab", "jpath"
+    "pack", "jsonpath-lab", "jpath",
+    "mime-lab", "mime"
 ]
 
 if FileSystemEventHandler:
@@ -578,6 +580,11 @@ def run_ip_lab(args):
         sys.exit(0)
 
     success = run_ip_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_mime_lab(args):
+    """Runs the MIME Lab."""
+    success = run_mime_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_jsonpath_lab(args):
@@ -12731,6 +12738,24 @@ def parse_args(argv=None):
     jsonpath_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jsonpath_eval_parser.add_argument("expression", help="JSONPath expression.")
 
+    # --- Mime Lab command ---
+    parser_mime = subparsers.add_parser(
+        "mime-lab",
+        aliases=["mime"],
+        help="MIME Type and Magic Number Laboratory."
+    )
+    mime_subparsers = parser_mime.add_subparsers(dest="action")
+    mime_subparsers.add_parser("tui", help="Launch MIME Lab TUI.")
+
+    mime_lookup = mime_subparsers.add_parser("lookup", help="Lookup MIME type by extension.")
+    mime_lookup.add_argument("extension", help="Extension to lookup (e.g. '.json').")
+
+    mime_reverse = mime_subparsers.add_parser("reverse", help="Lookup extensions by MIME type.")
+    mime_reverse.add_argument("mime", help="MIME type to lookup (e.g. 'application/json').")
+
+    mime_detect = mime_subparsers.add_parser("detect", help="Detect MIME type of file using extension and magic numbers.")
+    mime_detect.add_argument("file", help="File to detect type.")
+
     # --- New 'math-lab' command ---
     parser_math = subparsers.add_parser(
         "math-lab",
@@ -19847,6 +19872,10 @@ async def main():
 
     if args.command in ["jsonpath-lab", "jpath"]:
         run_jsonpath_lab(args)
+        return
+
+    if args.command in ["mime-lab", "mime"]:
+        run_mime_lab(args)
         return
 
     # Initialize Agent Client

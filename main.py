@@ -211,6 +211,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
+    "bencode-lab", "bencode", "torrent",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
@@ -1038,6 +1039,27 @@ def run_http_lab(args):
 
     run_http_lab_logic(args)
     sys.exit(0)
+
+def run_bencode_lab(args):
+    """Runs the Bencode Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Bencode Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-bencode")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.bencode_lab import run_bencode_lab_logic
+    success = run_bencode_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_geo_lab(args):
     """Runs the Geo Lab."""
@@ -12496,6 +12518,30 @@ def parse_args(argv=None):
     # html-lab tui
     parser_html_tui = html_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
+    # --- New 'bencode-lab' command ---
+    parser_bencode_lab = subparsers.add_parser(
+        "bencode-lab",
+        aliases=["bencode", "torrent"],
+        help="Bencode encoding/decoding utilities."
+    )
+    bencode_lab_subparsers = parser_bencode_lab.add_subparsers(
+        dest="action",
+        help="Action to perform",
+        required=True
+    )
+
+    # bencode-lab decode
+    parser_bl_decode = bencode_lab_subparsers.add_parser("decode", help="Decode bencode data.")
+    parser_bl_decode.add_argument("input", nargs="?", help="Input content (or via stdin).")
+
+    # bencode-lab encode
+    parser_bl_encode = bencode_lab_subparsers.add_parser("encode", help="Encode JSON to bencode.")
+    parser_bl_encode.add_argument("input", nargs="?", help="JSON input (or via stdin).")
+    parser_bl_encode.add_argument("--hex", action="store_true", help="Output as hex string instead of raw bytes.")
+
+    # bencode-lab tui
+    bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
+
     # --- 'seo-lab' command ---
     parser_seo = subparsers.add_parser(
         "seo-lab",
@@ -19486,6 +19532,10 @@ async def main():
 
     if args.command in ["url-lab", "url"]:
         run_url_lab(args)
+        return
+
+    if args.command in ["bencode-lab", "bencode", "torrent"]:
+        run_bencode_lab(args)
         return
 
     if args.command in ["cert-lab", "cert"]:

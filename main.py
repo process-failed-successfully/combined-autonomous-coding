@@ -304,7 +304,8 @@ KNOWN_COMMANDS = [
     "physics-lab", "phys",
     "set-lab", "sets",
     "ip-lab", "ip",
-    "pack"
+    "pack",
+    "bencode-lab", "bencode", "torrent"
 ]
 
 if FileSystemEventHandler:
@@ -539,6 +540,28 @@ def run_set_lab(args):
     """Runs the Set Lab."""
     success = run_set_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_bencode_lab(args):
+    """Runs the Bencode Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Bencode Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-bencode")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.bencode_lab import run_bencode_lab_logic
+    run_bencode_lab_logic(args)
+    sys.exit(0)
+
 
 def run_pack_lab(args):
     """Runs the Pack Lab to bundle the codebase."""
@@ -8886,6 +8909,26 @@ def parse_args(argv=None):
         default=Path("."),
         help="The project directory to run the pull command in (default: current directory).",
     )
+
+    # --- bencode-lab ---
+    parser_bencode = subparsers.add_parser(
+        "bencode-lab",
+        aliases=["bencode", "torrent"],
+        help="Bencode / BitTorrent utilities."
+    )
+    bencode_subparsers = parser_bencode.add_subparsers(
+        dest="action",
+        help="Bencode Lab actions."
+    )
+
+    bencode_tui_parser = bencode_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
+
+    bencode_decode = bencode_subparsers.add_parser("decode", help="Decode bencoded data.")
+    bencode_decode.add_argument("input", help="Input file or '-' for stdin.")
+
+    bencode_encode = bencode_subparsers.add_parser("encode", help="Encode JSON to bencode.")
+    bencode_encode.add_argument("input", help="Input JSON file or '-' for stdin.")
+    bencode_encode.add_argument("--output", "-o", help="Output file path (default: stdout).")
 
     # --- New 'patch' command ---
     parser_patch = subparsers.add_parser(
@@ -19715,6 +19758,10 @@ async def main():
 
     if args.command in ["set-lab", "sets"]:
         run_set_lab(args)
+        return
+
+    if args.command in ["bencode-lab", "bencode", "torrent"]:
+        run_bencode_lab(args)
         return
 
     if args.command == "pack":

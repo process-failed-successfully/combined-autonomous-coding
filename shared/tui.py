@@ -98,6 +98,7 @@ from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
+from shared.tui_bencode import BencodeLabTab
 from shared.tui_issues import IssuesLabTab
 from shared.tui_conflict import ConflictTab
 from shared.tui_adr import ADRTab
@@ -4122,8 +4123,11 @@ class AgentTUI(App):
                 yield CodeQualityTab(self.project_dir)
             with TabPane("Transpiler", id="tab-transpiler"):
                 yield TranspilerLabTab(self.project_dir)
+
             with TabPane("Pack", id="tab-pack"):
                 yield PackLabTab(self.project_dir)
+            with TabPane("Bencode", id="tab-bencode"):
+                yield BencodeLabTab(self.project_dir)
             with TabPane("Impact", id="tab-impact"):
                 yield ImpactTab(self.project_dir)
             with TabPane("Troubleshoot", id="tab-troubleshoot"):

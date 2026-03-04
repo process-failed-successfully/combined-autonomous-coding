@@ -1399,6 +1399,21 @@ def run_seo_lab(args):
 
 def run_xml_lab(args):
     """Runs the XML Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching XML Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-xml")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.xml_lab import run_xml_lab_logic
     run_xml_lab_logic(args)
     sys.exit(0)
@@ -13295,6 +13310,9 @@ def parse_args(argv=None):
 
     # xml-lab json
     parser_xml_json = xml_subparsers.add_parser("json", help="Convert to JSON.")
+
+    # xml-lab tui
+    parser_xml_tui = xml_subparsers.add_parser("tui", help="Launch interactive XML Lab.")
 
     # --- New 'markdown-lab' command ---
     parser_md = subparsers.add_parser(

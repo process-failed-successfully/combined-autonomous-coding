@@ -27,9 +27,13 @@ class TestCommandPalette(unittest.IsolatedAsyncioTestCase):
         self.patcher_km = patch("shared.tui.KnowledgeManager")
         self.mock_km = self.patcher_km.start()
 
+        self.patcher_k_tab = patch("shared.tui_knowledge_graph.KnowledgeManager")
+        self.mock_k_tab = self.patcher_k_tab.start()
+
     def tearDown(self):
         self.patcher_db.stop()
         self.patcher_km.stop()
+        self.patcher_k_tab.stop()
         shutil.rmtree(self.test_dir)
 
     async def test_filtering(self):

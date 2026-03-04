@@ -10,19 +10,21 @@ class DummyApp(App):
         yield LoadLabTab("/tmp")
 
 class TestLoadLabTab(unittest.IsolatedAsyncioTestCase):
-    async def test_ui_and_worker(self):
+    @patch("shared.tui_load.LoadLabManager")
+    async def test_ui_and_worker(self, MockManager):
+        # We mock LoadLabManager class before initializing the app
+        # so that it doesn't fail due to missing aiohttp dependency.
+        mock_instance = MagicMock()
+        MockManager.return_value = mock_instance
+        mock_instance.run_load_test = AsyncMock(return_value={
+                "total_requests": 15, "duration": 2.5, "rps": 6.0, "success_count": 15, "error_count": 0,
+                "latency": {"min": 0.1, "max": 0.5, "avg": 0.2, "p95": 0.4, "p99": 0.45}
+            })
+
         app = DummyApp()
         async with app.run_test() as pilot:
             tab = app.query_one(LoadLabTab)
             self.assertIsNotNone(tab)
-
-            # Since the worker is a thread worker running an event loop internally now,
-            # we need to mock it in a way that doesn't explode in the isolated loop.
-            # But the easiest way is to mock run_load_test as an AsyncMock
-            tab.manager.run_load_test = AsyncMock(return_value={
-                "total_requests": 15, "duration": 2.5, "rps": 6.0, "success_count": 15, "error_count": 0,
-                "latency": {"min": 0.1, "max": 0.5, "avg": 0.2, "p95": 0.4, "p99": 0.45}
-            })
 
             tab.query_one("#url-input").value = "http://localhost:8080"
             tab.query_one("#users-input").value = "5"
@@ -34,7 +36,7 @@ class TestLoadLabTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.3)
 
             # Check if run_load_test was called with the correct args
-            tab.manager.run_load_test.assert_called_once_with(
+            mock_instance.run_load_test.assert_called_once_with(
                 url="http://localhost:8080",
                 users=5,
                 duration=2,

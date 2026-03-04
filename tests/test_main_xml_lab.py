@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from argparse import Namespace
-import sys
 
 from main import run_xml_lab
+
 
 class TestMainXmlLab(unittest.TestCase):
 
@@ -38,6 +38,7 @@ class TestMainXmlLab(unittest.TestCase):
             mock_tui.assert_called_once_with(project_dir=".", start_tab="tab-xml")
             mock_app_instance.run.assert_called_once()
             mock_exit.assert_called_once_with(0)
+
 
 if __name__ == "__main__":
     unittest.main()

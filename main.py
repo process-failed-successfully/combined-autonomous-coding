@@ -13358,7 +13358,7 @@ def parse_args(argv=None):
     parser_xml_json = xml_subparsers.add_parser("json", help="Convert to JSON.")
 
     # xml-lab tui
-    parser_xml_tui = xml_subparsers.add_parser("tui", help="Launch interactive XML Lab.")
+    xml_subparsers.add_parser("tui", help="Launch interactive XML Lab.")
 
     # --- New 'markdown-lab' command ---
     parser_md = subparsers.add_parser(

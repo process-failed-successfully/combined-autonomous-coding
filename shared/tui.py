@@ -211,6 +211,7 @@ from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
 from shared.tui_schema import SchemaLabTab
 from shared.tui_jsonpath import JsonPathLabTab
+from shared.tui_mime import MimeLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3952,6 +3953,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
+        PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4387,6 +4389,8 @@ class AgentTUI(App):
                 yield A11yLabTab(self.project_dir)
             with TabPane("Load Lab", id="tab-load"):
                 yield LoadLabTab(self.project_dir)
+            with TabPane("MIME Lab", id="tab-mime"):
+                yield MimeLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -1001,8 +1001,26 @@ def run_speed_lab(args):
 
 async def run_load_lab(args):
     """Runs the Load Lab."""
-    await run_load_lab_logic(args)
-    sys.exit(0)
+    if getattr(args, 'tui', False):
+        from shared.tui import AgentTUI
+        print("Launching Load Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-load")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            await app.run_async()
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        if not args.url:
+            print("Error: --url is required when not running in TUI mode.", file=sys.stderr)
+            sys.exit(1)
+        await run_load_lab_logic(args)
+        sys.exit(0)
 
 def run_ast_lab(args):
     """Runs the AST Lab."""
@@ -15076,12 +15094,13 @@ def parse_args(argv=None):
         aliases=["load"],
         help="HTTP load testing tool."
     )
-    parser_load.add_argument("--url", required=True, help="Target URL.")
+    parser_load.add_argument("--url", help="Target URL.")
     parser_load.add_argument("--users", "-u", type=int, default=1, help="Number of concurrent users.")
     parser_load.add_argument("--duration", "-d", type=int, default=10, help="Duration of test in seconds.")
     parser_load.add_argument("--method", "-m", default="GET", help="HTTP Method (GET, POST, etc).")
     parser_load.add_argument("--body", help="Request body.")
     parser_load.add_argument("--headers", help="Request headers (Key:Value,Key2:Value2).")
+    parser_load.add_argument("--tui", action="store_true", help="Launch the Load Lab TUI")
 
     # --- New 'ast-lab' command ---
     parser_ast = subparsers.add_parser(

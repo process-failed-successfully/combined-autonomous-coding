@@ -170,6 +170,7 @@ from shared.set_lab import run_set_lab_logic
 from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
+from shared.token_lab import run_token_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -280,7 +281,7 @@ KNOWN_COMMANDS = [
     "diagram-lab", "diagram", "draw",
     "pipe-lab", "pipe", "stream",
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
-    "user-agent-lab", "ua",
+    "user-agent-lab", "ua", "token-lab", "tokens",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
@@ -609,6 +610,26 @@ def run_jsonpath_lab(args):
     else:
         print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
         sys.exit(1)
+
+def run_token_lab(args):
+    """Runs the Token Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Token Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-token")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        success = run_token_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_cicd_lab(args):
     """Runs the CI/CD Lab TUI."""
@@ -12744,6 +12765,28 @@ def parse_args(argv=None):
     jsonpath_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jsonpath_eval_parser.add_argument("expression", help="JSONPath expression.")
 
+    # --- Token Lab command ---
+    parser_token = subparsers.add_parser(
+        "token-lab",
+        aliases=["tokens"],
+        help="Tokenize, count, and decode text using tiktoken."
+    )
+    token_subparsers = parser_token.add_subparsers(dest="action")
+    token_tui_parser = token_subparsers.add_parser("tui", help="Launch Token Lab TUI.")
+
+    token_count_parser = token_subparsers.add_parser("count", help="Count tokens in text.")
+    token_count_parser.add_argument("--text", help="Text to count tokens for", required=True)
+    token_count_parser.add_argument("--encoding", help="Encoding to use (e.g., cl100k_base)", default="cl100k_base")
+    token_count_parser.add_argument("--verbose", action="store_true", help="Print actual tokens")
+
+    token_encode_parser = token_subparsers.add_parser("encode", help="Encode text to tokens.")
+    token_encode_parser.add_argument("--text", help="Text to encode", required=True)
+    token_encode_parser.add_argument("--encoding", help="Encoding to use", default="cl100k_base")
+
+    token_decode_parser = token_subparsers.add_parser("decode", help="Decode tokens to text.")
+    token_decode_parser.add_argument("--tokens", help="Comma-separated list of integer tokens", required=True)
+    token_decode_parser.add_argument("--encoding", help="Encoding to use", default="cl100k_base")
+
     # --- Mime Lab command ---
     parser_mime = subparsers.add_parser(
         "mime-lab",
@@ -19878,6 +19921,10 @@ async def main():
 
     if args.command in ["jsonpath-lab", "jpath"]:
         run_jsonpath_lab(args)
+        return
+
+    if args.command in ["token-lab", "tokens"]:
+        run_token_lab(args)
         return
 
     if args.command in ["mime-lab", "mime"]:

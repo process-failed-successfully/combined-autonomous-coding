@@ -78,6 +78,9 @@ class MockDataGenerator:
             choices = options.get("choices", [])
             return random.choice(choices) if choices else None  # nosec B311
 
+        elif spec_type == "credit_card":
+            return self._generate_credit_card()
+
         elif spec_type == "string":
             length = options.get("length", 10)
             return self._random_string(length)
@@ -85,6 +88,24 @@ class MockDataGenerator:
         else:
             # Fallback
             return self._random_string(10)
+
+    def _generate_credit_card(self):
+        # Start with a Visa prefix (4) and generate 14 random digits
+        prefix = "4"
+        partial_cc = prefix + "".join([str(random.randint(0, 9)) for _ in range(14)])  # nosec B311
+
+        # Calculate Luhn check digit
+        total = 0
+        for i, digit in enumerate(reversed(partial_cc)):
+            n = int(digit)
+            if i % 2 == 0:
+                n *= 2
+                if n > 9:
+                    n -= 9
+            total += n
+
+        check_digit = (10 - (total % 10)) % 10
+        return partial_cc + str(check_digit)
 
     def _random_string(self, length):
         letters = string.ascii_lowercase

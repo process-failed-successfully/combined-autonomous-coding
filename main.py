@@ -326,6 +326,21 @@ if FileSystemEventHandler:
 
 def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Calc Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-calc")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.calc_lab import run_calc_lab_logic
     run_calc_lab_logic(args)
     sys.exit(0)
@@ -12836,6 +12851,7 @@ def parse_args(argv=None):
         aliases=["calc"],
         help="Programmer's Calculator."
     )
+    parser_calc.add_argument("--tui", action="store_true", help="Launch the Textual TUI for Calc Lab")
     parser_calc.add_argument("expression", nargs="*", help="Mathematical expression to evaluate (or start REPL).")
 
     # --- New 'unit-lab' command ---

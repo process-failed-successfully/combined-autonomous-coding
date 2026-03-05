@@ -109,6 +109,7 @@ from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
 from shared.tui_math import MathLabTab
+from shared.tui_calc import CalcLabTab
 from shared.tui_finance import FinanceLabTab
 from shared.tui_unit import UnitLabTab
 from shared.tui_url import UrlLabTab
@@ -3955,6 +3956,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
+        PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4261,6 +4263,8 @@ class AgentTUI(App):
                 yield TimeLabTab()
             with TabPane("Math Lab", id="tab-math"):
                 yield MathLabTab()
+            with TabPane("Calc Lab", id="tab-calc"):
+                yield CalcLabTab()
             with TabPane("Finance Lab", id="tab-finance"):
                 yield FinanceLabTab()
             with TabPane("Unit Lab", id="tab-unit"):

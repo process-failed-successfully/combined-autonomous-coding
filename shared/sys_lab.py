@@ -5,6 +5,7 @@ import platform
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+
 class SysLabManager:
     """
     Manages system information, processes, and disk usage.
@@ -40,7 +41,7 @@ class SysLabManager:
                 cpu_info["freq_min"] = freq.min
                 cpu_info["freq_max"] = freq.max
         except FileNotFoundError:
-            pass # Freq not available on all systems
+            pass  # Freq not available on all systems
 
         # Memory
         mem = psutil.virtual_memory()
@@ -107,17 +108,17 @@ class SysLabManager:
         # Sort
         reverse = True
         if sort_by == "cpu":
-            key = lambda x: x['cpu_percent'] or 0.0
+            def key(x): return x['cpu_percent'] or 0.0
         elif sort_by == "mem":
-            key = lambda x: x['memory_percent'] or 0.0
+            def key(x): return x['memory_percent'] or 0.0
         elif sort_by == "pid":
-            key = lambda x: x['pid']
+            def key(x): return x['pid']
             reverse = False
         elif sort_by == "name":
-            key = lambda x: (x['name'] or "").lower()
+            def key(x): return (x['name'] or "").lower()
             reverse = False
         else:
-            key = lambda x: x['cpu_percent'] or 0.0
+            def key(x): return x['cpu_percent'] or 0.0
 
         procs.sort(key=key, reverse=reverse)
         return procs[:limit]
@@ -228,6 +229,7 @@ class SysLabManager:
             n += 1
         return f"{size:.2f} {power_labels[n]}"
 
+
 def run_sys_lab_logic(args):
     """
     CLI logic for Sys Lab.
@@ -241,7 +243,8 @@ def run_sys_lab_logic(args):
         print(f"Kernel:   {info['system']['version']}")
         print(f"CPU:      {info['cpu']['physical_cores']} phys / {info['cpu']['logical_cores']} log ({info['cpu']['usage_percent']}%)")
         print(f"Memory:   {manager.format_bytes(info['memory']['used'])} / {manager.format_bytes(info['memory']['total'])} ({info['memory']['percent']}%)")
-        print(f"Disk (/): {manager.format_bytes(info['disk']['root_used'])} / {manager.format_bytes(info['disk']['root_total'])} ({info['disk']['root_percent']}%)")
+        print(
+            f"Disk (/): {manager.format_bytes(info['disk']['root_used'])} / {manager.format_bytes(info['disk']['root_total'])} ({info['disk']['root_percent']}%)")
         sys.exit(0)
 
     elif args.action == "proc":
@@ -266,8 +269,10 @@ def run_sys_lab_logic(args):
             cmd = p['cmdline'] or ""
 
             # Truncate
-            if len(user) > 10: user = user[:9] + "."
-            if len(name) > 20: name = name[:19] + "."
+            if len(user) > 10:
+                user = user[:9] + "."
+            if len(name) > 20:
+                name = name[:19] + "."
 
             print(f"{pid:<6} | {user:<10} | {cpu:<5} | {mem:<5} | {name:<20} | {cmd}")
         sys.exit(0)

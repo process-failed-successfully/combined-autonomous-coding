@@ -211,6 +211,7 @@ from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
 from shared.tui_schema import SchemaLabTab
 from shared.tui_jsonpath import JsonPathLabTab
+from shared.tui_token import TokenLabTab
 from shared.tui_mime import MimeLabTab
 from shared.plugin_manager import PluginManager
 
@@ -4385,6 +4386,8 @@ class AgentTUI(App):
                 yield SchemaLabTab(self.project_dir)
             with TabPane("JSONPath Lab", id="tab-jsonpath"):
                 yield JsonPathLabTab(self.project_dir)
+            with TabPane("Token Lab", id="tab-token"):
+                yield TokenLabTab(self.project_dir)
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
             with TabPane("Load Lab", id="tab-load"):

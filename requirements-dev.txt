@@ -10,3 +10,4 @@ watchdog
 pytest-asyncio
 pre-commit
 jsonpath-ng
+tiktoken

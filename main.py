@@ -309,7 +309,8 @@ KNOWN_COMMANDS = [
     "set-lab", "sets",
     "ip-lab", "ip",
     "pack", "jsonpath-lab", "jpath",
-    "mime-lab", "mime"
+    "mime-lab", "mime",
+    "branch-lab", "bl"
 ]
 
 if FileSystemEventHandler:
@@ -602,6 +603,27 @@ def run_mime_lab(args):
     """Runs the MIME Lab."""
     success = run_mime_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_branch_lab(args):
+    """Runs the Branch Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Branch Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-branch-lab")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.branch_lab import run_branch_lab_logic
+        success = run_branch_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_jsonpath_lab(args):
     """Runs the JSONPath Lab."""
@@ -16051,6 +16073,10 @@ def parse_args(argv=None):
     parser_transpiler.add_argument("--target", help="Target language (required for CLI)")
     parser_transpiler.add_argument("--agent", choices=["gemini", "cursor", "local"], default="gemini", help="AI Agent to use")
 
+    # --- Branch Lab ---
+    parser_branch_lab = subparsers.add_parser("branch-lab", aliases=["bl"], help="Git Branch Manager Lab")
+    parser_branch_lab.add_argument("action", choices=["tui"], default="tui", nargs="?", help="Action to perform (default: tui)")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -19967,6 +19993,10 @@ async def main():
 
     if args.command in ["mime-lab", "mime"]:
         run_mime_lab(args)
+        return
+
+    if args.command in ["branch-lab", "bl"]:
+        run_branch_lab(args)
         return
 
     # Initialize Agent Client

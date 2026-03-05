@@ -214,6 +214,7 @@ from shared.tui_schema import SchemaLabTab
 from shared.tui_jsonpath import JsonPathLabTab
 from shared.tui_token import TokenLabTab
 from shared.tui_mime import MimeLabTab
+from shared.tui_branch_lab import BranchLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3936,6 +3937,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Finance Lab", "switch_tab_finance"),
         PaletteCommand("Go to Converter Lab", "switch_tab_converter"),
         PaletteCommand("Go to Git", "switch_tab_git"),
+        PaletteCommand("Go to Branch Lab", "switch_tab_branch_lab"),
         PaletteCommand("Go to Config", "switch_tab_config"),
         PaletteCommand("Go to IDE Config", "switch_tab_ide_config"),
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
@@ -3951,6 +3953,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Dash Lab", "switch_tab_dash_lab"),
         PaletteCommand("Go to CQ Lab", "switch_tab_cq_lab"),
         PaletteCommand("Go to A11y Lab", "switch_tab_a11y"),
+        PaletteCommand("Go to Branch Lab", "switch_tab_branch_lab"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
@@ -3984,6 +3987,8 @@ class AgentTUI(App):
         elif isinstance(action, str):
             if action.startswith("switch_tab_"):
                 tab_id = action.replace("switch_tab_", "tab-")
+                if tab_id == "tab-branch_lab":
+                    tab_id = "tab-branch-lab"
                 self.query_one("#main-tabs", TabbedContent).active = tab_id
             elif action == "refresh_dashboard":
                 self.action_refresh_dashboard()
@@ -4398,6 +4403,8 @@ class AgentTUI(App):
                 yield LoadLabTab(self.project_dir)
             with TabPane("MIME Lab", id="tab-mime"):
                 yield MimeLabTab(self.project_dir)
+            with TabPane("Branch Lab", id="tab-branch-lab"):
+                yield BranchLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

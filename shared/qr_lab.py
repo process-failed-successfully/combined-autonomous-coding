@@ -20,6 +20,7 @@ except ImportError:
 
 console = Console()
 
+
 class QRLabManager:
     """Manages QR code operations."""
 
@@ -86,7 +87,8 @@ class QRLabManager:
 
         # Escape special characters in SSID and Password
         def escape(s):
-            if not s: return ""
+            if not s:
+                return ""
             return s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
 
         esc_ssid = escape(ssid)
@@ -129,6 +131,7 @@ class QRLabManager:
         """Generates Geo URI."""
         return f"geo:{lat},{lon}"
 
+
 def run_qr_lab_logic(args):
     """Entry point for QR lab CLI."""
     try:
@@ -160,6 +163,39 @@ def run_qr_lab_logic(args):
                 # For console, we print the string too so user verifies
                 console.print(f"WiFi Config: [dim]{wifi_str}[/dim]")
                 manager.generate(wifi_str)
+
+        elif args.action == "email":
+            email_str = manager.generate_email(args.to, args.subject, args.body)
+            output = Path(args.output) if args.output else None
+            if output:
+                manager.generate(email_str, output_path=output)
+            else:
+                console.print(f"Email Config: [dim]{email_str}[/dim]")
+                manager.generate(email_str)
+
+        elif args.action == "sms":
+            sms_str = manager.generate_sms(args.phone, args.message)
+            output = Path(args.output) if args.output else None
+            if output:
+                manager.generate(sms_str, output_path=output)
+            else:
+                console.print(f"SMS Config: [dim]{sms_str}[/dim]")
+                manager.generate(sms_str)
+
+        elif args.action == "geo":
+            geo_str = manager.generate_geo(args.lat, args.lon)
+            output = Path(args.output) if args.output else None
+            if output:
+                manager.generate(geo_str, output_path=output)
+            else:
+                console.print(f"Geo Config: [dim]{geo_str}[/dim]")
+                manager.generate(geo_str)
+
+        elif args.action == "tui":
+            from shared.tui import AgentTUI
+            import asyncio
+            app = AgentTUI(project_dir=Path.cwd(), initial_tab="tab-qr")
+            asyncio.run(app.run_async())
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")

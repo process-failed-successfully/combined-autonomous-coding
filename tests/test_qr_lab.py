@@ -7,7 +7,8 @@ from pathlib import Path
 # Add parent dir to path to find shared
 sys.path.append(str(Path(__file__).parent.parent))
 
-from shared.qr_lab import QRLabManager
+from shared.qr_lab import QRLabManager  # noqa: E402
+
 
 class TestQRLabManager(unittest.TestCase):
     def setUp(self):
@@ -62,3 +63,74 @@ class TestQRLabManager(unittest.TestCase):
 
         ascii_art = self.manager.generate_ascii("test")
         self.assertEqual(ascii_art, "##  ##\n  ##  ")
+
+    @patch("shared.qr_lab.QRLabManager.generate")
+    @patch("shared.qr_lab.console.print")
+    def test_run_qr_lab_logic_email(self, mock_print, mock_generate):
+        from shared.qr_lab import run_qr_lab_logic
+
+        class Args:
+            action = "email"
+            to = "test@example.com"
+            subject = "Subj"
+            body = "Msg"
+            output = None
+
+        args = Args()
+        run_qr_lab_logic(args)
+
+        mock_generate.assert_called_once_with("mailto:test@example.com?subject=Subj&body=Msg")
+        mock_print.assert_called()
+
+    @patch("shared.qr_lab.QRLabManager.generate")
+    @patch("shared.qr_lab.console.print")
+    def test_run_qr_lab_logic_sms(self, mock_print, mock_generate):
+        from shared.qr_lab import run_qr_lab_logic
+
+        class Args:
+            action = "sms"
+            phone = "+12345"
+            message = "Hi"
+            output = "out.png"
+
+        args = Args()
+        run_qr_lab_logic(args)
+
+        mock_generate.assert_called_once_with("sms:+12345?body=Hi", output_path=Path("out.png"))
+
+    @patch("shared.qr_lab.QRLabManager.generate")
+    @patch("shared.qr_lab.console.print")
+    def test_run_qr_lab_logic_geo(self, mock_print, mock_generate):
+        from shared.qr_lab import run_qr_lab_logic
+
+        class Args:
+            action = "geo"
+            lat = 10.0
+            lon = 20.0
+            output = None
+
+        args = Args()
+        run_qr_lab_logic(args)
+
+        mock_generate.assert_called_once_with("geo:10.0,20.0")
+
+    @patch("asyncio.run")
+    @patch("shared.tui.AgentTUI")
+    def test_run_qr_lab_logic_tui(self, mock_tui, mock_run):
+        from shared.qr_lab import run_qr_lab_logic
+
+        class Args:
+            action = "tui"
+
+        args = Args()
+
+        mock_app = MagicMock()
+        mock_tui.return_value = mock_app
+        mock_app.run_async.return_value = "coro"
+
+        run_qr_lab_logic(args)
+
+        mock_tui.assert_called_once()
+        kwargs = mock_tui.call_args.kwargs
+        self.assertEqual(kwargs["initial_tab"], "tab-qr")
+        mock_run.assert_called_once_with("coro")

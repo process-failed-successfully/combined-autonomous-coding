@@ -1473,6 +1473,9 @@ def run_url_lab(args):
 
 def run_cert_lab(args):
     """Runs the Certificate Lab."""
+    if getattr(args, "action", None) == "tui":
+        run_tui(args, "tab-cert")
+        sys.exit(0)
     from shared.cert_lab import run_cert_lab_logic
     success = run_cert_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -12639,6 +12642,9 @@ def parse_args(argv=None):
     parser_cert_gen.add_argument("--san", action="append", help="Subject Alternative Name (repeatable).")
     parser_cert_gen.add_argument("--days", type=int, default=365, help="Validity in days.")
     parser_cert_gen.add_argument("-o", "--output", help="Output directory.")
+
+    # cert-lab tui
+    cert_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
     # --- New 'time-lab' command ---
     parser_time = subparsers.add_parser(

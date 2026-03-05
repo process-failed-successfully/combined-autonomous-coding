@@ -3,8 +3,6 @@ import shutil
 import tempfile
 import sys
 import os
-import ssl
-import socket
 import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -12,12 +10,13 @@ from unittest.mock import MagicMock, patch
 # Ensure the project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from shared.cert_lab import CertLabManager, run_cert_lab_logic
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import hashes
-from cryptography.x509.oid import NameOID
+from shared.cert_lab import CertLabManager, run_cert_lab_logic  # noqa: E402
+from cryptography import x509  # noqa: E402
+from cryptography.hazmat.primitives import serialization  # noqa: E402
+from cryptography.hazmat.primitives.asymmetric import rsa  # noqa: E402
+from cryptography.hazmat.primitives import hashes  # noqa: E402
+from cryptography.x509.oid import NameOID  # noqa: E402
+
 
 class TestCertLab(unittest.TestCase):
     def setUp(self):
@@ -59,7 +58,7 @@ class TestCertLab(unittest.TestCase):
         details = self.manager.inspect_file(cert_path)
 
         self.assertEqual(details['Subject']['commonName'], "inspect.me")
-        self.assertEqual(details['Issuer']['commonName'], "inspect.me") # Self-signed
+        self.assertEqual(details['Issuer']['commonName'], "inspect.me")  # Self-signed
         self.assertIn("inspect.me", details['SANs'])
         self.assertTrue(details['Days Remaining'] >= 29)
 
@@ -116,6 +115,20 @@ class TestCertLab(unittest.TestCase):
 
         self.assertTrue(success)
         self.assertIn("Subject: {'commonName': 'cli.test'}", output)
+
+    @patch('main.sys.exit', side_effect=SystemExit)
+    @patch('main.run_tui')
+    def test_cert_lab_tui_dispatch(self, mock_run_tui, mock_exit):
+        import main
+        args = MagicMock()
+        args.action = "tui"
+
+        with self.assertRaises(SystemExit):
+            main.run_cert_lab(args)
+
+        mock_run_tui.assert_called_once_with(args, "tab-cert")
+        mock_exit.assert_called_once_with(0)
+
 
 if __name__ == '__main__':
     unittest.main()

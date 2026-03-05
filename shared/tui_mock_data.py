@@ -25,7 +25,7 @@ class MockDataTab(Container):
                 with Vertical(classes="stat-box"):
                     yield Input(placeholder="Field Name...", id="mock-field-name")
                     yield Select.from_values(
-                        ["string", "int", "float", "boolean", "uuid", "date", "datetime", "email", "name", "choice"],
+                        ["string", "int", "float", "boolean", "uuid", "date", "datetime", "email", "name", "choice", "credit_card"],
                         id="mock-field-type",
                         value="string",
                         prompt="Type"

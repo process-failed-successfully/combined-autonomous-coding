@@ -29,7 +29,8 @@ class TestMockDataGenerator(unittest.TestCase):
             "ts": "datetime",
             "email": "email",
             "full_name": "name",
-            "category": {"type": "choice", "choices": ["A", "B", "C"]}
+            "category": {"type": "choice", "choices": ["A", "B", "C"]},
+            "cc": "credit_card"
         }
         gen = MockDataGenerator(schema)
         data = gen.generate(5)
@@ -41,6 +42,24 @@ class TestMockDataGenerator(unittest.TestCase):
         self.assertTrue("@" in row["email"])
         self.assertTrue(" " in row["full_name"])
         self.assertIn(row["category"], ["A", "B", "C"])
+
+        # Test credit card format and Luhn
+        cc = row["cc"]
+        self.assertEqual(len(cc), 16)
+        self.assertTrue(cc.isdigit())
+        self.assertTrue(cc.startswith("4"))
+
+        # Verify Luhn
+        total = 0
+        for i, digit in enumerate(reversed(cc[:-1])):
+            n = int(digit)
+            if i % 2 == 0:
+                n *= 2
+                if n > 9:
+                    n -= 9
+            total += n
+        check_digit = (10 - (total % 10)) % 10
+        self.assertEqual(int(cc[-1]), check_digit)
 
     def test_export_json(self):
         schema = {"id": "int"}

@@ -1,13 +1,12 @@
 import unittest
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
 import sys
 from pathlib import Path
-import os
 
 # Add repo root to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
+from shared.sys_lab import SysLabManager  # noqa: E402
 
-from shared.sys_lab import SysLabManager
 
 class TestSysLabManager(unittest.TestCase):
 
@@ -27,7 +26,7 @@ class TestSysLabManager(unittest.TestCase):
         )
 
         # Mock psutil
-        mock_psutil.cpu_count.side_effect = [4, 8] # physical, logical
+        mock_psutil.cpu_count.side_effect = [4, 8]  # physical, logical
         mock_psutil.cpu_percent.return_value = 15.5
         mock_psutil.cpu_freq.return_value = MagicMock(current=2400, min=800, max=4000)
 
@@ -60,7 +59,8 @@ class TestSysLabManager(unittest.TestCase):
         p1.info = {'pid': 1, 'name': 'init', 'username': 'root', 'cpu_percent': 0.1, 'memory_percent': 0.1, 'status': 'sleeping', 'cmdline': ['/sbin/init']}
 
         p2 = MagicMock()
-        p2.info = {'pid': 100, 'name': 'python', 'username': 'user', 'cpu_percent': 50.0, 'memory_percent': 2.0, 'status': 'running', 'cmdline': ['python', 'script.py']}
+        p2.info = {'pid': 100, 'name': 'python', 'username': 'user', 'cpu_percent': 50.0,
+                   'memory_percent': 2.0, 'status': 'running', 'cmdline': ['python', 'script.py']}
 
         p3 = MagicMock()
         p3.info = {'pid': 200, 'name': 'chrome', 'username': 'user', 'cpu_percent': 10.0, 'memory_percent': 5.0, 'status': 'running', 'cmdline': ['chrome']}
@@ -70,7 +70,7 @@ class TestSysLabManager(unittest.TestCase):
         # Test sort by cpu (default)
         procs = self.manager.list_processes()
         self.assertEqual(len(procs), 3)
-        self.assertEqual(procs[0]['pid'], 100) # Highest CPU
+        self.assertEqual(procs[0]['pid'], 100)  # Highest CPU
 
         # Test filter
         procs = self.manager.list_processes(filter_name="python")
@@ -91,7 +91,7 @@ class TestSysLabManager(unittest.TestCase):
         result = self.manager.kill_process(pid=1234)
 
         mock_process_cls.assert_called_with(1234)
-        mock_proc.send_signal.assert_called_with(15) # Default SIGTERM
+        mock_proc.send_signal.assert_called_with(15)  # Default SIGTERM
         self.assertTrue(result['success'])
 
     @patch('shared.sys_lab.psutil.process_iter')
@@ -151,6 +151,7 @@ class TestSysLabManager(unittest.TestCase):
         self.assertEqual(self.manager.format_bytes(1024), "1.00 KB")
         self.assertEqual(self.manager.format_bytes(1024**2), "1.00 MB")
         self.assertEqual(self.manager.format_bytes(500), "500.00 B")
+
 
 if __name__ == '__main__':
     unittest.main()

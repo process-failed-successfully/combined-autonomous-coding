@@ -66,6 +66,7 @@ from shared.tui_log_tail import LogTailTab
 from shared.tui_productivity import ProductivityTab
 from shared.tui_services import ServicesTab
 from shared.tui_system_monitor import SystemMonitorTab
+from shared.tui_sys import SysTab
 from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
 from shared.tui_terraform import TerraformTab
@@ -4158,6 +4159,8 @@ class AgentTUI(App):
                 yield ASTExplorerTab()
             with TabPane("Network", id="tab-network"):
                 yield NetworkTab(self.project_dir)
+            with TabPane("System Lab", id="tab-sys"):
+                yield SysTab(self.project_dir)
             with TabPane("Net Diag", id="tab-net-diag"):
                 yield NetDiagTab(self.project_dir)
             with TabPane("CIDR Lab", id="tab-cidr"):

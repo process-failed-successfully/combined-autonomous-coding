@@ -1,7 +1,7 @@
 import unittest
-import sys
 from unittest.mock import patch, MagicMock
 from shared.ulid_lab import UlidLabManager, run_ulid_lab_logic
+
 
 class TestUlidLabManager(unittest.TestCase):
     def setUp(self):
@@ -30,6 +30,7 @@ class TestUlidLabManager(unittest.TestCase):
         valid_ulid = self.manager.generate()[0]
         self.assertTrue(self.manager.validate(valid_ulid))
         self.assertFalse(self.manager.validate("invalid"))
+
 
 class TestUlidLabCli(unittest.TestCase):
     @patch('builtins.print')
@@ -69,6 +70,7 @@ class TestUlidLabCli(unittest.TestCase):
         run_ulid_lab_logic(args)
         mock_print.assert_called_with(f"✅ Valid ULID: {valid_ulid}")
         mock_exit.assert_called_with(0)
+
 
 if __name__ == '__main__':
     unittest.main()

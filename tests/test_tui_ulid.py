@@ -1,11 +1,10 @@
 import unittest
-import sys
-from unittest.mock import patch, MagicMock
-from pathlib import Path
+from unittest.mock import MagicMock
 
 from textual.app import App
 from textual.widgets import TabbedContent
 from shared.tui_ulid import UlidLabTab
+
 
 class DummyApp(App):
     def __init__(self, *args, **kwargs):
@@ -13,6 +12,7 @@ class DummyApp(App):
 
     def compose(self):
         yield UlidLabTab()
+
 
 class TestUlidLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -39,7 +39,7 @@ class TestUlidLabTab(unittest.IsolatedAsyncioTestCase):
             self.tab.notify = MagicMock()
 
             tabs = pilot.app.query_one(TabbedContent)
-            tabs.active = "tab-2" # inspect is usually second
+            tabs.active = "tab-2"  # inspect is usually second
             await pilot.pause()
 
             # Switch tab if needed, but we can just query the button
@@ -60,6 +60,7 @@ class TestUlidLabTab(unittest.IsolatedAsyncioTestCase):
 
             lbl = pilot.app.query_one("#lbl-ulid-validate-result")
             self.assertIn("Invalid ULID", str(lbl.render()))
+
 
 if __name__ == '__main__':
     unittest.main()

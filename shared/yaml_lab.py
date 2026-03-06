@@ -210,6 +210,13 @@ def run_yaml_lab_logic(args):
             return manager.load_yaml(sys.stdin.read())
         return manager.load_yaml(args.input)
 
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching YAML Lab TUI...")
+        app = AgentTUI(project_dir=Path("."), start_tab="tab-yaml")
+        app.run()
+        sys.exit(0)
+
     if args.action == "get":
         try:
             data = load_input()

@@ -13314,6 +13314,9 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # yaml-lab tui
+    yaml_subparsers.add_parser("tui", help="Launch YAML Lab TUI.")
+
     # yaml-lab get
     parser_yaml_get = yaml_subparsers.add_parser("get", help="Get value from YAML.")
     parser_yaml_get.add_argument("input", help="YAML string or file path.")

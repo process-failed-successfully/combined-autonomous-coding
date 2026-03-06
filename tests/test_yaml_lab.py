@@ -126,5 +126,19 @@ key: value
         self.assertIn("b:", yaml_str)
         self.assertIn("- 2", yaml_str)
 
+class TestYamlLabCLI(unittest.TestCase):
+    @unittest.mock.patch('sys.exit', side_effect=SystemExit)
+    @unittest.mock.patch('shared.tui.AgentTUI.run')
+    def test_tui_action(self, mock_run, mock_exit):
+        from shared.yaml_lab import run_yaml_lab_logic
+        import argparse
+
+        args = argparse.Namespace(action="tui")
+        with self.assertRaises(SystemExit):
+            run_yaml_lab_logic(args)
+
+        mock_run.assert_called_once()
+        mock_exit.assert_called_with(0)
+
 if __name__ == '__main__':
     unittest.main()

@@ -12569,6 +12569,10 @@ def parse_args(argv=None):
     parser_tl_hash.add_argument("--algo", "-a", choices=["md5", "sha1", "sha256", "sha512"], default="sha256", help="Hashing algorithm.")
     parser_tl_hash.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
 
+    # text-lab lorem
+    parser_tl_lorem = text_lab_subparsers.add_parser("lorem", help="Generate lorem ipsum dummy text.")
+    parser_tl_lorem.add_argument("--words", "-w", type=int, default=100, help="Number of words to generate.")
+
     # --- New 'html-lab' command ---
     parser_html = subparsers.add_parser(
         "html-lab",

@@ -114,5 +114,19 @@ class TestTextLabCLI(unittest.TestCase):
         manager_instance.filter_lines.assert_called_with("input", "regex", exclude=True)
         mock_print.assert_called_with("filtered")
 
+    @patch("shared.text_lab.TextLabManager")
+    def test_lorem(self, MockManager):
+        manager_instance = MockManager.return_value
+        manager_instance.lorem_ipsum.return_value = "lorem ipsum"
+
+        self.mock_args.action = "lorem"
+        self.mock_args.words = 2
+
+        with patch("builtins.print") as mock_print:
+            run_text_lab_logic(self.mock_args)
+
+        manager_instance.lorem_ipsum.assert_called_with(2)
+        mock_print.assert_called_with("lorem ipsum")
+
 if __name__ == "__main__":
     unittest.main()

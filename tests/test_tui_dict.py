@@ -1,12 +1,14 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Button, RichLog
+from textual.widgets import Input, RichLog
 from shared.tui_dict import DictLabTab
+
 
 class MockDictLabApp(App[None]):
     def compose(self) -> ComposeResult:
         yield DictLabTab()
+
 
 class TestDictLabTUI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -73,6 +75,7 @@ class TestDictLabTUI(unittest.IsolatedAsyncioTestCase):
             content = "\n".join([line.text for line in log.lines])
 
             self.assertIn("Word 'xyz' not found.", content)
+
 
 if __name__ == '__main__':
     unittest.main()

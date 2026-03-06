@@ -1,14 +1,11 @@
-import sys
 from typing import Any
-from pathlib import Path
-from textual.app import App, ComposeResult
+from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal
 from textual.widgets import Label, Button, Input, RichLog
-from textual.binding import Binding
 from textual import work
 from textual import on
-from textual.message import Message
 from shared.dict_lab import DictLabManager
+
 
 class DictLabTab(Vertical):
     """Tab for Dictionary operations."""

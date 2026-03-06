@@ -636,9 +636,10 @@ def run_branch_lab(args):
             loop = None
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.branch_lab import run_branch_lab_logic
         success = run_branch_lab_logic(args)
@@ -1347,11 +1348,29 @@ def run_cidr_lab(args):
 
 def run_color_lab(args):
     """Runs the Color Lab utilities."""
-    from shared.color_lab import run_color_lab_logic
-    # Convert args to dict
-    args_dict = vars(args)
-    run_color_lab_logic(**args_dict)
-    sys.exit(0)
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Color Lab TUI...")
+        # Since color lab is stateless and doesn't explicitly need project_dir for most ops,
+        # but TUI requires it, we'll just pass current dir if not present.
+        project_dir = getattr(args, "project_dir", Path("."))
+        app = AgentTUI(project_dir=project_dir, start_tab="tab-color")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+    else:
+        from shared.color_lab import run_color_lab_logic
+        # Convert args to dict
+        args_dict = vars(args)
+        run_color_lab_logic(**args_dict)
+        sys.exit(0)
 
 def run_data_lab(args):
     """Runs the Data Lab utilities."""
@@ -12210,6 +12229,9 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # color-lab tui
+    parser_cl_tui = color_lab_subparsers.add_parser("tui", help="Launch Color Lab TUI.")
 
     # color-lab check
     parser_cl_check = color_lab_subparsers.add_parser("check", help="Check contrast between two colors.")

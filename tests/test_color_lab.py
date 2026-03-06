@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from pathlib import Path
 from shared.color_lab import Color
 
+
 class TestColorLab(unittest.TestCase):
     def test_parsing(self):
         c = Color("#ffffff")
@@ -45,18 +46,18 @@ class TestColorLab(unittest.TestCase):
         self.assertNotEqual(c.hex, sim.hex)
 
     def test_cmyk(self):
-        c = Color("#ff0000") # Red
+        c = Color("#ff0000")  # Red
         # Cyan=0, Magenta=1, Yellow=1, Black=0
         self.assertEqual(c.cmyk, (0, 100, 100, 0))
 
-        c = Color("#00ffff") # Cyan
+        c = Color("#00ffff")  # Cyan
         # C=1, M=0, Y=0, K=0
         self.assertEqual(c.cmyk, (100, 0, 0, 0))
 
-        c = Color("#000000") # Black
+        c = Color("#000000")  # Black
         self.assertEqual(c.cmyk, (0, 0, 0, 100))
 
-        c = Color("#ffffff") # White
+        c = Color("#ffffff")  # White
         self.assertEqual(c.cmyk, (0, 0, 0, 0))
 
     @patch("shared.color_lab.HAS_PIL", True)
@@ -78,9 +79,9 @@ class TestColorLab(unittest.TestCase):
         # Mock getcolors (count, index)
         # Let's say we have 3 prominent colors
         mock_q_img.getcolors.return_value = [
-            (100, 0), # Most frequent, index 0
-            (50, 1),  # Index 1
-            (10, 2)   # Index 2
+            (100, 0),  # Most frequent, index 0
+            (50, 1),   # Index 1
+            (10, 2)    # Index 2
         ]
 
         # Mock getpalette (flat list of r,g,b)
@@ -100,6 +101,33 @@ class TestColorLab(unittest.TestCase):
             self.assertEqual(len(colors), 2)
             self.assertEqual(colors[0].rgb, (255, 0, 0))
             self.assertEqual(colors[1].rgb, (0, 255, 0))
+
+
+class TestColorLabCLI(unittest.TestCase):
+    @patch("shared.tui.AgentTUI")
+    @patch("main.sys.exit")
+    def test_run_color_lab_tui(self, mock_exit, mock_agent_tui):
+        from main import run_color_lab
+        mock_exit.side_effect = SystemExit
+
+        # Setup mock args
+        args = MagicMock()
+        args.action = "tui"
+        args.project_dir = Path("/tmp/dummy")
+
+        # Setup mock TUI app instance
+        mock_app_instance = MagicMock()
+        mock_agent_tui.return_value = mock_app_instance
+
+        # Call the function
+        with self.assertRaises(SystemExit):
+            run_color_lab(args)
+
+        # Assertions
+        mock_agent_tui.assert_called_once_with(project_dir=Path("/tmp/dummy"), start_tab="tab-color")
+        mock_app_instance.run.assert_called_once()
+        mock_exit.assert_called_once_with(0)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -158,6 +158,21 @@ class TestTextLab(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.hash_text(text, "unknown_algo")
 
+    def test_lorem_ipsum(self):
+        # Default words (100)
+        lorem_100 = self.manager.lorem_ipsum()
+        words_100 = lorem_100.split()
+        self.assertEqual(len(words_100), 100)
+
+        # Specific words
+        lorem_5 = self.manager.lorem_ipsum(words=5)
+        words_5 = lorem_5.split()
+        self.assertEqual(len(words_5), 5)
+
+        # Edge cases
+        self.assertEqual(self.manager.lorem_ipsum(words=0), "")
+        self.assertEqual(self.manager.lorem_ipsum(words=-5), "")
+
 
 if __name__ == '__main__':
     unittest.main()

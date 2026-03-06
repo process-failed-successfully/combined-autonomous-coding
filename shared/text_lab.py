@@ -176,6 +176,41 @@ class TextLabManager:
     def _to_path(self, text: str) -> str:
         return self._to_snake(text).replace('_', '/')
 
+    def lorem_ipsum(self, words: int = 100) -> str:
+        import random
+        lorem_words = [
+            "lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit",
+            "sed", "do", "eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore",
+            "magna", "aliqua", "enim", "ad", "minim", "veniam", "quis", "nostrud", "exercitation",
+            "ullamco", "laboris", "nisi", "ut", "aliquip", "ex", "ea", "commodo", "consequat",
+            "duis", "aute", "irure", "dolor", "in", "reprehenderit", "in", "voluptate", "velit",
+            "esse", "cillum", "dolore", "eu", "fugiat", "nulla", "pariatur", "excepteur", "sint",
+            "occaecat", "cupidatat", "non", "proident", "sunt", "in", "culpa", "qui", "officia",
+            "deserunt", "mollit", "anim", "id", "est", "laborum"
+        ]
+
+        if words <= 0:
+            return ""
+
+        result = []
+        for i in range(words):
+            word = random.choice(lorem_words)
+            if i == 0:
+                word = word.capitalize()
+            elif i > 0 and result[-1].endswith('.'):
+                word = word.capitalize()
+
+            # Randomly add periods to simulate sentences
+            if i > 5 and i < words - 1 and random.random() < 0.1 and not word.endswith('.'):
+                word += '.'
+
+            result.append(word)
+
+        text = " ".join(result)
+        if not text.endswith('.'):
+            text += '.'
+        return text
+
 
 def run_text_lab_logic(args):
     """CLI handler for Text Lab."""
@@ -296,5 +331,9 @@ def run_text_lab_logic(args):
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
             return False
+
+    elif args.action == "lorem":
+        words = args.words if hasattr(args, "words") and args.words is not None else 100
+        print(manager.lorem_ipsum(words))
 
     return True

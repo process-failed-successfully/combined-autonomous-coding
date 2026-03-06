@@ -202,6 +202,7 @@ from shared.tui_pre_commit import PreCommitLabTab
 from shared.tui_cq import CodeQualityTab
 from shared.tui_pack import PackLabTab
 from shared.tui_transpiler import TranspilerLabTab
+from shared.tui_dict import DictLabTab
 from shared.tui_http_status import HttpStatusLabTab
 from shared.tui_subtitle import SubtitleLabTab
 from shared.tui_matrix import MatrixLabTab
@@ -3956,6 +3957,7 @@ class AgentTUI(App):
         PaletteCommand("Go to A11y Lab", "switch_tab_a11y"),
         PaletteCommand("Go to Branch Lab", "switch_tab_branch_lab"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
+        PaletteCommand("Go to Dictionary Lab", "switch_tab_dict"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
@@ -4139,6 +4141,8 @@ class AgentTUI(App):
                 yield CodeQualityTab(self.project_dir)
             with TabPane("Transpiler", id="tab-transpiler"):
                 yield TranspilerLabTab(self.project_dir)
+            with TabPane("Dictionary", id="tab-dict"):
+                yield DictLabTab()
             with TabPane("Pack", id="tab-pack"):
                 yield PackLabTab(self.project_dir)
             with TabPane("Impact", id="tab-impact"):

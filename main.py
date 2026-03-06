@@ -375,6 +375,25 @@ def run_find_lab(args):
 
 def run_dict_lab(args):
     """Runs the Dictionary Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Dictionary Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-dict")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    if not getattr(args, "word", None):
+        print("Error: Word argument is required.", file=sys.stderr)
+        sys.exit(1)
+
     run_dict_lab_logic(args)
     sys.exit(0)
 
@@ -15922,8 +15941,9 @@ def parse_args(argv=None):
     # Actually, aliases in add_parser mainly work if we use that name.
     # But we want 'define' to be the action if called as 'dict-lab define'.
 
-    parser_dict.add_argument("word", help="Word to lookup.")
+    parser_dict.add_argument("word", nargs="?", help="Word to lookup.")
     parser_dict.add_argument("action", nargs="?", choices=["define", "synonym", "antonym"], default="define", help="Action to perform (default: define).")
+    parser_dict.add_argument("--tui", action="store_true", help="Launch the Dictionary Lab TUI.")
 
     # --- New 'parquet-lab' command ---
     parser_parquet = subparsers.add_parser(

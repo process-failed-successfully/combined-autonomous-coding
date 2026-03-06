@@ -140,6 +140,7 @@ from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_template import TemplateLabTab
 from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
@@ -4314,6 +4315,8 @@ class AgentTUI(App):
                 yield YamlLabTab(self.project_dir)
             with TabPane("XML Lab", id="tab-xml"):
                 yield XmlLabTab(self.project_dir)
+            with TabPane("Template Lab", id="tab-template-lab"):
+                yield TemplateLabTab(self.project_dir)
             with TabPane("TOML Lab", id="tab-toml"):
                 yield TomlLabTab(self.project_dir)
             with TabPane("Markdown Lab", id="tab-markdown"):

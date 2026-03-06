@@ -160,6 +160,7 @@ from shared.tui_port import PortLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_uuid import UuidLabTab
+from shared.tui_ulid import UlidLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
 from shared.tui_sock import SockLabTab
@@ -3945,6 +3946,7 @@ class AgentTUI(App):
         PaletteCommand("Go to DevTools", "switch_tab_devtools"),
         PaletteCommand("Go to PyPI Lab", "switch_tab_pypi"),
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
+        PaletteCommand("Go to ULID Lab", "switch_tab_ulid"),
         PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
         PaletteCommand("Go to Struct Lab", "switch_tab_struct"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
@@ -4235,6 +4237,8 @@ class AgentTUI(App):
                 yield JwtLabTab()
             with TabPane("UUID Lab", id="tab-uuid"):
                 yield UuidLabTab()
+            with TabPane("ULID Lab", id="tab-ulid"):
+                yield UlidLabTab()
             with TabPane("OTP Lab", id="tab-otp"):
                 yield OtpLabTab()
             with TabPane("Sanitizer", id="tab-sanitizer"):

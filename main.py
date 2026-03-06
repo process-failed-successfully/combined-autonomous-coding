@@ -209,7 +209,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "password-lab", "pwd-lab",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
@@ -1418,6 +1418,27 @@ def run_uuid_lab(args):
 
     from shared.uuid_lab import run_uuid_lab_logic
     run_uuid_lab_logic(args)
+    sys.exit(0)
+
+def run_ulid_lab(args):
+    """Runs the ULID Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching ULID Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-ulid")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.ulid_lab import run_ulid_lab_logic
+    run_ulid_lab_logic(args)
     sys.exit(0)
 
 def run_password_lab(args):
@@ -19689,6 +19710,10 @@ async def main():
 
     if args.command in ["uuid-lab", "uuid"]:
         run_uuid_lab(args)
+        return
+
+    if args.command in ["ulid-lab", "ulid"]:
+        run_ulid_lab(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

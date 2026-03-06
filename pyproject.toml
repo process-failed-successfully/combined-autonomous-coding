@@ -45,6 +45,7 @@ dependencies = [
     "qrcode",
     "pandas",
     "pyarrow",
+    "ulid-py",
 ]
 requires-python = ">=3.11"
 

@@ -41,3 +41,4 @@ pyarrow
 pytesseract
 jsonpath-ng
 tiktoken
+ulid-py

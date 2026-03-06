@@ -1657,8 +1657,23 @@ def run_excel_lab(args):
 
 def run_template_lab(args):
     """Runs the Template Lab."""
-    run_template_lab_logic(args)
-    sys.exit(0)
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Template Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-template-lab")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            print("Cannot launch TUI from within an existing event loop. Try running without other async commands.")
+            sys.exit(1)
+        app.run()
+        sys.exit(0)
+    else:
+        run_template_lab_logic(args)
+        sys.exit(0)
 
 def run_json_lab(args):
     """Runs the JSON Lab."""
@@ -13172,6 +13187,9 @@ def parse_args(argv=None):
     # template-lab lint
     parser_template_lint = template_subparsers.add_parser("lint", help="Lint template syntax.")
     parser_template_lint.add_argument("template", help="Template file path.")
+
+    # template-lab tui
+    parser_template_tui = template_subparsers.add_parser("tui", help="Launch interactive Template Lab TUI.")
 
     # --- New 'json-lab' command ---
     parser_json = subparsers.add_parser(

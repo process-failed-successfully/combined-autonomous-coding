@@ -30,7 +30,7 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
         self.patcher_db = patch("shared.tui.init_db")
         self.mock_init_db = self.patcher_db.start()
 
-        self.patcher_km = patch("shared.tui.KnowledgeManager")
+        self.patcher_km = patch("shared.tui_knowledge_graph.KnowledgeManager")
         self.mock_km = self.patcher_km.start()
 
         self.patcher_ask = patch("shared.tui.run_ask_logic", new_callable=AsyncMock)

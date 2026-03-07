@@ -6592,11 +6592,11 @@ def run_prompt_lab(args):
     run_tui(args)
 
 
-def run_tui(args):
+def run_tui(args, start_tab=None):
     """Starts the Textual TUI."""
     try:
         from shared.tui import AgentTUI
-        app = AgentTUI(project_dir=args.project_dir)
+        app = AgentTUI(project_dir=args.project_dir, start_tab=start_tab)
         import asyncio
         try:
             loop = asyncio.get_running_loop()
@@ -13655,6 +13655,9 @@ def parse_args(argv=None):
 
     # net-lab ip
     parser_net_ip = net_subparsers.add_parser("ip", help="Get IP info.")
+
+    # net-lab tui
+    parser_net_tui = net_subparsers.add_parser("tui", help="Launch the Network Diagnostics TUI.")
 
     # --- New 'pdf-lab' command ---
     parser_pdf = subparsers.add_parser(

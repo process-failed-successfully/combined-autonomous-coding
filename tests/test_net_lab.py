@@ -69,6 +69,21 @@ class TestNetLabManager(unittest.TestCase):
             self.assertEqual(info["public_ip"], "1.2.3.4")
             self.assertEqual(info["local_ip"], "192.168.1.10")
 
+    @patch("sys.exit", side_effect=SystemExit)
+    @patch("shared.tui.AgentTUI.run")
+    def test_run_net_lab_logic_tui(self, mock_run, mock_exit):
+        from shared.net_lab import run_net_lab_logic
+        import argparse
+        from pathlib import Path
+
+        args = argparse.Namespace(action="tui", project_dir=Path("."))
+
+        with self.assertRaises(SystemExit):
+            run_net_lab_logic(args)
+
+        mock_run.assert_called_once()
+        mock_exit.assert_called_once_with(0)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -253,7 +253,7 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
 
         run_tui(args)
 
-        MockAgentTUI.assert_called_with(project_dir=self.project_dir)
+        MockAgentTUI.assert_called_with(project_dir=self.project_dir, start_tab=None)
         MockAgentTUI.return_value.run.assert_called_once()
         mock_exit.assert_called_with(0)
 

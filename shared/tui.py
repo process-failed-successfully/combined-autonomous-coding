@@ -109,6 +109,7 @@ from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
+from shared.tui_jwt import JwtLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_calc import CalcLabTab
 from shared.tui_finance import FinanceLabTab

@@ -1,9 +1,14 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import sys
 import io
+import sys
+from pathlib import Path
 
-from shared.luhn_lab import LuhnManager, run_luhn_lab_logic
+# Fix ModuleNotFoundError during pytest by appending project root
+sys.path.append(str(Path(__file__).parent.parent))
+
+from shared.luhn_lab import LuhnManager, run_luhn_lab_logic  # noqa: E402
+
 
 class TestLuhnManager(unittest.TestCase):
     def setUp(self):
@@ -19,7 +24,7 @@ class TestLuhnManager(unittest.TestCase):
         # Known invalid Luhn numbers
         self.assertFalse(self.manager.validate("79927398714"))
         self.assertFalse(self.manager.validate("1234567812345671"))
-        self.assertFalse(self.manager.validate("1")) # Too short/single digit often invalid, depends on sum
+        self.assertFalse(self.manager.validate("1"))  # Too short/single digit often invalid, depends on sum
 
     def test_validate_with_formatting(self):
         # Should ignore non-digit characters
@@ -47,6 +52,7 @@ class TestLuhnManager(unittest.TestCase):
     def test_generate_invalid_length(self):
         with self.assertRaises(ValueError):
             self.manager.generate(length=5, prefix="123456")
+
 
 class TestLuhnLabCLI(unittest.TestCase):
     @patch("sys.exit")
@@ -93,6 +99,7 @@ class TestLuhnLabCLI(unittest.TestCase):
         self.assertTrue(generated_num.startswith("4556"))
         self.assertEqual(len(generated_num), 16)
         self.assertTrue(LuhnManager().validate(generated_num))
+
 
 if __name__ == '__main__':
     unittest.main()

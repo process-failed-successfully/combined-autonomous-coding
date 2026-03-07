@@ -1,6 +1,7 @@
 import sys
 import random
 
+
 class LuhnManager:
     """
     Manages validation and generation of numbers using the Luhn algorithm.
@@ -45,7 +46,7 @@ class LuhnManager:
         random_length = length - len(prefix_digits) - 1
 
         # Generate random middle digits
-        random_digits = ''.join(str(random.randint(0, 9)) for _ in range(random_length)) # nosec B311
+        random_digits = ''.join(str(random.randint(0, 9)) for _ in range(random_length))  # nosec B311
 
         partial_number = prefix_digits + random_digits
 
@@ -53,7 +54,7 @@ class LuhnManager:
         partial_digits = [int(d) for d in partial_number]
 
         checksum = 0
-        is_second = True # Starting from the rightmost digit of the *partial* number, which will be the second digit of the *final* number
+        is_second = True  # Starting from the rightmost digit of the *partial* number, which will be the second digit of the *final* number
 
         for digit in reversed(partial_digits):
             if is_second:

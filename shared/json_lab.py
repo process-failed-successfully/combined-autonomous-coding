@@ -177,6 +177,14 @@ class JsonLabManager:
         )
         return "\n".join(diff)
 
+    def validate(self, input_data: str) -> bool:
+        """Validates if input is valid JSON."""
+        try:
+            self.load_json(input_data)
+            return True
+        except ValueError:
+            return False
+
     def query(self, data: Any, expression: str) -> Any:
         """
         Evaluates a Python expression on the data.
@@ -290,6 +298,31 @@ def run_json_lab_logic(args):
                 print(result)
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "validate":
+        try:
+            content = args.input
+            if content == "-":
+                content = sys.stdin.read()
+            else:
+                # Try to treat input as a file path first, if it exists and is a file.
+                path = Path(content)
+                if path.exists() and path.is_file():
+                    content = path.read_text(encoding='utf-8')
+
+            if manager.validate(content):
+                print("✅ Valid JSON.")
+                sys.exit(0)
+            else:
+                print("❌ Invalid JSON.")
+                sys.exit(1)
+        except IOError as e:
+            # Handle file read errors explicitly
+            print(f"❌ Error reading file: {e}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ Error validating JSON: {e}", file=sys.stderr)
             sys.exit(1)
 
     else:

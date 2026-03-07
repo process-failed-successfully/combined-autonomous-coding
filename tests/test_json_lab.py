@@ -89,6 +89,12 @@ class TestJsonLabManager(unittest.TestCase):
         self.assertIn("-", diff)
         self.assertIn("+", diff)
 
+    def test_validate(self):
+        self.assertTrue(self.manager.validate('{"a": 1}'))
+        self.assertTrue(self.manager.validate('[1, 2, 3]'))
+        self.assertFalse(self.manager.validate('{a: 1}'))
+        self.assertFalse(self.manager.validate('invalid'))
+
     def test_query(self):
         # Basic access
         self.assertEqual(self.manager.query(self.sample_data, "data['store']['bicycle']['color']"), "red")

@@ -9,7 +9,7 @@ import sys
 # Ensure shared is importable
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shared.barcode_lab import BarcodeLabManager, run_barcode_lab_logic
+from shared.barcode_lab import BarcodeLabManager, run_barcode_lab_logic  # noqa: E402
 
 class TestBarcodeLabManager(unittest.TestCase):
     def setUp(self):

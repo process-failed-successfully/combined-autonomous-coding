@@ -57,6 +57,11 @@ class BarcodeLabManager:
             if output_path:
                 # remove extension if present as save() adds it
                 base_path = str(output_path)
+
+                # Check for mocked objects masquerading as strings during tests
+                if "MagicMock" in base_path:
+                     raise RuntimeError(f"Detected MagicMock in output path: {base_path}. Aborting save to prevent garbage files.")
+
                 if svg and base_path.endswith('.svg'):
                     base_path = base_path[:-4]
                 elif not svg and base_path.endswith('.png'):

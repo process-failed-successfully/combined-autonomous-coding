@@ -106,6 +106,8 @@ class TestBarcodeLabCLI(unittest.TestCase):
         args.format = "code128"
         args.svg = True
         args.output = str(Path(self.temp_dir) / "out")
+
+        # the function internally relies on sys.stderr, so let's check it silently runs
         success = run_barcode_lab_logic(args)
         self.assertTrue(success)
         self.assertTrue((Path(self.temp_dir) / "out.svg").exists())

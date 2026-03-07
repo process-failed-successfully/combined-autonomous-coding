@@ -76,6 +76,38 @@ class TextLabManager:
     def collapse_spaces(self, text: str) -> str:
         return re.sub(r'\s+', ' ', text)
 
+    def extract(self, text: str, type: str) -> str:
+        """Extracts patterns like emails, urls, or ips from text."""
+        import re
+        if type == "email":
+            # Basic email regex
+            pattern = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]*[a-zA-Z0-9-]+'
+            matches = re.findall(pattern, text)
+            return "\n".join(set(matches))
+        elif type == "url":
+            # Basic URL regex
+            pattern = r'https?://[^\s]+'
+            # remove trailing punctuation if matched
+            matches = []
+            for m in re.findall(pattern, text):
+                while m and m[-1] in ".,;:!?()[]{}":
+                    m = m[:-1]
+                matches.append(m)
+            return "\n".join(set(matches))
+        elif type == "ip":
+            # IPv4 regex
+            pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
+            matches = re.findall(pattern, text)
+            # Verify they are actual valid IPv4 ranges
+            valid_ips = []
+            for m in matches:
+                parts = m.split('.')
+                if all(0 <= int(p) <= 255 for p in parts):
+                    valid_ips.append(m)
+            return "\n".join(set(valid_ips))
+        else:
+            raise ValueError(f"Unknown extract type: {type}")
+
     def filter_lines(self, text: str, pattern: str, exclude: bool = False) -> str:
         lines = text.splitlines()
         try:
@@ -228,7 +260,18 @@ def run_text_lab_logic(args):
                 pass
         return None
 
-    if args.action == "transform":
+    if args.action == "extract":
+        text_input = get_input(args.text)
+        if not text_input:
+            print("Error: Input text required (argument or stdin).", file=sys.stderr)
+            return False
+        try:
+            print(manager.extract(text_input, args.type))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return False
+
+    elif args.action == "transform":
         text_input = get_input(args.text)
         if not text_input:
             print("Error: Input text required (argument or stdin).", file=sys.stderr)

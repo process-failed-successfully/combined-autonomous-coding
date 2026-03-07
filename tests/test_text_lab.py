@@ -43,6 +43,24 @@ class TestTextLab(unittest.TestCase):
         self.assertEqual(self.manager.transform("hello_world", "path"), "hello/world")
         self.assertEqual(self.manager.transform("Hello World", "path"), "hello/world")
 
+    def test_extract(self):
+        text = "Contact us at test@example.com or admin@test.org. Visit https://example.com/page. My IP is 192.168.1.1 and 10.0.0.255, but not 256.0.0.1."
+
+        emails = self.manager.extract(text, "email")
+        self.assertIn("test@example.com", emails)
+        self.assertIn("admin@test.org", emails)
+
+        urls = self.manager.extract(text, "url")
+        self.assertIn("https://example.com/page", urls)
+
+        ips = self.manager.extract(text, "ip")
+        self.assertIn("192.168.1.1", ips)
+        self.assertIn("10.0.0.255", ips)
+        self.assertNotIn("256.0.0.1", ips)
+
+        with self.assertRaises(ValueError):
+            self.manager.extract(text, "unknown")
+
     def test_line_operations(self):
         # Sort
         text = "c\na\nb"

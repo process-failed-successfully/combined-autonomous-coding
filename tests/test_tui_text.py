@@ -40,6 +40,66 @@ class TestTextLabTab(unittest.IsolatedAsyncioTestCase):
         # hello_world -> helloWorld
         self.assertEqual(mock_output.text, "helloWorld")
 
+    async def test_encode_interaction(self):
+        tab = TextLabTab()
+        tab.notify = MagicMock()
+
+        mock_input = MagicMock(spec=TextArea)
+        mock_input.text = "hello world"
+
+        mock_output = MagicMock(spec=TextArea)
+
+        def query_one_side_effect(selector, type=None):
+            if selector == "#text-input":
+                return mock_input
+            if selector == "#text-output":
+                return mock_output
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=query_one_side_effect)
+
+        # Test Base64 Encode
+        event = MagicMock()
+        event.button.id = "btn-enc-base64-en"
+        await tab.on_button_pressed(event)
+        self.assertEqual(mock_output.text, "aGVsbG8gd29ybGQ=")
+
+        # Test Base64 Decode
+        mock_input.text = "aGVsbG8gd29ybGQ="
+        event.button.id = "btn-enc-base64-de"
+        await tab.on_button_pressed(event)
+        self.assertEqual(mock_output.text, "hello world")
+
+    async def test_extract_interaction(self):
+        tab = TextLabTab()
+        tab.notify = MagicMock()
+
+        mock_input = MagicMock(spec=TextArea)
+        mock_input.text = "Here is my email test@example.com."
+
+        mock_output = MagicMock(spec=TextArea)
+
+        def query_one_side_effect(selector, type=None):
+            if selector == "#text-input":
+                return mock_input
+            if selector == "#text-output":
+                return mock_output
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=query_one_side_effect)
+
+        # Test Extract Emails
+        event = MagicMock()
+        event.button.id = "btn-ext-email"
+        await tab.on_button_pressed(event)
+        self.assertEqual(mock_output.text, "test@example.com")
+
+        # Test Extract URLs
+        mock_input.text = "Check out https://github.com/path!"
+        event.button.id = "btn-ext-url"
+        await tab.on_button_pressed(event)
+        self.assertEqual(mock_output.text, "https://github.com/path")
+
     async def test_filter_interaction(self):
         tab = TextLabTab()
         tab.notify = MagicMock()

@@ -72,6 +72,24 @@ class TextLabTab(Container):
                             yield Button("Dot", id="btn-case-dot")
                             yield Button("Path", id="btn-case-path")
 
+                    with TabPane("Encode"):
+                        with Horizontal():
+                            yield Button("B64 Enc", id="btn-enc-base64-en")
+                            yield Button("B64 Dec", id="btn-enc-base64-de")
+                            yield Button("URL Enc", id="btn-enc-url-en")
+                            yield Button("URL Dec", id="btn-enc-url-de")
+                        with Horizontal():
+                            yield Button("HTML Enc", id="btn-enc-html-en")
+                            yield Button("HTML Dec", id="btn-enc-html-de")
+                            yield Button("Hex Enc", id="btn-enc-hex-en")
+                            yield Button("Hex Dec", id="btn-enc-hex-de")
+
+                    with TabPane("Extract"):
+                        with Horizontal():
+                            yield Button("Emails", id="btn-ext-email")
+                            yield Button("URLs", id="btn-ext-url")
+                            yield Button("IPs", id="btn-ext-ip")
+
                     with TabPane("Lines"):
                         with Horizontal():
                             yield Button("Sort Asc", id="btn-line-sort")
@@ -174,6 +192,32 @@ class TextLabTab(Container):
                 pattern = self.query_one("#text-filter-pattern", Input).value
                 exclude = (btn_id == "btn-filter-remove")
                 result = self.manager.filter_lines(text, pattern, exclude=exclude)
+
+            # Extract
+            elif btn_id == "btn-ext-email":
+                result = self.manager.extract(text, "email")
+            elif btn_id == "btn-ext-url":
+                result = self.manager.extract(text, "url")
+            elif btn_id == "btn-ext-ip":
+                result = self.manager.extract(text, "ip")
+
+            # Encode
+            elif btn_id == "btn-enc-base64-en":
+                result = self.manager.encode(text, "base64", decode=False)
+            elif btn_id == "btn-enc-base64-de":
+                result = self.manager.encode(text, "base64", decode=True)
+            elif btn_id == "btn-enc-url-en":
+                result = self.manager.encode(text, "url", decode=False)
+            elif btn_id == "btn-enc-url-de":
+                result = self.manager.encode(text, "url", decode=True)
+            elif btn_id == "btn-enc-html-en":
+                result = self.manager.encode(text, "html", decode=False)
+            elif btn_id == "btn-enc-html-de":
+                result = self.manager.encode(text, "html", decode=True)
+            elif btn_id == "btn-enc-hex-en":
+                result = self.manager.encode(text, "hex", decode=False)
+            elif btn_id == "btn-enc-hex-de":
+                result = self.manager.encode(text, "hex", decode=True)
 
             # Hash
             elif btn_id == "btn-hash-md5":

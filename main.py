@@ -1404,6 +1404,17 @@ def run_crypto_lab(args):
 
 def run_image_lab(args):
     """Runs the Image Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Image Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-image")
+        import asyncio
+        try:
+            asyncio.run(app.run_async())
+        except RuntimeError:
+            app.run()
+        sys.exit(0)
+
     run_image_lab_logic(args)
     sys.exit(0)
 
@@ -13517,6 +13528,9 @@ def parse_args(argv=None):
     # image-lab reveal
     parser_img_reveal = image_subparsers.add_parser("reveal", help="Reveal a secret message from an image.")
     parser_img_reveal.add_argument("input", help="Input image path.")
+
+    # image-lab tui
+    image_subparsers.add_parser("tui", help="Launch the Image Lab TUI.")
 
     # --- New 'media-lab' command ---
     parser_media = subparsers.add_parser(

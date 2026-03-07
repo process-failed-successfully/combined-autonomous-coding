@@ -1,7 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch, call
 from pathlib import Path
+import sys
+import argparse
 from shared.image_lab import ImageLabManager
+from main import run_image_lab
 
 class TestImageLabManager(unittest.TestCase):
     def setUp(self):
@@ -332,6 +335,22 @@ class TestImageLabManager(unittest.TestCase):
             # P2: 11 1  (1 from byte 2 start) -> (101, 101, 101)
 
             self.assertEqual(new_pixels[2], (101, 101, 101))
+
+    @patch("shared.tui.AgentTUI")
+    def test_run_image_lab_tui(self, mock_agent_tui):
+        args = argparse.Namespace(action="tui", project_dir=Path("."))
+        mock_app = MagicMock()
+        mock_agent_tui.return_value = mock_app
+        # Mock run_async to be a coroutine that does nothing
+        async def mock_run_async():
+            pass
+        mock_app.run_async = mock_run_async
+
+        with patch("sys.exit", side_effect=SystemExit):
+            with self.assertRaises(SystemExit):
+                run_image_lab(args)
+
+        mock_agent_tui.assert_called_with(project_dir=args.project_dir, start_tab="tab-image")
 
 if __name__ == "__main__":
     unittest.main()

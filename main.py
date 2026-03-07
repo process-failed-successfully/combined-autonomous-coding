@@ -12495,6 +12495,9 @@ def parse_args(argv=None):
     parser_mac_lookup = mac_subparsers.add_parser("lookup", aliases=["info"], help="Look up the vendor of a MAC address.")
     parser_mac_lookup.add_argument("mac", help="The MAC address to look up.")
 
+    # mac tui
+    mac_subparsers.add_parser("tui", help="Launch interactive MAC Lab TUI.")
+
     # --- New 'physics-lab' command ---
     parser_physics = subparsers.add_parser(
         "physics-lab",
@@ -20114,7 +20117,13 @@ async def main():
         return
 
     if args.command in ["mac-lab", "mac"]:
-        run_mac_lab(args)
+        if getattr(args, "action", None) == "tui":
+            from shared.tui import AgentTUI
+            app = AgentTUI(project_dir=args.project_dir, start_tab="tab-mac")
+            await app.run_async()
+            sys.exit(0)
+        else:
+            run_mac_lab(args)
         return
 
     if args.command in ["ip-lab", "ip"]:

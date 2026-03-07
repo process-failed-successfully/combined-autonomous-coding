@@ -98,6 +98,7 @@ from shared.tui_network import NetworkTab
 from shared.tui_net_diag import NetDiagTab
 from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
+from shared.tui_mac import MacLabTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_issues import IssuesLabTab
@@ -4412,6 +4413,8 @@ class AgentTUI(App):
                 yield JsonPathLabTab(self.project_dir)
             with TabPane("Token Lab", id="tab-token"):
                 yield TokenLabTab(self.project_dir)
+            with TabPane("MAC Lab", id="tab-mac"):
+                yield MacLabTab()
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
             with TabPane("Load Lab", id="tab-load"):

@@ -160,7 +160,7 @@ from shared.tui_permissions import PermissionsLabTab
 from shared.tui_pcap import PcapLabTab
 from shared.tui_port import PortLabTab
 from shared.tui_database import DatabaseTab
-from shared.tui_jwt import JwtLabTab
+# Removed duplicate import for JwtLabTab
 from shared.tui_uuid import UuidLabTab
 from shared.tui_ulid import UlidLabTab
 from shared.tui_mock_data import MockDataTab
@@ -4277,8 +4277,7 @@ class AgentTUI(App):
                 yield ConverterLabTab(self.project_dir)
             with TabPane("Crypto Lab", id="tab-crypto"):
                 yield CryptoLabTab()
-            with TabPane("JWT Lab", id="tab-jwt"):
-                yield JwtLabTab()
+            # Removed duplicate JWT Lab tab to fix widget ID collision
             with TabPane("Time Lab", id="tab-time"):
                 yield TimeLabTab()
             with TabPane("Math Lab", id="tab-math"):

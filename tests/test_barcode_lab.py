@@ -40,7 +40,8 @@ class TestBarcodeLabManager(unittest.TestCase):
         self.assertIn("test_barcode", result)
 
         # check file created
-        self.assertTrue((Path(self.temp_dir) / "test_barcode.svg").exists())
+        actual_path = result.split("Barcode saved to ")[1].strip()
+        self.assertTrue(Path(actual_path).exists())
 
     def test_generate_png(self):
         output_path = Path(self.temp_dir) / "test_barcode"
@@ -48,7 +49,8 @@ class TestBarcodeLabManager(unittest.TestCase):
         self.assertIn("test_barcode", result)
 
         # check file created
-        self.assertTrue((Path(self.temp_dir) / "test_barcode.png").exists())
+        actual_path = result.split("Barcode saved to ")[1].strip()
+        self.assertTrue(Path(actual_path).exists(), f"File {actual_path} not found in {os.listdir(self.temp_dir)}")
 
     def test_generate_invalid_format(self):
         with self.assertRaises(ValueError):

@@ -310,7 +310,8 @@ KNOWN_COMMANDS = [
     "ip-lab", "ip",
     "pack", "jsonpath-lab", "jpath",
     "mime-lab", "mime",
-    "branch-lab", "bl"
+    "branch-lab", "bl",
+    "luhn-lab", "luhn"
 ]
 
 if FileSystemEventHandler:
@@ -622,6 +623,11 @@ def run_mime_lab(args):
     """Runs the MIME Lab."""
     success = run_mime_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_luhn_lab(args):
+    """Runs the Luhn Lab."""
+    from shared.luhn_lab import run_luhn_lab_logic
+    run_luhn_lab_logic(args)
 
 def run_branch_lab(args):
     """Runs the Branch Lab."""
@@ -16200,6 +16206,23 @@ def parse_args(argv=None):
     parser_branch_lab = subparsers.add_parser("branch-lab", aliases=["bl"], help="Git Branch Manager Lab")
     parser_branch_lab.add_argument("action", choices=["tui"], default="tui", nargs="?", help="Action to perform (default: tui)")
 
+    # --- New 'luhn-lab' command ---
+    parser_luhn = subparsers.add_parser(
+        "luhn-lab",
+        aliases=["luhn"],
+        help="Luhn algorithm tools (credit cards, IMEI, etc.)."
+    )
+    luhn_subparsers = parser_luhn.add_subparsers(dest="action", required=True)
+
+    # validate
+    luhn_validate = luhn_subparsers.add_parser("validate", help="Validate a number using the Luhn algorithm.")
+    luhn_validate.add_argument("number", type=str, help="The number to validate.")
+
+    # generate
+    luhn_generate = luhn_subparsers.add_parser("generate", help="Generate a valid Luhn number.")
+    luhn_generate.add_argument("--prefix", type=str, default="", help="Prefix for the generated number.")
+    luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -20124,6 +20147,10 @@ async def main():
 
     if args.command in ["branch-lab", "bl"]:
         run_branch_lab(args)
+        return
+
+    if args.command in ["luhn-lab", "luhn"]:
+        run_luhn_lab(args)
         return
 
     # Initialize Agent Client

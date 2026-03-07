@@ -67,15 +67,13 @@ class BarcodeLabManager:
                 elif not svg and base_path.endswith('.png'):
                     base_path = base_path[:-4]
 
-                bc.save(base_path)
-                ext = '.svg' if svg else '.png'
-                return f"Barcode saved to {base_path}{ext}"
+                actual_path = bc.save(base_path)
+                return f"Barcode saved to {actual_path}"
             else:
                 # If no path, we'll save it to a default name in the current directory
                 default_name = f"barcode_{fmt}_{data}"
-                bc.save(default_name)
-                ext = '.svg' if svg else '.png'
-                return f"Barcode saved to {default_name}{ext}"
+                actual_path = bc.save(default_name)
+                return f"Barcode saved to {actual_path}"
 
         except Exception as e:
             raise RuntimeError(f"Failed to generate barcode: {e}")

@@ -13255,7 +13255,7 @@ def parse_args(argv=None):
     parser_json = subparsers.add_parser(
         "json-lab",
         aliases=["json"],
-        help="JSON utilities (get, set, del, minify, diff, query, tui)."
+        help="JSON utilities (get, set, del, minify, diff, query, validate, tui)."
     )
     json_subparsers = parser_json.add_subparsers(
         dest="action",
@@ -13295,6 +13295,10 @@ def parse_args(argv=None):
     parser_json_diff = json_subparsers.add_parser("diff", help="Diff two JSON files.")
     parser_json_diff.add_argument("file1", help="First file.")
     parser_json_diff.add_argument("file2", help="Second file.")
+
+    # json-lab validate
+    parser_json_validate = json_subparsers.add_parser("validate", help="Validate JSON.")
+    parser_json_validate.add_argument("input", help="JSON string or file path.")
 
     # --- New 'ini-lab' command ---
     parser_ini = subparsers.add_parser(

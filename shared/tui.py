@@ -55,6 +55,7 @@ from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_hash import HashLabTab
+from shared.tui_barcode import BarcodeLabTab
 from shared.tui_ip import IpLabTab
 from shared.tui_bencode import BencodeLabTab
 from shared.tui_sentinel import SentinelTab
@@ -4066,6 +4067,8 @@ class AgentTUI(App):
                 yield BencodeLabTab()
             with TabPane("Socket Lab", id="tab-sock"):
                 yield SockLabTab()
+            with TabPane("Barcode Lab", id="tab-barcode"):
+                yield BarcodeLabTab()
             with TabPane("Runner", id="tab-runner"):
                 yield TaskRunnerTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):

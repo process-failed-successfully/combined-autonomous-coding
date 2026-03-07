@@ -282,6 +282,7 @@ KNOWN_COMMANDS = [
     "pipe-lab", "pipe", "stream",
     "dict-lab", "dict", "define", "synonym", "antonym", "thesaurus",
     "user-agent-lab", "ua", "token-lab", "tokens",
+    "barcode-lab", "barcode",
     "find-lab", "find", "locate",
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
@@ -628,6 +629,27 @@ def run_luhn_lab(args):
     """Runs the Luhn Lab."""
     from shared.luhn_lab import run_luhn_lab_logic
     run_luhn_lab_logic(args)
+
+def run_barcode_lab(args):
+    """Runs the Barcode Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Barcode Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-barcode")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.barcode_lab import run_barcode_lab_logic
+    success = run_barcode_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_branch_lab(args):
     """Runs the Branch Lab."""
@@ -12823,6 +12845,28 @@ def parse_args(argv=None):
     # cert-lab tui
     cert_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
+    # --- New 'barcode-lab' command ---
+    parser_barcode = subparsers.add_parser(
+        "barcode-lab",
+        aliases=["barcode"],
+        help="Barcode Lab: generate and validate 1D barcodes."
+    )
+    barcode_subparsers = parser_barcode.add_subparsers(dest="action", required=True, help="Action to perform")
+
+    parser_barcode_list = barcode_subparsers.add_parser("list", help="List supported barcode formats")
+
+    parser_barcode_gen = barcode_subparsers.add_parser("generate", help="Generate a barcode")
+    parser_barcode_gen.add_argument("data", help="Data to encode")
+    parser_barcode_gen.add_argument("--format", "-f", default="code128", help="Barcode format (default: code128)")
+    parser_barcode_gen.add_argument("--output", "-o", help="Output file path (without extension)")
+    parser_barcode_gen.add_argument("--svg", action="store_true", help="Generate SVG instead of PNG")
+
+    parser_barcode_val = barcode_subparsers.add_parser("validate", help="Validate data for a barcode format")
+    parser_barcode_val.add_argument("data", help="Data to validate")
+    parser_barcode_val.add_argument("--format", "-f", required=True, help="Barcode format")
+
+    barcode_subparsers.add_parser("tui", help="Launch the Barcode Lab TUI")
+
     # --- New 'time-lab' command ---
     parser_time = subparsers.add_parser(
         "time-lab",
@@ -20164,6 +20208,10 @@ async def main():
 
     if args.command in ["luhn-lab", "luhn"]:
         run_luhn_lab(args)
+        return
+
+    if args.command in ["barcode-lab", "barcode"]:
+        run_barcode_lab(args)
         return
 
     # Initialize Agent Client

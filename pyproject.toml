@@ -43,6 +43,8 @@ dependencies = [
     "feedparser",
     "websockets",
     "qrcode",
+    "python-barcode",
+    "setuptools",
     "pandas",
     "pyarrow",
     "ulid-py",

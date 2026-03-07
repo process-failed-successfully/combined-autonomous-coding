@@ -42,3 +42,5 @@ pytesseract
 jsonpath-ng
 tiktoken
 ulid-py
+python-barcode>=0.15.1
+setuptools

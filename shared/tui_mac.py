@@ -148,7 +148,9 @@ class MacLabTab(Container):
             self.app.call_from_thread(update_ui)
 
         except Exception as e:
+            error_msg = str(e)
+
             def update_error():
                 log.clear()
-                log.write(f"[bold red]Lookup failed: {str(e)}[/bold red]")
+                log.write(f"[bold red]Lookup failed: {error_msg}[/bold red]")
             self.app.call_from_thread(update_error)

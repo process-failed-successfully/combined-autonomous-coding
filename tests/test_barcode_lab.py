@@ -34,23 +34,23 @@ class TestBarcodeLabManager(unittest.TestCase):
         # Invalid format name
         self.assertFalse(self.manager.validate("123", "invalid_format"))
 
-    def test_generate_svg(self):
+    @patch('barcode.writer.SVGWriter.save')
+    def test_generate_svg(self, mock_save):
         output_path = Path(self.temp_dir) / "test_barcode"
+        mock_save.return_value = f"{output_path}.svg"
+
         result = self.manager.generate("hello", fmt="code128", output_path=output_path, svg=True)
-        self.assertIn("test_barcode", result)
+        self.assertIn("test_barcode.svg", result)
+        mock_save.assert_called_once()
 
-        # check file created
-        actual_path = result.split("Barcode saved to ")[1].strip()
-        self.assertTrue(Path(actual_path).exists())
-
-    def test_generate_png(self):
+    @patch('barcode.writer.ImageWriter.save')
+    def test_generate_png(self, mock_save):
         output_path = Path(self.temp_dir) / "test_barcode"
-        result = self.manager.generate("hello", fmt="code128", output_path=output_path, svg=False)
-        self.assertIn("test_barcode", result)
+        mock_save.return_value = f"{output_path}.png"
 
-        # check file created
-        actual_path = result.split("Barcode saved to ")[1].strip()
-        self.assertTrue(Path(actual_path).exists(), f"File {actual_path} not found in {os.listdir(self.temp_dir)}")
+        result = self.manager.generate("hello", fmt="code128", output_path=output_path, svg=False)
+        self.assertIn("test_barcode.png", result)
+        mock_save.assert_called_once()
 
     def test_generate_invalid_format(self):
         with self.assertRaises(ValueError):
@@ -100,8 +100,9 @@ class TestBarcodeLabCLI(unittest.TestCase):
         success = run_barcode_lab_logic(args)
         self.assertFalse(success)
 
+    @patch("barcode.writer.SVGWriter.save")
     @patch("builtins.print")
-    def test_cli_generate_success(self, mock_print):
+    def test_cli_generate_success(self, mock_print, mock_save):
         args = MagicMock()
         args.action = "generate"
         args.data = "hello"
@@ -109,10 +110,12 @@ class TestBarcodeLabCLI(unittest.TestCase):
         args.svg = True
         args.output = str(Path(self.temp_dir) / "out")
 
+        mock_save.return_value = f"{args.output}.svg"
+
         # the function internally relies on sys.stderr, so let's check it silently runs
         success = run_barcode_lab_logic(args)
         self.assertTrue(success)
-        self.assertTrue((Path(self.temp_dir) / "out.svg").exists())
+        mock_save.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()

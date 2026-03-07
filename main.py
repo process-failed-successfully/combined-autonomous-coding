@@ -1414,6 +1414,16 @@ def run_media_lab(args):
 
 def run_jwt_lab(args):
     """Runs the JWT Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching JWT Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-jwt")
+        try:
+            asyncio.run(app.run_async())
+        except RuntimeError:
+            app.run()
+        sys.exit(0)
+
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -12411,6 +12421,9 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("token", help="The JWT token.")
     parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
+
+    # jwt-lab tui
+    parser_jwt_tui = jwt_subparsers.add_parser("tui", help="Launch JWT Lab TUI.")
 
     # --- New 'ip-lab' command ---
     parser_ip = subparsers.add_parser(

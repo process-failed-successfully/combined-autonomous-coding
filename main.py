@@ -216,7 +216,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
-    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "http-lab", "http", "req",
+    "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
     "proxy-lab", "proxy",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "pcap-lab", "pcap", "rss-lab", "rss", "fs-lab", "fs", "files",
@@ -1048,6 +1048,27 @@ def run_docs_lab(args):
 def run_qr_lab(args):
     """Runs the QR Lab."""
     run_qr_lab_logic(args)
+    sys.exit(0)
+
+def run_barcode_lab(args):
+    """Runs the Barcode Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Barcode Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-barcode")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.barcode_lab import run_barcode_lab_logic
+    run_barcode_lab_logic(args)
     sys.exit(0)
 
 def run_monitor_lab(args):
@@ -13858,6 +13879,27 @@ def parse_args(argv=None):
     # qr-lab tui
     qr_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
+    # --- New 'barcode-lab' command ---
+    parser_barcode = subparsers.add_parser(
+        "barcode-lab",
+        aliases=["barcode"],
+        help="1D Barcode utilities."
+    )
+    barcode_subparsers = parser_barcode.add_subparsers(
+        dest="action",
+        help="Barcode Lab Action"
+    )
+    barcode_subparsers.add_parser("list", help="List supported barcode formats.")
+    parser_barcode_gen = barcode_subparsers.add_parser("generate", help="Generate a 1D barcode.")
+    parser_barcode_gen.add_argument("--data", help="Data to encode.", required=True)
+    parser_barcode_gen.add_argument("--type", help="Barcode type (e.g., ean13).", required=True)
+    parser_barcode_gen.add_argument("--output", "-o", help="Output file path (extension is optional).", required=True)
+
+    parser_barcode_val = barcode_subparsers.add_parser("validate", help="Validate data for a 1D barcode.")
+    parser_barcode_val.add_argument("--data", help="Data to validate.", required=True)
+    parser_barcode_val.add_argument("--type", help="Barcode type (e.g., ean13).", required=True)
+    barcode_subparsers.add_parser("tui", help="Launch interactive TUI.")
+
     # --- New 'http-lab' command ---
     parser_http = subparsers.add_parser(
         "http-lab",
@@ -19553,6 +19595,10 @@ async def main():
 
     if args.command in ["qr-lab", "qr"]:
         run_qr_lab(args)
+        return
+
+    if args.command in ["barcode-lab", "barcode"]:
+        run_barcode_lab(args)
         return
 
     if args.command in ["http-lab", "http", "req"]:

@@ -42,3 +42,4 @@ pytesseract
 jsonpath-ng
 tiktoken
 ulid-py
+python-barcode

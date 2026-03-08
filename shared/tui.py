@@ -3978,10 +3978,11 @@ class AgentTUI(App):
         PaletteCommand("Quit", "quit"),
     ]
 
-    def __init__(self, project_dir: Path, start_tab: str = None, **kwargs) -> None:
+    def __init__(self, project_dir: Path, start_tab: str = None, hex_file: str = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
         self.start_tab = start_tab
+        self.hex_file = hex_file
         self.plugin_manager = PluginManager(project_dir)
         self.plugin_manager.load_plugins()
 
@@ -4302,7 +4303,7 @@ class AgentTUI(App):
             with TabPane("DevTools", id="tab-devtools"):
                 yield DevToolsTab(self.project_dir)
             with TabPane("Hex Lab", id="tab-hex"):
-                yield HexTab(self.project_dir)
+                yield HexTab(self.project_dir, hex_file=self.hex_file)
             with TabPane("HTTP Server Lab", id="tab-http-server"):
                 yield HttpServerLabTab(self.project_dir)
             with TabPane("HTTP Client", id="tab-http-client"):

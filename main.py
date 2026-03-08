@@ -311,7 +311,8 @@ KNOWN_COMMANDS = [
     "pack", "jsonpath-lab", "jpath",
     "mime-lab", "mime",
     "branch-lab", "bl",
-    "luhn-lab", "luhn"
+    "luhn-lab", "luhn",
+    "iban-lab", "iban"
 ]
 
 if FileSystemEventHandler:
@@ -644,6 +645,28 @@ def run_luhn_lab(args):
     else:
         from shared.luhn_lab import run_luhn_lab_logic
         run_luhn_lab_logic(args)
+        sys.exit(0)
+
+def run_iban_lab(args):
+    """Runs the IBAN Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        from pathlib import Path
+        print("Launching IBAN Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-iban")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.iban_lab import run_iban_lab_logic
+        run_iban_lab_logic(args)
         sys.exit(0)
 
 def run_branch_lab(args):
@@ -16301,6 +16324,27 @@ def parse_args(argv=None):
     luhn_generate.add_argument("--prefix", type=str, default="", help="Prefix for the generated number.")
     luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
 
+    # --- New 'iban-lab' command ---
+    parser_iban = subparsers.add_parser(
+        "iban-lab",
+        aliases=["iban"],
+        help="IBAN validation, generation, and parsing tools."
+    )
+    iban_subparsers = parser_iban.add_subparsers(dest="action", required=True)
+    iban_subparsers.add_parser("tui", help="Launch the interactive IBAN Lab TUI.")
+
+    # validate
+    iban_validate = iban_subparsers.add_parser("validate", help="Validate an IBAN.")
+    iban_validate.add_argument("iban", type=str, help="The IBAN to validate.")
+
+    # generate
+    iban_generate = iban_subparsers.add_parser("generate", help="Generate a valid IBAN.")
+    iban_generate.add_argument("--country-code", type=str, required=True, help="Country code for the generated IBAN.")
+
+    # parse
+    iban_parse = iban_subparsers.add_parser("parse", help="Parse an IBAN.")
+    iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -20253,6 +20297,10 @@ async def main():
 
     if args.command in ["luhn-lab", "luhn"]:
         run_luhn_lab(args)
+        return
+
+    if args.command in ["iban-lab", "iban"]:
+        run_iban_lab(args)
         return
 
     # Initialize Agent Client

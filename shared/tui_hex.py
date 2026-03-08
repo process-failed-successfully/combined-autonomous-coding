@@ -41,9 +41,10 @@ class HexTab(Container):
         Binding("pagedown", "page_down", "Page Down"),
     ]
 
-    def __init__(self, project_dir: Path, **kwargs) -> None:
+    def __init__(self, project_dir: Path, hex_file: str = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.project_dir = project_dir
+        self.hex_file = hex_file
         self.manager = HexManager(project_dir)
         self.chunk_size = 256  # Bytes per page
         self.current_offset = 0
@@ -68,6 +69,10 @@ class HexTab(Container):
         for i in range(16):
             table.add_column(f"{i:02X}", width=4, key=f"col_{i}")
         table.add_column("ASCII", width=18)
+
+        if self.hex_file:
+            self.query_one("#hex-file-input", Input).value = self.hex_file
+            self.load_file()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-hex-load":

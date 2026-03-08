@@ -92,8 +92,15 @@ def run_hex_lab_logic(args):
     # But for now, we'll just launch the TUI.
 
     print("Launching Hex Lab TUI...")
-    app = AgentTUI(project_dir=args.project_dir)
-    # Ideally we'd switch tab here, but TUI lifecycle is complex.
-    # For this MVP, we just launch the app.
-    # Users can navigate to Hex Lab tab.
-    app.run()
+    app = AgentTUI(project_dir=args.project_dir, start_tab="tab-hex", hex_file=getattr(args, "file", None))
+
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        asyncio.ensure_future(app.run_async())
+    else:
+        app.run()

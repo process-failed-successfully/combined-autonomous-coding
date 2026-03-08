@@ -155,6 +155,7 @@ from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
 from shared.tui_media import MediaLabTab
 from shared.tui_qr import QrLabTab
+from shared.tui_barcode import BarcodeLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
@@ -4333,6 +4334,8 @@ class AgentTUI(App):
                 yield MediaLabTab(self.project_dir)
             with TabPane("QR Lab", id="tab-qr"):
                 yield QrLabTab(self.project_dir)
+            with TabPane("Barcode Lab", id="tab-barcode"):
+                yield BarcodeLabTab(self.project_dir)
             with TabPane("PDF Lab", id="tab-pdf"):
                 yield PdfLabTab(self.project_dir)
             with TabPane("Mock Data", id="tab-mock-data"):

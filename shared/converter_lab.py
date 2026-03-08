@@ -374,6 +374,79 @@ class ConverterManager:
 
         return code
 
+    def json_to_go(self, json_str: str, struct_name: str = "Root") -> str:
+        """Generates Go structs from JSON."""
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            return f"// Error parsing JSON: {e}"
+
+        structs = {}
+
+        def get_go_type(val: Any) -> str:
+            if isinstance(val, str):
+                return "string"
+            if isinstance(val, bool):
+                return "bool"
+            if isinstance(val, int):
+                return "int"
+            if isinstance(val, float):
+                return "float64"
+            if val is None:
+                return "interface{}"
+            return "interface{}"
+
+        def generate_struct(name: str, obj: Dict[str, Any]) -> str:
+            original_name = name
+            counter = 1
+            while name in structs:
+                name = f"{original_name}{counter}"
+                counter += 1
+
+            lines = [f"type {name} struct {{"]
+            for k, v in obj.items():
+                field_name = "".join(word.capitalize() for word in k.split("_"))
+                type_str = "interface{}"
+
+                if isinstance(v, dict):
+                    sub_name = f"{name}{field_name}"
+                    type_str = generate_struct(sub_name, v)
+                elif isinstance(v, list):
+                    if v:
+                        item = v[0]
+                        if isinstance(item, dict):
+                            sub_name = f"{name}{field_name}Item"
+                            item_type = generate_struct(sub_name, item)
+                            type_str = f"[]{item_type}"
+                        else:
+                            type_str = f"[]{get_go_type(item)}"
+                    else:
+                        type_str = "[]interface{}"
+                else:
+                    type_str = get_go_type(v)
+
+                lines.append(f'\t{field_name} {type_str} `json:"{k}"`')
+            lines.append("}")
+
+            structs[name] = "\n".join(lines)
+            return name
+
+        if isinstance(data, dict):
+            generate_struct(struct_name, data)
+        elif isinstance(data, list):
+            if data and isinstance(data[0], dict):
+                generate_struct(f"{struct_name}Item", data[0])
+            else:
+                return "// Root is list of primitives"
+        else:
+            return "// Root is primitive"
+
+        code = ""
+        for name, struct_code in structs.items():
+            code += struct_code + "\n\n"
+
+        return code
+
     def convert_format(self, content: str, from_fmt: str, to_fmt: str) -> str:
         """
         Converts content between formats: json, yaml, toml, xml.
@@ -572,6 +645,8 @@ def run_converter_lab_logic(args) -> bool:
                 result = manager.json_to_pydantic(content, name)
             elif target == "typescript" or target == "ts":
                 result = manager.json_to_typescript(content, name)
+            elif target == "go":
+                result = manager.json_to_go(content, name)
             else:
                 print(f"Error: Unknown target {target}")
                 return False

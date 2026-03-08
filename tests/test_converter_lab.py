@@ -1,7 +1,8 @@
-import pytest
+import pytest  # noqa: F401
 from shared.converter_lab import ConverterManager
 import json
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # noqa: F401
+
 
 class TestConverterManager:
     def setup_method(self):
@@ -64,11 +65,22 @@ class TestConverterManager:
         assert "name: string;" in code
         assert "scores: number[];" in code
 
-import argparse
-import sys
-from io import StringIO
-from unittest.mock import patch
-from shared.converter_lab import run_converter_lab_logic
+    def test_json_to_go(self):
+        json_str = '{"user_name": "John", "age": 30, "scores": [1, 2], "meta": {"active": true}}'
+        code = self.manager.json_to_go(json_str, "User")
+        assert "type User struct {" in code
+        assert 'UserName string `json:"user_name"`' in code
+        assert 'Age int `json:"age"`' in code
+        assert 'Scores []int `json:"scores"`' in code
+        assert "type UserMeta struct {" in code
+        assert 'Meta UserMeta `json:"meta"`' in code
+
+
+import argparse  # noqa: E402
+from io import StringIO  # noqa: E402
+from unittest.mock import patch  # noqa: E402
+from shared.converter_lab import run_converter_lab_logic  # noqa: E402
+
 
 class TestConverterLabCLI:
     def setup_method(self):

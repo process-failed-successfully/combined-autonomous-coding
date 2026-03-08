@@ -12726,6 +12726,8 @@ def parse_args(argv=None):
     parser_tl_lorem = text_lab_subparsers.add_parser("lorem", help="Generate lorem ipsum dummy text.")
     parser_tl_lorem.add_argument("--words", "-w", type=int, default=100, help="Number of words to generate.")
 
+    text_lab_subparsers.add_parser("tui", help="Launch the Text Lab TUI.")
+
     # --- New 'html-lab' command ---
     parser_html = subparsers.add_parser(
         "html-lab",
@@ -12926,7 +12928,7 @@ def parse_args(argv=None):
     # converter-lab types
     parser_converter_types = converter_subparsers.add_parser("types", help="Generate types from JSON.")
     parser_converter_types.add_argument("input", nargs="?", help="JSON input (or via stdin).")
-    parser_converter_types.add_argument("--target", "-t", default="pydantic", help="Target type (pydantic, typescript).")
+    parser_converter_types.add_argument("--target", "-t", default="pydantic", help="Target type (pydantic, typescript, go).")
     parser_converter_types.add_argument("--name", "-n", default="Root", help="Root interface/model name.")
 
     # converter-lab tui

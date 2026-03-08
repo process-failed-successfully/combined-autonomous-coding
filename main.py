@@ -10724,6 +10724,10 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # Env 'tui'
+    parser_env_tui = env_subparsers.add_parser("tui", help="Launch the Env Lab TUI.")
+    parser_env_tui.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # Env 'init'
     parser_env_init = env_subparsers.add_parser("init", help="Initialize .env and .env.example.")
     parser_env_init.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
@@ -17384,9 +17388,23 @@ def run_dockerize(args):
 
 def run_env(args):
     """Manages environment variables."""
-    from shared.env_manager import EnvManager
+    # Ensure project_dir exists, as 'tui' may not define args.project_dir
+    project_dir = getattr(args, "project_dir", Path(".")).resolve()
 
-    project_dir = args.project_dir.resolve()
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Env Lab TUI...")
+        app = AgentTUI(project_dir=project_dir, start_tab="tab-env")
+        import asyncio
+        import sys
+
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+        asyncio.run(app.run_async())
+        sys.exit(0)
+
+    from shared.env_manager import EnvManager
     manager = EnvManager(project_dir)
     print(f"--- Environment Manager in: {project_dir} ---")
 

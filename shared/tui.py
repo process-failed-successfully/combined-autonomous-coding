@@ -223,6 +223,7 @@ from shared.tui_token import TokenLabTab
 from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
 from shared.tui_luhn import LuhnLabTab
+from shared.tui_iban import IbanLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3971,6 +3972,7 @@ class AgentTUI(App):
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
+        PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4431,6 +4433,8 @@ class AgentTUI(App):
                 yield BranchLabTab(self.project_dir)
             with TabPane("Luhn Lab", id="tab-luhn"):
                 yield LuhnLabTab()
+            with TabPane("IBAN Lab", id="tab-iban"):
+                yield IbanLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

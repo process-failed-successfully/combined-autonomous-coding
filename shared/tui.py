@@ -222,6 +222,7 @@ from shared.tui_jsonpath import JsonPathLabTab
 from shared.tui_token import TokenLabTab
 from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
+from shared.tui_luhn import LuhnLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3969,6 +3970,7 @@ class AgentTUI(App):
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
+        PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4426,6 +4428,8 @@ class AgentTUI(App):
                 yield MimeLabTab(self.project_dir)
             with TabPane("Branch Lab", id="tab-branch-lab"):
                 yield BranchLabTab(self.project_dir)
+            with TabPane("Luhn Lab", id="tab-luhn"):
+                yield LuhnLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

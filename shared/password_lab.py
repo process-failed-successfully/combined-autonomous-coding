@@ -117,8 +117,23 @@ class PasswordLabManager:
         """
         Hashes a password.
         """
+        if algo == "bcrypt":
+            import bcrypt
+            if salt:
+                salt_bytes = salt.encode('utf-8')
+                # bcrypt requires a specific salt format; typically it generates its own.
+                # If a custom salt is provided, it might not be a valid bcrypt salt,
+                # but we will try to use it if it is 22 characters long base64.
+                # However, it's safer to just use gensalt if not a valid bcrypt salt.
+                if not salt_bytes.startswith(b"$2"):
+                    salt_bytes = bcrypt.gensalt()
+            else:
+                salt_bytes = bcrypt.gensalt()
+            hashed = bcrypt.hashpw(password.encode('utf-8'), salt_bytes)
+            return hashed.decode('utf-8')
+
         if salt:
-            salt_bytes = salt.encode('utf-8')
+            salt_bytes = base64.b64decode(salt) if len(salt) % 4 == 0 and salt.endswith("==") or salt.endswith("=") else salt.encode('utf-8')
         else:
             salt_bytes = os.urandom(16)
             salt = base64.b64encode(salt_bytes).decode('utf-8')
@@ -153,6 +168,31 @@ class PasswordLabManager:
 
         else:
             raise ValueError(f"Unsupported algorithm: {algo}")
+
+    def verify_password(self, password: str, hashed: str) -> bool:
+        """
+        Verifies a password against a hash.
+        """
+        if hashed.startswith("$scrypt$") or hashed.startswith("$pbkdf2-sha256$"):
+            parts = hashed.split("$")
+            if len(parts) != 4:
+                return False
+            algo, salt, _ = parts[1], parts[2], parts[3]
+
+            # Map back to algorithm expected by hash_password
+            if algo == "pbkdf2-sha256":
+                algo = "pbkdf2"
+
+            expected_hash = self.hash_password(password, algo=algo, salt=salt)
+            return secrets.compare_digest(expected_hash, hashed)
+        elif hashed.startswith("$2a$") or hashed.startswith("$2b$") or hashed.startswith("$2y$"):
+            import bcrypt
+            try:
+                return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+            except Exception:
+                return False
+        else:
+            raise ValueError(f"Unsupported hash format: {hashed}")
 
 def run_password_lab_logic(args):
     """
@@ -209,6 +249,29 @@ def run_password_lab_logic(args):
         try:
             hashed = manager.hash_password(password, algo=args.algo, salt=args.salt)
             print(hashed)
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.action == "verify":
+        if not args.password:
+            import getpass
+            password = getpass.getpass("Enter password to verify: ")
+        else:
+            password = args.password
+
+        if not getattr(args, 'hash', None):
+            print("Error: --hash is required for verify.")
+            sys.exit(1)
+
+        try:
+            is_valid = manager.verify_password(password, args.hash)
+            if is_valid:
+                print("✅ Password is valid.")
+                sys.exit(0)
+            else:
+                print("❌ Invalid password.")
+                sys.exit(1)
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

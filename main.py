@@ -626,8 +626,25 @@ def run_mime_lab(args):
 
 def run_luhn_lab(args):
     """Runs the Luhn Lab."""
-    from shared.luhn_lab import run_luhn_lab_logic
-    run_luhn_lab_logic(args)
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        from pathlib import Path
+        print("Launching Luhn Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-luhn")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.luhn_lab import run_luhn_lab_logic
+        run_luhn_lab_logic(args)
+        sys.exit(0)
 
 def run_branch_lab(args):
     """Runs the Branch Lab."""
@@ -16262,6 +16279,7 @@ def parse_args(argv=None):
         help="Luhn algorithm tools (credit cards, IMEI, etc.)."
     )
     luhn_subparsers = parser_luhn.add_subparsers(dest="action", required=True)
+    luhn_subparsers.add_parser("tui", help="Launch the interactive Luhn Lab TUI.")
 
     # validate
     luhn_validate = luhn_subparsers.add_parser("validate", help="Validate a number using the Luhn algorithm.")

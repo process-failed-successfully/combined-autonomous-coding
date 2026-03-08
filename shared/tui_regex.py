@@ -5,11 +5,11 @@ from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Button, Input, Label, RichLog, Checkbox, TextArea, Select, TabbedContent, TabPane
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
-from textual import on
 from rich.markup import escape
 
 from shared.ask import run_ask_logic
 from shared.regex_game import RegexGameEngine, RegexGameGenerator
+
 
 class RegexLabTab(Container):
     """Tab for experimenting with Regex."""
@@ -30,10 +30,12 @@ class RegexLabTab(Container):
                 with TabPane("Playground"):
                     # Pattern Input
                     with Container(classes="stat-box"):
-                        yield Label("Regex Pattern:")
+                        yield Label("Regex Pattern & Replacement:")
                         with Horizontal():
                             yield Input(placeholder="e.g. ^[a-zA-Z0-9]+$", id="regex-pattern")
+                            yield Input(placeholder="Replacement String...", id="regex-replacement")
                             yield Button("Match", id="btn-regex-match", variant="primary")
+                            yield Button("Replace", id="btn-regex-replace", variant="default")
 
                         with Horizontal():
                             yield Checkbox("Ignore Case", id="chk-ignore-case")
@@ -99,6 +101,8 @@ class RegexLabTab(Container):
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-regex-match":
             self.match_regex()
+        elif event.button.id == "btn-regex-replace":
+            self.replace_regex()
         elif event.button.id == "btn-regex-explain":
             await self.explain_regex()
         elif event.button.id == "btn-regex-generate":
@@ -151,7 +155,7 @@ class RegexLabTab(Container):
 
     async def get_hint(self) -> None:
         level = self.levels[self.current_level_index]
-        agent_type = "gemini" # Default or user choice
+        agent_type = "gemini"  # Default or user choice
 
         prompt = f"""
 I am trying to solve a regex puzzle.
@@ -237,6 +241,41 @@ Give me a hint about what regex concepts I should use. Do not give me the exact 
         except re.error as e:
             output.write(f"[bold red]Regex Error:[/bold red] {e}")
 
+    def replace_regex(self) -> None:
+        pattern = self.query_one("#regex-pattern", Input).value
+        replacement = self.query_one("#regex-replacement", Input).value
+        text = self.query_one("#regex-test-string", TextArea).text
+        output = self.query_one("#regex-output", RichLog)
+        output.clear()
+
+        if not pattern:
+            output.write("[red]Error: Pattern required.[/red]")
+            return
+
+        flags = 0
+        if self.query_one("#chk-ignore-case", Checkbox).value:
+            flags |= re.IGNORECASE
+        if self.query_one("#chk-multiline", Checkbox).value:
+            flags |= re.MULTILINE
+        if self.query_one("#chk-dotall", Checkbox).value:
+            flags |= re.DOTALL
+
+        try:
+            new_text, count = re.subn(pattern, replacement, text, flags=flags)
+            if count == 0:
+                output.write("No matches found to replace.")
+                return
+
+            output.write(f"Replaced [bold green]{count}[/bold green] occurrences:\n")
+
+            output.write("[bold]Original Text:[/bold]")
+            output.write(escape(text))
+            output.write("\n[bold]Modified Text:[/bold]")
+            output.write(escape(new_text))
+
+        except re.error as e:
+            output.write(f"[bold red]Regex Error:[/bold red] {e}")
+
     async def explain_regex(self) -> None:
         pattern = self.query_one("#regex-pattern", Input).value
         if not pattern:
@@ -283,7 +322,7 @@ Give me a hint about what regex concepts I should use. Do not give me the exact 
             log.write(response)
 
             # If generating, try to extract code block to input
-            if "Generate" in str(prompt): # Simple heuristic
+            if "Generate" in str(prompt):  # Simple heuristic
                 match = re.search(r"```(?:regex|python)?\s*(.*?)\s*```", response, re.DOTALL)
                 if match:
                     pattern = match.group(1).strip()

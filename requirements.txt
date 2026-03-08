@@ -43,3 +43,4 @@ jsonpath-ng
 tiktoken
 ulid-py
 python-barcode
+bcrypt

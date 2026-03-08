@@ -59,5 +59,39 @@ class TestPasswordLab(unittest.TestCase):
         except ImportError:
             print("Skipping scrypt test: cryptography not installed")
 
+    def test_hash_bcrypt(self):
+        try:
+            import bcrypt
+            hashed = self.manager.hash_password("mysecret", algo="bcrypt")
+            self.assertTrue(hashed.startswith("$2") or hashed.startswith("$2a$") or hashed.startswith("$2b$") or hashed.startswith("$2y$"))
+        except ImportError:
+            print("Skipping bcrypt test: bcrypt not installed")
+
+    def test_verify_password(self):
+        pwd = "supersecretpassword123!"
+
+        # test pbkdf2
+        hashed_pbkdf2 = self.manager.hash_password(pwd, algo="pbkdf2")
+        self.assertTrue(self.manager.verify_password(pwd, hashed_pbkdf2))
+        self.assertFalse(self.manager.verify_password("wrong", hashed_pbkdf2))
+
+        # test scrypt
+        try:
+            import cryptography
+            hashed_scrypt = self.manager.hash_password(pwd, algo="scrypt")
+            self.assertTrue(self.manager.verify_password(pwd, hashed_scrypt))
+            self.assertFalse(self.manager.verify_password("wrong", hashed_scrypt))
+        except ImportError:
+            pass
+
+        # test bcrypt
+        try:
+            import bcrypt
+            hashed_bcrypt = self.manager.hash_password(pwd, algo="bcrypt")
+            self.assertTrue(self.manager.verify_password(pwd, hashed_bcrypt))
+            self.assertFalse(self.manager.verify_password("wrong", hashed_bcrypt))
+        except ImportError:
+            pass
+
 if __name__ == '__main__':
     unittest.main()

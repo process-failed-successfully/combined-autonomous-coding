@@ -12627,8 +12627,13 @@ def parse_args(argv=None):
     # password-lab hash
     parser_pwd_hash = pwd_subparsers.add_parser("hash", help="Hash a password.")
     parser_pwd_hash.add_argument("password", nargs="?", help="Password to hash (prompts if omitted).")
-    parser_pwd_hash.add_argument("--algo", choices=["scrypt", "pbkdf2"], default="scrypt", help="Hashing algorithm.")
+    parser_pwd_hash.add_argument("--algo", choices=["scrypt", "pbkdf2", "bcrypt"], default="scrypt", help="Hashing algorithm.")
     parser_pwd_hash.add_argument("--salt", help="Optional salt (random if omitted).")
+
+    # password-lab verify
+    parser_pwd_verify = pwd_subparsers.add_parser("verify", help="Verify a password against a hash.")
+    parser_pwd_verify.add_argument("password", nargs="?", help="Password to verify (prompts if omitted).")
+    parser_pwd_verify.add_argument("--hash", required=True, help="The hash to verify against.")
 
     # password-lab tui
     pwd_subparsers.add_parser("tui", help="Launch interactive TUI for Password Lab.")

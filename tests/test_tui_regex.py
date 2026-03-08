@@ -23,6 +23,7 @@ class TestRegexLabTab(unittest.IsolatedAsyncioTestCase):
             tab = self.app.query_one(RegexLabTab)
             self.assertIsNotNone(tab)
             self.assertIsNotNone(tab.query_one("#regex-pattern", Input))
+            self.assertIsNotNone(tab.query_one("#regex-replacement", Input))
             self.assertIsNotNone(tab.query_one("#regex-test-string", TextArea))
             self.assertIsNotNone(tab.query_one("#regex-output", RichLog))
 
@@ -60,6 +61,25 @@ class TestRegexLabTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
             # If escape is missing, this would likely raise rich.errors.MarkupError or similar
             # pass implied if no exception
+
+    async def test_replace_regex(self):
+        """Verify that regex replacement works without exceptions."""
+        async with self.app.run_test(size=(1000, 400)) as pilot:
+            tab = self.app.query_one(RegexLabTab)
+
+            pattern_input = tab.query_one("#regex-pattern", Input)
+            pattern_input.value = r"apples"
+
+            replacement_input = tab.query_one("#regex-replacement", Input)
+            replacement_input.value = r"oranges"
+
+            test_area = tab.query_one("#regex-test-string", TextArea)
+            test_area.text = "I have 5 apples."
+
+            tab.replace_regex()
+            await pilot.pause()
+
+            # Pass implied if no exception
 
     @patch("shared.tui_regex.run_ask_logic", new_callable=AsyncMock)
     async def test_explain_regex(self, mock_ask):

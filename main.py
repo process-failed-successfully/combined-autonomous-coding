@@ -340,9 +340,10 @@ def run_calc_lab(args):
             loop = None
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.calc_lab import run_calc_lab_logic
     run_calc_lab_logic(args)
@@ -388,9 +389,10 @@ def run_dict_lab(args):
             loop = None
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     if not getattr(args, "word", None):
         print("Error: Word argument is required.", file=sys.stderr)
@@ -406,6 +408,23 @@ def run_emoji_lab(args):
 
 def run_base64_lab(args):
     """Runs the Base64 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base64 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base64")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
     from shared.base64_lab import run_base64_lab_logic
     success = run_base64_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -14317,9 +14336,10 @@ def parse_args(argv=None):
         "base64-lab", aliases=["base64", "b64"],
         help="Base64 encode and decode strings."
     )
-    b64_group = parser_b64.add_mutually_exclusive_group(required=True)
+    b64_group = parser_b64.add_mutually_exclusive_group(required=False)
     b64_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
     b64_group.add_argument("--decode", "-d", type=str, help="Base64 text to decode.")
+    b64_group.add_argument("--tui", action="store_true", help="Launch the interactive Base64 Lab TUI.")
 
     # random-lab int
     parser_random_int = random_subparsers.add_parser("int", help="Random integers.")

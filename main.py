@@ -1486,6 +1486,21 @@ def run_badges(args):
 
 def run_crypto_lab(args):
     """Runs the Crypto Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Crypto Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, "project_dir", Path(".")), start_tab="tab-crypto")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     success = run_crypto_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -13611,6 +13626,49 @@ def parse_args(argv=None):
     parser_crypto_rand = crypto_subparsers.add_parser("random", help="Generate random data.")
     parser_crypto_rand.add_argument("--length", type=int, default=32, help="Length.")
     parser_crypto_rand.add_argument("--type", choices=["hex", "base64", "uuid", "int"], default="hex", help="Type.")
+
+    # crypto-lab tui
+    crypto_subparsers.add_parser("tui", help="Launch the Crypto Lab TUI.")
+
+    # crypto-lab rsa-keygen
+    parser_crypto_rsa_keygen = crypto_subparsers.add_parser("rsa-keygen", help="Generate RSA Keypair.")
+
+    parser_crypto_rsa_keygen.add_argument("--output", "-o", help="Prefix for output files.")
+
+    # crypto-lab rsa-encrypt
+    parser_crypto_rsa_encrypt = crypto_subparsers.add_parser("rsa-encrypt", help="Encrypt data with RSA Public Key.")
+    parser_crypto_rsa_encrypt.add_argument("--text", help="Input text.")
+    parser_crypto_rsa_encrypt.add_argument("--file", help="Input file.")
+    parser_crypto_rsa_encrypt.add_argument("--key", help="Public key string.")
+    parser_crypto_rsa_encrypt.add_argument("--key-file", help="Public key file.")
+    parser_crypto_rsa_encrypt.add_argument("--output", "-o", help="Output file.")
+
+    # crypto-lab rsa-decrypt
+    parser_crypto_rsa_decrypt = crypto_subparsers.add_parser("rsa-decrypt", help="Decrypt data with RSA Private Key.")
+    parser_crypto_rsa_decrypt.add_argument("--input", help="Base64 encoded input.")
+    parser_crypto_rsa_decrypt.add_argument("--input-file", help="Input file.")
+    parser_crypto_rsa_decrypt.add_argument("--key", help="Private key string.")
+    parser_crypto_rsa_decrypt.add_argument("--key-file", help="Private key file.")
+    parser_crypto_rsa_decrypt.add_argument("--output", "-o", help="Output file.")
+
+    # crypto-lab rsa-sign
+    parser_crypto_rsa_sign = crypto_subparsers.add_parser("rsa-sign", help="Sign data with RSA Private Key.")
+    parser_crypto_rsa_sign.add_argument("--text", help="Input text.")
+    parser_crypto_rsa_sign.add_argument("--file", help="Input file.")
+    parser_crypto_rsa_sign.add_argument("--key", help="Private key string.")
+    parser_crypto_rsa_sign.add_argument("--key-file", help="Private key file.")
+    parser_crypto_rsa_sign.add_argument("--output", "-o", help="Output file.")
+
+    # crypto-lab rsa-verify
+    parser_crypto_rsa_verify = crypto_subparsers.add_parser("rsa-verify", help="Verify signature with RSA Public Key.")
+    parser_crypto_rsa_verify.add_argument("--text", help="Input text.")
+    parser_crypto_rsa_verify.add_argument("--file", help="Input file.")
+    parser_crypto_rsa_verify.add_argument("--signature", help="Base64 encoded signature.")
+    parser_crypto_rsa_verify.add_argument("--signature-file", help="Signature file.")
+    parser_crypto_rsa_verify.add_argument("--key", help="Public key string.")
+    parser_crypto_rsa_verify.add_argument("--key-file", help="Public key file.")
+
+
 
     # --- New 'image-lab' command ---
     parser_image = subparsers.add_parser(

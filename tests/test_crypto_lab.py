@@ -126,3 +126,36 @@ def test_cli_random(capsys):
     run_crypto_lab_logic(args)
     captured = capsys.readouterr()
     assert len(captured.out.strip()) == 8
+
+def test_rsa_keygen(crypto_manager):
+    priv, pub = crypto_manager.generate_rsa_keypair()
+    assert b"BEGIN PRIVATE KEY" in priv
+    assert b"BEGIN PUBLIC KEY" in pub
+
+def test_rsa_encrypt_decrypt(crypto_manager):
+    priv, pub = crypto_manager.generate_rsa_keypair()
+    test_str = "secret_data"
+    encrypted = crypto_manager.rsa_encrypt(test_str, pub)
+    decrypted = crypto_manager.rsa_decrypt(encrypted, priv)
+    assert decrypted.decode('utf-8') == test_str
+
+def test_rsa_sign_verify(crypto_manager):
+    priv, pub = crypto_manager.generate_rsa_keypair()
+    test_str = "secret_data"
+    signature = crypto_manager.rsa_sign(test_str, priv)
+    is_valid = crypto_manager.rsa_verify(test_str, signature, pub)
+    assert is_valid
+
+    # Test invalid signature
+    is_invalid = crypto_manager.rsa_verify(test_str, b"bad_signature", pub)
+    assert not is_invalid
+
+def test_cli_rsa_keygen(capsys):
+    args = MagicMock()
+    args.action = "rsa-keygen"
+    args.output = None
+
+    run_crypto_lab_logic(args)
+    captured = capsys.readouterr()
+    assert "BEGIN PRIVATE KEY" in captured.out
+    assert "BEGIN PUBLIC KEY" in captured.out

@@ -39,3 +39,14 @@ class TestCronLabManager(unittest.IsolatedAsyncioTestCase):
         result = await self.manager.generate_expression("every day at noon", MagicMock())
         self.assertTrue(result)
         mock_ask.assert_called_once()
+
+class TestCronLabCLI(unittest.IsolatedAsyncioTestCase):
+    @patch("main.run_tui")
+    async def test_run_cron_lab_tui(self, mock_run_tui):
+        from main import run_cron_lab
+        args = MagicMock()
+        args.action = "tui"
+
+        await run_cron_lab(args)
+
+        mock_run_tui.assert_called_once_with(args, start_tab="tab-cron")

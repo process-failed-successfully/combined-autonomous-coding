@@ -11361,7 +11361,7 @@ def parse_args(argv=None):
     )
     parser_cron.add_argument(
         "action",
-        choices=["next", "explain", "generate"],
+        choices=["next", "explain", "generate", "tui"],
         help="Action to perform."
     )
     parser_cron.add_argument(
@@ -17025,6 +17025,11 @@ async def run_cron_lab(args):
 
     project_dir = args.project_dir.resolve()
     manager = CronLabManager()
+
+    if args.action == "tui":
+        print("Launching Cron Lab TUI...")
+        run_tui(args, start_tab="tab-cron")
+        return
 
     if args.action == "next":
         if not args.expression:

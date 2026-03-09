@@ -3,6 +3,7 @@ import binascii
 import codecs
 import html
 import urllib.parse
+import sys
 
 
 class CodecLabManager:
@@ -132,3 +133,47 @@ class CodecLabManager:
             else:
                 result.append(char)
         return "".join(result)
+
+
+def run_codec_lab_logic(args):
+    """CLI logic for the Codec Lab."""
+    manager = CodecLabManager()
+
+    if not args.text and not sys.stdin.isatty():
+        text = sys.stdin.read().strip()
+    else:
+        text = args.text
+
+    if not text:
+        print("Error: Input text required either via --text or stdin.", file=sys.stderr)
+        sys.exit(1)
+
+    result = ""
+    algo = args.algorithm.lower()
+    mode = args.mode.lower()
+
+    if algo == "base64":
+        result = manager.base64_encode(text) if mode == "encode" else manager.base64_decode(text)
+    elif algo == "rot13":
+        result = manager.rot13(text)
+    elif algo == "html":
+        result = manager.html_encode(text) if mode == "encode" else manager.html_decode(text)
+    elif algo == "url":
+        result = manager.url_encode(text) if mode == "encode" else manager.url_decode(text)
+    elif algo == "hex":
+        result = manager.hex_encode(text) if mode == "encode" else manager.hex_decode(text)
+    elif algo == "binary":
+        result = manager.binary_encode(text) if mode == "encode" else manager.binary_decode(text)
+    elif algo == "unicode":
+        result = manager.unicode_escape(text) if mode == "encode" else manager.unicode_unescape(text)
+    elif algo == "leet":
+        if mode == "decode":
+            print("Warning: Leet speak decoding is not supported (it's lossy). Outputting as-is.", file=sys.stderr)
+            result = text
+        else:
+            result = manager.leet_speak(text)
+    else:
+        print(f"Unknown algorithm: {algo}", file=sys.stderr)
+        sys.exit(1)
+
+    print(result)

@@ -211,6 +211,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
@@ -1704,6 +1705,27 @@ def run_cert_lab(args):
     success = run_cert_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+def run_codec_lab(args):
+    """Runs the Codec Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Codec Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-codec")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.codec_lab import run_codec_lab_logic
+    run_codec_lab_logic(args)
+    sys.exit(0)
 
 def run_converter_lab(args):
     """Runs the Converter Lab."""
@@ -12984,6 +13006,21 @@ def parse_args(argv=None):
 
     # converter-lab tui
     parser_converter_tui = converter_subparsers.add_parser("tui", help="Launch Converter Lab TUI.")
+
+    # --- New 'codec-lab' command ---
+    parser_codec = subparsers.add_parser(
+        "codec-lab",
+        aliases=["codec"],
+        help="Text Encoding and Decoding utilities (base64, hex, url, html, etc)."
+    )
+    codec_subparsers = parser_codec.add_subparsers(dest="action", required=True)
+    codec_subparsers.add_parser("tui", help="Launch Codec Lab TUI.")
+
+    parser_codec_run = codec_subparsers.add_parser("run", help="Run a codec operation.")
+    parser_codec_run.add_argument("algorithm", help="Algorithm (base64, rot13, html, url, hex, binary, unicode, leet).")
+    parser_codec_run.add_argument("mode", choices=["encode", "decode"], help="Mode (encode or decode).")
+    parser_codec_run.add_argument("--text", "-t", help="Input text (can also use stdin).")
+
     parser_pack = subparsers.add_parser(
         "pack",
         help="Pack the codebase into a single file for LLM context."
@@ -20009,6 +20046,10 @@ async def main():
         run_cert_lab(args)
         return
 
+
+    if args.command in ["codec-lab", "codec"]:
+        run_codec_lab(args)
+        return
 
     if args.command in ["converter-lab", "convert"]:
         run_converter_lab(args)

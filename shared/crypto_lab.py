@@ -4,8 +4,11 @@ import secrets
 import base64
 import sys
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.exceptions import InvalidSignature
 
 class CryptoLabManager:
     """
@@ -27,9 +30,9 @@ class CryptoLabManager:
 
         algo = algo.lower()
         if algo not in hashlib.algorithms_available:
-             # Fallback check for common ones guaranteed by hashlib
-             if algo not in ["md5", "sha1", "sha256", "sha512"]:
-                 raise ValueError(f"Unsupported algorithm: {algo}")
+            # Fallback check for common ones guaranteed by hashlib
+            if algo not in ["md5", "sha1", "sha256", "sha512"]:
+                raise ValueError(f"Unsupported algorithm: {algo}")
 
         hasher = hashlib.new(algo)
         hasher.update(data_bytes)
@@ -63,7 +66,7 @@ class CryptoLabManager:
         Types: hex, base64, uuid, int.
         """
         if type == "hex":
-            return secrets.token_hex(length // 2) # token_hex takes nbytes, returns 2*nbytes chars
+            return secrets.token_hex(length // 2)  # token_hex takes nbytes, returns 2*nbytes chars
         elif type == "base64":
             return secrets.token_urlsafe(length)
         elif type == "uuid":
@@ -74,6 +77,102 @@ class CryptoLabManager:
             return str(int.from_bytes(secrets.token_bytes(length), byteorder="big"))
         else:
             raise ValueError(f"Unknown type: {type}")
+
+
+
+    def generate_rsa_keypair(self) -> tuple[bytes, bytes]:
+        """Generates an RSA private and public key pair."""
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        private_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        public_key = private_key.public_key()
+        public_bytes = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        return private_bytes, public_bytes
+
+    def rsa_encrypt(self, input_data: Union[str, bytes], public_key_bytes: bytes) -> bytes:
+        """Encrypts data using an RSA public key."""
+        public_key = serialization.load_pem_public_key(public_key_bytes)
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+        ciphertext = public_key.encrypt(
+            data_bytes,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return ciphertext
+
+    def rsa_decrypt(self, input_data: bytes, private_key_bytes: bytes) -> bytes:
+        """Decrypts data using an RSA private key."""
+        private_key = serialization.load_pem_private_key(
+            private_key_bytes,
+            password=None,
+        )
+        plaintext = private_key.decrypt(
+            input_data,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return plaintext
+
+    def rsa_sign(self, input_data: Union[str, bytes], private_key_bytes: bytes) -> bytes:
+        """Signs data using an RSA private key."""
+        private_key = serialization.load_pem_private_key(
+            private_key_bytes,
+            password=None,
+        )
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+        signature = private_key.sign(
+            data_bytes,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return signature
+
+    def rsa_verify(self, input_data: Union[str, bytes], signature: bytes, public_key_bytes: bytes) -> bool:
+        """Verifies a signature using an RSA public key."""
+        public_key = serialization.load_pem_public_key(public_key_bytes)
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+        try:
+            public_key.verify(
+                signature,
+                data_bytes,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return True
+        except InvalidSignature:
+            return False
+
+
 
 def run_crypto_lab_logic(args) -> bool:
     """
@@ -141,7 +240,7 @@ def run_crypto_lab_logic(args) -> bool:
                     return False
                 data = path.read_bytes()
             else:
-                 # Read from stdin
+                # Read from stdin
                 if not sys.stdin.isatty():
                     try:
                         data = sys.stdin.buffer.read()
@@ -186,7 +285,7 @@ def run_crypto_lab_logic(args) -> bool:
                     return False
                 data = path.read_bytes()
             else:
-                 # Read from stdin
+                # Read from stdin
                 if not sys.stdin.isatty():
                     data = sys.stdin.buffer.read().strip()
                 else:
@@ -207,8 +306,109 @@ def run_crypto_lab_logic(args) -> bool:
                 try:
                     print(decrypted.decode("utf-8"))
                 except UnicodeDecodeError:
-                    print(decrypted) # Bytes repr
+                    print(decrypted)  # Bytes repr
             return True
+
+
+        elif args.action == "rsa-keygen":
+            priv, pub = manager.generate_rsa_keypair()
+            if args.output:
+                Path(f"{args.output}").write_bytes(priv)
+                Path(f"{args.output}.pub").write_bytes(pub)
+                print(f"Keypair saved to {args.output} and {args.output}.pub")
+            else:
+                print("--- Private Key ---")
+                print(priv.decode('utf-8'))
+                print("--- Public Key ---")
+                print(pub.decode('utf-8'))
+            return True
+
+        elif args.action == "rsa-encrypt":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                key = Path(args.key_file).read_bytes()
+            if not key:
+                print("Error: Public key required.", file=sys.stderr)
+                return False
+
+            data = args.text if args.text else Path(args.file).read_bytes() if args.file else sys.stdin.buffer.read()
+            encrypted = manager.rsa_encrypt(data, key)
+            if args.output:
+                Path(args.output).write_bytes(encrypted)
+            else:
+                print(base64.b64encode(encrypted).decode('utf-8'))
+            return True
+
+        elif args.action == "rsa-decrypt":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                key = Path(args.key_file).read_bytes()
+            if not key:
+                print("Error: Private key required.", file=sys.stderr)
+                return False
+
+            if args.input:
+                data = base64.b64decode(args.input)
+            elif args.input_file:
+                data = Path(args.input_file).read_bytes()
+            else:
+                data = sys.stdin.buffer.read()
+
+            decrypted = manager.rsa_decrypt(data, key)
+            if args.output:
+                Path(args.output).write_bytes(decrypted)
+            else:
+                print(decrypted.decode('utf-8', errors='replace'))
+            return True
+
+        elif args.action == "rsa-sign":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                key = Path(args.key_file).read_bytes()
+            if not key:
+                print("Error: Private key required.", file=sys.stderr)
+                return False
+
+            data = args.text if args.text else Path(args.file).read_bytes() if args.file else sys.stdin.buffer.read()
+            signature = manager.rsa_sign(data, key)
+            if args.output:
+                Path(args.output).write_bytes(signature)
+            else:
+                print(base64.b64encode(signature).decode('utf-8'))
+            return True
+
+        elif args.action == "rsa-verify":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                key = Path(args.key_file).read_bytes()
+            if not key:
+                print("Error: Public key required.", file=sys.stderr)
+                return False
+
+            data = args.text if args.text else Path(args.file).read_bytes() if args.file else sys.stdin.buffer.read()
+
+            if args.signature:
+                signature = base64.b64decode(args.signature)
+            elif args.signature_file:
+                signature = Path(args.signature_file).read_bytes()
+            else:
+                print("Error: Signature required.", file=sys.stderr)
+                return False
+
+            if manager.rsa_verify(data, signature, key):
+                print("Signature Verified: OK")
+                return True
+            else:
+                print("Signature Verified: FAILED", file=sys.stderr)
+                return False
 
         elif args.action == "random":
             result = manager.generate_random(args.length, args.type)

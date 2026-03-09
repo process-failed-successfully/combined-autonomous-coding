@@ -1,8 +1,8 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Input, Label, Select, TabbedContent, TabPane, TextArea
-from textual import on
 from shared.crypto_lab import CryptoLabManager
+
 
 class CryptoLabTab(Container):
     """Tab for Cryptographic operations."""
@@ -62,6 +62,35 @@ class CryptoLabTab(Container):
                         yield Label("[bold]Decrypted Output[/bold]")
                         yield TextArea(id="crypto-dec-output", read_only=True)
 
+                # Asymmetric (RSA)
+                with TabPane("Asymmetric (RSA)"):
+                    with Horizontal(classes="stat-box"):
+                        with Vertical():
+                            yield Button("Generate RSA Keypair", id="btn-crypto-rsa-gen", variant="warning")
+                    with Horizontal(classes="stat-box"):
+                        with Vertical():
+                            yield Label("Private Key (PEM):")
+                            yield TextArea(id="crypto-rsa-priv")
+                        with Vertical():
+                            yield Label("Public Key (PEM):")
+                            yield TextArea(id="crypto-rsa-pub")
+                    with Horizontal(classes="stat-box"):
+                        with Vertical():
+                            yield Label("Input Text:")
+                            yield TextArea(id="crypto-rsa-input")
+                            with Horizontal():
+                                yield Button("Encrypt (uses Pub)", id="btn-crypto-rsa-enc", variant="primary")
+                                yield Button("Decrypt (uses Priv)", id="btn-crypto-rsa-dec", variant="primary")
+                                yield Button("Sign (uses Priv)", id="btn-crypto-rsa-sign", variant="primary")
+                                yield Button("Verify (uses Pub)", id="btn-crypto-rsa-verify", variant="primary")
+                    with Horizontal(classes="stat-box"):
+                        with Vertical():
+                            yield Label("Signature (Base64) (for Verify):")
+                            yield TextArea(id="crypto-rsa-signature")
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Output (Text or Base64)[/bold]")
+                        yield TextArea(id="crypto-rsa-output", read_only=True)
+
                 # Random
                 with TabPane("Random"):
                     with Horizontal(classes="stat-box"):
@@ -89,6 +118,16 @@ class CryptoLabTab(Container):
             self.do_decrypt()
         elif event.button.id == "btn-crypto-rand":
             self.do_random()
+        elif event.button.id == "btn-crypto-rsa-gen":
+            self.do_rsa_gen()
+        elif event.button.id == "btn-crypto-rsa-enc":
+            self.do_rsa_enc()
+        elif event.button.id == "btn-crypto-rsa-dec":
+            self.do_rsa_dec()
+        elif event.button.id == "btn-crypto-rsa-sign":
+            self.do_rsa_sign()
+        elif event.button.id == "btn-crypto-rsa-verify":
+            self.do_rsa_verify()
 
     def do_hash(self) -> None:
         text = self.query_one("#crypto-hash-input", TextArea).text
@@ -158,5 +197,85 @@ class CryptoLabTab(Container):
             res = self.manager.generate_random(length, str(type_val))
             out.text = res
             self.notify("Generated.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_rsa_gen(self) -> None:
+        try:
+            priv, pub = self.manager.generate_rsa_keypair()
+            self.query_one("#crypto-rsa-priv", TextArea).text = priv.decode("utf-8")
+            self.query_one("#crypto-rsa-pub", TextArea).text = pub.decode("utf-8")
+            self.notify("RSA Keypair generated.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_rsa_enc(self) -> None:
+        pub = self.query_one("#crypto-rsa-pub", TextArea).text
+        text = self.query_one("#crypto-rsa-input", TextArea).text
+        out = self.query_one("#crypto-rsa-output", TextArea)
+
+        if not pub or not text:
+            self.notify("Public key and input required.", severity="error")
+            return
+
+        try:
+            import base64
+            res = self.manager.rsa_encrypt(text, pub.encode("utf-8"))
+            out.text = base64.b64encode(res).decode("utf-8")
+            self.notify("Encrypted.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_rsa_dec(self) -> None:
+        priv = self.query_one("#crypto-rsa-priv", TextArea).text
+        text = self.query_one("#crypto-rsa-input", TextArea).text
+        out = self.query_one("#crypto-rsa-output", TextArea)
+
+        if not priv or not text:
+            self.notify("Private key and input required.", severity="error")
+            return
+
+        try:
+            import base64
+            data = base64.b64decode(text.strip())
+            res = self.manager.rsa_decrypt(data, priv.encode("utf-8"))
+            out.text = res.decode("utf-8")
+            self.notify("Decrypted.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_rsa_sign(self) -> None:
+        priv = self.query_one("#crypto-rsa-priv", TextArea).text
+        text = self.query_one("#crypto-rsa-input", TextArea).text
+        out = self.query_one("#crypto-rsa-output", TextArea)
+
+        if not priv or not text:
+            self.notify("Private key and input required.", severity="error")
+            return
+
+        try:
+            import base64
+            res = self.manager.rsa_sign(text, priv.encode("utf-8"))
+            out.text = base64.b64encode(res).decode("utf-8")
+            self.notify("Signed.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_rsa_verify(self) -> None:
+        pub = self.query_one("#crypto-rsa-pub", TextArea).text
+        text = self.query_one("#crypto-rsa-input", TextArea).text
+        sig_text = self.query_one("#crypto-rsa-signature", TextArea).text.strip()
+        if not pub or not text or not sig_text:
+            self.notify("Public key, input text, and signature required.", severity="error")
+            return
+
+        try:
+            import base64
+            sig = base64.b64decode(sig_text)
+            is_valid = self.manager.rsa_verify(text, sig, pub.encode("utf-8"))
+            if is_valid:
+                self.notify("Signature is VALID.", severity="information")
+            else:
+                self.notify("Signature is INVALID.", severity="error")
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")

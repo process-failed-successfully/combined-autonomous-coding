@@ -1309,6 +1309,19 @@ def run_webhook_lab(args):
 
 def run_hash_lab(args):
     """Runs the Hash Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Hash Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-hash")
+
+        # Support both asyncio running and standard blocking run depending on Textual version
+        if hasattr(app, 'run_async'):
+            import asyncio
+            asyncio.run(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     success = run_hash_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -14385,6 +14398,9 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # hash-lab tui
+    parser_hash_tui = hash_subparsers.add_parser("tui", help="Launch Hash Lab TUI.")
 
     # hash-lab string
     parser_hash_str = hash_subparsers.add_parser("string", help="Hash a string.")

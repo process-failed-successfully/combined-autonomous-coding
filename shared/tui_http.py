@@ -18,13 +18,18 @@ class HttpLabTab(Container):
     def compose(self) -> ComposeResult:
         with Horizontal():
             # Left Pane: History
-            with Vertical(id="http-history-pane", classes="stat-box"):
+            with Vertical(id="http-history-pane", classes="stat-box", styles="width: 20%;"):
                 yield Label("[bold]History[/bold]")
                 yield ListView(id="http-history-list")
                 yield Button("Clear History", id="btn-http-clear", variant="error")
 
+            # Middle Pane: Code Snippets
+            with Vertical(id="http-snippets-pane", classes="stat-box", styles="width: 25%; display: none;"):
+                yield Label("[bold]Code Snippets[/bold]")
+                yield TextArea(id="http-snippet-text", read_only=True, language="bash")
+
             # Right Pane: Workspace
-            with Vertical(id="http-workspace-pane"):
+            with Vertical(id="http-workspace-pane", styles="width: 1fr;"):
                 yield Label("[bold]HTTP Request Builder[/bold]", classes="welcome-text")
 
                 # cURL Import
@@ -37,6 +42,7 @@ class HttpLabTab(Container):
                     yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], id="http-method", value="GET")
                     yield Input(placeholder="https://api.example.com/v1/...", id="http-url")
                     yield Button("Send", id="btn-http-send", variant="primary")
+                    yield Button("Code", id="btn-http-code", variant="default")
 
                 with TabbedContent(id="http-tabs"):
                     with TabPane("Headers", id="http-tab-headers"):
@@ -76,6 +82,60 @@ class HttpLabTab(Container):
             self.clear_history()
         elif event.button.id == "btn-http-import-curl":
             self.import_curl()
+        elif event.button.id == "btn-http-code":
+            self.toggle_snippets()
+
+    def toggle_snippets(self) -> None:
+        pane = self.query_one("#http-snippets-pane")
+        if pane.styles.display == "none":
+            pane.styles.display = "block"
+            self.update_snippet()
+        else:
+            pane.styles.display = "none"
+
+    @on(Input.Changed, "#http-url")
+    def on_url_changed(self, event: Input.Changed) -> None:
+        if self.query_one("#http-snippets-pane").styles.display != "none":
+            self.update_snippet()
+
+    @on(Select.Changed, "#http-method")
+    def on_method_changed(self, event: Select.Changed) -> None:
+        if self.query_one("#http-snippets-pane").styles.display != "none":
+            self.update_snippet()
+
+    @on(TextArea.Changed, "#http-headers")
+    def on_headers_changed(self, event: TextArea.Changed) -> None:
+        if self.query_one("#http-snippets-pane").styles.display != "none":
+            self.update_snippet()
+
+    @on(TextArea.Changed, "#http-body")
+    def on_body_changed(self, event: TextArea.Changed) -> None:
+        if self.query_one("#http-snippets-pane").styles.display != "none":
+            self.update_snippet()
+
+    def update_snippet(self) -> None:
+        method = self.query_one("#http-method", Select).value
+        url = self.query_one("#http-url", Input).value
+        headers_text = self.query_one("#http-headers", TextArea).text
+        body_text = self.query_one("#http-body", TextArea).text
+
+        headers = {}
+        for line in headers_text.splitlines():
+            if ":" in line:
+                k, v = line.split(":", 1)
+                headers[k.strip()] = v.strip()
+
+        data = None
+        if body_text.strip():
+            # If it parses as JSON, serialize it without extra spaces to make the curl compact
+            try:
+                json_data = json.loads(body_text)
+                data = json.dumps(json_data)
+            except json.JSONDecodeError:
+                data = body_text
+
+        curl_cmd = self.manager.generate_curl(method, url, headers, data)
+        self.query_one("#http-snippet-text", TextArea).text = curl_cmd
 
     def import_curl(self) -> None:
         curl_str = self.query_one("#http-curl-input", Input).value

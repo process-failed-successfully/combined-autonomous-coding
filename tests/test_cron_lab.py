@@ -7,6 +7,31 @@ class TestCronLabManager(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.manager = CronLabManager()
 
+    def test_parse_valid(self):
+        # 5 parts
+        result = self.manager.parse("0 12 * * 1-5")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["minute"], "0")
+        self.assertEqual(result["hour"], "12")
+        self.assertEqual(result["day_of_month"], "*")
+        self.assertEqual(result["month"], "*")
+        self.assertEqual(result["day_of_week"], "1-5")
+
+        # 6 parts
+        result6 = self.manager.parse("0 0 12 * * 1-5")
+        self.assertTrue(result6["success"])
+        self.assertEqual(result6["second"], "0")
+        self.assertEqual(result6["minute"], "0")
+        self.assertEqual(result6["hour"], "12")
+        self.assertEqual(result6["day_of_month"], "*")
+        self.assertEqual(result6["month"], "*")
+        self.assertEqual(result6["day_of_week"], "1-5")
+
+    def test_parse_invalid(self):
+        result = self.manager.parse("invalid")
+        self.assertFalse(result["success"])
+        self.assertIn("Invalid cron expression", result["error"])
+
     def test_get_next_occurrences_valid(self):
         # Every minute
         expression = "* * * * *"

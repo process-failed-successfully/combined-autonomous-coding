@@ -11389,7 +11389,7 @@ def parse_args(argv=None):
     )
     parser_cron.add_argument(
         "action",
-        choices=["next", "explain", "generate", "tui"],
+        choices=["next", "explain", "generate", "tui", "parse"],
         help="Action to perform."
     )
     parser_cron.add_argument(
@@ -17105,7 +17105,21 @@ async def run_cron_lab(args):
         run_tui(args, start_tab="tab-cron")
         return
 
-    if args.action == "next":
+    if args.action == "parse":
+        if not args.expression:
+            print("Error: --expression is required for 'parse' action.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.parse(args.expression)
+        if result["success"]:
+            import json
+            print(json.dumps(result, indent=2))
+            sys.exit(0)
+        else:
+            print(f"❌ Cron Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "next":
         if not args.expression:
             print("Error: --expression is required for 'next' action.", file=sys.stderr)
             sys.exit(1)

@@ -64,5 +64,39 @@ class TestHttpLabManager(unittest.TestCase):
         # Should add http://
         mock_request.assert_called_once_with("GET", "http://example.com")
 
+    def test_parse_curl_basic_get(self):
+        curl_cmd = "curl http://example.com"
+        result = self.manager.parse_curl(curl_cmd)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['url'], "http://example.com")
+        self.assertEqual(result['method'], "GET")
+        self.assertEqual(result['headers'], {})
+        self.assertIsNone(result['data'])
+
+    def test_parse_curl_post_with_data(self):
+        curl_cmd = "curl -X POST http://example.com -d '{\"key\": \"value\"}'"
+        result = self.manager.parse_curl(curl_cmd)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['url'], "http://example.com")
+        self.assertEqual(result['method'], "POST")
+        self.assertEqual(result['data'], '{"key": "value"}')
+
+    def test_parse_curl_with_headers_and_auth(self):
+        curl_cmd = "curl -H 'Content-Type: application/json' -u user:pass http://example.com"
+        result = self.manager.parse_curl(curl_cmd)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['url'], "http://example.com")
+        self.assertEqual(result['method'], "GET")  # defaults to GET
+        self.assertIn('Content-Type', result['headers'])
+        self.assertEqual(result['headers']['Content-Type'], 'application/json')
+        self.assertIn('Authorization', result['headers'])
+        self.assertTrue(result['headers']['Authorization'].startswith('Basic '))
+
+    def test_parse_curl_invalid(self):
+        # Empty string
+        self.assertIsNone(self.manager.parse_curl(""))
+        # Unmatched quotes
+        self.assertIsNone(self.manager.parse_curl("curl http://example.com -d '{\"key\""))
+
 if __name__ == '__main__':
     unittest.main()

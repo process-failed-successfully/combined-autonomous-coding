@@ -54,6 +54,34 @@ class TestHttpLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("200", str(lbl.render()))
 
     @patch("shared.tui_http.HttpLabManager")
+    async def test_import_curl(self, MockManager):
+        mock_instance = MockManager.return_value
+        mock_instance.parse_curl.return_value = {
+            "url": "https://api.example.com",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": '{"test": 123}'
+        }
+
+        app = HttpLabTestApp()
+        async with app.run_test(size=(300, 50)) as pilot:
+            tab = app.query_one(HttpLabTab)
+            tab.manager = mock_instance
+
+            # Fill inputs
+            tab.query_one("#http-curl-input").value = "curl -X POST https://api.example.com -d '{\"test\": 123}'"
+
+            # Click import
+            await pilot.click("#btn-http-import-curl")
+            await pilot.pause()
+
+            # Verify UI was updated
+            self.assertEqual(tab.query_one("#http-url").value, "https://api.example.com")
+            self.assertEqual(tab.query_one("#http-method").value, "POST")
+            self.assertIn("Content-Type: application/json", tab.query_one("#http-headers").text)
+            self.assertIn('"test": 123', tab.query_one("#http-body").text)
+
+    @patch("shared.tui_http.HttpLabManager")
     async def test_send_request_error(self, MockManager):
         mock_instance = MockManager.return_value
         mock_instance.request.side_effect = Exception("Connection Failed")

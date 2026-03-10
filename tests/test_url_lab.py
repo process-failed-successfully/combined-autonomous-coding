@@ -86,6 +86,27 @@ class TestUrlLabManager(unittest.TestCase):
         self.assertEqual(result_https, "https://example.com/foo")
 
 class TestRunUrlLabLogic(unittest.TestCase):
+    @patch('sys.exit', side_effect=SystemExit(0))
+    def test_run_tui(self, mock_exit):
+        """Test that action='tui' launches the URL Lab TUI."""
+        from pathlib import Path
+        args = MagicMock()
+        args.action = "tui"
+        args.project_dir = Path("mock_dir")
+
+        # Mock async run
+        async def mock_run_async(*args, **kwargs):
+            pass
+
+        # We need to mock AgentTUI before it gets imported and run by main
+        with patch('shared.tui.AgentTUI') as MockAgentTUI:
+            MockAgentTUI.return_value.run_async = mock_run_async
+            from main import run_url_lab
+            with self.assertRaises(SystemExit) as cm:
+                run_url_lab(args)
+            self.assertEqual(cm.exception.code, 0)
+            MockAgentTUI.assert_called_with(project_dir=args.project_dir, start_tab="tab-url-lab")
+
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_run_parse(self, mock_stdout):
         args = MagicMock()

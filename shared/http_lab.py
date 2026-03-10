@@ -2,6 +2,8 @@ import sys
 import json
 import requests
 import time
+import shlex
+import argparse
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from urllib.parse import urlparse
@@ -46,6 +48,81 @@ class HttpLabManager:
             return response.json()
         except ValueError:
             return None
+
+    def parse_curl(self, curl_cmd: str) -> Optional[Dict[str, Any]]:
+        """Parses a curl command and extracts method, url, headers, and body."""
+        try:
+            tokens = shlex.split(curl_cmd)
+        except ValueError:
+            return None
+
+        if not tokens:
+            return None
+
+        # Remove 'curl' command itself if present
+        if tokens[0].lower() == 'curl':
+            tokens = tokens[1:]
+
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('url_pos', nargs='?')
+        parser.add_argument('--url', dest='url_named')
+        parser.add_argument('-X', '--request', dest='method')
+        parser.add_argument('-H', '--header', dest='headers', action='append', default=[])
+        parser.add_argument('-d', '--data', '--data-raw', '--data-binary', '--data-ascii', dest='data')
+        parser.add_argument('-u', '--user', dest='auth')
+        parser.add_argument('-A', '--user-agent', dest='user_agent')
+        parser.add_argument('-I', '--head', action='store_true')
+
+        import contextlib
+        import io
+        try:
+            # parse_known_args doesn't exit on unknown args usually, but if it hits something like -h it might.
+            with contextlib.redirect_stderr(io.StringIO()):
+                args, unknown = parser.parse_known_args(tokens)
+        except SystemExit:
+            return None
+
+        url = args.url_named or args.url_pos
+        if not url:
+            # Fallback for URLs not caught (e.g. at the end with options before it)
+            for u in unknown:
+                if u.startswith('http://') or u.startswith('https://'):
+                    url = u
+                    break
+
+        method = args.method
+        if not method:
+            if args.data is not None:
+                method = 'POST'
+            elif args.head:
+                method = 'HEAD'
+            else:
+                method = 'GET'
+        else:
+            method = method.upper()
+
+        headers = {}
+        for h in args.headers:
+            if ':' in h:
+                k, v = h.split(':', 1)
+                headers[k.strip()] = v.strip()
+
+        # Handle User-Agent
+        if args.user_agent:
+            headers['User-Agent'] = args.user_agent
+
+        # Basic auth
+        if args.auth:
+            import base64
+            auth_str = base64.b64encode(args.auth.encode()).decode('utf-8')
+            headers['Authorization'] = f'Basic {auth_str}'
+
+        return {
+            'url': url or '',
+            'method': method,
+            'headers': headers,
+            'data': args.data,
+        }
 
 def run_http_lab_logic(args):
     """

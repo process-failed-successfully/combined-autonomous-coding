@@ -27,6 +27,11 @@ class HttpLabTab(Container):
             with Vertical(id="http-workspace-pane"):
                 yield Label("[bold]HTTP Request Builder[/bold]", classes="welcome-text")
 
+                # cURL Import
+                with Horizontal(classes="stat-box"):
+                    yield Input(placeholder="Paste cURL command here...", id="http-curl-input")
+                    yield Button("Import cURL", id="btn-http-import-curl", variant="warning")
+
                 # Request Line
                 with Horizontal(classes="stat-box"):
                     yield Select.from_values(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], id="http-method", value="GET")
@@ -62,12 +67,58 @@ class HttpLabTab(Container):
 
         # Adjust layout
         self.query_one("#http-url").styles.width = "1fr"
+        self.query_one("#http-curl-input").styles.width = "1fr"
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-http-send":
             await self.send_request()
         elif event.button.id == "btn-http-clear":
             self.clear_history()
+        elif event.button.id == "btn-http-import-curl":
+            self.import_curl()
+
+    def import_curl(self) -> None:
+        curl_str = self.query_one("#http-curl-input", Input).value
+        if not curl_str:
+            self.notify("Please paste a cURL command.", severity="warning")
+            return
+
+        parsed = self.manager.parse_curl(curl_str)
+        if not parsed:
+            self.notify("Failed to parse cURL command.", severity="error")
+            return
+
+        # Update URL and Method
+        self.query_one("#http-url", Input).value = parsed['url']
+        method = parsed['method'].upper()
+        # Fallback to GET if method is weird, or just set it if it's in the list
+        valid_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+        if method in valid_methods:
+            self.query_one("#http-method", Select).value = method
+        else:
+            self.query_one("#http-method", Select).value = "GET"
+
+        # Update Headers
+        headers_text = ""
+        for k, v in parsed['headers'].items():
+            headers_text += f"{k}: {v}\n"
+        self.query_one("#http-headers", TextArea).text = headers_text
+
+        # Update Body
+        if parsed['data']:
+            body = parsed['data']
+            # Try to format as JSON if possible
+            try:
+                parsed_json = json.loads(body)
+                body = json.dumps(parsed_json, indent=2)
+            except json.JSONDecodeError:
+                pass
+            self.query_one("#http-body", TextArea).text = body
+        else:
+            self.query_one("#http-body", TextArea).text = ""
+
+        self.notify("cURL command imported successfully!")
+        self.query_one("#http-curl-input", Input).value = ""
 
     async def send_request(self) -> None:
         method = self.query_one("#http-method", Select).value

@@ -1720,6 +1720,21 @@ def run_xml_lab(args):
 
 def run_url_lab(args):
     """Runs the URL Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching URL Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-url-lab")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.url_lab import run_url_lab_logic
     run_url_lab_logic(args)
     sys.exit(0)
@@ -12909,6 +12924,9 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # url-lab tui
+    parser_ul_tui = url_lab_subparsers.add_parser("tui", help="Launch the URL Lab TUI.")
 
     # url-lab parse
     parser_ul_parse = url_lab_subparsers.add_parser("parse", help="Parse a URL into components.")

@@ -124,6 +124,29 @@ class HttpLabManager:
             'data': args.data,
         }
 
+    def generate_curl(self, method: str, url: str, headers: Optional[Dict[str, str]] = None, data: Optional[str] = None) -> str:
+        """Generates a curl command string from request parameters."""
+        cmd = ["curl", "-X", method.upper()]
+
+        if headers:
+            for k, v in headers.items():
+                cmd.append(f"-H \"{k}: {v}\"")
+
+        if data:
+            # Escape single quotes and wrap in single quotes to prevent shell expansion
+            escaped_data = data.replace("'", "'\\''")
+            cmd.append(f"-d '{escaped_data}'")
+
+        # Handle the case where url might not be complete (e.g., when first typing in the TUI)
+        if url:
+            if not url.startswith("http"):
+                url = "http://" + url
+            cmd.append(f"\"{url}\"")
+        else:
+            cmd.append("\"\"")
+
+        return " ".join(cmd)
+
 def run_http_lab_logic(args):
     """
     CLI logic for Http Lab.

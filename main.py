@@ -1317,10 +1317,19 @@ def run_hash_lab(args):
         # Support both asyncio running and standard blocking run depending on Textual version
         if hasattr(app, 'run_async'):
             import asyncio
-            asyncio.run(app.run_async())
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
+        return
 
     success = run_hash_lab_logic(args)
     sys.exit(0 if success else 1)

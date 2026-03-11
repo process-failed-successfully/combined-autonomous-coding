@@ -1589,6 +1589,8 @@ def run_nanoid_lab(args):
     """Runs the NanoID Lab."""
     if args.action == "tui":
         print("Launching NanoID Lab TUI...")
+        from shared.tui import AgentTUI
+        from shared.tui import AgentTUI
         app = AgentTUI(project_dir=args.project_dir, start_tab="tab-nanoid")
         import asyncio
         try:

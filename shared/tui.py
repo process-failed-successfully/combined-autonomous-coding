@@ -196,6 +196,7 @@ from shared.tui_sound import SoundLabTab
 from shared.tui_diagram import DiagramLabTab
 from shared.tui_find import FindLabTab
 from shared.tui_html import HtmlLabTab
+from shared.tui_css import CssLabTab
 from shared.tui_clipboard import ClipboardTab
 from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
@@ -4396,6 +4397,8 @@ class AgentTUI(App):
                 yield DiagramLabTab(self.project_dir)
             with TabPane("HTML Lab", id="tab-html"):
                 yield HtmlLabTab(self.project_dir)
+            with TabPane("CSS Lab", id="tab-css"):
+                yield CssLabTab()
             with TabPane("Clipboard Lab", id="tab-clipboard"):
                 yield ClipboardTab(self.project_dir)
             with TabPane("Host Lab", id="tab-host-lab"):

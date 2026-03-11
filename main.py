@@ -171,6 +171,7 @@ from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
+from shared.css_lab import run_css_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -215,7 +216,7 @@ KNOWN_COMMANDS = [
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "css-lab", "css",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
     "proxy-lab", "proxy",
@@ -13926,6 +13927,25 @@ def parse_args(argv=None):
     parser_media_trim.add_argument("--duration", help="Duration (e.g. 10).")
 
     # --- New 'xml-lab' command ---
+    # --- New 'css-lab' command ---
+    parser_css = subparsers.add_parser(
+        "css-lab",
+        aliases=["css"],
+        help="CSS utilities (format, minify, tui)."
+    )
+    css_subparsers = parser_css.add_subparsers(dest="action", help="CSS Lab Actions.")
+
+    # css format
+    parser_css_format = css_subparsers.add_parser("format", help="Format CSS.")
+    parser_css_format.add_argument("file", nargs="?", help="Input CSS file.")
+
+    # css minify
+    parser_css_minify = css_subparsers.add_parser("minify", help="Minify CSS.")
+    parser_css_minify.add_argument("file", nargs="?", help="Input CSS file.")
+
+    # css tui
+    parser_css_tui = css_subparsers.add_parser("tui", help="Launch the CSS Lab TUI.")
+
     parser_xml = subparsers.add_parser(
         "xml-lab",
         aliases=["xml"],
@@ -19968,6 +19988,10 @@ async def main():
 
     if args.command in ["media-lab", "media"]:
         run_media_lab(args)
+        return
+
+    if args.command in ["css-lab", "css"]:
+        run_css_lab_logic(args)
         return
 
     if args.command in ["xml-lab", "xml"]:

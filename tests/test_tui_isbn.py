@@ -1,5 +1,5 @@
 import pytest
-import asyncio
+
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Button, Label, Select
 from shared.tui_isbn import IsbnLabTab

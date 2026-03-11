@@ -1,3 +1,4 @@
+from typing import Any
 import sys
 import random
 
@@ -82,7 +83,7 @@ class IsbnManager:
         else:
             raise ValueError("Format type must be '10' or '13'.")
 
-    def parse(self, isbn: str) -> dict:
+    def parse(self, isbn: str) -> dict[str, Any]:
         """
         Parses an ISBN into its components and validates it.
         (Note: Accurate splitting into group/publisher/title requires a massive database.

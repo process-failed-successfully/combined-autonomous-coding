@@ -13,6 +13,7 @@ authors = [
     {name = "User", email = "user@example.com"},
 ]
 dependencies = [
+    "nanoid>=2.0.0",
     "typer",
     "SQLAlchemy",
     "rich",

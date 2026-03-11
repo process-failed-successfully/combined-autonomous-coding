@@ -13845,6 +13845,11 @@ def parse_args(argv=None):
     # xml-lab json
     parser_xml_json = xml_subparsers.add_parser("json", help="Convert to JSON.")
 
+    # xml-lab diff
+    parser_xml_diff = xml_subparsers.add_parser("diff", help="Diff two XML files.")
+    parser_xml_diff.add_argument("file1", help="First file.")
+    parser_xml_diff.add_argument("file2", help="Second file.")
+
     # xml-lab tui
     parser_xml_tui = xml_subparsers.add_parser("tui", help="Launch interactive XML Lab.")
 

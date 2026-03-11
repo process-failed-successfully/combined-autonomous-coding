@@ -1,5 +1,6 @@
 import sys
 import json
+import difflib
 import defusedxml.ElementTree as DetusedET
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import List, Dict, Any, Optional
 
 class XmlLabManager:
     """
-    Manages XML operations: format, validate, xpath, edit, to_json.
+    Manages XML operations: format, validate, xpath, edit, to_json, diff.
     """
 
     def parse(self, content: str) -> ET.Element:
@@ -99,9 +100,38 @@ class XmlLabManager:
 
         return result
 
+    def diff(self, element1: ET.Element, element2: ET.Element) -> str:
+        """Returns a semantic diff of two XML documents."""
+        str1 = self.format(element1)
+        str2 = self.format(element2)
+
+        diff_lines = difflib.unified_diff(
+            str1.splitlines(),
+            str2.splitlines(),
+            fromfile="original",
+            tofile="modified",
+            lineterm=""
+        )
+        return "\n".join(diff_lines)
+
 def run_xml_lab_logic(args):
     """CLI Entry point for XML Lab."""
     manager = XmlLabManager()
+
+    # If action is diff, we handle multiple inputs differently
+    if args.action == "diff":
+        try:
+            root1 = manager.load_file(args.file1)
+            root2 = manager.load_file(args.file2)
+            diff_result = manager.diff(root1, root2)
+            if diff_result:
+                print(diff_result)
+                sys.exit(1)
+            else:
+                sys.exit(0)
+        except Exception as e:
+            print(f"Error diffing XML: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # Read Input
     content = ""

@@ -89,5 +89,20 @@ class TestXmlLabManager(unittest.TestCase):
         self.assertIn("nested", data)
         self.assertEqual(data["nested"]["subchild"], "SubText")
 
+    def test_diff(self):
+        xml1 = """<root><child id="1">Text</child></root>"""
+        xml2 = """<root><child id="2">Text</child></root>"""
+        root1 = self.manager.parse(xml1)
+        root2 = self.manager.parse(xml2)
+        diff_str = self.manager.diff(root1, root2)
+        self.assertIn("-  <child id=\"1\">Text</child>", diff_str)
+        self.assertIn("+  <child id=\"2\">Text</child>", diff_str)
+
+    def test_diff_identical(self):
+        root1 = self.manager.parse(self.valid_xml)
+        root2 = self.manager.parse(self.valid_xml)
+        diff_str = self.manager.diff(root1, root2)
+        self.assertEqual(diff_str, "")
+
 if __name__ == '__main__':
     unittest.main()

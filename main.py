@@ -313,7 +313,8 @@ KNOWN_COMMANDS = [
     "mime-lab", "mime",
     "branch-lab", "bl",
     "luhn-lab", "luhn",
-    "iban-lab", "iban"
+    "iban-lab", "iban",
+    "case-lab", "case"
 ]
 
 if FileSystemEventHandler:
@@ -690,6 +691,27 @@ def run_luhn_lab(args):
         run_luhn_lab_logic(args)
         sys.exit(0)
 
+
+def run_case_lab(args):
+    """Runs the Case Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Case Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-case")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.string_case_lab import run_string_case_lab_logic
+        run_string_case_lab_logic(args)
+        sys.exit(0)
 
 def run_iban_lab(args):
     """Runs the IBAN Lab."""
@@ -16636,6 +16658,26 @@ def parse_args(argv=None):
     luhn_generate.add_argument("--prefix", type=str, default="", help="Prefix for the generated number.")
     luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
 
+    # --- New 'case-lab' command ---
+    parser_case = subparsers.add_parser(
+        "case-lab",
+        aliases=["case"],
+        help="String case conversions (camel, snake, kebab, etc.)."
+    )
+    case_subparsers = parser_case.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # case-lab convert
+    parser_case_convert = case_subparsers.add_parser("convert", help="Convert string case.")
+    parser_case_convert.add_argument("text", nargs="?", help="The string to convert (can also be passed via stdin).")
+    parser_case_convert.add_argument("--to", required=True, choices=["camel", "snake", "kebab", "pascal", "constant", "dot", "path"], help="Target case format.")
+
+    # case-lab tui
+    case_subparsers.add_parser("tui", help="Launch interactive TUI for Case Lab.")
+
     # --- New 'iban-lab' command ---
     parser_iban = subparsers.add_parser(
         "iban-lab",
@@ -20665,6 +20707,10 @@ async def main():
 
     if args.command in ["iban-lab", "iban"]:
         run_iban_lab(args)
+        return
+
+    if args.command in ["case-lab", "case"]:
+        run_case_lab(args)
         return
 
     if args.command in ["isbn-lab", "isbn"]:

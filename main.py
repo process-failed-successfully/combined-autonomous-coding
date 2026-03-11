@@ -171,6 +171,7 @@ from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
+from shared.nanoid_lab import run_nanoid_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -313,7 +314,8 @@ KNOWN_COMMANDS = [
     "mime-lab", "mime",
     "branch-lab", "bl",
     "luhn-lab", "luhn",
-    "iban-lab", "iban"
+    "iban-lab", "iban",
+    "nanoid-lab", "nanoid"
 ]
 
 if FileSystemEventHandler:
@@ -687,6 +689,26 @@ def run_iban_lab(args):
     else:
         from shared.iban_lab import run_iban_lab_logic
         run_iban_lab_logic(args)
+        sys.exit(0)
+
+def run_nanoid_lab(args):
+    """Runs the NanoID Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching NanoID Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-nanoid")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        run_nanoid_lab_logic(args)
         sys.exit(0)
 
 def run_branch_lab(args):
@@ -16508,6 +16530,27 @@ def parse_args(argv=None):
     iban_parse = iban_subparsers.add_parser("parse", help="Parse an IBAN.")
     iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
 
+    # --- New 'nanoid-lab' command ---
+    parser_nanoid = subparsers.add_parser(
+        "nanoid-lab",
+        aliases=["nanoid"],
+        help="NanoID generation and validation tools."
+    )
+    nanoid_subparsers = parser_nanoid.add_subparsers(dest="action", required=True)
+    nanoid_subparsers.add_parser("tui", help="Launch the interactive NanoID Lab TUI.")
+
+    # generate
+    nanoid_generate = nanoid_subparsers.add_parser("generate", help="Generate NanoIDs.")
+    nanoid_generate.add_argument("--size", type=int, default=21, help="Size of the NanoID (default: 21).")
+    nanoid_generate.add_argument("--alphabet", type=str, help="Custom alphabet to use.")
+    nanoid_generate.add_argument("--count", type=int, default=1, help="Number of NanoIDs to generate.")
+
+    # validate
+    nanoid_validate = nanoid_subparsers.add_parser("validate", help="Validate a NanoID.")
+    nanoid_validate.add_argument("--nanoid", type=str, required=True, help="The NanoID to validate.")
+    nanoid_validate.add_argument("--size", type=int, default=21, help="Expected size of the NanoID.")
+    nanoid_validate.add_argument("--alphabet", type=str, help="Expected custom alphabet.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -20487,6 +20530,10 @@ async def main():
 
     if args.command in ["iban-lab", "iban"]:
         run_iban_lab(args)
+        return
+
+    if args.command in ["nanoid-lab", "nanoid"]:
+        run_nanoid_lab(args)
         return
 
     # Initialize Agent Client

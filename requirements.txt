@@ -44,3 +44,4 @@ tiktoken
 ulid-py
 python-barcode
 bcrypt
+nanoid

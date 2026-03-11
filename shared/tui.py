@@ -224,6 +224,7 @@ from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
 from shared.tui_luhn import LuhnLabTab
 from shared.tui_iban import IbanLabTab
+from shared.tui_nanoid import NanoIDLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4435,6 +4436,8 @@ class AgentTUI(App):
                 yield LuhnLabTab()
             with TabPane("IBAN Lab", id="tab-iban"):
                 yield IbanLabTab()
+            with TabPane("NanoID Lab", id="tab-nanoid"):
+                yield NanoIDLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

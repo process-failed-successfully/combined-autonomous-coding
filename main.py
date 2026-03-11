@@ -1588,6 +1588,7 @@ def run_uuid_lab(args):
 def run_nanoid_lab(args):
     """Runs the NanoID Lab."""
     if args.action == "tui":
+        from shared.tui import AgentTUI
         print("Launching NanoID Lab TUI...")
         from shared.tui import AgentTUI
         from shared.tui import AgentTUI

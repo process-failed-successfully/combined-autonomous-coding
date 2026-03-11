@@ -249,6 +249,13 @@ def run_csv_lab_logic(args):
     """CLI logic for CSV Lab."""
     manager = CsvLabManager(args.project_dir)
 
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching CSV Lab TUI...")
+        app = AgentTUI(project_dir=manager.project_dir, start_tab="tab-csv")
+        app.run()
+        sys.exit(0)
+
     # Load input
     if args.file:
         try:

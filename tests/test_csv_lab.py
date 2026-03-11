@@ -136,3 +136,34 @@ def test_query_sql_invalid_sql(csv_manager):
     with pytest.raises(ValueError) as excinfo:
         csv_manager.query_sql(data, "SELECT * FROM non_existent_table")
     assert "SQL Error" in str(excinfo.value)
+
+import unittest.mock
+
+class TestCsvLabCLI:
+    @unittest.mock.patch('sys.exit', side_effect=SystemExit)
+    def test_tui_action(self, mock_exit):
+        from shared.csv_lab import run_csv_lab_logic
+        import argparse
+        import sys
+
+        # We must properly patch the exact path being imported locally in the function
+        # The function does `from shared.tui import AgentTUI`
+
+        mock_agent_tui = unittest.mock.MagicMock()
+        mock_app = unittest.mock.MagicMock()
+        mock_agent_tui.return_value = mock_app
+
+        args = argparse.Namespace(project_dir=Path("."), action="tui", file=None)
+
+        # Create a mock module for shared.tui to avoid actually importing it
+        # and raising ImportErrors on missing dependencies like PyYAML.
+        mock_shared_tui = unittest.mock.MagicMock()
+        mock_shared_tui.AgentTUI = mock_agent_tui
+
+        with unittest.mock.patch.dict('sys.modules', {'shared.tui': mock_shared_tui}):
+            with pytest.raises(SystemExit):
+                run_csv_lab_logic(args)
+
+        mock_agent_tui.assert_called_once_with(project_dir=Path("."), start_tab="tab-csv")
+        mock_app.run.assert_called_once()
+        mock_exit.assert_called_with(0)

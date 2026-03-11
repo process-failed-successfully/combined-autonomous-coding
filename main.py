@@ -667,6 +667,7 @@ def run_luhn_lab(args):
         run_luhn_lab_logic(args)
         sys.exit(0)
 
+
 def run_iban_lab(args):
     """Runs the IBAN Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -687,6 +688,27 @@ def run_iban_lab(args):
     else:
         from shared.iban_lab import run_iban_lab_logic
         run_iban_lab_logic(args)
+        sys.exit(0)
+
+def run_isbn_lab(args):
+    """Runs the ISBN Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching ISBN Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-isbn")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.isbn_lab import run_isbn_lab_logic
+        run_isbn_lab_logic(args)
         sys.exit(0)
 
 def run_branch_lab(args):
@@ -16596,6 +16618,27 @@ def parse_args(argv=None):
     iban_parse = iban_subparsers.add_parser("parse", help="Parse an IBAN.")
     iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
 
+    # --- ISBN Lab ---
+    parser_isbn = subparsers.add_parser(
+        "isbn-lab", aliases=["isbn"], help="Manage International Standard Book Numbers (ISBN-10, ISBN-13)"
+    )
+    isbn_subparsers = parser_isbn.add_subparsers(dest="action", help="Action to perform")
+
+    isbn_subparsers.add_parser("tui", help="Launch the interactive ISBN Lab TUI.")
+
+    isbn_validate = isbn_subparsers.add_parser("validate", help="Validate an ISBN.")
+    isbn_validate.add_argument("isbn", help="The ISBN string to validate.")
+
+    isbn_generate = isbn_subparsers.add_parser("generate", help="Generate a valid ISBN.")
+    isbn_generate.add_argument("--format", choices=["10", "13"], default="13", help="ISBN format (10 or 13).")
+    isbn_generate.add_argument("--prefix", choices=["978", "979"], default="978", help="Prefix for ISBN-13.")
+
+    isbn_parse = isbn_subparsers.add_parser("parse", help="Parse an ISBN.")
+    isbn_parse.add_argument("isbn", help="The ISBN string to parse.")
+
+    isbn_convert = isbn_subparsers.add_parser("convert", help="Convert an ISBN-10 to ISBN-13.")
+    isbn_convert.add_argument("isbn", help="The ISBN-10 string to convert.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -20578,6 +20621,10 @@ async def main():
 
     if args.command in ["iban-lab", "iban"]:
         run_iban_lab(args)
+        return
+
+    if args.command in ["isbn-lab", "isbn"]:
+        run_isbn_lab(args)
         return
 
     # Initialize Agent Client

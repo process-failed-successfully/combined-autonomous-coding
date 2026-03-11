@@ -149,6 +149,7 @@ from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
+from shared.tui_css import CssLabTab
 from shared.tui_base64 import Base64LabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_diff_lab import DiffLabTab
@@ -3971,6 +3972,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
+        PaletteCommand("Go to CSS Lab", "switch_tab_css"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
@@ -4314,6 +4316,8 @@ class AgentTUI(App):
                 yield HttpServerLabTab(self.project_dir)
             with TabPane("HTTP Client", id="tab-http-client"):
                 yield HttpLabTab()
+            with TabPane("CSS Lab", id="tab-css"):
+                yield CssLabTab()
             with TabPane("Base64 Lab", id="tab-base64"):
                 yield Base64LabTab()
             with TabPane("Hash Lab", id="tab-hash"):

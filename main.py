@@ -407,6 +407,29 @@ def run_emoji_lab(args):
     run_emoji_lab_logic(args)
     sys.exit(0)
 
+
+def run_css_lab(args):
+    """Runs the CSS Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching CSS Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-css")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.css_lab import run_css_lab_logic
+    success = run_css_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 def run_base64_lab(args):
     """Runs the Base64 Lab."""
     if getattr(args, "tui", False):
@@ -14567,6 +14590,17 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+
+    # css-lab
+    parser_css = subparsers.add_parser(
+        "css-lab", aliases=["css"],
+        help="CSS format and minify."
+    )
+    parser_css.add_argument("action", choices=["format", "minify", "tui"], nargs="?", default="tui", help="Action to perform (format, minify, or tui).")
+    parser_css.add_argument("--file", "-f", help="Input CSS file.")
+    parser_css.add_argument("--output", "-o", help="Output CSS file.")
+    parser_css.add_argument("--tui", action="store_true", help="Launch the interactive CSS Lab TUI.")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -20453,6 +20487,11 @@ async def main():
 
     if args.command in ["emoji-lab", "emoji", "emoj"]:
         run_emoji_lab(args)
+        return
+
+
+    if args.command in ["css-lab", "css"]:
+        run_css_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

@@ -225,6 +225,7 @@ from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
 from shared.tui_luhn import LuhnLabTab
 from shared.tui_iban import IbanLabTab
+from shared.tui_isbn import IsbnLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4069,6 +4070,8 @@ class AgentTUI(App):
                 yield PortLabTab()
             with TabPane("IP Lab", id="tab-ip"):
                 yield IpLabTab()
+            with TabPane("ISBN Lab", id="tab-isbn"):
+                yield IsbnLabTab()
             with TabPane("Bencode Lab", id="tab-bencode"):
                 yield BencodeLabTab()
             with TabPane("Socket Lab", id="tab-sock"):

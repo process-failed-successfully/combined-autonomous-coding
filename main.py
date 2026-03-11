@@ -13430,6 +13430,9 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # csv-lab tui
+    parser_csv_tui = csv_subparsers.add_parser("tui", help="Launch CSV Lab TUI.")
+
     # csv-lab query
     parser_csv_query = csv_subparsers.add_parser("query", help="Run SQL queries on the CSV data.")
     parser_csv_query.add_argument("--query", "-q", required=True, help="SQL query to execute (table name is 'data').")

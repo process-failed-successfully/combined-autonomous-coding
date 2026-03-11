@@ -7,6 +7,7 @@ from pathlib import Path
 from textual.widgets import ListView, Static, Select
 from shared.tui import AgentTUI
 from shared.tui_pattern import PatternLabTab
+from textual.widgets import Static
 
 class TestTUIPattern(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -49,6 +50,7 @@ class TestTUIPattern(unittest.IsolatedAsyncioTestCase):
         start_patch('shared.tui.LinkChecker')
         start_patch('shared.tui.OpenAPIGenerator')
         start_patch('shared.tui_knowledge_graph.KnowledgeManager')
+        start_patch('shared.tui.ProcessExplorerTab', side_effect=lambda *args, **kwargs: Static("Mock ProcessExplorer Tab", id="tab-process-explorer"))
 
         # Capture the specific mock we need
         self.mock_pattern_cls = start_patch('shared.tui_pattern.PatternLabManager')

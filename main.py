@@ -14213,6 +14213,8 @@ def parse_args(argv=None):
     parser_http.add_argument("--no-verify", action="store_true", help="Disable SSL verification.")
     parser_http.add_argument("--timeout", type=float, default=10.0, help="Request timeout.")
     parser_http.add_argument("--proxy", help="Proxy URL.")
+    parser_http.add_argument("--curl", help="Execute request from a curl command string.")
+    parser_http.add_argument("--to-curl", action="store_true", help="Print the equivalent curl command string instead of making a request.")
     parser_http.add_argument("--verbose", "-v", action="store_true", help="Show detailed request/response info.")
 
     # --- New 'proxy-lab' command ---

@@ -244,6 +244,44 @@ class CsvLabManager:
         conn.close()
         return result
 
+    def export_data(self, data: List[Dict[str, Any]], format: str) -> str:
+        """Exports data to various formats (json, markdown, html)."""
+        if not data:
+            if format == "json":
+                return "[]"
+            elif format == "markdown":
+                return ""
+            elif format == "html":
+                return "<table></table>"
+
+        if format == "json":
+            import json
+            return json.dumps(data, indent=2)
+        elif format == "markdown":
+            headers = self.get_headers(data)
+            header_row = "| " + " | ".join(headers) + " |"
+            sep_row = "| " + " | ".join(["---"] * len(headers)) + " |"
+            rows = [header_row, sep_row]
+            for row in data:
+                rows.append("| " + " | ".join(str(row.get(h, "")) for h in headers) + " |")
+            return "\n".join(rows)
+        elif format == "html":
+            headers = self.get_headers(data)
+            lines = ["<table>", "  <thead>", "    <tr>"]
+            for h in headers:
+                lines.append(f"      <th>{h}</th>")
+            lines.extend(["    </tr>", "  </thead>", "  <tbody>"])
+            for row in data:
+                lines.append("    <tr>")
+                for h in headers:
+                    val = str(row.get(h, "")).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    lines.append(f"      <td>{val}</td>")
+                lines.append("    </tr>")
+            lines.extend(["  </tbody>", "</table>"])
+            return "\n".join(lines)
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
 
 def run_csv_lab_logic(args):
     """CLI logic for CSV Lab."""
@@ -396,6 +434,19 @@ def run_csv_lab_logic(args):
                     print("No results returned.")
         except ValueError as e:
             print(f"❌ Query error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "export":
+        try:
+            result = manager.export_data(data, args.format)
+            if args.output:
+                with open(args.output, "w", encoding="utf-8") as f:
+                    f.write(result)
+                print(f"✅ Exported data to {args.output} in {args.format} format.")
+            else:
+                print(result)
+        except ValueError as e:
+            print(f"❌ Export error: {e}", file=sys.stderr)
             sys.exit(1)
 
     sys.exit(0)

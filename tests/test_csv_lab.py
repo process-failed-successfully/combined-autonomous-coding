@@ -137,6 +137,35 @@ def test_query_sql_invalid_sql(csv_manager):
         csv_manager.query_sql(data, "SELECT * FROM non_existent_table")
     assert "SQL Error" in str(excinfo.value)
 
+def test_export_data_json(csv_manager, sample_csv):
+    data = csv_manager.load_csv(sample_csv)
+    json_output = csv_manager.export_data(data, "json")
+    import json
+    parsed = json.loads(json_output)
+    assert len(parsed) == 4
+    assert parsed[0]["name"] == "Alice"
+
+def test_export_data_markdown(csv_manager, sample_csv):
+    data = csv_manager.load_csv(sample_csv)
+    md_output = csv_manager.export_data(data, "markdown")
+    assert "| id | name | age | city |" in md_output
+    assert "| --- | --- | --- | --- |" in md_output
+    assert "| 1 | Alice | 30 | New York |" in md_output
+
+def test_export_data_html(csv_manager, sample_csv):
+    data = csv_manager.load_csv(sample_csv)
+    html_output = csv_manager.export_data(data, "html")
+    assert "<table>" in html_output
+    assert "<th>name</th>" in html_output
+    assert "<td>Alice</td>" in html_output
+    assert "</table>" in html_output
+
+def test_export_data_invalid_format(csv_manager, sample_csv):
+    data = csv_manager.load_csv(sample_csv)
+    with pytest.raises(ValueError) as excinfo:
+        csv_manager.export_data(data, "invalid_fmt")
+    assert "Unsupported format" in str(excinfo.value)
+
 import unittest.mock
 
 class TestCsvLabCLI:

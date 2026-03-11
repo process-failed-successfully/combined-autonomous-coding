@@ -13467,6 +13467,11 @@ def parse_args(argv=None):
     parser_csv_select.add_argument("columns", help="Comma-separated list of columns.")
     parser_csv_select.add_argument("--output", "-o", help="Output file (default stdout).")
 
+    # csv-lab export
+    parser_csv_export = csv_subparsers.add_parser("export", help="Export CSV to other formats.")
+    parser_csv_export.add_argument("--format", required=True, choices=["json", "markdown", "html"], help="Output format.")
+    parser_csv_export.add_argument("--output", "-o", help="Output file (default stdout).")
+
     # --- New 'excel-lab' command ---
     parser_excel = subparsers.add_parser(
         "excel-lab",

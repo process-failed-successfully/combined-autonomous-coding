@@ -164,6 +164,7 @@ from shared.tui_port import PortLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_uuid import UuidLabTab
+from shared.tui_nanoid import NanoIDLab
 from shared.tui_ulid import UlidLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
@@ -4246,6 +4247,9 @@ class AgentTUI(App):
                 yield JwtLabTab()
             with TabPane("UUID Lab", id="tab-uuid"):
                 yield UuidLabTab()
+
+            with TabPane("NanoID Lab", id="tab-nanoid"):
+                yield NanoIDLab()
             with TabPane("ULID Lab", id="tab-ulid"):
                 yield UlidLabTab()
             with TabPane("OTP Lab", id="tab-otp"):

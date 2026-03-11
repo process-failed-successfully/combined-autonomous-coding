@@ -1584,6 +1584,27 @@ def run_uuid_lab(args):
     run_uuid_lab_logic(args)
     sys.exit(0)
 
+
+def run_nanoid_lab(args):
+    """Runs the NanoID Lab."""
+    if args.action == "tui":
+        print("Launching NanoID Lab TUI...")
+        from shared.tui import AgentTUI
+        from shared.tui import AgentTUI
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-nanoid")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    from shared.nanoid_lab import run_nanoid_lab_logic
+    run_nanoid_lab_logic(args)
+
 def run_ulid_lab(args):
     """Runs the ULID Lab."""
     if args.action == "tui":
@@ -12686,6 +12707,68 @@ def parse_args(argv=None):
     parser_phys_pe.add_argument("--gravity", "-g", type=float, default=9.81, help="Gravity")
 
     # --- New 'uuid-lab' command ---
+    # ==========================================
+    # ULID Lab
+    # ==========================================
+    # ==========================================
+    # NanoID Lab
+    # ==========================================
+    parser_nanoid = subparsers.add_parser(
+        "nanoid-lab",
+        aliases=["nanoid"],
+        help="NanoID Generator."
+    )
+    nanoid_subparsers = parser_nanoid.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # nanoid generate
+    parser_nanoid_gen = nanoid_subparsers.add_parser("generate", aliases=["gen"], help="Generate NanoIDs.")
+    parser_nanoid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of NanoIDs to generate.")
+    parser_nanoid_gen.add_argument("--size", "-s", type=int, default=21, help="Size of the NanoID.")
+    parser_nanoid_gen.add_argument("--alphabet", "-a", type=str, default=None, help="Custom alphabet to use.")
+
+    # nanoid tui
+    parser_nanoid_tui = nanoid_subparsers.add_parser("tui", help="Launch NanoID Lab TUI.")
+
+    # nanoid bulk
+    parser_nanoid_bulk = nanoid_subparsers.add_parser("bulk", help="Generate bulk NanoIDs.")
+    parser_nanoid_bulk.add_argument("count", type=int, help="Number of NanoIDs.")
+    parser_nanoid_bulk.add_argument("--size", "-s", type=int, default=21, help="Size of the NanoID.")
+    parser_nanoid_bulk.add_argument("--alphabet", "-a", type=str, default=None, help="Custom alphabet to use.")
+
+    parser_ulid = subparsers.add_parser(
+        "ulid-lab",
+        aliases=["ulid"],
+        help="ULID Generator and Inspector."
+    )
+    ulid_subparsers = parser_ulid.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ulid generate
+    parser_ulid_gen = ulid_subparsers.add_parser("generate", aliases=["gen"], help="Generate ULIDs.")
+    parser_ulid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of ULIDs to generate.")
+
+    # ulid inspect
+    parser_ulid_inspect = ulid_subparsers.add_parser("inspect", aliases=["info", "decode"], help="Inspect a ULID.")
+    parser_ulid_inspect.add_argument("ulid", nargs="?", help="The ULID to inspect.")
+
+    # ulid tui
+    parser_ulid_tui = ulid_subparsers.add_parser("tui", help="Launch ULID Lab TUI.")
+
+    # ulid validate
+    parser_ulid_validate = ulid_subparsers.add_parser("validate", aliases=["check"], help="Validate a ULID.")
+    parser_ulid_validate.add_argument("ulid", nargs="?", help="The ULID to validate.")
+
+    # ulid bulk
+    parser_ulid_bulk = ulid_subparsers.add_parser("bulk", help="Generate bulk ULIDs.")
+    parser_ulid_bulk.add_argument("count", type=int, help="Number of ULIDs.")
+
     parser_uuid = subparsers.add_parser(
         "uuid-lab",
         aliases=["uuid"],
@@ -20135,6 +20218,9 @@ async def main():
         run_uuid_lab(args)
         return
 
+    if args.command in ["nanoid-lab", "nanoid"]:
+        run_nanoid_lab(args)
+        return
     if args.command in ["ulid-lab", "ulid"]:
         run_ulid_lab(args)
         return

@@ -227,6 +227,7 @@ from shared.tui_branch_lab import BranchLabTab
 from shared.tui_luhn import LuhnLabTab
 from shared.tui_iban import IbanLabTab
 from shared.tui_isbn import IsbnLabTab
+from shared.tui_case import CaseLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4446,6 +4447,8 @@ class AgentTUI(App):
                 yield LuhnLabTab()
             with TabPane("IBAN Lab", id="tab-iban"):
                 yield IbanLabTab()
+            with TabPane("Case Lab", id="tab-case"):
+                yield CaseLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

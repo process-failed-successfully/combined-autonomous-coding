@@ -85,9 +85,9 @@ class DiskUsageTab(Container):
         tree.root.expand()
 
         # Add immediate children of root
-        self._add_children(tree.root, data.get("children", []))
+        self._add_tree_children(tree.root, data.get("children", []))
 
-    def _add_children(self, node: Any, children: list) -> None:
+    def _add_tree_children(self, node: Any, children: list) -> None:
         """Adds immediate children to the tree node."""
         for child in children:
             size_str = format_size(child["size"])
@@ -116,7 +116,7 @@ class DiskUsageTab(Container):
 
         children_data = node_data.get("children", [])
         if children_data:
-            self._add_children(node, children_data)
+            self._add_tree_children(node, children_data)
 
     def _update_table(self, files: list) -> None:
         table = self.query_one("#du-table", DataTable)

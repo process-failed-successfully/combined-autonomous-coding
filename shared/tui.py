@@ -228,6 +228,7 @@ from shared.tui_luhn import LuhnLabTab
 from shared.tui_iban import IbanLabTab
 from shared.tui_isbn import IsbnLabTab
 from shared.tui_case import CaseLabTab
+from shared.tui_data_uri import DataUriLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3978,6 +3979,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
+        PaletteCommand("Go to Data URI Lab", "switch_tab_data_uri"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4449,6 +4451,8 @@ class AgentTUI(App):
                 yield IbanLabTab()
             with TabPane("Case Lab", id="tab-case"):
                 yield CaseLabTab()
+            with TabPane("Data URI Lab", id="tab-data-uri"):
+                yield DataUriLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

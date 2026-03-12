@@ -171,6 +171,7 @@ from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
+from shared.data_uri_lab import run_data_uri_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -314,7 +315,8 @@ KNOWN_COMMANDS = [
     "branch-lab", "bl",
     "luhn-lab", "luhn",
     "iban-lab", "iban",
-    "case-lab", "case"
+    "case-lab", "case",
+    "data-uri-lab", "data-uri"
 ]
 
 if FileSystemEventHandler:
@@ -691,6 +693,11 @@ def run_luhn_lab(args):
         run_luhn_lab_logic(args)
         sys.exit(0)
 
+
+def run_data_uri_lab(args):
+    """Runs the Data URI Lab."""
+    success = run_data_uri_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_case_lab(args):
     """Runs the Case Lab."""
@@ -16658,6 +16665,31 @@ def parse_args(argv=None):
     luhn_generate.add_argument("--prefix", type=str, default="", help="Prefix for the generated number.")
     luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
 
+    # --- New 'data-uri-lab' command ---
+    parser_data_uri = subparsers.add_parser(
+        "data-uri-lab",
+        aliases=["data-uri"],
+        help="Encode text or files into Data URIs and decode Data URIs."
+    )
+    data_uri_subparsers = parser_data_uri.add_subparsers(dest="action", required=True)
+
+    # encode
+    data_uri_encode = data_uri_subparsers.add_parser("encode", help="Encode text or a file to a Data URI.")
+    data_uri_encode_group = data_uri_encode.add_mutually_exclusive_group(required=True)
+    data_uri_encode_group.add_argument("--text", type=str, help="Text to encode.")
+    data_uri_encode_group.add_argument("--file", type=str, help="File to encode.")
+    data_uri_encode.add_argument("--mime", type=str, help="MIME type to use (optional, will try to guess for files).")
+    data_uri_encode.add_argument("--no-base64", action="store_true", help="Don't use base64 encoding (only for --text).")
+
+    # decode
+    data_uri_decode = data_uri_subparsers.add_parser("decode", help="Decode a Data URI.")
+    data_uri_decode.add_argument("uri", type=str, help="The Data URI to decode.")
+    data_uri_decode.add_argument("--output", "-o", type=str, help="File to save the decoded data to.")
+    data_uri_decode.add_argument("--info-only", action="store_true", help="Only show the parsed MIME type and properties, not the data.")
+
+    # tui
+    data_uri_subparsers.add_parser("tui", help="Launch interactive TUI for Data URI Lab.")
+
     # --- New 'case-lab' command ---
     parser_case = subparsers.add_parser(
         "case-lab",
@@ -20711,6 +20743,10 @@ async def main():
 
     if args.command in ["case-lab", "case"]:
         run_case_lab(args)
+        return
+
+    if args.command in ["data-uri-lab", "data-uri"]:
+        run_data_uri_lab(args)
         return
 
     if args.command in ["isbn-lab", "isbn"]:

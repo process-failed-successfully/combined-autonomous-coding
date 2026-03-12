@@ -1,8 +1,8 @@
 import sys
-import json
 import math
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+
 
 class GeoLabManager:
     """Manages geolocation utilities."""
@@ -48,6 +48,7 @@ class GeoLabManager:
         """
         return f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
 
+
 def run_geo_lab_logic(args):
     """CLI entry point for Geo Lab."""
     manager = GeoLabManager()
@@ -57,12 +58,14 @@ def run_geo_lab_logic(args):
         print(f"--- Locating: {query} ---")
         result = manager.locate(query)
         if result.get("status") == "success":
+            lat = result.get('lat', 0.0)
+            lon = result.get('lon', 0.0)
             print(f"IP: {result.get('query')}")
             print(f"Location: {result.get('city')}, {result.get('regionName')}, {result.get('country')}")
-            print(f"Coordinates: {result.get('lat')}, {result.get('lon')}")
+            print(f"Coordinates: {lat}, {lon}")
             print(f"ISP: {result.get('isp')}")
             print(f"Timezone: {result.get('timezone')}")
-            print(f"Map: {manager.map_url(result.get('lat'), result.get('lon'))}")
+            print(f"Map: {manager.map_url(float(lat), float(lon))}")
         else:
             print(f"❌ Failed: {result.get('message')}")
             sys.exit(1)
@@ -76,7 +79,7 @@ def run_geo_lab_logic(args):
             lat2, lon2 = float(p2[0]), float(p2[1])
 
             dist = manager.calculate_distance(lat1, lon1, lat2, lon2)
-            print(f"--- Distance ---")
+            print("--- Distance ---")
             print(f"From: {lat1}, {lon1}")
             print(f"To:   {lat2}, {lon2}")
             print(f"Result: {dist['km']} km ({dist['miles']} miles)")
@@ -88,7 +91,7 @@ def run_geo_lab_logic(args):
         try:
             p = args.point.split(',')
             lat, lon = float(p[0]), float(p[1])
-            print(f"--- Map Link ---")
+            print("--- Map Link ---")
             print(manager.map_url(lat, lon))
         except (ValueError, IndexError):
             print("❌ Error: Coordinates must be in 'lat,lon' format.", file=sys.stderr)

@@ -1327,6 +1327,21 @@ def run_bencode_lab(args):
 
 def run_geo_lab(args):
     """Runs the Geo Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Geo Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-geo")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     run_geo_lab_logic(args)
     sys.exit(0)
 
@@ -14386,6 +14401,9 @@ def parse_args(argv=None):
     # geo-lab map
     parser_geo_map = geo_subparsers.add_parser("map", help="Get Google Maps link.")
     parser_geo_map.add_argument("point", help="Coordinates (lat,lon).")
+
+    # geo-lab tui
+    parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
     # --- New 'struct-lab' command ---
     parser_struct = subparsers.add_parser(

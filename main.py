@@ -13192,6 +13192,12 @@ def parse_args(argv=None):
     parser_tl_lorem = text_lab_subparsers.add_parser("lorem", help="Generate lorem ipsum dummy text.")
     parser_tl_lorem.add_argument("--words", "-w", type=int, default=100, help="Number of words to generate.")
 
+    # text-lab random
+    parser_tl_random = text_lab_subparsers.add_parser("random", aliases=["rand"], help="Generate a random string.")
+    parser_tl_random.add_argument("--length", "-l", type=int, default=16, help="Length of the random string (default: 16).")
+    parser_tl_random.add_argument("--charset", "-c", choices=["alphanumeric", "alpha", "numeric", "hex", "ascii"], default="alphanumeric", help="Character set to use (default: alphanumeric).")
+
+
     text_lab_subparsers.add_parser("tui", help="Launch the Text Lab TUI.")
 
     # --- New 'html-lab' command ---

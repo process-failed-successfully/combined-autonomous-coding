@@ -191,6 +191,37 @@ class TestTextLab(unittest.TestCase):
         self.assertEqual(self.manager.lorem_ipsum(words=0), "")
         self.assertEqual(self.manager.lorem_ipsum(words=-5), "")
 
+    def test_generate_random_string(self):
+        # Default
+        s1 = self.manager.generate_random_string()
+        self.assertEqual(len(s1), 16)
+
+        # Length
+        s2 = self.manager.generate_random_string(length=32)
+        self.assertEqual(len(s2), 32)
+
+        s3 = self.manager.generate_random_string(length=0)
+        self.assertEqual(s3, "")
+
+        # Charsets
+        import string
+        s_alpha = self.manager.generate_random_string(length=100, charset="alpha")
+        self.assertTrue(all(c in string.ascii_letters for c in s_alpha))
+
+        s_numeric = self.manager.generate_random_string(length=100, charset="numeric")
+        self.assertTrue(all(c in string.digits for c in s_numeric))
+
+        s_hex = self.manager.generate_random_string(length=100, charset="hex")
+        self.assertTrue(all(c in string.hexdigits.lower() for c in s_hex))
+
+        s_ascii = self.manager.generate_random_string(length=100, charset="ascii")
+        self.assertTrue(all(c in string.printable.strip() for c in s_ascii))
+
+        # Invalid charset
+        with self.assertRaises(ValueError):
+            self.manager.generate_random_string(charset="unknown")
+
+
 
 if __name__ == '__main__':
     unittest.main()

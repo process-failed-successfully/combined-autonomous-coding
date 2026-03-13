@@ -80,6 +80,7 @@ from shared.tui_proxy import ProxyLabTab
 from shared.tui_ws import WsLabTab
 from shared.tui_webhook import WebhookLabTab
 from shared.tui_regex import RegexLabTab
+from shared.tui_changelog import ChangelogLabTab
 from shared.tui_rss import RssLabTab
 from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
@@ -4293,6 +4294,8 @@ class AgentTUI(App):
                 yield FlashcardsTab(self.project_dir)
             with TabPane("Regex Lab", id="tab-regex"):
                 yield RegexLabTab(self.project_dir)
+            with TabPane("Changelog Lab", id="tab-changelog"):
+                yield ChangelogLabTab(self.project_dir)
             with TabPane("Random Lab", id="tab-random"):
                 yield RandomLabTab()
             with TabPane("RSS Lab", id="tab-rss"):

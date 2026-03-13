@@ -80,6 +80,7 @@ from shared.log_lab import run_log_lab_logic
 from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
+from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.csv_lab import run_csv_lab_logic
 from shared.excel_lab import run_excel_lab_logic
@@ -219,6 +220,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
+    "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
     "proxy-lab", "proxy",
     "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
@@ -2074,6 +2076,27 @@ def run_yaml_lab(args):
     """Runs the YAML Lab."""
     run_yaml_lab_logic(args)
     sys.exit(0)
+
+def run_changelog_lab(args):
+    """Runs the Changelog Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Changelog Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-changelog")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            # Do not exit immediately
+        else:
+            app.run()
+            sys.exit(0)
+    else:
+        run_changelog_lab_logic(args)
+        sys.exit(0)
 
 def run_toml_lab(args):
     """Runs the TOML Lab."""
@@ -13775,6 +13798,28 @@ def parse_args(argv=None):
     parser_ini_from_json = ini_subparsers.add_parser("from-json", help="Convert JSON to INI.")
     parser_ini_from_json.add_argument("file", help="Output INI file path.")
     parser_ini_from_json.add_argument("--json-input", help="JSON string input (or use piped stdin).", default=None)
+    # --- New 'changelog-lab' command ---
+    parser_changelog = subparsers.add_parser(
+        "changelog-lab",
+        aliases=["changelog"],
+        help="Changelog utilities (generate, tui)."
+    )
+    changelog_subparsers = parser_changelog.add_subparsers(
+        dest="action",
+        help="Changelog Lab commands."
+    )
+
+    # changelog-lab generate
+    parser_changelog_generate = changelog_subparsers.add_parser("generate", help="Generate a changelog from git history.")
+    parser_changelog_generate.add_argument("--base", help="Base git ref (e.g. main, v1.0.0).")
+    parser_changelog_generate.add_argument("--head", default="HEAD", help="Head git ref (e.g. feature-branch, HEAD).")
+    parser_changelog_generate.add_argument("--version", help="Version title for the changelog.")
+    parser_changelog_generate.add_argument("--output", help="Output markdown file path.")
+
+    # changelog-lab tui
+    parser_changelog_tui = changelog_subparsers.add_parser("tui", help="Launch Changelog Lab TUI.")
+
+
 
     # --- New 'yaml-lab' command ---
     parser_yaml = subparsers.add_parser(
@@ -20577,9 +20622,15 @@ async def main():
         run_ini_lab(args)
         return
 
+
     if args.command in ["yaml-lab", "yaml"]:
         run_yaml_lab(args)
         return
+
+    if args.command in ["changelog-lab", "changelog"]:
+        run_changelog_lab(args)
+        return
+
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)

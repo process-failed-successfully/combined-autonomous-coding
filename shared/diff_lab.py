@@ -2,6 +2,8 @@ import sys
 import json
 import yaml
 import difflib
+import filecmp
+import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Union
 
@@ -66,6 +68,72 @@ class DiffLabManager:
             self._compare_image(file1, file2, output)
         else:
             self._compare_text(file1, file2)
+
+    def compare_directories(self, dir1: Path, dir2: Path, output_json: bool = False) -> Optional[List[Dict[str, str]]]:
+        """
+        Recursively compares two directories.
+        Returns a list of dicts with 'path' and 'status' (Added, Removed, Modified, Identical) if output_json is True,
+        otherwise prints a summary and returns None.
+        """
+        if not dir1.is_dir():
+            print(f"❌ Directory not found: {dir1}")
+            return None
+        if not dir2.is_dir():
+            print(f"❌ Directory not found: {dir2}")
+            return None
+
+        results = []
+
+        def _compare_dirs(dcmp, dir_a, dir_b, rel_path=""):
+            for name in dcmp.left_only:
+                results.append({"path": os.path.join(rel_path, name), "status": "Removed"})
+            for name in dcmp.right_only:
+                results.append({"path": os.path.join(rel_path, name), "status": "Added"})
+
+            # dcmp does shallow comparisons, so we do a deep check on common files
+            match, mismatch, errors = filecmp.cmpfiles(dir_a, dir_b, dcmp.common_files, shallow=False)
+
+            for name in mismatch:
+                results.append({"path": os.path.join(rel_path, name), "status": "Modified"})
+            for name in match:
+                results.append({"path": os.path.join(rel_path, name), "status": "Identical"})
+            for name in errors:
+                results.append({"path": os.path.join(rel_path, name), "status": "Error"})
+
+            for sub_name, sub_dcmp in dcmp.subdirs.items():
+                _compare_dirs(sub_dcmp, os.path.join(dir_a, sub_name), os.path.join(dir_b, sub_name), os.path.join(rel_path, sub_name))
+
+        dcmp = filecmp.dircmp(str(dir1), str(dir2))
+        _compare_dirs(dcmp, str(dir1), str(dir2))
+
+        # Sort results by path for better readability
+        results.sort(key=lambda x: x["path"])
+
+        if output_json:
+            return results
+
+        if HAS_RICH and self.console:
+            table = Table(title=f"Directory Diff: {dir1.name} vs {dir2.name}", box=box.SIMPLE)
+            table.add_column("Path", style="cyan")
+            table.add_column("Status", style="bold")
+
+            for res in results:
+                status = res["status"]
+                style = ""
+                if status == "Added": style = "green"
+                elif status == "Removed": style = "red"
+                elif status == "Modified": style = "yellow"
+                elif status == "Identical": style = "dim"
+
+                table.add_row(res["path"], f"[{style}]{status}[/{style}]")
+
+            self.console.print(table)
+        else:
+            print(f"--- Directory Diff: {dir1.name} vs {dir2.name} ---")
+            for res in results:
+                print(f"{res['status']:<10} | {res['path']}")
+
+        return results
 
     def get_text_diff(self, lines1: List[str], lines2: List[str], fromfile: str = "a", tofile: str = "b") -> List[str]:
         """
@@ -277,7 +345,26 @@ def run_diff_lab_logic(args):
 
     file1 = Path(args.file1).resolve()
     file2 = Path(args.file2).resolve()
-    output = Path(args.output).resolve() if args.output else None
+    output = Path(args.output).resolve() if getattr(args, 'output', None) else None
 
-    manager.compare_files(file1, file2, ftype=args.type, output=output)
+    if file1.is_dir() and file2.is_dir():
+        is_json = getattr(args, 'json', False)
+        results = manager.compare_directories(file1, file2, output_json=is_json)
+        if is_json and results is not None:
+            output_str = json.dumps(results, indent=2)
+            if output:
+                output.write_text(output_str, encoding="utf-8")
+                print(f"✅ Saved JSON results to {output}")
+            else:
+                print(output_str)
+        elif output and not is_json:
+            # Output textual format to file if requested and not JSON
+            output_str = f"--- Directory Diff: {file1.name} vs {file2.name} ---\n"
+            for res in results:
+                output_str += f"{res['status']:<10} | {res['path']}\n"
+            output.write_text(output_str, encoding="utf-8")
+            print(f"✅ Saved textual results to {output}")
+    else:
+        manager.compare_files(file1, file2, ftype=getattr(args, 'type', None), output=output)
+
     sys.exit(0)

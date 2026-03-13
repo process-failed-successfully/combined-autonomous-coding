@@ -291,6 +291,7 @@ KNOWN_COMMANDS = [
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
     "go-lab", "go", "golang",
+    "base32-lab", "base32", "b32",
     "base64-lab", "base64", "b64",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
@@ -434,6 +435,24 @@ def run_css_lab(args):
 
     from shared.css_lab import run_css_lab_logic
     success = run_css_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base32_lab(args):
+    """Runs the Base32 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base32 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base32")
+        if getattr(args, '_in_event_loop', False):
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base32_lab import run_base32_lab_logic
+    success = run_base32_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base64_lab(args):
@@ -14799,6 +14818,16 @@ def parse_args(argv=None):
     parser_css.add_argument("--output", "-o", help="Output CSS file.")
     parser_css.add_argument("--tui", action="store_true", help="Launch the interactive CSS Lab TUI.")
 
+    # base32-lab
+    parser_b32 = subparsers.add_parser(
+        "base32-lab", aliases=["base32", "b32"],
+        help="Base32 encode and decode strings."
+    )
+    b32_group = parser_b32.add_mutually_exclusive_group(required=False)
+    b32_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    b32_group.add_argument("--decode", "-d", type=str, help="Base32 text to decode.")
+    parser_b32.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base32 Lab.")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -20771,6 +20800,10 @@ async def main():
 
     if args.command in ["css-lab", "css"]:
         run_css_lab(args)
+        return
+
+    if args.command in ["base32-lab", "base32", "b32"]:
+        run_base32_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

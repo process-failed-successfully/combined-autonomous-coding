@@ -230,6 +230,7 @@ from shared.tui_isbn import IsbnLabTab
 from shared.tui_case import CaseLabTab
 from shared.tui_data_uri import DataUriLabTab
 from shared.tui_geo import GeoLabTab
+from shared.tui_ocr import OcrLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4457,6 +4458,8 @@ class AgentTUI(App):
                 yield DataUriLabTab()
             with TabPane("Geo Lab", id="tab-geo"):
                 yield GeoLabTab()
+            with TabPane("OCR Lab", id="tab-ocr"):
+                yield OcrLabTab(project_dir=self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

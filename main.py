@@ -1631,6 +1631,28 @@ def run_image_lab(args):
     run_image_lab_logic(args)
     sys.exit(0)
 
+
+def run_ocr_lab(args):
+    """Runs the OCR Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching OCR Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-ocr")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.ocr_lab import run_ocr_lab_logic
+    run_ocr_lab_logic(args)
+    sys.exit(0)
+
 def run_media_lab(args):
     """Runs the Media Lab."""
     run_media_lab_logic(args)
@@ -13891,6 +13913,18 @@ def parse_args(argv=None):
 
 
     # --- New 'image-lab' command ---
+
+    parser_ocr = subparsers.add_parser(
+        "ocr-lab",
+        aliases=["ocr"],
+        help="OCR Lab for extracting text and data from images."
+    )
+    parser_ocr.add_argument("action", choices=["extract", "data", "langs", "tui"], default="tui", nargs="?", help="Action to perform.")
+    parser_ocr.add_argument("--file", "-f", help="Path to the image file.")
+    parser_ocr.add_argument("--lang", "-l", help="Language for OCR (e.g., eng, fra).")
+    parser_ocr.add_argument("--output", "-o", help="File to save the output.")
+    parser_ocr.add_argument("--tui", action="store_true", help="Launch the Textual UI.")
+
     parser_image = subparsers.add_parser(
         "image-lab",
         aliases=["img"],
@@ -20086,6 +20120,11 @@ async def main():
 
     if args.command in ["crypto-lab", "crypto"]:
         run_crypto_lab(args)
+        return
+
+
+    if args.command in ["ocr-lab", "ocr"]:
+        run_ocr_lab(args)
         return
 
     if args.command in ["image-lab", "img"]:

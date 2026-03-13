@@ -140,6 +140,7 @@ from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
+from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_template import TemplateLabTab
@@ -3974,6 +3975,10 @@ class AgentTUI(App):
         PaletteCommand("Go to Dictionary Lab", "switch_tab_dict"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
+        PaletteCommand("Go to JSON Lab", "switch_tab_json"),
+        PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
+        PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
+        PaletteCommand("Go to XML Lab", "switch_tab_xml"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
@@ -4337,12 +4342,12 @@ class AgentTUI(App):
                 yield IniLabTab(self.project_dir)
             with TabPane("YAML Lab", id="tab-yaml"):
                 yield YamlLabTab(self.project_dir)
+            with TabPane("TOML Lab", id="tab-toml"):
+                yield TomlLabTab(self.project_dir)
             with TabPane("XML Lab", id="tab-xml"):
                 yield XmlLabTab(self.project_dir)
             with TabPane("Template Lab", id="tab-template-lab"):
                 yield TemplateLabTab(self.project_dir)
-            with TabPane("TOML Lab", id="tab-toml"):
-                yield TomlLabTab(self.project_dir)
             with TabPane("Markdown Lab", id="tab-markdown"):
                 yield MarkdownLabTab(self.project_dir)
             with TabPane("CSV Lab", id="tab-csv"):

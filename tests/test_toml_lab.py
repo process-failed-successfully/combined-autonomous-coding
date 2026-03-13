@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock
 from shared.toml_lab import TomlLabManager
 import tomlkit
 import json
@@ -116,6 +117,35 @@ key = "value" # Inline comment
         self.assertIn("# This is a comment", dumped)
         self.assertIn("# Inline comment", dumped)
         self.assertIn('key = "new_value"', dumped)
+
+class TestTomlLabCLI(unittest.TestCase):
+    @unittest.mock.patch('sys.exit', side_effect=SystemExit)
+    def test_tui_action(self, mock_exit):
+        from shared.toml_lab import run_toml_lab_logic
+        import argparse
+        import sys
+        from pathlib import Path
+
+        # We must properly patch the exact path being imported locally in the function
+        # The function does `from shared.tui import AgentTUI`
+
+        mock_agent_tui = unittest.mock.MagicMock()
+        mock_app = unittest.mock.MagicMock()
+        mock_agent_tui.return_value = mock_app
+
+        args = argparse.Namespace(action="tui", input=None)
+
+        # Create a mock module for shared.tui to avoid actually importing it
+        mock_shared_tui = unittest.mock.MagicMock()
+        mock_shared_tui.AgentTUI = mock_agent_tui
+
+        with unittest.mock.patch.dict('sys.modules', {'shared.tui': mock_shared_tui}):
+            with self.assertRaises(SystemExit):
+                run_toml_lab_logic(args)
+
+        mock_agent_tui.assert_called_once_with(project_dir=Path("."), start_tab="tab-toml")
+        mock_app.run.assert_called_once()
+        mock_exit.assert_called_with(0)
 
 if __name__ == '__main__':
     unittest.main()

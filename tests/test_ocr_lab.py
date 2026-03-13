@@ -1,3 +1,4 @@
+import pytest
 import unittest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -114,3 +115,96 @@ class TestOcrLabCLI(unittest.TestCase):
         with patch('builtins.print') as mock_print:
             run_ocr_lab_logic(args)
             self.mock_manager.get_languages.assert_called_once()
+
+from unittest.mock import patch, MagicMock
+from pathlib import Path
+from main import run_ocr_lab
+import argparse
+from shared.tui_ocr import OcrLabTab
+
+@patch('shared.ocr_lab.OcrLabManager')
+def test_run_ocr_lab_cli_extract(mock_manager_class, tmp_path):
+    mock_manager = MagicMock()
+    mock_manager_class.return_value = mock_manager
+    mock_manager.extract_text.return_value = "Mocked OCR Text"
+
+    args = argparse.Namespace(
+        command="ocr-lab",
+        action="extract",
+        file="test.png",
+        lang="eng",
+        output=str(tmp_path / "output.txt"),
+        tui=False,
+        project_dir=tmp_path
+    )
+
+    with pytest.raises(SystemExit) as e:
+        run_ocr_lab(args)
+
+    assert e.value.code == 0
+    mock_manager.extract_text.assert_called_once()
+    assert (tmp_path / "output.txt").read_text() == "Mocked OCR Text"
+
+@patch('shared.ocr_lab.OcrLabManager')
+def test_run_ocr_lab_cli_data(mock_manager_class, tmp_path):
+    mock_manager = MagicMock()
+    mock_manager_class.return_value = mock_manager
+    mock_manager.get_data.return_value = {"text": ["Mocked", "Data"]}
+
+    args = argparse.Namespace(
+        command="ocr-lab",
+        action="data",
+        file="test.png",
+        lang="eng",
+        output=str(tmp_path / "output.json"),
+        tui=False,
+        project_dir=tmp_path
+    )
+
+    with pytest.raises(SystemExit) as e:
+        run_ocr_lab(args)
+
+    assert e.value.code == 0
+    mock_manager.get_data.assert_called_once()
+
+    import json
+    with open(tmp_path / "output.json", "r") as f:
+        data = json.load(f)
+    assert data == {"text": ["Mocked", "Data"]}
+
+@patch('shared.ocr_lab.OcrLabManager')
+def test_run_ocr_lab_cli_langs(mock_manager_class, capsys):
+    mock_manager = MagicMock()
+    mock_manager_class.return_value = mock_manager
+    mock_manager.get_languages.return_value = ["eng", "fra"]
+
+    args = argparse.Namespace(
+        command="ocr-lab",
+        action="langs",
+        file=None,
+        lang=None,
+        output=None,
+        tui=False,
+        project_dir=Path(".")
+    )
+
+    with pytest.raises(SystemExit) as e:
+        run_ocr_lab(args)
+
+    assert e.value.code == 0
+    mock_manager.get_languages.assert_called_once()
+    captured = capsys.readouterr()
+    assert "eng" in captured.out
+    assert "fra" in captured.out
+
+@patch('main.run_ocr_lab')
+def test_run_ocr_lab_tui(mock_run):
+    args = argparse.Namespace(command="ocr-lab", action="tui", tui=True, project_dir=Path("."))
+    pass
+
+@pytest.mark.asyncio
+async def test_ocr_lab_tab_components():
+    """Test that the OCR tab initializes correctly."""
+    tab = OcrLabTab(project_dir=Path("."))
+    assert tab.project_dir == Path(".")
+    assert tab.manager is not None

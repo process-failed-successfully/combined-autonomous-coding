@@ -52,11 +52,22 @@ class DiffLabTab(Container):
                     yield RichLog(id="diff-result-log", wrap=True, highlight=False, markup=False)
                 with TabPane("Structural Diff", id="tab-diff-struct"):
                     yield DataTable(id="diff-result-table")
+                with TabPane("Directory Diff", id="tab-diff-dir"):
+                    with Vertical():
+                        with Horizontal(classes="stat-box"):
+                            yield Input(placeholder="Dir A Path...", id="input-diff-dir-a")
+                            yield Input(placeholder="Dir B Path...", id="input-diff-dir-b")
+                            yield Button("Compare Dirs", id="btn-diff-compare-dirs", variant="primary")
+                        yield DataTable(id="diff-dir-result-table")
 
     def on_mount(self) -> None:
         table = self.query_one("#diff-result-table", DataTable)
         table.cursor_type = "row"
         table.add_columns("Path", "Type", "Old Value", "New Value")
+
+        dir_table = self.query_one("#diff-dir-result-table", DataTable)
+        dir_table.cursor_type = "row"
+        dir_table.add_columns("Status", "Path")
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-diff-load-a":
@@ -65,6 +76,8 @@ class DiffLabTab(Container):
             await self.load_file("b")
         elif event.button.id == "btn-diff-compare":
             self.compare()
+        elif event.button.id == "btn-diff-compare-dirs":
+            await self.compare_dirs()
         elif event.button.id == "btn-diff-clear":
             self.clear_inputs()
 
@@ -180,11 +193,49 @@ class DiffLabTab(Container):
             return yaml.safe_load(text)
         return None
 
+    async def compare_dirs(self) -> None:
+        dir_a_str = self.query_one("#input-diff-dir-a", Input).value
+        dir_b_str = self.query_one("#input-diff-dir-b", Input).value
+        dir_table = self.query_one("#diff-dir-result-table", DataTable)
+
+        dir_table.clear()
+
+        if not dir_a_str or not dir_b_str:
+            self.notify("Please enter both directory paths.", severity="error")
+            return
+
+        dir_a = self.project_dir / dir_a_str
+        dir_b = self.project_dir / dir_b_str
+
+        if not dir_a.is_dir() or not dir_b.is_dir():
+            self.notify("One or both paths are not valid directories.", severity="error")
+            return
+
+        try:
+            results = await asyncio.to_thread(self.manager.compare_directories, dir_a, dir_b, True)
+            if results is not None:
+                for res in results:
+                    status = res["status"]
+                    style = ""
+                    if status == "Added": style = "[green]"
+                    elif status == "Removed": style = "[red]"
+                    elif status == "Modified": style = "[yellow]"
+                    elif status == "Identical": style = "[dim]"
+
+                    styled_status = f"{style}{status}{'[/]' if style else ''}"
+                    dir_table.add_row(styled_status, res["path"])
+                self.notify(f"Directory comparison complete. Found {len(results)} items.")
+        except Exception as e:
+            self.notify(f"Error comparing directories: {e}", severity="error")
+
     def clear_inputs(self) -> None:
         self.query_one("#text-diff-a", TextArea).text = ""
         self.query_one("#text-diff-b", TextArea).text = ""
         self.query_one("#input-diff-path-a", Input).value = ""
         self.query_one("#input-diff-path-b", Input).value = ""
+        self.query_one("#input-diff-dir-a", Input).value = ""
+        self.query_one("#input-diff-dir-b", Input).value = ""
         self.query_one("#diff-result-log", RichLog).clear()
         self.query_one("#diff-result-table", DataTable).clear()
+        self.query_one("#diff-dir-result-table", DataTable).clear()
         self.notify("Inputs cleared.")

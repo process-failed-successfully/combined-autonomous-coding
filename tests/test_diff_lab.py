@@ -134,5 +134,43 @@ class TestDiffLab(unittest.TestCase):
         self.assertEqual(diff[0]['old'], 1)
         self.assertEqual(diff[0]['new'], 2)
 
+    def test_compare_directories(self):
+        dir1 = Path(self.temp_dir) / "dir1"
+        dir2 = Path(self.temp_dir) / "dir2"
+        dir1.mkdir()
+        dir2.mkdir()
+
+        # Identical file
+        (dir1 / "identical.txt").write_text("same")
+        (dir2 / "identical.txt").write_text("same")
+
+        # Modified file
+        (dir1 / "modified.txt").write_text("v1")
+        (dir2 / "modified.txt").write_text("v2")
+
+        # Added file
+        (dir2 / "added.txt").write_text("new")
+
+        # Removed file
+        (dir1 / "removed.txt").write_text("old")
+
+        with patch('sys.stdout'):
+            results = self.manager.compare_directories(dir1, dir2, output_json=True)
+
+        self.assertIsNotNone(results)
+        self.assertEqual(len(results), 4)
+
+        # Helper to find a file in the results
+        def get_status(filename):
+            for res in results:
+                if filename in res['path']:
+                    return res['status']
+            return None
+
+        self.assertEqual(get_status("identical.txt"), "Identical")
+        self.assertEqual(get_status("modified.txt"), "Modified")
+        self.assertEqual(get_status("added.txt"), "Added")
+        self.assertEqual(get_status("removed.txt"), "Removed")
+
 if __name__ == "__main__":
     unittest.main()

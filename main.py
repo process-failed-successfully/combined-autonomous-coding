@@ -320,7 +320,8 @@ KNOWN_COMMANDS = [
     "luhn-lab", "luhn",
     "iban-lab", "iban",
     "case-lab", "case",
-    "data-uri-lab", "data-uri"
+    "data-uri-lab", "data-uri",
+    "har-lab", "har"
 ]
 
 if FileSystemEventHandler:
@@ -719,6 +720,12 @@ def run_luhn_lab(args):
 def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
     success = run_data_uri_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_har_lab(args):
+    """Runs the HAR Lab."""
+    from shared.har_lab import run_har_lab_logic
+    success = run_har_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_snowflake_lab(args):
@@ -8970,6 +8977,14 @@ def parse_args(argv=None):
 
     # Subparser for 'tui'
     parser_tui = subparsers.add_parser("tui", help="Start the interactive Textual TUI")
+
+    # Subparser for 'har-lab'
+    parser_har = subparsers.add_parser("har-lab", aliases=["har"], help="Manage HAR files")
+    parser_har.add_argument("action", choices=["summary", "urls", "curl", "tui"], help="Action to perform")
+    parser_har.add_argument("file", nargs="?", help="Path to the HAR file")
+    parser_har.add_argument("--index", type=int, default=0, help="Index of the entry for 'curl' action")
+    parser_har.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory")
+    parser_har.add_argument("--tui", action="store_true", help="Launch TUI")
     parser_tui.add_argument(
         "-p", "--project-dir",
         type=Path,
@@ -20942,6 +20957,10 @@ async def main():
 
     if args.command in ["data-uri-lab", "data-uri"]:
         run_data_uri_lab(args)
+        return
+
+    if args.command in ["har-lab", "har"]:
+        run_har_lab(args)
         return
 
     if args.command in ["isbn-lab", "isbn"]:

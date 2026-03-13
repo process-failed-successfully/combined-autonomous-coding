@@ -323,7 +323,8 @@ KNOWN_COMMANDS = [
     "iban-lab", "iban",
     "case-lab", "case",
     "data-uri-lab", "data-uri",
-    "morse-lab", "morse"
+    "morse-lab", "morse",
+    "roman-lab", "roman"
 ]
 
 if FileSystemEventHandler:
@@ -736,6 +737,27 @@ def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
     success = run_data_uri_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_roman_lab(args):
+    """Runs the Roman Numeral Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Roman Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-roman")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.roman_lab import run_roman_lab_logic
+        success = run_roman_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_morse_lab(args):
     """Runs the Morse Code Lab."""
@@ -16888,6 +16910,16 @@ def parse_args(argv=None):
     luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
 
     # --- New 'morse-lab' command ---
+    parser_roman = subparsers.add_parser(
+        "roman-lab",
+        aliases=["roman"],
+        help="Roman Numeral Lab (convert integer <-> roman, TUI)"
+    )
+    roman_subparsers = parser_roman.add_subparsers(dest="action", help="Roman Numeral actions")
+    roman_subparsers.add_parser("tui", help="Launch interactive Roman Lab TUI.")
+    parser_roman_convert = roman_subparsers.add_parser("convert", help="Convert between integers and Roman numerals.")
+    parser_roman_convert.add_argument("value", nargs="?", help="The integer or Roman numeral to convert.")
+
     parser_morse = subparsers.add_parser(
         "morse-lab",
         aliases=["morse"],
@@ -21009,6 +21041,10 @@ async def main():
 
     if args.command in ["morse-lab", "morse"]:
         run_morse_lab(args)
+        return
+
+    if args.command in ["roman-lab", "roman"]:
+        run_roman_lab(args)
         return
 
     # Initialize Agent Client

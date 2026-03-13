@@ -174,6 +174,7 @@ from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
 from shared.data_uri_lab import run_data_uri_lab_logic
 from shared.snowflake_lab import run_snowflake_lab_logic
+from shared.morse_lab import run_morse_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -321,7 +322,8 @@ KNOWN_COMMANDS = [
     "luhn-lab", "luhn",
     "iban-lab", "iban",
     "case-lab", "case",
-    "data-uri-lab", "data-uri"
+    "data-uri-lab", "data-uri",
+    "morse-lab", "morse"
 ]
 
 if FileSystemEventHandler:
@@ -734,6 +736,26 @@ def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
     success = run_data_uri_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_morse_lab(args):
+    """Runs the Morse Code Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Morse Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-morse")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        success = run_morse_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_snowflake_lab(args):
     """Runs the Snowflake Lab."""
@@ -16865,6 +16887,19 @@ def parse_args(argv=None):
     luhn_generate.add_argument("--prefix", type=str, default="", help="Prefix for the generated number.")
     luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
 
+    # --- New 'morse-lab' command ---
+    parser_morse = subparsers.add_parser(
+        "morse-lab",
+        aliases=["morse"],
+        help="Morse Code Lab (encode, decode, audio)"
+    )
+    parser_morse.add_argument("text", nargs="?", help="Text to encode/decode")
+    parser_morse.add_argument("--encode", action="store_true", help="Force encode mode")
+    parser_morse.add_argument("--decode", action="store_true", help="Force decode mode")
+    parser_morse.add_argument("--audio", help="Generate audio file path (.wav)")
+    parser_morse.add_argument("--wpm", type=int, default=15, help="Words per minute for audio (default 15)")
+    parser_morse.add_argument("--freq", type=int, default=800, help="Tone frequency for audio in Hz (default 800)")
+
     # --- New 'data-uri-lab' command ---
     parser_data_uri = subparsers.add_parser(
         "data-uri-lab",
@@ -20970,6 +21005,10 @@ async def main():
 
     if args.command in ["isbn-lab", "isbn"]:
         run_isbn_lab(args)
+        return
+
+    if args.command in ["morse-lab", "morse"]:
+        run_morse_lab(args)
         return
 
     # Initialize Agent Client

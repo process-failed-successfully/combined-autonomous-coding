@@ -168,6 +168,7 @@ from shared.tui_jwt import JwtLabTab
 from shared.tui_uuid import UuidLabTab
 from shared.tui_nanoid import NanoIDLab
 from shared.tui_ulid import UlidLabTab
+from shared.tui_snowflake import SnowflakeLabTab
 from shared.tui_mock_data import MockDataTab
 from shared.tui_sniffer import SnifferLabTab
 from shared.tui_sock import SockLabTab
@@ -4268,6 +4269,8 @@ class AgentTUI(App):
                 yield NanoIDLab()
             with TabPane("ULID Lab", id="tab-ulid"):
                 yield UlidLabTab()
+            with TabPane("Snowflake Lab", id="tab-snowflake"):
+                yield SnowflakeLabTab()
             with TabPane("OTP Lab", id="tab-otp"):
                 yield OtpLabTab()
             with TabPane("Sanitizer", id="tab-sanitizer"):

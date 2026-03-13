@@ -172,6 +172,7 @@ from shared.jsonpath_lab import run_jsonpath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
 from shared.data_uri_lab import run_data_uri_lab_logic
+from shared.snowflake_lab import run_snowflake_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -698,6 +699,26 @@ def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
     success = run_data_uri_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_snowflake_lab(args):
+    """Runs the Snowflake Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Snowflake Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-snowflake")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        success = run_snowflake_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_case_lab(args):
     """Runs the Case Lab."""
@@ -12850,6 +12871,32 @@ def parse_args(argv=None):
     parser_nanoid_bulk.add_argument("--size", "-s", type=int, default=21, help="Size of the NanoID.")
     parser_nanoid_bulk.add_argument("--alphabet", "-a", type=str, default=None, help="Custom alphabet to use.")
 
+    parser_snowflake = subparsers.add_parser(
+        "snowflake-lab",
+        aliases=["snowflake"],
+        help="Snowflake ID Generator and Inspector."
+    )
+    snowflake_subparsers = parser_snowflake.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # snowflake generate
+    parser_snowflake_gen = snowflake_subparsers.add_parser("generate", aliases=["gen"], help="Generate Snowflake IDs.")
+    parser_snowflake_gen.add_argument("--count", "-c", type=int, default=1, help="Number of IDs to generate.")
+    parser_snowflake_gen.add_argument("--worker-id", type=int, default=1, help="Worker ID (0-31).")
+    parser_snowflake_gen.add_argument("--datacenter-id", type=int, default=1, help="Datacenter ID (0-31).")
+    parser_snowflake_gen.add_argument("--epoch", type=int, default=None, help="Custom epoch in milliseconds.")
+
+    # snowflake parse
+    parser_snowflake_parse = snowflake_subparsers.add_parser("parse", aliases=["info", "decode"], help="Parse a Snowflake ID.")
+    parser_snowflake_parse.add_argument("snowflake", help="The Snowflake ID to parse.")
+    parser_snowflake_parse.add_argument("--epoch", type=int, default=None, help="Custom epoch in milliseconds.")
+
+    # snowflake tui
+    parser_snowflake_tui = snowflake_subparsers.add_parser("tui", help="Launch Snowflake Lab TUI.")
+
     parser_ulid = subparsers.add_parser(
         "ulid-lab",
         aliases=["ulid"],
@@ -20442,6 +20489,10 @@ async def main():
     if args.command in ["nanoid-lab", "nanoid"]:
         run_nanoid_lab(args)
         return
+    if args.command in ["snowflake-lab", "snowflake"]:
+        run_snowflake_lab(args)
+        return
+
     if args.command in ["ulid-lab", "ulid"]:
         run_ulid_lab(args)
         return

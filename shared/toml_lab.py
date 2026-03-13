@@ -194,6 +194,13 @@ def run_toml_lab_logic(args):
     """CLI Entry point for Toml Lab."""
     manager = TomlLabManager()
 
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching TOML Lab TUI...")
+        app = AgentTUI(project_dir=Path("."), start_tab="tab-toml")
+        app.run()
+        sys.exit(0)
+
     def load_input():
         if not hasattr(args, 'input') or not args.input:
              # Try reading from stdin if available?

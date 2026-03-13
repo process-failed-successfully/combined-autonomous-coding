@@ -13804,6 +13804,9 @@ def parse_args(argv=None):
     parser_toml_validate = toml_subparsers.add_parser("validate", help="Validate TOML.")
     parser_toml_validate.add_argument("input", nargs="?", default="-", help="Input TOML file or string.")
 
+    # toml-lab tui
+    parser_toml_tui = toml_subparsers.add_parser("tui", help="Interactive TOML Editor TUI.")
+
     # --- New 'crypto-lab' command ---
     parser_crypto = subparsers.add_parser(
         "crypto-lab",

@@ -235,6 +235,7 @@ from shared.tui_case import CaseLabTab
 from shared.tui_data_uri import DataUriLabTab
 from shared.tui_geo import GeoLabTab
 from shared.tui_ocr import OcrLabTab
+from shared.tui_har import HarLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -3991,6 +3992,7 @@ class AgentTUI(App):
         PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
         PaletteCommand("Go to Data URI Lab", "switch_tab_data_uri"),
         PaletteCommand("Go to Geo Lab", "switch_tab_geo"),
+        PaletteCommand("Go to HAR Lab", "switch_tab_har"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4475,6 +4477,8 @@ class AgentTUI(App):
                 yield GeoLabTab()
             with TabPane("OCR Lab", id="tab-ocr"):
                 yield OcrLabTab(project_dir=self.project_dir)
+            with TabPane("HAR Lab", id="tab-har"):
+                yield HarLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

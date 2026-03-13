@@ -235,6 +235,7 @@ from shared.tui_isbn import IsbnLabTab
 from shared.tui_case import CaseLabTab
 from shared.tui_data_uri import DataUriLabTab
 from shared.tui_geo import GeoLabTab
+from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
 from shared.tui_morse import MorseLabTab
 from shared.plugin_manager import PluginManager
@@ -4087,6 +4088,8 @@ class AgentTUI(App):
                 yield SystemdLabTab(self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):
                 yield PortLabTab()
+            with TabPane("Roman Lab", id="tab-roman"):
+                yield RomanLabTab()
             with TabPane("IP Lab", id="tab-ip"):
                 yield IpLabTab()
             with TabPane("ISBN Lab", id="tab-isbn"):

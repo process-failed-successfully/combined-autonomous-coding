@@ -292,6 +292,7 @@ KNOWN_COMMANDS = [
     "ocr-lab", "ocr",
     "go-lab", "go", "golang",
     "base32-lab", "base32", "b32",
+    "base58-lab", "base58", "b58",
     "base64-lab", "base64", "b64",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
@@ -453,6 +454,19 @@ def run_base32_lab(args):
 
     from shared.base32_lab import run_base32_lab_logic
     success = run_base32_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base58_lab(args):
+    """Runs the Base58 Lab."""
+    from shared.tui import AgentTUI
+    if getattr(args, 'tui', False):
+        print("Launching Base58 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base58")
+        app.run()
+        sys.exit(0)
+
+    from shared.base58_lab import run_base58_lab_logic
+    success = run_base58_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base64_lab(args):
@@ -14827,6 +14841,16 @@ def parse_args(argv=None):
     b32_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
     b32_group.add_argument("--decode", "-d", type=str, help="Base32 text to decode.")
     parser_b32.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base32 Lab.")
+
+    # base58-lab
+    parser_b58 = subparsers.add_parser(
+        "base58-lab", aliases=["base58", "b58"],
+        help="Base58 encode and decode strings."
+    )
+    b58_group = parser_b58.add_mutually_exclusive_group(required=True)
+    b58_group.add_argument("--encode", "-e", type=str, help="Text to Base58 encode.")
+    b58_group.add_argument("--decode", "-d", type=str, help="Base58 text to decode.")
+    parser_b58.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base58 Lab.")
 
     # base64-lab
     parser_b64 = subparsers.add_parser(

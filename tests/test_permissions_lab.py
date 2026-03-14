@@ -3,6 +3,7 @@ import sys
 import os
 import shutil
 import tempfile
+import argparse
 from io import StringIO
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from shared.permissions_lab import PermissionsManager, run_permissions_lab_logic
+from main import run_permissions_lab
 
 class TestPermissionsLab(unittest.TestCase):
     def setUp(self):
@@ -100,6 +102,22 @@ class TestPermissionsLab(unittest.TestCase):
         self.assertIn("Owner: Read, Write, Execute", output)
         self.assertIn("Group: Read, Execute", output)
         self.assertIn("Other: Read, Execute", output)
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_run_permissions_lab_tui(self, mock_stdout):
+        args = argparse.Namespace(action="tui", project_dir=Path("."))
+
+        with patch('shared.tui.AgentTUI') as mock_agent_tui:
+            mock_app = MagicMock()
+            mock_agent_tui.return_value = mock_app
+
+            with self.assertRaises(SystemExit) as cm:
+                run_permissions_lab(args)
+
+            self.assertEqual(cm.exception.code, 0)
+            mock_agent_tui.assert_called_once_with(project_dir=Path("."), start_tab="tab-permissions")
+            mock_app.run.assert_called_once()
+            self.assertIn("Launching Permissions Lab TUI...", mock_stdout.getvalue())
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,6 +5,7 @@ import argparse
 
 from shared.roman_lab import RomanLabManager, run_roman_lab_logic
 
+
 class TestRomanLabManager:
     @pytest.fixture
     def manager(self):
@@ -31,7 +32,7 @@ class TestRomanLabManager:
 
     def test_int_to_roman_type_error(self, manager):
         with pytest.raises(TypeError):
-            manager.int_to_roman("10") # type: ignore
+            manager.int_to_roman("10")  # type: ignore
 
     @pytest.mark.parametrize("roman, arabic", [
         ('I', 1),
@@ -41,7 +42,7 @@ class TestRomanLabManager:
         ('XCIX', 99),
         ('MMXXIV', 2024),
         ('MMMCMXCIX', 3999),
-        ('mmxxiv', 2024) # case insensitive
+        ('mmxxiv', 2024)  # case insensitive
     ])
     def test_roman_to_int_valid(self, manager, roman, arabic):
         assert manager.roman_to_int(roman) == arabic
@@ -55,7 +56,7 @@ class TestRomanLabManager:
 
     def test_roman_to_int_type_error(self, manager):
         with pytest.raises(TypeError):
-            manager.roman_to_int(10) # type: ignore
+            manager.roman_to_int(10)  # type: ignore
 
     def test_convert_auto_detect(self, manager):
         success, out = manager.convert("2024")
@@ -77,6 +78,7 @@ def test_run_roman_lab_logic_convert_value():
         assert success
         assert fake_stdout.getvalue().strip() == "X"
 
+
 def test_run_roman_lab_logic_convert_stdin():
     args = argparse.Namespace(action="convert", value=None)
     with patch('sys.stdin', io.StringIO("XX")), \
@@ -86,12 +88,14 @@ def test_run_roman_lab_logic_convert_stdin():
         assert success
         assert fake_stdout.getvalue().strip() == "20"
 
+
 def test_run_roman_lab_logic_invalid_action():
     args = argparse.Namespace(action="unknown", value="10")
     with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
         success = run_roman_lab_logic(args)
         assert not success
         assert "Unknown action" in fake_stdout.getvalue()
+
 
 def test_run_roman_lab_logic_empty_value():
     args = argparse.Namespace(action="convert", value=None)
@@ -100,6 +104,7 @@ def test_run_roman_lab_logic_empty_value():
         success = run_roman_lab_logic(args)
         assert not success
         assert "Value is required" in fake_stdout.getvalue()
+
 
 def test_run_roman_lab_logic_convert_error():
     args = argparse.Namespace(action="convert", value="INVALID")

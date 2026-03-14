@@ -5,7 +5,8 @@ Roman Numeral Lab
 Utilities for converting between integers and Roman numerals.
 """
 
-from typing import Union, Tuple
+from typing import Tuple
+
 
 class RomanLabManager:
     """Manages Roman numeral conversions."""

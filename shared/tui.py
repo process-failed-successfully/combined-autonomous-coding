@@ -119,6 +119,7 @@ from shared.tui_unit import UnitLabTab
 from shared.tui_url import UrlLabTab
 from shared.tui_user_agent import UserAgentLabTab
 from shared.tui_color import ColorLabTab
+from shared.tui_bitwise import BitwiseLabTab
 from shared.tui_calendar import CalendarTab
 from shared.tui_otp import OtpLabTab
 from shared.tui_devtools import DevToolsTab
@@ -4334,6 +4335,8 @@ class AgentTUI(App):
                 yield PermissionsLabTab()
             with TabPane("Color Lab", id="tab-color"):
                 yield ColorLabTab()
+            with TabPane("Bitwise Lab", id="tab-bitwise"):
+                yield BitwiseLabTab()
             with TabPane("Calendar", id="tab-calendar"):
                 yield CalendarTab(self.project_dir)
             with TabPane("Notebooks", id="tab-notebooks"):

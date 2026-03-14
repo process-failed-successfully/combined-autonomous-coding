@@ -100,7 +100,6 @@ from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
 from shared.media_lab import run_media_lab_logic
-from shared.markdown_lab import run_markdown_lab_logic
 from shared.net_lab import run_net_lab_logic
 from shared.pdf_lab import run_pdf_lab_logic
 from shared.archive_lab import run_archive_lab_logic
@@ -1941,6 +1940,7 @@ def run_http_status_lab(args):
     success = run_http_status_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_markdown_lab(args):
     """Runs the Markdown Lab."""
     if getattr(args, "action", None) == "tui":
@@ -1961,6 +1961,7 @@ def run_markdown_lab(args):
     from shared.markdown_lab import run_markdown_lab_logic
     success = run_markdown_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_html_lab(args):
     """Runs the HTML Lab."""

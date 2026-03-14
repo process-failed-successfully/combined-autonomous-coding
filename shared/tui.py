@@ -3989,6 +3989,7 @@ class AgentTUI(App):
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
+        PaletteCommand("Go to Markdown Lab", "switch_tab_markdown"),
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),

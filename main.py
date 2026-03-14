@@ -1943,6 +1943,22 @@ def run_http_status_lab(args):
 
 def run_markdown_lab(args):
     """Runs the Markdown Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Markdown Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-markdown")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.markdown_lab import run_markdown_lab_logic
     success = run_markdown_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -14329,6 +14345,9 @@ def parse_args(argv=None):
     parser_md_lint = md_subparsers.add_parser("lint", help="Lint markdown file.")
     parser_md_lint.add_argument("--file", "-f", help="Input file.")
     parser_md_lint.add_argument("--root", help="Root directory for link checking.")
+
+    # md-lab tui
+    parser_md_tui = md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
 
     # --- New 'net-lab' command ---
     parser_net = subparsers.add_parser(

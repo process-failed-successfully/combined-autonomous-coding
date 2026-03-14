@@ -212,7 +212,7 @@ KNOWN_COMMANDS = [
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
-    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
+    "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "bitwise-lab", "bits", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
@@ -1678,6 +1678,27 @@ def run_cidr_lab(args):
     """Runs the CIDR Lab utilities."""
     run_cidr_lab_logic(args)
     sys.exit(0)
+
+def run_bitwise_lab(args):
+    """Runs the Bitwise Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Bitwise Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-bitwise")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.bitwise_lab import run_bitwise_lab_logic
+        success = run_bitwise_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_color_lab(args):
     """Runs the Color Lab utilities."""
@@ -12723,6 +12744,41 @@ def parse_args(argv=None):
     parser_port_wait.add_argument("state", choices=["open", "closed"], help="State to wait for.")
     parser_port_wait.add_argument("-t", "--timeout", type=int, default=30, help="Timeout in seconds.")
 
+    # --- New 'bitwise-lab' command ---
+    parser_bitwise_lab = subparsers.add_parser(
+        "bitwise-lab",
+        aliases=["bits"],
+        help="Bitwise operations and conversions."
+    )
+    bitwise_lab_subparsers = parser_bitwise_lab.add_subparsers(dest="action", required=True, help="Action to perform.")
+
+    # bitwise-lab tui
+    bitwise_lab_subparsers.add_parser("tui", help="Launch Bitwise Lab TUI.")
+
+    # bitwise-lab format
+    parser_bw_fmt = bitwise_lab_subparsers.add_parser("format", help="Format value.")
+    parser_bw_fmt.add_argument("val1", help="Value (hex, dec, oct, bin).")
+    parser_bw_fmt.add_argument("--bits", type=int, choices=[8, 16, 32, 64], default=32, help="Bit width.")
+    parser_bw_fmt.add_argument("--json", action="store_true", help="Output as JSON.")
+
+    # bitwise-lab operations
+    for op in ["and", "or", "xor", "lshift", "rshift"]:
+        parser_op = bitwise_lab_subparsers.add_parser(op, help=f"Perform bitwise {op}.")
+        parser_op.add_argument("val1", help="First value.")
+        parser_op.add_argument("val2", help="Second value / shift amount.")
+        parser_op.add_argument("--bits", type=int, choices=[8, 16, 32, 64], default=32, help="Bit width.")
+        parser_op.add_argument("--json", action="store_true", help="Output as JSON.")
+
+    parser_bw_not = bitwise_lab_subparsers.add_parser("not", help="Perform bitwise NOT (~).")
+    parser_bw_not.add_argument("val1", help="Value.")
+    parser_bw_not.add_argument("--bits", type=int, choices=[8, 16, 32, 64], default=32, help="Bit width.")
+    parser_bw_not.add_argument("--json", action="store_true", help="Output as JSON.")
+
+    parser_bw_swap = bitwise_lab_subparsers.add_parser("swap", help="Swap endianness.")
+    parser_bw_swap.add_argument("val1", help="Value.")
+    parser_bw_swap.add_argument("--bits", type=int, choices=[16, 32, 64], default=32, help="Bit width.")
+    parser_bw_swap.add_argument("--json", action="store_true", help="Output as JSON.")
+
     # --- New 'color-lab' command ---
     parser_color_lab = subparsers.add_parser(
         "color-lab",
@@ -20874,6 +20930,10 @@ async def main():
 
     if args.command == "port":
         run_port(args)
+        return
+
+    if args.command in ["bitwise-lab", "bits"]:
+        run_bitwise_lab(args)
         return
 
     if args.command == "color-lab":

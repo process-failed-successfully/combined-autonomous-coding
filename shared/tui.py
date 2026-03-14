@@ -166,6 +166,7 @@ from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
 from shared.tui_pcap import PcapLabTab
 from shared.tui_port import PortLabTab
+from shared.tui_har import HarLabTab
 from shared.tui_database import DatabaseTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_uuid import UuidLabTab
@@ -3995,6 +3996,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Data URI Lab", "switch_tab_data_uri"),
         PaletteCommand("Go to Geo Lab", "switch_tab_geo"),
         PaletteCommand("Morse Lab", "switch_tab_morse"),
+        PaletteCommand("Go to HAR Lab", "switch_tab_har"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4485,6 +4487,8 @@ class AgentTUI(App):
                 yield OcrLabTab(project_dir=self.project_dir)
             with TabPane("Morse Lab", id="tab-morse"):
                 yield MorseLabTab(self.project_dir)
+            with TabPane("HAR Lab", id="tab-har"):
+                yield HarLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

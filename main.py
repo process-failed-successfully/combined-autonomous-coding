@@ -759,6 +759,26 @@ def run_roman_lab(args):
         success = run_roman_lab_logic(args)
         sys.exit(0 if success else 1)
 
+def run_har_lab(args):
+    """Runs the HAR Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        from shared.tui import AgentTUI
+        print("Launching HAR Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-har")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.har_lab import run_har_lab_logic
+        run_har_lab_logic(args)
+
 def run_morse_lab(args):
     """Runs the Morse Code Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -16962,6 +16982,25 @@ def parse_args(argv=None):
     parser_roman_convert = roman_subparsers.add_parser("convert", help="Convert between integers and Roman numerals.")
     parser_roman_convert.add_argument("value", nargs="?", help="The integer or Roman numeral to convert.")
 
+    parser_har = subparsers.add_parser(
+        "har-lab",
+        aliases=["har"],
+        help="HAR Lab utilities for analyzing HTTP Archive files."
+    )
+    har_subparsers = parser_har.add_subparsers(dest="action", required=True)
+    har_subparsers.add_parser("tui", help="Launch interactive TUI for HAR Lab.")
+
+    parser_har_summary = har_subparsers.add_parser("summary", help="Summarize HAR file.")
+    parser_har_summary.add_argument("--file", "-f", required=True, help="Path to HAR file.")
+
+    parser_har_urls = har_subparsers.add_parser("urls", help="Extract URLs from HAR file.")
+    parser_har_urls.add_argument("--file", "-f", required=True, help="Path to HAR file.")
+    parser_har_urls.add_argument("--method", "-m", help="Filter by HTTP method (e.g. GET).")
+
+    parser_har_curl = har_subparsers.add_parser("curl", help="Generate cURL command from HAR file.")
+    parser_har_curl.add_argument("--file", "-f", required=True, help="Path to HAR file.")
+    parser_har_curl.add_argument("--index", "-i", type=int, default=0, help="Entry index (0-based) to convert to cURL.")
+
     parser_morse = subparsers.add_parser(
         "morse-lab",
         aliases=["morse"],
@@ -21083,6 +21122,10 @@ async def main():
 
     if args.command in ["morse-lab", "morse"]:
         run_morse_lab(args)
+        return
+
+    if args.command in ["har-lab", "har"]:
+        run_har_lab(args)
         return
 
     if args.command in ["roman-lab", "roman"]:

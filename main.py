@@ -2053,6 +2053,21 @@ def run_time_lab(args):
 
 def run_math_lab(args):
     """Runs the Math Lab."""
+    if getattr(args, "action", None) == "tui":
+        print("Launching Math Lab TUI...")
+        from shared.tui import AgentTUI
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-math")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.math_lab import run_math_lab_logic
     success = run_math_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -13502,6 +13517,9 @@ def parse_args(argv=None):
         required=True,
         help="Action to perform."
     )
+
+    # math-lab tui
+    parser_math_tui = math_subparsers.add_parser("tui", help="Launch interactive Math Lab TUI.")
 
     # math-lab eval
     parser_math_eval = math_subparsers.add_parser("eval", help="Evaluate a math expression.")

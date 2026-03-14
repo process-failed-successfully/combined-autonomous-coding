@@ -119,5 +119,27 @@ class TestMathLabCLI(unittest.TestCase):
         finally:
             sys.stdout = saved_stdout
 
+    @unittest.mock.patch("shared.tui.AgentTUI")
+    @unittest.mock.patch("main.sys.exit")
+    def test_math_lab_tui_cli(self, mock_exit, mock_agent_tui):
+        from main import run_math_lab
+        from pathlib import Path
+
+        args = MagicMock()
+        args.action = "tui"
+        args.project_dir = Path("/tmp/dummy")
+
+        mock_exit.side_effect = SystemExit
+
+        mock_app_instance = MagicMock()
+        mock_agent_tui.return_value = mock_app_instance
+
+        with self.assertRaises(SystemExit):
+            run_math_lab(args)
+
+        mock_agent_tui.assert_called_once_with(project_dir=Path("/tmp/dummy"), start_tab="tab-math")
+        mock_app_instance.run.assert_called_once()
+        mock_exit.assert_called_once_with(0)
+
 if __name__ == '__main__':
     unittest.main()

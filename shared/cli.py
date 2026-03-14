@@ -23,6 +23,7 @@ from shared.work_session import WorkSessionManager
 
 logger = logging.getLogger(__name__)
 
+
 async def run_do_logic(
     instruction: str,
     project_dir: Path,
@@ -56,8 +57,8 @@ async def run_do_logic(
         agent_type=agent_type,
         model=model,
         verbose=verbose,
-        max_iterations=1, # Single shot
-        stream_output=False, # We want just the command first
+        max_iterations=1,  # Single shot
+        stream_output=False,  # We want just the command first
     )
 
     # Initialize Agent
@@ -128,9 +129,9 @@ async def run_do_logic(
 
             # Remove language identifier if present (e.g. "bash")
             if command.startswith("bash") or command.startswith("sh"):
-                 # This is risky if the command actually starts with bash, but usually it's the markdown block info
-                 # Better: check if it was inside a block
-                 pass
+                # This is risky if the command actually starts with bash, but usually it's the markdown block info
+                # Better: check if it was inside a block
+                pass
 
             command = command.strip()
 
@@ -139,18 +140,35 @@ async def run_do_logic(
                 return False
 
             if attempts == 0:
-                print(f"\n--- Suggested Command ---")
+                print("\n--- Suggested Command ---")
             else:
                 print(f"\n--- Suggested Command (Retry {attempts}/{max_retries}) ---")
 
-            print(f"\033[1m{command}\033[0m") # Bold
+            print(f"\033[1m{command}\033[0m")  # Bold
             print("-------------------------")
 
             if yes:
                 should_run = True
             else:
-                confirm = input("Run this command? [y/N]: ").strip().lower()
-                should_run = (confirm == 'y')
+                should_run = False
+                while True:
+                    confirm = input("Run this command? [y/N/e(xplain)]: ").strip().lower()
+                    if confirm == 'y':
+                        should_run = True
+                        break
+                    elif confirm in ['n', '']:
+                        should_run = False
+                        break
+                    elif confirm.startswith('e'):
+                        print("\n--- Generating Explanation ---")
+                        explain_prompt = f"Explain the following shell command concisely:\n\n`{command}`\n\nProvide ONLY the explanation."
+                        try:
+                            _, explanation, _ = await agent.run_agent_session(explain_prompt)
+                            print(f"{explanation.strip()}\n------------------------------\n")
+                        except Exception as e:
+                            print(f"❌ Failed to get explanation: {e}\n------------------------------\n")
+                    else:
+                        print("Invalid option.")
 
             if should_run:
                 print(f"\nRunning: {command}")

@@ -103,7 +103,7 @@ class TestCliFeature(unittest.IsolatedAsyncioTestCase):
             )
 
             output = fake_out.getvalue()
-            self.assertIn("Run this command? [y/N]:", str(mock_input.call_args)) # Can't check stdout for input prompt easily
+            self.assertIn("Run this command? [y/N/e(xplain)]:", str(mock_input.call_args))  # Can't check stdout for input prompt easily
             self.assertIn("Running: ls -la", output)
             self.assertTrue(success)
 

@@ -117,6 +117,54 @@ class SessionManager:
                 process_interactive.terminate()
                 return 1
 
+    def prune_sessions(self, force: bool = False) -> List[str]:
+        """
+        Removes dead sessions (or all sessions if force=True).
+        Cleans up session configs, log files, and isolated workspaces.
+        Returns a list of pruned session names.
+        """
+        import shutil
+        pruned = []
+        sessions = self.list_sessions()
+
+        for session in sessions:
+            if session["status"] == "dead" or force:
+                name = session["name"]
+
+                # Stop if it's currently running (only happens if force=True)
+                if session["status"] == "running":
+                    self.stop_session(name)
+
+                # Remove config file
+                config_path = self._get_session_path(name)
+                if config_path.exists():
+                    try:
+                        config_path.unlink()
+                    except Exception:
+                        pass
+
+                # Remove log file
+                log_file_str = session.get("log_file", "")
+                if log_file_str:
+                    log_path = Path(log_file_str)
+                    if log_path.exists() and log_path.is_file():
+                        try:
+                            log_path.unlink()
+                        except Exception:
+                            pass
+
+                # Remove workspace
+                workspace_path = session.get("workspace_path")
+                if workspace_path and os.path.exists(workspace_path):
+                    try:
+                        shutil.rmtree(workspace_path)
+                    except Exception:
+                        pass
+
+                pruned.append(name)
+
+        return pruned
+
     def stop_session(self, name: str):
         path = self._get_session_path(name)
         if not path.exists():

@@ -14210,6 +14210,11 @@ def parse_args(argv=None):
     parser_image_placeholder.add_argument("--text", help="Text to overlay.")
     parser_image_placeholder.add_argument("--text-color", default="black", help="Text color.")
 
+    # image-lab favicon
+    parser_image_favicon = image_subparsers.add_parser("favicon", help="Generate standard favicons from an image.")
+    parser_image_favicon.add_argument("input", help="Source image file (ideally 512x512+).")
+    parser_image_favicon.add_argument("output", help="Output directory to save favicons.")
+
     # image-lab exif
     parser_image_exif = image_subparsers.add_parser("exif", help="Read EXIF data from an image.")
     parser_image_exif.add_argument("file", help="Image file path.")

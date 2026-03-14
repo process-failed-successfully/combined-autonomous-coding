@@ -2,10 +2,16 @@ import unittest
 from pathlib import Path
 import tempfile
 import shutil
-from PIL import Image
 
-from shared.image_lab import ImageLabManager
+from shared.image_lab import ImageLabManager, HAS_PIL
 
+try:
+    from PIL import Image
+except ImportError:
+    pass
+
+
+@unittest.skipIf(not HAS_PIL, "Pillow library is not installed")
 class TestFavicon(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
@@ -40,6 +46,7 @@ class TestFavicon(unittest.TestCase):
         for name in expected_files:
             self.assertIn(name, generated_names)
             self.assertTrue((self.output_dir / name).exists())
+
 
 if __name__ == '__main__':
     unittest.main()

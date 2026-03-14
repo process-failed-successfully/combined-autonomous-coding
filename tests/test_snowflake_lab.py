@@ -23,16 +23,23 @@ class TestSnowflakeManager(unittest.TestCase):
 
         self.assertEqual(len(ids), count)
 
+        # We cannot assert exact sequence numbers (0, 1, 2) because if the clock
+        # ticks to the next millisecond during generation, the sequence resets to 0.
+        # Instead, we just verify they are all valid and have the correct machine IDs.
         for i, snowflake in enumerate(ids):
             parsed = self.manager.parse(snowflake)
 
             self.assertTrue(parsed["valid"])
             self.assertEqual(parsed["worker_id"], worker_id)
             self.assertEqual(parsed["datacenter_id"], datacenter_id)
-            self.assertEqual(parsed["sequence"], i)
+            self.assertTrue(0 <= parsed["sequence"] <= 4095)
             self.assertEqual(parsed["epoch_used"], SnowflakeManager.DEFAULT_EPOCH)
             # Timestamp should be relatively recent relative to epoch, positive
             self.assertGreater(parsed["timestamp"], SnowflakeManager.DEFAULT_EPOCH)
+
+        # Verify all IDs are strictly increasing and unique
+        self.assertEqual(len(set(ids)), count)
+        self.assertEqual(ids, sorted(ids))
 
     def test_invalid_parse(self):
         parsed = self.manager.parse(-1)

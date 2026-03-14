@@ -2,27 +2,37 @@ import unittest
 from pathlib import Path
 import tempfile
 import shutil
-from PIL import Image
+
+try:
+    from PIL import Image
+    HAS_PILLOW = True
+except ImportError:
+    HAS_PILLOW = False
 
 from shared.image_lab import ImageLabManager
 
+@unittest.skipUnless(HAS_PILLOW, "Pillow library is not installed. Please run: pip install Pillow")
 class TestFavicon(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.tmp_dir)
         self.manager = ImageLabManager(self.project_dir)
 
-        # Create a dummy 800x600 image to also test cropping
-        self.input_image = self.project_dir / "input.png"
-        img = Image.new("RGB", (800, 600), "red")
-        img.save(self.input_image)
+        if HAS_PILLOW:
+            # Create a dummy 800x600 image to also test cropping
+            self.input_image = self.project_dir / "input.png"
+            img = Image.new("RGB", (800, 600), "red")
+            img.save(self.input_image)
 
-        self.output_dir = self.project_dir / "favicons"
+            self.output_dir = self.project_dir / "favicons"
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
     def test_generate_favicon(self):
+        if not HAS_PILLOW:
+            self.skipTest("Pillow not installed")
+
         generated = self.manager.generate_favicon(self.input_image, self.output_dir)
         self.assertTrue(self.output_dir.exists())
         self.assertGreater(len(generated), 0)

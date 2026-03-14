@@ -5,8 +5,16 @@ import tempfile
 import sys
 import shutil
 import io
+
+try:
+    from PIL import Image
+    HAS_PILLOW = True
+except ImportError:
+    HAS_PILLOW = False
+
 from main import parse_args, main
 
+@unittest.skipUnless(HAS_PILLOW, "Pillow library is not installed")
 class TestImageLabFaviconCLI(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()

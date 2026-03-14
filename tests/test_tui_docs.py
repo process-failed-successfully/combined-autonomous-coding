@@ -37,6 +37,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.TaskManager'),
             patch('shared.tui.KnowledgeManager'),
             patch('shared.tui.init_db'), # prevent db init
+            patch('shared.tui_knowledge_graph.KnowledgeManager'),
             patch('shared.tui.ApiLabManager'),
             patch('shared.tui.PlaygroundManager'),
             patch('shared.tui.SecretsManager'),
@@ -45,6 +46,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DebtCollector'),
             patch('shared.tui.SecurityAuditor'),
             patch('shared.tui.OptimizationManager'),
+            patch('shared.tui.ProcessExplorerTab', return_value=Container()),
         ]
         for p in self.patches:
             p.start()

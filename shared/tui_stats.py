@@ -76,7 +76,13 @@ class StatsTab(Container):
             for k in totals:
                 totals[k] += info[k]
 
-        table.add_section()
+        try:
+            table.add_section()
+        except AttributeError:
+            # Fallback for Textual < 0.81.0 where add_section doesn't exist
+            # We'll just add a visual separator row instead
+            table.add_row("---", "---", "---", "---", "---", "---")
+
         table.add_row(
             "[bold]TOTAL[/bold]",
             str(totals["files"]),

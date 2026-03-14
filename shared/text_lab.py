@@ -243,6 +243,34 @@ class TextLabManager:
             text += '.'
         return text
 
+    def generate_random_string(self, length: int = 16, charset: str = "alphanumeric") -> str:
+        import random
+        import string
+
+        if length <= 0:
+            return ""
+
+        if charset == "alphanumeric":
+            chars = string.ascii_letters + string.digits
+        elif charset == "alpha":
+            chars = string.ascii_letters
+        elif charset == "numeric":
+            chars = string.digits
+        elif charset == "hex":
+            chars = "0123456789abcdef"
+        elif charset == "ascii":
+            chars = string.printable.strip()
+        else:
+            raise ValueError(f"Unknown charset: {charset}")
+
+        # Use secrets if available for better security
+        try:
+            import secrets
+            return "".join(secrets.choice(chars) for _ in range(length))
+        except ImportError:
+            return "".join(random.choice(chars) for _ in range(length))
+
+
 
 def run_text_lab_logic(args):
     """CLI handler for Text Lab."""
@@ -378,5 +406,15 @@ def run_text_lab_logic(args):
     elif args.action == "lorem":
         words = args.words if hasattr(args, "words") and args.words is not None else 100
         print(manager.lorem_ipsum(words))
+
+    elif args.action in ("random", "rand"):
+        length = args.length if hasattr(args, "length") and args.length is not None else 16
+        charset = args.charset if hasattr(args, "charset") and args.charset is not None else "alphanumeric"
+        try:
+            print(manager.generate_random_string(length, charset))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return False
+
 
     return True

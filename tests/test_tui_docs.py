@@ -46,6 +46,7 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.DebtCollector'),
             patch('shared.tui.SecurityAuditor'),
             patch('shared.tui.OptimizationManager'),
+            patch('shared.tui.ProcessExplorerTab', return_value=Container()),
         ]
         for p in self.patches:
             p.start()

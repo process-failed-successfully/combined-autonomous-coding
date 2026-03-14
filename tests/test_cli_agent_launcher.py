@@ -126,3 +126,115 @@ def test_cli_config_set():
         result = runner.invoke(app, ["config", "set", "max_iterations", "10"])
         assert result.exit_code == 0
         mock_set.assert_called_with("max_iterations", "10")
+
+@patch("agents.cli.session_manager")
+def test_cli_prune_no_force(mock_session_mgr):
+    mock_session_mgr.prune_sessions.return_value = ["dead-session"]
+    result = runner.invoke(app, ["prune"])
+
+    assert result.exit_code == 0
+    assert "Pruning dead sessions..." in result.stdout
+    assert "Successfully pruned 1 session" in result.stdout
+    assert "dead-session" in result.stdout
+    mock_session_mgr.prune_sessions.assert_called_once_with(force=False)
+
+@patch("agents.cli.session_manager")
+def test_cli_prune_force(mock_session_mgr):
+    mock_session_mgr.prune_sessions.return_value = ["live-session", "dead-session"]
+    result = runner.invoke(app, ["prune", "--force"])
+
+    assert result.exit_code == 0
+    assert "--force will also stop and remove currently running sessions" in result.stdout
+    assert "Pruning all sessions..." in result.stdout
+    assert "Successfully pruned 2 session" in result.stdout
+    assert "live-session" in result.stdout
+    mock_session_mgr.prune_sessions.assert_called_once_with(force=True)
+
+@patch("agents.cli.session_manager")
+def test_cli_prune_empty(mock_session_mgr):
+    mock_session_mgr.prune_sessions.return_value = []
+    result = runner.invoke(app, ["prune"])
+
+    assert result.exit_code == 0
+    assert "No sessions found to prune" in result.stdout
+    mock_session_mgr.prune_sessions.assert_called_once_with(force=False)
+
+
+def test_session_manager_prune_logic(tmp_path):
+    from agents.session_manager import SessionManager
+    from pathlib import Path
+    import json
+
+    # Create a real SessionManager but point it to tmp_path
+    sm = SessionManager()
+    sm.data_dir = tmp_path / "sessions"
+    sm.logs_dir = tmp_path / "logs"
+    sm.data_dir.mkdir(parents=True)
+    sm.logs_dir.mkdir(parents=True)
+
+    # Create mock session files
+    live_session = {
+        "name": "live-session",
+        "pid": 9999999, # Highly unlikely to exist
+        "status": "running",
+        "log_file": str(sm.logs_dir / "live.log"),
+        "workspace_path": str(tmp_path / "live_workspace")
+    }
+
+    dead_session = {
+        "name": "dead-session",
+        "pid": 9999998,
+        "status": "dead",
+        "log_file": str(sm.logs_dir / "dead.log"),
+        "workspace_path": str(tmp_path / "dead_workspace")
+    }
+
+    # We will mock _is_process_running instead of relying on pid lookup
+    with patch.object(sm, "_is_process_running") as mock_is_running:
+        def side_effect(pid):
+            if pid == 9999999: return True
+            if pid == 9999998: return False
+            return False
+        mock_is_running.side_effect = side_effect
+
+        # Write config files
+        (sm.data_dir / "live-session.json").write_text(json.dumps(live_session))
+        (sm.data_dir / "dead-session.json").write_text(json.dumps(dead_session))
+
+        # Create log files
+        Path(live_session["log_file"]).touch()
+        Path(dead_session["log_file"]).touch()
+
+        # Create workspaces
+        Path(live_session["workspace_path"]).mkdir()
+        Path(dead_session["workspace_path"]).mkdir()
+
+        # Prune with force=False
+        pruned = sm.prune_sessions(force=False)
+        assert "dead-session" in pruned
+        assert "live-session" not in pruned
+
+        # Check files
+        assert (sm.data_dir / "live-session.json").exists()
+        assert not (sm.data_dir / "dead-session.json").exists()
+
+        assert Path(live_session["log_file"]).exists()
+        assert not Path(dead_session["log_file"]).exists()
+
+        assert Path(live_session["workspace_path"]).exists()
+        assert not Path(dead_session["workspace_path"]).exists()
+
+        # Prune with force=True
+        # We need to mock stop_session since it tries to kill the process
+        with patch.object(sm, "stop_session") as mock_stop:
+            pruned2 = sm.prune_sessions(force=True)
+            assert "live-session" in pruned2
+            mock_stop.assert_called_once_with("live-session")
+
+
+@patch("agents.cli.session_manager")
+def test_cli_list_empty(mock_session_mgr):
+    mock_session_mgr.list_sessions.return_value = []
+    result = runner.invoke(app, ["list"])
+    assert result.exit_code == 0
+    assert "No active sessions found" in result.stdout

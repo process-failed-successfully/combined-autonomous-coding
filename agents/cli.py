@@ -279,6 +279,25 @@ def attach(name: str):
     logs(name, follow=True)
 
 
+@app.command()
+def prune(force: bool = typer.Option(False, "--force", "-f", help="Also prune running sessions")):
+    """
+    Remove all dead sessions, their logs, and orphaned workspaces.
+    """
+    if force:
+        console.print("[yellow]Warning: --force will also stop and remove currently running sessions![/yellow]")
+
+    console.print(f"[cyan]Pruning {'all' if force else 'dead'} sessions...[/cyan]")
+    pruned = session_manager.prune_sessions(force=force)
+
+    if not pruned:
+        console.print("[dim]No sessions found to prune.[/dim]")
+    else:
+        console.print(f"[green]Successfully pruned {len(pruned)} session(s):[/green]")
+        for name in pruned:
+            console.print(f"  - {name}")
+
+
 @config_app.command("list-keys")
 def config_list_keys():
     """List all configurable keys."""

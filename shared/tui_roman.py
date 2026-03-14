@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Any
 
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal
@@ -7,13 +7,14 @@ from textual.widgets import Static, Input, Button, Label
 
 from shared.roman_lab import RomanLabManager
 
+
 class RomanLabTab(Vertical):
     """A tab for Roman numeral conversions."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.manager = RomanLabManager()
-        self.auto_convert_task: Optional[asyncio.Task] = None
+        self.auto_convert_task: Optional[asyncio.Task[Any]] = None
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="pl-content-container"):

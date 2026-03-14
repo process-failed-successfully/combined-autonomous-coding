@@ -1214,9 +1214,24 @@ def run_mqtt_lab(args):
 
 def run_permissions_lab(args):
     """Runs the Permissions Lab."""
-    from shared.permissions_lab import run_permissions_lab_logic
-    run_permissions_lab_logic(args)
-    sys.exit(0)
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Permissions Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-permissions")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.permissions_lab import run_permissions_lab_logic
+        run_permissions_lab_logic(args)
+        sys.exit(0)
 
 def run_systemd_lab(args):
     """Runs the Systemd Lab."""
@@ -16250,6 +16265,9 @@ def parse_args(argv=None):
     # perm explain
     parser_perm_explain = perm_subparsers.add_parser("explain", help="Explain permission string.")
     parser_perm_explain.add_argument("value", help="Octal (755) or Symbolic (rwxr-xr-x) string.")
+
+    # perm tui
+    perm_subparsers.add_parser("tui", help="Launch interactive TUI for Permissions Lab.")
 
     # --- New 'ollama-lab' command ---
     parser_ollama = subparsers.add_parser(

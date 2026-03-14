@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from shared.markdown_lab import MarkdownLabManager
 
@@ -113,6 +114,26 @@ print("code")
         issues = self.manager.lint(text)
         self.assertEqual(len(issues), 1)
         self.assertEqual(issues[0]['type'], 'missing-alt-text')
+
+    @patch('sys.exit')
+    @patch('shared.tui.AgentTUI')
+    def test_markdown_lab_tui_launch(self, mock_agent_tui, mock_exit):
+        import sys
+        from main import parse_args, run_markdown_lab
+
+        test_args = ["main.py", "markdown-lab", "tui"]
+        with patch.object(sys, 'argv', test_args):
+            args = parse_args()
+
+            mock_exit.side_effect = SystemExit(0)
+            with self.assertRaises(SystemExit) as cm:
+                run_markdown_lab(args)
+
+            self.assertEqual(cm.exception.code, 0)
+            mock_agent_tui.assert_called_once()
+            mock_app = mock_agent_tui.return_value
+            mock_app.run.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -295,6 +295,7 @@ KNOWN_COMMANDS = [
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
+    "base62-lab", "base62", "b62",
     "base64-lab", "base64", "b64",
     "base85-lab", "base85", "b85",
     "matrix-lab", "matrix",
@@ -490,6 +491,19 @@ def run_base58_lab(args):
 
     from shared.base58_lab import run_base58_lab_logic
     success = run_base58_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base62_lab(args):
+    """Runs the Base62 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base62 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base62")
+        app.run()
+        sys.exit(0)
+
+    from shared.base62_lab import run_base62_lab_logic
+    success = run_base62_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base85_lab(args):
@@ -15114,10 +15128,20 @@ def parse_args(argv=None):
         "base58-lab", aliases=["base58", "b58"],
         help="Base58 encode and decode strings."
     )
-    b58_group = parser_b58.add_mutually_exclusive_group(required=True)
+    b58_group = parser_b58.add_mutually_exclusive_group(required=False)
     b58_group.add_argument("--encode", "-e", type=str, help="Text to Base58 encode.")
     b58_group.add_argument("--decode", "-d", type=str, help="Base58 text to decode.")
     parser_b58.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base58 Lab.")
+
+    # base62-lab
+    parser_b62 = subparsers.add_parser(
+        "base62-lab", aliases=["base62", "b62"],
+        help="Base62 encode and decode strings."
+    )
+    b62_group = parser_b62.add_mutually_exclusive_group(required=False)
+    b62_group.add_argument("--encode", "-e", type=str, help="Text to Base62 encode.")
+    b62_group.add_argument("--decode", "-d", type=str, help="Base62 text to decode.")
+    parser_b62.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base62 Lab.")
 
     # base85-lab
     parser_b85 = subparsers.add_parser(
@@ -21189,6 +21213,10 @@ async def main():
 
     if args.command in ["base85-lab", "base85", "b85"]:
         run_base85_lab(args)
+        return
+
+    if args.command in ["base62-lab", "base62", "b62"]:
+        run_base62_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

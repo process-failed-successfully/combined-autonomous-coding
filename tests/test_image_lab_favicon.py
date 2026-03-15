@@ -5,20 +5,20 @@ import shutil
 
 try:
     from PIL import Image
-    HAS_PILLOW = True
 except ImportError:
-    HAS_PILLOW = False
+    pass
 
-from shared.image_lab import ImageLabManager
+from shared.image_lab import ImageLabManager, HAS_PIL
 
-@unittest.skipUnless(HAS_PILLOW, "Pillow library is not installed. Please run: pip install Pillow")
+
+@unittest.skipIf(not HAS_PIL, "Pillow library is not installed. Please run: pip install Pillow")
 class TestFavicon(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.tmp_dir)
         self.manager = ImageLabManager(self.project_dir)
 
-        if HAS_PILLOW:
+        if HAS_PIL:
             # Create a dummy 800x600 image to also test cropping
             self.input_image = self.project_dir / "input.png"
             img = Image.new("RGB", (800, 600), "red")
@@ -30,7 +30,7 @@ class TestFavicon(unittest.TestCase):
         shutil.rmtree(self.tmp_dir)
 
     def test_generate_favicon(self):
-        if not HAS_PILLOW:
+        if not HAS_PIL:
             self.skipTest("Pillow not installed")
 
         generated = self.manager.generate_favicon(self.input_image, self.output_dir)
@@ -50,6 +50,7 @@ class TestFavicon(unittest.TestCase):
         for name in expected_files:
             self.assertIn(name, generated_names)
             self.assertTrue((self.output_dir / name).exists())
+
 
 if __name__ == '__main__':
     unittest.main()

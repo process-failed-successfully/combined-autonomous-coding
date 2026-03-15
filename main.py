@@ -1941,6 +1941,7 @@ def run_http_status_lab(args):
     success = run_http_status_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_markdown_lab(args):
     """Runs the Markdown Lab."""
     if getattr(args, "action", None) == "tui":
@@ -14352,7 +14353,7 @@ def parse_args(argv=None):
     parser_md_lint.add_argument("--root", help="Root directory for link checking.")
 
     # md-lab tui
-    parser_md_tui = md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
+    md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
 
     # --- New 'net-lab' command ---
     parser_net = subparsers.add_parser(

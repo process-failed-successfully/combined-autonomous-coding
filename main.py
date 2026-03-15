@@ -219,7 +219,7 @@ KNOWN_COMMANDS = [
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -13772,6 +13772,20 @@ def parse_args(argv=None):
     # sql-lab game
     parser_sql_game = sql_subparsers.add_parser("game", help="Play the SQL Learning Game.")
 
+    # --- New 'json2csv-lab' command ---
+    parser_json2csv = subparsers.add_parser(
+        "json2csv-lab",
+        aliases=["j2c"],
+        help="JSON to CSV converter utilities."
+    )
+    parser_json2csv.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2csv.add_argument("--output", "-o", help="Output file path.")
+    json2csv_subparsers = parser_json2csv.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+    json2csv_subparsers.add_parser("tui", help="Launch JSON to CSV Lab TUI.")
+
     # --- New 'csv-lab' command ---
     parser_csv = subparsers.add_parser(
         "csv-lab",
@@ -20899,6 +20913,11 @@ async def main():
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)
+        return
+
+    if args.command in ["json2csv-lab", "j2c"]:
+        from shared.json2csv_lab import run_json2csv_lab_logic
+        run_json2csv_lab_logic(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

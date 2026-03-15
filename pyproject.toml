@@ -50,6 +50,7 @@ dependencies = [
     "pyarrow",
     "ulid-py",
     "python-barcode",
+    "cbor2",
 ]
 requires-python = ">=3.11"
 

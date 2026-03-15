@@ -324,7 +324,8 @@ KNOWN_COMMANDS = [
     "case-lab", "case",
     "data-uri-lab", "data-uri",
     "morse-lab", "morse",
-    "roman-lab", "roman"
+    "roman-lab", "roman",
+    "bitwise-lab", "bits"
 ]
 
 if FileSystemEventHandler:
@@ -817,6 +818,27 @@ def run_snowflake_lab(args):
         sys.exit(0)
     else:
         success = run_snowflake_lab_logic(args)
+        sys.exit(0 if success else 1)
+
+def run_bitwise_lab(args):
+    """Runs the Bitwise Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Bitwise Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-bitwise")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.bitwise_lab import run_bitwise_lab_logic
+        success = run_bitwise_lab_logic(args)
         sys.exit(0 if success else 1)
 
 def run_case_lab(args):
@@ -17077,6 +17099,29 @@ def parse_args(argv=None):
     # case-lab tui
     case_subparsers.add_parser("tui", help="Launch interactive TUI for Case Lab.")
 
+    # --- New 'bitwise-lab' command ---
+    parser_bitwise = subparsers.add_parser(
+        "bitwise-lab",
+        aliases=["bits"],
+        help="Bitwise operations and numerical base conversions."
+    )
+    bitwise_subparsers = parser_bitwise.add_subparsers(dest="action", required=True)
+    bitwise_subparsers.add_parser("tui", help="Launch the interactive Bitwise Lab TUI.")
+
+    # convert
+    bitwise_convert = bitwise_subparsers.add_parser("convert", help="Convert a number to different bases.")
+    bitwise_convert.add_argument("num", type=str, help="Number to convert (can use 0x, 0b, 0o prefixes).")
+
+    # and, or, xor, lshift, rshift
+    for op in ["and", "or", "xor", "lshift", "rshift"]:
+        op_parser = bitwise_subparsers.add_parser(op, help=f"Perform bitwise {op.upper()}.")
+        op_parser.add_argument("num1", type=str, help="First number.")
+        op_parser.add_argument("num2", type=str, help="Second number.")
+
+    # not
+    bitwise_not = bitwise_subparsers.add_parser("not", help="Perform bitwise NOT.")
+    bitwise_not.add_argument("num", type=str, help="Number to NOT.")
+
     # --- New 'iban-lab' command ---
     parser_iban = subparsers.add_parser(
         "iban-lab",
@@ -21129,6 +21174,10 @@ async def main():
 
     if args.command in ["case-lab", "case"]:
         run_case_lab(args)
+        return
+
+    if args.command in ["bitwise-lab", "bits"]:
+        run_bitwise_lab(args)
         return
 
     if args.command in ["data-uri-lab", "data-uri"]:

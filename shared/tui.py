@@ -239,6 +239,7 @@ from shared.tui_geo import GeoLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
 from shared.tui_morse import MorseLabTab
+from shared.tui_bitwise import BitwiseLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4490,6 +4491,8 @@ class AgentTUI(App):
                 yield MorseLabTab(self.project_dir)
             with TabPane("HAR Lab", id="tab-har"):
                 yield HarLabTab(self.project_dir)
+            with TabPane("Bitwise Lab", id="tab-bitwise"):
+                yield BitwiseLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

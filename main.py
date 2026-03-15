@@ -100,7 +100,6 @@ from shared.plugin_manager import PluginManager
 from shared.crypto_lab import run_crypto_lab_logic
 from shared.image_lab import run_image_lab_logic
 from shared.media_lab import run_media_lab_logic
-from shared.markdown_lab import run_markdown_lab_logic
 from shared.net_lab import run_net_lab_logic
 from shared.pdf_lab import run_pdf_lab_logic
 from shared.archive_lab import run_archive_lab_logic

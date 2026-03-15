@@ -1885,15 +1885,9 @@ def run_media_lab(args):
 
 def run_jwt_lab(args):
     """Runs the JWT Lab."""
-    if hasattr(args, "action") and args.action == "tui":
-        from shared.tui import AgentTUI
-        print("Launching JWT Lab TUI...")
-        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-jwt")
-        try:
-            asyncio.run(app.run_async())
-        except RuntimeError:
-            app.run()
-        sys.exit(0)
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-jwt")
+        return
 
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
@@ -2245,6 +2239,9 @@ def run_log_lab(args):
 
 async def run_sql_lab(args):
     """Runs the SQL Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-sql")
+        return
     await run_sql_lab_logic(args)
     sys.exit(0)
 
@@ -13881,7 +13878,10 @@ def parse_args(argv=None):
     parser_sql_export.add_argument("--output", "-o", required=True, help="Output file path.")
 
     # sql-lab game
-    parser_sql_game = sql_subparsers.add_parser("game", help="Play the SQL Learning Game.")
+    sql_subparsers.add_parser("game", help="Play the SQL Learning Game.")
+
+    # sql-lab tui
+    sql_subparsers.add_parser("tui", help="Launch interactive TUI for SQL Lab.")
 
     # --- New 'json2csv-lab' command ---
     parser_json2csv = subparsers.add_parser(

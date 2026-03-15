@@ -1482,6 +1482,27 @@ def run_bencode_lab(args):
     success = run_bencode_lab_logic(args)
     sys.exit(0 if success else 1)
 
+def run_cbor_lab(args):
+    """Runs the CBOR Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching CBOR Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-cbor")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.cbor_lab import run_cbor_lab_logic
+    success = run_cbor_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 def run_geo_lab(args):
     """Runs the Geo Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -13347,6 +13368,31 @@ def parse_args(argv=None):
     # bencode-lab tui
     bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
 
+
+    # --- New 'cbor-lab' command ---
+    parser_cbor_lab = subparsers.add_parser(
+        "cbor-lab",
+        aliases=["cbor"],
+        help="CBOR encoding/decoding utilities."
+    )
+    cbor_lab_subparsers = parser_cbor_lab.add_subparsers(
+        dest="action",
+        help="Action to perform",
+        required=True
+    )
+
+    # cbor-lab decode
+    parser_cbor_decode = cbor_lab_subparsers.add_parser("decode", help="Decode CBOR data.")
+    parser_cbor_decode.add_argument("input", nargs="?", help="Input content (or via stdin).")
+
+    # cbor-lab encode
+    parser_cbor_encode = cbor_lab_subparsers.add_parser("encode", help="Encode JSON to CBOR.")
+    parser_cbor_encode.add_argument("input", nargs="?", help="JSON input (or via stdin).")
+    parser_cbor_encode.add_argument("--hex", action="store_true", help="Output hex string.")
+
+    # cbor-lab tui
+    parser_cbor_tui = cbor_lab_subparsers.add_parser("tui", help="Launch the CBOR Lab TUI.")
+
     # --- 'seo-lab' command ---
     parser_seo = subparsers.add_parser(
         "seo-lab",
@@ -20847,6 +20893,10 @@ async def main():
 
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
+        return
+
+    if args.command in ["cbor-lab", "cbor"]:
+        run_cbor_lab(args)
         return
 
     if args.command in ["cert-lab", "cert"]:

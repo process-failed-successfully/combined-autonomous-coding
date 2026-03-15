@@ -14352,7 +14352,7 @@ def parse_args(argv=None):
     parser_md_lint.add_argument("--root", help="Root directory for link checking.")
 
     # md-lab tui
-    parser_md_tui = md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
+    md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
 
     # --- New 'net-lab' command ---
     parser_net = subparsers.add_parser(

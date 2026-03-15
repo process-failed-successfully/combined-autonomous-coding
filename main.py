@@ -2183,8 +2183,23 @@ def run_math_lab(args):
 
 def run_unit_lab(args):
     """Runs the Unit Lab."""
-    success = run_unit_lab_logic(args)
-    sys.exit(0 if success else 1)
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Unit Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-unit")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        success = run_unit_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_sys_lab(args):
     """Runs the System Lab."""
@@ -13698,6 +13713,9 @@ def parse_args(argv=None):
     # unit-lab list
     parser_unit_list = unit_subparsers.add_parser("list", help="List available units.")
     parser_unit_list.add_argument("category", nargs="?", help="Filter by category (storage, time, length, weight, temperature).")
+
+    # unit-lab tui
+    parser_unit_tui = unit_subparsers.add_parser("tui", help="Launch Unit Lab TUI.")
 
     # --- New 'semver-lab' command ---
     parser_semver = subparsers.add_parser(

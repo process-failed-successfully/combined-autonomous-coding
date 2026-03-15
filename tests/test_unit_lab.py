@@ -1,5 +1,9 @@
 import unittest
+from unittest.mock import patch, MagicMock
+import argparse
+from pathlib import Path
 from shared.unit_lab import UnitLabManager
+
 
 class TestUnitLabManager(unittest.TestCase):
     def setUp(self):
@@ -42,7 +46,7 @@ class TestUnitLabManager(unittest.TestCase):
     def test_error_handling(self):
         self.assertTrue(self.manager.convert(1, "unknown", "b").startswith("Error"))
         self.assertTrue(self.manager.convert(1, "b", "unknown").startswith("Error"))
-        self.assertTrue(self.manager.convert(1, "b", "c").startswith("Error")) # Storage to Temp
+        self.assertTrue(self.manager.convert(1, "b", "c").startswith("Error"))  # Storage to Temp
 
     def test_currency(self):
         # 1 USD -> 1 USD
@@ -73,3 +77,24 @@ class TestUnitLabManager(unittest.TestCase):
         len_u = self.manager.list_units("length")
         self.assertIn("m", len_u)
         self.assertNotIn("c", len_u)
+
+    @patch('sys.exit')
+    def test_run_unit_lab_tui(self, mock_exit):
+        mock_exit.side_effect = SystemExit
+
+        mock_agent_tui = MagicMock()
+        mock_app = MagicMock()
+        mock_agent_tui.return_value = mock_app
+
+        args = argparse.Namespace(action="tui", project_dir=Path("."))
+
+        mock_shared_tui = MagicMock()
+        mock_shared_tui.AgentTUI = mock_agent_tui
+
+        from main import run_unit_lab
+        with patch.dict('sys.modules', {'shared.tui': mock_shared_tui}):
+            with self.assertRaises(SystemExit):
+                run_unit_lab(args)
+
+        mock_agent_tui.assert_called_once_with(project_dir=Path("."), start_tab="tab-unit")
+        mock_app.run.assert_called_once()

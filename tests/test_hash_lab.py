@@ -1,8 +1,8 @@
 import unittest
 import tempfile
-import os
 from pathlib import Path
 from shared.hash_lab import HashLabManager
+
 
 class TestHashLab(unittest.TestCase):
 
@@ -100,6 +100,29 @@ class TestHashLab(unittest.TestCase):
         self.assertEqual(len(res["passed"]), 1)
         self.assertEqual(len(res["failed"]), 1)
         self.assertEqual(res["failed"][0]["file"], "file2.txt")
+
+    def test_hash_string_hmac(self):
+        import hmac
+        expected = hmac.new(b"secret", b"hello", "sha256").hexdigest()
+        self.assertEqual(self.manager.hash_string("hello", "sha256", "secret"), expected)
+
+    def test_hash_file_hmac(self):
+        import hmac
+        f = self.root / "test_hmac.txt"
+        f.write_text("hello", encoding="utf-8")
+        expected = hmac.new(b"secret", b"hello", "sha256").hexdigest()
+        self.assertEqual(self.manager.hash_file(f, "sha256", "secret"), expected)
+
+    def test_hash_dir_hmac(self):
+        import hmac
+        d = self.root / "dir_hmac"
+        d.mkdir()
+        f1 = d / "f1.txt"
+        f1.write_text("data", encoding="utf-8")
+        expected = hmac.new(b"key", b"data", "sha256").hexdigest()
+        res = self.manager.hash_dir(d, "sha256", False, "key")
+        self.assertEqual(res[str(f1)], expected)
+
 
 if __name__ == '__main__':
     unittest.main()

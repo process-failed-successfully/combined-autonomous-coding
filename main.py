@@ -15022,17 +15022,20 @@ def parse_args(argv=None):
     parser_hash_str = hash_subparsers.add_parser("string", help="Hash a string.")
     parser_hash_str.add_argument("text", nargs="?", help="Input text.")
     parser_hash_str.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+    parser_hash_str.add_argument("--hmac", help="Optional HMAC key.")
 
     # hash-lab file
     parser_hash_file = hash_subparsers.add_parser("file", help="Hash a file.")
     parser_hash_file.add_argument("path", help="File path.")
     parser_hash_file.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
+    parser_hash_file.add_argument("--hmac", help="Optional HMAC key.")
 
     # hash-lab dir
     parser_hash_dir = hash_subparsers.add_parser("dir", help="Hash a directory.")
     parser_hash_dir.add_argument("path", help="Directory path.")
     parser_hash_dir.add_argument("--algo", default="sha256", help="Algorithm (default: sha256).")
     parser_hash_dir.add_argument("--recursive", "-r", action="store_true", help="Recursive hash.")
+    parser_hash_dir.add_argument("--hmac", help="Optional HMAC key.")
 
     # hash-lab compare
     parser_hash_cmp = hash_subparsers.add_parser("compare", help="Compare two files.")

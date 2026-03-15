@@ -1,8 +1,10 @@
+import hmac
 import hashlib
 import sys
 import os
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, Optional, Union
+
 
 class HashLabManager:
     """
@@ -21,13 +23,16 @@ class HashLabManager:
             raise ValueError(f"Algorithm '{algo}' not available.")
         return hashlib.new(algo)
 
-    def hash_string(self, text: str, algo: str = "sha256") -> str:
+    def hash_string(self, text: str, algo: str = "sha256", hmac_key: Optional[str] = None) -> str:
         """Hashes a string."""
-        h = self._get_hasher(algo)
-        h.update(text.encode("utf-8"))
+        if hmac_key:
+            h = hmac.new(hmac_key.encode("utf-8"), text.encode("utf-8"), algo)
+        else:
+            h = self._get_hasher(algo)
+            h.update(text.encode("utf-8"))
         return h.hexdigest()
 
-    def hash_file(self, filepath: Union[str, Path], algo: str = "sha256") -> str:
+    def hash_file(self, filepath: Union[str, Path], algo: str = "sha256", hmac_key: Optional[str] = None) -> str:
         """Hashes a file (streaming)."""
         path = Path(filepath)
         if not path.exists():
@@ -35,13 +40,16 @@ class HashLabManager:
         if not path.is_file():
             raise ValueError(f"Path '{path}' is not a file.")
 
-        h = self._get_hasher(algo)
+        if hmac_key:
+            h = hmac.new(hmac_key.encode("utf-8"), b"", algo)
+        else:
+            h = self._get_hasher(algo)
         with open(path, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
                 h.update(chunk)
         return h.hexdigest()
 
-    def hash_dir(self, dirpath: Union[str, Path], algo: str = "sha256", recursive: bool = False) -> Dict[str, str]:
+    def hash_dir(self, dirpath: Union[str, Path], algo: str = "sha256", recursive: bool = False, hmac_key: Optional[str] = None) -> Dict[str, str]:
         """Hashes all files in a directory."""
         path = Path(dirpath)
         if not path.exists():
@@ -55,14 +63,14 @@ class HashLabManager:
                 for file in files:
                     fp = Path(root) / file
                     try:
-                        results[str(fp)] = self.hash_file(fp, algo)
+                        results[str(fp)] = self.hash_file(fp, algo, hmac_key)
                     except Exception as e:
                         results[str(fp)] = f"Error: {e}"
         else:
             for file in path.iterdir():
                 if file.is_file():
                     try:
-                        results[str(file)] = self.hash_file(file, algo)
+                        results[str(file)] = self.hash_file(file, algo, hmac_key)
                     except Exception as e:
                         results[str(file)] = f"Error: {e}"
         return results
@@ -140,17 +148,19 @@ class HashLabManager:
 
         return results
 
+
 def run_hash_lab_logic(args) -> bool:
     """CLI handler for Hash Lab."""
     manager = HashLabManager()
 
     # Default algo is sha256
     algo = getattr(args, "algo", "sha256")
+    hmac_key = getattr(args, "hmac", None)
 
     try:
         if args.action == "string":
             if not args.text:
-                 # Read from stdin
+                # Read from stdin
                 if not sys.stdin.isatty():
                     try:
                         content = sys.stdin.read()
@@ -159,26 +169,26 @@ def run_hash_lab_logic(args) -> bool:
                         # However, user experience: `echo "foo" | hash string` -> hash("foo\n")
                         # We'll use strip() if it looks like a single line to be helpful,
                         # or args.text if provided.
-                        print(manager.hash_string(content.strip(), algo))
+                        print(manager.hash_string(content.strip(), algo, hmac_key))
                         return True
                     except Exception:
                         pass
                 print("Error: Text required.", file=sys.stderr)
                 return False
 
-            print(manager.hash_string(args.text, algo))
+            print(manager.hash_string(args.text, algo, hmac_key))
 
         elif args.action == "file":
             print(f"--- Hashing File ({algo}) ---")
             print(f"File: {args.path}")
-            result = manager.hash_file(args.path, algo)
+            result = manager.hash_file(args.path, algo, hmac_key)
             print(f"Hash: {result}")
 
         elif args.action == "dir":
             print(f"--- Hashing Directory ({algo}) ---")
             recursive = args.recursive
             print(f"Directory: {args.path} (Recursive: {recursive})")
-            results = manager.hash_dir(args.path, algo, recursive)
+            results = manager.hash_dir(args.path, algo, recursive, hmac_key)
 
             for f, h in sorted(results.items()):
                 print(f"{h}  {f}")

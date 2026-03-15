@@ -11,6 +11,27 @@ def config_manager(tmp_path):
         yield ConfigManager()
 
 
+def test_get_value(config_manager, capsys):
+    # Set a value first
+    config_manager.set_value("max_iterations", "100")
+    capsys.readouterr() # clear stdout
+
+    # Test get_value
+    config_manager.get_value("max_iterations")
+    out = capsys.readouterr().out
+    assert "max_iterations: 100" in out
+
+    # Test get_value for unset key
+    config_manager.get_value("timeout")
+    out = capsys.readouterr().out
+    assert "timeout: Not Set" in out
+
+    # Test invalid key
+    config_manager.get_value("max_iters")
+    out = capsys.readouterr().out
+    assert "Error: Unknown key 'max_iters'" in out
+
+
 def test_set_value_valid(config_manager, capsys):
     config_manager.set_value("max_iterations", "100")
     assert "Set 'max_iterations' to '100'" in capsys.readouterr().out

@@ -5,6 +5,7 @@ from textual.widgets import Button, Input, Label, Select, TabbedContent, TabPane
 from shared.hash_lab import HashLabManager
 import asyncio
 
+
 class HashLabTab(Container):
     """Tab for Hash operations (String, File, Dir, Checksum)."""
 
@@ -26,6 +27,7 @@ class HashLabTab(Container):
                         with Horizontal():
                             yield Label("Algorithm:", classes="label")
                             yield Select.from_values(["md5", "sha1", "sha256", "sha512"], id="hash-string-algo", value="sha256")
+                            yield Input(placeholder="Optional HMAC Key", id="hash-string-hmac")
                             yield Button("Calculate", id="btn-hash-string", variant="primary")
 
                     with Vertical(classes="stat-box"):
@@ -40,6 +42,7 @@ class HashLabTab(Container):
                         with Horizontal():
                             yield Label("Algorithm:", classes="label")
                             yield Select.from_values(["md5", "sha1", "sha256", "sha512"], id="hash-file-algo", value="sha256")
+                            yield Input(placeholder="Optional HMAC Key", id="hash-file-hmac")
                             yield Button("Calculate", id="btn-hash-file", variant="primary")
 
                     with Vertical(classes="stat-box"):
@@ -55,6 +58,7 @@ class HashLabTab(Container):
                             yield Checkbox("Recursive", id="hash-dir-recursive")
                             yield Label("Algorithm:", classes="label")
                             yield Select.from_values(["md5", "sha1", "sha256", "sha512"], id="hash-dir-algo", value="sha256")
+                            yield Input(placeholder="Optional HMAC Key", id="hash-dir-hmac")
                             yield Button("Calculate", id="btn-hash-dir", variant="primary")
 
                     with Vertical(classes="stat-box"):
@@ -113,6 +117,7 @@ class HashLabTab(Container):
     def hash_string(self) -> None:
         text = self.query_one("#hash-string-input", TextArea).text
         algo = self.query_one("#hash-string-algo", Select).value or "sha256"
+        hmac_key = self.query_one("#hash-string-hmac", Input).value
         out = self.query_one("#hash-string-output", TextArea)
 
         if not text:
@@ -120,7 +125,7 @@ class HashLabTab(Container):
             return
 
         try:
-            res = self.manager.hash_string(text, str(algo))
+            res = self.manager.hash_string(text, str(algo), hmac_key)
             out.text = res
             self.notify("Hash calculated.")
         except Exception as e:
@@ -129,6 +134,7 @@ class HashLabTab(Container):
     async def hash_file(self) -> None:
         path_str = self.query_one("#hash-file-input", Input).value
         algo = self.query_one("#hash-file-algo", Select).value or "sha256"
+        hmac_key = self.query_one("#hash-file-hmac", Input).value
         out = self.query_one("#hash-file-output", TextArea)
 
         if not path_str:
@@ -139,7 +145,7 @@ class HashLabTab(Container):
 
         try:
             # Run in thread
-            res = await asyncio.to_thread(self.manager.hash_file, path, str(algo))
+            res = await asyncio.to_thread(self.manager.hash_file, path, str(algo), hmac_key)
             out.text = res
             self.notify("File hashed.")
         except Exception as e:
@@ -149,6 +155,7 @@ class HashLabTab(Container):
     async def hash_dir(self) -> None:
         path_str = self.query_one("#hash-dir-input", Input).value
         algo = self.query_one("#hash-dir-algo", Select).value or "sha256"
+        hmac_key = self.query_one("#hash-dir-hmac", Input).value
         recursive = self.query_one("#hash-dir-recursive", Checkbox).value
         table = self.query_one("#hash-dir-table", DataTable)
 
@@ -161,7 +168,7 @@ class HashLabTab(Container):
         self.notify("Hashing directory...")
 
         try:
-            results = await asyncio.to_thread(self.manager.hash_dir, path, str(algo), recursive)
+            results = await asyncio.to_thread(self.manager.hash_dir, path, str(algo), recursive, hmac_key)
 
             for f, h in sorted(results.items()):
                 # Try to make path relative for display

@@ -292,6 +292,7 @@ KNOWN_COMMANDS = [
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
     "go-lab", "go", "golang",
+    "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
     "base64-lab", "base64", "b64",
@@ -442,6 +443,23 @@ def run_css_lab(args):
     from shared.css_lab import run_css_lab_logic
     success = run_css_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_base16_lab(args):
+    """Runs the Base16 Lab."""
+    if getattr(args, 'tui', False):
+        try:
+            from shared.tui import AgentTUI
+        except ImportError as e:
+            print(f"Error starting TUI: {e}")
+            sys.exit(1)
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base16")
+        app.run()
+        sys.exit(0)
+
+    from shared.base16_lab import run_base16_lab_logic
+    success = run_base16_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 
 def run_base32_lab(args):
     """Runs the Base32 Lab."""
@@ -15072,6 +15090,15 @@ def parse_args(argv=None):
     parser_css.add_argument("--output", "-o", help="Output CSS file.")
     parser_css.add_argument("--tui", action="store_true", help="Launch the interactive CSS Lab TUI.")
 
+    # base16-lab
+    parser_b16 = subparsers.add_parser(
+        "base16-lab", aliases=["base16", "b16"],
+        help="Base16 encoding/decoding utilities."
+    )
+    parser_b16.add_argument("--encode", type=str, help="Text to Base16 encode")
+    parser_b16.add_argument("--decode", type=str, help="Base16 string to decode")
+    parser_b16.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base16 Lab")
+
     # base32-lab
     parser_b32 = subparsers.add_parser(
         "base32-lab", aliases=["base32", "b32"],
@@ -21153,6 +21180,9 @@ async def main():
         run_css_lab(args)
         return
 
+    if args.command in ["base16-lab", "base16", "b16"]:
+        run_base16_lab(args)
+        return
     if args.command in ["base32-lab", "base32", "b32"]:
         run_base32_lab(args)
         return

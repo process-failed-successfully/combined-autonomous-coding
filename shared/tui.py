@@ -158,6 +158,7 @@ from shared.tui_base85 import Base85LabTab
 from shared.tui_base64 import Base64LabTab
 from shared.tui_base58 import Base58LabTab
 from shared.tui_base32 import Base32LabTab
+from shared.tui_base16 import Base16LabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
@@ -4358,6 +4359,8 @@ class AgentTUI(App):
                 yield Base85LabTab()
             with TabPane("Base58 Lab", id="tab-base58"):
                 yield Base58LabTab()
+            with TabPane("Base16 Lab", id="tab-base16"):
+                yield Base16LabTab()
             with TabPane("Base64 Lab", id="tab-base64"):
                 yield Base64LabTab()
 

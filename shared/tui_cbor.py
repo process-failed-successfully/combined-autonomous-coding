@@ -4,6 +4,7 @@ from textual.widgets import Label, Button, TextArea, Select, RadioSet, RadioButt
 
 from shared.cbor_lab import CborManager
 
+
 class CborTab(Container):
     """Tab for CBOR encoding and decoding."""
 

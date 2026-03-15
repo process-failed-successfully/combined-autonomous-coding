@@ -3,6 +3,7 @@ from unittest.mock import patch
 import argparse
 from shared.cbor_lab import CborManager, run_cbor_lab_logic
 
+
 class TestCborManager(unittest.TestCase):
     def setUp(self):
         self.manager = CborManager()
@@ -23,6 +24,7 @@ class TestCborManager(unittest.TestCase):
         # CBOR requires valid structure, b"\x1c" is float16 but missing 2 bytes
         with self.assertRaises(ValueError):
             self.manager.decode(b"\x1c")
+
 
 class TestCborLabLogic(unittest.TestCase):
     @patch('sys.stdout')
@@ -45,5 +47,6 @@ class TestCborLabLogic(unittest.TestCase):
         result = run_cbor_lab_logic(args)
         self.assertFalse(result)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

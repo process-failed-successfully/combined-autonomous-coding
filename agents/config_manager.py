@@ -72,6 +72,19 @@ class ConfigManager:
         console.print(table)
         console.print(f"\n[dim]Config file: {self.config_path}[/dim]")
 
+    def get_value(self, key: str):
+        """Get a configuration value."""
+        if key not in CONFIG_KEYS:
+            console.print(f"[red]Error: Unknown key '{key}'.[/red]")
+            matches = difflib.get_close_matches(key, CONFIG_KEYS.keys(), n=1, cutoff=0.6)
+            if matches:
+                console.print(f"[dim]Did you mean '{matches[0]}'? [/dim]")
+            return
+
+        current_config = self._load_config()
+        val = current_config.get(key, "Not Set")
+        console.print(f"{key}: {val}")
+
     def set_value(self, key: str, value: str):
         """Set a configuration value."""
         if key not in CONFIG_KEYS:

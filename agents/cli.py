@@ -304,6 +304,12 @@ def config_list_keys():
     ConfigManager().list_keys()
 
 
+@config_app.command("get")
+def config_get(key: str):
+    """Get a configuration value."""
+    ConfigManager().get_value(key)
+
+
 @config_app.command("set")
 def config_set(key: str, value: str):
     """Set a configuration value."""

@@ -4,6 +4,7 @@ from pathlib import Path
 from textual.widgets import Input, RichLog, DataTable, TextArea, Select, Checkbox
 from shared.tui_hash import HashLabTab
 
+
 class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.patcher = patch("shared.tui_hash.HashLabManager")
@@ -33,10 +34,18 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         algo_select.value = "md5"
         output_area = MagicMock(spec=TextArea)
 
+        hmac_input = MagicMock(spec=Input)
+        hmac_input.value = "mykey"
+
         def query_side_effect(selector, type=None):
-            if selector == "#hash-string-input": return text_input
-            if selector == "#hash-string-algo": return algo_select
-            if selector == "#hash-string-output": return output_area
+            if selector == "#hash-string-input":
+                return text_input
+            if selector == "#hash-string-algo":
+                return algo_select
+            if selector == "#hash-string-output":
+                return output_area
+            if selector == "#hash-string-hmac":
+                return hmac_input
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -46,7 +55,7 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         self.tab.hash_string()
 
         # Verify
-        self.mock_manager.hash_string.assert_called_with("hello", "md5")
+        self.mock_manager.hash_string.assert_called_with("hello", "md5", "mykey")
         self.assertEqual(output_area.text, "hash123")
         self.tab.notify.assert_called_with("Hash calculated.")
 
@@ -58,10 +67,18 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         algo_select.value = "sha1"
         output_area = MagicMock(spec=TextArea)
 
+        hmac_input = MagicMock(spec=Input)
+        hmac_input.value = "mykey2"
+
         def query_side_effect(selector, type=None):
-            if selector == "#hash-file-input": return path_input
-            if selector == "#hash-file-algo": return algo_select
-            if selector == "#hash-file-output": return output_area
+            if selector == "#hash-file-input":
+                return path_input
+            if selector == "#hash-file-algo":
+                return algo_select
+            if selector == "#hash-file-output":
+                return output_area
+            if selector == "#hash-file-hmac":
+                return hmac_input
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -71,7 +88,7 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         await self.tab.hash_file()
 
         # Verify
-        self.mock_manager.hash_file.assert_called()
+        self.mock_manager.hash_file.assert_called_with(self.project_dir / "test.txt", "sha1", "mykey2")
         self.assertEqual(output_area.text, "filehash123")
         self.tab.notify.assert_called_with("File hashed.")
 
@@ -84,11 +101,20 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         recursive_chk.value = True
         table = MagicMock(spec=DataTable)
 
+        hmac_input = MagicMock(spec=Input)
+        hmac_input.value = "mykey3"
+
         def query_side_effect(selector, type=None):
-            if selector == "#hash-dir-input": return path_input
-            if selector == "#hash-dir-algo": return algo_select
-            if selector == "#hash-dir-recursive": return recursive_chk
-            if selector == "#hash-dir-table": return table
+            if selector == "#hash-dir-input":
+                return path_input
+            if selector == "#hash-dir-algo":
+                return algo_select
+            if selector == "#hash-dir-recursive":
+                return recursive_chk
+            if selector == "#hash-dir-table":
+                return table
+            if selector == "#hash-dir-hmac":
+                return hmac_input
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -96,23 +122,30 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
 
         await self.tab.hash_dir()
 
-        self.mock_manager.hash_dir.assert_called()
+        self.mock_manager.hash_dir.assert_called_with(self.project_dir / "src", "sha256", True, "mykey3")
         table.clear.assert_called()
         self.assertEqual(table.add_row.call_count, 2)
         # Notify msg depends on length of results
         self.tab.notify.assert_called_with("Hashed 2 files.")
 
     async def test_compare_files(self):
-        p1 = MagicMock(spec=Input); p1.value = "a.txt"
-        p2 = MagicMock(spec=Input); p2.value = "b.txt"
-        algo = MagicMock(spec=Select); algo.value = "md5"
+        p1 = MagicMock(spec=Input)
+        p1.value = "a.txt"
+        p2 = MagicMock(spec=Input)
+        p2.value = "b.txt"
+        algo = MagicMock(spec=Select)
+        algo.value = "md5"
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#hash-compare-1": return p1
-            if selector == "#hash-compare-2": return p2
-            if selector == "#hash-compare-algo": return algo
-            if selector == "#hash-compare-log": return log
+            if selector == "#hash-compare-1":
+                return p1
+            if selector == "#hash-compare-2":
+                return p2
+            if selector == "#hash-compare-algo":
+                return algo
+            if selector == "#hash-compare-log":
+                return log
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -128,16 +161,23 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(found_match)
 
     async def test_verify_checksums(self):
-        sum_file = MagicMock(spec=Input); sum_file.value = "sums.txt"
-        root = MagicMock(spec=Input); root.value = ""
-        algo = MagicMock(spec=Select); algo.value = "sha256"
+        sum_file = MagicMock(spec=Input)
+        sum_file.value = "sums.txt"
+        root = MagicMock(spec=Input)
+        root.value = ""
+        algo = MagicMock(spec=Select)
+        algo.value = "sha256"
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
-            if selector == "#hash-sum-file": return sum_file
-            if selector == "#hash-sum-root": return root
-            if selector == "#hash-sum-algo": return algo
-            if selector == "#hash-sum-log": return log
+            if selector == "#hash-sum-file":
+                return sum_file
+            if selector == "#hash-sum-root":
+                return root
+            if selector == "#hash-sum-algo":
+                return algo
+            if selector == "#hash-sum-log":
+                return log
             return MagicMock()
         self.tab.query_one.side_effect = query_side_effect
 
@@ -154,6 +194,7 @@ class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
         log.write.assert_called()
         found_pass = any("All checks passed" in str(c) for c in log.write.call_args_list)
         self.assertTrue(found_pass)
+
 
 if __name__ == "__main__":
     unittest.main()

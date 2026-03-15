@@ -9,6 +9,7 @@ import sys
 import json
 import cbor2
 
+
 class CborManager:
     """Manages CBOR operations (encode/decode)."""
 
@@ -27,6 +28,7 @@ class CborManager:
             return cbor2.dumps(obj)
         except Exception as e:
             raise TypeError(f"Cannot encode object to CBOR: {e}")
+
 
 def run_cbor_lab_logic(args):
     """CLI logic for cbor-lab."""

@@ -118,6 +118,11 @@ key: value
         invalid_yaml_2 = "[unbalanced brackets"
         self.assertFalse(self.manager.validate(invalid_yaml_2))
 
+    def test_query(self):
+        self.assertEqual(self.manager.query(self.sample_data, "len(data['spec']['containers'])"), 2)
+        self.assertEqual(self.manager.query(self.sample_data, "data['metadata']['labels']['env']"), "prod")
+        self.assertEqual(self.manager.query(self.sample_data, "[c['name'] for c in data['spec']['containers']]"), ["nginx", "redis"])
+
     def test_dump_yaml(self):
         data = {"a": 1, "b": [2, 3]}
         yaml_str = self.manager.dump_yaml(data)
@@ -125,6 +130,7 @@ key: value
         self.assertIn("a: 1", yaml_str)
         self.assertIn("b:", yaml_str)
         self.assertIn("- 2", yaml_str)
+
 
 class TestYamlLabCLI(unittest.TestCase):
     @unittest.mock.patch('sys.exit', side_effect=SystemExit)

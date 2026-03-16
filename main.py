@@ -14245,6 +14245,11 @@ def parse_args(argv=None):
     parser_yaml_merge.add_argument("base", help="Base YAML file.")
     parser_yaml_merge.add_argument("override", help="Override YAML file.")
 
+    # yaml-lab query
+    parser_yaml_query = yaml_subparsers.add_parser("query", help="Evaluate a Python expression on the YAML data.")
+    parser_yaml_query.add_argument("input", help="YAML string or file path.")
+    parser_yaml_query.add_argument("path", help="The Python expression to evaluate (uses 'data' as the YAML object).")
+
     # yaml-lab validate
     parser_yaml_validate = yaml_subparsers.add_parser("validate", help="Validate YAML.")
     parser_yaml_validate.add_argument("input", help="YAML string or file path.")

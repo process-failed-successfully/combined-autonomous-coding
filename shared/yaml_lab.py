@@ -189,6 +189,39 @@ class YamlLabManager:
         except ValueError:
             return False
 
+    def query(self, data: Any, expression: str) -> Any:
+        """
+        Evaluates a Python expression on the data.
+        Supported names: data, len, sorted, max, min, sum, list, dict, set, tuple, enumerate, zip, map, filter, any, all.
+        """
+        # Restricted evaluation environment
+        allowed_names = {
+            "data": data,
+            "len": len,
+            "sorted": sorted,
+            "max": max,
+            "min": min,
+            "sum": sum,
+            "list": list,
+            "dict": dict,
+            "set": set,
+            "tuple": tuple,
+            "enumerate": enumerate,
+            "zip": zip,
+            "map": map,
+            "filter": filter,
+            "any": any,
+            "all": all,
+            "str": str,
+            "int": int,
+            "float": float,
+            "bool": bool,
+        }
+
+        # We explicitly disable __builtins__ to prevent access to globals/imports
+        return eval(expression, {"__builtins__": {}}, allowed_names)  # nosec B307
+
+
 def run_yaml_lab_logic(args):
     """CLI Entry point for Yaml Lab."""
     manager = YamlLabManager()
@@ -295,6 +328,18 @@ def run_yaml_lab_logic(args):
             override = manager.load_yaml(args.override)
             result = manager.merge(base, override)
             print(manager.dump_yaml(result))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "query":
+        try:
+            data = load_input()
+            result = manager.query(data, args.path)
+            if isinstance(result, (dict, list)):
+                print(json.dumps(result, indent=2, default=str))
+            else:
+                print(result)
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)

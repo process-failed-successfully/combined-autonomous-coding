@@ -481,6 +481,24 @@ def run_base32_lab(args):
     success = run_base32_lab_logic(args)
     sys.exit(0 if success else 1)
 
+def run_base36_lab(args):
+    """Runs the Base36 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base36 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base36")
+        if getattr(args, '_in_event_loop', False):
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base36_lab import run_base36_lab_logic
+    success = run_base36_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 def run_base58_lab(args):
     """Runs the Base58 Lab."""
     from shared.tui import AgentTUI
@@ -15185,6 +15203,16 @@ def parse_args(argv=None):
     b32_group.add_argument("--decode", "-d", type=str, help="Base32 text to decode.")
     parser_b32.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base32 Lab.")
 
+    # base36-lab
+    parser_b36 = subparsers.add_parser(
+        "base36-lab", aliases=["base36", "b36"],
+        help="Base36 encode and decode strings."
+    )
+    b36_group = parser_b36.add_mutually_exclusive_group(required=False)
+    b36_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    b36_group.add_argument("--decode", "-d", type=str, help="Base36 text to decode.")
+    parser_b36.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base36 Lab.")
+
     # base58-lab
     parser_b58 = subparsers.add_parser(
         "base58-lab", aliases=["base58", "b58"],
@@ -21275,6 +21303,10 @@ async def main():
         return
     if args.command in ["base32-lab", "base32", "b32"]:
         run_base32_lab(args)
+        return
+
+    if args.command in ["base36-lab", "base36", "b36"]:
+        run_base36_lab(args)
         return
 
     if args.command in ["base85-lab", "base85", "b85"]:

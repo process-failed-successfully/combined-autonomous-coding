@@ -51,6 +51,7 @@ dependencies = [
     "ulid-py",
     "python-barcode",
     "cbor2",
+    "msgpack",
 ]
 requires-python = ">=3.11"
 

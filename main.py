@@ -219,6 +219,7 @@ KNOWN_COMMANDS = [
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
+    "msgpack-lab", "msgpack", "mpack",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
@@ -1527,6 +1528,27 @@ def run_bencode_lab(args):
 
     from shared.bencode_lab import run_bencode_lab_logic
     success = run_bencode_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_msgpack_lab(args):
+    """Runs the MessagePack Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching MessagePack Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-msgpack")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.msgpack_lab import run_msgpack_lab_logic
+    success = run_msgpack_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_cbor_lab(args):
@@ -13428,6 +13450,28 @@ def parse_args(argv=None):
     bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
 
 
+    # --- New 'msgpack-lab' command ---
+    parser_msgpack_lab = subparsers.add_parser(
+        "msgpack-lab",
+        aliases=["msgpack", "mpack"],
+        help="MessagePack utilities (encode, decode, tui)."
+    )
+    msgpack_lab_subparsers = parser_msgpack_lab.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+
+    # msgpack-lab decode
+    parser_msgpack_decode = msgpack_lab_subparsers.add_parser("decode", help="Decode MessagePack data (Base64).")
+    parser_msgpack_decode.add_argument("data", nargs="?", help="Input content (or via stdin).")
+
+    # msgpack-lab encode
+    parser_msgpack_encode = msgpack_lab_subparsers.add_parser("encode", help="Encode JSON to MessagePack (Base64).")
+    parser_msgpack_encode.add_argument("data", nargs="?", help="JSON input (or via stdin).")
+
+    # msgpack-lab tui
+    parser_msgpack_tui = msgpack_lab_subparsers.add_parser("tui", help="Launch the MessagePack Lab TUI.")
+
     # --- New 'cbor-lab' command ---
     parser_cbor_lab = subparsers.add_parser(
         "cbor-lab",
@@ -20990,6 +21034,10 @@ async def main():
 
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
+        return
+
+    if args.command in ["msgpack-lab", "msgpack", "mpack"]:
+        run_msgpack_lab(args)
         return
 
     if args.command in ["cbor-lab", "cbor"]:

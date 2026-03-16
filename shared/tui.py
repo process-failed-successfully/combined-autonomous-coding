@@ -246,6 +246,7 @@ from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
+from shared.tui_uni import UniLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4005,6 +4006,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Geo Lab", "switch_tab_geo"),
         PaletteCommand("Morse Lab", "switch_tab_morse"),
         PaletteCommand("Go to HAR Lab", "switch_tab_har"),
+        PaletteCommand("Go to Unicode Lab", "switch_tab_uni"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4499,6 +4501,8 @@ class AgentTUI(App):
                 yield IbanLabTab()
             with TabPane("Case Lab", id="tab-case"):
                 yield CaseLabTab()
+            with TabPane("Unicode Lab", id="tab-uni"):
+                yield UniLabTab()
             with TabPane("Data URI Lab", id="tab-data-uri"):
                 yield DataUriLabTab()
             with TabPane("Geo Lab", id="tab-geo"):

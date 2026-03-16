@@ -1737,8 +1737,23 @@ def run_k8s_lab(args):
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
-    success = run_uni_lab_logic(args)
-    sys.exit(0 if success else 1)
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching Unicode Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-uni")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        success = run_uni_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 def run_code_query_cli(args):
     """Runs the Code Query tool."""
@@ -14673,6 +14688,9 @@ def parse_args(argv=None):
     # uni-lab unescape
     parser_uni_unescape = uni_subparsers.add_parser("unescape", help="Unescape \\u sequences.")
     parser_uni_unescape.add_argument("--text", help="Input text.")
+
+    # uni-lab tui
+    parser_uni_tui = uni_subparsers.add_parser("tui", help="Launch interactive Unicode Lab.")
 
     # --- New 'docs-lab' command ---
     parser_docs = subparsers.add_parser(

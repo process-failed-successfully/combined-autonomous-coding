@@ -55,8 +55,11 @@ class MetricWidget(Static):
         if len(value) > 50:
             value = value[:47] + "..."
 
-        lbl = self.query_one(f"#val-{self.id}", Label)
-        lbl.update(value)
+        try:
+            lbl = self.query_one(f"#val-{self.id}", Label)
+            lbl.update(value)
+        except Exception:
+            pass
 
 
 class LogWidget(Container):
@@ -98,12 +101,15 @@ class LogWidget(Container):
     @work(exclusive=True)
     async def refresh_data(self) -> None:
         content = await self.manager.execute_source(self.config)
-        log = self.query_one(f"#log-{self.id}", RichLog)
-        # Clear logic? For now, we append if it looks like a stream, or replace?
-        # DashLab execute_source reads the whole file/command output.
-        # So we should clear and write.
-        log.clear()
-        log.write(content)
+        try:
+            log = self.query_one(f"#log-{self.id}", RichLog)
+            # Clear logic? For now, we append if it looks like a stream, or replace?
+            # DashLab execute_source reads the whole file/command output.
+            # So we should clear and write.
+            log.clear()
+            log.write(content)
+        except Exception:
+            pass
 
 
 class DashboardRunner(Container):

@@ -1530,6 +1530,7 @@ def run_bencode_lab(args):
     success = run_bencode_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_msgpack_lab(args):
     """Runs the MessagePack Lab."""
     if hasattr(args, "action") and args.action == "tui":
@@ -13472,7 +13473,7 @@ def parse_args(argv=None):
     parser_msgpack_encode.add_argument("data", nargs="?", help="JSON input (or via stdin).")
 
     # msgpack-lab tui
-    parser_msgpack_tui = msgpack_lab_subparsers.add_parser("tui", help="Launch the MessagePack Lab TUI.")
+    msgpack_lab_subparsers.add_parser("tui", help="Launch the MessagePack Lab TUI.")
 
     # --- New 'cbor-lab' command ---
     parser_cbor_lab = subparsers.add_parser(

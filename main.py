@@ -2188,6 +2188,8 @@ def run_converter_lab(args):
         from shared.converter_lab import run_converter_lab_logic
         success = run_converter_lab_logic(args)
         sys.exit(0 if success else 1)
+
+
 def run_time_lab(args):
     """Runs the Time Lab."""
     if hasattr(args, 'action') and args.action == 'tui':
@@ -13041,7 +13043,7 @@ def parse_args(argv=None):
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
     # jwt-lab tui
-    parser_jwt_tui = jwt_subparsers.add_parser("tui", help="Launch JWT Lab TUI.")
+    jwt_subparsers.add_parser("tui", help="Launch JWT Lab TUI.")
 
     # --- New 'ip-lab' command ---
     parser_ip = subparsers.add_parser(
@@ -18947,6 +18949,7 @@ def _pr_create(args, config):
 
     sys.exit(0)
 
+
 def _pr_list(args, config):
     """Lists open pull requests."""
     from shared.github_client import GitHubClient
@@ -18969,6 +18972,7 @@ def _pr_list(args, config):
         print(f"❌ Error listing PRs: {e}", file=sys.stderr)
         sys.exit(1)
 
+
 def _pr_show(args, config):
     """Shows details of a pull request."""
     from shared.github_client import GitHubClient
@@ -18987,6 +18991,7 @@ def _pr_show(args, config):
     except Exception as e:
         print(f"❌ Error fetching PR: {e}", file=sys.stderr)
         sys.exit(1)
+
 
 def _pr_merge(args, config):
     """Merges a pull request."""
@@ -19013,6 +19018,7 @@ def _pr_merge(args, config):
         print(f"❌ Error merging PR: {e}", file=sys.stderr)
         sys.exit(1)
 
+
 def _pr_close(args, config):
     """Closes a pull request."""
     from shared.github_client import GitHubClient
@@ -19028,11 +19034,12 @@ def _pr_close(args, config):
 
     client = GitHubClient(token=config.github_token, host=config.github_host or "github.com")
     try:
-        res = client.close_pull_request(args.project_dir, args.number)
+        client.close_pull_request(args.project_dir, args.number)
         print(f"✅ PR #{args.number} closed successfully.")
     except Exception as e:
         print(f"❌ Error closing PR: {e}", file=sys.stderr)
         sys.exit(1)
+
 
 def run_pr(args):
     """Handles GitHub pull requests."""
@@ -19300,6 +19307,7 @@ def run_mock(args):
         else:
             print(output_content)
         sys.exit(0)
+
 
 def run_dash_lab(args):
     """Runs the Dash Lab TUI."""
@@ -21011,6 +21019,7 @@ async def main():
     if args.command in ["password-lab", "pwd-lab"]:
         run_password_lab(args)
         return
+
 
     if args.command in ["http-status-lab", "http-status", "status-code"]:
         run_http_status_lab(args)

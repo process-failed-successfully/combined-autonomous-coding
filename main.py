@@ -2489,6 +2489,12 @@ def run_devtools(args):
         else:
             print(DevTools.base64_encode(args.text))
 
+    elif args.action == "url":
+        if args.decode:
+            print(DevTools.url_decode(args.text))
+        else:
+            print(DevTools.url_encode(args.text))
+
     elif args.action == "hash":
         print(DevTools.calculate_hash(args.text, args.algo))
 
@@ -12544,6 +12550,11 @@ def parse_args(argv=None):
     parser_dt_b64 = devtools_subparsers.add_parser("base64", help="Encode/Decode Base64.")
     parser_dt_b64.add_argument("text", help="Text to process.")
     parser_dt_b64.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
+
+    # devtools url
+    parser_dt_url = devtools_subparsers.add_parser("url", help="Encode/Decode URL.")
+    parser_dt_url.add_argument("text", help="Text to process.")
+    parser_dt_url.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
 
     # devtools hash
     parser_dt_hash = devtools_subparsers.add_parser("hash", help="Calculate hash.")

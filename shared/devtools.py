@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import urllib.parse
 import uuid
 from datetime import datetime
 
@@ -40,6 +41,22 @@ class DevTools:
         """Decodes Base64 text."""
         try:
             return base64.b64decode(text).decode("utf-8")
+        except Exception as e:
+            return f"Error: {e}"
+
+    @staticmethod
+    def url_encode(text: str) -> str:
+        """Encodes text to URL-safe format."""
+        try:
+            return urllib.parse.quote(text)
+        except Exception as e:
+            return f"Error: {e}"
+
+    @staticmethod
+    def url_decode(text: str) -> str:
+        """Decodes URL-encoded text."""
+        try:
+            return urllib.parse.unquote(text)
         except Exception as e:
             return f"Error: {e}"
 

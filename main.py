@@ -300,6 +300,7 @@ KNOWN_COMMANDS = [
     "base58-lab", "base58", "b58",
     "base62-lab", "base62", "b62",
     "base64-lab", "base64", "b64",
+    "base64url-lab", "base64url", "b64url",
     "base85-lab", "base85", "b85",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
@@ -585,6 +586,29 @@ def run_base64_lab(args):
 
     from shared.base64_lab import run_base64_lab_logic
     success = run_base64_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base64url_lab(args):
+    """Runs the Base64URL Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base64URL Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base64url")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base64url_lab import run_base64url_lab_logic
+    success = run_base64url_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_go_lab(args):
@@ -15318,6 +15342,15 @@ def parse_args(argv=None):
     b64_group.add_argument("--decode", "-d", type=str, help="Base64 text to decode.")
     b64_group.add_argument("--tui", action="store_true", help="Launch the interactive Base64 Lab TUI.")
 
+    parser_b64url = subparsers.add_parser(
+        "base64url-lab", aliases=["base64url", "b64url"],
+        help="Base64URL encode and decode strings."
+    )
+    b64url_group = parser_b64url.add_mutually_exclusive_group(required=False)
+    b64url_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    b64url_group.add_argument("--decode", "-d", type=str, help="Base64URL text to decode.")
+    b64url_group.add_argument("--tui", action="store_true", help="Launch the interactive Base64URL Lab TUI.")
+
     # random-lab int
     parser_random_int = random_subparsers.add_parser("int", help="Random integers.")
     parser_random_int.add_argument("min", type=int, help="Minimum value.")
@@ -21397,6 +21430,10 @@ async def main():
         return
     if args.command in ["base64-lab", "base64", "b64"]:
         run_base64_lab(args)
+        return
+
+    if args.command in ["base64url-lab", "base64url", "b64url"]:
+        run_base64url_lab(args)
         return
 
     if args.command in ["go-lab", "go", "golang"]:

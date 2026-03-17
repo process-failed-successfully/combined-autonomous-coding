@@ -44,6 +44,24 @@ class DevTools:
             return f"Error: {e}"
 
     @staticmethod
+    def base64url_encode(text: str) -> str:
+        """Encodes text to Base64URL."""
+        try:
+            return base64.urlsafe_b64encode(text.encode("utf-8")).decode("utf-8").rstrip('=')
+        except Exception as e:
+            return f"Error encoding to Base64URL: {e}"
+
+    @staticmethod
+    def base64url_decode(text: str) -> str:
+        """Decodes text from Base64URL."""
+        try:
+            padding_needed = len(text) % 4
+            padded_string = text + ('=' * ((4 - padding_needed) % 4))
+            return base64.urlsafe_b64decode(padded_string).decode("utf-8")
+        except Exception as e:
+            return f"Error decoding from Base64URL: {e}"
+
+    @staticmethod
     def generate_uuid() -> str:
         """Generates a random UUID v4."""
         return str(uuid.uuid4())

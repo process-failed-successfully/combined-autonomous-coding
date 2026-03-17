@@ -72,7 +72,7 @@ class Base64LabTab(Container):
 
             output_area.text = result
 
-            if result.startswith("Error:"):
+            if result.startswith("Error"):
                 self.notify("Operation failed.", severity="error")
             else:
                 self.notify("Done.")

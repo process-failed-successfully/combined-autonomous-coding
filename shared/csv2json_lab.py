@@ -57,6 +57,21 @@ def run_csv2json_lab_logic(args: argparse.Namespace) -> bool:
     """CLI logic for csv2json lab."""
     manager = Csv2JsonManager()
 
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching CSV to JSON Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-csv2json")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     if getattr(args, "file", None):
         filepath = Path(args.file)
         output_path = Path(args.output) if getattr(args, "output", None) else None

@@ -14033,6 +14033,7 @@ def parse_args(argv=None):
     parser_csv2json.add_argument("--text", "-t", help="Input CSV text.")
     parser_csv2json.add_argument("--output", "-o", help="Output file path.")
     parser_csv2json.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_csv2json.add_argument("--tui", action="store_true", help="Launch interactive TUI for CSV to JSON Lab.")
 
     # --- New 'csv-lab' command ---
     parser_csv = subparsers.add_parser(

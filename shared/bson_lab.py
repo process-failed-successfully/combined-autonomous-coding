@@ -7,7 +7,13 @@ Provides utilities for BSON (Binary JSON) encoding and decoding.
 
 import sys
 import json
-import bson
+
+try:
+    import bson
+    HAS_BSON = True
+except ImportError:
+    HAS_BSON = False
+
 
 class BsonManager:
     """Manages BSON operations (encode/decode)."""
@@ -15,6 +21,8 @@ class BsonManager:
     @staticmethod
     def decode(data: bytes):
         """Decodes BSON data into Python objects."""
+        if not HAS_BSON:
+            raise ValueError("bson library is not installed")
         try:
             return bson.loads(data)
         except Exception as e:
@@ -23,13 +31,20 @@ class BsonManager:
     @staticmethod
     def encode(obj) -> bytes:
         """Encodes a Python object to BSON."""
+        if not HAS_BSON:
+            raise TypeError("bson library is not installed")
         try:
             return bson.dumps(obj)
         except Exception as e:
             raise TypeError(f"Cannot encode object to BSON: {e}")
 
+
 def run_bson_lab_logic(args):
     """CLI logic for bson-lab."""
+    if not HAS_BSON:
+        print("Error: The 'bson' library is not installed. Please install it using 'pip install bson'.", file=sys.stderr)
+        return False
+
     manager = BsonManager()
 
     # Read input from stdin if not provided

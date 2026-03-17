@@ -2,7 +2,8 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Label, Button, TextArea, Select, RadioSet, RadioButton
 
-from shared.bson_lab import BsonManager
+from shared.bson_lab import BsonManager, HAS_BSON
+
 
 class BsonLabTab(Container):
     """Tab for BSON encoding and decoding."""
@@ -12,6 +13,10 @@ class BsonLabTab(Container):
         self.manager = BsonManager()
 
     def compose(self) -> ComposeResult:
+        if not HAS_BSON:
+            yield Label("[bold red]Error:[/bold red] The 'bson' library is not installed.\n\nPlease install it using: [bold]pip install bson[/bold]")
+            return
+
         yield Label("BSON Lab", id="bson-header", classes="text-bold")
 
         with Horizontal(id="bson-controls", classes="mb-1"):

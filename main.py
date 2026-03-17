@@ -333,7 +333,7 @@ KNOWN_COMMANDS = [
     "morse-lab", "morse",
     "roman-lab", "roman",
     "bitwise-lab", "bits",
-    "brainfuck-lab", "brainfuck"
+    "brainfuck-lab", "brainfuck", "bf"
 ]
 
 if FileSystemEventHandler:
@@ -15002,8 +15002,7 @@ def parse_args(argv=None):
     parser_geo_map.add_argument("point", help="Coordinates (lat,lon).")
 
     # geo-lab tui
-    parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
-
+    geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
     # --- New 'brainfuck-lab' command ---
     parser_brainfuck = subparsers.add_parser(
@@ -20905,7 +20904,6 @@ async def main():
     if args.command in ["proc-lab", "proc"]:
         await run_proc_lab_logic(args)
         return
-
 
     if args.command in ["brainfuck-lab", "brainfuck", "bf"]:
         run_brainfuck_lab_logic(args)

@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import patch
 import argparse
-from shared.bson_lab import BsonManager, run_bson_lab_logic
+from shared.bson_lab import BsonManager, run_bson_lab_logic, HAS_BSON
 
+
+@unittest.skipIf(not HAS_BSON, "bson not installed")
 class TestBsonManager(unittest.TestCase):
     def setUp(self):
         self.manager = BsonManager()
@@ -23,6 +25,8 @@ class TestBsonManager(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.decode(b"invalid")
 
+
+@unittest.skipIf(not HAS_BSON, "bson not installed")
 class TestBsonLabLogic(unittest.TestCase):
     @patch('sys.stdout')
     def test_run_bson_lab_encode(self, mock_stdout):
@@ -43,6 +47,7 @@ class TestBsonLabLogic(unittest.TestCase):
         args = argparse.Namespace(action='encode', input='{"a": 1', hex=True)
         result = run_bson_lab_logic(args)
         self.assertFalse(result)
+
 
 if __name__ == '__main__':
     unittest.main()

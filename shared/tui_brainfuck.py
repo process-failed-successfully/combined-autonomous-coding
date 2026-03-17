@@ -1,8 +1,8 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Label, TextArea, RichLog, DataTable
-from textual.reactive import reactive
 from shared.brainfuck_lab import BrainfuckInterpreter
+
 
 class BrainfuckLabTab(Container):
     """Tab for Brainfuck Interpreter."""
@@ -77,7 +77,7 @@ class BrainfuckLabTab(Container):
 
     def on_mount(self) -> None:
         table = self.query_one("#bf-memory-table", DataTable)
-        table.add_columns(*[f"{i:02d}" for i in range(21)]) # Show 21 cells
+        table.add_columns(*[f"{i:02d}" for i in range(21)])  # Show 21 cells
         self.update_ui()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -152,11 +152,11 @@ class BrainfuckLabTab(Container):
                 steps += 1
 
             if steps >= max_steps:
-                 self.query_one("#bf-status-value", Label).update("Halted (Max steps exceeded).")
-                 self.notify("Max steps exceeded.", severity="warning")
+                self.query_one("#bf-status-value", Label).update("Halted (Max steps exceeded).")
+                self.notify("Max steps exceeded.", severity="warning")
             else:
-                 self.query_one("#bf-status-value", Label).update("Halted (Finished).")
-                 self.notify("Execution finished.")
+                self.query_one("#bf-status-value", Label).update("Halted (Finished).")
+                self.notify("Execution finished.")
 
             self._is_running = False
             self.update_ui()
@@ -185,7 +185,7 @@ class BrainfuckLabTab(Container):
         log = self.query_one("#bf-output-log", RichLog)
         log.clear()
         if self.interpreter.output_data:
-             log.write(self.interpreter.output_data)
+            log.write(self.interpreter.output_data)
 
         # Update memory table
         table = self.query_one("#bf-memory-table", DataTable)
@@ -195,23 +195,23 @@ class BrainfuckLabTab(Container):
         start_idx = max(0, dp - 10)
         end_idx = start_idx + 21
         if end_idx > self.interpreter.memory_size:
-             end_idx = self.interpreter.memory_size
-             start_idx = max(0, end_idx - 21)
+            end_idx = self.interpreter.memory_size
+            start_idx = max(0, end_idx - 21)
 
         header_row = [f"Idx {i}" for i in range(start_idx, end_idx)]
         val_row = []
         for i in range(start_idx, end_idx):
             val = f"{self.interpreter.memory[i]:03d}"
             if i == dp:
-                val = f"[{val}]" # Mark current pointer
+                val = f"[{val}]"  # Mark current pointer
             else:
                 val = f" {val} "
             val_row.append(val)
 
         # Add padding if needed
         while len(header_row) < 21:
-             header_row.append("")
-             val_row.append("")
+            header_row.append("")
+            val_row.append("")
 
         table.add_row(*header_row)
         table.add_row(*val_row)

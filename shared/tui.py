@@ -53,6 +53,7 @@ from shared.prompt_lab import PromptLabManager
 from shared.scaffold import ScaffoldManager
 from shared.refactor import RefactorManager
 from shared.tui_security import SecurityTab
+from shared.tui_nato import NatoLabTab
 from shared.tui_guardrails import GuardrailsTab
 from shared.tui_hash import HashLabTab
 from shared.tui_ip import IpLabTab
@@ -4328,6 +4329,9 @@ class AgentTUI(App):
                 yield CronLabTab(self.project_dir)
             with TabPane("Text Lab", id="tab-text"):
                 yield TextLabTab()
+
+            with TabPane("NATO Lab", id="tab-nato"):
+                yield NatoLabTab()
             with TabPane("Codec Lab", id="tab-codec"):
                 yield CodecLabTab()
             with TabPane("Converter Lab", id="tab-converter"):

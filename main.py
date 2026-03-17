@@ -192,6 +192,7 @@ AVAILABLE_AGENTS = {
 
 # Known CLI commands for recipe execution
 KNOWN_COMMANDS = [
+    "nato-lab", "nato",
     "shell", "tui", "quiz", "kata", "prompt-lab", "knowledge", "chat", "ask", "do",
     "optimize", "perf", "debug", "code-review", "summarize", "explain", "init", "adr",
     "onboard", "session", "secrets", "db", "database", "playground", "completion",
@@ -538,6 +539,28 @@ def run_base85_lab(args):
     success = run_base85_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+
+def run_nato_lab(args):
+    """Runs the NATO Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching NATO Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-nato")
+        if getattr(args, '_in_event_loop', False):
+            import asyncio
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            import sys
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.nato_lab import run_nato_lab_logic
+    import sys
+    success = run_nato_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_base64_lab(args):
     """Runs the Base64 Lab."""
@@ -15248,6 +15271,17 @@ def parse_args(argv=None):
     b85_group.add_argument("--decode", "-d", type=str, help="Base85 text to decode.")
     b85_group.add_argument("--tui", action="store_true", help="Launch the interactive Base85 Lab TUI.")
 
+
+    # nato-lab
+    parser_nato = subparsers.add_parser(
+        "nato-lab", aliases=["nato"],
+        help="NATO Phonetic Alphabet encoding and decoding."
+    )
+    nato_group = parser_nato.add_mutually_exclusive_group(required=True)
+    nato_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    nato_group.add_argument("--decode", "-d", type=str, help="Phonetic text to decode.")
+    nato_group.add_argument("--tui", action="store_true", help="Launch interactive TUI for NATO Lab.")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -21322,6 +21356,9 @@ async def main():
         run_base62_lab(args)
         return
 
+    if args.command in ["nato-lab", "nato"]:
+        run_nato_lab(args)
+        return
     if args.command in ["base64-lab", "base64", "b64"]:
         run_base64_lab(args)
         return

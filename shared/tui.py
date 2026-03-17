@@ -244,6 +244,7 @@ from shared.tui_isbn import IsbnLabTab
 from shared.tui_case import CaseLabTab
 from shared.tui_data_uri import DataUriLabTab
 from shared.tui_geo import GeoLabTab
+from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
 from shared.tui_morse import MorseLabTab
@@ -4006,6 +4007,7 @@ class AgentTUI(App):
         PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
         PaletteCommand("Go to Data URI Lab", "switch_tab_data_uri"),
         PaletteCommand("Go to Geo Lab", "switch_tab_geo"),
+        PaletteCommand("Go to Brainfuck Lab", "switch_tab_brainfuck"),
         PaletteCommand("Morse Lab", "switch_tab_morse"),
         PaletteCommand("Go to HAR Lab", "switch_tab_har"),
         PaletteCommand("Go to Unicode Lab", "switch_tab_uni"),
@@ -4514,6 +4516,8 @@ class AgentTUI(App):
                 yield DataUriLabTab()
             with TabPane("Geo Lab", id="tab-geo"):
                 yield GeoLabTab()
+            with TabPane("Brainfuck Lab", id="tab-brainfuck"):
+                yield BrainfuckLabTab()
             with TabPane("OCR Lab", id="tab-ocr"):
                 yield OcrLabTab(project_dir=self.project_dir)
             with TabPane("Morse Lab", id="tab-morse"):

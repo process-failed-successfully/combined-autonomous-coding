@@ -174,6 +174,7 @@ from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
 from shared.data_uri_lab import run_data_uri_lab_logic
 from shared.snowflake_lab import run_snowflake_lab_logic
+from shared.brainfuck_lab import run_brainfuck_lab_logic
 from shared.morse_lab import run_morse_lab_logic
 from shared import __version__
 import json
@@ -330,7 +331,8 @@ KNOWN_COMMANDS = [
     "data-uri-lab", "data-uri",
     "morse-lab", "morse",
     "roman-lab", "roman",
-    "bitwise-lab", "bits"
+    "bitwise-lab", "bits",
+    "brainfuck-lab", "brainfuck"
 ]
 
 if FileSystemEventHandler:
@@ -14955,6 +14957,19 @@ def parse_args(argv=None):
     # geo-lab tui
     parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
+
+    # --- New 'brainfuck-lab' command ---
+    parser_brainfuck = subparsers.add_parser(
+        "brainfuck-lab",
+        aliases=["brainfuck", "bf"],
+        help="Brainfuck Interpreter Lab."
+    )
+    brainfuck_group = parser_brainfuck.add_mutually_exclusive_group(required=False)
+    brainfuck_group.add_argument("--code", type=str, help="Brainfuck code to execute.")
+    brainfuck_group.add_argument("--file", "-f", type=str, help="File containing Brainfuck code.")
+    parser_brainfuck.add_argument("--input", "-i", type=str, default="", help="Input data for the Brainfuck program.")
+    parser_brainfuck.add_argument("--tui", action="store_true", help="Launch Brainfuck Lab TUI.")
+
     # --- New 'struct-lab' command ---
     parser_struct = subparsers.add_parser(
         "struct-lab",
@@ -20842,6 +20857,11 @@ async def main():
 
     if args.command in ["proc-lab", "proc"]:
         await run_proc_lab_logic(args)
+        return
+
+
+    if args.command in ["brainfuck-lab", "brainfuck", "bf"]:
+        run_brainfuck_lab_logic(args)
         return
 
     if args.command in ["geo-lab", "geo"]:

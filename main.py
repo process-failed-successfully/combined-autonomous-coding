@@ -222,6 +222,7 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
+    "bson-lab", "bson",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
@@ -1592,6 +1593,27 @@ def run_msgpack_lab(args):
 
     from shared.msgpack_lab import run_msgpack_lab_logic
     success = run_msgpack_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_bson_lab(args):
+    """Runs the BSON Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching BSON Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-bson")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.bson_lab import run_bson_lab_logic
+    success = run_bson_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_cbor_lab(args):
@@ -13508,6 +13530,31 @@ def parse_args(argv=None):
     bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
 
 
+    # --- New 'bson-lab' command ---
+    parser_bson_lab = subparsers.add_parser(
+        "bson-lab",
+        aliases=["bson"],
+        help="BSON encoding/decoding utilities."
+    )
+    bson_lab_subparsers = parser_bson_lab.add_subparsers(
+        dest="action",
+        help="Action to perform",
+        required=True
+    )
+
+    # bson-lab decode
+    parser_bson_decode = bson_lab_subparsers.add_parser("decode", help="Decode BSON data.")
+    parser_bson_decode.add_argument("input", nargs="?", help="Input content (or via stdin).")
+
+    # bson-lab encode
+    parser_bson_encode = bson_lab_subparsers.add_parser("encode", help="Encode JSON to BSON.")
+    parser_bson_encode.add_argument("input", nargs="?", help="JSON input (or via stdin).")
+    parser_bson_encode.add_argument("--hex", action="store_true", help="Output as hex string instead of raw bytes.")
+
+    # bson-lab tui
+    bson_lab_subparsers.add_parser("tui", help="Launch BSON Lab TUI.")
+
+
     # --- New 'msgpack-lab' command ---
     parser_msgpack_lab = subparsers.add_parser(
         "msgpack-lab",
@@ -21150,6 +21197,10 @@ async def main():
 
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
+        return
+
+    if args.command in ["bson-lab", "bson"]:
+        run_bson_lab(args)
         return
 
     if args.command in ["msgpack-lab", "msgpack", "mpack"]:

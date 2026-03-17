@@ -221,7 +221,7 @@ KNOWN_COMMANDS = [
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -13997,6 +13997,18 @@ def parse_args(argv=None):
     )
     json2csv_subparsers.add_parser("tui", help="Launch JSON to CSV Lab TUI.")
 
+    # --- New 'csv2json-lab' command ---
+    parser_csv2json = subparsers.add_parser(
+        "csv2json-lab",
+        aliases=["c2j"],
+        help="Convert CSV data to JSON array of objects."
+    )
+    parser_csv2json.add_argument("--file", "-f", help="Input CSV file.")
+    parser_csv2json.add_argument("--text", "-t", help="Input CSV text string.")
+    parser_csv2json.add_argument("--output", "-o", help="Output file to save the JSON.")
+    parser_csv2json.add_argument("--delimiter", "-d", default=",", help="Delimiter used in the CSV (default: ,).")
+    parser_csv2json.add_argument("--tui", action="store_true", help="Launch CSV to JSON Lab TUI.")
+
     # --- New 'csv-lab' command ---
     parser_csv = subparsers.add_parser(
         "csv-lab",
@@ -21198,6 +21210,11 @@ async def main():
     if args.command in ["json2csv-lab", "j2c"]:
         from shared.json2csv_lab import run_json2csv_lab_logic
         run_json2csv_lab_logic(args)
+        return
+
+    if args.command in ["csv2json-lab", "c2j"]:
+        from shared.csv2json_lab import run_csv2json_lab_logic
+        run_csv2json_lab_logic(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

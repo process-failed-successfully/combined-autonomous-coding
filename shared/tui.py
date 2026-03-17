@@ -142,6 +142,7 @@ from shared.tui_static import StaticLabTab
 from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
+from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_json2csv import Json2CsvTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
@@ -4392,6 +4393,8 @@ class AgentTUI(App):
                 yield YamlLabTab(self.project_dir)
             with TabPane("TOML Lab", id="tab-toml"):
                 yield TomlLabTab(self.project_dir)
+            with TabPane("CSV to JSON", id="tab-csv2json"):
+                yield Csv2JsonTab(self.project_dir)
             with TabPane("JSON to CSV", id="tab-json2csv"):
                 yield Json2CsvTab(self.project_dir)
             with TabPane("XML Lab", id="tab-xml"):

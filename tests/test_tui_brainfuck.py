@@ -1,9 +1,10 @@
 import pytest
+from typing import Any
 from textual.app import App
 from shared.tui_brainfuck import BrainfuckLabTab
 
 
-class DummyApp(App):
+class DummyApp(App[Any]):
     def compose(self):
         yield BrainfuckLabTab()
 

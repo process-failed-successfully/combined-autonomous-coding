@@ -1,6 +1,7 @@
 import unittest
 from shared.brainfuck_lab import BrainfuckInterpreter
 
+
 class TestBrainfuckLab(unittest.TestCase):
     def setUp(self):
         self.interpreter = BrainfuckInterpreter()
@@ -30,9 +31,10 @@ class TestBrainfuckLab(unittest.TestCase):
             self.interpreter.run("]")
 
     def test_max_steps(self):
-        code = "+[]" # infinite loop
+        code = "+[]"  # infinite loop
         with self.assertRaises(RuntimeError):
             self.interpreter.run(code, max_steps=100)
+
 
 if __name__ == '__main__':
     unittest.main()

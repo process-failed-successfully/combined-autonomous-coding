@@ -1,6 +1,7 @@
 import argparse
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List
+
 
 class BrainfuckInterpreter:
     """An interpreter for the Brainfuck esoteric programming language."""
@@ -94,6 +95,7 @@ class BrainfuckInterpreter:
             raise RuntimeError(f"Exceeded maximum steps ({max_steps})")
 
         return self.output_data
+
 
 def run_brainfuck_lab_logic(args: argparse.Namespace) -> bool:
     """CLI logic for Brainfuck Lab."""

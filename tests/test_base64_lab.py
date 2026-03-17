@@ -1,6 +1,6 @@
 import unittest
 import argparse
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from shared.base64_lab import run_base64_lab_logic
 
 class TestBase64Lab(unittest.TestCase):
@@ -24,23 +24,26 @@ class TestBase64Lab(unittest.TestCase):
         success = run_base64_lab_logic(args)
         self.assertFalse(success)
 
-    @patch('shared.tui.AgentTUI.run')
-    @patch('shared.tui.AgentTUI.__init__', return_value=None)
-    def test_tui_launch(self, mock_tui_init, mock_tui_run):
+    from unittest.mock import MagicMock
+    @patch('main.sys.exit')
+    def test_tui_launch(self, mock_exit):
+        mock_agent_tui = MagicMock()
+        mock_app = MagicMock()
+        mock_agent_tui.return_value = mock_app
+        # Mock sys.exit to raise an exception so we don't fall through to the logic block
+        mock_exit.side_effect = SystemExit(0)
         from main import run_base64_lab
-        args = argparse.Namespace(command="base64-lab", encode=None, decode=None, tui=True, project_dir=".")
+        args = argparse.Namespace(command="base64-lab", encode=None, decode=None, tui=True, project_dir=".", _in_event_loop=False)
 
-        with patch('sys.exit') as mock_exit:
-            # We must simulate exit by raising a custom exception or just mock it to raise SystemExit
-            mock_exit.side_effect = SystemExit(0)
+        with patch.dict('sys.modules', {'shared.tui': MagicMock(AgentTUI=mock_agent_tui)}):
             try:
                 run_base64_lab(args)
             except SystemExit as e:
                 self.assertEqual(e.code, 0)
-            mock_exit.assert_called_with(0)
 
-        mock_tui_init.assert_called_with(project_dir=".", start_tab="tab-base64")
-        mock_tui_run.assert_called_once()
+        mock_agent_tui.assert_called_with(project_dir=".", start_tab="tab-base64")
+        mock_app.run.assert_called_once()
+        mock_exit.assert_called_with(0)
 
     @patch('sys.stderr.write')
     def test_invalid_decode(self, mock_stderr):

@@ -88,6 +88,33 @@ class UuidLabManager:
         except ValueError:
             return False
 
+    def extract(self, text: str, unique: bool = False) -> List[str]:
+        """Extracts all valid UUIDs from the given text."""
+        import re
+        # UUID v1-v5 format regex
+        pattern = r'\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b'
+        matches = re.findall(pattern, text)
+
+        # Verify valid UUIDs (just in case)
+        valid_uuids = []
+        for match in matches:
+            if self.validate(match):
+                # Standardize to lowercase
+                standardized = str(uuid.UUID(match)).lower()
+                valid_uuids.append(standardized)
+
+        if unique:
+            # Preserve order while making unique
+            seen = set()
+            unique_uuids = []
+            for u in valid_uuids:
+                if u not in seen:
+                    unique_uuids.append(u)
+                    seen.add(u)
+            return unique_uuids
+
+        return valid_uuids
+
 def run_uuid_lab_logic(args):
     """CLI handler for UUID Lab."""
     manager = UuidLabManager()
@@ -147,3 +174,30 @@ def run_uuid_lab_logic(args):
         except Exception as e:
              print(f"Error: {e}", file=sys.stderr)
              sys.exit(1)
+
+    elif args.action == "extract":
+        text_to_process = ""
+        if hasattr(args, 'file') and args.file:
+            from pathlib import Path
+            try:
+                text_to_process = Path(args.file).read_text(encoding="utf-8")
+            except Exception as e:
+                print(f"Error reading file: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif hasattr(args, 'text') and args.text:
+            text_to_process = args.text
+        elif not sys.stdin.isatty():
+            text_to_process = sys.stdin.read()
+        else:
+            print("Error: Provide text via --text, --file, or stdin.", file=sys.stderr)
+            sys.exit(1)
+
+        unique = getattr(args, 'unique', False)
+        uuids = manager.extract(text_to_process, unique=unique)
+
+        if not uuids:
+            print("No UUIDs found.")
+            sys.exit(0)
+
+        for u in uuids:
+            print(u)

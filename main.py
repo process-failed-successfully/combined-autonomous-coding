@@ -296,6 +296,7 @@ KNOWN_COMMANDS = [
     "emoji-lab", "emoji", "emoj",
     "ocr-lab", "ocr",
     "go-lab", "go", "golang",
+    "js-lab", "js",
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
@@ -450,6 +451,28 @@ def run_css_lab(args):
 
     from shared.css_lab import run_css_lab_logic
     success = run_css_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_js_lab(args):
+    """Runs the JavaScript Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching JS Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-js")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.js_lab import run_js_lab_logic
+    success = run_js_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base16_lab(args):
@@ -15333,6 +15356,17 @@ def parse_args(argv=None):
     parser_css.add_argument("--output", "-o", help="Output CSS file.")
     parser_css.add_argument("--tui", action="store_true", help="Launch the interactive CSS Lab TUI.")
 
+    # --- New 'js-lab' command ---
+    parser_js = subparsers.add_parser(
+        "js-lab", aliases=["js"],
+        help="JavaScript evaluator and minifier."
+    )
+    parser_js.add_argument("action", choices=["run", "minify", "tui"], nargs="?", default="tui", help="Action to perform (run, minify, or tui).")
+    parser_js.add_argument("--file", "-f", help="Input JS file.")
+    parser_js.add_argument("--code", "-c", help="Inline JS code.")
+    parser_js.add_argument("--output", "-o", help="Output JS file.")
+    parser_js.add_argument("--tui", action="store_true", help="Launch the interactive JS Lab TUI.")
+
     # base16-lab
     parser_b16 = subparsers.add_parser(
         "base16-lab", aliases=["base16", "b16"],
@@ -21488,6 +21522,10 @@ async def main():
 
     if args.command in ["css-lab", "css"]:
         run_css_lab(args)
+        return
+
+    if args.command in ["js-lab", "js"]:
+        run_js_lab(args)
         return
 
     if args.command in ["base16-lab", "base16", "b16"]:

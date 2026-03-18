@@ -157,6 +157,7 @@ from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_css import CssLabTab
+from shared.tui_js import JsLabTab
 from shared.tui_base85 import Base85LabTab
 from shared.tui_a85 import A85LabTab
 from shared.tui_base62 import Base62LabTab
@@ -4005,6 +4006,7 @@ class AgentTUI(App):
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Go to Markdown Lab", "switch_tab_markdown"),
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
+        PaletteCommand("Go to JS Lab", "switch_tab_js"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
@@ -4373,6 +4375,8 @@ class AgentTUI(App):
                 yield HttpLabTab()
             with TabPane("CSS Lab", id="tab-css"):
                 yield CssLabTab()
+            with TabPane("JS Lab", id="tab-js"):
+                yield JsLabTab()
             with TabPane("Base85 Lab", id="tab-base85"):
                 yield Base85LabTab()
             with TabPane("Ascii85 Lab", id="tab-a85"):

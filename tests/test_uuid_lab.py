@@ -59,5 +59,24 @@ class TestUuidLabManager(unittest.TestCase):
         self.assertTrue(self.manager.validate(str(uuid.uuid4())))
         self.assertFalse(self.manager.validate("not-a-uuid"))
 
+    def test_extract_uuids(self):
+        u1 = str(uuid.uuid4())
+        u2 = str(uuid.uuid1())
+        u3 = str(uuid.uuid5(uuid.NAMESPACE_DNS, "test"))
+
+        # Upper and mixed cases
+        text = f"Here is {u1.upper()}, and {u2}, also {u3}. Oh and {u1} again! Plus an invalid 12345678-1234-1234-1234-12345678901z"
+
+        uuids = self.manager.extract(text)
+        self.assertEqual(len(uuids), 4)
+        self.assertEqual(uuids[0], u1.lower())
+        self.assertEqual(uuids[1], u2)
+        self.assertEqual(uuids[2], u3)
+        self.assertEqual(uuids[3], u1)
+
+        unique_uuids = self.manager.extract(text, unique=True)
+        self.assertEqual(len(unique_uuids), 3)
+        self.assertEqual(unique_uuids, [u1, u2, u3])
+
 if __name__ == '__main__':
     unittest.main()

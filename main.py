@@ -13352,6 +13352,12 @@ def parse_args(argv=None):
     parser_uuid_bulk = uuid_subparsers.add_parser("bulk", help="Generate bulk v4 UUIDs.")
     parser_uuid_bulk.add_argument("count", type=int, help="Number of UUIDs.")
 
+    # uuid extract
+    parser_uuid_extract = uuid_subparsers.add_parser("extract", help="Extract UUIDs from text or a file.")
+    parser_uuid_extract.add_argument("--text", help="Text to extract from.")
+    parser_uuid_extract.add_argument("--file", help="File to extract from.")
+    parser_uuid_extract.add_argument("--unique", action="store_true", help="Return only unique UUIDs.")
+
     # --- New 'password-lab' command ---
     parser_pwd = subparsers.add_parser(
         "password-lab",

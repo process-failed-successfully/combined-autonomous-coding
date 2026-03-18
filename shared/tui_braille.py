@@ -36,7 +36,9 @@ class BrailleLabTab(Vertical):
         self._updating = True
         try:
             braille_area = self.query_one("#braille-output", TextArea)
-            braille_area.text = self.manager.encode(event.text_area.text)
+            new_text = self.manager.encode(event.text_area.text)
+            if braille_area.text != new_text:
+                braille_area.load_text(new_text)
         finally:
             self._updating = False
 
@@ -47,7 +49,9 @@ class BrailleLabTab(Vertical):
         self._updating = True
         try:
             text_area = self.query_one("#braille-text-input", TextArea)
-            text_area.text = self.manager.decode(event.text_area.text)
+            new_text = self.manager.decode(event.text_area.text)
+            if text_area.text != new_text:
+                text_area.load_text(new_text)
         finally:
             self._updating = False
 
@@ -55,7 +59,7 @@ class BrailleLabTab(Vertical):
     def on_clear(self, event: Button.Pressed) -> None:
         self._updating = True
         try:
-            self.query_one("#braille-text-input", TextArea).text = ""
-            self.query_one("#braille-output", TextArea).text = ""
+            self.query_one("#braille-text-input", TextArea).load_text("")
+            self.query_one("#braille-output", TextArea).load_text("")
         finally:
             self._updating = False

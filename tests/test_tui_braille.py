@@ -20,7 +20,7 @@ async def test_braille_tab():
         braille_output = app.query_one("#braille-output", TextArea)
 
         # Type text, see braille
-        text_input.text = "hello"
+        text_input.load_text("hello")
         await pilot.pause(0.1)
         assert braille_output.text == "⠓⠑⠇⠇⠕"
 
@@ -31,6 +31,6 @@ async def test_braille_tab():
         assert braille_output.text == ""
 
         # Type braille, see text
-        braille_output.text = "⠺⠕⠗⠇⠙"
+        braille_output.load_text("⠺⠕⠗⠇⠙")
         await pilot.pause(0.1)
         assert text_input.text == "world"

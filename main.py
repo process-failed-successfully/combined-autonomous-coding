@@ -608,6 +608,7 @@ def run_base64_lab(args):
     success = run_base64_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base64url_lab(args):
     """Runs the Base64URL Lab."""
     if getattr(args, "tui", False):
@@ -625,11 +626,12 @@ def run_base64url_lab(args):
         else:
             app.run()
             sys.exit(0)
-            return
+        return
 
     from shared.base64url_lab import run_base64url_lab_logic
     success = run_base64url_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_go_lab(args):
     """Runs the Go Lab."""

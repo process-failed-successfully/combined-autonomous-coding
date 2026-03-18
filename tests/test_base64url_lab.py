@@ -3,6 +3,7 @@ import argparse
 from unittest.mock import patch, MagicMock
 from shared.base64url_lab import run_base64url_lab_logic
 
+
 class TestBase64UrlLab(unittest.TestCase):
     @patch('builtins.print')
     def test_encode(self, mock_print):

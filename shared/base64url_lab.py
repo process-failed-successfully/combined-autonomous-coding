@@ -2,6 +2,7 @@ import argparse
 import base64
 import sys
 
+
 def run_base64url_lab_logic(args: argparse.Namespace) -> bool:
     try:
         if getattr(args, "encode", None):

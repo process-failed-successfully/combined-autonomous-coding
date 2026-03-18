@@ -333,7 +333,7 @@ KNOWN_COMMANDS = [
     "luhn-lab", "luhn",
     "iban-lab", "iban",
     "case-lab", "case",
-    "data-uri-lab", "data-uri",
+    "data-uri-lab", "data-uri", "vcard-lab", "vcard",
     "morse-lab", "morse",
     "roman-lab", "roman",
     "bitwise-lab", "bits",
@@ -911,6 +911,27 @@ def run_luhn_lab(args):
         run_luhn_lab_logic(args)
         sys.exit(0)
 
+
+
+def run_vcard_lab(args):
+    """Runs the VCard Lab."""
+    if getattr(args, "action", None) == "tui":
+        print("Launching VCard Lab TUI...")
+        from shared.tui import AgentTUI
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-vcard")
+        # Handle async execution safely
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            asyncio.ensure_future(app.run_async())
+        except RuntimeError:
+            app.run()
+        return
+
+    from shared.vcard_lab import run_vcard_lab_logic
+    success = run_vcard_lab_logic(args)
+    if not success:
+        sys.exit(1)
 
 def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
@@ -17558,6 +17579,33 @@ def parse_args(argv=None):
     parser_morse.add_argument("--wpm", type=int, default=15, help="Words per minute for audio (default 15)")
     parser_morse.add_argument("--freq", type=int, default=800, help="Tone frequency for audio in Hz (default 800)")
 
+
+    # --- New 'vcard-lab' command ---
+    parser_vcard = subparsers.add_parser(
+        "vcard-lab",
+        aliases=["vcard"],
+        help="vCard generation and parsing utilities."
+    )
+    vcard_subparsers = parser_vcard.add_subparsers(dest="action", help="Action to perform.")
+
+    # vcard-lab tui
+    vcard_subparsers.add_parser("tui", help="Launch VCard Lab TUI.")
+
+    # vcard-lab generate
+    parser_vcard_generate = vcard_subparsers.add_parser("generate", help="Generate a vCard.")
+    parser_vcard_generate.add_argument("--first-name", help="First name.")
+    parser_vcard_generate.add_argument("--last-name", help="Last name.")
+    parser_vcard_generate.add_argument("--email", help="Email address.")
+    parser_vcard_generate.add_argument("--phone", help="Phone number.")
+    parser_vcard_generate.add_argument("--org", help="Organization.")
+    parser_vcard_generate.add_argument("--title", help="Job title.")
+    parser_vcard_generate.add_argument("--url", help="Website URL.")
+    parser_vcard_generate.add_argument("--output", "-o", help="Output file path.")
+
+    # vcard-lab parse
+    parser_vcard_parse = vcard_subparsers.add_parser("parse", help="Parse a vCard.")
+    parser_vcard_parse.add_argument("--file", "-f", help="Input vCard file. (Reads from stdin if omitted).")
+
     # --- New 'data-uri-lab' command ---
     parser_data_uri = subparsers.add_parser(
         "data-uri-lab",
@@ -21747,6 +21795,11 @@ async def main():
 
     if args.command in ["bitwise-lab", "bits"]:
         run_bitwise_lab(args)
+        return
+
+
+    if args.command in ["vcard-lab", "vcard"]:
+        run_vcard_lab(args)
         return
 
     if args.command in ["data-uri-lab", "data-uri"]:

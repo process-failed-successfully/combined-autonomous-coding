@@ -249,6 +249,7 @@ from shared.tui_iban import IbanLabTab
 from shared.tui_isbn import IsbnLabTab
 from shared.tui_case import CaseLabTab
 from shared.tui_data_uri import DataUriLabTab
+from shared.tui_vcard import VCardLabTab
 from shared.tui_geo import GeoLabTab
 from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
@@ -4533,6 +4534,8 @@ class AgentTUI(App):
                 yield UniLabTab()
             with TabPane("Data URI Lab", id="tab-data-uri"):
                 yield DataUriLabTab()
+            with TabPane("vCard Lab", id="tab-vcard"):
+                yield VCardLabTab(self.project_dir)
             with TabPane("Geo Lab", id="tab-geo"):
                 yield GeoLabTab()
             with TabPane("Brainfuck Lab", id="tab-brainfuck"):

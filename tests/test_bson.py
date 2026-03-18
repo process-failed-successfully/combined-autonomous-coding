@@ -3,6 +3,8 @@ import pytest
 from unittest.mock import patch
 import argparse
 from pathlib import Path
+import unittest
+from shared.bson_lab import HAS_BSON
 
 # Need to import Any for TUI tests to avoid missing type parameters error
 from typing import Any
@@ -24,6 +26,7 @@ def tui_app():
     return DummyApp()
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_bson_encode():
     # Valid encode
     data = '{"test": 123}'
@@ -39,6 +42,7 @@ def test_bson_encode():
         BsonManager.encode('["array"]')
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_bson_decode():
     encoded = BsonManager.encode('{"test": 123}')
     decoded = BsonManager.decode(encoded)
@@ -49,6 +53,7 @@ def test_bson_decode():
         BsonManager.decode(b'invalid bson bytes')
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_run_bson_lab_logic_encode_success(capsys):
     data = '{"test": 123}'
     args = argparse.Namespace(action="encode", data=data)
@@ -58,6 +63,7 @@ def test_run_bson_lab_logic_encode_success(capsys):
     assert captured.out.strip() != ""  # Output hex string
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_run_bson_lab_logic_encode_missing_data(capsys):
     args = argparse.Namespace(action="encode", data=None)
     assert run_bson_lab_logic(args) is False
@@ -65,6 +71,7 @@ def test_run_bson_lab_logic_encode_missing_data(capsys):
     assert "Error: --data is required for encoding." in captured.err
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_run_bson_lab_logic_decode_success(capsys):
     data = '{"test": 123}'
     encoded_hex = BsonManager.encode(data).hex()
@@ -75,6 +82,7 @@ def test_run_bson_lab_logic_decode_success(capsys):
     assert '"test": 123' in captured.out
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_run_bson_lab_logic_decode_missing_data(capsys):
     args = argparse.Namespace(action="decode", data=None)
     assert run_bson_lab_logic(args) is False
@@ -82,6 +90,7 @@ def test_run_bson_lab_logic_decode_missing_data(capsys):
     assert "Error: --data is required for decoding." in captured.err
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_run_bson_lab_logic_invalid_action(capsys):
     args = argparse.Namespace(action="invalid", data="something")
     assert run_bson_lab_logic(args) is False
@@ -109,6 +118,7 @@ def test_run_bson_lab_logic_no_bson(capsys):
     assert "The 'bson' library is required" in captured.err
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 @pytest.mark.asyncio
 async def test_bson_lab_tui_encode(tui_app):
     async with tui_app.run_test() as pilot:
@@ -125,6 +135,7 @@ async def test_bson_lab_tui_encode(tui_app):
         assert tab.error_message == ""
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 @pytest.mark.asyncio
 async def test_bson_lab_tui_decode(tui_app):
     async with tui_app.run_test() as pilot:
@@ -142,6 +153,7 @@ async def test_bson_lab_tui_decode(tui_app):
         assert tab.error_message == ""
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 @pytest.mark.asyncio
 async def test_bson_lab_tui_decode_error(tui_app):
     async with tui_app.run_test() as pilot:
@@ -155,6 +167,7 @@ async def test_bson_lab_tui_decode_error(tui_app):
         assert "Decode Error:" in tab.error_message
 
 
+@unittest.skipIf(not HAS_BSON, "bson is not installed")
 def test_run_bson_lab_tui_action():
     from main import run_bson_lab
     args = argparse.Namespace(command="bson-lab", action="tui", project_dir=Path("."))

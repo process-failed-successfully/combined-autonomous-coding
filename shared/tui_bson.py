@@ -28,11 +28,9 @@ class BsonLabTab(Container):
         )
 
     def on_mount(self) -> None:
-        try:
-            import bson  # noqa: F401
-            self.has_bson = True
-        except ImportError:
-            self.has_bson = False
+        from shared.bson_lab import HAS_BSON
+        self.has_bson = HAS_BSON
+        if not self.has_bson:
             self.error_message = "Error: 'bson' module not installed. Please 'pip install pymongo' or 'bson'."
 
     def watch_error_message(self, old_val: str, new_val: str) -> None:

@@ -3,8 +3,10 @@ import sys
 import argparse
 try:
     import bson
+    HAS_BSON = True
 except ImportError:
     bson = None
+    HAS_BSON = False
 
 
 class BsonManager:

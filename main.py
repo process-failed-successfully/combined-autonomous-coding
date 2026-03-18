@@ -13639,7 +13639,7 @@ def parse_args(argv=None):
     parser_bson_encode.add_argument("data", nargs="?", help="JSON input (or via stdin).")
 
     # bson-lab tui
-    parser_bson_tui = bson_lab_subparsers.add_parser("tui", help="Launch the BSON Lab TUI.")
+    bson_lab_subparsers.add_parser("tui", help="Launch the BSON Lab TUI.")
 
     # --- New 'cbor-lab' command ---
     parser_cbor_lab = subparsers.add_parser(

@@ -302,6 +302,7 @@ KNOWN_COMMANDS = [
     "base64-lab", "base64", "b64",
     "base64url-lab", "base64url", "b64url",
     "base85-lab", "base85", "b85",
+    "a85-lab", "a85", "ascii85",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
@@ -527,6 +528,25 @@ def run_base62_lab(args):
 
     from shared.base62_lab import run_base62_lab_logic
     success = run_base62_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_a85_lab(args):
+    """Runs the Ascii85 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Ascii85 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-a85")
+        if getattr(args, '_in_event_loop', False):
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.a85_lab import run_a85_lab_logic
+    success = run_a85_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base85_lab(args):
@@ -15312,6 +15332,15 @@ def parse_args(argv=None):
     parser_b62.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base62 Lab.")
 
     # base85-lab
+    parser_a85 = subparsers.add_parser(
+        "a85-lab", aliases=["a85", "ascii85"],
+        help="Ascii85 encode and decode strings."
+    )
+    a85_group = parser_a85.add_mutually_exclusive_group(required=False)
+    a85_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    a85_group.add_argument("--decode", "-d", type=str, help="Ascii85 text to decode.")
+    a85_group.add_argument("--tui", action="store_true", help="Launch the interactive Ascii85 Lab TUI.")
+
     parser_b85 = subparsers.add_parser(
         "base85-lab", aliases=["base85", "b85"],
         help="Base85 encode and decode strings."
@@ -21417,6 +21446,9 @@ async def main():
         run_base36_lab(args)
         return
 
+    if args.command in ["a85-lab", "a85", "ascii85"]:
+        run_a85_lab(args)
+        return
     if args.command in ["base85-lab", "base85", "b85"]:
         run_base85_lab(args)
         return

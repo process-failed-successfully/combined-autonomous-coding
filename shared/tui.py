@@ -157,6 +157,7 @@ from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_css import CssLabTab
 from shared.tui_base85 import Base85LabTab
+from shared.tui_a85 import A85LabTab
 from shared.tui_base62 import Base62LabTab
 from shared.tui_base64 import Base64LabTab
 from shared.tui_base64url import Base64UrlLabTab
@@ -4371,6 +4372,8 @@ class AgentTUI(App):
                 yield CssLabTab()
             with TabPane("Base85 Lab", id="tab-base85"):
                 yield Base85LabTab()
+            with TabPane("Ascii85 Lab", id="tab-a85"):
+                yield A85LabTab()
             with TabPane("Base58 Lab", id="tab-base58"):
                 yield Base58LabTab()
             with TabPane("Base62 Lab", id="tab-base62"):

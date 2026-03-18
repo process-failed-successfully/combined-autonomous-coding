@@ -89,8 +89,8 @@ class TestDiffLab(unittest.TestCase):
         self.manager.console.print.assert_called()
 
     @patch("shared.diff_lab.HAS_PILLOW", True)
-    @patch("PIL.Image.open")
-    @patch("PIL.ImageChops.difference")
+    @patch("shared.diff_lab.Image.open")
+    @patch("shared.diff_lab.ImageChops.difference")
     def test_compare_image_diff(self, mock_diff, mock_open):
         # Setup mocks
         img1 = MagicMock()

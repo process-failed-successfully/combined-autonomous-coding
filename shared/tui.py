@@ -156,6 +156,7 @@ from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
+from shared.tui_braille import BrailleLabTab
 from shared.tui_css import CssLabTab
 from shared.tui_base85 import Base85LabTab
 from shared.tui_a85 import A85LabTab
@@ -4411,6 +4412,8 @@ class AgentTUI(App):
                 yield TemplateLabTab(self.project_dir)
             with TabPane("Markdown Lab", id="tab-markdown"):
                 yield MarkdownLabTab(self.project_dir)
+            with TabPane("Braille Lab", id="tab-braille"):
+                yield BrailleLabTab()
             with TabPane("CSV Lab", id="tab-csv"):
                 yield CsvLabTab(self.project_dir)
             with TabPane("Diff Lab", id="tab-diff"):

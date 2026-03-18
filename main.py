@@ -210,7 +210,7 @@ KNOWN_COMMANDS = [
     "debt", "check-links", "security", "help", "cherry-pick", "rollback", "timeline",
     "analytics", "deps", "duplication", "unused", "risk", "impact", "a11y", "license",
     "bisect", "map", "architecture", "arch", "release", "openapi", "docstring", "refactor",
-    "polish", "resolve", "regex", "cron-lab", "resolve-conflicts", "fix-conflicts",
+    "polish", "resolve", "regex", "cron-lab", "braille-lab", "resolve-conflicts", "fix-conflicts",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
@@ -11929,6 +11929,22 @@ def parse_args(argv=None):
         help="Skip confirmation prompt.",
     )
 
+    # --- New 'braille-lab' command ---
+    parser_braille = subparsers.add_parser(
+        "braille-lab",
+        help="Braille Lab: Encode and decode Braille."
+    )
+    parser_braille.add_argument(
+        "action",
+        choices=["encode", "decode", "tui"],
+        help="Action to perform."
+    )
+    parser_braille.add_argument(
+        "text",
+        nargs="?",
+        help="Text or Braille to translate."
+    )
+
     # --- New 'regex' command ---
     parser_regex = subparsers.add_parser(
         "regex",
@@ -20788,6 +20804,11 @@ async def main():
 
     if args.command == "regex":
         await run_regex(args)
+        return
+
+    if args.command == "braille-lab":
+        from shared.braille_lab import run_braille_lab_logic
+        run_braille_lab_logic(args)
         return
 
     if args.command == "logic-lab":

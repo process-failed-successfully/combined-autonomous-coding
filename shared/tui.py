@@ -256,6 +256,7 @@ from shared.tui_ocr import OcrLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
 from shared.tui_uni import UniLabTab
+from shared.tui_vcard import VCardTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4018,6 +4019,7 @@ class AgentTUI(App):
         PaletteCommand("Morse Lab", "switch_tab_morse"),
         PaletteCommand("Go to HAR Lab", "switch_tab_har"),
         PaletteCommand("Go to Unicode Lab", "switch_tab_uni"),
+        PaletteCommand("Go to vCard Lab", "switch_tab_vcard"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4545,6 +4547,8 @@ class AgentTUI(App):
                 yield HarLabTab(self.project_dir)
             with TabPane("Bitwise Lab", id="tab-bitwise"):
                 yield BitwiseLabTab()
+            with TabPane("vCard Lab", id="tab-vcard"):
+                yield VCardTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

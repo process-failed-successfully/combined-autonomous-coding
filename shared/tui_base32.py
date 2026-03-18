@@ -1,7 +1,8 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Label, TextArea
+from textual.widgets import Button, Checkbox, Label, TextArea
 import base64
+
 
 class Base32LabTab(Container):
     """Tab for Base32 Encoding/Decoding."""
@@ -39,6 +40,7 @@ class Base32LabTab(Container):
                 yield Button("Decode", id="btn-b32-decode", variant="success")
                 yield Button("Swap Input/Output", id="btn-b32-swap", variant="warning")
                 yield Button("Clear", id="btn-b32-clear", variant="error")
+                yield Checkbox("Use Base32Hex", id="cb-b32-hex")
 
             # Output Section
             with Vertical(classes="b32-box"):
@@ -58,6 +60,7 @@ class Base32LabTab(Container):
     def process(self, encode: bool) -> None:
         text = self.query_one("#b32-input", TextArea).text
         output_area = self.query_one("#b32-output", TextArea)
+        use_hex = self.query_one("#cb-b32-hex", Checkbox).value
 
         if not text:
             self.notify("Input is empty.", severity="warning")
@@ -65,9 +68,15 @@ class Base32LabTab(Container):
 
         try:
             if encode:
-                result = base64.b32encode(text.encode('utf-8')).decode('utf-8')
+                if use_hex:
+                    result = base64.b32hexencode(text.encode('utf-8')).decode('utf-8')
+                else:
+                    result = base64.b32encode(text.encode('utf-8')).decode('utf-8')
             else:
-                result = base64.b32decode(text).decode('utf-8')
+                if use_hex:
+                    result = base64.b32hexdecode(text, casefold=True).decode('utf-8')
+                else:
+                    result = base64.b32decode(text, casefold=True).decode('utf-8')
 
             output_area.text = result
             self.notify("Done.")

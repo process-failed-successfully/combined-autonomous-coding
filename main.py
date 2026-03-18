@@ -301,6 +301,7 @@ KNOWN_COMMANDS = [
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
     "base62-lab", "base62", "b62",
+    "base91-lab", "base91", "b91",
     "base64-lab", "base64", "b64",
     "base64url-lab", "base64url", "b64url",
     "base85-lab", "base85", "b85",
@@ -607,6 +608,24 @@ def run_nato_lab(args):
     from shared.nato_lab import run_nato_lab_logic
     import sys
     success = run_nato_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base91_lab(args):
+    """Runs the Base91 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base91 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base91")
+        if getattr(args, '_in_event_loop', False):
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base91_lab import run_base91_lab_logic
+    success = run_base91_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base64_lab(args):
@@ -15432,6 +15451,16 @@ def parse_args(argv=None):
     b62_group.add_argument("--decode", "-d", type=str, help="Base62 text to decode.")
     parser_b62.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base62 Lab.")
 
+    # base91-lab
+    parser_b91 = subparsers.add_parser(
+        "base91-lab", aliases=["base91", "b91"],
+        help="Base91 encode and decode strings."
+    )
+    b91_group = parser_b91.add_mutually_exclusive_group(required=False)
+    b91_group.add_argument("--encode", "-e", type=str, help="Text to Base91 encode.")
+    b91_group.add_argument("--decode", "-d", type=str, help="Base91 text to decode.")
+    parser_b91.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base91 Lab.")
+
     # base85-lab
     parser_a85 = subparsers.add_parser(
         "a85-lab", aliases=["a85", "ascii85"],
@@ -21569,6 +21598,10 @@ async def main():
 
     if args.command in ["base62-lab", "base62", "b62"]:
         run_base62_lab(args)
+        return
+
+    if args.command in ["base91-lab", "base91", "b91"]:
+        run_base91_lab(args)
         return
 
     if args.command in ["nato-lab", "nato"]:

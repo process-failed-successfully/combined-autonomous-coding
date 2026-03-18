@@ -338,7 +338,8 @@ KNOWN_COMMANDS = [
     "roman-lab", "roman",
     "bitwise-lab", "bits",
     "brainfuck-lab", "brainfuck",
-    "vcard-lab", "vcard"
+    "vcard-lab", "vcard",
+    "curl-lab", "curl"
 ]
 
 if FileSystemEventHandler:
@@ -912,6 +913,11 @@ def run_luhn_lab(args):
         run_luhn_lab_logic(args)
         sys.exit(0)
 
+
+def run_curl_lab(args):
+    """Runs the cURL Converter Lab."""
+    from shared.curl_lab import run_curl_lab_logic
+    run_curl_lab_logic(args)
 
 def run_vcard_lab(args):
     """Runs the vCard Lab utilities."""
@@ -15134,6 +15140,16 @@ def parse_args(argv=None):
     parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
 
+    # --- New 'curl-lab' command ---
+    parser_curl = subparsers.add_parser(
+        "curl-lab",
+        aliases=["curl"],
+        help="Convert cURL commands to Python, JS, and Go code."
+    )
+    parser_curl.add_argument("--tui", action="store_true", help="Launch the TUI interface.")
+    parser_curl.add_argument("command_str", nargs="?", help="The cURL command string to convert.")
+    parser_curl.add_argument("--target", choices=["python", "js", "go"], default="python", help="Target language for CLI conversion (default: python).")
+
     # --- New 'vcard-lab' command ---
     parser_vcard = subparsers.add_parser(
         "vcard-lab",
@@ -21821,6 +21837,10 @@ async def main():
 
     if args.command in ["roman-lab", "roman"]:
         run_roman_lab(args)
+        return
+
+    if args.command in ["curl-lab", "curl"]:
+        run_curl_lab(args)
         return
 
     if args.command in ["vcard-lab", "vcard"]:

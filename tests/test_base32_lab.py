@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from shared.base32_lab import run_base32_lab_logic
 from main import run_base32_lab
-import base64
+
 
 class TestBase32Lab(unittest.TestCase):
     def setUp(self):
@@ -21,25 +21,37 @@ class TestBase32Lab(unittest.TestCase):
         sys.stderr = self.original_stderr
 
     def test_encode(self):
-        args = argparse.Namespace(encode="hello world", decode=None, tui=False)
+        args = argparse.Namespace(encode="hello world", decode=None, hex=False, tui=False)
         result = run_base32_lab_logic(args)
         self.assertTrue(result)
         self.assertEqual(self.held_stdout.getvalue().strip(), "NBSWY3DPEB3W64TMMQ======")
 
     def test_decode(self):
-        args = argparse.Namespace(encode=None, decode="NBSWY3DPEB3W64TMMQ======", tui=False)
+        args = argparse.Namespace(encode=None, decode="NBSWY3DPEB3W64TMMQ======", hex=False, tui=False)
+        result = run_base32_lab_logic(args)
+        self.assertTrue(result)
+        self.assertEqual(self.held_stdout.getvalue().strip(), "hello world")
+
+    def test_encode_hex(self):
+        args = argparse.Namespace(encode="hello world", decode=None, hex=True, tui=False)
+        result = run_base32_lab_logic(args)
+        self.assertTrue(result)
+        self.assertEqual(self.held_stdout.getvalue().strip(), "D1IMOR3F41RMUSJCCG======")
+
+    def test_decode_hex(self):
+        args = argparse.Namespace(encode=None, decode="D1IMOR3F41RMUSJCCG======", hex=True, tui=False)
         result = run_base32_lab_logic(args)
         self.assertTrue(result)
         self.assertEqual(self.held_stdout.getvalue().strip(), "hello world")
 
     def test_no_args(self):
-        args = argparse.Namespace(encode=None, decode=None, tui=False)
+        args = argparse.Namespace(encode=None, decode=None, hex=False, tui=False)
         result = run_base32_lab_logic(args)
         self.assertFalse(result)
         self.assertIn("Error: must provide either --encode, --decode, or --tui", self.held_stderr.getvalue())
 
     def test_invalid_decode(self):
-        args = argparse.Namespace(encode=None, decode="INVALIDBASE32!!!", tui=False)
+        args = argparse.Namespace(encode=None, decode="INVALIDBASE32!!!", hex=False, tui=False)
         result = run_base32_lab_logic(args)
         self.assertFalse(result)
         self.assertIn("Error processing base32:", self.held_stderr.getvalue())
@@ -72,6 +84,7 @@ class TestBase32Lab(unittest.TestCase):
 
         mock_logic.assert_called_once_with(args)
         mock_exit.assert_called_once_with(0)
+
 
 if __name__ == '__main__':
     unittest.main()

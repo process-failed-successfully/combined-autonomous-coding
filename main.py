@@ -15472,6 +15472,7 @@ def parse_args(argv=None):
     b32_group = parser_b32.add_mutually_exclusive_group(required=False)
     b32_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
     b32_group.add_argument("--decode", "-d", type=str, help="Base32 text to decode.")
+    parser_b32.add_argument("--hex", action="store_true", help="Use Base32Hex alphabet.")
     parser_b32.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base32 Lab.")
 
     # base36-lab

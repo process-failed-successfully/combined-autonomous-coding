@@ -59,6 +59,7 @@ from shared.tui_hash import HashLabTab
 from shared.tui_ip import IpLabTab
 from shared.tui_bencode import BencodeLabTab
 from shared.tui_msgpack import MsgpackLabTab
+from shared.tui_bson import BsonLabTab
 from shared.tui_cbor import CborTab
 from shared.tui_sentinel import SentinelTab
 from shared.tui_impact import ImpactTab
@@ -4116,6 +4117,8 @@ class AgentTUI(App):
                 yield BencodeLabTab()
             with TabPane("MessagePack Lab", id="tab-msgpack"):
                 yield MsgpackLabTab(project_dir=self.project_dir)
+            with TabPane("BSON Lab", id="tab-bson"):
+                yield BsonLabTab()
             with TabPane("CBOR Lab", id="tab-cbor"):
                 yield CborTab()
             with TabPane("Socket Lab", id="tab-sock"):

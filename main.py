@@ -303,6 +303,7 @@ KNOWN_COMMANDS = [
     "base64-lab", "base64", "b64",
     "base64url-lab", "base64url", "b64url",
     "base85-lab", "base85", "b85",
+    "base91-lab", "base91", "b91",
     "a85-lab", "a85", "ascii85",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
@@ -561,6 +562,27 @@ def run_base85_lab(args):
 
     from shared.base85_lab import run_base85_lab_logic
     success = run_base85_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base91_lab(args):
+    """Runs the Base91 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base91 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base91")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.base91_lab import run_base91_lab_logic
+    success = run_base91_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -15388,6 +15410,16 @@ def parse_args(argv=None):
     b58_group.add_argument("--decode", "-d", type=str, help="Base58 text to decode.")
     parser_b58.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base58 Lab.")
 
+    # base91-lab
+    parser_b91 = subparsers.add_parser(
+        "base91-lab", aliases=["base91", "b91"],
+        help="Base91 encode and decode strings."
+    )
+    b91_group = parser_b91.add_mutually_exclusive_group(required=False)
+    b91_group.add_argument("--encode", "-e", type=str, help="Text to Base91 encode.")
+    b91_group.add_argument("--decode", "-d", type=str, help="Base91 text to decode.")
+    parser_b91.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base91 Lab.")
+
     # base62-lab
     parser_b62 = subparsers.add_parser(
         "base62-lab", aliases=["base62", "b62"],
@@ -21527,6 +21559,10 @@ async def main():
         return
     if args.command in ["base85-lab", "base85", "b85"]:
         run_base85_lab(args)
+        return
+
+    if args.command in ["base91-lab", "base91", "b91"]:
+        run_base91_lab(args)
         return
 
     if args.command in ["base62-lab", "base62", "b62"]:

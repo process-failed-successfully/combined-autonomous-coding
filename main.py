@@ -337,7 +337,8 @@ KNOWN_COMMANDS = [
     "morse-lab", "morse",
     "roman-lab", "roman",
     "bitwise-lab", "bits",
-    "brainfuck-lab", "brainfuck"
+    "brainfuck-lab", "brainfuck",
+    "vcard-lab", "vcard"
 ]
 
 if FileSystemEventHandler:
@@ -911,6 +912,28 @@ def run_luhn_lab(args):
         run_luhn_lab_logic(args)
         sys.exit(0)
 
+
+def run_vcard_lab(args):
+    """Runs the vCard Lab utilities."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching vCard Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-vcard")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.vcard_lab import run_vcard_lab_logic
+    success = run_vcard_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
@@ -15111,6 +15134,36 @@ def parse_args(argv=None):
     parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
 
+    # --- New 'vcard-lab' command ---
+    parser_vcard = subparsers.add_parser(
+        "vcard-lab",
+        aliases=["vcard"],
+        help="vCard generator and parser tools."
+    )
+    vcard_subparsers = parser_vcard.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    vcard_gen_parser = vcard_subparsers.add_parser("generate", help="Generate a vCard")
+    vcard_gen_parser.add_argument("--fn", help="Full name")
+    vcard_gen_parser.add_argument("--n", help="Name structure (Last;First;Middle;Prefix;Suffix)")
+    vcard_gen_parser.add_argument("--org", help="Organization")
+    vcard_gen_parser.add_argument("--title", help="Job title")
+    vcard_gen_parser.add_argument("--email", action="append", help="Email address (can be used multiple times)")
+    vcard_gen_parser.add_argument("--tel", action="append", help="Telephone number (can be used multiple times)")
+    vcard_gen_parser.add_argument("--url", action="append", help="URL (can be used multiple times)")
+    vcard_gen_parser.add_argument("--adr", help="Address (PO Box;Ext Addr;Street;City;State;Zip;Country)")
+    vcard_gen_parser.add_argument("--note", help="Note")
+    vcard_gen_parser.add_argument("--output", "-o", help="Output file path to save the generated vCard")
+
+    vcard_parse_parser = vcard_subparsers.add_parser("parse", help="Parse a vCard")
+    vcard_parse_parser.add_argument("--file", "-f", help="Path to vCard file (.vcf)")
+    vcard_parse_parser.add_argument("--text", "-t", help="vCard content as text")
+
+    vcard_subparsers.add_parser("tui", help="Launch vCard Lab TUI")
+
     # --- New 'brainfuck-lab' command ---
     parser_brainfuck = subparsers.add_parser(
         "brainfuck-lab",
@@ -21767,6 +21820,10 @@ async def main():
 
     if args.command in ["roman-lab", "roman"]:
         run_roman_lab(args)
+        return
+
+    if args.command in ["vcard-lab", "vcard"]:
+        run_vcard_lab(args)
         return
 
     # Initialize Agent Client

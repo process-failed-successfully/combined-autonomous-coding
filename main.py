@@ -215,7 +215,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
@@ -13339,6 +13339,18 @@ def parse_args(argv=None):
     parser_phys_pe.add_argument("--height", "-ht", type=float, required=True, help="Height (m)")
     parser_phys_pe.add_argument("--gravity", "-g", type=float, default=9.81, help="Gravity")
 
+    # --- New 'hashids-lab' command ---
+    parser_hashids = subparsers.add_parser(
+        "hashids-lab", aliases=["hashids"],
+        help="Hashids Generator Lab"
+    )
+    parser_hashids.add_argument("action", choices=["encode", "decode", "tui"], help="Action to perform.")
+    parser_hashids.add_argument("--salt", default="", help="Salt for hashids.")
+    parser_hashids.add_argument("--min-length", type=int, default=0, help="Minimum length of the hashid.")
+    parser_hashids.add_argument("--alphabet", default="", help="Custom alphabet.")
+    parser_hashids.add_argument("--numbers", nargs="+", type=int, help="Integers to encode.")
+    parser_hashids.add_argument("--hashid", help="Hashid to decode.")
+
     # --- New 'uuid-lab' command ---
     # ==========================================
     # ULID Lab
@@ -21389,6 +21401,11 @@ async def main():
 
     if args.command in ["ulid-lab", "ulid"]:
         run_ulid_lab(args)
+        return
+
+    if args.command in ["hashids-lab", "hashids"]:
+        from shared.hashids_lab import run_hashids_lab_logic
+        run_hashids_lab_logic(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

@@ -150,6 +150,7 @@ from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_template import TemplateLabTab
+from shared.tui_hashids import HashidsLabTab
 from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
@@ -4344,6 +4345,8 @@ class AgentTUI(App):
                 yield CronLabTab(self.project_dir)
             with TabPane("Text Lab", id="tab-text"):
                 yield TextLabTab()
+            with TabPane("Hashids Lab", id="tab-hashids"):
+                yield HashidsLabTab()
 
             with TabPane("NATO Lab", id="tab-nato"):
                 yield NatoLabTab()

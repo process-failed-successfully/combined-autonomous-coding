@@ -48,3 +48,4 @@ nanoid>=2.0.0
 cbor2
 msgpack
 pymongo
+hashids

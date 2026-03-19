@@ -339,7 +339,8 @@ KNOWN_COMMANDS = [
     "bitwise-lab", "bits",
     "brainfuck-lab", "brainfuck",
     "vcard-lab", "vcard",
-    "curl-lab", "curl"
+    "curl-lab", "curl",
+    "portscan-lab", "portscan", "pscan"
 ]
 
 if FileSystemEventHandler:
@@ -918,6 +919,29 @@ def run_curl_lab(args):
     """Runs the cURL Converter Lab."""
     from shared.curl_lab import run_curl_lab_logic
     run_curl_lab_logic(args)
+
+def run_portscan_lab(args):
+    """Runs the PortScan Lab utilities."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching PortScan Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-portscan")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.portscan_lab import run_portscan_cli_logic
+    import asyncio
+    success = asyncio.run(run_portscan_cli_logic(args))
+    sys.exit(0 if success else 1)
 
 def run_vcard_lab(args):
     """Runs the vCard Lab utilities."""
@@ -17764,6 +17788,21 @@ def parse_args(argv=None):
     iban_parse = iban_subparsers.add_parser("parse", help="Parse an IBAN.")
     iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
 
+    # --- PortScan Lab ---
+    parser_portscan = subparsers.add_parser(
+        "portscan-lab", aliases=["portscan", "pscan"],
+        help="Scan open ports on a host."
+    )
+    portscan_subparsers = parser_portscan.add_subparsers(dest="action", help="PortScan actions")
+
+    portscan_scan = portscan_subparsers.add_parser("scan", help="Scan ports from CLI")
+    portscan_scan.add_argument("host", help="Hostname or IP to scan")
+    portscan_scan.add_argument("--ports", default="1-1024", help="Port range (e.g. 80, 1-1024)")
+    portscan_scan.add_argument("--timeout", type=float, default=1.0, help="Connection timeout in seconds")
+    portscan_scan.add_argument("--concurrency", type=int, default=100, help="Number of concurrent scans")
+
+    portscan_tui = portscan_subparsers.add_parser("tui", help="Launch PortScan TUI")
+
     # --- ISBN Lab ---
     parser_isbn = subparsers.add_parser(
         "isbn-lab", aliases=["isbn"], help="Manage International Standard Book Numbers (ISBN-10, ISBN-13)"
@@ -21901,6 +21940,10 @@ async def main():
 
     if args.command in ["vcard-lab", "vcard"]:
         run_vcard_lab(args)
+        return
+
+    if args.command in ["portscan-lab", "portscan", "pscan"]:
+        run_portscan_lab(args)
         return
 
     # Initialize Agent Client

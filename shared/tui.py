@@ -260,6 +260,7 @@ from shared.tui_bitwise import BitwiseLabTab
 from shared.tui_uni import UniLabTab
 from shared.tui_vcard import VCardTab
 from shared.tui_curl import CurlLabTab
+from shared.tui_portscan import PortScanTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4557,6 +4558,8 @@ class AgentTUI(App):
                 yield VCardTab(self.project_dir)
             with TabPane("cURL Lab", id="tab-curl"):
                 yield CurlLabTab(self.project_dir)
+            with TabPane("PortScan", id="tab-portscan"):
+                yield PortScanTab()
             with TabPane("Lorem Lab", id="tab-lorem"):
                 yield LoremLabTab()
 

@@ -223,7 +223,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -1729,6 +1729,27 @@ def run_bson_lab(args):
 
     from shared.bson_lab import run_bson_lab_logic
     success = run_bson_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_lorem_lab(args):
+    """Runs the Lorem Ipsum Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Lorem Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-lorem")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.lorem_lab import run_lorem_lab_logic
+    success = run_lorem_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_cbor_lab(args):
@@ -17598,6 +17619,20 @@ def parse_args(argv=None):
     luhn_generate.add_argument("--prefix", type=str, default="", help="Prefix for the generated number.")
     luhn_generate.add_argument("--length", type=int, required=True, help="Total length of the generated number.")
 
+    # --- New 'lorem-lab' command ---
+    parser_lorem = subparsers.add_parser(
+        "lorem-lab",
+        aliases=["lorem", "lipsum"],
+        help="Lorem Ipsum generator."
+    )
+    lorem_subparsers = parser_lorem.add_subparsers(dest="action", required=True)
+    lorem_subparsers.add_parser("tui", help="Launch interactive Lorem Lab TUI.")
+
+    lorem_generate = lorem_subparsers.add_parser("generate", help="Generate lorem ipsum text.")
+    lorem_generate.add_argument("--count", type=int, default=1, help="Number of items to generate.")
+    lorem_generate.add_argument("--type", choices=["words", "sentences", "paragraphs"], default="paragraphs", help="Type of text to generate.")
+    lorem_generate.add_argument("--no-start", action="store_true", help="Don't start with 'Lorem ipsum...'.")
+
     # --- New 'morse-lab' command ---
     parser_roman = subparsers.add_parser(
         "roman-lab",
@@ -21830,6 +21865,10 @@ async def main():
 
     if args.command in ["case-lab", "case"]:
         run_case_lab(args)
+        return
+
+    if args.command in ["lorem-lab", "lorem", "lipsum"]:
+        run_lorem_lab(args)
         return
 
     if args.command in ["bitwise-lab", "bits"]:

@@ -216,7 +216,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "text-lab", "txt", "rot13-lab", "rot13", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
@@ -2199,6 +2199,27 @@ def run_password_lab(args):
         from shared.password_lab import run_password_lab_logic
         run_password_lab_logic(args)
         sys.exit(0)
+
+def run_rot13_lab(args):
+    """Runs the ROT13 Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching ROT13 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-rot13")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.rot13_lab import run_rot13_lab_logic
+    success = run_rot13_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_text_lab(args):
     """Runs the Text Lab."""
@@ -13523,6 +13544,14 @@ def parse_args(argv=None):
     parser_http_status_lab_search.add_argument("query", help="The search query.")
     http_status_lab_subparsers.add_parser("tui", help="Launch the HTTP Status Code TUI.")
 
+    parser_rot13_lab = subparsers.add_parser(
+        "rot13-lab",
+        aliases=["rot13"],
+        help="ROT13 encoding/decoding utilities."
+    )
+    parser_rot13_lab.add_argument("--tui", action="store_true", help="Launch interactive TUI for ROT13 Lab.")
+    parser_rot13_lab.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
+
     parser_text_lab = subparsers.add_parser(
         "text-lab",
         aliases=["txt"],
@@ -21401,6 +21430,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command in ["rot13-lab", "rot13"]:
+        run_rot13_lab(args)
         return
 
     if args.command in ["html-lab", "html"]:

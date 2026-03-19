@@ -215,3 +215,33 @@ KanbanBoard {
     text-style: bold;
     margin-right: 1;
 }
+#portscan-inputs-container {
+    height: auto;
+    margin-bottom: 1;
+}
+
+#portscan-options-container {
+    height: auto;
+    margin-bottom: 1;
+}
+
+.portscan-option-label {
+    margin-right: 1;
+    content-align: right middle;
+}
+
+.portscan-option-input {
+    width: 10;
+    margin-right: 2;
+}
+
+#portscan-status {
+    text-align: center;
+    color: yellow;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#portscan-table {
+    height: 100%;
+}

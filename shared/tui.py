@@ -254,6 +254,7 @@ from shared.tui_geo import GeoLabTab
 from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
+from shared.tui_lorem import LoremLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
 from shared.tui_uni import UniLabTab
@@ -4556,6 +4557,8 @@ class AgentTUI(App):
                 yield VCardTab(self.project_dir)
             with TabPane("cURL Lab", id="tab-curl"):
                 yield CurlLabTab(self.project_dir)
+            with TabPane("Lorem Lab", id="tab-lorem"):
+                yield LoremLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

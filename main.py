@@ -21230,7 +21230,6 @@ async def main():
         run_crypto_lab(args)
         return
 
-
     if args.command in ["ocr-lab", "ocr"]:
         run_ocr_lab(args)
         return
@@ -21616,7 +21615,6 @@ async def main():
         run_cert_lab(args)
         return
 
-
     if args.command in ["codec-lab", "codec"]:
         run_codec_lab(args)
         return
@@ -21664,7 +21662,6 @@ async def main():
         run_ini_lab(args)
         return
 
-
     if args.command in ["yaml-lab", "yaml"]:
         run_yaml_lab(args)
         return
@@ -21672,7 +21669,6 @@ async def main():
     if args.command in ["changelog-lab", "changelog"]:
         run_changelog_lab(args)
         return
-
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)
@@ -21796,18 +21792,18 @@ async def main():
         # If the command itself is one of the actions, we need to adjust args.
         # e.g. "define hello" -> args.command="define", args.word="hello", args.action="define"
         if args.command in ["define", "synonym", "antonym", "thesaurus"]:
-             # If the user typed 'define hello', argparse parsed 'define' as command and 'hello' as word.
-             # We want args.action to be 'define'.
-             # However, our parser definition for dict-lab expects "word" and "action".
-             # If we used aliases, 'define' maps to dict-lab parser.
-             # So 'main.py define hello' parses 'hello' as word, and action defaults to 'define' or consumes next arg?
-             # Let's fix action if needed.
-             if args.command == "synonym" or args.command == "thesaurus":
-                 args.action = "synonym"
-             elif args.command == "antonym":
-                 args.action = "antonym"
-             else:
-                 args.action = "define"
+            # If the user typed 'define hello', argparse parsed 'define' as command and 'hello' as word.
+            # We want args.action to be 'define'.
+            # However, our parser definition for dict-lab expects "word" and "action".
+            # If we used aliases, 'define' maps to dict-lab parser.
+            # So 'main.py define hello' parses 'hello' as word, and action defaults to 'define' or consumes next arg?
+            # Let's fix action if needed.
+            if args.command == "synonym" or args.command == "thesaurus":
+                args.action = "synonym"
+            elif args.command == "antonym":
+                args.action = "antonym"
+            else:
+                args.action = "define"
 
         run_dict_lab(args)
         return
@@ -21819,7 +21815,6 @@ async def main():
     if args.command in ["emoji-lab", "emoji", "emoj"]:
         run_emoji_lab(args)
         return
-
 
     if args.command in ["css-lab", "css"]:
         run_css_lab(args)

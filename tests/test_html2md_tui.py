@@ -46,7 +46,7 @@ def test_tui_html2md_convert(monkeypatch):
     assert "Hello **World**!" in mock_output.text
     # Call error branch for full coverage
     mock_input.text = "invalid"
-    tab.manager.convert = MagicMock(side_effect=Exception("Test Error"))
+    tab.manager.convert = MagicMock(side_effect=Exception("Test Error"))  # type: ignore
     tab.action_convert()
     assert "Error converting HTML: Test Error" in mock_output.text
 

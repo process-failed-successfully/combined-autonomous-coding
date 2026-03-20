@@ -1,7 +1,7 @@
-from shared.html2md_lab import HtmlToMarkdownParser, Html2MdManager, run_html2md_logic
+from shared.html2md_lab import Html2MdManager, run_html2md_logic
 import argparse
 import tempfile
-import pytest
+
 
 def test_convert():
     manager = Html2MdManager()
@@ -27,9 +27,11 @@ def test_convert():
     # Blockquotes
     assert manager.convert("<blockquote>Quote</blockquote>") == "> Quote"
 
+
 def test_cli_logic_text():
     args = argparse.Namespace(text="<p>Test</p>", file=None, output=None, action="convert")
-    assert run_html2md_logic(args) == True
+    assert run_html2md_logic(args) is True
+
 
 def test_cli_logic_file():
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -37,7 +39,8 @@ def test_cli_logic_file():
         f.close()
 
         args = argparse.Namespace(text=None, file=f.name, output=None, action="convert")
-        assert run_html2md_logic(args) == True
+        assert run_html2md_logic(args) is True
+
 
 def test_cli_logic_output():
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as f_in, tempfile.NamedTemporaryFile(mode="w", delete=False) as f_out:
@@ -46,7 +49,7 @@ def test_cli_logic_output():
         f_out.close()
 
         args = argparse.Namespace(text=None, file=f_in.name, output=f_out.name, action="convert")
-        assert run_html2md_logic(args) == True
+        assert run_html2md_logic(args) is True
 
         with open(f_out.name, 'r') as f_read:
             assert f_read.read() == "File Content"

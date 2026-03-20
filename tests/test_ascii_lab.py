@@ -4,13 +4,23 @@ from pathlib import Path
 import sys
 
 # Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
 
 from shared.ascii_lab import AsciiLabManager
 
 class TestAsciiLab(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.pil_patcher = patch.dict('sys.modules', {
+            'PIL': MagicMock(),
+            'PIL.Image': MagicMock(),
+            'PIL.ImageSequence': MagicMock()
+        })
+        cls.pil_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.pil_patcher.stop()
+
     def setUp(self):
         self.manager = AsciiLabManager()
         # Mock Path.exists to always return True for tests

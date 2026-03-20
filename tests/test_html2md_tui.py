@@ -40,7 +40,7 @@ def test_tui_html2md_convert(monkeypatch):
             return mock_output
         return MagicMock()
 
-    tab.query_one = mock_query_one
+    setattr(tab, "query_one", mock_query_one)
     tab.action_convert()
 
     assert "Hello **World**!" in mock_output.text
@@ -69,7 +69,7 @@ def test_tui_html2md_clear(monkeypatch):
             return mock_output
         return MagicMock()
 
-    tab.query_one = mock_query_one
+    setattr(tab, "query_one", mock_query_one)
     tab.action_clear()
 
     assert mock_input.text == ""

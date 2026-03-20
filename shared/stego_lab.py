@@ -16,13 +16,6 @@ class StegoManager:
                 "Please install it."
             )
 
-    def _get_data(self, img):
-        """Helper to get pixel data avoiding deprecation warnings if possible."""
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            return list(img.getdata())
-
     def hide(self, image_path: str, secret_message: str, output_path: str) -> bool:
         """Hides a secret message in an image using LSB steganography."""
         img = Image.open(image_path)
@@ -32,7 +25,7 @@ class StegoManager:
         binary_message = ''.join(format(ord(char), '08b') for char in secret_message)
         binary_message += '1111111111111110'
 
-        data = self._get_data(img)
+        data = list(img.getdata())
 
         if len(binary_message) > len(data) * 3:
             raise ValueError("Message is too large to fit in this image.")
@@ -63,7 +56,7 @@ class StegoManager:
         """Extracts a hidden message from an image."""
         img = Image.open(image_path)
         img = img.convert("RGB")
-        data = self._get_data(img)
+        data = list(img.getdata())
 
         binary_message = ""
         for pixel in data:

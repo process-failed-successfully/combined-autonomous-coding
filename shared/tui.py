@@ -261,6 +261,7 @@ from shared.tui_uni import UniLabTab
 from shared.tui_vcard import VCardTab
 from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
+from shared.tui_html2md import Html2MdTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4520,6 +4521,9 @@ class AgentTUI(App):
                 yield RenameLabTab(self.project_dir)
             with TabPane("Diagram Lab", id="tab-diagram"):
                 yield DiagramLabTab(self.project_dir)
+            with TabPane("HTML2MD Lab", id="tab-html2md"):
+                yield Html2MdTab()
+
             with TabPane("HTML Lab", id="tab-html"):
                 yield HtmlLabTab(self.project_dir)
             with TabPane("Clipboard Lab", id="tab-clipboard"):

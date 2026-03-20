@@ -219,7 +219,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "html2md-lab", "html2md", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -2328,6 +2328,27 @@ def run_html_lab(args):
     from shared.html_lab import run_html_lab_logic
     run_html_lab_logic(args)
     sys.exit(0)
+
+def run_html2md_lab(args):
+    """Runs the HTML to Markdown Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Html2Md Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-html2md")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.html2md_lab import run_html2md_logic
+    success = run_html2md_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_seo_lab(args):
     """Runs the SEO Lab."""
@@ -13670,6 +13691,18 @@ def parse_args(argv=None):
         aliases=["html"],
         help="HTML utilities (extract, clean, table, validate)."
     )
+
+    # html2md-lab
+    parser_html2md = subparsers.add_parser(
+        "html2md-lab",
+        aliases=["html2md"],
+        help="Convert HTML to Markdown."
+    )
+    parser_html2md.add_argument("--file", help="Input HTML file.")
+    parser_html2md.add_argument("--text", help="Input HTML text.")
+    parser_html2md.add_argument("--output", "-o", help="Output file path.")
+    parser_html2md.add_argument("--tui", action="store_true", help="Launch HTML to Markdown TUI.")
+    parser_html2md.set_defaults(action="convert")
     parser_html.add_argument("--file", help="Input HTML file (defaults to stdin).")
     html_subparsers = parser_html.add_subparsers(
         dest="action",
@@ -21505,6 +21538,10 @@ async def main():
 
     if args.command in ["html-lab", "html"]:
         run_html_lab(args)
+        return
+
+    if args.command in ["html2md-lab", "html2md"]:
+        run_html2md_lab(args)
         return
 
     if args.command in ["seo-lab", "seo"]:

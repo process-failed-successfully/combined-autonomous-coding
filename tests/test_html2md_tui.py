@@ -1,26 +1,32 @@
-import pytest
 from unittest.mock import MagicMock
 import sys
+
 
 class MockWidget:
     def __init__(self, *args, **kwargs):
         pass
 
+
 class MockButton(MockWidget):
     class Pressed:
         pass
 
+
 class MockLabel(MockWidget):
     pass
+
 
 class MockTextArea(MockWidget):
     pass
 
+
 class MockVertical(MockWidget):
     pass
 
+
 class MockHorizontal(MockWidget):
     pass
+
 
 def get_mock_widgets():
     m = MagicMock()
@@ -29,12 +35,14 @@ def get_mock_widgets():
     m.TextArea = MockTextArea
     return m
 
+
 def get_mock_containers():
     m = MagicMock()
     m.Container = MockWidget
     m.Vertical = MockVertical
     m.Horizontal = MockHorizontal
     return m
+
 
 def test_tui_html2md_convert(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
@@ -69,6 +77,7 @@ def test_tui_html2md_convert(monkeypatch):
     tab.action_convert()
     assert "Error converting HTML: Test Error" in mock_output.text
 
+
 def test_tui_html2md_clear(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
     monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
@@ -98,6 +107,7 @@ def test_tui_html2md_clear(monkeypatch):
     assert mock_input.text == ""
     assert mock_output.text == ""
 
+
 def test_tui_html2md_compose(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
     monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
@@ -110,6 +120,7 @@ def test_tui_html2md_compose(monkeypatch):
     tab = Html2MdTab()
     res = list(tab.compose())
     assert len(res) > 0
+
 
 def test_tui_html2md_on_button_pressed(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
@@ -129,6 +140,7 @@ def test_tui_html2md_on_button_pressed(monkeypatch):
 
     class MButton:
         id = "btn-convert"
+
     class MockEvent:
         button = MButton()
 

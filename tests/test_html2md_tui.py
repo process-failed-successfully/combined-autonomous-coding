@@ -5,9 +5,11 @@ from textual.widgets import TextArea
 
 from shared.tui_html2md import Html2MdTab
 
+
 class DummyApp(App[Any]):
     def compose(self) -> ComposeResult:
         yield Html2MdTab()
+
 
 class TestHtml2MdTui(unittest.IsolatedAsyncioTestCase):
     async def test_tui_html2md_convert(self):

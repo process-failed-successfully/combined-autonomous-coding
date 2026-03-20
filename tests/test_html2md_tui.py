@@ -1,27 +1,46 @@
+import pytest
 from unittest.mock import MagicMock
 import sys
 
+class MockWidget:
+    def __init__(self, *args, **kwargs):
+        pass
 
-class _MockButton:
+class MockButton(MockWidget):
     class Pressed:
         pass
 
+class MockLabel(MockWidget):
+    pass
 
-class _MockTextualWidgetsModule:
-    Header = object
-    Footer = object
-    Input = object
-    Button = _MockButton
-    Static = object
-    Label = object
-    TextArea = object
+class MockTextArea(MockWidget):
+    pass
 
+class MockVertical(MockWidget):
+    pass
+
+class MockHorizontal(MockWidget):
+    pass
+
+def get_mock_widgets():
+    m = MagicMock()
+    m.Button = MockButton
+    m.Label = MockLabel
+    m.TextArea = MockTextArea
+    return m
+
+def get_mock_containers():
+    m = MagicMock()
+    m.Container = MockWidget
+    m.Vertical = MockVertical
+    m.Horizontal = MockHorizontal
+    return m
 
 def test_tui_html2md_convert(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
     monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
-    monkeypatch.setitem(sys.modules, 'textual.containers', MagicMock(Container=object, Horizontal=object, Vertical=object))
-    monkeypatch.setitem(sys.modules, 'textual.widgets', _MockTextualWidgetsModule())
+    monkeypatch.setitem(sys.modules, 'textual.containers', get_mock_containers())
+    monkeypatch.setitem(sys.modules, 'textual.widgets', get_mock_widgets())
     monkeypatch.setitem(sys.modules, 'textual.binding', MagicMock())
 
     from shared.tui_html2md import Html2MdTab
@@ -50,12 +69,11 @@ def test_tui_html2md_convert(monkeypatch):
     tab.action_convert()
     assert "Error converting HTML: Test Error" in mock_output.text
 
-
 def test_tui_html2md_clear(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
     monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
-    monkeypatch.setitem(sys.modules, 'textual.containers', MagicMock(Container=object, Horizontal=object, Vertical=object))
-    monkeypatch.setitem(sys.modules, 'textual.widgets', _MockTextualWidgetsModule())
+    monkeypatch.setitem(sys.modules, 'textual.containers', get_mock_containers())
+    monkeypatch.setitem(sys.modules, 'textual.widgets', get_mock_widgets())
     monkeypatch.setitem(sys.modules, 'textual.binding', MagicMock())
 
     from shared.tui_html2md import Html2MdTab
@@ -79,3 +97,47 @@ def test_tui_html2md_clear(monkeypatch):
 
     assert mock_input.text == ""
     assert mock_output.text == ""
+
+def test_tui_html2md_compose(monkeypatch):
+    monkeypatch.setitem(sys.modules, 'textual', MagicMock())
+    monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
+    monkeypatch.setitem(sys.modules, 'textual.containers', get_mock_containers())
+    monkeypatch.setitem(sys.modules, 'textual.widgets', get_mock_widgets())
+    monkeypatch.setitem(sys.modules, 'textual.binding', MagicMock())
+
+    from shared.tui_html2md import Html2MdTab
+
+    tab = Html2MdTab()
+    res = list(tab.compose())
+    assert len(res) > 0
+
+def test_tui_html2md_on_button_pressed(monkeypatch):
+    monkeypatch.setitem(sys.modules, 'textual', MagicMock())
+    monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
+    monkeypatch.setitem(sys.modules, 'textual.containers', get_mock_containers())
+    monkeypatch.setitem(sys.modules, 'textual.widgets', get_mock_widgets())
+    monkeypatch.setitem(sys.modules, 'textual.binding', MagicMock())
+
+    from shared.tui_html2md import Html2MdTab
+
+    tab = Html2MdTab()
+
+    mock_convert = MagicMock()
+    mock_clear = MagicMock()
+    tab.action_convert = mock_convert
+    tab.action_clear = mock_clear
+
+    class MButton:
+        id = "btn-convert"
+    class MockEvent:
+        button = MButton()
+
+    tab.on_button_pressed(MockEvent())
+    mock_convert.assert_called_once()
+
+    MockEvent.button.id = "btn-clear"
+    tab.on_button_pressed(MockEvent())
+    mock_clear.assert_called_once()
+
+    MockEvent.button.id = "other"
+    tab.on_button_pressed(MockEvent())

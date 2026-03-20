@@ -22,15 +22,18 @@ class StegoManager:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             try:
-                return list(img.getdata())
+                data = list(img.getdata())
+                # Ensure getdata() actually returned all pixels
+                if len(data) == img.width * img.height:
+                    return data
             except Exception:
                 pass
-            # Fallback if getdata is completely removed in future
-            data = []
-            for y in range(img.height):
-                for x in range(img.width):
-                    data.append(img.getpixel((x, y)))
-            return data
+        # Fallback if getdata is completely removed in future or returned incomplete data
+        data = []
+        for y in range(img.height):
+            for x in range(img.width):
+                data.append(img.getpixel((x, y)))
+        return data
 
     def hide(self, image_path: str, secret_message: str, output_path: str) -> bool:
         """Hides a secret message in an image using LSB steganography."""

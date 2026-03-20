@@ -3,22 +3,28 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 import sys
 
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
-
-from shared.ascii_lab import AsciiLabManager
+# We cannot globally poison sys.modules here because it breaks other tests (e.g. stego_lab)
+# that actually use PIL. We will patch sys.modules in setUp instead.
 
 class TestAsciiLab(unittest.TestCase):
     def setUp(self):
+        self.sys_modules_patcher = patch.dict('sys.modules', {
+            'PIL': MagicMock(),
+            'PIL.Image': MagicMock(),
+            'PIL.ImageSequence': MagicMock()
+        })
+        self.sys_modules_patcher.start()
+
+        from shared.ascii_lab import AsciiLabManager
         self.manager = AsciiLabManager()
+
         # Mock Path.exists to always return True for tests
         self.patcher = patch('pathlib.Path.exists', return_value=True)
         self.mock_exists = self.patcher.start()
 
     def tearDown(self):
         self.patcher.stop()
+        self.sys_modules_patcher.stop()
 
     @patch('shared.ascii_lab.Image.open')
     def test_convert_image_to_ascii(self, mock_open):

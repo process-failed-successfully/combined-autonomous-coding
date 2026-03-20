@@ -25,30 +25,37 @@ class StegoManager:
         binary_message = ''.join(format(ord(char), '08b') for char in secret_message)
         binary_message += '1111111111111110'
 
-        data = list(img.getdata())
+        width, height = img.size
+        capacity = width * height * 3
 
-        if len(binary_message) > len(data) * 3:
+        if len(binary_message) > capacity:
             raise ValueError("Message is too large to fit in this image.")
 
-        new_data = []
+        pixels = img.load()
         data_index = 0
 
-        for pixel in data:
-            r, g, b = pixel
+        for y in range(height):
+            for x in range(width):
+                if data_index >= len(binary_message):
+                    break
 
-            if data_index < len(binary_message):
-                r = (r & ~1) | int(binary_message[data_index])
-                data_index += 1
-            if data_index < len(binary_message):
-                g = (g & ~1) | int(binary_message[data_index])
-                data_index += 1
-            if data_index < len(binary_message):
-                b = (b & ~1) | int(binary_message[data_index])
-                data_index += 1
+                r, g, b = pixels[x, y]
 
-            new_data.append((r, g, b))
+                if data_index < len(binary_message):
+                    r = (r & ~1) | int(binary_message[data_index])
+                    data_index += 1
+                if data_index < len(binary_message):
+                    g = (g & ~1) | int(binary_message[data_index])
+                    data_index += 1
+                if data_index < len(binary_message):
+                    b = (b & ~1) | int(binary_message[data_index])
+                    data_index += 1
 
-        img.putdata(new_data)
+                pixels[x, y] = (r, g, b)
+
+            if data_index >= len(binary_message):
+                break
+
         img.save(output_path)
         return True
 
@@ -56,18 +63,29 @@ class StegoManager:
         """Extracts a hidden message from an image."""
         img = Image.open(image_path)
         img = img.convert("RGB")
-        data = list(img.getdata())
+
+        width, height = img.size
+        pixels = img.load()
 
         binary_message = ""
-        for pixel in data:
-            r, g, b = pixel
-            binary_message += str(r & 1)
-            binary_message += str(g & 1)
-            binary_message += str(b & 1)
-
-        # Search for the terminator
         terminator = '1111111111111110'
-        terminator_index = binary_message.find(terminator)
+        terminator_index = -1
+
+        for y in range(height):
+            for x in range(width):
+                r, g, b = pixels[x, y]
+                binary_message += str(r & 1)
+                binary_message += str(g & 1)
+                binary_message += str(b & 1)
+
+                if len(binary_message) >= len(terminator):
+                    idx = binary_message.rfind(terminator, max(0, len(binary_message) - len(terminator) - 3))
+                    if idx != -1:
+                        terminator_index = idx
+                        break
+
+            if terminator_index != -1:
+                break
 
         if terminator_index == -1:
             raise ValueError("No hidden message found or corrupted data.")

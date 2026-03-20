@@ -22,7 +22,10 @@ class StegoManager:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             try:
-                data = list(img.getdata())
+                if hasattr(img, 'get_flattened_data'):
+                    data = list(img.get_flattened_data())
+                else:
+                    data = list(img.getdata())
                 # Ensure getdata() actually returned all pixels
                 if len(data) == img.width * img.height:
                     return data

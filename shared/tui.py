@@ -254,6 +254,7 @@ from shared.tui_geo import GeoLabTab
 from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
+from shared.tui_stego import StegoLabTab
 from shared.tui_lorem import LoremLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
@@ -4572,6 +4573,8 @@ class AgentTUI(App):
                 yield LuhnLabTab()
             with TabPane("IBAN Lab", id="tab-iban"):
                 yield IbanLabTab()
+            with TabPane("Stego Lab", id="tab-stego"):
+                yield StegoLabTab()
             with TabPane("Case Lab", id="tab-case"):
                 yield CaseLabTab()
             with TabPane("Unicode Lab", id="tab-uni"):

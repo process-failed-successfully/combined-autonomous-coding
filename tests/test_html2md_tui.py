@@ -1,10 +1,11 @@
-import pytest
 from unittest.mock import MagicMock
 import sys
+
 
 class _MockButton:
     class Pressed:
         pass
+
 
 class _MockTextualWidgetsModule:
     Header = object
@@ -14,6 +15,7 @@ class _MockTextualWidgetsModule:
     Static = object
     Label = object
     TextArea = object
+
 
 def test_tui_html2md_convert(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())
@@ -42,6 +44,7 @@ def test_tui_html2md_convert(monkeypatch):
     tab.action_convert()
 
     assert "Hello **World**!" in mock_output.text
+
 
 def test_tui_html2md_clear(monkeypatch):
     monkeypatch.setitem(sys.modules, 'textual', MagicMock())

@@ -338,6 +338,7 @@ KNOWN_COMMANDS = [
     "roman-lab", "roman",
     "bitwise-lab", "bits",
     "brainfuck-lab", "brainfuck",
+    "stego-lab", "stego",
     "vcard-lab", "vcard",
     "curl-lab", "curl",
     "portscan-lab", "portscan", "pscan"
@@ -1135,6 +1136,28 @@ def run_isbn_lab(args):
         from shared.isbn_lab import run_isbn_lab_logic
         run_isbn_lab_logic(args)
         sys.exit(0)
+
+def run_stego_lab(args):
+    """Runs the Stego Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Stego Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-stego")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.stego_lab import run_stego_lab_logic
+    run_stego_lab_logic(args)
+
 
 def run_branch_lab(args):
     """Runs the Branch Lab."""
@@ -15279,6 +15302,24 @@ def parse_args(argv=None):
 
     vcard_subparsers.add_parser("tui", help="Launch vCard Lab TUI")
 
+    # --- New 'stego-lab' command ---
+    parser_stego = subparsers.add_parser(
+        "stego-lab",
+        aliases=["stego"],
+        help="Steganography tools to hide and extract messages from images."
+    )
+    stego_subparsers = parser_stego.add_subparsers(dest="action", required=True)
+
+    stego_subparsers.add_parser("tui", help="Launch the interactive Stego Lab TUI.")
+
+    stego_hide = stego_subparsers.add_parser("hide", help="Hide a secret message in an image.")
+    stego_hide.add_argument("--image", required=True, help="Path to the carrier image.")
+    stego_hide.add_argument("--message", required=True, help="The secret message to hide.")
+    stego_hide.add_argument("--output", required=True, help="Path to save the output image.")
+
+    stego_extract = stego_subparsers.add_parser("extract", help="Extract a hidden message from an image.")
+    stego_extract.add_argument("--image", required=True, help="Path to the carrier image.")
+
     # --- New 'brainfuck-lab' command ---
     parser_brainfuck = subparsers.add_parser(
         "brainfuck-lab",
@@ -21254,6 +21295,9 @@ async def main():
         await run_proc_lab_logic(args)
         return
 
+    if args.command in ["stego-lab", "stego"]:
+        run_stego_lab(args)
+        return
 
     if args.command in ["brainfuck-lab", "brainfuck", "bf"]:
         run_brainfuck_lab_logic(args)

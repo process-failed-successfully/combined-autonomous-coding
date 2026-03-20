@@ -1,76 +1,41 @@
-from unittest.mock import MagicMock
-import sys
+import unittest
+from typing import Any
+from textual.app import App, ComposeResult
+from textual.widgets import TextArea
 
+from shared.tui_html2md import Html2MdTab
 
-class _MockButton:
-    class Pressed:
-        pass
+class DummyApp(App[Any]):
+    def compose(self) -> ComposeResult:
+        yield Html2MdTab()
 
+class TestHtml2MdTui(unittest.IsolatedAsyncioTestCase):
+    async def test_tui_html2md_convert(self):
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            tab = app.query_one(Html2MdTab)
 
-class _MockTextualWidgetsModule:
-    Header = object
-    Footer = object
-    Input = object
-    Button = _MockButton
-    Static = object
-    Label = object
-    TextArea = object
+            input_area = tab.query_one("#input-html", TextArea)
+            output_area = tab.query_one("#output-md", TextArea)
 
+            input_area.text = "<p>Hello <b>World</b>!</p>"
 
-def test_tui_html2md_convert(monkeypatch):
-    monkeypatch.setitem(sys.modules, 'textual', MagicMock())
-    monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
-    monkeypatch.setitem(sys.modules, 'textual.containers', MagicMock(Container=object, Horizontal=object, Vertical=object))
-    monkeypatch.setitem(sys.modules, 'textual.widgets', _MockTextualWidgetsModule())
-    monkeypatch.setitem(sys.modules, 'textual.binding', MagicMock())
+            await pilot.click("#btn-convert")
 
-    from shared.tui_html2md import Html2MdTab
+            self.assertIn("Hello **World**!", output_area.text)
 
-    tab = Html2MdTab()
+    async def test_tui_html2md_clear(self):
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            tab = app.query_one(Html2MdTab)
 
-    mock_input = MagicMock()
-    mock_input.text = "<p>Hello <b>World</b>!</p>"
-    mock_output = MagicMock()
-    mock_output.text = ""
+            input_area = tab.query_one("#input-html", TextArea)
+            output_area = tab.query_one("#output-md", TextArea)
 
-    def mock_query_one(selector, widget_type=None):
-        if selector == "#input-html":
-            return mock_input
-        elif selector == "#output-md":
-            return mock_output
-        return MagicMock()
+            input_area.text = "<p>Hello</p>"
+            output_area.text = "Hello"
 
-    tab.query_one = mock_query_one
-    tab.action_convert()
+            await pilot.click("#btn-clear")
 
-    assert "Hello **World**!" in mock_output.text
-
-
-def test_tui_html2md_clear(monkeypatch):
-    monkeypatch.setitem(sys.modules, 'textual', MagicMock())
-    monkeypatch.setitem(sys.modules, 'textual.app', MagicMock(ComposeResult=list))
-    monkeypatch.setitem(sys.modules, 'textual.containers', MagicMock(Container=object, Horizontal=object, Vertical=object))
-    monkeypatch.setitem(sys.modules, 'textual.widgets', _MockTextualWidgetsModule())
-    monkeypatch.setitem(sys.modules, 'textual.binding', MagicMock())
-
-    from shared.tui_html2md import Html2MdTab
-
-    tab = Html2MdTab()
-
-    mock_input = MagicMock()
-    mock_input.text = "<p>Hello</p>"
-    mock_output = MagicMock()
-    mock_output.text = "Hello"
-
-    def mock_query_one(selector, widget_type=None):
-        if selector == "#input-html":
-            return mock_input
-        elif selector == "#output-md":
-            return mock_output
-        return MagicMock()
-
-    tab.query_one = mock_query_one
-    tab.action_clear()
-
-    assert mock_input.text == ""
-    assert mock_output.text == ""
+            self.assertEqual(input_area.text, "")
+            self.assertEqual(output_area.text, "")

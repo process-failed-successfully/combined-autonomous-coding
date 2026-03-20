@@ -300,6 +300,7 @@ KNOWN_COMMANDS = [
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
+    "base45-lab", "base45", "b45",
     "base62-lab", "base62", "b62",
     "base91-lab", "base91", "b91",
     "base64-lab", "base64", "b64",
@@ -543,6 +544,19 @@ def run_base58_lab(args):
 
     from shared.base58_lab import run_base58_lab_logic
     success = run_base58_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base45_lab(args):
+    """Runs the Base45 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base45 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base45")
+        app.run()
+        sys.exit(0)
+
+    from shared.base45_lab import run_base45_lab_logic
+    success = run_base45_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base62_lab(args):
@@ -15644,6 +15658,15 @@ def parse_args(argv=None):
     b58_group.add_argument("--decode", "-d", type=str, help="Base58 text to decode.")
     parser_b58.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base58 Lab.")
 
+    # base45-lab
+    base45_parser = subparsers.add_parser(
+        "base45-lab", aliases=["base45", "b45"],
+        help="Encode/Decode Base45 strings"
+    )
+    base45_parser.add_argument("--encode", help="Text to encode", type=str)
+    base45_parser.add_argument("--decode", help="Base45 string to decode", type=str)
+    base45_parser.add_argument("--tui", help="Launch interactive TUI", action="store_true")
+
     # base62-lab
     parser_b62 = subparsers.add_parser(
         "base62-lab", aliases=["base62", "b62"],
@@ -21839,6 +21862,10 @@ async def main():
         return
     if args.command in ["base85-lab", "base85", "b85"]:
         run_base85_lab(args)
+        return
+
+    if args.command in ["base45-lab", "base45", "b45"]:
+        run_base45_lab(args)
         return
 
     if args.command in ["base62-lab", "base62", "b62"]:

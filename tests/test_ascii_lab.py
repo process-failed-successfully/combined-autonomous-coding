@@ -1,17 +1,24 @@
 import unittest
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 from pathlib import Path
-import sys
 
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
-
-from shared.ascii_lab import AsciiLabManager
 
 class TestAsciiLab(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.pil_patcher = patch.dict('sys.modules', {
+            'PIL': MagicMock(),
+            'PIL.Image': MagicMock(),
+            'PIL.ImageSequence': MagicMock()
+        })
+        cls.pil_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.pil_patcher.stop()
+
     def setUp(self):
+        from shared.ascii_lab import AsciiLabManager
         self.manager = AsciiLabManager()
         # Mock Path.exists to always return True for tests
         self.patcher = patch('pathlib.Path.exists', return_value=True)
@@ -43,13 +50,13 @@ class TestAsciiLab(unittest.TestCase):
         # width=100
         # height = 100 * (100/100) * 0.5 = 50
 
-        mock_gray.getdata.return_value = [0, 255] * 2500 # 5000 pixels
+        mock_gray.getdata.return_value = [0, 255] * 2500  # 5000 pixels
 
         result = self.manager.convert_image_to_ascii(Path("test.png"), width=100)
 
         self.assertTrue(len(result) > 0)
-        self.assertIn("@", result) # Should match 0
-        self.assertIn(" ", result) # Should match 255 (if space is last char)
+        self.assertIn("@", result)  # Should match 0
+        self.assertIn(" ", result)  # Should match 255 (if space is last char)
 
     @patch('shared.ascii_lab.Image.open')
     @patch('shared.ascii_lab.ImageSequence.Iterator')
@@ -85,6 +92,7 @@ class TestAsciiLab(unittest.TestCase):
         self.assertTrue(mock_print.called)
         # Verify sleep was called
         self.assertTrue(mock_sleep.called)
+
 
 if __name__ == '__main__':
     unittest.main()

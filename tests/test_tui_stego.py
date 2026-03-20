@@ -1,16 +1,17 @@
-import pytest
 import os
 import tempfile
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from textual.app import App, ComposeResult
 from shared.tui_stego import StegoLabTab
 from shared.stego_lab import HAS_PILLOW
+
 
 # Create a dummy app to host the tab
 class DummyStegoApp(App[None]):
     def compose(self) -> ComposeResult:
         yield StegoLabTab()
+
 
 class TestStegoLabTab(unittest.IsolatedAsyncioTestCase):
     def setUp(self):

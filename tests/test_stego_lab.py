@@ -4,8 +4,6 @@ import sys
 import io
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 # Create a dummy image for testing
 try:
@@ -106,6 +104,7 @@ class TestStegoLab(unittest.TestCase):
         success = run_stego_lab_logic(args)
         self.assertTrue(success)
         self.assertIn("CLI Secret Extract", self.held_stdout.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,10 +40,15 @@ def test_tui_html2md_convert(monkeypatch):
             return mock_output
         return MagicMock()
 
-    tab.query_one = mock_query_one
+    tab.query_one = mock_query_one  # type: ignore
     tab.action_convert()
 
     assert "Hello **World**!" in mock_output.text
+    # Call error branch for full coverage
+    mock_input.text = "invalid"
+    tab.manager.convert = MagicMock(side_effect=Exception("Test Error"))
+    tab.action_convert()
+    assert "Error converting HTML: Test Error" in mock_output.text
 
 
 def test_tui_html2md_clear(monkeypatch):
@@ -69,7 +74,7 @@ def test_tui_html2md_clear(monkeypatch):
             return mock_output
         return MagicMock()
 
-    tab.query_one = mock_query_one
+    tab.query_one = mock_query_one  # type: ignore
     tab.action_clear()
 
     assert mock_input.text == ""

@@ -13830,6 +13830,15 @@ def parse_args(argv=None):
     parser_ul_decode = url_lab_subparsers.add_parser("decode", help="URL decode text.")
     parser_ul_decode.add_argument("text", help="Text to decode.")
 
+    # url-lab encode-plus
+    parser_ul_encode_plus = url_lab_subparsers.add_parser("encode-plus", help="URL encode text with space as +.")
+    parser_ul_encode_plus.add_argument("text", help="Text to encode.")
+
+    # url-lab decode-plus
+    parser_ul_decode_plus = url_lab_subparsers.add_parser("decode-plus", help="URL decode text with + as space.")
+    parser_ul_decode_plus.add_argument("text", help="Text to decode.")
+
+
     # url-lab join
     parser_ul_join = url_lab_subparsers.add_parser("join", help="Join a base URL with paths.")
     parser_ul_join.add_argument("base", help="Base URL.")

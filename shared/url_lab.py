@@ -25,6 +25,13 @@ class UrlLabManager:
     def decode(self, text: str) -> str:
         return urllib.parse.unquote(text)
 
+    def encode_plus(self, text: str) -> str:
+        return urllib.parse.quote_plus(text)
+
+    def decode_plus(self, text: str) -> str:
+        return urllib.parse.unquote_plus(text)
+
+
     def join(self, base: str, paths: List[str]) -> str:
         url = base
         for path in paths:
@@ -103,6 +110,13 @@ def run_url_lab_logic(args):
 
     elif args.action == "decode":
         print(manager.decode(args.text))
+
+    elif args.action == "encode-plus":
+        print(manager.encode_plus(args.text))
+
+    elif args.action == "decode-plus":
+        print(manager.decode_plus(args.text))
+
 
     elif args.action == "join":
         # args.paths is a list

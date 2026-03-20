@@ -1,6 +1,6 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, DataTable, Input, Label, RichLog, TabbedContent, TabPane
+from textual.widgets import Button, DataTable, Input, Label, RichLog, TabbedContent, TabPane, Select
 import json
 
 from shared.url_lab import UrlLabManager
@@ -33,6 +33,7 @@ class UrlLabTab(Container):
                         yield Input(placeholder="Text to encode/decode...", id="url-enc-input")
 
                         with Horizontal():
+                            yield Select.from_values(["Standard (%20)", "Plus (+)"], id="url-enc-mode", value="Standard (%20)")
                             yield Button("Encode", id="btn-url-encode", variant="warning")
                             yield Button("Decode", id="btn-url-decode", variant="success")
 
@@ -102,6 +103,7 @@ class UrlLabTab(Container):
 
     def action_encode(self) -> None:
         text = self.query_one("#url-enc-input", Input).value
+        mode = self.query_one("#url-enc-mode", Select).value
         log = self.query_one("#url-enc-log", RichLog)
         log.clear()
 
@@ -110,13 +112,17 @@ class UrlLabTab(Container):
             return
 
         try:
-            result = self.manager.encode(text)
+            if mode == "Plus (+)":
+                result = self.manager.encode_plus(text)
+            else:
+                result = self.manager.encode(text)
             log.write(result)
         except Exception as e:
             log.write(f"[red]Error: {e}[/red]")
 
     def action_decode(self) -> None:
         text = self.query_one("#url-enc-input", Input).value
+        mode = self.query_one("#url-enc-mode", Select).value
         log = self.query_one("#url-enc-log", RichLog)
         log.clear()
 
@@ -125,7 +131,10 @@ class UrlLabTab(Container):
             return
 
         try:
-            result = self.manager.decode(text)
+            if mode == "Plus (+)":
+                result = self.manager.decode_plus(text)
+            else:
+                result = self.manager.decode(text)
             log.write(result)
         except Exception as e:
             log.write(f"[red]Error: {e}[/red]")

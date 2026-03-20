@@ -29,6 +29,17 @@ class TestUrlLabManager(unittest.TestCase):
         decoded = self.manager.decode(text)
         self.assertEqual(decoded, "hello world/&?")
 
+    def test_encode_plus(self):
+        text = "hello world/&?"
+        encoded = self.manager.encode_plus(text)
+        self.assertEqual(encoded, "hello+world%2F%26%3F")
+
+    def test_decode_plus(self):
+        text = "hello+world%2F%26%3F"
+        decoded = self.manager.decode_plus(text)
+        self.assertEqual(decoded, "hello world/&?")
+
+
     def test_join(self):
         base = "http://example.com/api/"
         paths = ["v1", "users", "123"]
@@ -99,7 +110,9 @@ class TestRunUrlLabLogic(unittest.TestCase):
             pass
 
         # We need to mock AgentTUI before it gets imported and run by main
-        with patch('shared.tui.AgentTUI') as MockAgentTUI:
+        with patch.dict('sys.modules', {'shared.tui': MagicMock(AgentTUI=MagicMock())}):
+            import sys
+            MockAgentTUI = sys.modules['shared.tui'].AgentTUI
             MockAgentTUI.return_value.run_async = mock_run_async
             from main import run_url_lab
             with self.assertRaises(SystemExit) as cm:
@@ -131,6 +144,19 @@ class TestRunUrlLabLogic(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(mock_stdout.getvalue().strip(), "hello%20world")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_encode_plus(self, mock_stdout):
+        args = MagicMock()
+        args.action = "encode-plus"
+        args.text = "hello world"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "hello+world")
+
 
 if __name__ == '__main__':
     unittest.main()

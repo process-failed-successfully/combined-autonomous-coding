@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from textual.widgets import Input, RichLog, DataTable
+from textual.widgets import Input, RichLog, DataTable, Select
 # Import the class under test
 from shared.tui_url import UrlLabTab
 
@@ -54,11 +54,15 @@ class TestUrlLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Inputs
         input_widget = MagicMock(spec=Input)
         input_widget.value = "hello world"
+        select_widget = MagicMock(spec=Select)
+        select_widget.value = "Standard (%20)"
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
             if selector == "#url-enc-input":
                 return input_widget
+            if selector == "#url-enc-mode":
+                return select_widget
             if selector == "#url-enc-log":
                 return log
             return MagicMock()
@@ -78,11 +82,15 @@ class TestUrlLabTab(unittest.IsolatedAsyncioTestCase):
         # Mock Inputs
         input_widget = MagicMock(spec=Input)
         input_widget.value = "hello%20world"
+        select_widget = MagicMock(spec=Select)
+        select_widget.value = "Standard (%20)"
         log = MagicMock(spec=RichLog)
 
         def query_side_effect(selector, type=None):
             if selector == "#url-enc-input":
                 return input_widget
+            if selector == "#url-enc-mode":
+                return select_widget
             if selector == "#url-enc-log":
                 return log
             return MagicMock()
@@ -96,6 +104,63 @@ class TestUrlLabTab(unittest.IsolatedAsyncioTestCase):
 
         # Verify
         self.mock_manager.decode.assert_called_with("hello%20world")
+        log.write.assert_called_with("hello world")
+
+
+    async def test_action_encode_plus(self):
+        # Mock Inputs
+        input_widget = MagicMock(spec=Input)
+        input_widget.value = "hello world"
+        select_widget = MagicMock(spec=Select)
+        select_widget.value = "Plus (+)"
+        log = MagicMock(spec=RichLog)
+
+        def query_side_effect(selector, type=None):
+            if selector == "#url-enc-input":
+                return input_widget
+            if selector == "#url-enc-mode":
+                return select_widget
+            if selector == "#url-enc-log":
+                return log
+            return MagicMock()
+        self.tab.query_one.side_effect = query_side_effect
+
+        # Mock Manager
+        self.mock_manager.encode_plus.return_value = "hello+world"
+
+        # Run
+        self.tab.action_encode()
+
+        # Verify
+        self.mock_manager.encode_plus.assert_called_with("hello world")
+        log.write.assert_called_with("hello+world")
+
+    async def test_action_decode_plus(self):
+        # Mock Inputs
+        input_widget = MagicMock(spec=Input)
+        input_widget.value = "hello+world"
+        select_widget = MagicMock(spec=Select)
+        select_widget.value = "Plus (+)"
+        log = MagicMock(spec=RichLog)
+
+        def query_side_effect(selector, type=None):
+            if selector == "#url-enc-input":
+                return input_widget
+            if selector == "#url-enc-mode":
+                return select_widget
+            if selector == "#url-enc-log":
+                return log
+            return MagicMock()
+        self.tab.query_one.side_effect = query_side_effect
+
+        # Mock Manager
+        self.mock_manager.decode_plus.return_value = "hello world"
+
+        # Run
+        self.tab.action_decode()
+
+        # Verify
+        self.mock_manager.decode_plus.assert_called_with("hello+world")
         log.write.assert_called_with("hello world")
 
     async def test_action_param_add(self):

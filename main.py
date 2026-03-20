@@ -176,6 +176,7 @@ from shared.data_uri_lab import run_data_uri_lab_logic
 from shared.snowflake_lab import run_snowflake_lab_logic
 from shared.brainfuck_lab import run_brainfuck_lab_logic
 from shared.morse_lab import run_morse_lab_logic
+from shared.stego_lab import run_stego_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -340,7 +341,8 @@ KNOWN_COMMANDS = [
     "brainfuck-lab", "brainfuck",
     "vcard-lab", "vcard",
     "curl-lab", "curl",
-    "portscan-lab", "portscan", "pscan"
+    "portscan-lab", "portscan", "pscan",
+    "stego-lab", "stego"
 ]
 
 if FileSystemEventHandler:
@@ -942,6 +944,27 @@ def run_portscan_lab(args):
     import asyncio
     success = asyncio.run(run_portscan_cli_logic(args))
     sys.exit(0 if success else 1)
+
+def run_stego_lab(args):
+    """Runs the Stego Lab utilities."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Stego Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-stego")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.stego_lab import run_stego_lab_logic
+    run_stego_lab_logic(args)
 
 def run_vcard_lab(args):
     """Runs the vCard Lab utilities."""
@@ -17864,6 +17887,23 @@ def parse_args(argv=None):
     iban_parse = iban_subparsers.add_parser("parse", help="Parse an IBAN.")
     iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
 
+    # --- Stego Lab ---
+    parser_stego = subparsers.add_parser(
+        "stego-lab", aliases=["stego"],
+        help="Steganography tools."
+    )
+    stego_subparsers = parser_stego.add_subparsers(dest="action", help="Stego actions")
+
+    parser_stego_hide = stego_subparsers.add_parser("hide", help="Hide message in image")
+    parser_stego_hide.add_argument("input", help="Input image file")
+    parser_stego_hide.add_argument("output", help="Output image file")
+    parser_stego_hide.add_argument("-m", "--message", help="Message to hide. If not provided, reads from stdin.")
+
+    parser_stego_extract = stego_subparsers.add_parser("extract", help="Extract message from image")
+    parser_stego_extract.add_argument("input", help="Input image file")
+
+    stego_subparsers.add_parser("tui", help="Launch the Stego Lab TUI")
+
     # --- PortScan Lab ---
     parser_portscan = subparsers.add_parser(
         "portscan-lab", aliases=["portscan", "pscan"],
@@ -22028,6 +22068,10 @@ async def main():
 
     if args.command in ["portscan-lab", "portscan", "pscan"]:
         run_portscan_lab(args)
+        return
+
+    if args.command in ["stego-lab", "stego"]:
+        run_stego_lab(args)
         return
 
     # Initialize Agent Client

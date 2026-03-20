@@ -254,6 +254,7 @@ from shared.tui_geo import GeoLabTab
 from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
+from shared.tui_stego import StegoLabTab
 from shared.tui_lorem import LoremLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
@@ -4059,6 +4060,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Unicode Lab", "switch_tab_uni"),
         PaletteCommand("Go to vCard Lab", "switch_tab_vcard"),
         PaletteCommand("Go to cURL Lab", "switch_tab_curl"),
+        PaletteCommand("Go to Stego Lab", "switch_tab_stego"),
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4587,6 +4589,8 @@ class AgentTUI(App):
                 yield BrainfuckLabTab()
             with TabPane("OCR Lab", id="tab-ocr"):
                 yield OcrLabTab(project_dir=self.project_dir)
+            with TabPane("Stego Lab", id="tab-stego"):
+                yield StegoLabTab(self.project_dir)
             with TabPane("Morse Lab", id="tab-morse"):
                 yield MorseLabTab(self.project_dir)
             with TabPane("HAR Lab", id="tab-har"):

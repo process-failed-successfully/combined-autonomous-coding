@@ -174,6 +174,44 @@ class ApiLabManager:
                 'success': False
             }
 
+    def generate_code_snippet(self, method: str, url: str, body: str, language: str) -> str:
+        """
+        Generates a code snippet for the specified language.
+        """
+        method = method.upper()
+        body_str = body.strip() if body else ""
+
+        if language == "Python (requests)":
+            code = f"import requests\nimport json\n\nurl = \"{url}\"\n"
+            if body_str:
+                # Wrap the body in a raw string and use json.loads to safely parse it
+                # This prevents issues with unquoted JSON booleans/nulls directly in Python
+                code += f"payload = json.loads(r\"\"\"{body_str}\"\"\")\n"
+                code += f"headers = {{'Content-Type': 'application/json'}}\n"
+                code += f"response = requests.request(\"{method}\", url, json=payload, headers=headers)\n"
+            else:
+                code += f"response = requests.request(\"{method}\", url)\n"
+            code += "\nprint(response.text)"
+            return code
+
+        elif language == "Node.js (fetch)":
+            code = f"const url = \"{url}\";\n"
+            code += f"const options = {{\n  method: \"{method}\",\n"
+            if body_str:
+                code += f"  headers: {{ 'Content-Type': 'application/json' }},\n"
+                code += f"  body: JSON.stringify({body_str})\n"
+            code += "};\n\n"
+            code += "fetch(url, options)\n  .then(res => res.text())\n  .then(console.log)\n  .catch(console.error);"
+            return code
+
+        elif language == "cURL":
+            code = f"curl -X {method} \"{url}\""
+            if body_str:
+                code += f" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{body_str}'"
+            return code
+
+        return f"// Language {language} not supported"
+
 def run_api_lab_cli(args):
     """
     CLI entry point for API Lab.

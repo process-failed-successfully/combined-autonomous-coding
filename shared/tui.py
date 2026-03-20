@@ -2143,6 +2143,13 @@ class ApiLabTab(Container):
                         yield Label("[bold]Response[/bold]")
                         yield RichLog(id="api-response-log", wrap=True, highlight=True, markup=True)
 
+                    with TabPane("Code Gen"):
+                        yield Label("[bold]Generate Code Snippets[/bold]", classes="welcome-text")
+                        with Horizontal(classes="stat-box"):
+                            yield Select.from_values(["Python (requests)", "Node.js (fetch)", "cURL"], id="api-codegen-lang", value="Python (requests)")
+                            yield Button("Generate", id="btn-api-codegen", variant="primary")
+                        yield TextArea(id="api-codegen-output", language="python", read_only=True)
+
                     with TabPane("Fuzzer"):
                         yield Label("[bold]Interactive API Fuzzer[/bold]", classes="welcome-text")
                         with Container(classes="stat-box"):
@@ -2192,6 +2199,31 @@ class ApiLabTab(Container):
             await self.run_fuzzer()
         elif event.button.id == "btn-api-load-start":
             await self.run_load_test()
+        elif event.button.id == "btn-api-codegen":
+            self.generate_code_snippet()
+
+    def generate_code_snippet(self) -> None:
+        method = self.query_one("#api-method", Select).value
+        url = self.query_one("#api-url", Input).value
+        body = self.query_one("#api-body", Input).value
+        lang = self.query_one("#api-codegen-lang", Select).value
+        output = self.query_one("#api-codegen-output", TextArea)
+
+        if not url:
+            self.notify("URL required to generate code.", severity="error")
+            return
+
+        code = self.manager.generate_code_snippet(method, url, body, lang)
+
+        if lang == "Python (requests)":
+            output.language = "python"
+        elif lang == "Node.js (fetch)":
+            output.language = "javascript"
+        elif lang == "cURL":
+            output.language = "bash"
+
+        output.text = code
+        self.notify("Code snippet generated.")
 
     def load_spec(self, force_reload: bool = False) -> None:
         if not self.manager.spec_data or force_reload:

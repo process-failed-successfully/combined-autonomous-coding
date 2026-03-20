@@ -299,6 +299,7 @@ KNOWN_COMMANDS = [
     "js-lab", "js",
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
+    "stego-lab", "stego",
     "base58-lab", "base58", "b58",
     "base62-lab", "base62", "b62",
     "base91-lab", "base91", "b91",
@@ -512,6 +513,28 @@ def run_base32_lab(args):
 
     from shared.base32_lab import run_base32_lab_logic
     success = run_base32_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_stego_lab(args):
+    """Runs the Stego Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Stego Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-stego")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.stego_lab import run_stego_lab_logic
+    success = run_stego_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base36_lab(args):
@@ -15546,6 +15569,16 @@ def parse_args(argv=None):
     parser_b16.add_argument("--decode", type=str, help="Base16 string to decode")
     parser_b16.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base16 Lab")
 
+    # stego-lab
+    parser_stego = subparsers.add_parser(
+        "stego-lab", aliases=["stego"],
+        help="Steganography Lab: Hide and extract text in images (LSB)."
+    )
+    parser_stego.add_argument("action", choices=["hide", "extract", "tui"], help="Action to perform.")
+    parser_stego.add_argument("--image", help="Path to the image file.")
+    parser_stego.add_argument("--text", help="Text to hide.")
+    parser_stego.add_argument("--output", help="Path to save the output image.")
+
     # base32-lab
     parser_b32 = subparsers.add_parser(
         "base32-lab", aliases=["base32", "b32"],
@@ -21753,6 +21786,10 @@ async def main():
         return
     if args.command in ["base32-lab", "base32", "b32"]:
         run_base32_lab(args)
+        return
+
+    if args.command in ["stego-lab", "stego"]:
+        run_stego_lab(args)
         return
 
     if args.command in ["base36-lab", "base36", "b36"]:

@@ -170,6 +170,7 @@ from shared.tui_base58 import Base58LabTab
 from shared.tui_base36 import Base36LabTab
 from shared.tui_base32 import Base32LabTab
 from shared.tui_base16 import Base16LabTab
+from shared.tui_stego import StegoLabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
@@ -4037,6 +4038,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Dictionary Lab", "switch_tab_dict"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
+        PaletteCommand("Go to Stego Lab", "switch_tab_stego"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
@@ -4432,6 +4434,8 @@ class AgentTUI(App):
                 yield Base91LabTab()
             with TabPane("Base36 Lab", id="tab-base36"):
                 yield Base36LabTab()
+            with TabPane("Stego Lab", id="tab-stego"):
+                yield StegoLabTab()
             with TabPane("Base16 Lab", id="tab-base16"):
                 yield Base16LabTab()
             with TabPane("Base64 Lab", id="tab-base64"):

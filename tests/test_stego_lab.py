@@ -28,7 +28,8 @@ def temp_image():
     fd, path = tempfile.mkstemp(suffix=".png")
     os.close(fd)
 
-    img = Image.new('RGB', (300, 300), color='white')
+    # Need a slightly larger image to hold the huge message test reliably.
+    img = Image.new('RGB', (400, 400), color='white')
     img.save(path)
 
     yield path
@@ -64,9 +65,9 @@ def test_stego_manager_hide_extract(temp_image, temp_output):
 @pytest.mark.skipif(not HAS_PILLOW, reason="Pillow is required for Stego Lab tests.")
 def test_stego_manager_message_too_large(temp_image, temp_output):
     manager = StegoManager()
-    # Image is 300x300 = 90000 pixels. Each pixel has 3 LSBs = 270000 bits capacity.
-    # Max size = ~33750 characters.
-    huge_message = "A" * 35000
+    # Image is 400x400 = 160000 pixels. Each pixel has 3 LSBs = 480000 bits capacity.
+    # Max size = ~60000 characters.
+    huge_message = "A" * 65000
 
     with pytest.raises(ValueError, match="Message is too large to fit in this image"):
         manager.hide(temp_image, huge_message, temp_output)

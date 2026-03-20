@@ -21,7 +21,11 @@ class StegoManager:
         import warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
-            return list(img.getdata())
+            data = list(img.getdata())
+            # On certain older Python/Pillow combinations, list(img.getdata()) may return empty.
+            if not data and img.width > 0 and img.height > 0:
+                data = [img.getpixel((x, y)) for y in range(img.height) for x in range(img.width)]
+            return data
 
     def hide(self, image_path: str, secret_message: str, output_path: str) -> bool:
         """Hides a secret message in an image using LSB steganography."""

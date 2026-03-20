@@ -1,9 +1,10 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Header, Footer, Input, Button, Static, Label, TextArea
+from textual.widgets import Button, Label, TextArea
 from textual.binding import Binding
 
 from shared.html2md_lab import Html2MdManager
+
 
 class Html2MdTab(Container):
     """TUI Tab for Html2Md Lab."""

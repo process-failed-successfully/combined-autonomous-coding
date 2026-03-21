@@ -343,7 +343,7 @@ KNOWN_COMMANDS = [
     "vcard-lab", "vcard",
     "curl-lab", "curl",
     "portscan-lab", "portscan", "pscan",
-    "stego-lab", "stego"
+    "stego-lab", "stego", "rot13-lab", "rot13"
 ]
 
 if FileSystemEventHandler:
@@ -357,6 +357,29 @@ if FileSystemEventHandler:
                 return
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
+
+def run_rot13_lab(args):
+    """Runs the ROT13 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching ROT13 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-rot13")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.rot13_lab import run_rot13_lab_logic
+    success = run_rot13_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
@@ -15752,6 +15775,14 @@ def parse_args(argv=None):
     nato_group.add_argument("--decode", "-d", type=str, help="Phonetic text to decode.")
     nato_group.add_argument("--tui", action="store_true", help="Launch interactive TUI for NATO Lab.")
 
+    # rot13-lab
+    parser_rot13 = subparsers.add_parser(
+        "rot13-lab", aliases=["rot13"],
+        help="ROT13 Lab"
+    )
+    parser_rot13.add_argument("text", nargs="?", help="Text to process")
+    parser_rot13.add_argument("--tui", action="store_true", help="Launch ROT13 Lab TUI")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -21936,6 +21967,10 @@ async def main():
     if args.command in ["nato-lab", "nato"]:
         run_nato_lab(args)
         return
+    if args.command in ["rot13-lab", "rot13"]:
+        run_rot13_lab(args)
+        return
+
     if args.command in ["base64-lab", "base64", "b64"]:
         run_base64_lab(args)
         return

@@ -306,6 +306,7 @@ KNOWN_COMMANDS = [
     "base91-lab", "base91", "b91",
     "base64-lab", "base64", "b64",
     "base64url-lab", "base64url", "b64url",
+    "zlib-lab", "zlib", "compress", "inflate",
     "base85-lab", "base85", "b85",
     "a85-lab", "a85", "ascii85",
     "matrix-lab", "matrix",
@@ -691,6 +692,28 @@ def run_base64_lab(args):
 
     from shared.base64_lab import run_base64_lab_logic
     success = run_base64_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_zlib_lab(args):
+    """Runs the Zlib Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Zlib Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-zlib")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.zlib_lab import run_zlib_lab_logic
+    success = run_zlib_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base64url_lab(args):
@@ -15793,6 +15816,18 @@ def parse_args(argv=None):
     b64_group.add_argument("--decode", "-d", type=str, help="Base64 text to decode.")
     b64_group.add_argument("--tui", action="store_true", help="Launch the interactive Base64 Lab TUI.")
 
+    # zlib-lab
+    parser_zlib = subparsers.add_parser(
+        "zlib-lab", aliases=["zlib", "compress", "inflate"],
+        help="Compress and decompress data using zlib, deflate, or gzip."
+    )
+    zlib_group = parser_zlib.add_mutually_exclusive_group(required=False)
+    zlib_group.add_argument("--compress", "-c", type=str, help="Text to compress.")
+    zlib_group.add_argument("--decompress", "-d", type=str, help="Data to decompress.")
+    zlib_group.add_argument("--tui", action="store_true", help="Launch the interactive Zlib Lab TUI.")
+    parser_zlib.add_argument("--format", "-f", choices=["zlib", "deflate", "gzip"], default="zlib", help="Compression format (default: zlib).")
+    parser_zlib.add_argument("--base64", "-b", action="store_true", help="Use base64 instead of hex for outputting/reading compressed data.")
+
     parser_b64url = subparsers.add_parser(
         "base64url-lab", aliases=["base64url", "b64url"],
         help="Base64URL encode and decode strings."
@@ -21973,6 +22008,10 @@ async def main():
 
     if args.command in ["base64-lab", "base64", "b64"]:
         run_base64_lab(args)
+        return
+
+    if args.command in ["zlib-lab", "zlib", "compress", "inflate"]:
+        run_zlib_lab(args)
         return
 
     if args.command in ["base64url-lab", "base64url", "b64url"]:

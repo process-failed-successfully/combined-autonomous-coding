@@ -104,6 +104,7 @@ from shared.tui_net_diag import NetDiagTab
 from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_mac import MacLabTab
+from shared.tui_size import SizeLabTab
 from shared.tui_typegen import TypegenLabTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
@@ -4069,7 +4070,10 @@ class AgentTUI(App):
         PaletteCommand("Go to vCard Lab", "switch_tab_vcard"),
         PaletteCommand("Go to cURL Lab", "switch_tab_curl"),
         PaletteCommand("Go to Stego Lab", "switch_tab_stego"),
+
         PaletteCommand("Go to CSV to MD Lab", "switch_tab_csv2md"),
+        PaletteCommand("Go to Size Lab", "switch_tab_size"),
+
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
         PaletteCommand("Run Lint", "run_lint"),
@@ -4602,8 +4606,12 @@ class AgentTUI(App):
                 yield IbanLabTab()
             with TabPane("Case Lab", id="tab-case"):
                 yield CaseLabTab()
+
             with TabPane("Typegen Lab", id="tab-typegen"):
                 yield TypegenLabTab()
+            with TabPane("Size Lab", id="tab-size"):
+                yield SizeLabTab()
+
             with TabPane("Unicode Lab", id="tab-uni"):
                 yield UniLabTab()
             with TabPane("Data URI Lab", id="tab-data-uri"):

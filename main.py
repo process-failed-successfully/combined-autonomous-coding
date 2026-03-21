@@ -346,7 +346,7 @@ KNOWN_COMMANDS = [
     "vcard-lab", "vcard",
     "curl-lab", "curl",
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
-    "stego-lab", "stego", "rot13-lab", "rot13"
+    "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size"
 ]
 
 if FileSystemEventHandler:
@@ -1025,6 +1025,30 @@ def run_portscan_lab(args):
     from shared.portscan_lab import run_portscan_cli_logic
     import asyncio
     success = asyncio.run(run_portscan_cli_logic(args))
+    sys.exit(0 if success else 1)
+
+
+def run_size_lab(args):
+    """Runs the Size Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Size Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-size")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.size_lab import run_size_lab_logic
+    success = run_size_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_stego_lab(args):
@@ -18059,6 +18083,23 @@ def parse_args(argv=None):
     typegen_subparsers.add_parser("tui", help="Launch the Typegen Lab TUI")
 
     # --- Stego Lab ---
+
+    parser_size = subparsers.add_parser(
+        "size-lab", aliases=["size"],
+        help="Format byte sizes into human readable strings and vice versa."
+    )
+    size_subparsers = parser_size.add_subparsers(dest="action")
+    parser_size.add_argument("--tui", action="store_true", help="Launch the Size Lab TUI")
+
+    size_tui = size_subparsers.add_parser("tui", help="Launch the interactive Size Lab TUI.")
+
+    size_parse = size_subparsers.add_parser("parse", help="Parse human readable string to bytes")
+    size_parse.add_argument("size", type=str, help="Size string (e.g. '1.5 GB')")
+
+    size_format = size_subparsers.add_parser("format", help="Format bytes to human readable string")
+    size_format.add_argument("bytes", type=int, help="Bytes value to format")
+    size_format.add_argument("--si", action="store_true", help="Use SI decimal units instead of IEC binary units")
+
     parser_stego = subparsers.add_parser(
         "stego-lab", aliases=["stego"],
         help="Steganography tools."
@@ -22284,6 +22325,11 @@ async def main():
             return
 
         run_typegen_lab_logic(args)
+        return
+
+
+    if args.command in ["size-lab", "size"]:
+        run_size_lab(args)
         return
 
     if args.command in ["stego-lab", "stego"]:

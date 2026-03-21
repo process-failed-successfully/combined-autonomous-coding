@@ -35,6 +35,28 @@ class TestImageLabTab(unittest.IsolatedAsyncioTestCase):
         table.clear.assert_called()
         table.add_row.assert_any_call("format", "PNG")
 
+    def test_load_exif(self):
+        path = Path("test.jpg")
+        self.tab.manager.read_exif.return_value = {"Orientation": 1, "Model": "TestCamera"}
+
+        self.tab.load_exif(path)
+
+        self.tab.manager.read_exif.assert_called_with(path)
+        # Check table population
+        table = self.tab.query_one("#img-exif-table")
+        table.clear.assert_called()
+        table.add_row.assert_any_call("Model", "TestCamera")
+
+    async def test_run_remove_exif(self):
+        self.tab.selected_file = Path("test.jpg")
+        self.tab.query_one("#img-exif-out").value = "no_exif.jpg"
+
+        await self.tab.run_remove_exif()
+
+        expected_out = Path("test.jpg").parent / "no_exif.jpg"
+        self.tab.manager.remove_exif.assert_called_with(Path("test.jpg"), expected_out)
+        self.tab.notify.assert_called()
+
     async def test_run_convert(self):
         self.tab.selected_file = Path("test.png")
         self.tab.query_one("#img-conv-format").value = "JPEG"

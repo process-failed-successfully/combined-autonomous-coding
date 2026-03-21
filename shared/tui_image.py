@@ -99,10 +99,21 @@ class ImageLabTab(Container):
                         yield Button("Reveal Message", id="btn-img-reveal", variant="success")
                         yield RichLog(id="img-stego-log", wrap=True, highlight=True, markup=True)
 
+                    with TabPane("EXIF"):
+                        yield DataTable(id="img-exif-table")
+                        yield Button("Refresh EXIF", id="btn-img-exif-refresh", variant="default")
+                        yield Label("Output Filename (for EXIF removal):")
+                        yield Input(placeholder="no_exif.jpg", id="img-exif-out")
+                        yield Button("Remove EXIF", id="btn-img-exif-remove", variant="error")
+
     def on_mount(self) -> None:
         table = self.query_one("#img-info-table", DataTable)
         table.cursor_type = "row"
         table.add_columns("Property", "Value")
+
+        exif_table = self.query_one("#img-exif-table", DataTable)
+        exif_table.cursor_type = "row"
+        exif_table.add_columns("Tag", "Value")
 
     @on(DirectoryTree.FileSelected, "#img-tree")
     def on_file_selected(self, event: DirectoryTree.FileSelected) -> None:
@@ -111,6 +122,7 @@ class ImageLabTab(Container):
             self.selected_file = path
             self.load_preview(path)
             self.load_info(path)
+            self.load_exif(path)
             # Reset logs
             self.query_one("#img-stego-log", RichLog).clear()
 
@@ -134,6 +146,26 @@ class ImageLabTab(Container):
         except Exception as e:
             self.notify(f"Error loading info: {e}", severity="error")
 
+    def load_exif(self, path: Path) -> None:
+        table = self.query_one("#img-exif-table", DataTable)
+        table.clear()
+
+        try:
+            exif_data = self.manager.read_exif(path)
+            if not exif_data:
+                table.add_row("Status", "No EXIF data found.")
+            else:
+                for key, value in exif_data.items():
+                    if isinstance(value, bytes) and len(value) > 50:
+                        val_str = f"<{len(value)} bytes>"
+                    elif isinstance(value, tuple) and len(value) > 10:
+                        val_str = f"<{len(value)} items>"
+                    else:
+                        val_str = str(value)
+                    table.add_row(str(key), val_str)
+        except Exception as e:
+            self.notify(f"Error loading EXIF: {e}", severity="error")
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if not self.selected_file:
             self.notify("No image selected.", severity="warning")
@@ -153,6 +185,12 @@ class ImageLabTab(Container):
 
         elif event.button.id == "btn-img-reveal":
             await self.run_reveal()
+
+        elif event.button.id == "btn-img-exif-refresh":
+            self.load_exif(self.selected_file)
+
+        elif event.button.id == "btn-img-exif-remove":
+            await self.run_remove_exif()
 
     async def run_convert(self) -> None:
         fmt = self.query_one("#img-conv-format", Select).value
@@ -224,3 +262,17 @@ class ImageLabTab(Container):
                 log.write("[yellow]No message found.[/yellow]")
         except Exception as e:
             log.write(f"[red]Error: {e}[/red]")
+
+    async def run_remove_exif(self) -> None:
+        out_name = self.query_one("#img-exif-out", Input).value
+        if not out_name:
+            out_name = f"{self.selected_file.stem}_noexif{self.selected_file.suffix}"
+
+        output_path = self.selected_file.parent / out_name
+
+        try:
+            self.manager.remove_exif(self.selected_file, output_path)
+            self.notify(f"Image without EXIF saved to {output_path.name}")
+            self.query_one("#img-tree", DirectoryTree).reload()
+        except Exception as e:
+            self.notify(f"EXIF removal failed: {e}", severity="error")

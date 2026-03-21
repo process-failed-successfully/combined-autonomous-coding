@@ -177,6 +177,7 @@ from shared.snowflake_lab import run_snowflake_lab_logic
 from shared.brainfuck_lab import run_brainfuck_lab_logic
 from shared.morse_lab import run_morse_lab_logic
 from shared.stego_lab import run_stego_lab_logic
+from shared.typegen_lab import run_typegen_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -343,7 +344,7 @@ KNOWN_COMMANDS = [
     "brainfuck-lab", "brainfuck",
     "vcard-lab", "vcard",
     "curl-lab", "curl",
-    "portscan-lab", "portscan", "pscan",
+    "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
     "stego-lab", "stego", "rot13-lab", "rot13"
 ]
 
@@ -17988,6 +17989,22 @@ def parse_args(argv=None):
     iban_parse = iban_subparsers.add_parser("parse", help="Parse an IBAN.")
     iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
 
+    # --- Typegen Lab ---
+    parser_typegen = subparsers.add_parser(
+        "typegen-lab", aliases=["typegen"],
+        help="Generate type definitions from JSON."
+    )
+    typegen_subparsers = parser_typegen.add_subparsers(dest="action", help="Typegen actions")
+
+    typegen_generate = typegen_subparsers.add_parser("generate", help="Generate types from JSON")
+    typegen_generate.add_argument("--json", help="JSON string to convert")
+    typegen_generate.add_argument("--file", "-f", help="Path to JSON file")
+    typegen_generate.add_argument("--lang", "-l", choices=["typescript", "go", "python", "rust"], default="typescript", help="Target language")
+    typegen_generate.add_argument("--name", "-n", default="Root", help="Name of the root struct/interface")
+    typegen_generate.add_argument("--output", "-o", help="File to write generated types to")
+
+    typegen_subparsers.add_parser("tui", help="Launch the Typegen Lab TUI")
+
     # --- Stego Lab ---
     parser_stego = subparsers.add_parser(
         "stego-lab", aliases=["stego"],
@@ -22186,6 +22203,26 @@ async def main():
 
     if args.command in ["portscan-lab", "portscan", "pscan"]:
         run_portscan_lab(args)
+        return
+
+    if args.command in ["typegen-lab", "typegen"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Typegen Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-typegen")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        run_typegen_lab_logic(args)
         return
 
     if args.command in ["stego-lab", "stego"]:

@@ -104,6 +104,7 @@ from shared.tui_net_diag import NetDiagTab
 from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_mac import MacLabTab
+from shared.tui_typegen import TypegenLabTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_issues import IssuesLabTab
@@ -4593,6 +4594,8 @@ class AgentTUI(App):
                 yield IbanLabTab()
             with TabPane("Case Lab", id="tab-case"):
                 yield CaseLabTab()
+            with TabPane("Typegen Lab", id="tab-typegen"):
+                yield TypegenLabTab()
             with TabPane("Unicode Lab", id="tab-uni"):
                 yield UniLabTab()
             with TabPane("Data URI Lab", id="tab-data-uri"):

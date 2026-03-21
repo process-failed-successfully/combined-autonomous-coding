@@ -224,7 +224,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -14362,6 +14362,18 @@ def parse_args(argv=None):
     parser_csv2json.add_argument("--output", "-o", help="Output file path.")
     parser_csv2json.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
 
+    # --- New 'csv2md-lab' command ---
+    parser_csv2md = subparsers.add_parser(
+        "csv2md-lab",
+        aliases=["csv2md"],
+        help="CSV to Markdown table converter."
+    )
+    parser_csv2md.add_argument("--file", "-f", help="Input CSV file.")
+    parser_csv2md.add_argument("--text", "-t", help="Input CSV text.")
+    parser_csv2md.add_argument("--output", "-o", help="Output file path.")
+    parser_csv2md.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_csv2md.add_argument("--tui", action="store_true", help="Launch the CSV to Markdown TUI.")
+
     # --- New 'csv-lab' command ---
     parser_csv = subparsers.add_parser(
         "csv-lab",
@@ -21743,6 +21755,11 @@ async def main():
     if args.command in ["csv2json-lab", "c2j"]:
         from shared.csv2json_lab import run_csv2json_lab_logic
         run_csv2json_lab_logic(args)
+        return
+
+    if args.command in ["csv2md-lab", "csv2md"]:
+        from shared.csv2md_lab import run_csv2md_lab_logic
+        run_csv2md_lab_logic(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

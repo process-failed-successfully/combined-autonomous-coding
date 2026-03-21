@@ -305,6 +305,7 @@ KNOWN_COMMANDS = [
     "base45-lab", "base45", "b45",
     "base62-lab", "base62", "b62",
     "base91-lab", "base91", "b91",
+    "punycode-lab", "punycode", "idn",
     "base64-lab", "base64", "b64",
     "base64url-lab", "base64url", "b64url",
     "zlib-lab", "zlib", "compress", "inflate",
@@ -597,6 +598,26 @@ def run_base62_lab(args):
 
     from shared.base62_lab import run_base62_lab_logic
     success = run_base62_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_punycode_lab(args):
+    """Runs the Punycode Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        import asyncio
+        print("Launching Punycode Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-punycode")
+        if getattr(args, '_in_event_loop', False):
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.punycode_lab import run_punycode_lab_logic
+    success = run_punycode_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -15781,6 +15802,16 @@ def parse_args(argv=None):
     b62_group.add_argument("--decode", "-d", type=str, help="Base62 text to decode.")
     parser_b62.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base62 Lab.")
 
+    # punycode-lab
+    punycode_parser = subparsers.add_parser(
+        "punycode-lab", aliases=["punycode", "idn"],
+        help="Encode and decode Punycode (IDNA) for internationalized domain names."
+    )
+    punycode_group = punycode_parser.add_mutually_exclusive_group(required=False)
+    punycode_group.add_argument("--encode", "-e", type=str, help="Domain name to encode to Punycode.")
+    punycode_group.add_argument("--decode", "-d", type=str, help="Punycode domain name to decode.")
+    punycode_parser.add_argument("--tui", help="Launch interactive TUI", action="store_true")
+
     # base91-lab
     parser_b91 = subparsers.add_parser(
         "base91-lab", aliases=["base91", "b91"],
@@ -22040,6 +22071,10 @@ async def main():
 
     if args.command in ["base91-lab", "base91", "b91"]:
         run_base91_lab(args)
+        return
+
+    if args.command in ["punycode-lab", "punycode", "idn"]:
+        run_punycode_lab(args)
         return
 
     if args.command in ["nato-lab", "nato"]:

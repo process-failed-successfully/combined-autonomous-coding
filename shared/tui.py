@@ -270,6 +270,7 @@ from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
 from shared.tui_html2md import Html2MdTab
 from shared.tui_md2html import Md2HtmlTab
+from shared.tui_punycode import PunycodeLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4051,6 +4052,7 @@ class AgentTUI(App):
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
+        PaletteCommand("Go to Punycode Lab", "switch_tab_punycode"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Go to Markdown Lab", "switch_tab_markdown"),
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
@@ -4547,6 +4549,8 @@ class AgentTUI(App):
                 yield HtmlEntityTab()
             with TabPane("MD2HTML Lab", id="tab-md2html"):
                 yield Md2HtmlTab()
+            with TabPane("Punycode Lab", id="tab-punycode"):
+                yield PunycodeLabTab()
 
             with TabPane("HTML Lab", id="tab-html"):
                 yield HtmlLabTab(self.project_dir)

@@ -2123,6 +2123,9 @@ def run_terraform_lab(args):
 
 def run_dns_lab(args):
     """Runs the DNS Lab."""
+    if args.action == "tui":
+        run_tui(args, start_tab="tab-dns")
+        return
     run_dns_lab_logic(args)
     sys.exit(0)
 
@@ -16581,6 +16584,9 @@ def parse_args(argv=None):
     parser_dns_prop = dns_subparsers.add_parser("propagation", help="Check DNS propagation.")
     parser_dns_prop.add_argument("domain", help="Domain to check.")
     parser_dns_prop.add_argument("--type", "-t", default="A", help="Record type.")
+
+    # dns-lab tui
+    parser_dns_tui = dns_subparsers.add_parser("tui", help="Launch interactive TUI for DNS Lab.")
 
     # --- New 'whois-lab' command ---
     parser_whois = subparsers.add_parser(

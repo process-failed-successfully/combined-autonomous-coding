@@ -303,6 +303,7 @@ KNOWN_COMMANDS = [
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
     "base45-lab", "base45", "b45",
+    "punycode-lab", "punycode", "idn",
     "base62-lab", "base62", "b62",
     "base91-lab", "base91", "b91",
     "base64-lab", "base64", "b64",
@@ -571,6 +572,29 @@ def run_base58_lab(args):
 
     from shared.base58_lab import run_base58_lab_logic
     success = run_base58_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_punycode_lab(args):
+    """Runs the Punycode Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Punycode Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-punycode")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.punycode_lab import run_punycode_lab_logic
+    success = run_punycode_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base45_lab(args):
@@ -15762,6 +15786,16 @@ def parse_args(argv=None):
     b58_group.add_argument("--decode", "-d", type=str, help="Base58 text to decode.")
     parser_b58.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base58 Lab.")
 
+
+    # punycode-lab
+    punycode_parser = subparsers.add_parser(
+        "punycode-lab", aliases=["punycode", "idn"],
+        help="Encode/Decode Punycode domains"
+    )
+    punycode_parser.add_argument("--encode", help="Domain to encode", type=str)
+    punycode_parser.add_argument("--decode", help="Punycode to decode", type=str)
+    punycode_parser.add_argument("--tui", help="Launch interactive TUI", action="store_true")
+
     # base45-lab
     base45_parser = subparsers.add_parser(
         "base45-lab", aliases=["base45", "b45"],
@@ -22028,6 +22062,11 @@ async def main():
         return
     if args.command in ["base85-lab", "base85", "b85"]:
         run_base85_lab(args)
+        return
+
+
+    if args.command in ["punycode-lab", "punycode", "idn"]:
+        run_punycode_lab(args)
         return
 
     if args.command in ["base45-lab", "base45", "b45"]:

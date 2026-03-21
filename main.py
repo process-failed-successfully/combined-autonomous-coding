@@ -221,7 +221,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "html2md-lab", "html2md", "md2html-lab", "md2html", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -2391,6 +2391,11 @@ def run_markdown_lab(args):
     from shared.markdown_lab import run_markdown_lab_logic
     success = run_markdown_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_html_entity_lab(args):
+    """Runs the HTML Entity Lab."""
+    from shared.html_entity_lab import run_html_entity_lab_logic
+    run_html_entity_lab_logic(args)
 
 def run_html_lab(args):
     """Runs the HTML Lab."""
@@ -13790,6 +13795,23 @@ def parse_args(argv=None):
 
     text_lab_subparsers.add_parser("tui", help="Launch the Text Lab TUI.")
 
+    # --- New 'html-entity-lab' command ---
+    parser_html_entity = subparsers.add_parser(
+        "html-entity-lab",
+        aliases=["entity-lab", "entity", "html-entity"],
+        help="Encode and decode HTML entities."
+    )
+    html_entity_subparsers = parser_html_entity.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+    html_entity_subparsers.add_parser("tui", help="Launch the HTML Entity Lab TUI.")
+    parser_he_encode = html_entity_subparsers.add_parser("encode", help="Encode text to HTML entities.")
+    parser_he_encode.add_argument("text", nargs="?", help="Text to encode.")
+    parser_he_decode = html_entity_subparsers.add_parser("decode", help="Decode HTML entities back to characters.")
+    parser_he_decode.add_argument("text", nargs="?", help="Text to decode.")
+
     # --- New 'html-lab' command ---
     parser_html = subparsers.add_parser(
         "html-lab",
@@ -21726,6 +21748,10 @@ async def main():
 
     if args.command in ["text-lab", "txt"]:
         run_text_lab(args)
+        return
+
+    if args.command in ["html-entity-lab", "entity-lab", "entity", "html-entity"]:
+        run_html_entity_lab(args)
         return
 
     if args.command in ["html-lab", "html"]:

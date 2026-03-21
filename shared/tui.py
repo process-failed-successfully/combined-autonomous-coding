@@ -170,6 +170,7 @@ from shared.tui_zlib import ZlibTab
 from shared.tui_base91 import Base91LabTab
 from shared.tui_base64 import Base64LabTab
 from shared.tui_rot13 import Rot13LabTab
+from shared.tui_html_entity import HtmlEntityTab
 from shared.tui_base64url import Base64UrlLabTab
 from shared.tui_base58 import Base58LabTab
 from shared.tui_base36 import Base36LabTab
@@ -4541,6 +4542,9 @@ class AgentTUI(App):
                 yield DiagramLabTab(self.project_dir)
             with TabPane("HTML2MD Lab", id="tab-html2md"):
                 yield Html2MdTab()
+
+            with TabPane("HTML Entity Lab", id="tab-html-entity"):
+                yield HtmlEntityTab()
             with TabPane("MD2HTML Lab", id="tab-md2html"):
                 yield Md2HtmlTab()
 

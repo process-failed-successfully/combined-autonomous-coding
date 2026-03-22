@@ -87,5 +87,19 @@ class TestInteractiveShell(unittest.TestCase):
         self.shell.onecmd("diff_summary")
         mock_main._run_diff_summary_logic.assert_called_once_with(project_dir='.')
 
+    @patch('subprocess.run')
+    def test_default_command(self, mock_run):
+        """Test that unrecognized commands are passed to the system shell."""
+        self.shell.onecmd("ls -la")
+        mock_run.assert_called_once_with("ls -la", shell=True, check=False)
+
+    @patch('subprocess.run')
+    def test_default_command_exception(self, mock_run):
+        """Test that exceptions from subprocess.run are caught and printed."""
+        mock_run.side_effect = Exception("Test exception")
+        self.shell.onecmd("failing_command")
+        self.assertIn("Error executing command: Test exception", self.mock_stdout.getvalue())
+
+
 if __name__ == '__main__':
     unittest.main()

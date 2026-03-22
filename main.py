@@ -221,7 +221,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -2276,6 +2276,16 @@ def run_media_lab(args):
     """Runs the Media Lab."""
     run_media_lab_logic(args)
     sys.exit(0)
+
+
+def run_sqlite_lab(args):
+    """Runs the SQLite Lab."""
+    if args.action == "tui":
+        run_tui(args, start_tab="tab-sqlite")
+        return
+    from shared.sqlite_lab import run_sqlite_lab_logic
+    success = run_sqlite_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_jwt_lab(args):
     """Runs the JWT Lab."""
@@ -13449,6 +13459,33 @@ def parse_args(argv=None):
     parser_cl_subnet.add_argument("cidr", help="Base CIDR.")
     parser_cl_subnet.add_argument("new_prefix", type=int, help="New prefix length.")
 
+
+    # --- New 'sqlite-lab' command ---
+    parser_sqlite = subparsers.add_parser(
+        "sqlite-lab",
+        aliases=["sqlite"],
+        help="SQLite Database Lab."
+    )
+    sqlite_subparsers = parser_sqlite.add_subparsers(dest="action", required=True)
+
+    # query
+    parser_sqlite_query = sqlite_subparsers.add_parser("query", help="Execute a SQL query.")
+    parser_sqlite_query.add_argument("query", help="The SQL query to execute.")
+    parser_sqlite_query.add_argument("--db", default=":memory:", help="Database file path (default: :memory:).")
+    parser_sqlite_query.add_argument("--format", choices=["json", "csv"], default="json", help="Output format.")
+
+    # tables
+    parser_sqlite_tables = sqlite_subparsers.add_parser("tables", help="List all tables.")
+    parser_sqlite_tables.add_argument("--db", default=":memory:", help="Database file path (default: :memory:).")
+
+    # schema
+    parser_sqlite_schema = sqlite_subparsers.add_parser("schema", help="Show database schema.")
+    parser_sqlite_schema.add_argument("--table", help="Optional table name to filter schema.")
+    parser_sqlite_schema.add_argument("--db", default=":memory:", help="Database file path (default: :memory:).")
+
+    # tui
+    sqlite_subparsers.add_parser("tui", help="Launch interactive TUI for SQLite Lab.")
+
     # --- New 'jwt-lab' command ---
     parser_jwt = subparsers.add_parser(
         "jwt-lab",
@@ -21790,6 +21827,11 @@ async def main():
 
     if args.command in ["cidr-lab", "cidr"]:
         run_cidr_lab(args)
+        return
+
+
+    if args.command in ["sqlite-lab", "sqlite"]:
+        run_sqlite_lab(args)
         return
 
     if args.command == "jwt-lab":

@@ -225,7 +225,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -2456,6 +2456,27 @@ def run_markdown_lab(args):
 
     from shared.markdown_lab import run_markdown_lab_logic
     success = run_markdown_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_json2md_lab(args):
+    """Runs the JSON to Markdown Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Json2Md Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-json2md")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+
+    from shared.json2md_lab import run_json2md_lab_logic
+    success = run_json2md_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_html_entity_lab(args):
@@ -14513,6 +14534,18 @@ def parse_args(argv=None):
     )
     json2csv_subparsers.add_parser("tui", help="Launch JSON to CSV Lab TUI.")
 
+    # --- New 'json2md-lab' command ---
+    parser_json2md = subparsers.add_parser(
+        "json2md-lab",
+        aliases=["json2md"],
+        help="JSON to Markdown Table Converter Lab",
+        description="Converts JSON data to a Markdown table."
+    )
+    parser_json2md.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2md.add_argument("--text", "-t", help="Input JSON string.")
+    parser_json2md.add_argument("--output", "-o", help="Output file path.")
+    parser_json2md.add_argument("--tui", action="store_true", help="Launch the JSON to Markdown TUI.")
+
     # --- New 'csv2json-lab' command ---
     parser_csv2json = subparsers.add_parser(
         "csv2json-lab",
@@ -22006,6 +22039,10 @@ async def main():
     if args.command in ["csv2json-lab", "c2j"]:
         from shared.csv2json_lab import run_csv2json_lab_logic
         run_csv2json_lab_logic(args)
+        return
+
+    if args.command in ["json2md-lab", "json2md"]:
+        run_json2md_lab(args)
         return
 
     if args.command in ["csv2md-lab", "csv2md"]:

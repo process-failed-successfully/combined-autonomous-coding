@@ -203,6 +203,7 @@ from shared.tui_archive import ArchiveLabTab
 from shared.tui_dns import DnsLabTab
 from shared.tui_speed import SpeedLabTab
 from shared.tui_sql import SqlLabTab
+from shared.tui_sqlite import SqliteLabTab
 from shared.tui_cert import CertLabTab
 from shared.tui_chart import ChartLabTab
 from shared.tui_ast import ASTExplorerTab
@@ -4034,6 +4035,7 @@ class AgentTUI(App):
         PaletteCommand("Go to DNS Lab", "switch_tab_dns"),
         PaletteCommand("Go to ULID Lab", "switch_tab_ulid"),
         PaletteCommand("Go to SQL Lab", "switch_tab_sql"),
+        PaletteCommand("Go to SQLite Lab", "switch_tab_sqlite"),
         PaletteCommand("Go to Struct Lab", "switch_tab_struct"),
         PaletteCommand("Go to Cheatsheet", "switch_tab_cheatsheet"),
         PaletteCommand("Go to License Lab", "switch_tab_license"),

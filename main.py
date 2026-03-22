@@ -6668,24 +6668,7 @@ def run_replace(args):
 def run_todos(args):
     """Scans the project for TODO comments."""
     if hasattr(args, 'tui') and args.tui:
-        from textual.app import App, ComposeResult
-        from shared.tui_todos import TodosLabTab
-
-        class TodosLabApp(App):
-            CSS = "TodosLabTab { height: 100%; width: 100%; }"
-            def compose(self) -> ComposeResult:
-                yield TodosLabTab(args.project_dir.resolve())
-
-        app = TodosLabApp()
-        import asyncio
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        if loop and loop.is_running():
-            asyncio.ensure_future(app.run_async())
-        else:
-            app.run()
+        run_tui(args, start_tab="tab-todos")
         return
 
     from shared.todos import scan_todos, get_todo_blame

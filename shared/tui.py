@@ -274,6 +274,7 @@ from shared.tui_portscan import PortScanTab
 from shared.tui_html2md import Html2MdTab
 from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
+from shared.tui_todos import TodosLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4644,6 +4645,8 @@ class AgentTUI(App):
                 yield PortScanTab()
             with TabPane("Lorem Lab", id="tab-lorem"):
                 yield LoremLabTab()
+            with TabPane("TODOs Lab", id="tab-todos"):
+                yield TodosLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -346,7 +346,8 @@ KNOWN_COMMANDS = [
     "vcard-lab", "vcard",
     "curl-lab", "curl",
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
-    "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size"
+    "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
+    "alias-lab", "aliases"
 ]
 
 if FileSystemEventHandler:
@@ -1049,6 +1050,13 @@ def run_size_lab(args):
 
     from shared.size_lab import run_size_lab_logic
     success = run_size_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_alias_lab(args):
+    """Runs the Alias Lab utilities."""
+    from shared.alias_lab import run_alias_lab_logic
+    # Pass KNOWN_COMMANDS so the logic doesn't have to import it circularly.
+    success = run_alias_lab_logic(args, KNOWN_COMMANDS)
     sys.exit(0 if success else 1)
 
 def run_stego_lab(args):
@@ -15796,6 +15804,20 @@ def parse_args(argv=None):
     parser_css.add_argument("--output", "-o", help="Output CSS file.")
     parser_css.add_argument("--tui", action="store_true", help="Launch the interactive CSS Lab TUI.")
 
+    # --- New 'alias' command ---
+    parser_alias = subparsers.add_parser(
+        "alias-lab", aliases=["aliases"],
+        help="Generate shell aliases for all lab commands.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  main.py alias-lab --shell bash --prefix agent-
+  main.py alias-lab --shell zsh > ~/.agent_aliases.zsh
+        """
+    )
+    parser_alias.add_argument("--shell", choices=["bash", "zsh", "fish"], default="bash", help="Target shell for aliases")
+    parser_alias.add_argument("--prefix", default="", help="Prefix for the generated aliases (e.g. 'agent-')")
+
     # --- New 'js-lab' command ---
     parser_js = subparsers.add_parser(
         "js-lab", aliases=["js"],
@@ -22382,6 +22404,10 @@ async def main():
 
     if args.command in ["stego-lab", "stego"]:
         run_stego_lab(args)
+        return
+
+    if args.command in ["alias-lab", "aliases"]:
+        run_alias_lab(args)
         return
 
     # Initialize Agent Client

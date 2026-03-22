@@ -32,6 +32,15 @@ class InteractiveShell(cmd.Cmd):
         """Do nothing on an empty line."""
         pass
 
+    def default(self, line):
+        """Execute the command as a system shell command if it is not a recognized built-in command."""
+        import subprocess
+        try:
+            # We use shell=True because this is explicitly meant to be a pass-through to the system shell
+            subprocess.run(line, shell=True, check=False) # nosec B602
+        except Exception as e:
+            print(f"Error executing command: {e}")
+
     def do_status(self, arg):
         """Displays the current status of the agent project."""
         args = self.parse_args(arg)

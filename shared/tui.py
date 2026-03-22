@@ -146,6 +146,7 @@ from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
+from shared.tui_json2md import Json2MdTab
 from shared.tui_csv2md import Csv2MdTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
@@ -4051,6 +4052,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
+        PaletteCommand("Go to JSON to MD Lab", "switch_tab_json2md"),
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
@@ -4471,6 +4473,8 @@ class AgentTUI(App):
                 yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):
                 yield JsonLabTab(self.project_dir)
+            with TabPane("JSON to MD", id="tab-json2md"):
+                yield Json2MdTab()
             with TabPane("INI Lab", id="tab-ini"):
                 from shared.tui_ini import IniLabTab
                 yield IniLabTab(self.project_dir)

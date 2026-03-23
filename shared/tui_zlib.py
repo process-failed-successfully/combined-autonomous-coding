@@ -46,7 +46,7 @@ class ZlibTab(Container):
             with Horizontal(classes="zlib-controls"):
                 yield Label("Format: ")
                 yield Select(
-                    [("zlib", "zlib"), ("deflate", "deflate"), ("gzip", "gzip")],
+                    [("zlib", "zlib"), ("deflate", "deflate"), ("gzip", "gzip"), ("bzip2", "bzip2"), ("lzma", "lzma")],
                     value="zlib",
                     id="zlib-format",
                 )

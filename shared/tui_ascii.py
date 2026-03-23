@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional, List, Tuple
 from textual.app import ComposeResult
-from textual.widgets import Label, DirectoryTree, Button, RichLog, Input, Select, Checkbox, Static
+from textual.widgets import Label, DirectoryTree, Button, RichLog, Input, Select, Checkbox, Static, TabbedContent, TabPane
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual import on
 from shared.ascii_lab import AsciiLabManager
@@ -22,33 +22,52 @@ class AsciiLabTab(Container):
         self._current_frame_index = 0
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
-            # Left: File Browser
-            with Vertical(id="ascii-sidebar", classes="stat-box"):
-                yield Label("[bold]Images[/bold]")
-                yield DirectoryTree(str(self.project_dir), id="ascii-file-tree")
-
-            # Center: Controls
-            with Vertical(id="ascii-controls-pane", classes="stat-box"):
-                yield Label("[bold]Settings[/bold]")
-                yield Label("Width:")
-                yield Input(placeholder="100", value="100", id="ascii-width-input", type="integer")
-
-                yield Label("Charset:")
-                charsets = [(k, k) for k in self.manager.CHARSETS.keys()]
-                yield Select(charsets, value="standard", id="ascii-charset-select", allow_blank=False)
-
-                yield Checkbox("Inverse Colors", id="ascii-inverse-chk")
-
+        with TabbedContent():
+            with TabPane("Image"):
                 with Horizontal():
-                    yield Button("Convert", id="btn-ascii-convert", variant="primary", disabled=True)
-                    yield Button("Play/Pause", id="btn-ascii-play", variant="success", disabled=True)
+                    # Left: File Browser
+                    with Vertical(id="ascii-sidebar", classes="stat-box"):
+                        yield Label("[bold]Images[/bold]")
+                        yield DirectoryTree(str(self.project_dir), id="ascii-file-tree")
 
-            # Right: Preview
-            with VerticalScroll(id="ascii-preview-pane", classes="stat-box"):
-                yield Label("[bold]Preview[/bold]")
-                yield Static(id="ascii-preview-text", markup=False)
-                yield RichLog(id="ascii-preview-log", wrap=False, highlight=False, markup=False)
+                    # Center: Controls
+                    with Vertical(id="ascii-controls-pane", classes="stat-box"):
+                        yield Label("[bold]Settings[/bold]")
+                        yield Label("Width:")
+                        yield Input(placeholder="100", value="100", id="ascii-width-input", type="integer")
+
+                        yield Label("Charset:")
+                        charsets = [(k, k) for k in self.manager.CHARSETS.keys()]
+                        yield Select(charsets, value="standard", id="ascii-charset-select", allow_blank=False)
+
+                        yield Checkbox("Inverse Colors", id="ascii-inverse-chk")
+
+                        with Horizontal():
+                            yield Button("Convert", id="btn-ascii-convert", variant="primary", disabled=True)
+                            yield Button("Play/Pause", id="btn-ascii-play", variant="success", disabled=True)
+
+                    # Right: Preview
+                    with VerticalScroll(id="ascii-preview-pane", classes="stat-box"):
+                        yield Label("[bold]Preview[/bold]")
+                        yield Static(id="ascii-preview-text", markup=False)
+                        yield RichLog(id="ascii-preview-log", wrap=False, highlight=False, markup=False)
+
+            with TabPane("Text Banner"):
+                with Vertical(classes="stat-box"):
+                    yield Label("[bold]Text to Banner[/bold]")
+                    yield Input(placeholder="HELLO WORLD", id="ascii-text-input")
+                    yield Label("Character:")
+                    yield Input(placeholder="#", value="#", id="ascii-char-input")
+                    yield Button("Generate", id="btn-ascii-text-gen", variant="primary")
+                    with VerticalScroll():
+                        yield Static(id="ascii-text-output", markup=False)
+
+            with TabPane("ASCII Table"):
+                with VerticalScroll(classes="stat-box"):
+                    yield Label("[bold]ASCII Code Table (0-127)[/bold]")
+                    yield Button("Load Table", id="btn-ascii-table-load", variant="primary")
+                    yield Static(id="ascii-table-output", markup=False)
+
 
     def on_mount(self) -> None:
         self.query_one("#ascii-preview-log").display = False
@@ -206,3 +225,18 @@ class AsciiLabTab(Container):
                 duration = frame.info.get('duration', 100) / 1000.0
                 frames.append((ascii_frame, duration))
         return frames
+
+    @on(Button.Pressed, "#btn-ascii-text-gen")
+    def on_text_gen(self) -> None:
+        text = self.query_one("#ascii-text-input", Input).value
+        char = self.query_one("#ascii-char-input", Input).value or "#"
+        if not text:
+            return
+
+        banner = self.manager.generate_text_banner(text, char)
+        self.query_one("#ascii-text-output", Static).update(banner)
+
+    @on(Button.Pressed, "#btn-ascii-table-load")
+    def on_table_load(self) -> None:
+        table = self.manager.generate_ascii_table()
+        self.query_one("#ascii-table-output", Static).update(table)

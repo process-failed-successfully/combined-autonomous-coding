@@ -71,6 +71,103 @@ class AsciiLabManager:
 
         return ascii_image
 
+
+    # 5x5 Font for A-Z, 0-9, and Space
+    FONT_5x5 = {
+        'A': [" ### ", "#   #", "#####", "#   #", "#   #"],
+        'B': ["#### ", "#   #", "#### ", "#   #", "#### "],
+        'C': [" ####", "#    ", "#    ", "#    ", " ####"],
+        'D': ["#### ", "#   #", "#   #", "#   #", "#### "],
+        'E': ["#####", "#    ", "#### ", "#    ", "#####"],
+        'F': ["#####", "#    ", "#### ", "#    ", "#    "],
+        'G': [" ####", "#    ", "# ###", "#   #", " ####"],
+        'H': ["#   #", "#   #", "#####", "#   #", "#   #"],
+        'I': ["#####", "  #  ", "  #  ", "  #  ", "#####"],
+        'J': ["#####", "   # ", "   # ", "#  # ", " ##  "],
+        'K': ["#   #", "#  # ", "###  ", "#  # ", "#   #"],
+        'L': ["#    ", "#    ", "#    ", "#    ", "#####"],
+        'M': ["#   #", "## ##", "# # #", "#   #", "#   #"],
+        'N': ["#   #", "##  #", "# # #", "#  ##", "#   #"],
+        'O': [" ### ", "#   #", "#   #", "#   #", " ### "],
+        'P': ["#### ", "#   #", "#### ", "#    ", "#    "],
+        'Q': [" ### ", "#   #", "#   #", "#  ##", " ####"],
+        'R': ["#### ", "#   #", "#### ", "#  # ", "#   #"],
+        'S': [" ####", "#    ", " ### ", "    #", "#### "],
+        'T': ["#####", "  #  ", "  #  ", "  #  ", "  #  "],
+        'U': ["#   #", "#   #", "#   #", "#   #", " ### "],
+        'V': ["#   #", "#   #", "#   #", " # # ", "  #  "],
+        'W': ["#   #", "#   #", "# # #", "## ##", "#   #"],
+        'X': ["#   #", " # # ", "  #  ", " # # ", "#   #"],
+        'Y': ["#   #", " # # ", "  #  ", "  #  ", "  #  "],
+        'Z': ["#####", "   # ", "  #  ", " #   ", "#####"],
+        '0': [" ### ", "#  ##", "# # #", "##  #", " ### "],
+        '1': ["  #  ", " ##  ", "  #  ", "  #  ", " ### "],
+        '2': [" ####", "    #", " ### ", "#    ", "#####"],
+        '3': ["#####", "   # ", " ### ", "   # ", "#####"],
+        '4': ["   # ", "  ## ", " # # ", "#####", "   # "],
+        '5': ["#####", "#    ", "#### ", "    #", "#### "],
+        '6': [" ### ", "#    ", "#### ", "#   #", " ### "],
+        '7': ["#####", "    #", "   # ", "  #  ", " #   "],
+        '8': [" ### ", "#   #", " ### ", "#   #", " ### "],
+        '9': [" ### ", "#   #", " ####", "    #", " ### "],
+        ' ': ["     ", "     ", "     ", "     ", "     "],
+        '.': ["     ", "     ", "     ", "     ", "  #  "],
+        '!': ["  #  ", "  #  ", "  #  ", "     ", "  #  "],
+        '?': [" ### ", "    #", "  ## ", "     ", "  #  "],
+        '-': ["     ", "     ", "#####", "     ", "     "],
+        '_': ["     ", "     ", "     ", "     ", "#####"],
+        '+': ["     ", "  #  ", "#####", "  #  ", "     "],
+        '=': ["     ", "#####", "     ", "#####", "     "],
+    }
+
+    def generate_text_banner(self, text: str, char: str = "#") -> str:
+        """
+        Generates an ASCII art banner using a 5x5 block font.
+        """
+        text = text.upper()
+        lines = ["", "", "", "", ""]
+        for letter in text:
+            pattern = self.FONT_5x5.get(letter, self.FONT_5x5['?'])
+            for i in range(5):
+                lines[i] += pattern[i].replace('#', char) + "  "
+        return "\n".join(lines)
+
+    def generate_ascii_table(self) -> str:
+        """
+        Generates a formatted ASCII table showing Decimal, Hex, Octal, and Char for 0-127.
+        """
+        lines = []
+        lines.append(f"{'Dec':<5} | {'Hex':<5} | {'Oct':<5} | {'Char':<15}")
+        lines.append("-" * 38)
+
+        for i in range(128):
+            hex_val = f"0x{i:02X}"
+            oct_val = f"0o{i:03o}"
+
+            # Handle special control characters
+            if i < 32 or i == 127:
+                controls = {
+                    0: "NUL (null)", 1: "SOH (start of heading)", 2: "STX (start of text)",
+                    3: "ETX (end of text)", 4: "EOT (end of transmission)", 5: "ENQ (enquiry)",
+                    6: "ACK (acknowledge)", 7: "BEL (bell)", 8: "BS  (backspace)",
+                    9: "TAB (horizontal tab)", 10: "LF  (NL line feed)", 11: "VT  (vertical tab)",
+                    12: "FF  (NP form feed)", 13: "CR  (carriage return)", 14: "SO  (shift out)",
+                    15: "SI  (shift in)", 16: "DLE (data link escape)", 17: "DC1 (device control 1)",
+                    18: "DC2 (device control 2)", 19: "DC3 (device control 3)", 20: "DC4 (device control 4)",
+                    21: "NAK (negative ack)", 22: "SYN (synchronous idle)", 23: "ETB (end of trans. block)",
+                    24: "CAN (cancel)", 25: "EM  (end of medium)", 26: "SUB (substitute)",
+                    27: "ESC (escape)", 28: "FS  (file separator)", 29: "GS  (group separator)",
+                    30: "RS  (record separator)", 31: "US  (unit separator)", 127: "DEL (delete)"
+                }
+                char_repr = controls.get(i, f"CTRL-{i}")
+            else:
+                char_repr = chr(i)
+
+            lines.append(f"{i:<5} | {hex_val:<5} | {oct_val:<5} | {char_repr:<15}")
+
+        return "\n".join(lines)
+
+
     def play_gif(self, gif_path: Path, width: int = 100, charset: str = "standard", inverse: bool = False, fps_override: Optional[float] = None):
         """
         Plays a GIF as an ASCII animation in the terminal.
@@ -128,7 +225,7 @@ def run_ascii_lab_logic(args):
     """
     manager = AsciiLabManager()
 
-    file_path = Path(args.file)
+    file_path = Path(args.file) if hasattr(args, 'file') and args.file else None
 
     try:
         if args.action == "image":
@@ -148,6 +245,14 @@ def run_ascii_lab_logic(args):
                 inverse=args.inverse,
                 fps_override=args.fps
             )
+
+        elif args.action == "text":
+            result = manager.generate_text_banner(args.text, char=args.char)
+            print(result)
+
+        elif args.action == "table":
+            result = manager.generate_ascii_table()
+            print(result)
 
     except Exception as e:
         print(f"❌ Error: {e}", file=sys.stderr)

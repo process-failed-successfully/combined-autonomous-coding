@@ -10,7 +10,7 @@ sys.modules['PIL.ImageSequence'] = MagicMock()
 
 from shared.ascii_lab import AsciiLabManager
 
-class TestAsciiLab(unittest.TestCase):
+class TestAsciiLab(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.manager = AsciiLabManager()
         # Mock Path.exists to always return True for tests
@@ -85,6 +85,50 @@ class TestAsciiLab(unittest.TestCase):
         self.assertTrue(mock_print.called)
         # Verify sleep was called
         self.assertTrue(mock_sleep.called)
+
+
+
+    def test_generate_text_banner(self):
+        result = self.manager.generate_text_banner("HI", char="*")
+        lines = result.split("\n")
+        self.assertEqual(len(lines), 5)
+        self.assertTrue(lines[0].startswith("*   *"))
+
+    def test_generate_ascii_table(self):
+        result = self.manager.generate_ascii_table()
+        self.assertIn("Dec   | Hex   | Oct   | Char", result)
+        self.assertIn("NUL (null)", result)
+        self.assertIn("65    | 0x41  | 0o101 | A", result)
+
+    async def test_tui_ascii_text_and_table(self):
+        from textual.app import App
+        from shared.tui_ascii import AsciiLabTab
+        from textual.widgets import TabbedContent
+        from pathlib import Path
+
+        class DummyApp(App):
+            def compose(self):
+                yield AsciiLabTab(Path("."))
+
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            # Must activate tab
+            app.query_one(TabbedContent).active = "tab-2" # Text Banner
+            await pilot.pause()
+
+            app.query_one("#ascii-text-input").value = "TEST"
+
+            # Use action or call directly
+            tab = app.query_one(AsciiLabTab)
+            tab.on_text_gen()
+
+            output_static = app.query_one("#ascii-text-output")
+            self.assertIn("#####", str(output_static.render()))
+
+            # Table test
+            tab.on_table_load()
+            table_static = app.query_one("#ascii-table-output")
+            self.assertIn("0x41", str(table_static.render()))
 
 if __name__ == '__main__':
     unittest.main()

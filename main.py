@@ -17504,6 +17504,12 @@ Examples:
     parser_ascii_play.add_argument("--inverse", action="store_true", help="Inverse brightness.")
     parser_ascii_play.add_argument("--fps", type=float, help="Override FPS.")
 
+    parser_ascii_text = ascii_subparsers.add_parser("text", help="Generate ASCII art banner text.")
+    parser_ascii_text.add_argument("text", help="Text to convert to banner.")
+    parser_ascii_text.add_argument("--char", "-c", default="#", help="Character to use for drawing the banner.")
+
+    parser_ascii_table = ascii_subparsers.add_parser("table", help="Print ASCII character table (0-127).")
+
     # --- New 'weather-lab' command ---
     parser_weather = subparsers.add_parser(
         "weather-lab",

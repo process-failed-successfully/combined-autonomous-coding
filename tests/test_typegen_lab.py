@@ -3,6 +3,7 @@ from shared.typegen_lab import TypegenManager, run_typegen_lab_logic
 import argparse
 
 
+
 class TestTypegenManager(unittest.TestCase):
     def setUp(self):
         self.manager = TypegenManager()
@@ -57,6 +58,7 @@ class TestTypegenManager(unittest.TestCase):
         self.assertIn("Error parsing JSON", result)
 
 
+
 class TestTypegenLabCLI(unittest.TestCase):
     def test_run_logic_json_arg(self):
         from unittest.mock import patch
@@ -76,6 +78,7 @@ class TestTypegenLabCLI(unittest.TestCase):
                 result = run_typegen_lab_logic(args)
                 self.assertTrue(result)
                 mock_print.assert_any_call("export interface Root {\n  test: boolean;\n}")
+
 
 
 if __name__ == '__main__':

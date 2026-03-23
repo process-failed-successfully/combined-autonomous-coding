@@ -307,6 +307,7 @@ KNOWN_COMMANDS = [
     "base91-lab", "base91", "b91",
     "punycode-lab", "punycode", "idn",
     "base64-lab", "base64", "b64",
+    "base64img-lab", "base64img", "b64img",
     "base64url-lab", "base64url", "b64url",
     "zlib-lab", "zlib", "compress", "inflate",
     "brotli-lab", "brotli",
@@ -716,6 +717,29 @@ def run_base64_lab(args):
 
     from shared.base64_lab import run_base64_lab_logic
     success = run_base64_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_base64img_lab(args):
+    """Runs the Base64Img Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base64Img Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base64img")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            # We don't exit immediately here, let the event loop handle it.
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base64img_lab import run_base64img_lab_logic
+    success = run_base64img_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_zlib_lab(args):
@@ -15996,6 +16020,17 @@ Examples:
     b64_group.add_argument("--decode", "-d", type=str, help="Base64 text to decode.")
     b64_group.add_argument("--tui", action="store_true", help="Launch the interactive Base64 Lab TUI.")
 
+    # base64img-lab
+    parser_base64img = subparsers.add_parser(
+        "base64img-lab", aliases=["base64img", "b64img"],
+        help="Base64 encode and decode image files."
+    )
+    b64img_group = parser_base64img.add_mutually_exclusive_group(required=True)
+    b64img_group.add_argument("--encode", "-e", type=str, help="Path to image file to encode.")
+    b64img_group.add_argument("--decode", "-d", type=str, help="Base64 string or file containing Base64 to decode.")
+    b64img_group.add_argument("--tui", action="store_true", help="Launch the interactive Base64Img Lab TUI.")
+    parser_base64img.add_argument("--output", "-o", type=str, help="Output file path (required for decode, optional for encode).")
+
     # zlib-lab
     parser_zlib = subparsers.add_parser(
         "zlib-lab", aliases=["zlib", "compress", "inflate"],
@@ -22259,6 +22294,10 @@ async def main():
 
     if args.command in ["base64-lab", "base64", "b64"]:
         run_base64_lab(args)
+        return
+
+    if args.command in ["base64img-lab", "base64img", "b64img"]:
+        run_base64img_lab(args)
         return
 
     if args.command in ["zlib-lab", "zlib", "compress", "inflate"]:

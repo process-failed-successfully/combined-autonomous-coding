@@ -50,3 +50,4 @@ msgpack
 pymongo
 hashids
 idna
+brotli

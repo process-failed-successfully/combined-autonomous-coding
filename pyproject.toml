@@ -52,6 +52,7 @@ dependencies = [
     "python-barcode",
     "cbor2",
     "msgpack",
+    "brotli",
 ]
 requires-python = ">=3.11"
 

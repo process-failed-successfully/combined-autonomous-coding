@@ -31,6 +31,18 @@ class TestZlibLabManager(unittest.TestCase):
         decompressed = self.manager.decompress(compressed, format="gzip")
         self.assertEqual(decompressed, self.test_data)
 
+    def test_compress_decompress_bzip2(self):
+        compressed = self.manager.compress(self.test_data, format="bzip2")
+        self.assertTrue(compressed.startswith(b"BZh"))
+        decompressed = self.manager.decompress(compressed, format="bzip2")
+        self.assertEqual(decompressed, self.test_data)
+
+    def test_compress_decompress_lzma(self):
+        compressed = self.manager.compress(self.test_data, format="lzma")
+        self.assertTrue(compressed.startswith(b"\xfd\x37\x7a\x58\x5a\x00"))
+        decompressed = self.manager.decompress(compressed, format="lzma")
+        self.assertEqual(decompressed, self.test_data)
+
     def test_invalid_format(self):
         with self.assertRaises(ValueError):
             self.manager.compress(self.test_data, format="invalid")

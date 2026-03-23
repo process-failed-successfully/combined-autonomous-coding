@@ -1,6 +1,8 @@
 import argparse
 import base64
+import bz2
 import gzip
+import lzma
 import sys
 import zlib
 
@@ -17,6 +19,10 @@ class ZlibLabManager:
             return compressor.compress(data) + compressor.flush()
         elif format == "gzip":
             return gzip.compress(data, compresslevel=level if level != -1 else 9)
+        elif format == "bzip2":
+            return bz2.compress(data, compresslevel=level if level != -1 else 9)
+        elif format == "lzma":
+            return lzma.compress(data)
         else:
             raise ValueError(f"Unknown format: {format}")
 
@@ -28,6 +34,10 @@ class ZlibLabManager:
             return zlib.decompress(data, -15)
         elif format == "gzip":
             return gzip.decompress(data)
+        elif format == "bzip2":
+            return bz2.decompress(data)
+        elif format == "lzma":
+            return lzma.decompress(data)
         else:
             raise ValueError(f"Unknown format: {format}")
 

@@ -15975,13 +15975,13 @@ Examples:
     # zlib-lab
     parser_zlib = subparsers.add_parser(
         "zlib-lab", aliases=["zlib", "compress", "inflate"],
-        help="Compress and decompress data using zlib, deflate, or gzip."
+        help="Compress and decompress data using zlib, deflate, gzip, bzip2, or lzma."
     )
     zlib_group = parser_zlib.add_mutually_exclusive_group(required=False)
     zlib_group.add_argument("--compress", "-c", type=str, help="Text to compress.")
     zlib_group.add_argument("--decompress", "-d", type=str, help="Data to decompress.")
     zlib_group.add_argument("--tui", action="store_true", help="Launch the interactive Zlib Lab TUI.")
-    parser_zlib.add_argument("--format", "-f", choices=["zlib", "deflate", "gzip"], default="zlib", help="Compression format (default: zlib).")
+    parser_zlib.add_argument("--format", "-f", choices=["zlib", "deflate", "gzip", "bzip2", "lzma"], default="zlib", help="Compression format (default: zlib).")
     parser_zlib.add_argument("--base64", "-b", action="store_true", help="Use base64 instead of hex for outputting/reading compressed data.")
 
     parser_b64url = subparsers.add_parser(

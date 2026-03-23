@@ -7,6 +7,7 @@ from pathlib import Path
 from shared.typegen_lab import TypegenManager
 
 
+
 class TypegenLabTab(Container):
     """Tab for Typegen Lab operations."""
 

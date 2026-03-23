@@ -3,9 +3,11 @@ from textual.app import App, ComposeResult
 from shared.tui_typegen import TypegenLabTab
 
 
+
 class DummyApp(App[None]):
     def compose(self) -> ComposeResult:
         yield TypegenLabTab()
+
 
 
 class TestTypegenLabTab(unittest.IsolatedAsyncioTestCase):

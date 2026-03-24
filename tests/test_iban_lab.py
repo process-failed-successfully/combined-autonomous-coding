@@ -19,8 +19,10 @@ def test_iban_manager_validate_valid():
 def test_iban_manager_validate_invalid():
     manager = IbanManager()
     gb_iban = manager.generate("GB")
-    # Mess up one digit to make it invalid
-    bad_iban = gb_iban[:-1] + ("0" if gb_iban[-1] != "0" else "1")
+    # Mess up the checksum to make it deterministically invalid
+    checksum = int(gb_iban[2:4])
+    bad_checksum = str((checksum + 1) % 97).zfill(2)
+    bad_iban = gb_iban[:2] + bad_checksum + gb_iban[4:]
     assert manager.validate(bad_iban) is False
     assert manager.validate("INVALID") is False
     assert manager.validate("GB123") is False

@@ -299,6 +299,7 @@ KNOWN_COMMANDS = [
     "ocr-lab", "ocr",
     "go-lab", "go", "golang",
     "js-lab", "js",
+    "bcrypt-lab", "bcrypt",
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
@@ -762,6 +763,28 @@ def run_zlib_lab(args):
 
     from shared.zlib_lab import run_zlib_lab_logic
     success = run_zlib_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_bcrypt_lab(args):
+    """Runs the Bcrypt Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Bcrypt Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-bcrypt")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.bcrypt_lab import run_bcrypt_lab_logic
+    success = run_bcrypt_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_brotli_lab(args):
@@ -16043,6 +16066,18 @@ Examples:
     parser_zlib.add_argument("--format", "-f", choices=["zlib", "deflate", "gzip", "bzip2", "lzma"], default="zlib", help="Compression format (default: zlib).")
     parser_zlib.add_argument("--base64", "-b", action="store_true", help="Use base64 instead of hex for outputting/reading compressed data.")
 
+    # bcrypt-lab
+    parser_bcrypt = subparsers.add_parser(
+        "bcrypt-lab", aliases=["bcrypt"],
+        help="Bcrypt hash generation and verification."
+    )
+    bcrypt_group = parser_bcrypt.add_mutually_exclusive_group(required=False)
+    bcrypt_group.add_argument("--hash", type=str, help="Password to hash.")
+    bcrypt_group.add_argument("--verify", type=str, help="Password to verify.")
+    bcrypt_group.add_argument("--tui", action="store_true", help="Launch the interactive Bcrypt Lab TUI.")
+    parser_bcrypt.add_argument("--rounds", type=int, default=12, help="Cost factor (rounds) for hashing (default: 12).")
+    parser_bcrypt.add_argument("--hash-value", type=str, help="Hash string to verify against (required if using --verify).")
+
     # brotli-lab
     parser_brotli = subparsers.add_parser(
         "brotli-lab", aliases=["brotli"],
@@ -22302,6 +22337,10 @@ async def main():
 
     if args.command in ["zlib-lab", "zlib", "compress", "inflate"]:
         run_zlib_lab(args)
+        return
+
+    if args.command in ["bcrypt-lab", "bcrypt"]:
+        run_bcrypt_lab(args)
         return
 
     if args.command in ["brotli-lab", "brotli"]:

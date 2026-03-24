@@ -225,7 +225,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -2815,6 +2815,18 @@ async def run_sql_lab(args):
 def run_csv_lab(args):
     """Runs the CSV Lab."""
     run_csv_lab_logic(args)
+    sys.exit(0)
+
+def run_yaml2json_lab(args):
+    """Runs the YAML to JSON Lab."""
+    from shared.yaml2json_lab import run_yaml2json_lab_logic
+    run_yaml2json_lab_logic(args)
+    sys.exit(0)
+
+def run_json2yaml_lab(args):
+    """Runs the JSON to YAML Lab."""
+    from shared.json2yaml_lab import run_json2yaml_lab_logic
+    run_json2yaml_lab_logic(args)
     sys.exit(0)
 
 def run_excel_lab(args):
@@ -22161,6 +22173,14 @@ async def main():
     if args.command in ["csv2md-lab", "csv2md"]:
         from shared.csv2md_lab import run_csv2md_lab_logic
         run_csv2md_lab_logic(args)
+        return
+
+    if args.command in ["yaml2json-lab", "yaml2json", "y2j"]:
+        run_yaml2json_lab(args)
+        return
+
+    if args.command in ["json2yaml-lab", "json2yaml", "j2y"]:
+        run_json2yaml_lab(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

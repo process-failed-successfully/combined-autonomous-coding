@@ -279,6 +279,7 @@ from shared.tui_html2md import Html2MdTab
 from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
+from shared.tui_alias import AliasTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4663,6 +4664,8 @@ class AgentTUI(App):
                 yield LoremLabTab()
             with TabPane("TODOs Lab", id="tab-todos"):
                 yield TodosLabTab(self.project_dir)
+            with TabPane("Alias Lab", id="tab-alias"):
+                yield AliasTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

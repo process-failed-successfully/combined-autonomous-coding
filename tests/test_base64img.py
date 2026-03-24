@@ -102,10 +102,10 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
 
                 # Check output
                 output = tab.query_one("#output-base64").text
-                status = tab.query_one("#lbl-encode-status").renderable
+                status = str(tab.query_one("#lbl-encode-status").render())
 
                 self.assertEqual(output, "base64output")
-                self.assertIn("successfully encoded", str(status))
+                self.assertIn("successfully encoded", status)
 
     async def test_encode_empty_input(self):
         app = DummyApp()
@@ -113,8 +113,8 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(Base64ImgLabTab)
             # Click encode without typing
             await pilot.click("#btn-encode")
-            status = tab.query_one("#lbl-encode-status").renderable
-            self.assertIn("Please provide a file path", str(status))
+            status = str(tab.query_one("#lbl-encode-status").render())
+            self.assertIn("Please provide a file path", status)
 
     async def test_decode_success(self):
         app = DummyApp()
@@ -128,9 +128,9 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
                 await pilot.press(*list("out.png"))
 
                 await pilot.click("#btn-decode")
-                status = tab.query_one("#lbl-decode-status").renderable
+                status = str(tab.query_one("#lbl-decode-status").render())
 
-                self.assertIn("successfully saved to out.png", str(status))
+                self.assertIn("successfully saved to out.png", status)
 
     async def test_decode_empty_input(self):
         app = DummyApp()
@@ -138,5 +138,5 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(Base64ImgLabTab)
             # Click decode without typing
             await pilot.click("#btn-decode")
-            status = tab.query_one("#lbl-decode-status").renderable
-            self.assertIn("Please provide a Base64 string", str(status))
+            status = str(tab.query_one("#lbl-decode-status").render())
+            self.assertIn("Please provide a Base64 string", status)

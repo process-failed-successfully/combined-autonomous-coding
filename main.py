@@ -1124,6 +1124,22 @@ def run_size_lab(args):
 
 def run_alias_lab(args):
     """Runs the Alias Lab utilities."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Alias Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, "project_dir", None), start_tab="tab-alias")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
     from shared.alias_lab import run_alias_lab_logic
     # Pass KNOWN_COMMANDS so the logic doesn't have to import it circularly.
     success = run_alias_lab_logic(args, KNOWN_COMMANDS)
@@ -15904,6 +15920,7 @@ Examples:
     )
     parser_alias.add_argument("--shell", choices=["bash", "zsh", "fish"], default="bash", help="Target shell for aliases")
     parser_alias.add_argument("--prefix", default="", help="Prefix for the generated aliases (e.g. 'agent-')")
+    parser_alias.add_argument("--tui", action="store_true", help="Launch the interactive Alias Lab TUI.")
 
     # --- New 'js-lab' command ---
     parser_js = subparsers.add_parser(

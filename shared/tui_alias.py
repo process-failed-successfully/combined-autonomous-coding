@@ -61,7 +61,7 @@ class AliasTab(TabPane):
 
         # We can capture stdout from run_alias_lab_logic
         import argparse
-        args = argparse.Namespace(shell=shell, prefix=prefix)
+        args = argparse.Namespace(shell=shell, prefix=prefix)  # nosec B604
 
         old_stdout = sys.stdout
         sys.stdout = capture = io.StringIO()

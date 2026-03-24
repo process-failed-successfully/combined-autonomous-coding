@@ -14,6 +14,7 @@ from shared.alias_lab import run_alias_lab_logic
 import sys
 import io
 
+
 class AliasTab(TabPane):
     """A tab for Alias Lab operations."""
 
@@ -61,7 +62,9 @@ class AliasTab(TabPane):
 
         # We can capture stdout from run_alias_lab_logic
         import argparse
-        args = argparse.Namespace(shell=shell, prefix=prefix)
+        args = argparse.Namespace()
+        args.shell = shell
+        args.prefix = prefix
 
         old_stdout = sys.stdout
         sys.stdout = capture = io.StringIO()

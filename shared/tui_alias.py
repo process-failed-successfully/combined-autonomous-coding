@@ -14,6 +14,7 @@ from shared.alias_lab import run_alias_lab_logic
 import sys
 import io
 
+
 class AliasTab(TabPane):
     """A tab for Alias Lab operations."""
 

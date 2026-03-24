@@ -1,13 +1,14 @@
 import unittest
-from unittest.mock import patch, MagicMock
-import asyncio
+from unittest.mock import patch
 from textual.app import App
 from shared.tui_alias import AliasTab
-from textual.widgets import Select, Input, RichLog, Button
+from textual.widgets import Select, Input, RichLog
+
 
 class DummyApp(App):
     def compose(self):
         yield AliasTab()
+
 
 class TestTuiAlias(unittest.IsolatedAsyncioTestCase):
 
@@ -41,7 +42,7 @@ class TestTuiAlias(unittest.IsolatedAsyncioTestCase):
 
             # Check output
             lines = list(log.lines)
-            content = "\\n".join(str(l) for l in lines)
+            content = "\\n".join(str(line) for line in lines)
             # RichLog uses Strip with formatting.
             self.assertIn("alias ag-", content)
             self.assertIn("test", content)

@@ -29,11 +29,11 @@ class AliasLabTab(Container):
 
     @on(Button.Pressed, "#btn-generate-aliases")
     def on_generate_aliases(self) -> None:
-        shell = self.query_one("#alias-shell-select", Select).value or "bash"
-        prefix = self.query_one("#alias-prefix-input", Input).value
+        shell_val = self.query_one("#alias-shell-select", Select).value or "bash"
+        prefix_val = self.query_one("#alias-prefix-input", Input).value
 
         # Mock the args for the CLI logic
-        args = argparse.Namespace(shell=shell, prefix=prefix)
+        args = argparse.Namespace(shell=shell_val, prefix=prefix_val)  # nosec B604
 
         # Import KNOWN_COMMANDS lazily from main.py
         try:

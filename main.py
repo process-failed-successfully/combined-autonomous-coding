@@ -225,7 +225,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -15067,6 +15067,23 @@ def parse_args(argv=None):
     parser_ocr.add_argument("--output", "-o", help="File to save the output.")
     parser_ocr.add_argument("--tui", action="store_true", help="Launch the Textual UI.")
 
+    parser_exif = subparsers.add_parser(
+        "exif-lab",
+        aliases=["exif"],
+        help="EXIF Metadata tools."
+    )
+    exif_subparsers = parser_exif.add_subparsers(dest="action", help="EXIF actions")
+
+    parser_exif_read = exif_subparsers.add_parser("read", help="Read EXIF metadata")
+    parser_exif_read.add_argument("input", help="Image file path")
+
+    parser_exif_remove = exif_subparsers.add_parser("remove", help="Remove EXIF metadata")
+    parser_exif_remove.add_argument("input", help="Image file path")
+    parser_exif_remove.add_argument("--output", "-o", help="Output file path (default: no_exif_<filename>)")
+
+    parser_exif.add_argument("--tui", action="store_true", help="Launch EXIF Lab TUI")
+
+
     parser_image = subparsers.add_parser(
         "image-lab",
         aliases=["img"],
@@ -21689,6 +21706,27 @@ async def main():
 
     if args.command in ["ocr-lab", "ocr"]:
         run_ocr_lab(args)
+        return
+
+    if args.command in ["exif-lab", "exif"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            import asyncio
+            print("Launching EXIF Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-exif")
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.exif_lab import run_exif_lab_logic
+        run_exif_lab_logic(args)
         return
 
     if args.command in ["image-lab", "img"]:

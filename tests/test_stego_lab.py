@@ -2,12 +2,24 @@ import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
+# Add mock PIL.Image directly to sys.modules BEFORE importing the module
+import sys
+if 'PIL' not in sys.modules:
+    sys.modules['PIL'] = MagicMock()
+if 'PIL.Image' not in sys.modules:
+    sys.modules['PIL.Image'] = MagicMock()
+
 from shared.stego_lab import StegoManager
+import shared.stego_lab
 
 
 class TestStegoLab(unittest.TestCase):
     def setUp(self):
         self.manager = StegoManager(Path("."))
+
+        # Ensure MagicMock on the module attributes
+        if not hasattr(shared.stego_lab, 'Image'):
+            shared.stego_lab.Image = MagicMock()
 
     @patch("shared.stego_lab.HAS_PIL", True)
     @patch("shared.stego_lab.Image")

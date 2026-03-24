@@ -268,6 +268,7 @@ from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
 from shared.tui_stego import StegoLabTab
+from shared.tui_exif import ExifLabTab
 from shared.tui_lorem import LoremLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
@@ -4648,6 +4649,8 @@ class AgentTUI(App):
                 yield OcrLabTab(project_dir=self.project_dir)
             with TabPane("Stego Lab", id="tab-stego"):
                 yield StegoLabTab(self.project_dir)
+            with TabPane("EXIF Lab", id="tab-exif"):
+                yield ExifLabTab(self.project_dir)
             with TabPane("Morse Lab", id="tab-morse"):
                 yield MorseLabTab(self.project_dir)
             with TabPane("HAR Lab", id="tab-har"):

@@ -1,11 +1,10 @@
 import unittest
 import argparse
-import sys
 from io import StringIO
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from shared.html2jsx_lab import Html2JsxManager, run_html2jsx_lab_logic
+
 
 class TestHtml2JsxLab(unittest.TestCase):
     def setUp(self):
@@ -87,6 +86,7 @@ class TestHtml2JsxLab(unittest.TestCase):
             result = run_html2jsx_lab_logic(args)
             self.assertTrue(result)
             self.assertEqual(mock_stdout.getvalue().strip(), '<hr />')
+
 
 if __name__ == '__main__':
     unittest.main()

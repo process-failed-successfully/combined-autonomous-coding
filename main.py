@@ -2571,6 +2571,27 @@ def run_html_entity_lab(args):
     from shared.html_entity_lab import run_html_entity_lab_logic
     run_html_entity_lab_logic(args)
 
+def run_html2jsx_lab(args):
+    """Runs the HTML to JSX Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching HTML to JSX Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-html2jsx")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.html2jsx_lab import run_html2jsx_lab_logic
+    run_html2jsx_lab_logic(args)
+    sys.exit(0)
+
 def run_html_lab(args):
     """Runs the HTML Lab."""
     if hasattr(args, "action") and args.action == "tui":
@@ -13996,6 +14017,19 @@ def parse_args(argv=None):
     parser_he_decode = html_entity_subparsers.add_parser("decode", help="Decode HTML entities back to characters.")
     parser_he_decode.add_argument("text", nargs="?", help="Text to decode.")
 
+    # --- New 'html2jsx-lab' command ---
+    parser_html2jsx = subparsers.add_parser(
+        "html2jsx-lab",
+        aliases=["html2jsx"],
+        help="Convert HTML to React JSX format."
+    )
+    parser_html2jsx.add_argument("action", nargs="?", choices=["convert", "tui"], default="convert", help="Action to perform")
+    parser_html2jsx.add_argument("--text", type=str, help="HTML text to convert")
+    parser_html2jsx.add_argument("--file", type=str, help="HTML file to convert")
+    parser_html2jsx.add_argument("--output", type=str, help="Output file to write JSX to")
+    parser_html2jsx.add_argument("--component", action="store_true", help="Wrap output in a functional component")
+    parser_html2jsx.add_argument("--name", type=str, default="MyComponent", help="Name of the generated component")
+
     # --- New 'html-lab' command ---
     parser_html = subparsers.add_parser(
         "html-lab",
@@ -22078,6 +22112,10 @@ async def main():
 
     if args.command in ["html-entity-lab", "entity-lab", "entity", "html-entity"]:
         run_html_entity_lab(args)
+        return
+
+    if args.command in ["html2jsx-lab", "html2jsx"]:
+        run_html2jsx_lab(args)
         return
 
     if args.command in ["html-lab", "html"]:

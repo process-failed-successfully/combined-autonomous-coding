@@ -225,7 +225,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "xml2json-lab", "xml2json", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -2660,6 +2660,27 @@ def run_seo_lab(args):
     from shared.seo_lab import run_seo_lab_logic
     run_seo_lab_logic(args)
     sys.exit(0)
+
+def run_xml2json_lab(args):
+    """Runs the XML to JSON Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Xml2Json Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-xml2json")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.xml2json_lab import run_xml2json_lab_logic
+    success = run_xml2json_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_xml_lab(args):
     """Runs the XML Lab."""
@@ -14650,6 +14671,18 @@ def parse_args(argv=None):
     parser_json2md.add_argument("--output", "-o", help="Output file path.")
     parser_json2md.add_argument("--tui", action="store_true", help="Launch the JSON to Markdown TUI.")
 
+    # --- New 'xml2json-lab' command ---
+    parser_xml2json = subparsers.add_parser(
+        "xml2json-lab",
+        aliases=["xml2json"],
+        help="XML to JSON Converter Lab",
+        description="Converts XML data to a JSON string."
+    )
+    parser_xml2json.add_argument("--file", "-f", help="Input XML file.")
+    parser_xml2json.add_argument("--text", "-t", help="Input XML string.")
+    parser_xml2json.add_argument("--output", "-o", help="Output file path.")
+    parser_xml2json.add_argument("--tui", action="store_true", help="Launch the XML to JSON TUI.")
+
     # --- New 'csv2json-lab' command ---
     parser_csv2json = subparsers.add_parser(
         "csv2json-lab",
@@ -21773,6 +21806,10 @@ async def main():
 
     if args.command in ["xml-lab", "xml"]:
         run_xml_lab(args)
+        return
+
+    if args.command in ["xml2json-lab", "xml2json"]:
+        run_xml2json_lab(args)
         return
 
     if args.command in ["markdown-lab", "md", "md-lab"]:

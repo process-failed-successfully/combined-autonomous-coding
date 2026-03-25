@@ -84,9 +84,6 @@ RUN groupadd -g "${GID}" appuser && \
 # Copy installed python packages from builder
 COPY --from=builder /install /usr/local
 
-# Install Gemini CLI (Global)
-RUN npm install -g npm@latest && \
-    npm install -g @google/gemini-cli
 
 # Configure git to trust all directories (Global)
 RUN git config --global --add safe.directory '*'

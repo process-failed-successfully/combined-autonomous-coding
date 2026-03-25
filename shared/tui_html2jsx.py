@@ -5,6 +5,7 @@ from textual import on
 from shared.html2jsx_lab import Html2JsxManager
 import traceback
 
+
 class Html2JsxLabTab(Container):
     """
     Tab for HTML to JSX Lab operations.
@@ -62,4 +63,4 @@ class Html2JsxLabTab(Container):
 
     @on(Switch.Changed, "#switch-component")
     def on_switch_changed(self, event: Switch.Changed) -> None:
-        pass # Automatically handles toggling state
+        pass  # Automatically handles toggling state

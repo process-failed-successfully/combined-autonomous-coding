@@ -1,6 +1,6 @@
 import sys
-import re
 from html.parser import HTMLParser
+
 
 class HtmlToJsxParser(HTMLParser):
     def __init__(self, create_component=False, component_name="MyComponent"):
@@ -116,6 +116,7 @@ class HtmlToJsxParser(HTMLParser):
             return f"export default function {self.component_name}() {{\n  return (\n    <>\n      {content}\n    </>\n  );\n}}"
         return content
 
+
 class Html2JsxManager:
     def convert(self, html_str: str, create_component: bool = False, component_name: str = "MyComponent") -> str:
         if not html_str or not html_str.strip():
@@ -127,6 +128,7 @@ class Html2JsxManager:
             return parser.get_jsx()
         except Exception as e:
             return f"Error parsing HTML: {e}"
+
 
 def run_html2jsx_lab_logic(args) -> bool:
     """CLI logic for HTML to JSX Lab."""

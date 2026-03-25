@@ -1,13 +1,12 @@
 import json
-from pathlib import Path
-from typing import Optional
 
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Label, TextArea, Button
-from textual import on
+from textual.widgets import Button, Label, TextArea
 
 from shared.xml2json_lab import Xml2JsonManager
+
 
 class Xml2JsonTab(Container):
     """

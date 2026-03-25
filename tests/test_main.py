@@ -345,7 +345,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.config_loader.ensure_config_exists")
     @patch("shared.config_loader.load_config_from_file")
     @patch("shared.database.init_db")
-    @patch("json.dumps", return_value="{}")
+    @patch("main.json.dumps", return_value="{}")
     async def test_main_show_config_command(self, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
         args = MagicMock()
         args.command = "show-config"
@@ -371,7 +371,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_label = None
         args.dind = False
         args.no_dashboard = True
-        args.dashboard_url = None
+        args.dashboard_url = "http://localhost:8000"
 
         mock_parse_args.return_value = args
         mock_load_config.return_value = {}
@@ -386,7 +386,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
     @patch("shared.config_loader.ensure_config_exists")
     @patch("shared.config_loader.load_config_from_file")
     @patch("shared.database.init_db")
-    @patch("json.dumps", return_value="{}")
+    @patch("main.json.dumps", return_value="{}")
     @patch("sys.stderr")
     async def test_main_dry_run_deprecation(self, mock_stderr, mock_json_dumps, mock_init_db, mock_load_config, mock_ensure_config, mock_parse_args):
         args = MagicMock()
@@ -413,7 +413,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         args.jira_label = None
         args.dind = False
         args.no_dashboard = True
-        args.dashboard_url = None
+        args.dashboard_url = "http://localhost:8000"
 
         mock_parse_args.return_value = args
         mock_load_config.return_value = {}

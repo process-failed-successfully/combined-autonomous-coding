@@ -300,6 +300,7 @@ KNOWN_COMMANDS = [
     "go-lab", "go", "golang",
     "js-lab", "js",
     "bcrypt-lab", "bcrypt",
+    "base2-lab", "base2", "b2",
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
@@ -511,6 +512,23 @@ def run_js_lab(args):
     from shared.js_lab import run_js_lab_logic
     success = run_js_lab_logic(args)
     sys.exit(0 if success else 1)
+
+def run_base2_lab(args):
+    """Runs the Base2 Lab."""
+    if getattr(args, 'tui', False):
+        try:
+            from shared.tui import AgentTUI
+        except ImportError as e:
+            print(f"Error starting TUI: {e}")
+            sys.exit(1)
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base2")
+        app.run()
+        sys.exit(0)
+
+    from shared.base2_lab import run_base2_lab_logic
+    success = run_base2_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 
 def run_base16_lab(args):
     """Runs the Base16 Lab."""
@@ -15985,6 +16003,15 @@ Examples:
     parser_js.add_argument("--output", "-o", help="Output JS file.")
     parser_js.add_argument("--tui", action="store_true", help="Launch the interactive JS Lab TUI.")
 
+    # base2-lab
+    parser_b2 = subparsers.add_parser(
+        "base2-lab", aliases=["base2", "b2"],
+        help="Base2 (Binary) encoding/decoding utilities."
+    )
+    parser_b2.add_argument("--encode", type=str, help="Text to Base2 encode")
+    parser_b2.add_argument("--decode", type=str, help="Base2 string to decode")
+    parser_b2.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base2 Lab")
+
     # base16-lab
     parser_b16 = subparsers.add_parser(
         "base16-lab", aliases=["base16", "b16"],
@@ -22378,6 +22405,10 @@ async def main():
 
     if args.command in ["js-lab", "js"]:
         run_js_lab(args)
+        return
+
+    if args.command in ["base2-lab", "base2", "b2"]:
+        run_base2_lab(args)
         return
 
     if args.command in ["base16-lab", "base16", "b16"]:

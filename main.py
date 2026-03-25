@@ -302,6 +302,7 @@ KNOWN_COMMANDS = [
     "js-lab", "js",
     "bcrypt-lab", "bcrypt",
     "base16-lab", "base16", "b16",
+    "octal-lab", "octal",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
     "base45-lab", "base45", "b45",
@@ -511,6 +512,30 @@ def run_js_lab(args):
 
     from shared.js_lab import run_js_lab_logic
     success = run_js_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_octal_lab(args):
+    """Runs the Octal Lab."""
+    if getattr(args, 'tui', False):
+        try:
+            from shared.tui import AgentTUI
+        except ImportError as e:
+            print(f"Error loading TUI: {e}", file=sys.stderr)
+            sys.exit(1)
+        app = AgentTUI(project_dir=Path('.'), start_tab='tab-octal')
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.octal_lab import run_octal_lab_logic
+    success = run_octal_lab_logic(args)
     sys.exit(0 if success else 1)
 
 def run_base16_lab(args):
@@ -16038,6 +16063,15 @@ Examples:
     parser_js.add_argument("--output", "-o", help="Output JS file.")
     parser_js.add_argument("--tui", action="store_true", help="Launch the interactive JS Lab TUI.")
 
+    # octal-lab
+    parser_octal = subparsers.add_parser(
+        "octal-lab", aliases=["octal"],
+        help="Octal encoding/decoding utilities."
+    )
+    parser_octal.add_argument("--encode", type=str, help="Text to space-separated octal encode")
+    parser_octal.add_argument("--decode", type=str, help="Space-separated octal string to decode")
+    parser_octal.add_argument("--tui", action="store_true", help="Launch interactive TUI for Octal Lab")
+
     # base16-lab
     parser_b16 = subparsers.add_parser(
         "base16-lab", aliases=["base16", "b16"],
@@ -22442,6 +22476,10 @@ async def main():
 
     if args.command in ["js-lab", "js"]:
         run_js_lab(args)
+        return
+
+    if args.command in ["octal-lab", "octal"]:
+        run_octal_lab(args)
         return
 
     if args.command in ["base16-lab", "base16", "b16"]:

@@ -147,6 +147,7 @@ from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
 from shared.tui_json2md import Json2MdTab
+from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_csv2md import Csv2MdTab
 from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_kafka import KafkaLabTab
@@ -4061,6 +4062,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
         PaletteCommand("Go to JSON to MD Lab", "switch_tab_json2md"),
+        PaletteCommand("Go to XML to JSON Lab", "switch_tab_xml2json"),
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
@@ -4493,6 +4495,8 @@ class AgentTUI(App):
                 yield JsonLabTab(self.project_dir)
             with TabPane("JSON to MD", id="tab-json2md"):
                 yield Json2MdTab()
+            with TabPane("XML to JSON", id="tab-xml2json"):
+                yield Xml2JsonTab()
             with TabPane("INI Lab", id="tab-ini"):
                 from shared.tui_ini import IniLabTab
                 yield IniLabTab(self.project_dir)

@@ -277,6 +277,7 @@ from shared.tui_vcard import VCardTab
 from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
 from shared.tui_html2md import Html2MdTab
+from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
@@ -4573,6 +4574,9 @@ class AgentTUI(App):
                 yield DiagramLabTab(self.project_dir)
             with TabPane("HTML2MD Lab", id="tab-html2md"):
                 yield Html2MdTab()
+
+            with TabPane("HTML to JSX Lab", id="tab-html2jsx"):
+                yield Html2JsxLabTab()
 
             with TabPane("HTML Entity Lab", id="tab-html-entity"):
                 yield HtmlEntityTab()

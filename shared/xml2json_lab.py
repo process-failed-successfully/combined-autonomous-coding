@@ -1,5 +1,6 @@
 import sys
 import json
+import defusedxml.ElementTree as DefusedET
 import xml.etree.ElementTree as ET
 import argparse
 from pathlib import Path
@@ -43,9 +44,9 @@ class Xml2JsonManager:
     def convert_string(self, xml_string: str) -> Dict[str, Any]:
         """Parses an XML string and returns a Python dictionary."""
         try:
-            root = ET.fromstring(xml_string)
+            root = DefusedET.fromstring(xml_string)
             return {root.tag: self._element_to_dict(root)}
-        except ET.ParseError as e:
+        except DefusedET.ParseError as e:
             raise ValueError(f"XML Parse Error: {e}")
 
     def convert_file(self, filepath: Path) -> Dict[str, Any]:
@@ -53,10 +54,10 @@ class Xml2JsonManager:
         if not filepath.exists():
             raise FileNotFoundError(f"File not found: {filepath}")
         try:
-            tree = ET.parse(filepath)
+            tree = DefusedET.parse(filepath)
             root = tree.getroot()
             return {root.tag: self._element_to_dict(root)}
-        except ET.ParseError as e:
+        except DefusedET.ParseError as e:
             raise ValueError(f"XML Parse Error in {filepath}: {e}")
 
 def run_xml2json_lab_logic(args):

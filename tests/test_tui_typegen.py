@@ -4,9 +4,13 @@ from shared.tui_typegen import TypegenLabTab
 
 
 
+
+
 class DummyApp(App[None]):
     def compose(self) -> ComposeResult:
         yield TypegenLabTab()
+
+
 
 
 

@@ -10,6 +10,8 @@ from typing import Any, Dict
 
 
 
+
+
 class TypegenManager:
     """Manages the generation of types from JSON."""
 
@@ -142,6 +144,8 @@ class TypegenManager:
             lines.append(f"    pub {safe_key}: {rs_type},")
         lines.append("}")
         self.structs[name] = "\n".join(lines)
+
+
 
 
 

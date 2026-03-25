@@ -1,14 +1,14 @@
 import argparse
 import json
 import sys
-from typing import Any, Optional
+from typing import Any
 from pathlib import Path
 import defusedxml.ElementTree as ET  # nosec B405
 import xml.etree.ElementTree as pyET  # nosec B405
 
 
 class Xml2JsonManager:
-    def convert(self, xml_string: Optional[str]) -> str:
+    def convert(self, xml_string: str) -> str:
         """Converts an XML string to a JSON string."""
         if not xml_string or not xml_string.strip():
             return "{}"

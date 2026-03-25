@@ -13951,7 +13951,7 @@ def parse_args(argv=None):
 
     # text-lab extract
     parser_tl_extract = text_lab_subparsers.add_parser("extract", help="Extract items from text.")
-    parser_tl_extract.add_argument("--type", "-t", required=True, choices=["email", "url", "ip"], help="Item type to extract.")
+    parser_tl_extract.add_argument("--type", "-t", required=True, choices=["email", "url", "ip", "json"], help="Item type to extract.")
     parser_tl_extract.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
 
     # text-lab transform

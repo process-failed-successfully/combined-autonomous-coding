@@ -1,18 +1,20 @@
 import unittest
 import asyncio
 from textual.app import App, ComposeResult
-from textual.widgets import TextArea, Button, Switch, Input
+from textual.widgets import TextArea, Switch, Input
 
 from shared.tui_html2jsx import Html2JsxLabTab
+
 
 class DummyApp(App):
     def compose(self) -> ComposeResult:
         yield Html2JsxLabTab()
 
+
 class TestHtml2JsxLabTui(unittest.IsolatedAsyncioTestCase):
     async def test_html2jsx_tab_render(self):
         app = DummyApp()
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Check if all key elements are present
             self.assertIsNotNone(app.query_one("#html-input"))
             self.assertIsNotNone(app.query_one("#jsx-output"))
@@ -64,6 +66,7 @@ class TestHtml2JsxLabTui(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(app.query_one("#html-input", TextArea).text, "")
             self.assertEqual(app.query_one("#jsx-output", TextArea).text, "")
+
 
 if __name__ == '__main__':
     unittest.main()

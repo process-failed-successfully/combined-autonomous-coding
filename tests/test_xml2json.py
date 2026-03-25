@@ -1,5 +1,8 @@
 import unittest
+from textual.app import App
+from shared.tui_xml2json import Xml2JsonTab
 from shared.xml2json_lab import Xml2JsonManager
+
 
 class TestXml2Json(unittest.TestCase):
     def setUp(self):
@@ -28,13 +31,11 @@ class TestXml2Json(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.convert_string(xml)
 
-from unittest.mock import MagicMock
-from textual.app import App
-from shared.tui_xml2json import Xml2JsonTab
 
-class DummyApp(App):
+class DummyApp(App[None]):
     def compose(self):
         yield Xml2JsonTab()
+
 
 class TestXml2JsonTui(unittest.IsolatedAsyncioTestCase):
     async def test_tui_render(self):
@@ -56,6 +57,7 @@ class TestXml2JsonTui(unittest.IsolatedAsyncioTestCase):
 
             # Since JSON output comes out formatted
             self.assertIn('"item": "Test"', output_area.text)
+
 
 if __name__ == '__main__':
     unittest.main()

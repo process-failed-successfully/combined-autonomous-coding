@@ -1,5 +1,13 @@
+import asyncio
 import unittest
+from typing import Any
+
+from textual.app import App
+from textual.widgets import TextArea
+
+from shared.tui_xml2json import Xml2JsonTab
 from shared.xml2json_lab import Xml2JsonManager
+
 
 class TestXml2Json(unittest.TestCase):
     def setUp(self):
@@ -28,13 +36,11 @@ class TestXml2Json(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.convert_string(xml)
 
-from unittest.mock import MagicMock
-from textual.app import App
-from shared.tui_xml2json import Xml2JsonTab
 
-class DummyApp(App):
+class DummyApp(App[Any]):
     def compose(self):
         yield Xml2JsonTab()
+
 
 class TestXml2JsonTui(unittest.IsolatedAsyncioTestCase):
     async def test_tui_render(self):
@@ -43,19 +49,18 @@ class TestXml2JsonTui(unittest.IsolatedAsyncioTestCase):
             # Type something into the input
             await pilot.click("#xml2json-input")
             # Set the text attribute directly since it's a TextArea
-            app.query_one("#xml2json-input").text = "<root><item>Test</item></root>"
+            app.query_one("#xml2json-input", TextArea).text = "<root><item>Test</item></root>"
             await pilot.click("#btn-convert-xml2json")
 
             # Check the output
             # Need a slight pause for text generation
-            import asyncio
             await asyncio.sleep(0.1)
 
-            from textual.widgets import TextArea
             output_area = app.query_one("#xml2json-output", TextArea)
 
             # Since JSON output comes out formatted
             self.assertIn('"item": "Test"', output_area.text)
+
 
 if __name__ == '__main__':
     unittest.main()

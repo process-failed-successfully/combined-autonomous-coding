@@ -117,7 +117,7 @@ USER appuser
 ENV HOME=/home/appuser
 
 # Install Cursor Agent as appuser
-RUN curl https://cursor.com/install -fsS | bash
+RUN curl https://cursor.com/install -fsS | bash || echo "Warning: Cursor Agent installation failed, continuing anyway..."
 
 # Add local bin to PATH
 ENV PATH="/home/appuser/.local/bin:${PATH}"

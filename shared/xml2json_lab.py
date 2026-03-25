@@ -1,6 +1,7 @@
 import sys
 import json
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
+import xml.etree.ElementTree as pyET  # nosec B405
 import argparse
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -10,8 +11,8 @@ class Xml2JsonManager:
     Manages XML to JSON conversion.
     """
 
-    def _element_to_dict(self, element: ET.Element) -> Any:
-        result = {}
+    def _element_to_dict(self, element: pyET.Element) -> Any:
+        result: Dict[str, Any] = {}
 
         # Attributes
         if element.attrib:
@@ -45,7 +46,7 @@ class Xml2JsonManager:
         try:
             root = ET.fromstring(xml_string)
             return {root.tag: self._element_to_dict(root)}
-        except ET.ParseError as e:
+        except pyET.ParseError as e:
             raise ValueError(f"XML Parse Error: {e}")
 
     def convert_file(self, filepath: Path) -> Dict[str, Any]:
@@ -56,7 +57,7 @@ class Xml2JsonManager:
             tree = ET.parse(filepath)
             root = tree.getroot()
             return {root.tag: self._element_to_dict(root)}
-        except ET.ParseError as e:
+        except pyET.ParseError as e:
             raise ValueError(f"XML Parse Error in {filepath}: {e}")
 
 def run_xml2json_lab_logic(args):

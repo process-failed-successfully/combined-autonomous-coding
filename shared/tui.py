@@ -278,6 +278,7 @@ from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
 from shared.tui_html2md import Html2MdTab
 from shared.tui_html2jsx import Html2JsxLabTab
+from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
@@ -4508,6 +4509,8 @@ class AgentTUI(App):
                 yield Csv2MdTab()
             with TabPane("XML Lab", id="tab-xml"):
                 yield XmlLabTab(self.project_dir)
+            with TabPane("XML to JSON", id="tab-xml2json"):
+                yield Xml2JsonTab()
             with TabPane("Template Lab", id="tab-template-lab"):
                 yield TemplateLabTab(self.project_dir)
             with TabPane("Markdown Lab", id="tab-markdown"):

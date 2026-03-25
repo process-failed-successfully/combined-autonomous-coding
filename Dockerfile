@@ -116,8 +116,8 @@ RUN mkdir -p /app/combined-autonomous-coding && \
 USER appuser
 ENV HOME=/home/appuser
 
-# Install Cursor Agent as appuser
-RUN curl https://cursor.com/install -fsS | bash
+# Install Cursor Agent as appuser (ignoring errors as the URL sometimes returns 403)
+RUN curl https://cursor.com/install -fsS | bash || echo "Warning: Failed to install Cursor Agent"
 
 # Add local bin to PATH
 ENV PATH="/home/appuser/.local/bin:${PATH}"

@@ -1,10 +1,6 @@
 # Stage 1: Builder
 FROM python:3.11-slim-bookworm AS builder
 
-# Configure apt for robustness
-RUN echo 'Acquire::Retries "20";' > /etc/apt/apt.conf.d/80-retries && \
-    echo 'Acquire::http::Timeout "60";' >> /etc/apt/apt.conf.d/80-retries
-
 WORKDIR /build
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -23,10 +19,6 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Final
 FROM python:3.11-slim-bookworm
-
-# Configure apt for robustness
-RUN echo 'Acquire::Retries "20";' > /etc/apt/apt.conf.d/80-retries && \
-    echo 'Acquire::http::Timeout "60";' >> /etc/apt/apt.conf.d/80-retries
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG UID=1000

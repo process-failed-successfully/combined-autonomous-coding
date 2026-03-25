@@ -5,6 +5,7 @@ from textual import on
 
 from shared.xml2json_lab import Xml2JsonManager
 
+
 class Xml2JsonTab(TabPane):
     """A tab for converting XML to JSON."""
 

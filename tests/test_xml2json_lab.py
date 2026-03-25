@@ -1,10 +1,10 @@
 import unittest
 import json
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open
 from argparse import Namespace
-from pathlib import Path
 
 from shared.xml2json_lab import Xml2JsonManager, run_xml2json_lab_logic
+
 
 class TestXml2JsonManager(unittest.TestCase):
     def setUp(self):
@@ -115,6 +115,7 @@ class TestRunXml2JsonLabLogic(unittest.TestCase):
         args = Namespace(text="<root>unclosed", file=None, output=None)
         self.assertFalse(run_xml2json_lab_logic(args))
         mock_stderr.write.assert_called()
+
 
 if __name__ == '__main__':
     unittest.main()

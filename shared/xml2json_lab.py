@@ -1,9 +1,11 @@
 import argparse
 import json
 import sys
+from typing import Any
 from pathlib import Path
-import defusedxml.ElementTree as ET # nosec B405
-import xml.etree.ElementTree as pyET # nosec B405
+import defusedxml.ElementTree as ET  # nosec B405
+import xml.etree.ElementTree as pyET  # nosec B405
+
 
 class Xml2JsonManager:
     def convert(self, xml_string: str) -> str:
@@ -33,7 +35,7 @@ class Xml2JsonManager:
         # Handle children
         children = list(element)
         if children:
-            child_dict = {}
+            child_dict: dict[str, Any] = {}
             for child in children:
                 child_result = self._element_to_dict(child)
                 if child.tag in child_dict:
@@ -52,6 +54,7 @@ class Xml2JsonManager:
                 result["#text"] = text
 
         return result
+
 
 def run_xml2json_lab_logic(args: argparse.Namespace) -> bool:
     manager = Xml2JsonManager()

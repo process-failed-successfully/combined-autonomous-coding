@@ -77,7 +77,7 @@ class TextLabManager:
         return re.sub(r'\s+', ' ', text)
 
     def extract(self, text: str, type: str) -> str:
-        """Extracts patterns like emails, urls, ips, or embedded JSON from text."""
+        """Extracts patterns like emails, urls, or ips from text."""
         import re
         if type == "email":
             # Basic email regex
@@ -105,69 +105,8 @@ class TextLabManager:
                 if all(0 <= int(p) <= 255 for p in parts):
                     valid_ips.append(m)
             return "\n".join(set(valid_ips))
-        elif type == "json":
-            return self._extract_json(text)
         else:
             raise ValueError(f"Unknown extract type: {type}")
-
-    def _extract_json(self, text: str) -> str:
-        """Finds and extracts valid JSON objects/arrays from arbitrary text."""
-        import json
-        extracted = []
-        in_string = False
-        escape_next = False
-        bracket_count = 0
-        brace_count = 0
-        start_idx = -1
-
-        for i, char in enumerate(text):
-            if escape_next:
-                escape_next = False
-                continue
-
-            if char == '\\':
-                escape_next = True
-                continue
-
-            if char == '"':
-                in_string = not in_string
-                continue
-
-            if not in_string:
-                if char == '{':
-                    if brace_count == 0 and bracket_count == 0:
-                        start_idx = i
-                    brace_count += 1
-                elif char == '}':
-                    if brace_count > 0:
-                        brace_count -= 1
-                        if brace_count == 0 and bracket_count == 0 and start_idx != -1:
-                            potential_json = text[start_idx:i+1]
-                            try:
-                                parsed = json.loads(potential_json)
-                                extracted.append(json.dumps(parsed, indent=2))
-                            except json.JSONDecodeError:
-                                pass
-                            start_idx = -1
-                elif char == '[':
-                    if bracket_count == 0 and brace_count == 0:
-                        start_idx = i
-                    bracket_count += 1
-                elif char == ']':
-                    if bracket_count > 0:
-                        bracket_count -= 1
-                        if bracket_count == 0 and brace_count == 0 and start_idx != -1:
-                            potential_json = text[start_idx:i+1]
-                            try:
-                                parsed = json.loads(potential_json)
-                                extracted.append(json.dumps(parsed, indent=2))
-                            except json.JSONDecodeError:
-                                pass
-                            start_idx = -1
-
-        if not extracted:
-            return ""
-        return "\n\n".join(extracted)
 
     def filter_lines(self, text: str, pattern: str, exclude: bool = False) -> str:
         lines = text.splitlines()

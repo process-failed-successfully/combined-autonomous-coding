@@ -16,9 +16,6 @@ jobs:
       matrix:
         python-version: ["3.13.7"]
 
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
       - uses: actions/checkout@v4
 
@@ -58,9 +55,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.13.7"]
-
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - uses: actions/checkout@v4
@@ -102,9 +96,6 @@ jobs:
     runs-on: ubuntu-latest
     # Parallel execution, no needs
 
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
       - uses: actions/checkout@v4
 
@@ -112,7 +103,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: false

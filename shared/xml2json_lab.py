@@ -1,10 +1,10 @@
 import sys
 import json
 import defusedxml.ElementTree as DefusedET
-import xml.etree.ElementTree as ET  # nosec B405
+import xml.etree.ElementTree as ET
+import argparse
 from pathlib import Path
-from typing import Dict, Any
-
+from typing import Dict, Any, Optional
 
 class Xml2JsonManager:
     """
@@ -12,7 +12,7 @@ class Xml2JsonManager:
     """
 
     def _element_to_dict(self, element: ET.Element) -> Any:
-        result: Dict[str, Any] = {}
+        result = {}
 
         # Attributes
         if element.attrib:
@@ -60,8 +60,7 @@ class Xml2JsonManager:
         except DefusedET.ParseError as e:
             raise ValueError(f"XML Parse Error in {filepath}: {e}")
 
-
-def run_xml2json_lab_logic(args: Any) -> None:
+def run_xml2json_lab_logic(args):
     """CLI Entry point for XML to JSON conversion."""
     manager = Xml2JsonManager()
 

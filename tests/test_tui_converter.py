@@ -1,75 +1,73 @@
-import unittest
-from typing import Any
+import pytest
 from textual.app import App, ComposeResult
-from textual.widgets import TextArea, TabbedContent
+from textual.widgets import TextArea, Button, Select, RichLog, TabbedContent
 from shared.tui_converter import ConverterLabTab
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-
-class ConverterApp(App[Any]):
+class ConverterApp(App):
     def compose(self) -> ComposeResult:
         yield ConverterLabTab(project_dir=Path("."))
 
+@pytest.mark.asyncio
+async def test_tui_converter_curl():
+    app = ConverterApp()
+    async with app.run_test() as pilot:
+        # Initial tab is Curl
+        inp = app.query_one("#curl-input", TextArea)
+        inp.text = "curl http://example.com"
 
-class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
-    async def test_tui_converter_curl(self):
-        app = ConverterApp()
-        async with app.run_test() as pilot:
-            # Initial tab is Curl
-            inp = app.query_one("#curl-input", TextArea)
-            inp.text = "curl http://example.com"
+        await pilot.click("#btn-curl-convert")
 
-            await pilot.click("#btn-curl-convert")
+        out = app.query_one("#curl-output", TextArea)
+        assert "import requests" in out.text
+        assert "http://example.com" in out.text
 
-            out = app.query_one("#curl-output", TextArea)
-            self.assertIn("import requests", out.text)
-            self.assertIn("http://example.com", out.text)
+@pytest.mark.asyncio
+async def test_tui_converter_types():
+    app = ConverterApp()
+    async with app.run_test() as pilot:
+        # Switch tab
+        tabs = app.query_one("#tabs", TabbedContent)
+        tabs.active = "tab-types"
+        await pilot.pause() # Wait for switch
 
-    async def test_tui_converter_types(self):
-        app = ConverterApp()
-        async with app.run_test() as pilot:
-            # Switch tab
-            tabs = app.query_one("#tabs", TabbedContent)
-            tabs.active = "tab-types"
-            await pilot.pause() # Wait for switch
+        inp = app.query_one("#type-input", TextArea)
+        inp.text = '{"name": "test"}'
 
-            inp = app.query_one("#type-input", TextArea)
-            inp.text = '{"name": "test"}'
+        await pilot.click("#btn-type-convert")
 
-            await pilot.click("#btn-type-convert")
+        out = app.query_one("#type-output", TextArea)
+        assert "class RootModel(BaseModel):" in out.text
+        assert "name: str" in out.text
 
-            out = app.query_one("#type-output", TextArea)
-            self.assertIn("class RootModel(BaseModel):", out.text)
-            self.assertIn("name: str", out.text)
+@pytest.mark.asyncio
+async def test_tui_converter_format():
+    app = ConverterApp()
+    async with app.run_test() as pilot:
+        tabs = app.query_one("#tabs", TabbedContent)
+        tabs.active = "tab-format"
+        await pilot.pause()
 
-    async def test_tui_converter_format(self):
-        app = ConverterApp()
-        async with app.run_test() as pilot:
-            tabs = app.query_one("#tabs", TabbedContent)
-            tabs.active = "tab-format"
-            await pilot.pause()
+        inp = app.query_one("#fmt-input", TextArea)
+        inp.text = '{"key": "value"}'
 
-            inp = app.query_one("#fmt-input", TextArea)
-            inp.text = '{"key": "value"}'
+        # Default is JSON -> YAML
+        await pilot.click("#btn-fmt-convert")
 
-            # Default is JSON -> YAML
-            await pilot.click("#btn-fmt-convert")
+        out = app.query_one("#fmt-output", TextArea)
+        assert "key: value" in out.text
 
-            out = app.query_one("#fmt-output", TextArea)
-            self.assertIn("key: value", out.text)
+@pytest.mark.asyncio
+async def test_tui_converter_clear():
+    app = ConverterApp()
+    async with app.run_test() as pilot:
+        inp = app.query_one("#curl-input", TextArea)
+        inp.text = "something"
+        out = app.query_one("#curl-output", TextArea)
+        out.text = "result"
 
-    async def test_tui_converter_clear(self):
-        app = ConverterApp()
-        async with app.run_test() as pilot:
-            inp = app.query_one("#curl-input", TextArea)
-            inp.text = "something"
-            out = app.query_one("#curl-output", TextArea)
-            out.text = "result"
+        await pilot.click("#btn-curl-clear")
 
-            await pilot.click("#btn-curl-clear")
-
-            self.assertEqual(inp.text, "")
-            self.assertEqual(out.text, "")
-
-if __name__ == '__main__':
-    unittest.main()
+        assert inp.text == ""
+        assert out.text == ""

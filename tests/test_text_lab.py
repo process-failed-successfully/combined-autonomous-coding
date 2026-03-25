@@ -61,23 +61,6 @@ class TestTextLab(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.extract(text, "unknown")
 
-    def test_extract_json(self):
-        text = '''Here is some log data:
-        2023-10-27 10:00:00 INFO - Payload: {"user": "Alice", "id": 123}
-        And some more text with an array:
-        [1, 2, 3, {"nested": true}]
-        End of log.'''
-
-        extracted = self.manager.extract(text, "json")
-        self.assertIn('"user": "Alice"', extracted)
-        self.assertIn('"id": 123', extracted)
-        self.assertIn('[\n  1,\n  2,\n  3,\n  {\n    "nested": true\n  }\n]', extracted)
-
-        # Invalid JSON should be ignored
-        invalid_text = "This {is not} valid JSON {a: b}"
-        extracted_invalid = self.manager.extract(invalid_text, "json")
-        self.assertEqual(extracted_invalid, "")
-
     def test_line_operations(self):
         # Sort
         text = "c\na\nb"

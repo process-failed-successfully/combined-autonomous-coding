@@ -80,6 +80,7 @@ from shared.log_lab import run_log_lab_logic
 from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
+from shared.yaml2json_lab import run_yaml2json_lab_logic
 from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.csv_lab import run_csv_lab_logic
@@ -225,7 +226,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -13950,7 +13951,7 @@ def parse_args(argv=None):
 
     # text-lab extract
     parser_tl_extract = text_lab_subparsers.add_parser("extract", help="Extract items from text.")
-    parser_tl_extract.add_argument("--type", "-t", required=True, choices=["email", "url", "ip", "json"], help="Item type to extract.")
+    parser_tl_extract.add_argument("--type", "-t", required=True, choices=["email", "url", "ip"], help="Item type to extract.")
     parser_tl_extract.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
 
     # text-lab transform
@@ -14644,6 +14645,26 @@ def parse_args(argv=None):
 
     # sql-lab tui
     sql_subparsers.add_parser("tui", help="Launch interactive TUI for SQL Lab.")
+
+    # --- New 'yaml2json-lab' command ---
+    parser_yaml2json = subparsers.add_parser(
+        "yaml2json-lab",
+        aliases=["yaml2json", "y2j"],
+        help="YAML to JSON and JSON to YAML Converter Lab"
+    )
+    yaml2json_subparsers = parser_yaml2json.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+    yaml2json_subparsers.add_parser("tui", help="Launch YAML2JSON Lab TUI.")
+
+    yaml2json_parser_y2j = yaml2json_subparsers.add_parser("yaml2json", help="Convert YAML to JSON.")
+    yaml2json_parser_y2j.add_argument("input", help="YAML string or file path.")
+    yaml2json_parser_y2j.add_argument("--output", "-o", help="Output file path.")
+
+    yaml2json_parser_j2y = yaml2json_subparsers.add_parser("json2yaml", help="Convert JSON to YAML.")
+    yaml2json_parser_j2y.add_argument("input", help="JSON string or file path.")
+    yaml2json_parser_j2y.add_argument("--output", "-o", help="Output file path.")
 
     # --- New 'json2csv-lab' command ---
     parser_json2csv = subparsers.add_parser(
@@ -22254,6 +22275,13 @@ async def main():
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)
+        return
+
+    if args.command in ["yaml2json-lab", "yaml2json", "y2j"]:
+        if getattr(args, "action", None) == "tui":
+            run_tui(args, "tab-yaml2json")
+            return
+        run_yaml2json_lab_logic(args)
         return
 
     if args.command in ["json2csv-lab", "j2c"]:

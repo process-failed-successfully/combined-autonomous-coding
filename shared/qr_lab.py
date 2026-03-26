@@ -61,14 +61,17 @@ class QRLabManager:
         # Capture stdout to string
         import io
         f = io.StringIO()
-        qr.print_ascii(out=f, tty=False)
+        qr.print_ascii(out=f, tty=True)
         return f.getvalue()
 
     def _create_qr(self, text: str, **kwargs):
         self._check_dependency()
+        err_corr = kwargs.get("error_correction", qrcode.constants.ERROR_CORRECT_L)
+        if kwargs.get("logo"):
+            err_corr = qrcode.constants.ERROR_CORRECT_H
         qr = qrcode.QRCode(
             version=kwargs.get("version", 1),
-            error_correction=kwargs.get("error_correction", qrcode.constants.ERROR_CORRECT_L),
+            error_correction=err_corr,
             box_size=kwargs.get("box_size", 10),
             border=kwargs.get("border", 4),
         )
@@ -79,6 +82,54 @@ class QRLabManager:
     def _create_image(self, qr, **kwargs):
         fill_color = kwargs.get("fill_color", "black")
         back_color = kwargs.get("back_color", "white")
+        logo = kwargs.get("logo")
+        drawer_name = kwargs.get("drawer")
+        color_mask_name = kwargs.get("color_mask")
+
+        if logo or drawer_name or color_mask_name:
+            import qrcode.image.styledpil
+            from qrcode.image.styles.moduledrawers.pil import (
+                SquareModuleDrawer, CircleModuleDrawer, RoundedModuleDrawer,
+                VerticalBarsDrawer, HorizontalBarsDrawer
+            )
+            from qrcode.image.styles.colormasks import (
+                SolidFillColorMask, RadialGradiantColorMask, SquareGradiantColorMask,
+                HorizontalGradiantColorMask, VerticalGradiantColorMask
+            )
+            from PIL import ImageColor
+
+            fg = ImageColor.getrgb(fill_color)
+            bg = ImageColor.getrgb(back_color)
+
+            # Mask
+            mask_obj = SolidFillColorMask(back_color=bg, front_color=fg)
+            if color_mask_name == "radial":
+                mask_obj = RadialGradiantColorMask(back_color=bg, center_color=fg, edge_color=bg)
+            elif color_mask_name == "square":
+                mask_obj = SquareGradiantColorMask(back_color=bg, center_color=fg, edge_color=bg)
+            elif color_mask_name == "horizontal":
+                mask_obj = HorizontalGradiantColorMask(back_color=bg, left_color=fg, right_color=bg)
+            elif color_mask_name == "vertical":
+                mask_obj = VerticalGradiantColorMask(back_color=bg, top_color=fg, bottom_color=bg)
+
+            # Drawer
+            drawer_obj = SquareModuleDrawer()
+            if drawer_name == "circle":
+                drawer_obj = CircleModuleDrawer()
+            elif drawer_name == "rounded":
+                drawer_obj = RoundedModuleDrawer()
+            elif drawer_name == "vertical":
+                drawer_obj = VerticalBarsDrawer()
+            elif drawer_name == "horizontal":
+                drawer_obj = HorizontalBarsDrawer()
+
+            return qr.make_image(
+                image_factory=qrcode.image.styledpil.StyledPilImage,
+                module_drawer=drawer_obj,
+                color_mask=mask_obj,
+                embeded_image_path=logo
+            )
+
         return qr.make_image(fill_color=fill_color, back_color=back_color)
 
     def generate_wifi(self, ssid: str, password: Optional[str] = None, security_type: str = "WPA", hidden: bool = False) -> str:
@@ -137,14 +188,21 @@ def run_qr_lab_logic(args):
     try:
         manager = QRLabManager()
 
+        kwargs = {}
+        if hasattr(args, "logo") and args.logo:
+            kwargs["logo"] = args.logo
+        if hasattr(args, "drawer") and args.drawer:
+            kwargs["drawer"] = args.drawer
+        if hasattr(args, "color_mask") and getattr(args, "color_mask"):
+            kwargs["color_mask"] = getattr(args, "color_mask")
+        if hasattr(args, "fill_color") and args.fill_color:
+            kwargs["fill_color"] = args.fill_color
+        if hasattr(args, "back_color") and args.back_color:
+            kwargs["back_color"] = args.back_color
+
         if args.action == "gen":
             output = Path(args.output) if args.output else None
-            manager.generate(
-                args.text,
-                output_path=output,
-                fill_color=args.fill_color,
-                back_color=args.back_color
-            )
+            manager.generate(args.text, output_path=output, **kwargs)
 
         elif args.action == "wifi":
             wifi_str = manager.generate_wifi(
@@ -158,38 +216,38 @@ def run_qr_lab_logic(args):
 
             if output:
                 console.print(f"Generating WiFi QR Code for SSID: [bold]{args.ssid}[/bold]")
-                manager.generate(wifi_str, output_path=output)
+                manager.generate(wifi_str, output_path=output, **kwargs)
             else:
                 # For console, we print the string too so user verifies
                 console.print(f"WiFi Config: [dim]{wifi_str}[/dim]")
-                manager.generate(wifi_str)
+                manager.generate(wifi_str, **kwargs)
 
         elif args.action == "email":
             email_str = manager.generate_email(args.to, args.subject, args.body)
             output = Path(args.output) if args.output else None
             if output:
-                manager.generate(email_str, output_path=output)
+                manager.generate(email_str, output_path=output, **kwargs)
             else:
                 console.print(f"Email Config: [dim]{email_str}[/dim]")
-                manager.generate(email_str)
+                manager.generate(email_str, **kwargs)
 
         elif args.action == "sms":
             sms_str = manager.generate_sms(args.phone, args.message)
             output = Path(args.output) if args.output else None
             if output:
-                manager.generate(sms_str, output_path=output)
+                manager.generate(sms_str, output_path=output, **kwargs)
             else:
                 console.print(f"SMS Config: [dim]{sms_str}[/dim]")
-                manager.generate(sms_str)
+                manager.generate(sms_str, **kwargs)
 
         elif args.action == "geo":
             geo_str = manager.generate_geo(args.lat, args.lon)
             output = Path(args.output) if args.output else None
             if output:
-                manager.generate(geo_str, output_path=output)
+                manager.generate(geo_str, output_path=output, **kwargs)
             else:
                 console.print(f"Geo Config: [dim]{geo_str}[/dim]")
-                manager.generate(geo_str)
+                manager.generate(geo_str, **kwargs)
 
         elif args.action == "tui":
             from shared.tui import AgentTUI

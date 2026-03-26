@@ -15549,6 +15549,9 @@ def parse_args(argv=None):
     parser_qr_gen.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
     parser_qr_gen.add_argument("--fill-color", default="black", help="Fill color (default: black).")
     parser_qr_gen.add_argument("--back-color", default="white", help="Background color (default: white).")
+    parser_qr_gen.add_argument("--logo", help="Path to an image file to embed in the center.")
+    parser_qr_gen.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
+    parser_qr_gen.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
     # qr-lab wifi
     parser_qr_wifi = qr_subparsers.add_parser("wifi", help="Generate WiFi config QR code.")
@@ -15557,6 +15560,11 @@ def parse_args(argv=None):
     parser_qr_wifi.add_argument("--type", choices=["WPA", "WEP", "nopass"], default="WPA", help="Security type.")
     parser_qr_wifi.add_argument("--hidden", action="store_true", help="Hidden network.")
     parser_qr_wifi.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+    parser_qr_wifi.add_argument("--fill-color", default="black", help="Fill color (default: black).")
+    parser_qr_wifi.add_argument("--back-color", default="white", help="Background color (default: white).")
+    parser_qr_wifi.add_argument("--logo", help="Path to an image file to embed in the center.")
+    parser_qr_wifi.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
+    parser_qr_wifi.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
     # qr-lab email
     parser_qr_email = qr_subparsers.add_parser("email", help="Generate Email QR code.")
@@ -15564,18 +15572,33 @@ def parse_args(argv=None):
     parser_qr_email.add_argument("--subject", default="", help="Email subject.")
     parser_qr_email.add_argument("--body", default="", help="Email body.")
     parser_qr_email.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+    parser_qr_email.add_argument("--fill-color", default="black", help="Fill color (default: black).")
+    parser_qr_email.add_argument("--back-color", default="white", help="Background color (default: white).")
+    parser_qr_email.add_argument("--logo", help="Path to an image file to embed in the center.")
+    parser_qr_email.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
+    parser_qr_email.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
     # qr-lab sms
     parser_qr_sms = qr_subparsers.add_parser("sms", help="Generate SMS QR code.")
     parser_qr_sms.add_argument("--phone", required=True, help="Phone number.")
     parser_qr_sms.add_argument("--message", default="", help="SMS message.")
     parser_qr_sms.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+    parser_qr_sms.add_argument("--fill-color", default="black", help="Fill color (default: black).")
+    parser_qr_sms.add_argument("--back-color", default="white", help="Background color (default: white).")
+    parser_qr_sms.add_argument("--logo", help="Path to an image file to embed in the center.")
+    parser_qr_sms.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
+    parser_qr_sms.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
     # qr-lab geo
     parser_qr_geo = qr_subparsers.add_parser("geo", help="Generate Geo URI QR code.")
     parser_qr_geo.add_argument("--lat", type=float, required=True, help="Latitude.")
     parser_qr_geo.add_argument("--lon", type=float, required=True, help="Longitude.")
     parser_qr_geo.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+    parser_qr_geo.add_argument("--fill-color", default="black", help="Fill color (default: black).")
+    parser_qr_geo.add_argument("--back-color", default="white", help="Background color (default: white).")
+    parser_qr_geo.add_argument("--logo", help="Path to an image file to embed in the center.")
+    parser_qr_geo.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
+    parser_qr_geo.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
     # qr-lab tui
     qr_subparsers.add_parser("tui", help="Launch interactive TUI.")

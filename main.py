@@ -315,6 +315,7 @@ KNOWN_COMMANDS = [
     "brotli-lab", "brotli",
     "base85-lab", "base85", "b85",
     "a85-lab", "a85", "ascii85",
+    "octal-lab", "octal",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
@@ -623,6 +624,30 @@ def run_punycode_lab(args):
 
     from shared.punycode_lab import run_punycode_lab_logic
     success = run_punycode_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_octal_lab(args):
+    """Runs the Octal Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Octal Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-octal")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.octal_lab import run_octal_lab_logic
+    success = run_octal_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -16117,6 +16142,16 @@ Examples:
     b91_group.add_argument("--decode", "-d", type=str, help="Base91 text to decode.")
     parser_b91.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base91 Lab.")
 
+    # octal-lab
+    parser_octal = subparsers.add_parser(
+        "octal-lab", aliases=["octal"],
+        help="Octal encode and decode strings."
+    )
+    octal_group = parser_octal.add_mutually_exclusive_group(required=False)
+    octal_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    octal_group.add_argument("--decode", "-d", type=str, help="Octal text to decode.")
+    octal_group.add_argument("--tui", action="store_true", help="Launch the interactive Octal Lab TUI.")
+
     # base85-lab
     parser_a85 = subparsers.add_parser(
         "a85-lab", aliases=["a85", "ascii85"],
@@ -22453,6 +22488,10 @@ async def main():
 
     if args.command in ["base36-lab", "base36", "b36"]:
         run_base36_lab(args)
+        return
+
+    if args.command in ["octal-lab", "octal"]:
+        run_octal_lab(args)
         return
 
     if args.command in ["a85-lab", "a85", "ascii85"]:

@@ -246,6 +246,7 @@ KNOWN_COMMANDS = [
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
     "sock-lab", "sock", "nc", "netcat",
+    "pgp-lab", "pgp", "gpg",
     "ssh-lab", "ssh",
     "tmux-lab", "tmux",
     "terraform-lab", "tf", "terraform",
@@ -2250,6 +2251,28 @@ async def run_email_lab(args):
     """Runs the Email Lab."""
     await run_email_lab_logic(args)
     sys.exit(0)
+
+def run_pgp_lab(args):
+    """Runs the PGP Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching PGP Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-pgp")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.pgp_lab import run_pgp_lab_logic
+        success = run_pgp_lab_logic(args)
+        sys.exit(0 if success else 1)
+
 
 def run_ssh_lab(args):
     """Runs the SSH Lab."""
@@ -16841,6 +16864,49 @@ Examples:
     # sock-lab tui
     sock_subparsers.add_parser("tui", help="Launch TUI.")
 
+    # --- New 'pgp-lab' command ---
+    parser_pgp = subparsers.add_parser(
+        "pgp-lab",
+        aliases=["pgp", "gpg"],
+        help="PGP/GPG utilities (generate, encrypt, decrypt, sign, verify, list)."
+    )
+    pgp_subparsers = parser_pgp.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    pgp_subparsers.add_parser("tui", help="Launch the PGP Lab TUI.")
+    pgp_subparsers.add_parser("list", help="List PGP keys.")
+
+    parser_pgp_generate = pgp_subparsers.add_parser("generate", help="Generate a new PGP key.")
+    parser_pgp_generate.add_argument("--name", required=True, help="Real name.")
+    parser_pgp_generate.add_argument("--email", required=True, help="Email address.")
+    parser_pgp_generate.add_argument("--passphrase", required=True, help="Passphrase for the key.")
+
+    parser_pgp_encrypt = pgp_subparsers.add_parser("encrypt", help="Encrypt data.")
+    parser_pgp_encrypt.add_argument("--text", help="Text to encrypt.")
+    parser_pgp_encrypt.add_argument("--file", help="File to encrypt.")
+    parser_pgp_encrypt.add_argument("--recipients", required=True, help="Comma-separated list of recipient emails or fingerprints.")
+    parser_pgp_encrypt.add_argument("--output", help="Output file to save the encrypted data.")
+
+    parser_pgp_decrypt = pgp_subparsers.add_parser("decrypt", help="Decrypt data.")
+    parser_pgp_decrypt.add_argument("--text", help="Text to decrypt.")
+    parser_pgp_decrypt.add_argument("--file", help="File to decrypt.")
+    parser_pgp_decrypt.add_argument("--passphrase", required=True, help="Passphrase to decrypt.")
+    parser_pgp_decrypt.add_argument("--output", help="Output file to save the decrypted data.")
+
+    parser_pgp_sign = pgp_subparsers.add_parser("sign", help="Sign data.")
+    parser_pgp_sign.add_argument("--text", help="Text to sign.")
+    parser_pgp_sign.add_argument("--file", help="File to sign.")
+    parser_pgp_sign.add_argument("--keyid", required=True, help="Key ID or fingerprint to sign with.")
+    parser_pgp_sign.add_argument("--passphrase", required=True, help="Passphrase for the signing key.")
+    parser_pgp_sign.add_argument("--output", help="Output file to save the signed data.")
+
+    parser_pgp_verify = pgp_subparsers.add_parser("verify", help="Verify signed data.")
+    parser_pgp_verify.add_argument("--text", help="Signed text to verify.")
+    parser_pgp_verify.add_argument("--file", help="Signed file to verify.")
+
     # --- New 'ssh-lab' command ---
     parser_ssh = subparsers.add_parser(
         "ssh-lab",
@@ -22070,6 +22136,10 @@ async def main():
             sys.exit(0)
 
         await run_sock_lab_logic(args)
+        return
+
+    if args.command in ["pgp-lab", "pgp", "gpg"]:
+        run_pgp_lab(args)
         return
 
     if args.command in ["ssh-lab", "ssh"]:

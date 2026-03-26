@@ -51,3 +51,4 @@ pymongo
 hashids
 idna
 brotli
+python-gnupg>=0.5.0

@@ -132,6 +132,7 @@ from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
 from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
+from shared.tui_pgp import PGPLabTab
 from shared.tui_ssh import SshLabTab
 from shared.tui_i18n import I18nTab
 from shared.tui_sanitizer import SanitizerTab
@@ -4542,6 +4543,8 @@ class AgentTUI(App):
                 yield PdfLabTab(self.project_dir)
             with TabPane("Mock Data", id="tab-mock-data"):
                 yield MockDataTab(self.project_dir)
+            with TabPane("PGP Lab", id="tab-pgp"):
+                yield PGPLabTab()
             with TabPane("SSH Lab", id="tab-ssh"):
                 yield SshLabTab()
             with TabPane("Archive Lab", id="tab-archive"):

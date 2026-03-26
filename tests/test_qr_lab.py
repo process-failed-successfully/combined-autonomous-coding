@@ -134,3 +134,55 @@ class TestQRLabManager(unittest.TestCase):
         kwargs = mock_tui.call_args.kwargs
         self.assertEqual(kwargs["initial_tab"], "tab-qr")
         mock_run.assert_called_once_with("coro")
+
+    @patch("shared.qr_lab.QRLabManager.generate")
+    def test_run_qr_lab_logic_styling(self, mock_generate):
+        from shared.qr_lab import run_qr_lab_logic
+        import argparse
+        args = argparse.Namespace(
+            action="gen",
+            text="styled_test",
+            output="styled.png",
+            fill_color="red",
+            back_color="blue",
+            logo="logo.png",
+            drawer="circle",
+            color_mask="radial"
+        )
+        run_qr_lab_logic(args)
+        mock_generate.assert_called_once()
+        _, kwargs = mock_generate.call_args
+        assert kwargs["logo"] == "logo.png"
+        assert kwargs["drawer"] == "circle"
+        assert kwargs["color_mask"] == "radial"
+        assert kwargs["fill_color"] == "red"
+        assert kwargs["back_color"] == "blue"
+
+    @patch("shared.qr_lab.qrcode.QRCode.make_image")
+    def test_create_image_styled(self, mock_make_image):
+        from shared.qr_lab import QRLabManager
+        import qrcode
+        import qrcode.image.styledpil
+        from qrcode.image.styles.moduledrawers.pil import CircleModuleDrawer
+        from qrcode.image.styles.colormasks import RadialGradiantColorMask
+
+        manager = QRLabManager()
+        qr = qrcode.QRCode()
+        qr.add_data("test")
+
+        manager._create_image(
+            qr,
+            fill_color="red",
+            back_color="blue",
+            logo="dummy.png",
+            drawer="circle",
+            color_mask="radial"
+        )
+
+        mock_make_image.assert_called_once()
+        _, kwargs = mock_make_image.call_args
+
+        assert kwargs["image_factory"] == qrcode.image.styledpil.StyledPilImage
+        assert isinstance(kwargs["module_drawer"], CircleModuleDrawer)
+        assert isinstance(kwargs["color_mask"], RadialGradiantColorMask)
+        assert kwargs["embeded_image_path"] == "dummy.png"

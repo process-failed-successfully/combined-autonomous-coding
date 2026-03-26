@@ -53,6 +53,7 @@ dependencies = [
     "cbor2",
     "msgpack",
     "brotli",
+    "python-gnupg>=0.5.0",
 ]
 requires-python = ">=3.11"
 

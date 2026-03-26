@@ -258,6 +258,7 @@ from shared.tui_physics import PhysicsLabTab
 from shared.tui_set import SetLabTab
 from shared.tui_schema import SchemaLabTab
 from shared.tui_jsonpath import JsonPathLabTab
+from shared.tui_jmespath import JmesPathLabTab
 from shared.tui_token import TokenLabTab
 from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
@@ -4070,6 +4071,7 @@ class AgentTUI(App):
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
+        PaletteCommand("Go to JMESPath Lab", "switch_tab_jmespath"),
         PaletteCommand("Go to Punycode Lab", "switch_tab_punycode"),
         PaletteCommand("Go to MIME Lab", "switch_tab_mime"),
         PaletteCommand("Go to Markdown Lab", "switch_tab_markdown"),
@@ -4632,6 +4634,8 @@ class AgentTUI(App):
                 yield SchemaLabTab(self.project_dir)
             with TabPane("JSONPath Lab", id="tab-jsonpath"):
                 yield JsonPathLabTab(self.project_dir)
+            with TabPane("JMESPath Lab", id="tab-jmespath"):
+                yield JmesPathLabTab(self.project_dir)
             with TabPane("Token Lab", id="tab-token"):
                 yield TokenLabTab(self.project_dir)
             with TabPane("MAC Lab", id="tab-mac"):

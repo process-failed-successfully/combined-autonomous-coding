@@ -338,7 +338,7 @@ KNOWN_COMMANDS = [
     "physics-lab", "phys",
     "set-lab", "sets",
     "ip-lab", "ip",
-    "pack", "jsonpath-lab", "jpath",
+    "pack", "jsonpath-lab", "jpath", "jmespath-lab", "jmespath", "jp",
     "mime-lab", "mime",
     "branch-lab", "bl",
     "luhn-lab", "luhn",
@@ -1427,6 +1427,30 @@ def run_jsonpath_lab(args):
         sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         run_jsonpath_lab_logic(args)
+        sys.exit(0)
+    else:
+        print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
+        sys.exit(1)
+
+def run_jmespath_lab(args):
+    """Runs the JMESPath Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching JMESPath Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-jmespath")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    elif getattr(args, 'action', None) == 'evaluate':
+        from shared.jmespath_lab import run_jmespath_lab_logic
+        run_jmespath_lab_logic(args)
         sys.exit(0)
     else:
         print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
@@ -14485,6 +14509,20 @@ def parse_args(argv=None):
     jsonpath_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jsonpath_eval_parser.add_argument("expression", help="JSONPath expression.")
 
+    # --- New 'jmespath-lab' command ---
+    parser_jmespath = subparsers.add_parser(
+        "jmespath-lab",
+        aliases=["jmespath", "jp"],
+        help="Evaluate JMESPath expressions."
+    )
+    jmespath_subparsers = parser_jmespath.add_subparsers(dest="action")
+    jmespath_tui_parser = jmespath_subparsers.add_parser("tui", help="Launch JMESPath Lab TUI.")
+
+    jmespath_eval_parser = jmespath_subparsers.add_parser("evaluate", help="Evaluate JMESPath expressions.")
+    jmespath_eval_parser.add_argument("expression", help="JMESPath expression.")
+    jmespath_eval_parser.add_argument("--file", "-f", type=str, help="Input JSON file path.")
+    jmespath_eval_parser.add_argument("--text", "-t", type=str, help="Input JSON string.")
+
     # --- Token Lab command ---
     parser_token = subparsers.add_parser(
         "token-lab",
@@ -22779,6 +22817,10 @@ async def main():
 
     if args.command in ["jsonpath-lab", "jpath"]:
         run_jsonpath_lab(args)
+        return
+
+    if args.command in ["jmespath-lab", "jmespath", "jp"]:
+        run_jmespath_lab(args)
         return
 
     if args.command in ["token-lab", "tokens"]:

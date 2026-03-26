@@ -1,14 +1,13 @@
-import math
 import asyncio
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Tuple
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
-from textual.widgets import Label, Button, Select, DataTable, RichLog, Input
+from textual.widgets import Label, Button, Select, DataTable, Input
 from textual import on
 from shared.productivity_lab import ProductivityManager
-from shared.task_manager import TaskManager, Task
+from shared.task_manager import TaskManager
+
 
 class ProductivityTab(Container):
     """
@@ -40,8 +39,10 @@ class ProductivityTab(Container):
                 yield Select([], id="sel-prod-task", prompt="Pick a task or Free Focus")
 
                 with Horizontal(classes="timer-controls"):
-                    yield Button("Start Focus (25m)", id="btn-prod-start-focus", variant="success")
-                    yield Button("Start Break (5m)", id="btn-prod-start-break", variant="primary")
+                    yield Input(value="25", id="input-prod-focus-min", placeholder="Focus min", classes="timer-input")
+                    yield Button("Start Focus", id="btn-prod-start-focus", variant="success")
+                    yield Input(value="5", id="input-prod-break-min", placeholder="Break min", classes="timer-input")
+                    yield Button("Start Break", id="btn-prod-start-break", variant="primary")
                     yield Button("Stop", id="btn-prod-stop", variant="error", disabled=True)
 
             # Quick Actions
@@ -139,11 +140,19 @@ class ProductivityTab(Container):
 
     @on(Button.Pressed, "#btn-prod-start-focus")
     def on_start_focus(self) -> None:
-        self.start_timer(25 * 60, "work")
+        try:
+            minutes = int(self.query_one("#input-prod-focus-min", Input).value)
+        except ValueError:
+            minutes = 25
+        self.start_timer(minutes * 60, "work")
 
     @on(Button.Pressed, "#btn-prod-start-break")
     def on_start_break(self) -> None:
-        self.start_timer(5 * 60, "break")
+        try:
+            minutes = int(self.query_one("#input-prod-break-min", Input).value)
+        except ValueError:
+            minutes = 5
+        self.start_timer(minutes * 60, "break")
 
     @on(Button.Pressed, "#btn-prod-stop")
     def on_stop(self) -> None:
@@ -164,7 +173,7 @@ class ProductivityTab(Container):
 
         self.manager.start_session(session_type, task_id)
         self.remaining_seconds = duration
-        self.initial_duration = duration # Store for progress bar
+        self.initial_duration = duration  # Store for progress bar
         self.timer_active = True
 
         self.query_one("#btn-prod-start-focus").disabled = True
@@ -212,8 +221,10 @@ class ProductivityTab(Container):
 
         # Color based on phase
         color = "green"
-        if pct > 0.8: color = "yellow"
-        if pct > 0.95: color = "red"
+        if pct > 0.8:
+            color = "yellow"
+        if pct > 0.95:
+            color = "red"
 
         self.query_one("#lbl-timer-progress", Label).update(f"[{color}][{progress}][/{color}]")
 

@@ -1,8 +1,76 @@
 import unittest
 from unittest.mock import MagicMock, patch, PropertyMock
 from pathlib import Path
-from textual.widgets import Label
+from typing import Any
+from textual.app import App, ComposeResult
+from textual.widgets import Input, Button, Label
+
+# Since we want to test TUI app locally, we import the ProductivityTab
 from shared.tui_productivity import ProductivityTab
+
+class DummyApp(App[Any]):
+    def __init__(self, project_dir: Path):
+        super().__init__()
+        self.project_dir = project_dir
+
+    def compose(self) -> ComposeResult:
+        yield ProductivityTab(project_dir=self.project_dir)
+
+class TestTUIProductivity(unittest.IsolatedAsyncioTestCase):
+    async def test_custom_timer_inputs(self):
+        project_dir = Path(".")
+        app = DummyApp(project_dir=project_dir)
+
+        async with app.run_test() as pilot:
+            # Wait for mount
+            await pilot.pause()
+
+            # Verify inputs exist with default values
+            focus_input = app.query_one("#input-prod-focus-min", Input)
+            break_input = app.query_one("#input-prod-break-min", Input)
+
+            self.assertEqual(focus_input.value, "25")
+            self.assertEqual(break_input.value, "5")
+
+            # Change focus time to 15
+            focus_input.value = "15"
+
+            # Press start focus
+            focus_btn = app.query_one("#btn-prod-start-focus", Button)
+            focus_btn.press()
+
+            # Wait a tick for UI updates
+            await pilot.pause()
+
+            # Let's check internal state of the tab
+            tab = app.query_one(ProductivityTab)
+            self.assertTrue(tab.timer_active)
+            self.assertEqual(tab.initial_duration, 15 * 60)
+            self.assertEqual(tab.remaining_seconds, 15 * 60)
+
+            # Stop the timer
+            stop_btn = app.query_one("#btn-prod-stop", Button)
+            stop_btn.press()
+            await pilot.pause()
+
+            self.assertFalse(tab.timer_active)
+
+            # Change break time to 10
+            break_input.value = "10"
+
+            # Press start break
+            break_btn = app.query_one("#btn-prod-start-break", Button)
+            break_btn.press()
+            await pilot.pause()
+
+            self.assertTrue(tab.timer_active)
+            self.assertEqual(tab.initial_duration, 10 * 60)
+            self.assertEqual(tab.remaining_seconds, 10 * 60)
+
+            # Cleanup
+            stop_btn.press()
+            await pilot.pause()
+
 
 class TestProductivityTab(unittest.TestCase):
     def setUp(self):
@@ -83,3 +151,6 @@ class TestProductivityTab(unittest.TestCase):
         self.assertFalse(self.tab.timer_active)
         self.tab.manager.stop_session.assert_called()
         mock_app.bell.assert_called()
+
+if __name__ == '__main__':
+    unittest.main()

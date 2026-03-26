@@ -4,6 +4,7 @@ import argparse
 
 
 
+
 class TestTypegenManager(unittest.TestCase):
     def setUp(self):
         self.manager = TypegenManager()
@@ -59,6 +60,7 @@ class TestTypegenManager(unittest.TestCase):
 
 
 
+
 class TestTypegenLabCLI(unittest.TestCase):
     def test_run_logic_json_arg(self):
         from unittest.mock import patch
@@ -78,6 +80,7 @@ class TestTypegenLabCLI(unittest.TestCase):
                 result = run_typegen_lab_logic(args)
                 self.assertTrue(result)
                 mock_print.assert_any_call("export interface Root {\n  test: boolean;\n}")
+
 
 
 

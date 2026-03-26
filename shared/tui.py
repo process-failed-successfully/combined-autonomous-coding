@@ -123,6 +123,7 @@ from shared.tui_calc import CalcLabTab
 from shared.tui_finance import FinanceLabTab
 from shared.tui_unit import UnitLabTab
 from shared.tui_url import UrlLabTab
+from shared.tui_urlencode import UrlEncodeLabTab
 from shared.tui_user_agent import UserAgentLabTab
 from shared.tui_color import ColorLabTab
 from shared.tui_calendar import CalendarTab
@@ -4361,6 +4362,8 @@ class AgentTUI(App):
                 yield GrpcLabTab()
             with TabPane("URL Lab", id="tab-url-lab"):
                 yield UrlLabTab()
+            with TabPane("UrlEncode Lab", id="tab-urlencode"):
+                yield UrlEncodeLabTab()
             with TabPane("HTTP Status Lab", id="tab-http-status"):
                 yield HttpStatusLabTab()
             with TabPane("User Agent Lab", id="tab-user-agent"):

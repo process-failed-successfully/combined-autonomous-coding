@@ -219,7 +219,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "seo-lab", "seo",
@@ -2749,6 +2749,27 @@ def run_url_lab(args):
     from shared.url_lab import run_url_lab_logic
     run_url_lab_logic(args)
     sys.exit(0)
+
+def run_urlencode_lab(args):
+    """Runs the UrlEncode Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching UrlEncode Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-urlencode")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.urlencode_lab import run_urlencode_lab_logic
+    success = run_urlencode_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_cert_lab(args):
     """Runs the Certificate Lab."""
@@ -14241,6 +14262,15 @@ def parse_args(argv=None):
     parser_seo.add_argument("--file", help="Local file to analyze")
     parser_seo.add_argument("--format", choices=["text", "json"], default="text", help="Output report format")
 
+    parser_urlencode = subparsers.add_parser(
+        "urlencode-lab", aliases=["urlencode"],
+        help="URL encode and decode strings."
+    )
+    urlencode_group = parser_urlencode.add_mutually_exclusive_group(required=False)
+    urlencode_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    urlencode_group.add_argument("--decode", "-d", type=str, help="URL encoded text to decode.")
+    parser_urlencode.add_argument("--tui", action="store_true", help="Launch the TUI.")
+
     # --- New 'url-lab' command ---
     parser_url_lab = subparsers.add_parser(
         "url-lab",
@@ -22251,6 +22281,10 @@ async def main():
 
     if args.command in ["url-lab", "url"]:
         run_url_lab(args)
+        return
+
+    if args.command in ["urlencode-lab", "urlencode"]:
+        run_urlencode_lab(args)
         return
 
     if args.command in ["bencode-lab", "bencode", "torrent"]:

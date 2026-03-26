@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.11-slim-bookworm AS builder
+FROM mirror.gcr.io/library/python:3.11-slim-bookworm AS builder
 
 WORKDIR /build
 ENV DEBIAN_FRONTEND=noninteractive
@@ -18,7 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Final
-FROM python:3.11-slim-bookworm
+FROM mirror.gcr.io/library/python:3.11-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG UID=1000

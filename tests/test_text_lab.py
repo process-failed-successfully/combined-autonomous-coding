@@ -239,6 +239,5 @@ class TestTextLab(unittest.TestCase):
             self.manager.generate_random_string(charset="unknown")
 
 
-
 if __name__ == '__main__':
     unittest.main()

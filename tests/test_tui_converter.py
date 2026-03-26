@@ -31,7 +31,7 @@ class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
             # Switch tab
             tabs = app.query_one("#tabs", TabbedContent)
             tabs.active = "tab-types"
-            await pilot.pause() # Wait for switch
+            await pilot.pause()  # Wait for switch
 
             inp = app.query_one("#type-input", TextArea)
             inp.text = '{"name": "test"}'
@@ -70,6 +70,7 @@ class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(inp.text, "")
             self.assertEqual(out.text, "")
+
 
 if __name__ == '__main__':
     unittest.main()

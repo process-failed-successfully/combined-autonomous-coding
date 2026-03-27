@@ -83,6 +83,7 @@ from shared.yaml_lab import run_yaml_lab_logic
 from shared.yaml2json_lab import run_yaml2json_lab_logic
 from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
+from shared.toml2json_lab import run_toml2json_lab_logic
 from shared.csv_lab import run_csv_lab_logic
 from shared.excel_lab import run_excel_lab_logic
 from shared.template_lab import run_template_lab_logic
@@ -3049,6 +3050,17 @@ def run_changelog_lab(args):
 def run_toml_lab(args):
     """Runs the TOML Lab."""
     run_toml_lab_logic(args)
+
+def run_toml2json_lab(args):
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching TOML2JSON Lab TUI...")
+        app = AgentTUI(project_dir=Path("."), start_tab="tab-toml2json")
+        app.run()
+        sys.exit(0)
+    else:
+        run_toml2json_lab_logic(args)
+        sys.exit(0)
     sys.exit(0)
 
 def run_semver_lab(args):
@@ -14761,6 +14773,26 @@ def parse_args(argv=None):
     # sql-lab tui
     sql_subparsers.add_parser("tui", help="Launch interactive TUI for SQL Lab.")
 
+    # --- New 'toml2json-lab' command ---
+    parser_toml2json = subparsers.add_parser(
+        "toml2json-lab",
+        aliases=["toml2json", "t2j"],
+        help="Convert between TOML and JSON."
+    )
+    toml2json_subparsers = parser_toml2json.add_subparsers(
+        dest="action",
+        help="Action to perform (toml2json, json2toml, tui)."
+    )
+    toml2json_subparsers.add_parser("tui", help="Launch TOML2JSON Lab TUI.")
+
+    toml2json_parser_t2j = toml2json_subparsers.add_parser("toml2json", help="Convert TOML to JSON.")
+    toml2json_parser_t2j.add_argument("--input", "-i", required=True, help="Input TOML string or file.")
+    toml2json_parser_t2j.add_argument("--output", "-o", help="Output file path (optional).")
+
+    toml2json_parser_j2t = toml2json_subparsers.add_parser("json2toml", help="Convert JSON to TOML.")
+    toml2json_parser_j2t.add_argument("--input", "-i", required=True, help="Input JSON string or file.")
+    toml2json_parser_j2t.add_argument("--output", "-o", help="Output file path (optional).")
+
     # --- New 'yaml2json-lab' command ---
     parser_yaml2json = subparsers.add_parser(
         "yaml2json-lab",
@@ -22474,6 +22506,9 @@ async def main():
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)
+
+    if args.command in ["toml2json-lab", "toml2json", "t2j"]:
+        run_toml2json_lab(args)
         return
 
     if args.command in ["yaml2json-lab", "yaml2json", "y2j"]:

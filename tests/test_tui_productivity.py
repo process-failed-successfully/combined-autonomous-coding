@@ -3,10 +3,11 @@ from unittest.mock import MagicMock, patch, PropertyMock
 from pathlib import Path
 from typing import Any
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Button, Label
+from textual.widgets import Input, Button
 
 # Since we want to test TUI app locally, we import the ProductivityTab
 from shared.tui_productivity import ProductivityTab
+
 
 class DummyApp(App[Any]):
     def __init__(self, project_dir: Path):
@@ -16,9 +17,11 @@ class DummyApp(App[Any]):
     def compose(self) -> ComposeResult:
         yield ProductivityTab(project_dir=self.project_dir)
 
+
 class TestTUIProductivity(unittest.IsolatedAsyncioTestCase):
     async def test_custom_timer_inputs(self):
-        project_dir = Path(".")
+        project_dir = Path("/tmp/test_proj")
+        project_dir.mkdir(parents=True, exist_ok=True)
         app = DummyApp(project_dir=project_dir)
 
         async with app.run_test() as pilot:
@@ -151,6 +154,7 @@ class TestProductivityTab(unittest.TestCase):
         self.assertFalse(self.tab.timer_active)
         self.tab.manager.stop_session.assert_called()
         mock_app.bell.assert_called()
+
 
 if __name__ == '__main__':
     unittest.main()

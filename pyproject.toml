@@ -54,6 +54,7 @@ dependencies = [
     "msgpack",
     "brotli",
     "python-gnupg>=0.5.0",
+    "jmespath>=1.0.1",
 ]
 requires-python = ">=3.11"
 

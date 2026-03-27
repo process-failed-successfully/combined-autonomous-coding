@@ -172,6 +172,7 @@ from shared.physics_lab import run_physics_lab_logic
 from shared.set_lab import run_set_lab_logic
 from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
+from shared.jq_lab import run_jq_lab_logic
 from shared.jmespath_lab import run_jmespath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
@@ -341,6 +342,7 @@ KNOWN_COMMANDS = [
     "set-lab", "sets",
     "ip-lab", "ip",
     "pack", "jsonpath-lab", "jpath", "jmespath-lab", "jmespath", "jp",
+    "jq-lab", "jq",
     "mime-lab", "mime",
     "branch-lab", "bl",
     "luhn-lab", "luhn",
@@ -7882,6 +7884,17 @@ def run_prompt_lab(args):
     run_tui(args)
 
 
+def run_jq_lab(args):
+    """Runs the jq Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching jq Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-jq")
+        app.run()
+    else:
+        run_jq_lab_logic(args)
+
+
 def run_tui(args, start_tab=None):
     """Starts the Textual TUI."""
     try:
@@ -14533,6 +14546,18 @@ def parse_args(argv=None):
     jsonpath_eval_parser = jsonpath_subparsers.add_parser("evaluate", help="Evaluate JSONPath expressions.")
     jsonpath_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jsonpath_eval_parser.add_argument("expression", help="JSONPath expression.")
+
+    # --- New 'jq-lab' command ---
+    parser_jq = subparsers.add_parser(
+        "jq-lab",
+        aliases=["jq"],
+        help="Evaluate jq expressions."
+    )
+    jq_subparsers = parser_jq.add_subparsers(dest="action")
+    jq_tui_parser = jq_subparsers.add_parser("tui", help="Launch jq Lab TUI.")
+    jq_eval_parser = jq_subparsers.add_parser("evaluate", help="Evaluate jq expressions.")
+    jq_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
+    jq_eval_parser.add_argument("expression", help="jq expression.")
 
     # --- Token Lab command ---
     parser_token = subparsers.add_parser(
@@ -22868,6 +22893,10 @@ async def main():
 
     if args.command in ["jsonpath-lab", "jpath"]:
         run_jsonpath_lab(args)
+        return
+
+    if args.command in ["jq-lab", "jq"]:
+        run_jq_lab(args)
         return
 
     if args.command in ["jmespath-lab", "jmespath", "jp"]:

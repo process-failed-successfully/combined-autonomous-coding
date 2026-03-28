@@ -287,6 +287,7 @@ from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_yaml2json import Yaml2JsonLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
+from shared.tui_yaml2toml import Yaml2TomlLabTab
 from shared.tui_env2json import Env2JsonTab
 from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
@@ -4074,6 +4075,7 @@ class AgentTUI(App):
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
+        PaletteCommand("Go to Yaml2Toml Lab", "switch_tab_yaml2toml"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to jq Lab", "switch_tab_jq"),
         PaletteCommand("Go to JMESPath Lab", "switch_tab_jmespath"),
@@ -4532,6 +4534,8 @@ class AgentTUI(App):
                 yield Yaml2JsonLabTab()
             with TabPane("TOML to JSON", id="tab-toml2json"):
                 yield Toml2JsonLabTab()
+            with TabPane("YAML to TOML", id="tab-yaml2toml"):
+                yield Yaml2TomlLabTab()
             with TabPane("Env to JSON", id="tab-env2json"):
                 yield Env2JsonTab()
             with TabPane("Template Lab", id="tab-template-lab"):

@@ -13,6 +13,8 @@ def test_cli_help():
     assert "run" in result.stdout
     assert "list" in result.stdout
     assert "stop" in result.stdout
+    assert "pause" in result.stdout
+    assert "resume" in result.stdout
     assert "logs" in result.stdout
 
 
@@ -62,7 +64,8 @@ def test_cli_run_detached(mock_session_mgr, mock_preflight):
 def test_cli_list(mock_session_mgr):
     mock_session_mgr.list_sessions.return_value = [
         {"name": "agent-1", "pid": 1001, "status": "running", "start_time": 1700000000},
-        {"name": "agent-2", "pid": 1002, "status": "dead", "start_time": 1700000000}
+        {"name": "agent-2", "pid": 1002, "status": "dead", "start_time": 1700000000},
+        {"name": "agent-3", "pid": 1003, "status": "paused", "start_time": 1700000000}
     ]
 
     result = runner.invoke(app, ["list"])
@@ -74,6 +77,30 @@ def test_cli_list(mock_session_mgr):
     assert "running" in result.stdout
     assert "agent-2" in result.stdout
     assert "dead" in result.stdout
+    assert "agent-3" in result.stdout
+    assert "paused" in result.stdout
+
+
+@patch("agents.cli.session_manager")
+def test_cli_pause(mock_session_mgr):
+    mock_session_mgr.pause_session.return_value = (True, "Session paused successfully.")
+
+    result = runner.invoke(app, ["pause", "agent-1"])
+
+    assert result.exit_code == 0
+    assert "Session paused successfully." in result.stdout
+    mock_session_mgr.pause_session.assert_called_with("agent-1")
+
+
+@patch("agents.cli.session_manager")
+def test_cli_resume(mock_session_mgr):
+    mock_session_mgr.resume_session.return_value = (True, "Session resumed successfully.")
+
+    result = runner.invoke(app, ["resume", "agent-1"])
+
+    assert result.exit_code == 0
+    assert "Session resumed successfully." in result.stdout
+    mock_session_mgr.resume_session.assert_called_with("agent-1")
 
 
 @patch("agents.cli.session_manager")
@@ -127,6 +154,7 @@ def test_cli_config_set():
         assert result.exit_code == 0
         mock_set.assert_called_with("max_iterations", "10")
 
+
 @patch("agents.cli.session_manager")
 def test_cli_prune_no_force(mock_session_mgr):
     mock_session_mgr.prune_sessions.return_value = ["dead-session"]
@@ -137,6 +165,7 @@ def test_cli_prune_no_force(mock_session_mgr):
     assert "Successfully pruned 1 session" in result.stdout
     assert "dead-session" in result.stdout
     mock_session_mgr.prune_sessions.assert_called_once_with(force=False)
+
 
 @patch("agents.cli.session_manager")
 def test_cli_prune_force(mock_session_mgr):
@@ -149,6 +178,7 @@ def test_cli_prune_force(mock_session_mgr):
     assert "Successfully pruned 2 session" in result.stdout
     assert "live-session" in result.stdout
     mock_session_mgr.prune_sessions.assert_called_once_with(force=True)
+
 
 @patch("agents.cli.session_manager")
 def test_cli_prune_empty(mock_session_mgr):
@@ -175,7 +205,7 @@ def test_session_manager_prune_logic(tmp_path):
     # Create mock session files
     live_session = {
         "name": "live-session",
-        "pid": 9999999, # Highly unlikely to exist
+        "pid": 9999999,  # Highly unlikely to exist
         "status": "running",
         "log_file": str(sm.logs_dir / "live.log"),
         "workspace_path": str(tmp_path / "live_workspace")
@@ -189,13 +219,15 @@ def test_session_manager_prune_logic(tmp_path):
         "workspace_path": str(tmp_path / "dead_workspace")
     }
 
-    # We will mock _is_process_running instead of relying on pid lookup
-    with patch.object(sm, "_is_process_running") as mock_is_running:
+    # We will mock _get_process_status instead of relying on pid lookup
+    with patch.object(sm, "_get_process_status") as mock_get_process_status:
         def side_effect(pid):
-            if pid == 9999999: return True
-            if pid == 9999998: return False
-            return False
-        mock_is_running.side_effect = side_effect
+            if pid == 9999999:
+                return "running"
+            if pid == 9999998:
+                return "dead"
+            return "dead"
+        mock_get_process_status.side_effect = side_effect
 
         # Write config files
         (sm.data_dir / "live-session.json").write_text(json.dumps(live_session))

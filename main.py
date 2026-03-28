@@ -231,6 +231,7 @@ KNOWN_COMMANDS = [
     "bson-lab", "bson",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
+    "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
     "proxy-lab", "proxy",
@@ -15164,6 +15165,26 @@ def parse_args(argv=None):
 
 
 
+    # --- New 'run2compose-lab' command ---
+    parser_run2compose = subparsers.add_parser(
+        "run2compose-lab",
+        aliases=["run2compose", "r2c"],
+        help="Convert docker run commands to docker-compose.yml"
+    )
+    run2compose_subparsers = parser_run2compose.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # run2compose-lab tui
+    run2compose_subparsers.add_parser("tui", help="Launch Run2Compose Lab TUI.")
+
+    # run2compose-lab convert
+    parser_run2compose_convert = run2compose_subparsers.add_parser("convert", help="Convert a docker run command to docker-compose YAML.")
+    parser_run2compose_convert.add_argument("--command", dest="command_str", required=True, help="The docker run command string to convert.")
+    parser_run2compose_convert.add_argument("--output", "-o", help="Optional file to save the generated docker-compose.yml.")
+
     # --- New 'yaml-lab' command ---
     parser_yaml = subparsers.add_parser(
         "yaml-lab",
@@ -22587,6 +22608,26 @@ async def main():
         run_ini_lab(args)
         return
 
+
+    if args.command in ["run2compose-lab", "run2compose", "r2c"]:
+        if getattr(args, "action", None) == "tui":
+            from shared.tui import AgentTUI
+            print("Launching Run2Compose Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-run2compose")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+            sys.exit(0)
+
+        from shared.run2compose_lab import run_run2compose_lab_logic
+        run_run2compose_lab_logic(args)
+        return
 
     if args.command in ["yaml-lab", "yaml"]:
         run_yaml_lab(args)

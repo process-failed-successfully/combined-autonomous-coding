@@ -85,6 +85,7 @@ from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.toml2json_lab import run_toml2json_lab_logic
 from shared.csv_lab import run_csv_lab_logic
+from shared.json2xml_lab import run_json2xml_lab_logic
 from shared.excel_lab import run_excel_lab_logic
 from shared.template_lab import run_template_lab_logic
 from shared.unit_lab import run_unit_lab_logic
@@ -229,7 +230,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "json2xml-lab", "json2xml", "j2x", "yaml2json-lab", "yaml2json", "y2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -22558,6 +22559,10 @@ async def main():
     if args.command in ["json2csv-lab", "j2c"]:
         from shared.json2csv_lab import run_json2csv_lab_logic
         run_json2csv_lab_logic(args)
+        return
+
+    if args.command in ["json2xml-lab", "json2xml", "j2x"]:
+        run_json2xml_lab_logic(args)
         return
 
     if args.command in ["env2json-lab", "env2json", "json2env"]:

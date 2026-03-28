@@ -30,10 +30,10 @@ class SessionManager:
 
                 # Check if process is still running
                 pid = data.get("pid")
-                if pid and not self._is_process_running(pid):
-                    data["status"] = "dead"
+                if pid:
+                    data["status"] = self._get_process_status(pid)
                 else:
-                    data["status"] = "running"
+                    data["status"] = "dead"
 
                 sessions.append(data)
             except Exception:
@@ -41,15 +41,21 @@ class SessionManager:
         return sessions
 
     def _is_process_running(self, pid: int) -> bool:
+        return self._get_process_status(pid) in ("running", "paused")
+
+    def _get_process_status(self, pid: int) -> str:
         if not psutil.pid_exists(pid):
-            return False
+            return "dead"
         try:
             p = psutil.Process(pid)
-            if p.status() == psutil.STATUS_ZOMBIE:
-                return False
-            return True
+            status = p.status()
+            if status == psutil.STATUS_ZOMBIE:
+                return "dead"
+            elif status == psutil.STATUS_STOPPED:
+                return "paused"
+            return "running"
         except psutil.NoSuchProcess:
-            return False
+            return "dead"
 
     def start_session(self, name: str, command: List[str], detached: bool = False):
         if self._get_session_path(name).exists():
@@ -202,3 +208,53 @@ class SessionManager:
         with open(path, "r") as f:
             data = json.load(f)
         return Path(data["log_file"])
+
+    def pause_session(self, name: str) -> tuple[bool, str]:
+        path = self._get_session_path(name)
+        if not path.exists():
+            return False, "Session not found."
+
+        with open(path, "r") as f:
+            data = json.load(f)
+
+        pid = data.get("pid")
+        if not pid:
+            return False, "No PID found for session."
+
+        status = self._get_process_status(pid)
+        if status == "dead":
+            return False, "Session is dead."
+        if status == "paused":
+            return True, "Session is already paused."
+
+        try:
+            p = psutil.Process(pid)
+            p.suspend()
+            return True, "Session paused successfully."
+        except Exception as e:
+            return False, f"Failed to pause session: {e}"
+
+    def resume_session(self, name: str) -> tuple[bool, str]:
+        path = self._get_session_path(name)
+        if not path.exists():
+            return False, "Session not found."
+
+        with open(path, "r") as f:
+            data = json.load(f)
+
+        pid = data.get("pid")
+        if not pid:
+            return False, "No PID found for session."
+
+        status = self._get_process_status(pid)
+        if status == "dead":
+            return False, "Session is dead."
+        if status == "running":
+            return True, "Session is already running."
+
+        try:
+            p = psutil.Process(pid)
+            p.resume()
+            return True, "Session resumed successfully."
+        except Exception as e:
+            return False, f"Failed to resume session: {e}"

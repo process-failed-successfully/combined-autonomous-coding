@@ -189,7 +189,13 @@ def list():
     table.add_column("Started", style="blue")
 
     for s in sessions:
-        status_style = "green" if s["status"] == "running" else "red"
+        if s["status"] == "running":
+            status_style = "green"
+        elif s["status"] == "paused":
+            status_style = "yellow"
+        else:
+            status_style = "red"
+
         start_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(s["start_time"]))
         workspace = s.get("workspace_path", "Shared")
         mode = "Isolated" if workspace != "Shared" else "Shared"
@@ -203,6 +209,30 @@ def list():
         )
 
     console.print(table)
+
+
+@app.command()
+def pause(name: str):
+    """
+    Pause a detached agent session.
+    """
+    success, msg = session_manager.pause_session(name)
+    if success:
+        console.print(f"[yellow]{msg}[/yellow]")
+    else:
+        console.print(f"[red]{msg}[/red]")
+
+
+@app.command()
+def resume(name: str):
+    """
+    Resume a paused agent session.
+    """
+    success, msg = session_manager.resume_session(name)
+    if success:
+        console.print(f"[green]{msg}[/green]")
+    else:
+        console.print(f"[red]{msg}[/red]")
 
 
 @app.command()

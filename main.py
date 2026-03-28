@@ -225,7 +225,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -2756,6 +2756,27 @@ def run_xml2json_lab(args):
 
     from shared.xml2json_lab import run_xml2json_lab_logic
     run_xml2json_lab_logic(args)
+    sys.exit(0)
+
+def run_json2xml_lab(args):
+    """Runs the JSON to XML Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Json2Xml Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-json2xml")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.json2xml_lab import run_json2xml_lab_logic
+    run_json2xml_lab_logic(args)
     sys.exit(0)
 
 def run_xml_lab(args):
@@ -15456,6 +15477,17 @@ def parse_args(argv=None):
     parser_xml2json.add_argument("--output", "-o", help="Output file to save the JSON.")
     parser_xml2json.add_argument("--tui", action="store_true", help="Launch interactive XML to JSON Lab.")
 
+    # --- New 'json2xml-lab' command ---
+    parser_json2xml = subparsers.add_parser(
+        "json2xml-lab",
+        aliases=["json2xml"],
+        help="Convert JSON to XML."
+    )
+    parser_json2xml.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2xml.add_argument("--text", "-t", help="Input JSON string.")
+    parser_json2xml.add_argument("--output", "-o", help="Output file to save the XML.")
+    parser_json2xml.add_argument("--tui", action="store_true", help="Launch interactive JSON to XML Lab.")
+
     # --- New 'xml-lab' command ---
     parser_xml = subparsers.add_parser(
         "xml-lab",
@@ -22090,6 +22122,10 @@ async def main():
 
     if args.command in ["xml2json-lab", "xml2json"]:
         run_xml2json_lab(args)
+        return
+
+    if args.command in ["json2xml-lab", "json2xml"]:
+        run_json2xml_lab(args)
         return
 
     if args.command in ["markdown-lab", "md", "md-lab"]:

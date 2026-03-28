@@ -284,6 +284,7 @@ from shared.tui_portscan import PortScanTab
 from shared.tui_html2md import Html2MdTab
 from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_xml2json import Xml2JsonTab
+from shared.tui_json2xml import Json2XmlTab
 from shared.tui_yaml2json import Yaml2JsonLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
 from shared.tui_env2json import Env2JsonTab
@@ -4525,6 +4526,8 @@ class AgentTUI(App):
                 yield XmlLabTab(self.project_dir)
             with TabPane("XML to JSON", id="tab-xml2json"):
                 yield Xml2JsonTab()
+            with TabPane("JSON to XML", id="tab-json2xml"):
+                yield Json2XmlTab()
             with TabPane("YAML to JSON", id="tab-yaml2json"):
                 yield Yaml2JsonLabTab()
             with TabPane("TOML to JSON", id="tab-toml2json"):

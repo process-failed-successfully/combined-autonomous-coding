@@ -229,7 +229,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -14859,6 +14859,26 @@ def parse_args(argv=None):
     yaml2json_parser_j2y.add_argument("input", help="JSON string or file path.")
     yaml2json_parser_j2y.add_argument("--output", "-o", help="Output file path.")
 
+    # --- New 'yaml2toml-lab' command ---
+    parser_yaml2toml = subparsers.add_parser(
+        "yaml2toml-lab",
+        aliases=["yaml2toml", "toml2yaml", "y2t"],
+        help="YAML to TOML and TOML to YAML Converter Lab"
+    )
+    yaml2toml_subparsers = parser_yaml2toml.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+    yaml2toml_subparsers.add_parser("tui", help="Launch YAML2TOML Lab TUI.")
+
+    yaml2toml_parser_y2t = yaml2toml_subparsers.add_parser("yaml2toml", help="Convert YAML to TOML.")
+    yaml2toml_parser_y2t.add_argument("input", help="YAML string or file path.")
+    yaml2toml_parser_y2t.add_argument("--output", "-o", help="Output file path.")
+
+    yaml2toml_parser_t2y = yaml2toml_subparsers.add_parser("toml2yaml", help="Convert TOML to YAML.")
+    yaml2toml_parser_t2y.add_argument("input", help="TOML string or file path.")
+    yaml2toml_parser_t2y.add_argument("--output", "-o", help="Output file path.")
+
     # --- New 'json2csv-lab' command ---
     parser_json2csv = subparsers.add_parser(
         "json2csv-lab",
@@ -22589,6 +22609,14 @@ async def main():
             run_tui(args, "tab-yaml2json")
             return
         run_yaml2json_lab_logic(args)
+        return
+
+    if args.command in ["yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t"]:
+        if getattr(args, "action", None) == "tui":
+            run_tui(args, "tab-yaml2toml")
+            return
+        from shared.yaml2toml_lab import run_yaml2toml_lab_logic
+        run_yaml2toml_lab_logic(args)
         return
 
     if args.command in ["json2csv-lab", "j2c"]:

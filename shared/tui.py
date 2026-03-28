@@ -286,6 +286,7 @@ from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_yaml2json import Yaml2JsonLabTab
+from shared.tui_yaml2toml import Yaml2TomlLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
 from shared.tui_env2json import Env2JsonTab
 from shared.tui_md2html import Md2HtmlTab
@@ -4530,6 +4531,8 @@ class AgentTUI(App):
                 yield Json2XmlTab()
             with TabPane("YAML to JSON", id="tab-yaml2json"):
                 yield Yaml2JsonLabTab()
+            with TabPane("YAML to TOML", id="tab-yaml2toml"):
+                yield Yaml2TomlLabTab()
             with TabPane("TOML to JSON", id="tab-toml2json"):
                 yield Toml2JsonLabTab()
             with TabPane("Env to JSON", id="tab-env2json"):

@@ -7,6 +7,22 @@ Combined Autonomous Coding Agent
 Main entry point for running autonomous coding agents (Gemini or Cursor).
 """
 
+from shared.cli_utils import _run_history_graph_logic
+from shared.cli_utils import get_workflow_stage, WORKFLOW_STAGES, WORKFLOW_ORDER
+from shared.cli_utils import (
+    get_project_summary,
+    get_suggestions,
+    _run_enhanced_status_logic,
+    _run_tree_logic,
+    _run_report_logic,
+    _run_dashboard_logic,
+    _run_blame_logic,
+    _run_next_logic,
+    _run_context_show_logic,
+    _run_context_analyze_logic,
+    _find_metrics_file,
+    _parse_metrics,
+)
 import argparse
 import asyncio
 try:
@@ -175,6 +191,7 @@ from shared.ip_lab import run_ip_lab_logic
 from shared.jsonpath_lab import run_jsonpath_lab_logic
 from shared.jq_lab import run_jq_lab_logic
 from shared.jmespath_lab import run_jmespath_lab_logic
+from shared.xpath_lab import run_xpath_lab_logic
 from shared.mime_lab import run_mime_lab_logic
 from shared.token_lab import run_token_lab_logic
 from shared.data_uri_lab import run_data_uri_lab_logic
@@ -344,6 +361,7 @@ KNOWN_COMMANDS = [
     "set-lab", "sets",
     "ip-lab", "ip",
     "pack", "jsonpath-lab", "jpath", "jmespath-lab", "jmespath", "jp",
+    "xpath-lab", "xpath",
     "jq-lab", "jq",
     "mime-lab", "mime",
     "branch-lab", "bl",
@@ -374,6 +392,7 @@ if FileSystemEventHandler:
             print(f"File modified: {event.src_path}. Running command: {' '.join(self.command)}")
             subprocess.run(self.command, cwd=self.project_dir)
 
+
 def run_rot13_lab(args):
     """Runs the ROT13 Lab."""
     if getattr(args, "tui", False):
@@ -397,6 +416,7 @@ def run_rot13_lab(args):
     success = run_rot13_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
     if getattr(args, "tui", False):
@@ -419,6 +439,7 @@ def run_calc_lab(args):
     run_calc_lab_logic(args)
     sys.exit(0)
 
+
 def run_flashcards_lab(args):
     """Runs the Flashcards Lab TUI."""
     from shared.tui import AgentTUI
@@ -435,16 +456,19 @@ def run_flashcards_lab(args):
         app.run()
     sys.exit(0)
 
+
 def run_rename_lab(args):
     """Runs the Rename Lab."""
     run_rename_lab_logic(args)
     sys.exit(0)
+
 
 def run_find_lab(args):
     """Runs the Find Lab."""
     from shared.find_lab import run_find_lab_logic
     run_find_lab_logic(args)
     sys.exit(0)
+
 
 def run_dict_lab(args):
     """Runs the Dictionary Lab."""
@@ -470,6 +494,7 @@ def run_dict_lab(args):
 
     run_dict_lab_logic(args)
     sys.exit(0)
+
 
 def run_emoji_lab(args):
     """Runs the Emoji Lab."""
@@ -499,6 +524,7 @@ def run_css_lab(args):
     success = run_css_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_js_lab(args):
     """Runs the JavaScript Lab."""
     if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
@@ -520,6 +546,7 @@ def run_js_lab(args):
     from shared.js_lab import run_js_lab_logic
     success = run_js_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_base16_lab(args):
     """Runs the Base16 Lab."""
@@ -556,6 +583,7 @@ def run_base32_lab(args):
     success = run_base32_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base36_lab(args):
     """Runs the Base36 Lab."""
     if getattr(args, "tui", False):
@@ -574,6 +602,7 @@ def run_base36_lab(args):
     success = run_base36_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base58_lab(args):
     """Runs the Base58 Lab."""
     from shared.tui import AgentTUI
@@ -587,6 +616,7 @@ def run_base58_lab(args):
     success = run_base58_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base45_lab(args):
     """Runs the Base45 Lab."""
     if getattr(args, "tui", False):
@@ -599,6 +629,7 @@ def run_base45_lab(args):
     from shared.base45_lab import run_base45_lab_logic
     success = run_base45_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_base62_lab(args):
     """Runs the Base62 Lab."""
@@ -676,6 +707,7 @@ def run_a85_lab(args):
     success = run_a85_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base85_lab(args):
     """Runs the Base85 Lab."""
     if getattr(args, "tui", False):
@@ -688,7 +720,6 @@ def run_base85_lab(args):
     from shared.base85_lab import run_base85_lab_logic
     success = run_base85_lab_logic(args)
     sys.exit(0 if success else 1)
-
 
 
 def run_nato_lab(args):
@@ -712,6 +743,7 @@ def run_nato_lab(args):
     success = run_nato_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base91_lab(args):
     """Runs the Base91 Lab."""
     if getattr(args, "tui", False):
@@ -729,6 +761,7 @@ def run_base91_lab(args):
     from shared.base91_lab import run_base91_lab_logic
     success = run_base91_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_base64_lab(args):
     """Runs the Base64 Lab."""
@@ -753,6 +786,7 @@ def run_base64_lab(args):
     success = run_base64_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_base64img_lab(args):
     """Runs the Base64Img Lab."""
     if getattr(args, "tui", False):
@@ -776,6 +810,7 @@ def run_base64img_lab(args):
     success = run_base64img_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_zlib_lab(args):
     """Runs the Zlib Lab."""
     if getattr(args, "tui", False):
@@ -797,6 +832,7 @@ def run_zlib_lab(args):
     from shared.zlib_lab import run_zlib_lab_logic
     success = run_zlib_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_bcrypt_lab(args):
     """Runs the Bcrypt Lab."""
@@ -820,6 +856,7 @@ def run_bcrypt_lab(args):
     success = run_bcrypt_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_brotli_lab(args):
     """Runs the Brotli Lab."""
     if getattr(args, "tui", False):
@@ -841,6 +878,7 @@ def run_brotli_lab(args):
     from shared.brotli_lab import run_brotli_lab_logic
     success = run_brotli_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_base64url_lab(args):
     """Runs the Base64URL Lab."""
@@ -865,11 +903,13 @@ def run_base64url_lab(args):
     success = run_base64url_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_go_lab(args):
     """Runs the Go Lab."""
     from shared.go_lab import run_go_lab_logic
     success = run_go_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_matrix_lab(args):
     """Runs the Matrix Lab."""
@@ -892,11 +932,13 @@ def run_matrix_lab(args):
     run_matrix_lab_logic(args)
     sys.exit(0)
 
+
 def run_host_lab(args):
     """Runs the Host Lab."""
     from shared.host_lab import run_host_lab_logic
     run_host_lab_logic(args)
     sys.exit(0)
+
 
 def run_clipboard_lab(args):
     """Runs the Clipboard Lab."""
@@ -904,11 +946,13 @@ def run_clipboard_lab(args):
     run_clipboard_lab_logic(args)
     sys.exit(0)
 
+
 def run_slides_lab(args):
     """Runs the Slides Lab."""
     from shared.tui_slides import run_slides_lab_logic
     run_slides_lab_logic(args)
     sys.exit(0)
+
 
 def run_test_lab(args):
     """Runs the Test Lab TUI."""
@@ -925,6 +969,7 @@ def run_test_lab(args):
     else:
         app.run()
     sys.exit(0)
+
 
 def run_stats_lab(args):
     """Runs the Code Stats Lab."""
@@ -947,6 +992,7 @@ def run_stats_lab(args):
     run_stats_lab_logic(args)
     sys.exit(0)
 
+
 def run_disk_usage(args):
     """Runs the Disk Usage TUI."""
     from shared.tui import AgentTUI
@@ -962,6 +1008,7 @@ def run_disk_usage(args):
     else:
         app.run()
     sys.exit(0)
+
 
 def run_process_explorer(args):
     """Runs the Interactive Process Explorer TUI."""
@@ -979,11 +1026,13 @@ def run_process_explorer(args):
         app.run()
     sys.exit(0)
 
+
 def run_rebase_lab(args):
     """Runs the Interactive Git Rebase Lab."""
     from shared.rebase_lab import run_rebase_lab_logic
     run_rebase_lab_logic(args)
     sys.exit(0)
+
 
 def run_subtitle_lab(args):
     """Runs the Subtitle Lab."""
@@ -1006,6 +1055,7 @@ def run_subtitle_lab(args):
     run_subtitle_lab_logic(args)
     sys.exit(0)
 
+
 def run_shell_lab(args):
     """Runs the Shell Lab TUI."""
     from shared.tui import AgentTUI
@@ -1022,20 +1072,24 @@ def run_shell_lab(args):
         app.run()
     sys.exit(0)
 
+
 def run_chemistry_lab(args):
     """Runs the Chemistry Lab."""
     run_chemistry_lab_logic(args)
     sys.exit(0)
+
 
 def run_physics_lab(args):
     """Runs the Physics Lab."""
     run_physics_lab_logic(args)
     sys.exit(0)
 
+
 def run_set_lab(args):
     """Runs the Set Lab."""
     success = run_set_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_pack_lab(args):
     """Runs the Pack Lab to bundle the codebase."""
@@ -1050,10 +1104,12 @@ def run_pack_lab(args):
     success = run_pack_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_mac_lab(args):
     """Runs the MAC Lab."""
     run_mac_lab_logic(args)
     sys.exit(0)
+
 
 def run_ip_lab(args):
     """Runs the IP Lab."""
@@ -1075,10 +1131,12 @@ def run_ip_lab(args):
     success = run_ip_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_mime_lab(args):
     """Runs the MIME Lab."""
     success = run_mime_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_luhn_lab(args):
     """Runs the Luhn Lab."""
@@ -1107,6 +1165,7 @@ def run_curl_lab(args):
     """Runs the cURL Converter Lab."""
     from shared.curl_lab import run_curl_lab_logic
     run_curl_lab_logic(args)
+
 
 def run_portscan_lab(args):
     """Runs the PortScan Lab utilities."""
@@ -1155,6 +1214,7 @@ def run_size_lab(args):
     success = run_size_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_alias_lab(args):
     """Runs the Alias Lab utilities."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -1179,6 +1239,7 @@ def run_alias_lab(args):
     success = run_alias_lab_logic(args, KNOWN_COMMANDS)
     sys.exit(0 if success else 1)
 
+
 def run_stego_lab(args):
     """Runs the Stego Lab utilities."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -1199,6 +1260,7 @@ def run_stego_lab(args):
 
     from shared.stego_lab import run_stego_lab_logic
     run_stego_lab_logic(args)
+
 
 def run_vcard_lab(args):
     """Runs the vCard Lab utilities."""
@@ -1222,10 +1284,12 @@ def run_vcard_lab(args):
     success = run_vcard_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_data_uri_lab(args):
     """Runs the Data URI Lab."""
     success = run_data_uri_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_roman_lab(args):
     """Runs the Roman Numeral Lab."""
@@ -1248,6 +1312,7 @@ def run_roman_lab(args):
         success = run_roman_lab_logic(args)
         sys.exit(0 if success else 1)
 
+
 def run_har_lab(args):
     """Runs the HAR Lab."""
     if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
@@ -1267,6 +1332,7 @@ def run_har_lab(args):
     else:
         from shared.har_lab import run_har_lab_logic
         run_har_lab_logic(args)
+
 
 def run_morse_lab(args):
     """Runs the Morse Code Lab."""
@@ -1288,6 +1354,7 @@ def run_morse_lab(args):
         success = run_morse_lab_logic(args)
         sys.exit(0 if success else 1)
 
+
 def run_snowflake_lab(args):
     """Runs the Snowflake Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -1307,6 +1374,7 @@ def run_snowflake_lab(args):
     else:
         success = run_snowflake_lab_logic(args)
         sys.exit(0 if success else 1)
+
 
 def run_bitwise_lab(args):
     """Runs the Bitwise Lab."""
@@ -1329,6 +1397,7 @@ def run_bitwise_lab(args):
         success = run_bitwise_lab_logic(args)
         sys.exit(0 if success else 1)
 
+
 def run_case_lab(args):
     """Runs the Case Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -1349,6 +1418,7 @@ def run_case_lab(args):
         from shared.string_case_lab import run_string_case_lab_logic
         run_string_case_lab_logic(args)
         sys.exit(0)
+
 
 def run_iban_lab(args):
     """Runs the IBAN Lab."""
@@ -1372,6 +1442,7 @@ def run_iban_lab(args):
         run_iban_lab_logic(args)
         sys.exit(0)
 
+
 def run_isbn_lab(args):
     """Runs the ISBN Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -1392,6 +1463,7 @@ def run_isbn_lab(args):
         from shared.isbn_lab import run_isbn_lab_logic
         run_isbn_lab_logic(args)
         sys.exit(0)
+
 
 def run_branch_lab(args):
     """Runs the Branch Lab."""
@@ -1414,6 +1486,7 @@ def run_branch_lab(args):
         from shared.branch_lab import run_branch_lab_logic
         success = run_branch_lab_logic(args)
         sys.exit(0 if success else 1)
+
 
 def run_jsonpath_lab(args):
     """Runs the JSONPath Lab."""
@@ -1438,6 +1511,31 @@ def run_jsonpath_lab(args):
         print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
         sys.exit(1)
 
+
+def run_xpath_lab(args):
+    """Runs the XPath Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching XPath Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-xpath")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    elif getattr(args, 'action', None) == 'evaluate':
+        run_xpath_lab_logic(args)
+        sys.exit(0)
+    else:
+        print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_jmespath_lab(args):
     """Runs the JMESPath Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -1461,6 +1559,7 @@ def run_jmespath_lab(args):
         print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
         sys.exit(1)
 
+
 def run_token_lab(args):
     """Runs the Token Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -1481,6 +1580,7 @@ def run_token_lab(args):
         success = run_token_lab_logic(args)
         sys.exit(0 if success else 1)
 
+
 def run_cicd_lab(args):
     """Runs the CI/CD Lab TUI."""
     from shared.tui import AgentTUI
@@ -1497,6 +1597,7 @@ def run_cicd_lab(args):
         app.run()
     sys.exit(0)
 
+
 def run_knowledge_lab(args):
     """Runs the Knowledge Graph Lab TUI."""
     from shared.tui import AgentTUI
@@ -1512,6 +1613,7 @@ def run_knowledge_lab(args):
     else:
         app.run()
     sys.exit(0)
+
 
 def run_diagram_lab(args):
     """Runs the Diagram Lab."""
@@ -1534,17 +1636,20 @@ def run_diagram_lab(args):
     run_diagram_lab_logic(args)
     sys.exit(0)
 
+
 def run_pipeline_lab(args):
     """Runs the Pipeline Lab."""
     from shared.pipeline_lab import run_pipeline_lab_logic
     run_pipeline_lab_logic(args)
     sys.exit(0)
 
+
 def run_bandwidth_lab(args):
     """Runs the Bandwidth Lab."""
     from shared.bandwidth_lab import run_bandwidth_lab_logic
     run_bandwidth_lab_logic(args)
     sys.exit(0)
+
 
 def run_typing_lab(args):
     """Runs the Typing Lab."""
@@ -1561,6 +1666,7 @@ def run_typing_lab(args):
     else:
         app.run()
     sys.exit(0)
+
 
 def run_sound_lab(args):
     """Runs the Sound Lab."""
@@ -1583,11 +1689,13 @@ def run_sound_lab(args):
     run_sound_lab_logic(args)
     sys.exit(0)
 
+
 def run_maze_lab(args):
     """Runs the Maze Lab."""
     from shared.maze_lab import run_maze_lab_logic
     run_maze_lab_logic(args)
     sys.exit(0)
+
 
 def run_license_lab(args):
     """Runs the License Lab."""
@@ -1595,11 +1703,13 @@ def run_license_lab(args):
     success = run_license_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_rfc_lab(args):
     """Runs the RFC Lab."""
     from shared.rfc_lab import run_rfc_lab_logic
     run_rfc_lab_logic(args)
     sys.exit(0)
+
 
 def run_weather_lab(args):
     """Runs the Weather Lab."""
@@ -1607,17 +1717,20 @@ def run_weather_lab(args):
     run_weather_lab_logic(args)
     sys.exit(0)
 
+
 def run_pattern_lab(args):
     """Runs the Pattern Lab."""
     from shared.pattern_lab import run_pattern_lab_logic
     run_pattern_lab_logic(args)
     sys.exit(0)
 
+
 def run_ascii_lab(args):
     """Runs the Ascii Lab."""
     from shared.ascii_lab import run_ascii_lab_logic
     run_ascii_lab_logic(args)
     sys.exit(0)
+
 
 def run_path_lab(args):
     """Runs the Path Lab."""
@@ -1656,6 +1769,7 @@ def run_path_lab(args):
 
     sys.exit(0)
 
+
 def run_cheatsheet(args):
     """Runs the Cheatsheet Lab."""
     from shared.cheatsheet_lab import CheatsheetManager
@@ -1692,6 +1806,7 @@ def run_cheatsheet(args):
         print("\nUsage: cheatsheet <topic> OR cheatsheet --search <query>")
     sys.exit(0)
 
+
 def run_calendar_lab(args):
     """Runs the Calendar Lab."""
     from shared.calendar_lab import CalendarLabManager
@@ -1708,11 +1823,13 @@ def run_calendar_lab(args):
     print(manager.render_ascii_calendar(year, month))
     sys.exit(0)
 
+
 def run_finance_lab(args):
     """Runs the Finance Lab."""
     from shared.finance_lab import run_finance_lab_logic
     success = run_finance_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_runner_lab(args):
     """Runs the Task Runner Lab."""
@@ -1748,10 +1865,12 @@ def run_runner_lab(args):
         ret = manager.run_task(target, on_output=lambda x: print(x))
         sys.exit(ret)
 
+
 def run_gitignore_lab(args):
     """Runs the Gitignore Lab."""
     from shared.gitignore_lab import run_gitignore_lab_logic
     run_gitignore_lab_logic(args)
+
 
 def run_ollama_lab(args):
     """Runs the Ollama Lab."""
@@ -1759,11 +1878,13 @@ def run_ollama_lab(args):
     run_ollama_lab_logic(args)
     sys.exit(0)
 
+
 def run_mqtt_lab(args):
     """Runs the MQTT Lab."""
     from shared.mqtt_lab import run_mqtt_lab_logic
     run_mqtt_lab_logic(args)
     sys.exit(0)
+
 
 def run_permissions_lab(args):
     """Runs the Permissions Lab."""
@@ -1786,11 +1907,13 @@ def run_permissions_lab(args):
         run_permissions_lab_logic(args)
         sys.exit(0)
 
+
 def run_systemd_lab(args):
     """Runs the Systemd Lab."""
     from shared.systemd_lab import run_systemd_lab_logic
     run_systemd_lab_logic(args)
     sys.exit(0)
+
 
 def run_port(args):
     """Manages network ports."""
@@ -1837,20 +1960,24 @@ def run_port(args):
             print(f"❌ Timeout waiting for port {args.port}.", file=sys.stderr)
             sys.exit(1)
 
+
 def run_archive_lab(args):
     """Runs the Archive Lab."""
     run_archive_lab_logic(args)
     sys.exit(0)
+
 
 def run_docs_lab(args):
     """Runs the Docs Lab."""
     run_docs_lab_logic(args)
     sys.exit(0)
 
+
 def run_qr_lab(args):
     """Runs the QR Lab."""
     run_qr_lab_logic(args)
     sys.exit(0)
+
 
 def run_barcode_lab(args):
     """Runs the Barcode Lab."""
@@ -1873,45 +2000,54 @@ def run_barcode_lab(args):
     run_barcode_lab_logic(args)
     sys.exit(0)
 
+
 def run_monitor_lab(args):
     """Runs the Monitor Lab."""
     run_monitor_lab_logic(args)
     sys.exit(0)
+
 
 def run_metrics_lab(args):
     """Runs the Metrics Lab."""
     run_metrics_lab_logic(args)
     sys.exit(0)
 
+
 def run_fuzz_lab(args):
     """Runs the Fuzz Lab."""
     run_fuzz_lab_logic(args)
     sys.exit(0)
+
 
 def run_notify_lab(args):
     """Runs the Notify Lab."""
     run_notify_lab_logic(args)
     sys.exit(0)
 
+
 def run_contract_lab(args):
     """Runs the Contract Lab."""
     run_contract_lab_logic(args)
     sys.exit(0)
+
 
 def run_ansible_lab(args):
     """Runs the Ansible Lab."""
     run_ansible_lab_logic(args)
     sys.exit(0)
 
+
 def run_hex_lab(args):
     """Runs the Hex Lab."""
     run_hex_lab_logic(args)
     sys.exit(0)
 
+
 def run_speed_lab(args):
     """Runs the Speed Lab."""
     run_speed_lab_logic(args)
     sys.exit(0)
+
 
 async def run_load_lab(args):
     """Runs the Load Lab."""
@@ -1936,10 +2072,12 @@ async def run_load_lab(args):
         await run_load_lab_logic(args)
         sys.exit(0)
 
+
 def run_ast_lab(args):
     """Runs the AST Lab."""
     run_ast_lab_logic(args)
     sys.exit(0)
+
 
 def run_otp_lab(args):
     """Runs the OTP Lab."""
@@ -1947,10 +2085,12 @@ def run_otp_lab(args):
     run_otp_lab_logic(args)
     sys.exit(0)
 
+
 async def run_trace_lab(args):
     """Runs the Trace Lab."""
     await run_trace_lab_logic(args)
     sys.exit(0)
+
 
 def run_http_lab(args):
     """Runs the HTTP Lab."""
@@ -1971,6 +2111,7 @@ def run_http_lab(args):
 
     run_http_lab_logic(args)
     sys.exit(0)
+
 
 def run_bencode_lab(args):
     """Runs the Bencode Lab."""
@@ -1993,6 +2134,7 @@ def run_bencode_lab(args):
     success = run_bencode_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_msgpack_lab(args):
     """Runs the MessagePack Lab."""
     if hasattr(args, "action") and args.action == "tui":
@@ -2013,6 +2155,7 @@ def run_msgpack_lab(args):
     from shared.msgpack_lab import run_msgpack_lab_logic
     success = run_msgpack_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_bson_lab(args):
     """Runs the BSON Lab."""
@@ -2035,6 +2178,7 @@ def run_bson_lab(args):
     success = run_bson_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_lorem_lab(args):
     """Runs the Lorem Ipsum Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -2055,6 +2199,7 @@ def run_lorem_lab(args):
     from shared.lorem_lab import run_lorem_lab_logic
     success = run_lorem_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_cbor_lab(args):
     """Runs the CBOR Lab."""
@@ -2077,6 +2222,7 @@ def run_cbor_lab(args):
     success = run_cbor_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_geo_lab(args):
     """Runs the Geo Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -2097,20 +2243,24 @@ def run_geo_lab(args):
     run_geo_lab_logic(args)
     sys.exit(0)
 
+
 def run_struct_lab(args):
     """Runs the Struct Lab."""
     run_struct_lab_logic(args)
     sys.exit(0)
+
 
 def run_chart_lab(args):
     """Runs the Chart Lab."""
     run_chart_lab_logic(args)
     sys.exit(0)
 
+
 def run_enc_lab(args):
     """Runs the Encoding Lab."""
     success = run_enc_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_pcap_lab(args):
     """Runs the PCAP Lab."""
@@ -2133,20 +2283,24 @@ def run_pcap_lab(args):
     run_pcap_lab_logic(args)
     sys.exit(0)
 
+
 def run_rss_lab(args):
     """Runs the RSS Lab."""
     run_rss_lab_logic(args)
     sys.exit(0)
+
 
 def run_fs_lab(args):
     """Runs the FS Lab."""
     run_fs_lab_logic(args)
     sys.exit(0)
 
+
 def run_webhook_lab(args):
     """Runs the Webhook Lab."""
     run_webhook_lab_logic(args)
     sys.exit(0)
+
 
 def run_hash_lab(args):
     """Runs the Hash Lab."""
@@ -2175,6 +2329,7 @@ def run_hash_lab(args):
     success = run_hash_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_random_lab(args):
     """Runs the Random Lab."""
     if args.action == "tui":
@@ -2195,15 +2350,18 @@ def run_random_lab(args):
     run_random_lab_logic(args)
     sys.exit(0)
 
+
 async def run_browser_lab(args):
     """Runs the Browser Lab."""
     await run_browser_lab_logic(args)
     sys.exit(0)
 
+
 def run_npm_lab(args):
     """Runs the NPM Lab."""
     success = run_npm_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_pypi_lab(args):
     """Runs the PyPI Lab."""
@@ -2225,20 +2383,24 @@ def run_pypi_lab(args):
     success = run_pypi_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_docker_lab(args):
     """Runs the Docker Lab."""
     run_docker_lab_logic(args)
     sys.exit(0)
+
 
 def run_compose_lab(args):
     """Runs the Compose Lab."""
     run_compose_lab_logic(args)
     sys.exit(0)
 
+
 def run_k8s_lab(args):
     """Runs the Kubernetes Lab."""
     run_k8s_lab_logic(args)
     sys.exit(0)
+
 
 def run_uni_lab(args):
     """Runs the Unicode Lab."""
@@ -2260,26 +2422,31 @@ def run_uni_lab(args):
         success = run_uni_lab_logic(args)
         sys.exit(0 if success else 1)
 
+
 def run_code_query_cli(args):
     """Runs the Code Query tool."""
     from shared.code_query import run_code_query
     run_code_query(args)
     sys.exit(0)
 
+
 def run_redis_lab(args):
     """Runs the Redis Lab."""
     run_redis_lab_logic(args)
     sys.exit(0)
+
 
 def run_kafka_lab(args):
     """Runs the Kafka Lab."""
     run_kafka_lab_logic(args)
     sys.exit(0)
 
+
 async def run_email_lab(args):
     """Runs the Email Lab."""
     await run_email_lab_logic(args)
     sys.exit(0)
+
 
 def run_pgp_lab(args):
     """Runs the PGP Lab."""
@@ -2308,15 +2475,18 @@ def run_ssh_lab(args):
     run_ssh_lab_logic(args)
     sys.exit(0)
 
+
 def run_tmux_lab(args):
     """Runs the Tmux Lab."""
     run_tmux_lab_logic(args)
     sys.exit(0)
 
+
 def run_terraform_lab(args):
     """Runs the Terraform Lab."""
     run_terraform_lab_logic(args)
     sys.exit(0)
+
 
 def run_dns_lab(args):
     """Runs the DNS Lab."""
@@ -2326,15 +2496,18 @@ def run_dns_lab(args):
     run_dns_lab_logic(args)
     sys.exit(0)
 
+
 def run_whois_lab(args):
     """Runs the Whois Lab."""
     run_whois_lab_logic(args)
     sys.exit(0)
 
+
 def run_cidr_lab(args):
     """Runs the CIDR Lab utilities."""
     run_cidr_lab_logic(args)
     sys.exit(0)
+
 
 def run_color_lab(args):
     """Runs the Color Lab utilities."""
@@ -2362,6 +2535,7 @@ def run_color_lab(args):
         run_color_lab_logic(**args_dict)
         sys.exit(0)
 
+
 def run_data_lab(args):
     """Runs the Data Lab utilities."""
     if args.action == "tui":
@@ -2382,10 +2556,12 @@ def run_data_lab(args):
         run_data_lab_logic(args)
         sys.exit(0)
 
+
 def run_badges(args):
     """Runs the badges command."""
     success = run_badges_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_crypto_lab(args):
     """Runs the Crypto Lab."""
@@ -2406,6 +2582,7 @@ def run_crypto_lab(args):
 
     success = run_crypto_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_image_lab(args):
     """Runs the Image Lab."""
@@ -2445,6 +2622,7 @@ def run_ocr_lab(args):
     run_ocr_lab_logic(args)
     sys.exit(0)
 
+
 def run_media_lab(args):
     """Runs the Media Lab."""
     run_media_lab_logic(args)
@@ -2460,6 +2638,7 @@ def run_sqlite_lab(args):
     success = run_sqlite_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_jwt_lab(args):
     """Runs the JWT Lab."""
     if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
@@ -2469,6 +2648,7 @@ def run_jwt_lab(args):
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_uuid_lab(args):
     """Runs the UUID Lab."""
@@ -2512,6 +2692,7 @@ def run_nanoid_lab(args):
     from shared.nanoid_lab import run_nanoid_lab_logic
     run_nanoid_lab_logic(args)
 
+
 def run_ulid_lab(args):
     """Runs the ULID Lab."""
     if args.action == "tui":
@@ -2532,6 +2713,7 @@ def run_ulid_lab(args):
     from shared.ulid_lab import run_ulid_lab_logic
     run_ulid_lab_logic(args)
     sys.exit(0)
+
 
 def run_password_lab(args):
     """Runs the Password Lab."""
@@ -2560,6 +2742,7 @@ def run_password_lab(args):
         run_password_lab_logic(args)
         sys.exit(0)
 
+
 def run_text_lab(args):
     """Runs the Text Lab."""
     if getattr(args, "action", None) == "tui":
@@ -2580,6 +2763,7 @@ def run_text_lab(args):
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_http_status_lab(args):
     """Runs the HTTP Status Lab."""
@@ -2602,6 +2786,7 @@ def run_http_status_lab(args):
     success = run_http_status_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_markdown_lab(args):
     """Runs the Markdown Lab."""
     if getattr(args, "action", None) == "tui":
@@ -2622,6 +2807,7 @@ def run_markdown_lab(args):
     from shared.markdown_lab import run_markdown_lab_logic
     success = run_markdown_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_json2md_lab(args):
     """Runs the JSON to Markdown Lab."""
@@ -2644,10 +2830,12 @@ def run_json2md_lab(args):
     success = run_json2md_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_html_entity_lab(args):
     """Runs the HTML Entity Lab."""
     from shared.html_entity_lab import run_html_entity_lab_logic
     run_html_entity_lab_logic(args)
+
 
 def run_html2jsx_lab(args):
     """Runs the HTML to JSX Lab."""
@@ -2670,6 +2858,7 @@ def run_html2jsx_lab(args):
     run_html2jsx_lab_logic(args)
     sys.exit(0)
 
+
 def run_html_lab(args):
     """Runs the HTML Lab."""
     if hasattr(args, "action") and args.action == "tui":
@@ -2690,6 +2879,7 @@ def run_html_lab(args):
     from shared.html_lab import run_html_lab_logic
     run_html_lab_logic(args)
     sys.exit(0)
+
 
 def run_html2md_lab(args):
     """Runs the HTML to Markdown Lab."""
@@ -2712,6 +2902,7 @@ def run_html2md_lab(args):
     success = run_html2md_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_md2html_lab(args):
     """Runs the Markdown to HTML Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -2733,11 +2924,13 @@ def run_md2html_lab(args):
     success = run_md2html_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_seo_lab(args):
     """Runs the SEO Lab."""
     from shared.seo_lab import run_seo_lab_logic
     run_seo_lab_logic(args)
     sys.exit(0)
+
 
 def run_xml2json_lab(args):
     """Runs the XML to JSON Lab."""
@@ -2760,6 +2953,7 @@ def run_xml2json_lab(args):
     run_xml2json_lab_logic(args)
     sys.exit(0)
 
+
 def run_json2xml_lab(args):
     """Runs the JSON to XML Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -2780,6 +2974,7 @@ def run_json2xml_lab(args):
     from shared.json2xml_lab import run_json2xml_lab_logic
     run_json2xml_lab_logic(args)
     sys.exit(0)
+
 
 def run_xml_lab(args):
     """Runs the XML Lab."""
@@ -2802,6 +2997,7 @@ def run_xml_lab(args):
     run_xml_lab_logic(args)
     sys.exit(0)
 
+
 def run_url_lab(args):
     """Runs the URL Lab."""
     if getattr(args, "action", None) == "tui":
@@ -2823,6 +3019,7 @@ def run_url_lab(args):
     run_url_lab_logic(args)
     sys.exit(0)
 
+
 def run_urlencode_lab(args):
     """Runs the UrlEncode Lab."""
     if getattr(args, "tui", False):
@@ -2843,6 +3040,7 @@ def run_urlencode_lab(args):
     from shared.urlencode_lab import run_urlencode_lab_logic
     success = run_urlencode_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_cert_lab(args):
     """Runs the Certificate Lab."""
@@ -2875,6 +3073,7 @@ def run_codec_lab(args):
     run_codec_lab_logic(args)
     sys.exit(0)
 
+
 def run_converter_lab(args):
     """Runs the Converter Lab."""
     if hasattr(args, 'action') and args.action == 'tui':
@@ -2895,6 +3094,8 @@ def run_converter_lab(args):
         from shared.converter_lab import run_converter_lab_logic
         success = run_converter_lab_logic(args)
         sys.exit(0 if success else 1)
+
+
 def run_time_lab(args):
     """Runs the Time Lab."""
     if hasattr(args, 'action') and args.action == 'tui':
@@ -2914,6 +3115,7 @@ def run_time_lab(args):
     else:
         success = run_time_lab_logic(args)
         sys.exit(0 if success else 1)
+
 
 def run_math_lab(args):
     """Runs the Math Lab."""
@@ -2936,6 +3138,7 @@ def run_math_lab(args):
     success = run_math_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
 def run_unit_lab(args):
     """Runs the Unit Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -2956,15 +3159,18 @@ def run_unit_lab(args):
         success = run_unit_lab_logic(args)
         sys.exit(0 if success else 1)
 
+
 def run_sys_lab(args):
     """Runs the System Lab."""
     run_sys_lab_logic(args)
     sys.exit(0)
 
+
 def run_log_lab(args):
     """Runs the Log Lab."""
     run_log_lab_logic(args)
     sys.exit(0)
+
 
 async def run_sql_lab(args):
     """Runs the SQL Lab."""
@@ -2974,15 +3180,18 @@ async def run_sql_lab(args):
     await run_sql_lab_logic(args)
     sys.exit(0)
 
+
 def run_csv_lab(args):
     """Runs the CSV Lab."""
     run_csv_lab_logic(args)
     sys.exit(0)
 
+
 def run_excel_lab(args):
     """Runs the Excel Lab."""
     success = run_excel_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_template_lab(args):
     """Runs the Template Lab."""
@@ -3004,6 +3213,7 @@ def run_template_lab(args):
         run_template_lab_logic(args)
         sys.exit(0)
 
+
 def run_json_lab(args):
     """Runs the JSON Lab."""
     if args.action == "tui":
@@ -3023,6 +3233,7 @@ def run_json_lab(args):
 
     run_json_lab_logic(args)
     sys.exit(0)
+
 
 def run_ini_lab(args):
     """Runs the INI Lab."""
@@ -3051,6 +3262,7 @@ def run_yaml_lab(args):
     run_yaml_lab_logic(args)
     sys.exit(0)
 
+
 def run_changelog_lab(args):
     """Runs the Changelog Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -3072,9 +3284,11 @@ def run_changelog_lab(args):
         run_changelog_lab_logic(args)
         sys.exit(0)
 
+
 def run_toml_lab(args):
     """Runs the TOML Lab."""
     run_toml_lab_logic(args)
+
 
 def run_toml2json_lab(args):
     if getattr(args, "action", None) == "tui":
@@ -3088,17 +3302,20 @@ def run_toml2json_lab(args):
         sys.exit(0)
     sys.exit(0)
 
+
 def run_semver_lab(args):
     """Runs the SemVer Lab."""
     from shared.semver_lab import run_semver_lab_logic
     run_semver_lab_logic(args)
     sys.exit(0)
 
+
 def run_gantt(args):
     """Generates an ASCII Gantt chart for the current sprint plan."""
     project_dir = args.project_dir.resolve()
     success = run_gantt_logic(project_dir)
     sys.exit(0 if success else 1)
+
 
 def run_kanban(args):
     """Runs the Kanban board CLI."""
@@ -3112,6 +3329,7 @@ def run_kanban(args):
 
     success = run_kanban_logic(project_dir, action, task_id, status)
     sys.exit(0 if success else 1)
+
 
 async def run_resume(args):
     """Generates a project resume."""
@@ -3128,6 +3346,7 @@ async def run_resume(args):
     )
     sys.exit(0)
 
+
 async def run_retro(args):
     """Conducts a retrospective."""
     project_dir = args.project_dir.resolve()
@@ -3141,6 +3360,7 @@ async def run_retro(args):
         model=args.model
     )
     sys.exit(0 if success else 1)
+
 
 def run_devtools(args):
     """Runs developer tools from CLI."""
@@ -3182,6 +3402,7 @@ def run_devtools(args):
 
     sys.exit(0)
 
+
 def run_quiz(args):
     """Runs the codebase quiz."""
     from shared.quiz import QuizGenerator
@@ -3220,7 +3441,8 @@ def run_quiz(args):
         while True:
             try:
                 choice = input("Answer (1-4): ").strip()
-                if not choice: continue
+                if not choice:
+                    continue
                 choice_idx = int(choice) - 1
                 if 0 <= choice_idx < len(q.options):
                     break
@@ -3237,6 +3459,7 @@ def run_quiz(args):
     print(f"--- Game Over ---")
     print(f"Final Score: {score}/{len(questions)}")
     sys.exit(0)
+
 
 def run_kata(args):
     """Runs the Refactoring Kata game."""
@@ -3268,10 +3491,10 @@ def run_kata(args):
         print("\nTo start a challenge, run: main.py kata start --index <number>")
 
     elif args.action == "start":
-        challenges = manager.list_challenges(limit=args.limit) # Re-fetch to be safe/consistent indexes
+        challenges = manager.list_challenges(limit=args.limit)  # Re-fetch to be safe/consistent indexes
         if not challenges:
-             print("No challenges found.")
-             sys.exit(0)
+            print("No challenges found.")
+            sys.exit(0)
 
         idx = args.index - 1
         if not (0 <= idx < len(challenges)):
@@ -3305,6 +3528,7 @@ def run_kata(args):
 
     sys.exit(0)
 
+
 def run_serve(args):
     """Starts a local development server."""
     project_dir = args.project_dir.resolve()
@@ -3317,6 +3541,7 @@ def run_serve(args):
     )
     sys.exit(0 if success else 1)
 
+
 def run_ide(args):
     """Generates IDE configuration files."""
     from shared.ide_config import IdeConfigManager
@@ -3327,6 +3552,7 @@ def run_ide(args):
     if args.action == "vscode" or args.action == "cursor":
         success = manager.generate_vscode_config(dry_run=args.dry_run, force=args.force)
         sys.exit(0 if success else 1)
+
 
 def run_scheduler(args):
     """Manages the autonomous scheduler."""
@@ -3349,6 +3575,7 @@ def run_scheduler(args):
 
     sys.exit(0)
 
+
 def run_chaos(args):
     """Runs chaos engineering experiments."""
     run_chaos_logic(
@@ -3359,6 +3586,7 @@ def run_chaos(args):
         interface=getattr(args, 'interface', 'eth0')
     )
     sys.exit(0)
+
 
 def run_network(args):
     """Generates an interactive network graph of the codebase."""
@@ -3372,10 +3600,12 @@ def run_network(args):
     )
     sys.exit(0)
 
+
 def run_onboard(args):
     """Runs the onboarding wizard."""
     run_onboard_logic(args.project_dir)
     sys.exit(0)
+
 
 def run_secrets(args):
     """Manages encrypted secrets."""
@@ -3452,6 +3682,7 @@ def run_secrets(args):
 
     sys.exit(0)
 
+
 async def run_db(args):
     """Manages database operations."""
     from shared.database_manager import DatabaseManager
@@ -3480,6 +3711,7 @@ async def run_db(args):
     else:
         print(f"Unknown action: {args.action}", file=sys.stderr)
         sys.exit(1)
+
 
 async def run_adr(args):
     """Manages Architecture Decision Records."""
@@ -3615,15 +3847,15 @@ def run_session(args):
             if active:
                 target_session = active.name
             else:
-                 print("Error: No active session. Specify name with --name.", file=sys.stderr)
-                 sys.exit(1)
+                print("Error: No active session. Specify name with --name.", file=sys.stderr)
+                sys.exit(1)
 
         try:
             manager.add_file(target_session, args.file)
             print(f"✅ Added {args.file} to session '{target_session}'")
         except FileNotFoundError:
-             print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
-             sys.exit(1)
+            print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
+            sys.exit(1)
 
     elif args.action == "remove":
         if not args.file:
@@ -3636,20 +3868,20 @@ def run_session(args):
             if active:
                 target_session = active.name
             else:
-                 print("Error: No active session. Specify name with --name.", file=sys.stderr)
-                 sys.exit(1)
+                print("Error: No active session. Specify name with --name.", file=sys.stderr)
+                sys.exit(1)
 
         try:
             manager.remove_file(target_session, args.file)
             print(f"✅ Removed {args.file} from session '{target_session}'")
         except FileNotFoundError:
-             print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
-             sys.exit(1)
+            print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
+            sys.exit(1)
 
     elif args.action == "note":
         if not args.note:
-             print("Error: Note text required.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Note text required.", file=sys.stderr)
+            sys.exit(1)
 
         target_session = args.name
         if not target_session:
@@ -3657,15 +3889,15 @@ def run_session(args):
             if active:
                 target_session = active.name
             else:
-                 print("Error: No active session. Specify name with --name.", file=sys.stderr)
-                 sys.exit(1)
+                print("Error: No active session. Specify name with --name.", file=sys.stderr)
+                sys.exit(1)
 
         try:
             manager.add_note(target_session, args.note)
             print(f"✅ Added note to session '{target_session}'")
         except FileNotFoundError:
-             print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
-             sys.exit(1)
+            print(f"❌ Session '{target_session}' not found.", file=sys.stderr)
+            sys.exit(1)
 
     elif args.action == "stop":
         manager.stop_session()
@@ -3683,6 +3915,7 @@ def run_session(args):
             sys.exit(1)
 
     sys.exit(0)
+
 
 def run_playground(args):
     """Manages the agent playground."""
@@ -3723,6 +3956,7 @@ def run_playground(args):
 
     sys.exit(0)
 
+
 def run_init(args):
     """Runs an interactive setup wizard for a new project."""
     import subprocess
@@ -3750,7 +3984,8 @@ def run_init(args):
                 print("✅ Successfully initialized a new Git repository.")
             except (subprocess.CalledProcessError, FileNotFoundError) as e:
                 stderr = getattr(e, 'stderr', str(e))
-                if isinstance(stderr, bytes): stderr = stderr.decode()
+                if isinstance(stderr, bytes):
+                    stderr = stderr.decode()
                 print(f"❌ Error initializing Git repository: {stderr}")
 
     # --- Step 2: .gitignore ---
@@ -3855,9 +4090,9 @@ agent_config.yaml
     if spec_path.exists():
         print(f"✅ Application spec file already exists: {spec_path.name}")
         if not args.yes:
-             overwrite_spec = input("Do you want to overwrite it? [y/N]: ").strip().lower()
-             if overwrite_spec != 'y':
-                 spec_path = None # Skip writing
+            overwrite_spec = input("Do you want to overwrite it? [y/N]: ").strip().lower()
+            if overwrite_spec != 'y':
+                spec_path = None  # Skip writing
 
     if spec_path:
         print("Please describe the application you want to build.")
@@ -3870,7 +4105,7 @@ agent_config.yaml
                 line = input("> ")
                 if not line and len(spec_lines) > 0 and spec_lines[-1] == "":
                     # Two consecutive empty lines
-                    spec_lines.pop() # Remove the last empty line
+                    spec_lines.pop()  # Remove the last empty line
                     break
                 spec_lines.append(line)
         except (EOFError, KeyboardInterrupt):
@@ -4176,7 +4411,6 @@ def run_show_config(config):
     print(json.dumps(config, cls=EnhancedJSONEncoder, indent=2, sort_keys=True))
     sys.exit(0)
 
-from shared.cli_utils import _run_history_graph_logic
 
 def run_history_graph(args):
     """Displays a graph of historical metrics."""
@@ -4223,6 +4457,7 @@ RECOMMENDED_MODELS = {
         {"model": "ollama/codellama", "description": "Specialized for code generation.", "recommended": False},
     ]
 }
+
 
 def run_models(args):
     """Prints a list of recommended models for each agent."""
@@ -5052,6 +5287,7 @@ def _artifacts_diff(args, base_dir, mode):
 
     sys.exit(0)
 
+
 def run_tour(args):
     """Manages interactive code tours."""
     from shared.tour import TourManager
@@ -5164,6 +5400,7 @@ def run_tour(args):
 
     sys.exit(0)
 
+
 def run_artifacts(args, mode):
     """Manages agent artifacts (trash or archives)."""
     project_dir = args.project_dir.resolve()
@@ -5188,6 +5425,7 @@ def run_artifacts(args, mode):
     elif args.action == "diff":
         _artifacts_diff(args, base_dir, mode)
 
+
 def run_archives(args):
     """Manages the agent archives directory."""
     print("Warning: The 'archives' command is deprecated. Use 'artifacts archive <action>' instead.", file=sys.stderr)
@@ -5203,6 +5441,7 @@ def run_archives(args):
         dry_run=args.dry_run
     )
     run_artifacts(new_args, mode='archive')
+
 
 def run_revert(args):
     """Discards uncommitted changes for specified files or for the entire repository."""
@@ -5851,7 +6090,6 @@ def run_rewind(args):
         print(f"❌ Error checking git status: {e}", file=sys.stderr)
         sys.exit(1)
 
-
     # --- Interactive Mode ---
     if not target:
         print(f"--- Interactive Rewind in: {project_dir} ---")
@@ -5923,7 +6161,6 @@ def run_rewind(args):
                 print(f"❌ Error: Could not find a git commit for Run ID '{target}'.", file=sys.stderr)
                 print("Please provide a valid commit hash, reference, or a Run ID from the agent's history.", file=sys.stderr)
                 sys.exit(1)
-
 
     # --- Confirmation and Execution ---
     print(f"\nThis will perform a 'git reset --hard' to '{target}'.")
@@ -6030,7 +6267,7 @@ def run_restore(args):
     artifacts_to_restore = list(latest_trash_dir.iterdir())
     if not artifacts_to_restore:
         print("Trash archive is empty. Nothing to restore.")
-        latest_trash_dir.rmdir() # Clean up empty dir
+        latest_trash_dir.rmdir()  # Clean up empty dir
         print(f"Removed empty trash archive: {latest_trash_dir.name}")
         sys.exit(0)
 
@@ -6076,21 +6313,6 @@ def run_restore(args):
     print("\n✅ Restore complete.")
     sys.exit(0)
 
-
-from shared.cli_utils import (
-    get_project_summary,
-    get_suggestions,
-    _run_enhanced_status_logic,
-    _run_tree_logic,
-    _run_report_logic,
-    _run_dashboard_logic,
-    _run_blame_logic,
-    _run_next_logic,
-    _run_context_show_logic,
-    _run_context_analyze_logic,
-    _find_metrics_file,
-    _parse_metrics,
-)
 
 def run_release(args):
     """Manages the release process."""
@@ -6163,19 +6385,19 @@ def run_release(args):
         # Create tag
         tag_name = f"v{next_version}"
         if not args.no_changelog:
-             # Use changelog as tag message
-             # Write to temp file for safety
-             import tempfile
-             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tf:
-                 tf.write(changelog)
-                 tf_path = tf.name
+            # Use changelog as tag message
+            # Write to temp file for safety
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tf:
+                tf.write(changelog)
+                tf_path = tf.name
 
-             try:
-                 subprocess.run(["git", "-C", str(project_dir), "tag", "-a", tag_name, "-F", tf_path], check=True)
-             finally:
-                 os.unlink(tf_path)
+            try:
+                subprocess.run(["git", "-C", str(project_dir), "tag", "-a", tag_name, "-F", tf_path], check=True)
+            finally:
+                os.unlink(tf_path)
         else:
-             subprocess.run(["git", "-C", str(project_dir), "tag", tag_name], check=True)
+            subprocess.run(["git", "-C", str(project_dir), "tag", tag_name], check=True)
 
         print(f"✅ Created tag: {tag_name}")
         print("Don't forget to push: git push --follow-tags")
@@ -6190,8 +6412,8 @@ async def run_bisect(args):
 
     if args.action == "run":
         if not args.good or not args.bad or not args.command:
-             print("Error: --good, --bad, and --command are required for 'run' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: --good, --bad, and --command are required for 'run' action.", file=sys.stderr)
+            sys.exit(1)
 
         success = await run_bisect_logic(
             project_dir=project_dir,
@@ -6207,8 +6429,8 @@ async def run_bisect(args):
 
     elif args.action == "analyze":
         if not args.commit:
-             print("Error: Commit hash required for analysis.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Commit hash required for analysis.", file=sys.stderr)
+            sys.exit(1)
 
         description = args.bug_description or "A regression was reported on this commit."
         print(f"--- Analyzing Commit: {args.commit} ---")
@@ -6229,6 +6451,7 @@ def run_map(args):
     from shared.map import _run_map_logic
     _run_map_logic(args.project_dir, args.format, args.focus)
     sys.exit(0)
+
 
 def run_architecture(args):
     """Checks the project architecture against defined rules."""
@@ -6284,6 +6507,7 @@ def run_architecture(args):
         print("\n✅ No architecture violations found.")
         sys.exit(0)
 
+
 def run_analytics(args):
     """Runs project analytics."""
     if args.type == "git":
@@ -6296,6 +6520,7 @@ def run_analytics(args):
         _run_analytics_complexity_logic(args.project_dir)
     sys.exit(0)
 
+
 def run_duplication(args):
     """Runs the code duplication detector."""
     from shared.duplication import _run_duplication_logic
@@ -6307,6 +6532,7 @@ def run_duplication(args):
     )
     sys.exit(0)
 
+
 def run_unused(args):
     """Runs the unused code detector."""
     from shared.unused import _run_unused_logic
@@ -6317,6 +6543,7 @@ def run_unused(args):
     )
     sys.exit(0)
 
+
 def run_risk(args):
     """Runs the risk analysis (hotspots)."""
     from shared.risk_analysis import _run_risk_logic
@@ -6326,6 +6553,7 @@ def run_risk(args):
     )
     sys.exit(0)
 
+
 def run_impact(args):
     """Runs the predictive impact analysis."""
     from shared.impact import run_impact_logic
@@ -6334,6 +6562,7 @@ def run_impact(args):
         json_output=args.json
     )
     sys.exit(0)
+
 
 def run_a11y(args):
     """Runs the accessibility scanner."""
@@ -6361,6 +6590,7 @@ def run_a11y(args):
     )
     sys.exit(0)
 
+
 def run_license(args):
     """Checks dependency license compliance."""
     from shared.dependencies import DependencyAnalyzer
@@ -6383,8 +6613,10 @@ def run_license(args):
             status = item["status"]
 
             # Truncate if too long
-            if len(pkg) > 30: pkg = pkg[:27] + "..."
-            if len(lic) > 20: lic = lic[:17] + "..."
+            if len(pkg) > 30:
+                pkg = pkg[:27] + "..."
+            if len(lic) > 20:
+                lic = lic[:17] + "..."
 
             print(f"  {pkg:<30} | {lic:<20} | {status:<10}")
 
@@ -6400,6 +6632,7 @@ def run_license(args):
             sys.exit(1)
 
     sys.exit(0)
+
 
 def run_deps(args):
     """Generates a dependency graph or updates dependencies."""
@@ -6486,6 +6719,7 @@ def run_deps(args):
 
     print(_run_deps_logic(args.project_dir, args.format, args.check))
     sys.exit(0)
+
 
 async def run_optimize(args):
     """Runs the optimization logic."""
@@ -6584,8 +6818,8 @@ def run_knowledge(args):
 
     elif args.action == "delete":
         if not args.id:
-             console.print("Error: ID is required for 'delete' action.", style="red")
-             sys.exit(1)
+            console.print("Error: ID is required for 'delete' action.", style="red")
+            sys.exit(1)
 
         if manager.delete_knowledge(int(args.id)):
             console.print(f"[green]Deleted knowledge item #{args.id}[/green]")
@@ -6617,7 +6851,7 @@ def run_knowledge(args):
         table.add_column("Source", style="green")
         table.add_column("Question", style="white")
         if args.status == "answered":
-             table.add_column("Answer", style="yellow")
+            table.add_column("Answer", style="yellow")
 
         for q in questions:
             row = [str(q.id), q.source_agent, q.question]
@@ -6628,14 +6862,14 @@ def run_knowledge(args):
         console.print(table)
 
     elif args.action == "answer":
-         if not args.id or not args.answer:
-              console.print("Error: ID and Answer are required.", style="red")
-              sys.exit(1)
+        if not args.id or not args.answer:
+            console.print("Error: ID and Answer are required.", style="red")
+            sys.exit(1)
 
-         if manager.answer_question(int(args.id), args.answer):
-              console.print(f"[green]Answered question #{args.id}[/green]")
-         else:
-              console.print(f"[red]Question #{args.id} not found.[/red]")
+        if manager.answer_question(int(args.id), args.answer):
+            console.print(f"[green]Answered question #{args.id}[/green]")
+        else:
+            console.print(f"[red]Question #{args.id} not found.[/red]")
 
     sys.exit(0)
 
@@ -6782,10 +7016,12 @@ def run_context(args):
         print(context_output)
     sys.exit(0)
 
+
 def run_next(args):
     """Analyzes the project and executes the next logical command upon confirmation."""
     success = _run_next_logic(project_dir=args.project_dir)
     sys.exit(0 if success else 1)
+
 
 def run_blame(args):
     """Shows the agent Run ID or author for each line of a file."""
@@ -6820,7 +7056,7 @@ def run_smart_search(args):
 
     for i, res in enumerate(results):
         print(f"[{i+1}] \033[1m{res['file']}\033[0m (Score: {res['score']:.2f})")
-        print(f"    \033[90m{res['snippet']}\033[0m") # Gray snippet
+        print(f"    \033[90m{res['snippet']}\033[0m")  # Gray snippet
         print()
 
     sys.exit(0)
@@ -6861,18 +7097,18 @@ def run_search(args):
         results_by_file[f].append(res)
 
     for file_path, matches in results_by_file.items():
-        print(f"\n📄 \033[1m{file_path}\033[0m") # Bold filename
+        print(f"\n📄 \033[1m{file_path}\033[0m")  # Bold filename
         for m in matches:
             # Context before
             for ctx in m['context_before']:
-                print(f"    \033[90m{ctx}\033[0m") # Gray context
+                print(f"    \033[90m{ctx}\033[0m")  # Gray context
 
             # Match
             # Highlight the pattern in the content?
             # Simple highlight if not regex or complex
             content = m['content']
             # We skip highlighting for now to avoid messiness with regex matches
-            print(f"  \033[32m{m['line']}\033[0m: {content}") # Green line num
+            print(f"  \033[32m{m['line']}\033[0m: {content}")  # Green line num
 
             # Context after
             for ctx in m['context_after']:
@@ -7012,6 +7248,7 @@ def run_stash(args):
     elif args.action == "drop":
         _stash_drop(args, git_path, project_dir)
 
+
 def _stash_push(args, git_path, project_dir):
     """Stashes uncommitted changes."""
     print(f"--- Stashing changes in: {project_dir} ---")
@@ -7035,11 +7272,12 @@ def _stash_push(args, git_path, project_dir):
             sys.exit(1)
 
         print("✅ Changes stashed successfully.")
-        _stash_list(args, git_path, project_dir, count=1) # Show the latest stash
+        _stash_list(args, git_path, project_dir, count=1)  # Show the latest stash
 
     except subprocess.CalledProcessError as e:
         print(f"❌ An error occurred: {e.stderr}", file=sys.stderr)
         sys.exit(1)
+
 
 def _stash_list(args, git_path, project_dir, count=None):
     """Lists all available stashes."""
@@ -7063,6 +7301,7 @@ def _stash_list(args, git_path, project_dir, count=None):
     except subprocess.CalledProcessError as e:
         print(f"❌ Error listing stashes: {e.stderr}", file=sys.stderr)
         return []
+
 
 def _stash_pop(args, git_path, project_dir):
     """Interactively applies and removes a stash."""
@@ -7105,6 +7344,7 @@ def _stash_pop(args, git_path, project_dir):
     except (EOFError, KeyboardInterrupt):
         print("\nAborted.")
         sys.exit(0)
+
 
 def _stash_drop(args, git_path, project_dir):
     """Interactively deletes a stash."""
@@ -7196,6 +7436,7 @@ def run_report(args):
     )
     sys.exit(0 if success else 1)
 
+
 def run_dashboard(args):
     """Displays a comprehensive dashboard of the project's status."""
     if hasattr(args, 'format') and args.format == "html":
@@ -7213,6 +7454,7 @@ def run_dashboard(args):
         dashboard_text = _run_dashboard_logic(project_dir=args.project_dir)
         print(dashboard_text)
         sys.exit(0)
+
 
 def run_tree(args):
     """Displays a tree view of the project directory."""
@@ -7283,9 +7525,12 @@ def run_glance(args):
                 staged = sum(1 for line in tracked_changes if line and line[0] != ' ')
                 unstaged = sum(1 for line in tracked_changes if line and len(line) > 1 and line[1] != ' ')
                 summary_parts = []
-                if staged: summary_parts.append(f"{staged} staged")
-                if unstaged: summary_parts.append(f"{unstaged} unstaged")
-                if untracked: summary_parts.append(f"{untracked} untracked")
+                if staged:
+                    summary_parts.append(f"{staged} staged")
+                if unstaged:
+                    summary_parts.append(f"{unstaged} unstaged")
+                if untracked:
+                    summary_parts.append(f"{untracked} untracked")
                 git_summary = f"⚠️ {', '.join(summary_parts)}"
         except (subprocess.CalledProcessError, FileNotFoundError):
             git_summary = "Error checking status"
@@ -7362,6 +7607,7 @@ def _run_history_logic(project_dir):
         else:
             print("  Log file not found.")
 
+
 def run_history(args):
     """Displays a history of agent runs for the project."""
     _run_history_logic(project_dir=args.project_dir)
@@ -7429,6 +7675,7 @@ def _run_last_logic(project_dir):
 
     return True
 
+
 def run_last(args):
     """Displays a summary of the last agent run."""
     success = _run_last_logic(project_dir=args.project_dir)
@@ -7488,6 +7735,7 @@ def _run_diff_summary_logic(project_dir):
         return False
     return True
 
+
 def run_diff_summary(args):
     """Displays a summary of uncommitted git changes."""
     success = _run_diff_summary_logic(project_dir=args.project_dir)
@@ -7546,7 +7794,8 @@ def run_diff(args):
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         stderr = getattr(e, 'stderr', str(e))
-        if isinstance(stderr, bytes): stderr = stderr.decode().strip()
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode().strip()
         print(f"❌ An error occurred: {stderr}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
@@ -7591,13 +7840,13 @@ def _run_log_logic(project_dir, count=None):
         return False
     return True
 
+
 def run_log(args):
     """Displays the git commit history for the project."""
     success = _run_log_logic(project_dir=args.project_dir, count=args.count)
     sys.exit(0 if success else 1)
 
 
-import time
 def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
     """The core logic for displaying agent logs."""
     repo_root = Path(__file__).parent
@@ -7697,6 +7946,7 @@ def _run_logs_logic(run_id=None, lines=None, follow=False, grep=None):
 
     return True
 
+
 def run_logs(args):
     """Displays agent logs."""
     if hasattr(args, 'explore') and args.explore:
@@ -7713,7 +7963,7 @@ def run_logs(args):
 
 
 # --- Workflow Subcommand Helpers ---
-from shared.cli_utils import get_workflow_stage, WORKFLOW_STAGES, WORKFLOW_ORDER
+
 
 def _workflow_status(args):
     """Displays the current workflow status."""
@@ -7953,8 +8203,6 @@ def run_completion():
         sys.exit(1)
 
 
-
-
 def _format_duration(seconds: float) -> str:
     """Formats seconds into a human-readable string (m s)."""
     seconds = float(seconds)
@@ -7971,13 +8219,13 @@ def run_cost(args):
         status = calculator.check_budget()
         print(f"--- Budget Status ---")
         if status['status'] == "No Limit":
-             print("Status: No budget limit set in agent_config.yaml")
-             print(f"Total Cost: ${status['current']:.4f}")
+            print("Status: No budget limit set in agent_config.yaml")
+            print(f"Total Cost: ${status['current']:.4f}")
         else:
-             print(f"Status:    {status['status']}")
-             print(f"Limit:     ${status['limit']:.2f}")
-             print(f"Used:      ${status['current']:.4f} ({status['percent']:.1f}%)")
-             print(f"Remaining: ${status['remaining']:.4f}")
+            print(f"Status:    {status['status']}")
+            print(f"Limit:     ${status['limit']:.2f}")
+            print(f"Used:      ${status['current']:.4f} ({status['percent']:.1f}%)")
+            print(f"Remaining: ${status['remaining']:.4f}")
         print("")
 
     run_id = args.run_id
@@ -8066,8 +8314,8 @@ def _benchmark_show(args):
             sys.exit(1)
         metrics = _parse_metrics(metrics_file)
         if not metrics.get("Run ID"):
-             print("❌ Error: Could not determine Run ID from final_metrics.txt.", file=sys.stderr)
-             sys.exit(1)
+            print("❌ Error: Could not determine Run ID from final_metrics.txt.", file=sys.stderr)
+            sys.exit(1)
         run_id = metrics["Run ID"]
     else:
         metrics_file = _find_metrics_file(run_id, project_dir)
@@ -8120,12 +8368,12 @@ def _benchmark_compare(args):
             prefix = "✅ " if is_improvement else "🔻 "
             diff_str = f"{prefix}{diff:+.2f}"
             if "Time" in key:
-                 val1_str = _format_duration(val1)
-                 val2_str = _format_duration(val2)
-                 diff_str = f"{prefix}{_format_duration(abs(diff))}"
+                val1_str = _format_duration(val1)
+                val2_str = _format_duration(val2)
+                diff_str = f"{prefix}{_format_duration(abs(diff))}"
             else:
-                 val1_str = str(val1)
-                 val2_str = str(val2)
+                val1_str = str(val1)
+                val2_str = str(val2)
         else:
             val1_str = str(val1)
             val2_str = str(val2)
@@ -8366,7 +8614,7 @@ def run_branch(args):
             subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             if "did not match any file(s) known to git" in e.stderr:
-                main_branch = "master" # Fallback to master
+                main_branch = "master"  # Fallback to master
                 try:
                     subprocess.run([git_path, "-C", str(project_dir), "checkout", main_branch], check=True, capture_output=True, text=True)
                 except subprocess.CalledProcessError as e2:
@@ -8432,8 +8680,8 @@ async def run_recipes(args):
 
     elif args.action == "show":
         if not args.name:
-             print("Error: Name required for 'show' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Name required for 'show' action.", file=sys.stderr)
+            sys.exit(1)
         steps = manager.get_recipe(args.name)
         if not steps:
             print(f"Recipe '{args.name}' not found.", file=sys.stderr)
@@ -8445,20 +8693,20 @@ async def run_recipes(args):
 
     elif args.action == "run":
         if not args.name:
-             print("Error: Name required for 'run' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Name required for 'run' action.", file=sys.stderr)
+            sys.exit(1)
         success = manager.run_recipe(args.name, dry_run=args.dry_run, known_commands=KNOWN_COMMANDS)
         sys.exit(0 if success else 1)
 
     elif args.action == "delete":
         if not args.name:
-             print("Error: Name required for 'delete' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: Name required for 'delete' action.", file=sys.stderr)
+            sys.exit(1)
         if manager.delete_recipe(args.name):
             print(f"✅ Deleted recipe '{args.name}'.")
         else:
-             print(f"Recipe '{args.name}' not found.", file=sys.stderr)
-             sys.exit(1)
+            print(f"Recipe '{args.name}' not found.", file=sys.stderr)
+            sys.exit(1)
 
     elif args.action == "learn":
         from shared.recipe_learner import RecipeLearner
@@ -8733,7 +8981,7 @@ def run_test(args):
                 print("❌ Smart mode requires 'pytest' to be installed.", file=sys.stderr)
                 sys.exit(1)
         else:
-             print("⚠️  Smart test mode is currently only supported for Python projects. Falling back to full suite.")
+            print("⚠️  Smart test mode is currently only supported for Python projects. Falling back to full suite.")
 
     # --- Project Detection ---
     command_base = []
@@ -8777,7 +9025,6 @@ def run_test(args):
             full_command.append("--")
         full_command.extend(passthrough_args)
 
-
     print(f"Executing command: {' '.join(full_command)}")
     try:
         # Stream the output directly and run in the target project directory
@@ -8790,7 +9037,7 @@ def run_test(args):
         sys.exit(1)
     except KeyboardInterrupt:
         print("\nTest execution interrupted by user.")
-        sys.exit(130) # Standard exit code for Ctrl+C
+        sys.exit(130)  # Standard exit code for Ctrl+C
     except Exception as e:
         print(f"❌ An unexpected error occurred while running tests: {e}", file=sys.stderr)
         sys.exit(1)
@@ -8820,13 +9067,13 @@ def run_lint(args):
                 with open(project_dir / "package.json", 'r') as f:
                     package_data = json.load(f)
                     if "lint:fix" in package_data.get("scripts", {}):
-                         command_base = ["npm", "run", "lint:fix"]
+                        command_base = ["npm", "run", "lint:fix"]
                     else:
-                         command_base = ["npm", "run", "lint"]
-                         fix_flags = ["--", "--fix"]
+                        command_base = ["npm", "run", "lint"]
+                        fix_flags = ["--", "--fix"]
             except (IOError, json.JSONDecodeError):
-                 command_base = ["npm", "run", "lint"]
-                 fix_flags = ["--", "--fix"]
+                command_base = ["npm", "run", "lint"]
+                fix_flags = ["--", "--fix"]
 
         else:
             command_base = ["npm", "run", "lint"]
@@ -8848,7 +9095,7 @@ def run_lint(args):
             if is_fix_mode:
                 print("Warning: --fix is not supported by pylint. Ignoring.", file=sys.stderr)
         else:
-             print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
+            print("Warning: No Python linter (ruff, flake8, pylint) found in PATH.", file=sys.stderr)
 
     # --- Command Construction & Execution ---
     if not command_base:
@@ -8910,16 +9157,14 @@ def run_format(args):
         elif shutil.which("npx"):
             prettier_executable = "npx prettier"
 
-
         if prettier_executable:
             command_base = [prettier_executable, "."]
             if is_check_mode:
                 check_flags = ["--check"]
             else:
-                check_flags = ["--write"] # Prettier's equivalent of formatting
+                check_flags = ["--write"]  # Prettier's equivalent of formatting
         else:
             print("Warning: Node.js formatter 'prettier' not found.", file=sys.stderr)
-
 
     # --- Command Construction & Execution ---
     if not command_base:
@@ -9137,7 +9382,7 @@ def run_config(args):
                 try:
                     parsed_value = float(value)
                 except ValueError:
-                    parsed_value = value # Keep as string
+                    parsed_value = value  # Keep as string
 
         current_level[keys[-1]] = parsed_value
 
@@ -9676,7 +9921,6 @@ def parse_args(argv=None):
         help="Skip confirmation prompt",
     )
 
-
     # Subparser for 'rewind'
     parser_rewind = subparsers.add_parser("rewind", help="Reset the project to a previous state (git commit)")
     parser_rewind.add_argument(
@@ -9695,7 +9939,6 @@ def parse_args(argv=None):
         action="store_true",
         help="Skip confirmation prompt",
     )
-
 
     # Subparser for 'worktrees'
     parser_worktrees = subparsers.add_parser("worktrees", help="Manage agent-created git worktrees")
@@ -9884,7 +10127,6 @@ def parse_args(argv=None):
         action="store_true",
         help="Skip confirmation prompts for 'advance' or 'revert' actions.",
     )
-
 
     # --- New 'plan' command ---
     parser_plan = subparsers.add_parser(
@@ -10907,7 +11149,6 @@ def parse_args(argv=None):
     parser_knowledge_graph.add_argument("--format", choices=["html", "mermaid", "json"], default="html", help="Output format (default: html).")
     parser_knowledge_graph.add_argument("-o", "--output", help="Output file path.")
     parser_knowledge_graph.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
-
 
     # --- New 'chat' command ---
     parser_chat = subparsers.add_parser(
@@ -13742,7 +13983,6 @@ def parse_args(argv=None):
     parser_cl_subnet.add_argument("cidr", help="Base CIDR.")
     parser_cl_subnet.add_argument("new_prefix", type=int, help="New prefix length.")
 
-
     # --- New 'sqlite-lab' command ---
     parser_sqlite = subparsers.add_parser(
         "sqlite-lab",
@@ -14097,7 +14337,8 @@ def parse_args(argv=None):
 
     # text-lab transform
     parser_tl_transform = text_lab_subparsers.add_parser("transform", help="Transform text case.")
-    parser_tl_transform.add_argument("--type", "-t", required=True, choices=["upper", "lower", "title", "camel", "snake", "kebab", "pascal", "constant"], help="Transformation type.")
+    parser_tl_transform.add_argument("--type", "-t", required=True, choices=["upper", "lower",
+                                     "title", "camel", "snake", "kebab", "pascal", "constant"], help="Transformation type.")
     parser_tl_transform.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
 
     # text-lab encode
@@ -14158,8 +14399,8 @@ def parse_args(argv=None):
     # text-lab random
     parser_tl_random = text_lab_subparsers.add_parser("random", aliases=["rand"], help="Generate a random string.")
     parser_tl_random.add_argument("--length", "-l", type=int, default=16, help="Length of the random string (default: 16).")
-    parser_tl_random.add_argument("--charset", "-c", choices=["alphanumeric", "alpha", "numeric", "hex", "ascii"], default="alphanumeric", help="Character set to use (default: alphanumeric).")
-
+    parser_tl_random.add_argument("--charset", "-c", choices=["alphanumeric", "alpha", "numeric", "hex",
+                                  "ascii"], default="alphanumeric", help="Character set to use (default: alphanumeric).")
 
     text_lab_subparsers.add_parser("tui", help="Launch the Text Lab TUI.")
 
@@ -14276,7 +14517,6 @@ def parse_args(argv=None):
 
     # bencode-lab tui
     bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
-
 
     # --- New 'msgpack-lab' command ---
     parser_msgpack_lab = subparsers.add_parser(
@@ -14400,7 +14640,6 @@ def parse_args(argv=None):
     # url-lab decode-plus
     parser_ul_decode_plus = url_lab_subparsers.add_parser("decode-plus", help="URL decode text with + as space.")
     parser_ul_decode_plus.add_argument("text", help="Text to decode.")
-
 
     # url-lab join
     parser_ul_join = url_lab_subparsers.add_parser("join", help="Join a base URL with paths.")
@@ -15164,8 +15403,6 @@ def parse_args(argv=None):
     # changelog-lab tui
     parser_changelog_tui = changelog_subparsers.add_parser("tui", help="Launch Changelog Lab TUI.")
 
-
-
     # --- New 'run2compose-lab' command ---
     parser_run2compose = subparsers.add_parser(
         "run2compose-lab",
@@ -15375,8 +15612,6 @@ def parse_args(argv=None):
     parser_crypto_rsa_verify.add_argument("--key", help="Public key string.")
     parser_crypto_rsa_verify.add_argument("--key-file", help="Public key file.")
 
-
-
     # --- New 'image-lab' command ---
 
     parser_ocr = subparsers.add_parser(
@@ -15405,7 +15640,6 @@ def parse_args(argv=None):
     parser_exif_remove.add_argument("--output", "-o", help="Output file path (default: no_exif_<filename>)")
 
     parser_exif.add_argument("--tui", action="store_true", help="Launch EXIF Lab TUI")
-
 
     parser_image = subparsers.add_parser(
         "image-lab",
@@ -15972,7 +16206,6 @@ def parse_args(argv=None):
     # geo-lab tui
     parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
-
     # --- New 'curl-lab' command ---
     parser_curl = subparsers.add_parser(
         "curl-lab",
@@ -16282,7 +16515,6 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
-
     # css-lab
     parser_css = subparsers.add_parser(
         "css-lab", aliases=["css"],
@@ -16426,7 +16658,6 @@ Examples:
     b85_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
     b85_group.add_argument("--decode", "-d", type=str, help="Base85 text to decode.")
     b85_group.add_argument("--tui", action="store_true", help="Launch the interactive Base85 Lab TUI.")
-
 
     # nato-lab
     parser_nato = subparsers.add_parser(
@@ -18055,14 +18286,16 @@ Examples:
     parser_ascii_img = ascii_subparsers.add_parser("image", help="Convert image to ASCII.")
     parser_ascii_img.add_argument("--file", "-f", required=True, help="Input image file.")
     parser_ascii_img.add_argument("--width", type=int, default=100, help="Output width.")
-    parser_ascii_img.add_argument("--charset", default="standard", choices=["standard", "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
+    parser_ascii_img.add_argument("--charset", default="standard", choices=["standard",
+                                  "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
     parser_ascii_img.add_argument("--inverse", action="store_true", help="Inverse brightness.")
 
     # ascii play
     parser_ascii_play = ascii_subparsers.add_parser("play", help="Play GIF as ASCII animation.")
     parser_ascii_play.add_argument("--file", "-f", required=True, help="Input GIF file.")
     parser_ascii_play.add_argument("--width", type=int, default=100, help="Output width.")
-    parser_ascii_play.add_argument("--charset", default="standard", choices=["standard", "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
+    parser_ascii_play.add_argument("--charset", default="standard", choices=["standard",
+                                   "simple", "blocks", "binary", "matrix", "numbers"], help="Charset to use.")
     parser_ascii_play.add_argument("--inverse", action="store_true", help="Inverse brightness.")
     parser_ascii_play.add_argument("--fps", type=float, help="Override FPS.")
 
@@ -18336,7 +18569,8 @@ Examples:
 
     parser_rename.add_argument("--search", "-s", help="Regex pattern to search for.")
     parser_rename.add_argument("--replace", "-R", help="Replacement string (can use groups like \\1).")
-    parser_rename.add_argument("--transform", "-t", choices=["upper", "lower", "title", "camel", "snake", "kebab", "dot", "path", "constant"], help="Apply text transformation.")
+    parser_rename.add_argument("--transform", "-t", choices=["upper", "lower", "title", "camel", "snake",
+                               "kebab", "dot", "path", "constant"], help="Apply text transformation.")
 
     parser_rename.add_argument("--dry-run", action="store_true", default=True, help="Simulate rename (default).")
     parser_rename.add_argument("--no-dry-run", dest="dry_run", action="store_false", help="Execute rename.")
@@ -18532,7 +18766,8 @@ Examples:
 
     # --- Set Lab ---
     parser_set = subparsers.add_parser("set-lab", aliases=["sets"], help="Set Operations Lab")
-    parser_set.add_argument("action", choices=["union", "intersect", "difference", "sym_diff", "is_subset", "is_superset", "tui"], default="tui", nargs="?", help="Action to perform")
+    parser_set.add_argument("action", choices=["union", "intersect", "difference", "sym_diff", "is_subset",
+                            "is_superset", "tui"], default="tui", nargs="?", help="Action to perform")
     parser_set.add_argument("--list-a", help="First list (comma-separated or file path)")
     parser_set.add_argument("--list-b", help="Second list (comma-separated or file path)")
     parser_set.add_argument("--ignore-case", action="store_true", help="Ignore case during operation")
@@ -18666,7 +18901,8 @@ Examples:
     # case-lab convert
     parser_case_convert = case_subparsers.add_parser("convert", help="Convert string case.")
     parser_case_convert.add_argument("text", nargs="?", help="The string to convert (can also be passed via stdin).")
-    parser_case_convert.add_argument("--to", required=True, choices=["camel", "snake", "kebab", "pascal", "constant", "dot", "path"], help="Target case format.")
+    parser_case_convert.add_argument("--to", required=True, choices=["camel", "snake", "kebab",
+                                     "pascal", "constant", "dot", "path"], help="Target case format.")
 
     # case-lab tui
     case_subparsers.add_parser("tui", help="Launch interactive TUI for Case Lab.")
@@ -19017,7 +19253,7 @@ async def run_feature(args):
             action="create",
             branch_name=branch_name,
             project_dir=project_dir,
-            keep_branch=False # Not used in create
+            keep_branch=False  # Not used in create
         )
         try:
             run_branch(branch_args)
@@ -19037,9 +19273,9 @@ async def run_feature(args):
         # Note: interactive commit message generation is not enabled here as we ask for it above.
         commit_args = argparse.Namespace(
             message=commit_message,
-            run_tests=False, # For simplicity, don't run tests in this guided flow
+            run_tests=False,  # For simplicity, don't run tests in this guided flow
             project_dir=project_dir,
-            generate=False # Disable generation in guided flow
+            generate=False  # Disable generation in guided flow
         )
         try:
             await run_commit(commit_args)
@@ -19154,7 +19390,6 @@ def run_review(args):
         pass
     except Exception as e:
         print(f"Warning: Could not display diff. {e}", file=sys.stderr)
-
 
     print("\n--- Decision ---")
     print("Do you approve these changes?")
@@ -19329,17 +19564,20 @@ async def run_regex(args):
 
     flags = 0
     if args.flags:
-        if 'i' in args.flags: flags |= re.IGNORECASE
-        if 'm' in args.flags: flags |= re.MULTILINE
-        if 's' in args.flags: flags |= re.DOTALL
+        if 'i' in args.flags:
+            flags |= re.IGNORECASE
+        if 'm' in args.flags:
+            flags |= re.MULTILINE
+        if 's' in args.flags:
+            flags |= re.DOTALL
 
     if args.action == "match":
         if not args.pattern:
             print("Error: --pattern is required for 'match' action.", file=sys.stderr)
             sys.exit(1)
         if args.text is None:
-             print("Error: --text is required for 'match' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: --text is required for 'match' action.", file=sys.stderr)
+            sys.exit(1)
 
         result = manager.match_regex(args.pattern, args.text, flags)
 
@@ -19348,9 +19586,9 @@ async def run_regex(args):
             for m in result["matches"]:
                 print(f"  Match {m['index']}: {m['full_match']!r} at {m['span']}")
                 if m['groups']:
-                     print(f"    Groups: {m['groups']}")
+                    print(f"    Groups: {m['groups']}")
                 if m['group_dict']:
-                     print(f"    Named Groups: {m['group_dict']}")
+                    print(f"    Named Groups: {m['group_dict']}")
         else:
             print(f"❌ Regex Error: {result['error']}", file=sys.stderr)
             sys.exit(1)
@@ -19360,11 +19598,11 @@ async def run_regex(args):
             print("Error: --pattern is required for 'replace' action.", file=sys.stderr)
             sys.exit(1)
         if args.text is None:
-             print("Error: --text is required for 'replace' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: --text is required for 'replace' action.", file=sys.stderr)
+            sys.exit(1)
         if args.replacement is None:
-             print("Error: --replacement is required for 'replace' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: --replacement is required for 'replace' action.", file=sys.stderr)
+            sys.exit(1)
 
         result = manager.replace_regex(args.pattern, args.replacement, args.text, flags)
 
@@ -19393,9 +19631,9 @@ async def run_regex(args):
         sys.exit(0 if success else 1)
 
     elif args.action == "generate":
-        if not args.text: # reusing --text for description
-             print("Error: --text (description) is required for 'generate' action.", file=sys.stderr)
-             sys.exit(1)
+        if not args.text:  # reusing --text for description
+            print("Error: --text (description) is required for 'generate' action.", file=sys.stderr)
+            sys.exit(1)
 
         print(f"Asking {args.agent} to generate regex...")
         success = await manager.generate_regex(
@@ -19475,8 +19713,8 @@ async def run_cron_lab(args):
 
     elif args.action == "generate":
         if not args.description:
-             print("Error: --description is required for 'generate' action.", file=sys.stderr)
-             sys.exit(1)
+            print("Error: --description is required for 'generate' action.", file=sys.stderr)
+            sys.exit(1)
 
         print(f"Asking {args.agent} to generate cron expression...")
         success = await manager.generate_expression(
@@ -19541,21 +19779,21 @@ async def run_resolve_conflicts(args):
             if result["resolved"]:
                 print("✅ Resolution successful.")
                 if args.diff:
-                     import difflib
-                     diff = difflib.unified_diff(
+                    import difflib
+                    diff = difflib.unified_diff(
                         result["original_content"].splitlines(),
                         result["resolved_content"].splitlines(),
                         fromfile=f"a/{file_path.name}",
                         tofile=f"b/{file_path.name}",
                         lineterm=""
-                     )
-                     print("\n".join(diff))
+                    )
+                    print("\n".join(diff))
 
                 if not args.yes:
-                     confirm = input("Apply changes? [y/N]: ").strip().lower()
-                     if confirm != 'y':
-                         print("Skipped.")
-                         continue
+                    confirm = input("Apply changes? [y/N]: ").strip().lower()
+                    if confirm != 'y':
+                        print("Skipped.")
+                        continue
 
                 resolver.apply_resolution(file_path, result["resolved_content"])
                 print(f"Saved changes to {file_path.name}")
@@ -19618,7 +19856,7 @@ async def run_docstring(args):
                 print(f"  - Line {item['lineno']}: {item['type']} '{item['name']}'")
 
         print(f"\nTotal: {len(items)} missing.")
-        sys.exit(1) # Exit 1 to indicate issues found (like lint)
+        sys.exit(1)  # Exit 1 to indicate issues found (like lint)
 
     elif args.action == "generate":
         print("Scanning for missing docstrings...")
@@ -19688,7 +19926,7 @@ def run_security(args):
         config_path = get_config_path()
         if not config_path:
             ensure_config_exists()
-            config_path = get_config_path() # Should exist now
+            config_path = get_config_path()  # Should exist now
 
         if not config_path:
             print("❌ Error: Could not resolve configuration path.", file=sys.stderr)
@@ -19775,11 +20013,11 @@ def run_security(args):
         # Color coding
         sev_color = ""
         if sev == "HIGH":
-            sev_color = "\033[91m" # Red
+            sev_color = "\033[91m"  # Red
         elif sev == "MEDIUM":
-            sev_color = "\033[93m" # Yellow
+            sev_color = "\033[93m"  # Yellow
         elif sev == "LOW":
-            sev_color = "\033[94m" # Blue
+            sev_color = "\033[94m"  # Blue
         reset = "\033[0m"
 
         print(f"\n[{i+1}] {sev_color}{sev}{reset} [{ftype}] {desc}")
@@ -19999,12 +20237,11 @@ def run_setup(args):
                 # Run this command first
                 result = subprocess.run(dev_command, cwd=project_dir)
                 if result.returncode != 0:
-                     print(f"❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
-                     sys.exit(result.returncode)
+                    print(f"❌ Error installing dev dependencies. Aborting further setup.", file=sys.stderr)
+                    sys.exit(result.returncode)
             except Exception as e:
                 print(f"❌ An unexpected error occurred while installing dev dependencies: {e}", file=sys.stderr)
                 sys.exit(1)
-
 
     # 3. Go Project
     elif (project_dir / "go.mod").exists():
@@ -20074,7 +20311,7 @@ async def run_interact(args):
         "2": {"text": "Run tests", "func": run_test, "args": {"project_dir": project_dir, "test_args": []}},
         "3": {"text": "Run linter", "func": run_lint, "args": {"project_dir": project_dir, "fix": False, "lint_args": []}},
         "4": {"text": "Format code", "func": run_format, "args": {"project_dir": project_dir, "check": False, "format_args": []}},
-        "5": {"text": "Commit changes", "func": run_commit}, # Special handling
+        "5": {"text": "Commit changes", "func": run_commit},  # Special handling
         "6": {"text": "Suggest next step", "func": run_suggest, "args": {"project_dir": project_dir}},
     }
 
@@ -20383,6 +20620,7 @@ def _pr_create(args, config):
 
     sys.exit(0)
 
+
 def _pr_list(args, config):
     """Lists open pull requests."""
     from shared.github_client import GitHubClient
@@ -20405,6 +20643,7 @@ def _pr_list(args, config):
         print(f"❌ Error listing PRs: {e}", file=sys.stderr)
         sys.exit(1)
 
+
 def _pr_show(args, config):
     """Shows details of a pull request."""
     from shared.github_client import GitHubClient
@@ -20423,6 +20662,7 @@ def _pr_show(args, config):
     except Exception as e:
         print(f"❌ Error fetching PR: {e}", file=sys.stderr)
         sys.exit(1)
+
 
 def _pr_merge(args, config):
     """Merges a pull request."""
@@ -20449,6 +20689,7 @@ def _pr_merge(args, config):
         print(f"❌ Error merging PR: {e}", file=sys.stderr)
         sys.exit(1)
 
+
 def _pr_close(args, config):
     """Closes a pull request."""
     from shared.github_client import GitHubClient
@@ -20469,6 +20710,7 @@ def _pr_close(args, config):
     except Exception as e:
         print(f"❌ Error closing PR: {e}", file=sys.stderr)
         sys.exit(1)
+
 
 def run_pr(args):
     """Handles GitHub pull requests."""
@@ -20630,8 +20872,8 @@ def run_frontend(args):
 
     elif args.action == "verify":
         if not args.url or not args.name:
-             print("Error: --url and --name required for verify.")
-             sys.exit(1)
+            print("Error: --url and --name required for verify.")
+            sys.exit(1)
 
         # First capture current
         print(f"Capturing current state of {args.url}...")
@@ -20722,8 +20964,8 @@ def run_mock(args):
             data = generator.generate(count=args.count)
             output_content = generator.export(data, format=args.format, table_name=args.table_name)
         except Exception as e:
-             print(f"❌ Error generating data: {e}", file=sys.stderr)
-             sys.exit(1)
+            print(f"❌ Error generating data: {e}", file=sys.stderr)
+            sys.exit(1)
 
         if args.output:
             try:
@@ -20731,11 +20973,12 @@ def run_mock(args):
                     f.write(output_content)
                 print(f"✅ Mock data generated to {args.output}")
             except Exception as e:
-                 print(f"❌ Error writing output file: {e}", file=sys.stderr)
-                 sys.exit(1)
+                print(f"❌ Error writing output file: {e}", file=sys.stderr)
+                sys.exit(1)
         else:
             print(output_content)
         sys.exit(0)
+
 
 def run_dash_lab(args):
     """Runs the Dash Lab TUI."""
@@ -20819,7 +21062,7 @@ async def run_commit(args):
                 confirm = input("Use this message? [Y/n]: ").strip().lower()
                 if confirm not in ['y', '']:
                     print("Aborted. Falling back to interactive mode.")
-                    commit_message = None # Fallback
+                    commit_message = None  # Fallback
 
     # --- Interactive Commit Message Generation ---
     if not commit_message:
@@ -20916,21 +21159,21 @@ def _worktree_merge(args, git_path, project_dir, worktrees_base_dir):
         )
     except subprocess.CalledProcessError as e:
         if "did not match any file(s) known to git" in e.stderr:
-             main_branch = "master" # Fallback to master
-             print(f"  - '{main_branch}' not found, trying 'master'...")
-             try:
-                 subprocess.run(
-                     [git_path, "-C", str(project_dir), "checkout", main_branch],
-                     check=True, capture_output=True, text=True
-                 )
-             except subprocess.CalledProcessError as e2:
-                 stderr = e2.stderr.strip()
-                 print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
-                 sys.exit(1)
+            main_branch = "master"  # Fallback to master
+            print(f"  - '{main_branch}' not found, trying 'master'...")
+            try:
+                subprocess.run(
+                    [git_path, "-C", str(project_dir), "checkout", main_branch],
+                    check=True, capture_output=True, text=True
+                )
+            except subprocess.CalledProcessError as e2:
+                stderr = e2.stderr.strip()
+                print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+                sys.exit(1)
         else:
-             stderr = e.stderr.strip()
-             print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
-             sys.exit(1)
+            stderr = e.stderr.strip()
+            print(f"❌ Error checking out '{main_branch}': {stderr}", file=sys.stderr)
+            sys.exit(1)
 
     print(f"  - Merging branch '{branch_name}' into '{main_branch}'...")
     try:
@@ -21192,12 +21435,12 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
 
             confirm = input("\nAre you sure you want to discard ALL uncommitted changes in this worktree? [y/N]: ").strip().lower()
             if confirm == 'y':
-                 print("\nReverting changes...")
-                 try:
-                     manager.revert(selected_worktree)
-                     print("✅ Revert complete. Worktree is now clean.")
-                 except Exception as e:
-                     print(f"❌ Error during revert: {e}", file=sys.stderr)
+                print("\nReverting changes...")
+                try:
+                    manager.revert(selected_worktree)
+                    print("✅ Revert complete. Worktree is now clean.")
+                except Exception as e:
+                    print(f"❌ Error during revert: {e}", file=sys.stderr)
             else:
                 print("Aborted.")
 
@@ -21211,7 +21454,7 @@ def _worktree_manage(args, git_path, project_dir, worktrees_base_dir):
                 manager.remove(selected_worktree, force=mock_args.force)
                 print(f"✅ Removed worktree: {selected_worktree}")
             except Exception as e:
-                 print(f"❌ Error removing worktree '{selected_worktree}': {e}", file=sys.stderr)
+                print(f"❌ Error removing worktree '{selected_worktree}': {e}", file=sys.stderr)
         else:
             print("Aborted.")
 
@@ -21379,8 +21622,8 @@ def run_worktrees(args):
         worktrees_to_clean = []
         if args.worktree_name:
             if not (worktrees_base_dir / args.worktree_name).exists():
-                 print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
-                 sys.exit(1)
+                print(f"❌ Error: Worktree '{args.worktree_name}' not found.", file=sys.stderr)
+                sys.exit(1)
             worktrees_to_clean.append(args.worktree_name)
         else:
             worktrees = manager.list_worktrees()
@@ -22124,7 +22367,6 @@ async def main():
         run_crypto_lab(args)
         return
 
-
     if args.command in ["ocr-lab", "ocr"]:
         run_ocr_lab(args)
         return
@@ -22217,7 +22459,6 @@ async def main():
     if args.command in ["proc-lab", "proc"]:
         await run_proc_lab_logic(args)
         return
-
 
     if args.command in ["brainfuck-lab", "brainfuck", "bf"]:
         run_brainfuck_lab_logic(args)
@@ -22468,7 +22709,6 @@ async def main():
         run_cidr_lab(args)
         return
 
-
     if args.command in ["sqlite-lab", "sqlite"]:
         run_sqlite_lab(args)
         return
@@ -22561,7 +22801,6 @@ async def main():
         run_cert_lab(args)
         return
 
-
     if args.command in ["codec-lab", "codec"]:
         run_codec_lab(args)
         return
@@ -22609,7 +22848,6 @@ async def main():
         run_ini_lab(args)
         return
 
-
     if args.command in ["run2compose-lab", "run2compose", "r2c"]:
         if getattr(args, "action", None) == "tui":
             from shared.tui import AgentTUI
@@ -22637,7 +22875,6 @@ async def main():
     if args.command in ["changelog-lab", "changelog"]:
         run_changelog_lab(args)
         return
-
 
     if args.command in ["toml-lab", "toml"]:
         run_toml_lab(args)
@@ -22809,18 +23046,18 @@ async def main():
         # If the command itself is one of the actions, we need to adjust args.
         # e.g. "define hello" -> args.command="define", args.word="hello", args.action="define"
         if args.command in ["define", "synonym", "antonym", "thesaurus"]:
-             # If the user typed 'define hello', argparse parsed 'define' as command and 'hello' as word.
-             # We want args.action to be 'define'.
-             # However, our parser definition for dict-lab expects "word" and "action".
-             # If we used aliases, 'define' maps to dict-lab parser.
-             # So 'main.py define hello' parses 'hello' as word, and action defaults to 'define' or consumes next arg?
-             # Let's fix action if needed.
-             if args.command == "synonym" or args.command == "thesaurus":
-                 args.action = "synonym"
-             elif args.command == "antonym":
-                 args.action = "antonym"
-             else:
-                 args.action = "define"
+            # If the user typed 'define hello', argparse parsed 'define' as command and 'hello' as word.
+            # We want args.action to be 'define'.
+            # However, our parser definition for dict-lab expects "word" and "action".
+            # If we used aliases, 'define' maps to dict-lab parser.
+            # So 'main.py define hello' parses 'hello' as word, and action defaults to 'define' or consumes next arg?
+            # Let's fix action if needed.
+            if args.command == "synonym" or args.command == "thesaurus":
+                args.action = "synonym"
+            elif args.command == "antonym":
+                args.action = "antonym"
+            else:
+                args.action = "define"
 
         run_dict_lab(args)
         return
@@ -22832,7 +23069,6 @@ async def main():
     if args.command in ["emoji-lab", "emoji", "emoj"]:
         run_emoji_lab(args)
         return
-
 
     if args.command in ["css-lab", "css"]:
         run_css_lab(args)
@@ -23021,6 +23257,10 @@ async def main():
         run_jq_lab(args)
         return
 
+    if args.command in ["xpath-lab", "xpath"]:
+        run_xpath_lab(args)
+        return
+
     if args.command in ["jmespath-lab", "jmespath", "jp"]:
         run_jmespath_lab(args)
         return
@@ -23108,7 +23348,6 @@ async def main():
 
         run_typegen_lab_logic(args)
         return
-
 
     if args.command in ["size-lab", "size"]:
         run_size_lab(args)

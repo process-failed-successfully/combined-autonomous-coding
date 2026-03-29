@@ -192,5 +192,3 @@ class TestRun2ComposeLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Error generating YAML: YAML Error", tab.output_area.text)
 
 
-if __name__ == '__main__':
-    unittest.main()

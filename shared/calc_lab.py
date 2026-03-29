@@ -26,7 +26,7 @@ class CalcLabManager:
         })
         self.variables: Dict[str, Any] = {}
 
-    def _safe_eval(self, node: ast.AST) -> Union[int, float]:
+    def _safe_eval(self, node: ast.AST) -> Union[int, float, bool]:
         if isinstance(node, ast.Expression):
             return self._safe_eval(node.body)
         elif isinstance(node, ast.Constant): # Python >= 3.8
@@ -70,6 +70,28 @@ class CalcLabManager:
                 return -operand
             elif isinstance(node.op, ast.Invert):
                 return ~int(operand)
+        elif isinstance(node, ast.Compare):
+            left = self._safe_eval(node.left)
+            for op, comparator in zip(node.ops, node.comparators):
+                right = self._safe_eval(comparator)
+                if isinstance(op, ast.Eq):
+                    res = left == right
+                elif isinstance(op, ast.NotEq):
+                    res = left != right
+                elif isinstance(op, ast.Lt):
+                    res = left < right
+                elif isinstance(op, ast.LtE):
+                    res = left <= right
+                elif isinstance(op, ast.Gt):
+                    res = left > right
+                elif isinstance(op, ast.GtE):
+                    res = left >= right
+                else:
+                    raise ValueError(f"Unsupported comparison operator: {type(op).__name__}")
+                if not res:
+                    return False
+                left = right
+            return True
         elif isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
                 func_name = node.func.id
@@ -89,15 +111,17 @@ class CalcLabManager:
 
         raise ValueError(f"Unsupported operation: {type(node).__name__}")
 
-    def evaluate(self, expression: str) -> Union[float, int]:
+    def evaluate(self, expression: str) -> Union[float, int, bool]:
         """Safely evaluates a mathematical expression."""
         if not expression:
             raise ValueError("Empty expression")
 
         try:
             # Handle assignment manually for REPL support
-            if "=" in expression and not expression.startswith("="):
+            if "=" in expression and not expression.startswith("=") and "==" not in expression and "!=" not in expression and "<=" not in expression and ">=" not in expression:
                 # Check if it's a valid assignment (var = expr)
+                # Ensure we only split by the first '=' that isn't part of a comparison operator
+                # This basic check works since we ruled out the double-character comparators above
                 parts = expression.split("=", 1)
                 var_name = parts[0].strip()
                 expr = parts[1].strip()
@@ -120,9 +144,11 @@ class CalcLabManager:
         except Exception as e:
             raise ValueError(str(e))
 
-    def format_result(self, value: Union[int, float]) -> str:
+    def format_result(self, value: Union[int, float, bool]) -> str:
         """Formats the result for display."""
-        if isinstance(value, int):
+        if isinstance(value, bool):
+            return str(value)
+        elif isinstance(value, int):
             try:
                 dec_str = f"{value}"
                 hex_str = f"{value:#x}"

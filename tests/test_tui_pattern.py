@@ -123,10 +123,12 @@ class TestTUIPattern(unittest.IsolatedAsyncioTestCase):
             list_view.focus()
             list_view.index = 0
             await pilot.press("enter")
-            await pilot.pause(0.2)
+            await pilot.pause(0.5)
 
             # Change language
             select = tab.query_one("#pattern-lang-select", Select)
+
+            # Use event to change value safely
             select.value = "javascript"
             await pilot.pause(0.5)
 

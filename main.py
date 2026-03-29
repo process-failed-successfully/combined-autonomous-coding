@@ -81,6 +81,7 @@ from shared.sql_lab import run_sql_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
 from shared.yaml2json_lab import run_yaml2json_lab_logic
+from shared.xml2yaml_lab import run_xml2yaml_lab_logic
 from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.toml2json_lab import run_toml2json_lab_logic
@@ -229,7 +230,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
@@ -22658,6 +22659,22 @@ async def main():
             return
         from shared.yaml2toml_lab import run_yaml2toml_lab_logic
         run_yaml2toml_lab_logic(args)
+        return
+
+    if args.command in ["xml2yaml-lab", "xml2yaml", "x2y"]:
+        args.action = "xml2yaml"
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-xml2yaml")
+            return
+        run_xml2yaml_lab_logic(args)
+        return
+
+    if args.command in ["yaml2xml-lab", "yaml2xml", "y2x"]:
+        args.action = "yaml2xml"
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-xml2yaml")
+            return
+        run_xml2yaml_lab_logic(args)
         return
 
     if args.command in ["json2csv-lab", "j2c"]:

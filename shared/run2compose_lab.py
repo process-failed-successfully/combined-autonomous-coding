@@ -1,5 +1,5 @@
 import sys
-import yaml
+import yaml  # type: ignore
 import shlex
 import argparse
 from typing import Dict, Any

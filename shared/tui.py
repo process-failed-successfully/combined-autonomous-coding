@@ -288,6 +288,7 @@ from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2yaml import Xml2YamlTab
+from shared.tui_xml2toml import Xml2TomlTab
 from shared.tui_yaml2json import Yaml2JsonLabTab
 from shared.tui_yaml2toml import Yaml2TomlLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
@@ -4559,6 +4560,8 @@ class AgentTUI(App):
                 yield Json2XmlTab()
             with TabPane("XML to YAML", id="tab-xml2yaml"):
                 yield Xml2YamlTab()
+            with TabPane("XML to TOML", id="tab-xml2toml"):
+                yield Xml2TomlTab()
             with TabPane("YAML to JSON", id="tab-yaml2json"):
                 yield Yaml2JsonLabTab()
             with TabPane("YAML to TOML", id="tab-yaml2toml"):

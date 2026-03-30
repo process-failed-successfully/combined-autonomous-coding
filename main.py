@@ -98,6 +98,7 @@ from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
 from shared.yaml2json_lab import run_yaml2json_lab_logic
 from shared.xml2yaml_lab import run_xml2yaml_lab_logic
+from shared.xml2toml_lab import run_xml2toml_lab_logic
 from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.toml2json_lab import run_toml2json_lab_logic
@@ -247,7 +248,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
@@ -15101,6 +15102,24 @@ def parse_args(argv=None):
     yaml2json_parser_j2y.add_argument("--output", "-o", help="Output file path.")
 
     # --- New 'yaml2toml-lab' command ---
+
+    # --- New 'xml2toml-lab' command ---
+    parser_xml2toml = subparsers.add_parser(
+        "xml2toml-lab",
+        aliases=["xml2toml", "toml2xml", "x2t"],
+        help="XML to TOML and TOML to XML Converter Lab"
+    )
+    xml2toml_subparsers = parser_xml2toml.add_subparsers(
+        dest="action",
+        help="Action to perform (xml2toml, toml2xml, tui)."
+    )
+    xml2toml_subparsers.add_parser("tui", help="Launch XML2TOML Lab TUI.")
+    xml2toml_parser_x2t = xml2toml_subparsers.add_parser("xml2toml", help="Convert XML to TOML.")
+    xml2toml_parser_x2t.add_argument("input", help="XML string or file path.")
+    xml2toml_parser_x2t.add_argument("--output", "-o", help="Output file path.")
+    xml2toml_parser_t2x = xml2toml_subparsers.add_parser("toml2xml", help="Convert TOML to XML.")
+    xml2toml_parser_t2x.add_argument("input", help="TOML string or file path.")
+    xml2toml_parser_t2x.add_argument("--output", "-o", help="Output file path.")
     parser_yaml2toml = subparsers.add_parser(
         "yaml2toml-lab",
         aliases=["yaml2toml", "toml2yaml", "y2t"],
@@ -22898,6 +22917,18 @@ async def main():
         run_yaml2toml_lab_logic(args)
         return
 
+    if args.command in ["xml2toml-lab", "xml2toml", "toml2xml", "x2t"]:
+        if getattr(args, "action", None) is None:
+            if args.command in ["xml2toml", "toml2xml"]:
+                args.action = args.command
+            else:
+                args.action = "xml2toml"
+
+        if getattr(args, "tui", False) or args.action == "tui" or not hasattr(args, 'input'):
+            run_tui(args, "tab-xml2toml")
+            return
+        run_xml2toml_lab_logic(args)
+        return
     if args.command in ["xml2yaml-lab", "xml2yaml", "x2y"]:
         args.action = "xml2yaml"
         if getattr(args, "tui", False):

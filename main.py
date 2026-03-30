@@ -248,7 +248,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2toml-lab", "csv2toml", "c2t", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "yaml2json-lab", "yaml2json", "y2j", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
@@ -15227,6 +15227,18 @@ def parse_args(argv=None):
     parser_csv2json.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
     parser_csv2json.add_argument("--tui", action="store_true", help="Launch CSV to JSON Lab TUI.")
 
+    # --- New 'csv2toml-lab' command ---
+    parser_csv2toml = subparsers.add_parser(
+        "csv2toml-lab",
+        aliases=["csv2toml", "c2t"],
+        help="CSV to TOML converter."
+    )
+    parser_csv2toml.add_argument("--file", "-f", help="Input CSV file.")
+    parser_csv2toml.add_argument("--text", "-t", help="Input CSV text.")
+    parser_csv2toml.add_argument("--output", "-o", help="Output TOML file.")
+    parser_csv2toml.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_csv2toml.add_argument("--tui", action="store_true", help="Launch CSV to TOML Lab TUI.")
+
     # --- New 'csv2md-lab' command ---
     parser_csv2md = subparsers.add_parser(
         "csv2md-lab",
@@ -23018,6 +23030,11 @@ async def main():
     if args.command in ["csv2md-lab", "csv2md"]:
         from shared.csv2md_lab import run_csv2md_lab_logic
         run_csv2md_lab_logic(args)
+        return
+
+    if args.command in ["csv2toml-lab", "csv2toml", "c2t"]:
+        from shared.csv2toml_lab import run_csv2toml_lab_logic
+        run_csv2toml_lab_logic(args)
         return
 
     if args.command in ["csv-lab", "csv"]:

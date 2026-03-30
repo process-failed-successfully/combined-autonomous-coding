@@ -340,6 +340,7 @@ KNOWN_COMMANDS = [
     "base85-lab", "base85", "b85",
     "a85-lab", "a85", "ascii85",
     "octal-lab", "octal",
+    "binary-lab", "binary",
     "matrix-lab", "matrix",
     "host-lab", "hosts", "host",
     "clipboard-lab", "clip", "cp", "copy",
@@ -663,6 +664,30 @@ def run_punycode_lab(args):
 
     from shared.punycode_lab import run_punycode_lab_logic
     success = run_punycode_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_binary_lab(args):
+    """Runs the Binary Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Binary Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-binary")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.binary_lab import run_binary_lab_logic
+    success = run_binary_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -16659,6 +16684,15 @@ Examples:
     octal_group.add_argument("--decode", "-d", type=str, help="Octal text to decode.")
     octal_group.add_argument("--tui", action="store_true", help="Launch the interactive Octal Lab TUI.")
 
+    parser_binary = subparsers.add_parser(
+        "binary-lab", aliases=["binary"],
+        help="Binary encode and decode strings."
+    )
+    binary_group = parser_binary.add_mutually_exclusive_group(required=False)
+    binary_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    binary_group.add_argument("--decode", "-d", type=str, help="Binary text to decode.")
+    binary_group.add_argument("--tui", action="store_true", help="Launch the interactive Binary Lab TUI.")
+
     # base85-lab
     parser_a85 = subparsers.add_parser(
         "a85-lab", aliases=["a85", "ascii85"],
@@ -23122,6 +23156,10 @@ async def main():
 
     if args.command in ["octal-lab", "octal"]:
         run_octal_lab(args)
+        return
+
+    if args.command in ["binary-lab", "binary"]:
+        run_binary_lab(args)
         return
 
     if args.command in ["a85-lab", "a85", "ascii85"]:

@@ -241,7 +241,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "seo-lab", "seo",
@@ -3065,6 +3065,13 @@ def run_urlencode_lab(args):
 
     from shared.urlencode_lab import run_urlencode_lab_logic
     success = run_urlencode_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_urldecode_lab(args):
+    """Runs the UrlDecode Lab."""
+    from shared.urldecode_lab import run_urldecode_lab_logic
+    success = run_urldecode_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -14632,6 +14639,12 @@ def parse_args(argv=None):
     urlencode_group.add_argument("--decode", "-d", type=str, help="URL encoded text to decode.")
     parser_urlencode.add_argument("--tui", action="store_true", help="Launch the TUI.")
 
+    parser_urldecode = subparsers.add_parser(
+        "urldecode-lab", aliases=["urldecode"],
+        help="URL decode strings."
+    )
+    parser_urldecode.add_argument("--text", "-t", type=str, required=True, help="Text to decode.")
+
     # --- New 'url-lab' command ---
     parser_url_lab = subparsers.add_parser(
         "url-lab",
@@ -22832,6 +22845,10 @@ async def main():
 
     if args.command in ["urlencode-lab", "urlencode"]:
         run_urlencode_lab(args)
+        return
+
+    if args.command in ["urldecode-lab", "urldecode"]:
+        run_urldecode_lab(args)
         return
 
     if args.command in ["bencode-lab", "bencode", "torrent"]:

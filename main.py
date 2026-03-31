@@ -201,6 +201,7 @@ from shared.brainfuck_lab import run_brainfuck_lab_logic
 from shared.morse_lab import run_morse_lab_logic
 from shared.stego_lab import run_stego_lab_logic
 from shared.typegen_lab import run_typegen_lab_logic
+from shared.json_schema_lab import run_json_schema_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -19018,6 +19019,19 @@ Examples:
     iban_parse.add_argument("iban", type=str, help="The IBAN to parse.")
 
     # --- Typegen Lab ---
+    parser_json_schema = subparsers.add_parser(
+        "json-schema-lab", aliases=["jsonschema"],
+        help="Generate JSON Schema from JSON"
+    )
+    json_schema_subparsers = parser_json_schema.add_subparsers(dest="action", help="JSON Schema Lab actions")
+
+    js_generate = json_schema_subparsers.add_parser("generate", help="Generate schema from JSON")
+    js_generate.add_argument("--json", help="JSON data to parse")
+    js_generate.add_argument("--file", help="Input file containing JSON")
+    js_generate.add_argument("--output", help="Output file to write to")
+
+    json_schema_subparsers.add_parser("tui", help="Launch the JSON Schema Lab TUI")
+
     parser_typegen = subparsers.add_parser(
         "typegen-lab", aliases=["typegen"],
         help="Generate type definitions from JSON."
@@ -22966,6 +22980,10 @@ async def main():
             return
         from shared.yaml2toml_lab import run_yaml2toml_lab_logic
         run_yaml2toml_lab_logic(args)
+        return
+
+    if args.command in ["json-schema-lab", "jsonschema"]:
+        run_json_schema_lab_logic(args)
         return
 
     if args.command in ["xml2toml-lab", "xml2toml", "toml2xml", "x2t"]:

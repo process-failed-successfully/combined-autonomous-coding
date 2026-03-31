@@ -298,6 +298,7 @@ from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
 from shared.tui_alias import AliasLabTab
+from shared.tui_json_schema import JsonSchemaTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4749,6 +4750,8 @@ class AgentTUI(App):
                 yield TodosLabTab(self.project_dir)
             with TabPane("Alias Lab", id="tab-alias"):
                 yield AliasLabTab()
+            with TabPane("JSON Schema", id="tab-json-schema"):
+                yield JsonSchemaTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -150,6 +150,7 @@ from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
 from shared.tui_json2md import Json2MdTab
 from shared.tui_csv2md import Csv2MdTab
+from shared.tui_csv2toml import Csv2TomlTab
 from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
@@ -4556,6 +4557,8 @@ class AgentTUI(App):
                 yield Csv2JsonTab()
             with TabPane("CSV to MD", id="tab-csv2md"):
                 yield Csv2MdTab()
+            with TabPane("CSV to TOML", id="tab-csv2toml"):
+                yield Csv2TomlTab()
             with TabPane("XML Lab", id="tab-xml"):
                 yield XmlLabTab(self.project_dir)
             with TabPane("XML to JSON", id="tab-xml2json"):

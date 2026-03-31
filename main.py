@@ -380,7 +380,8 @@ KNOWN_COMMANDS = [
     "curl-lab", "curl",
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
-    "alias-lab", "aliases"
+    "alias-lab", "aliases",
+    "bip39-lab", "bip39"
 ]
 
 if FileSystemEventHandler:
@@ -16610,6 +16611,36 @@ Examples:
     parser_alias.add_argument("--prefix", default="", help="Prefix for the generated aliases (e.g. 'agent-')")
     parser_alias.add_argument("--tui", action="store_true", help="Launch the interactive Alias Lab TUI.")
 
+    # --- New 'bip39-lab' command ---
+    parser_bip39 = subparsers.add_parser(
+        "bip39-lab", aliases=["bip39"],
+        help="BIP39 Mnemonic and Seed Generator utilities.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  main.py bip39 generate --strength 256
+  main.py bip39 validate --phrase "your phrase here"
+  main.py bip39 seed --phrase "your phrase here" --passphrase "mysecret"
+  main.py bip39 tui
+        """
+    )
+    bip39_subs = parser_bip39.add_subparsers(dest="action")
+
+    bip39_gen = bip39_subs.add_parser("generate", help="Generate a new BIP39 mnemonic phrase")
+    bip39_gen.add_argument("--strength", type=int, choices=[128, 160, 192, 224, 256], default=128, help="Entropy strength (128-256 bits, defaults to 128)")
+    bip39_gen.add_argument("--language", default="english", help="Wordlist language (default: english)")
+
+    bip39_val = bip39_subs.add_parser("validate", help="Validate a BIP39 mnemonic phrase")
+    bip39_val.add_argument("--phrase", required=True, help="The mnemonic phrase to validate")
+    bip39_val.add_argument("--language", default="english", help="Wordlist language")
+
+    bip39_seed = bip39_subs.add_parser("seed", help="Generate seed from a mnemonic phrase")
+    bip39_seed.add_argument("--phrase", required=True, help="The mnemonic phrase")
+    bip39_seed.add_argument("--passphrase", default="", help="Optional passphrase")
+    bip39_seed.add_argument("--language", default="english", help="Wordlist language")
+
+    bip39_subs.add_parser("tui", help="Launch BIP39 Lab TUI")
+
     # --- New 'js-lab' command ---
     parser_js = subparsers.add_parser(
         "js-lab", aliases=["js"],
@@ -23481,6 +23512,11 @@ async def main():
     if args.command in ["alias-lab", "aliases"]:
         run_alias_lab(args)
         return
+
+    if args.command in ["bip39-lab", "bip39"]:
+        from shared.bip39_lab import run_bip39_lab_logic
+        success = run_bip39_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     # Initialize Agent Client
     from shared.agent_client import AgentClient

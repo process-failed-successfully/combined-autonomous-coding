@@ -45,6 +45,9 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             patch('shared.tui.RecipeLearner'),
             patch('shared.tui.DebtCollector'),
             patch('shared.tui.SecurityAuditor'),
+            patch('shared.tui.HealthCalculator'),
+            patch('shared.tui.CodeQualityTab', return_value=Container()),
+            patch('shared.tui.JsonSchemaTab', return_value=Container()),
             patch('shared.tui.OptimizationManager'),
             patch('shared.tui.ProcessExplorerTab', return_value=Container()),
         ]

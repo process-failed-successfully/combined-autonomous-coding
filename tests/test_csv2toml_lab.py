@@ -1,18 +1,18 @@
 import pytest
 import io
 import argparse
-import sys
 from unittest.mock import patch, MagicMock
 
 from textual.app import App, ComposeResult
-import pytest_asyncio
 
 from shared.csv2toml_lab import Csv2TomlManager, run_csv2toml_lab_logic
 from shared.tui_csv2toml import Csv2TomlTab
 
+
 class DummyApp(App[None]):
     def compose(self) -> ComposeResult:
         yield Csv2TomlTab()
+
 
 class TestCsv2TomlManager:
     @pytest.fixture
@@ -53,6 +53,7 @@ class TestCsv2TomlManager:
             with pytest.raises(ValueError, match="Failed to parse CSV or generate TOML"):
                 manager.convert_csv_to_toml("bad data")
 
+
 def test_run_csv2toml_lab_logic_text():
     args = argparse.Namespace(text="A,B\n1,2", file=None, tui=False, delimiter=",", output=None)
     with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
@@ -63,6 +64,7 @@ def test_run_csv2toml_lab_logic_text():
         assert "A = \"1\"" in output
         assert "B = \"2\"" in output
 
+
 def test_run_csv2toml_lab_logic_stdin():
     args = argparse.Namespace(text=None, file=None, tui=False, delimiter=",", output=None)
     with patch('sys.stdin', io.StringIO("A,B\n1,2")), \
@@ -72,6 +74,7 @@ def test_run_csv2toml_lab_logic_stdin():
         assert success
         assert "[[items]]" in fake_stdout.getvalue()
 
+
 def test_run_csv2toml_lab_logic_no_input():
     args = argparse.Namespace(text=None, file=None, tui=False, delimiter=",", output=None)
     with patch('sys.stdin.isatty', return_value=True), \
@@ -79,6 +82,7 @@ def test_run_csv2toml_lab_logic_no_input():
         success = run_csv2toml_lab_logic(args)
         assert not success
         assert "No input provided" in fake_stderr.getvalue()
+
 
 def test_run_csv2toml_lab_logic_file(tmp_path):
     csv_file = tmp_path / "test.csv"
@@ -89,6 +93,7 @@ def test_run_csv2toml_lab_logic_file(tmp_path):
         assert success
         assert "[[items]]" in fake_stdout.getvalue()
 
+
 def test_run_csv2toml_lab_logic_file_not_found(tmp_path):
     args = argparse.Namespace(text=None, file=str(tmp_path / "not_found.csv"), tui=False, delimiter=",", output=None)
     with patch('sys.stderr', new=io.StringIO()) as fake_stderr:
@@ -96,16 +101,18 @@ def test_run_csv2toml_lab_logic_file_not_found(tmp_path):
         assert not success
         assert "Error reading file" in fake_stderr.getvalue()
 
+
 def test_run_csv2toml_lab_logic_output_file(tmp_path):
     output_file = tmp_path / "out.toml"
     args = argparse.Namespace(text="A,B\n1,2", file=None, tui=False, delimiter=",", output=str(output_file))
-    with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
+    with patch('sys.stdout', new=io.StringIO()):
         success = run_csv2toml_lab_logic(args)
         assert success
         assert output_file.exists()
         content = output_file.read_text()
         assert "[[items]]" in content
         assert "A = \"1\"" in content
+
 
 def test_run_csv2toml_lab_logic_error():
     args = argparse.Namespace(text="A,B\n1,2", file=None, tui=False, delimiter=",", output=None)
@@ -114,6 +121,7 @@ def test_run_csv2toml_lab_logic_error():
             success = run_csv2toml_lab_logic(args)
             assert not success
             assert "Error converting CSV to TOML" in fake_stderr.getvalue()
+
 
 def test_run_csv2toml_lab_logic_tui():
     args = argparse.Namespace(tui=True, project_dir=".")
@@ -145,6 +153,7 @@ def test_run_csv2toml_lab_logic_tui():
             assert success
             mock_agent_tui.assert_called_once()
             mock_ensure_future.assert_called_once_with(mock_app.run_async())
+
 
 @pytest.mark.asyncio
 async def test_tui_csv2toml_tab_integration():

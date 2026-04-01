@@ -106,6 +106,7 @@ from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_mac import MacLabTab
 from shared.tui_size import SizeLabTab
 from shared.tui_typegen import TypegenLabTab
+from shared.tui_hash_validator import HashValidatorLabTab
 from shared.tui_snippets import SnippetsTab
 from shared.tui_pull_requests import PullRequestsTab
 from shared.tui_issues import IssuesLabTab
@@ -4718,6 +4719,8 @@ class AgentTUI(App):
 
             with TabPane("Typegen Lab", id="tab-typegen"):
                 yield TypegenLabTab()
+            with TabPane("Hash Validator Lab", id="tab-hash-validator"):
+                yield HashValidatorLabTab()
             with TabPane("Size Lab", id="tab-size"):
                 yield SizeLabTab()
 

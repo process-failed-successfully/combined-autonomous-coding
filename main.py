@@ -379,6 +379,7 @@ KNOWN_COMMANDS = [
     "vcard-lab", "vcard",
     "curl-lab", "curl",
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
+    "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
     "alias-lab", "aliases"
 ]
@@ -19044,6 +19045,23 @@ Examples:
 
     json_schema_subparsers.add_parser("tui", help="Launch the JSON Schema Lab TUI")
 
+    parser_hash_validator = subparsers.add_parser(
+        "hash-validator-lab", aliases=["hash-validator", "hval"],
+        help="Detect hash types and verify if an input matches a given hash."
+    )
+    hash_validator_subparsers = parser_hash_validator.add_subparsers(dest="action", help="Hash Validator actions")
+
+    hash_detect_parser = hash_validator_subparsers.add_parser("detect", help="Detect possible hash algorithms for a given hash")
+    hash_detect_parser.add_argument("--hash", help="The hash string to analyze", required=True)
+
+    hash_verify_parser = hash_validator_subparsers.add_parser("verify", help="Verify if an input matches a given hash")
+    hash_verify_parser.add_argument("--hash", help="The expected hash string", required=True)
+    hash_verify_parser.add_argument("--text", help="Input text to verify")
+    hash_verify_parser.add_argument("--file", help="Input file to verify")
+    hash_verify_parser.add_argument("--algorithm", help="Optional specific algorithm to use (e.g. sha256)")
+
+    hash_validator_subparsers.add_parser("tui", help="Launch the Hash Validator Lab TUI")
+
     parser_typegen = subparsers.add_parser(
         "typegen-lab", aliases=["typegen"],
         help="Generate type definitions from JSON."
@@ -23448,6 +23466,11 @@ async def main():
 
     if args.command in ["portscan-lab", "portscan", "pscan"]:
         run_portscan_lab(args)
+        return
+
+    if args.command in ["hash-validator-lab", "hash-validator", "hval"]:
+        from shared.hash_validator_lab import run_hash_validator_lab_logic
+        run_hash_validator_lab_logic(args)
         return
 
     if args.command in ["typegen-lab", "typegen"]:

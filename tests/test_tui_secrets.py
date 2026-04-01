@@ -149,6 +149,10 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
 
             if len(secrets_list.children) > 0:
                 secrets_list.index = 0
+
+                # simulate selection to enable the button
+                app.query_one("#btn-secret-delete").disabled = False
+
                 await pilot.pause(0.2)
 
                 # Click Delete

@@ -97,3 +97,24 @@ def run_yaml2json_lab_logic(args):
             return False
 
     return False
+
+
+def run_json2yaml_lab_logic(args):
+    """CLI handler for Json2Yaml Lab."""
+    manager = Yaml2JsonManager()
+
+    if getattr(args, "action", None) == "json2yaml":
+        try:
+            result = manager.convert_json_to_yaml(args.input)
+            if args.output:
+                with open(args.output, "w", encoding="utf-8") as f:
+                    f.write(result)
+                print(f"Output written to {args.output}")
+            else:
+                print(result)
+            return True
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return False
+
+    return False

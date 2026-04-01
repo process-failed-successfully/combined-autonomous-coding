@@ -4,7 +4,7 @@ import json
 import yaml
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from shared.yaml2json_lab import Yaml2JsonManager, run_yaml2json_lab_logic
+from shared.yaml2json_lab import Yaml2JsonManager, run_yaml2json_lab_logic, run_json2yaml_lab_logic
 
 class DummyArgs:
     def __init__(self, **kwargs):
@@ -72,5 +72,10 @@ class TestYaml2JsonCLI(unittest.TestCase):
         args = DummyArgs(action="json2yaml", input='{"key": "value"}', output=None)
         self.assertTrue(run_yaml2json_lab_logic(args))
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_run_json2yaml_new_logic(self):
+        args = DummyArgs(action="json2yaml", input='{"key": "value"}', output=None)
+        self.assertTrue(run_json2yaml_lab_logic(args))
+
+    def test_run_json2yaml_new_logic_invalid(self):
+        args = DummyArgs(action="json2yaml", input='{"key": "value"', output=None)
+        self.assertFalse(run_json2yaml_lab_logic(args))

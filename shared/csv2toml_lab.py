@@ -3,6 +3,7 @@ import io
 import sys
 import tomlkit
 
+
 class Csv2TomlManager:
     """Manager for converting CSV to TOML."""
 
@@ -34,6 +35,7 @@ class Csv2TomlManager:
             return tomlkit.dumps(doc)
         except Exception as e:
             raise ValueError(f"Failed to parse CSV or generate TOML: {e}")
+
 
 def run_csv2toml_lab_logic(args) -> bool:
     """Runs the CSV to TOML Lab logic for CLI."""

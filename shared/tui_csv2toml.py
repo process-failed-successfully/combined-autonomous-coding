@@ -4,6 +4,7 @@ from textual.widgets import Static, Button, TextArea, Input, Label
 from textual.binding import Binding
 from shared.csv2toml_lab import Csv2TomlManager
 
+
 class Csv2TomlTab(Static):
     """TUI tab for Csv2Toml Lab."""
 

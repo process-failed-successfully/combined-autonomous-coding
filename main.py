@@ -201,6 +201,7 @@ from shared.brainfuck_lab import run_brainfuck_lab_logic
 from shared.morse_lab import run_morse_lab_logic
 from shared.stego_lab import run_stego_lab_logic
 from shared.typegen_lab import run_typegen_lab_logic
+from shared.zip_lab import run_zip_lab_logic
 from shared.json_schema_lab import run_json_schema_lab_logic
 from shared import __version__
 import json
@@ -19208,6 +19209,20 @@ Examples:
     isbn_convert = isbn_subparsers.add_parser("convert", help="Convert an ISBN-10 to ISBN-13.")
     isbn_convert.add_argument("isbn", help="The ISBN-10 string to convert.")
 
+    parser_zip = subparsers.add_parser(
+        "zip-lab", aliases=["zip"], help="Utilities for creating and extracting zip archives."
+    )
+    zip_subparsers = parser_zip.add_subparsers(dest="action", help="Action to perform")
+    zip_subparsers.add_parser("tui", help="Launch the interactive Zip Lab TUI.")
+
+    zip_create = zip_subparsers.add_parser("create", help="Create a zip archive.")
+    zip_create.add_argument("inputs", nargs="+", help="Input files or directories to include in the archive.")
+    zip_create.add_argument("-o", "--output", help="Output archive path (default: archive.zip).")
+
+    zip_extract = zip_subparsers.add_parser("extract", help="Extract a zip archive.")
+    zip_extract.add_argument("input", help="Input archive to extract.")
+    zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -23579,6 +23594,10 @@ async def main():
 
     if args.command in ["alias-lab", "aliases"]:
         run_alias_lab(args)
+        return
+
+    if args.command in ["zip-lab", "zip"]:
+        run_zip_lab_logic(args)
         return
 
     # Initialize Agent Client

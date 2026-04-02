@@ -242,7 +242,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert", "bip39-lab", "bip39",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "seo-lab", "seo",
@@ -1289,6 +1289,11 @@ def run_stego_lab(args):
     from shared.stego_lab import run_stego_lab_logic
     run_stego_lab_logic(args)
 
+
+def run_bip39_lab(args):
+    """Runs the BIP39 Lab utilities."""
+    from shared.bip39_lab import run_bip39_lab_logic
+    run_bip39_lab_logic(args)
 
 def run_vcard_lab(args):
     """Runs the vCard Lab utilities."""
@@ -16308,6 +16313,32 @@ def parse_args(argv=None):
     parser_curl.add_argument("command_str", nargs="?", help="The cURL command string to convert.")
     parser_curl.add_argument("--target", choices=["python", "js", "go"], default="python", help="Target language for CLI conversion (default: python).")
 
+    # --- New 'bip39-lab' command ---
+    parser_bip39 = subparsers.add_parser(
+        "bip39-lab",
+        aliases=["bip39"],
+        help="BIP39 Mnemonic Generator and Validator"
+    )
+    bip39_subparsers = parser_bip39.add_subparsers(dest="action", help="Action to perform.")
+
+    # Generate Subcommand
+    bip39_gen_parser = bip39_subparsers.add_parser("generate", help="Generate a new BIP39 phrase")
+    bip39_gen_parser.add_argument("--words", type=int, choices=[12, 15, 18, 21, 24], default=12, help="Number of words (default: 12)")
+
+    # Validate Subcommand
+    bip39_val_parser = bip39_subparsers.add_parser("validate", help="Validate a BIP39 phrase")
+    bip39_val_parser.add_argument("--phrase", type=str, required=True, help="The mnemonic phrase to validate")
+
+    # Seed Subcommand
+    bip39_seed_parser = bip39_subparsers.add_parser("seed", help="Convert a mnemonic to a binary seed")
+    bip39_seed_parser.add_argument("--phrase", type=str, required=True, help="The mnemonic phrase")
+    bip39_seed_parser.add_argument("--passphrase", type=str, default="", help="Optional passphrase")
+
+    # TUI Subcommand
+    bip39_subparsers.add_parser("tui", help="Launch the BIP39 Lab TUI")
+    # Also support general --tui flag
+    parser_bip39.add_argument("--tui", action="store_true", help="Launch the TUI interface.")
+
     # --- New 'vcard-lab' command ---
     parser_vcard = subparsers.add_parser(
         "vcard-lab",
@@ -23490,6 +23521,10 @@ async def main():
 
     if args.command in ["curl-lab", "curl"]:
         run_curl_lab(args)
+        return
+
+    if args.command in ["bip39-lab", "bip39"]:
+        run_bip39_lab(args)
         return
 
     if args.command in ["vcard-lab", "vcard"]:

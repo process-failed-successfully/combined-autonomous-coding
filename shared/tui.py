@@ -149,6 +149,7 @@ from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
+from shared.tui_yaml2csv import Yaml2CsvTab
 from shared.tui_json2md import Json2MdTab
 from shared.tui_csv2md import Csv2MdTab
 from shared.tui_csv2toml import Csv2TomlTab
@@ -4553,6 +4554,8 @@ class AgentTUI(App):
                 yield YamlLabTab(self.project_dir)
             with TabPane("TOML Lab", id="tab-toml"):
                 yield TomlLabTab(self.project_dir)
+            with TabPane("YAML to CSV", id="tab-yaml2csv"):
+                yield Yaml2CsvTab()
             with TabPane("JSON to CSV", id="tab-json2csv"):
                 yield Json2CsvTab(self.project_dir)
             with TabPane("CSV to JSON", id="tab-csv2json"):

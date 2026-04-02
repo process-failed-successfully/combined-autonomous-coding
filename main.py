@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
@@ -690,6 +690,26 @@ def run_binary_lab(args):
 
     from shared.binary_lab import run_binary_lab_logic
     success = run_binary_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_bip39_lab(args):
+    """Runs the BIP39 Lab."""
+    if getattr(args, "tui", False) or getattr(args, "bip39_action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching BIP39 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-bip39")
+        if getattr(args, '_in_event_loop', False):
+            import asyncio
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.bip39_lab import run_bip39_lab_logic
+    success = run_bip39_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -14553,6 +14573,26 @@ def parse_args(argv=None):
     # bencode-lab tui
     bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
 
+    # --- BIP39 Lab Parser ---
+    parser_bip39_lab = subparsers.add_parser("bip39-lab", aliases=["bip39"], help="BIP39 Mnemonic Seed Generator and Validator")
+    bip39_subparsers = parser_bip39_lab.add_subparsers(dest="bip39_action", help="BIP39 commands")
+
+    parser_bip39_gen = bip39_subparsers.add_parser("generate", help="Generate a new mnemonic phrase")
+    parser_bip39_gen.add_argument("--strength", type=int, choices=[128, 160, 192, 224, 256], default=128, help="Entropy strength in bits (default: 128)")
+    parser_bip39_gen.add_argument("--language", type=str, default="english", help="Wordlist language (default: english)")
+
+    parser_bip39_val = bip39_subparsers.add_parser("validate", help="Validate an existing mnemonic phrase")
+    parser_bip39_val.add_argument("--phrase", type=str, required=True, help="The mnemonic phrase to validate")
+    parser_bip39_val.add_argument("--language", type=str, default="english", help="Wordlist language (default: english)")
+
+    parser_bip39_seed = bip39_subparsers.add_parser("seed", help="Convert mnemonic to binary seed (hex)")
+    parser_bip39_seed.add_argument("--phrase", type=str, required=True, help="The mnemonic phrase")
+    parser_bip39_seed.add_argument("--passphrase", type=str, default="", help="Optional passphrase for seed derivation")
+    parser_bip39_seed.add_argument("--language", type=str, default="english", help="Wordlist language (default: english)")
+
+    parser_bip39_tui = bip39_subparsers.add_parser("tui", help="Launch the BIP39 Lab TUI")
+    parser_bip39_lab.add_argument("--tui", action="store_true", help="Launch the TUI mode directly")
+
     # --- New 'msgpack-lab' command ---
     parser_msgpack_lab = subparsers.add_parser(
         "msgpack-lab",
@@ -23254,6 +23294,10 @@ async def main():
 
     if args.command in ["base36-lab", "base36", "b36"]:
         run_base36_lab(args)
+        return
+
+    if args.command in ["bip39-lab", "bip39"]:
+        run_bip39_lab(args)
         return
 
     if args.command in ["octal-lab", "octal"]:

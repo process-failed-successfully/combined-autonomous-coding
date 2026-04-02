@@ -14666,6 +14666,11 @@ def parse_args(argv=None):
     parser_ul_parse = url_lab_subparsers.add_parser("parse", help="Parse a URL into components.")
     parser_ul_parse.add_argument("url", help="URL to parse.")
 
+    # url-lab extract
+    parser_ul_extract = url_lab_subparsers.add_parser("extract", help="Extract a specific component from a URL.")
+    parser_ul_extract.add_argument("url", help="URL to extract from.")
+    parser_ul_extract.add_argument("component", choices=["scheme", "netloc", "hostname", "port", "path", "query", "fragment"], help="Component to extract.")
+
     # url-lab encode
     parser_ul_encode = url_lab_subparsers.add_parser("encode", help="URL encode text.")
     parser_ul_encode.add_argument("text", help="Text to encode.")

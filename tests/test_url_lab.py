@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 from shared.url_lab import UrlLabManager, run_url_lab_logic
 import json
-import sys
 import io
+
 
 class TestUrlLabManager(unittest.TestCase):
     def setUp(self):
@@ -18,6 +18,29 @@ class TestUrlLabManager(unittest.TestCase):
         self.assertEqual(result["query"], "query=param&key=val")
         self.assertEqual(result["fragment"], "fragment")
         self.assertEqual(result["query_params"], {"query": ["param"], "key": ["val"]})
+
+    def test_extract(self):
+        url = "https://user:pass@example.com:8080/path/to/resource?query=param&key=val#fragment"
+        self.assertEqual(self.manager.extract(url, "scheme"), "https")
+        self.assertEqual(self.manager.extract(url, "netloc"), "user:pass@example.com:8080")
+        self.assertEqual(self.manager.extract(url, "hostname"), "example.com")
+        self.assertEqual(self.manager.extract(url, "port"), "8080")
+        self.assertEqual(self.manager.extract(url, "path"), "/path/to/resource")
+        self.assertEqual(self.manager.extract(url, "query"), "query=param&key=val")
+        self.assertEqual(self.manager.extract(url, "fragment"), "fragment")
+
+        url_no_port = "https://example.com"
+        self.assertEqual(self.manager.extract(url_no_port, "port"), "")
+        self.assertEqual(self.manager.extract(url_no_port, "hostname"), "example.com")
+
+        url_no_hostname = "file:///path/to/file"
+        self.assertEqual(self.manager.extract(url_no_hostname, "hostname"), "")
+
+        with self.assertRaises(ValueError):
+            self.manager.extract(url, "invalid")
+
+        url_invalid_port = "http://example.com:invalid/"
+        self.assertEqual(self.manager.extract(url_invalid_port, "port"), "")
 
     def test_encode(self):
         text = "hello world/&?"
@@ -38,7 +61,6 @@ class TestUrlLabManager(unittest.TestCase):
         text = "hello+world%2F%26%3F"
         decoded = self.manager.decode_plus(text)
         self.assertEqual(decoded, "hello world/&?")
-
 
     def test_join(self):
         base = "http://example.com/api/"
@@ -96,6 +118,7 @@ class TestUrlLabManager(unittest.TestCase):
         result_https = self.manager.normalize(url_https)
         self.assertEqual(result_https, "https://example.com/foo")
 
+
 class TestRunUrlLabLogic(unittest.TestCase):
     @patch('sys.exit', side_effect=SystemExit(0))
     def test_run_tui(self, mock_exit):
@@ -119,6 +142,33 @@ class TestRunUrlLabLogic(unittest.TestCase):
                 run_url_lab(args)
             self.assertEqual(cm.exception.code, 0)
             MockAgentTUI.assert_called_with(project_dir=args.project_dir, start_tab="tab-url-lab")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_extract(self, mock_stdout):
+        args = MagicMock()
+        args.action = "extract"
+        args.url = "http://example.com/path"
+        args.component = "scheme"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        output = mock_stdout.getvalue().strip()
+        self.assertEqual(output, "http")
+
+    @patch('sys.stderr', new_callable=io.StringIO)
+    def test_run_extract_error(self, mock_stderr):
+        args = MagicMock()
+        args.action = "extract"
+        args.url = "http://example.com/path"
+        args.component = "invalid"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn("Error: Unknown component: invalid", mock_stderr.getvalue())
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_run_parse(self, mock_stdout):
@@ -157,6 +207,103 @@ class TestRunUrlLabLogic(unittest.TestCase):
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(mock_stdout.getvalue().strip(), "hello+world")
 
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_decode(self, mock_stdout):
+        args = MagicMock()
+        args.action = "decode"
+        args.text = "hello%20world"
 
-if __name__ == '__main__':
-    unittest.main()
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "hello world")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_decode_plus(self, mock_stdout):
+        args = MagicMock()
+        args.action = "decode-plus"
+        args.text = "hello+world"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "hello world")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_join(self, mock_stdout):
+        args = MagicMock()
+        args.action = "join"
+        args.base = "http://example.com/api/"
+        args.paths = ["v1", "users"]
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "http://example.com/api/users")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_params(self, mock_stdout):
+        args = MagicMock()
+        args.action = "params"
+        args.url = "http://example.com?foo=bar"
+        args.mode = "list"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        output = mock_stdout.getvalue()
+        self.assertIn('"foo"', output)
+        self.assertIn('"bar"', output)
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_params_error(self, mock_stdout):
+        args = MagicMock()
+        args.action = "params"
+        args.url = "http://example.com?foo=bar"
+        args.mode = "get"
+        # Ensure key is completely missing
+        del args.key
+
+        # Patch sys.stderr instead of stdout since we want to check the error message
+        with patch('sys.stderr', new_callable=io.StringIO) as mock_stderr:
+            with self.assertRaises(SystemExit) as cm:
+                run_url_lab_logic(args)
+
+            self.assertEqual(cm.exception.code, 1)
+            self.assertIn("Error: Key required for 'get' mode", mock_stderr.getvalue())
+
+    def test_params_add_error(self):
+        manager = UrlLabManager()
+        with self.assertRaises(ValueError):
+            manager.params("http://example.com", "add", key="foo")  # missing value
+
+    def test_params_set_error(self):
+        manager = UrlLabManager()
+        with self.assertRaises(ValueError):
+            manager.params("http://example.com", "set", key="foo")  # missing value
+
+    def test_params_remove_error(self):
+        manager = UrlLabManager()
+        with self.assertRaises(ValueError):
+            manager.params("http://example.com", "remove")  # missing key
+
+    def test_params_get_error(self):
+        manager = UrlLabManager()
+        with self.assertRaises(ValueError):
+            manager.params("http://example.com", "get")  # missing key
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_normalize(self, mock_stdout):
+        args = MagicMock()
+        args.action = "normalize"
+        args.url = "HTTP://Example.COM:80/foo"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "http://example.com/foo")

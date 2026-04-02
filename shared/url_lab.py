@@ -3,6 +3,7 @@ import json
 import sys
 from typing import Any, Dict, List, Optional
 
+
 class UrlLabManager:
     """Manages URL parsing, manipulation, and normalization."""
 
@@ -19,6 +20,28 @@ class UrlLabManager:
             "query_params": query_params
         }
 
+    def extract(self, url: str, component: str) -> str:
+        parsed = urllib.parse.urlparse(url)
+        if component == "scheme":
+            return parsed.scheme
+        elif component == "netloc":
+            return parsed.netloc
+        elif component == "path":
+            return parsed.path
+        elif component == "query":
+            return parsed.query
+        elif component == "fragment":
+            return parsed.fragment
+        elif component == "port":
+            try:
+                return str(parsed.port) if parsed.port is not None else ""
+            except ValueError:
+                return ""
+        elif component == "hostname":
+            return parsed.hostname if parsed.hostname else ""
+        else:
+            raise ValueError(f"Unknown component: {component}")
+
     def encode(self, text: str) -> str:
         return urllib.parse.quote(text)
 
@@ -30,7 +53,6 @@ class UrlLabManager:
 
     def decode_plus(self, text: str) -> str:
         return urllib.parse.unquote_plus(text)
-
 
     def join(self, base: str, paths: List[str]) -> str:
         url = base
@@ -97,6 +119,7 @@ class UrlLabManager:
         new_parsed = parsed._replace(scheme=scheme, netloc=netloc, query=sorted_query)
         return urllib.parse.urlunparse(new_parsed)
 
+
 def run_url_lab_logic(args):
     """CLI handler for URL Lab."""
     manager = UrlLabManager()
@@ -104,6 +127,13 @@ def run_url_lab_logic(args):
     if args.action == "parse":
         result = manager.parse(args.url)
         print(json.dumps(result, indent=2))
+
+    elif args.action == "extract":
+        try:
+            print(manager.extract(args.url, args.component))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.action == "encode":
         print(manager.encode(args.text))
@@ -116,7 +146,6 @@ def run_url_lab_logic(args):
 
     elif args.action == "decode-plus":
         print(manager.decode_plus(args.text))
-
 
     elif args.action == "join":
         # args.paths is a list

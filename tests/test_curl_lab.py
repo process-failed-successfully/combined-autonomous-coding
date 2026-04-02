@@ -122,6 +122,22 @@ class TestCurlLabManager(unittest.TestCase):
         self.assertIn('payload := strings.NewReader("hello \\"world\\"")', code)
         self.assertIn('http.NewRequest("POST", "https://api.example.com", payload)', code)
 
+    def test_to_json(self):
+        parsed = {
+            'url': 'https://api.example.com',
+            'method': 'POST',
+            'headers': {'Content-Type': 'application/json'},
+            'data': '{"key": "value"}',
+            'auth': ['user', 'pass']
+        }
+
+        json_output = self.manager.to_json(parsed)
+        self.assertIn('"url": "https://api.example.com"', json_output)
+        self.assertIn('"method": "POST"', json_output)
+        self.assertIn('"Content-Type": "application/json"', json_output)
+        self.assertIn('"data": "{\\"key\\": \\"value\\"}"', json_output)
+        self.assertIn('"auth": [\n    "user",\n    "pass"\n  ]', json_output)
+
     def test_parse_curl_argparse_error(self):
         # argparse error like an unknown flag will be ignored by parse_known_args
         # But if the user provides an invalid option like --help or -h it would exit.
@@ -157,6 +173,17 @@ class TestCurlLabCli(unittest.TestCase):
 
         self.assertIn("fetch(", output)
 
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_cli_json(self, mock_stdout):
+        args = MagicMock()
+        args.tui = False
+        args.command_str = "curl https://api.example.com"
+        args.target = "json"
 
+        run_curl_lab_logic(args)
+        output = mock_stdout.getvalue()
+
+        self.assertIn('"url": "https://api.example.com"', output)
+        self.assertIn('"method": "GET"', output)
 if __name__ == '__main__':
     unittest.main()

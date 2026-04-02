@@ -26,8 +26,10 @@ class CurlLabManager:
             raise ValueError("Input is not a valid curl command")
 
         class NoExitArgumentParser(argparse.ArgumentParser):
+
             def error(self, message):
                 raise ValueError(message)
+
             def exit(self, status=0, message=None):
                 if message:
                     raise ValueError(message)
@@ -239,6 +241,12 @@ class CurlLabManager:
 
         return "\n".join(lines)
 
+    def to_json(self, parsed: Dict[str, Any]) -> str:
+        """
+        Converts parsed cURL data into a formatted JSON string.
+        """
+        return json.dumps(parsed, indent=2)
+
 
 def run_curl_lab_logic(args):
     """
@@ -277,8 +285,10 @@ def run_curl_lab_logic(args):
             print(manager.to_js_fetch(parsed))
         elif target == 'go':
             print(manager.to_go_http(parsed))
+        elif target == 'json':
+            print(manager.to_json(parsed))
         else:
-            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go.", file=sys.stderr)
+            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, json.", file=sys.stderr)
             sys.exit(1)
 
     except Exception as e:

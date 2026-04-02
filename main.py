@@ -16306,7 +16306,7 @@ def parse_args(argv=None):
     )
     parser_curl.add_argument("--tui", action="store_true", help="Launch the TUI interface.")
     parser_curl.add_argument("command_str", nargs="?", help="The cURL command string to convert.")
-    parser_curl.add_argument("--target", choices=["python", "js", "go"], default="python", help="Target language for CLI conversion (default: python).")
+    parser_curl.add_argument("--target", choices=["python", "js", "go", "json"], default="python", help="Target language for CLI conversion (default: python).")
 
     # --- New 'vcard-lab' command ---
     parser_vcard = subparsers.add_parser(

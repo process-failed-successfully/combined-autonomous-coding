@@ -121,26 +121,10 @@ class TestCsv2SqlTab(unittest.TestCase):
                 return mock_delim
             if selector == "#c2s-output":
                 return mock_output
-            if selector == "#c2s-input":
-                return mock_input
-            if selector == "#c2s-table-input":
-                return mock_table
-            if selector == "#c2s-delim-input":
-                return mock_delim
-            if selector == "#c2s-output":
-                return mock_output
-            if selector == "#c2s-input":
-                return mock_input
-            if selector == "#c2s-table-input":
-                return mock_table
-            if selector == "#c2s-delim-input":
-                return mock_delim
-            if selector == "#c2s-output":
-                return mock_output
             return MagicMock()
 
-        tab.query_one = MagicMock(side_effect=mock_query_one)
-        tab.notify = MagicMock()
+        tab.query_one = MagicMock(side_effect=mock_query_one)  # type: ignore
+        tab.notify = MagicMock()  # type: ignore
 
         tab.convert()
 
@@ -183,8 +167,8 @@ class TestCsv2SqlTab(unittest.TestCase):
                 return mock_output
             return MagicMock()
 
-        tab.query_one = MagicMock(side_effect=mock_query_one)
-        tab.notify = MagicMock()
+        tab.query_one = MagicMock(side_effect=mock_query_one)  # type: ignore
+        tab.notify = MagicMock()  # type: ignore
 
         tab.convert()
 
@@ -221,8 +205,8 @@ class TestCsv2SqlTab(unittest.TestCase):
                 return mock_output
             return MagicMock()
 
-        tab.query_one = MagicMock(side_effect=mock_query_one)
-        tab.notify = MagicMock()
+        tab.query_one = MagicMock(side_effect=mock_query_one)  # type: ignore
+        tab.notify = MagicMock()  # type: ignore
 
         tab.convert()
 
@@ -248,8 +232,9 @@ class TestCsv2SqlTabAsync(unittest.IsolatedAsyncioTestCase):
     async def test_compose(self):
         from shared.tui_csv2sql import Csv2SqlTab
         from textual.app import App
+        from typing import Any
 
-        class TestApp(App):
+        class TestApp(App[Any]):
             def compose(self):
                 yield Csv2SqlTab()
 

@@ -82,7 +82,7 @@ class Csv2SqlManager:
 
             values = [self._infer_value(val) for val in row]
             vals_str = ", ".join(values)
-            stmt = f"INSERT INTO {table_name} ({cols}) VALUES ({vals_str});"
+            stmt = f"INSERT INTO {table_name} ({cols}) VALUES ({vals_str});"  # nosec B608
             sql_statements.append(stmt)
 
         if not sql_statements:

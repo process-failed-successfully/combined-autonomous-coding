@@ -145,7 +145,7 @@ class TestCsv2SqlTab(unittest.TestCase):
         tab.convert()
 
         mock_manager.convert_to_sql.assert_called_once_with("id,val\n1,hello", table_name="my_table", delimiter=",")
-        self.assertEqual(mock_output.text, "fake_sql")
+        mock_output.load_text.assert_called_once_with("fake_sql")
 
     @patch("shared.tui_csv2sql.Csv2SqlManager")
     def test_csv2sql_tab_empty(self, MockCsv2SqlManager):
@@ -227,7 +227,7 @@ class TestCsv2SqlTab(unittest.TestCase):
         tab.convert()
 
         tab.notify.assert_called_once_with("Error: fake error", severity="error")
-        self.assertEqual(mock_output.text, "-- Error: fake error")
+        mock_output.load_text.assert_called_once_with("-- Error: fake error")
 
 
 class TestCsv2SqlTabAsync(unittest.IsolatedAsyncioTestCase):

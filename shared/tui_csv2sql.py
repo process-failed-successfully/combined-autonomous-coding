@@ -25,11 +25,11 @@ class Csv2SqlTab(Container):
             with Horizontal():
                 with Vertical(classes="stat-box"):
                     yield Label("CSV Input (first row must be headers):")
-                    yield TextArea(id="c2s-input", language="csv")
+                    yield TextArea(id="c2s-input")
 
                 with Vertical(classes="stat-box"):
                     yield Label("SQL Output:")
-                    yield TextArea(id="c2s-output", language="sql", read_only=True)
+                    yield TextArea(id="c2s-output", read_only=True)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-convert-c2s":
@@ -47,8 +47,8 @@ class Csv2SqlTab(Container):
 
         try:
             sql = self.manager.convert_to_sql(csv_text, table_name=table_name, delimiter=delimiter)
-            out.text = sql
+            out.load_text(sql)
             self.notify("Converted to SQL.")
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")
-            out.text = f"-- Error: {e}"
+            out.load_text(f"-- Error: {e}")

@@ -89,7 +89,17 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             tabs.active = "tab-docs"
             await pilot.pause()
 
+            # Make sure Docstrings tabpane is active
+            doc_tabs = app.query_one(DocumentationTab).query_one("TabbedContent")
+            doc_tabs.active = "tab-2" # Try to ensure the table is mounted
+            await pilot.pause()
+
             doc_tab = app.query_one(DocumentationTab)
+
+            # Need to mount the actual target explicitly to ensure no out of bounds or query error
+            # In textual >= 0.82 some deferred content isn't immediately queryable depending on tab state
+            # but we know doc_tab is mounted.
+            table = doc_tab.query_one("#docstring-table", DataTable)
 
             # Invoke logic directly
             doc_tab.scan_docstrings()
@@ -98,7 +108,6 @@ class TestTUIDocs(unittest.IsolatedAsyncioTestCase):
             self.mock_docstring_mgr.scan.assert_called_once()
 
             # Verify table population
-            table = doc_tab.query_one("#docstring-table", DataTable)
             self.assertEqual(table.row_count, 1)
 
     async def test_check_links(self):

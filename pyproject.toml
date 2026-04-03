@@ -38,6 +38,7 @@ dependencies = [
     "watchdog",
     "argcomplete",
     "google-generativeai",
+    "sqlparse>=0.4.4",
     "croniter",
     "playwright",
     "pillow",

@@ -303,6 +303,7 @@ from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
 from shared.tui_alias import AliasLabTab
 from shared.tui_json_schema import JsonSchemaTab
+from shared.tui_fs import FsLabTab
 from shared.plugin_manager import PluginManager
 
 
@@ -4136,6 +4137,7 @@ class AgentTUI(App):
         PaletteCommand("Go to CSV to MD Lab", "switch_tab_csv2md"),
         PaletteCommand("Go to CSV to JSON Lab", "switch_tab_csv2json"),
         PaletteCommand("Go to Size Lab", "switch_tab_size"),
+        PaletteCommand("Go to FS Lab", "switch_tab_fs"),
 
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4764,6 +4766,8 @@ class AgentTUI(App):
                 yield AliasLabTab()
             with TabPane("JSON Schema", id="tab-json-schema"):
                 yield JsonSchemaTab()
+            with TabPane("FS Lab", id="tab-fs"):
+                yield FsLabTab(self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

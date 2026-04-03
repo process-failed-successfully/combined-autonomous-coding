@@ -303,6 +303,7 @@ from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
 from shared.tui_alias import AliasLabTab
 from shared.tui_json_schema import JsonSchemaTab
+from shared.tui_sqlformat import TabSqlFormat
 from shared.plugin_manager import PluginManager
 
 
@@ -4232,6 +4233,8 @@ class AgentTUI(App):
                 yield PortLabTab()
             with TabPane("Roman Lab", id="tab-roman"):
                 yield RomanLabTab()
+            with TabPane("SQL Format Lab", id="tab-sqlformat"):
+                yield TabSqlFormat()
             with TabPane("IP Lab", id="tab-ip"):
                 yield IpLabTab()
             with TabPane("ISBN Lab", id="tab-isbn"):

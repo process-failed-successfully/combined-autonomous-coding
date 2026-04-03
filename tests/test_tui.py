@@ -269,3 +269,44 @@ class TestTUIComponents(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestHashLabTab(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.project_dir = Path("/tmp/test_project")
+        self.project_dir.mkdir(parents=True, exist_ok=True)
+
+    @patch("shared.tui_hash.HashLabManager")
+    async def test_hash_lab_tab_submit(self, MockHashLabManager):
+        from shared.tui_hash import HashLabTab
+        tab = HashLabTab(self.project_dir)
+
+        from textual.widgets import TextArea, Select, Input
+        # Test hash string functionality logic
+        mock_manager = MockHashLabManager.return_value
+        mock_manager.hash_string.return_value = "fakehash"
+
+        mock_input = MagicMock(spec=TextArea)
+        mock_input.text = "hello"
+
+        mock_algo = MagicMock(spec=Select)
+        mock_algo.value = "sha256"
+
+        mock_hmac = MagicMock(spec=Input)
+        mock_hmac.value = ""
+
+        mock_output = MagicMock(spec=TextArea)
+
+        def mock_query_one(selector, type=None):
+            if selector == "#hash-string-input": return mock_input
+            if selector == "#hash-string-algo": return mock_algo
+            if selector == "#hash-string-hmac": return mock_hmac
+            if selector == "#hash-string-output": return mock_output
+            return MagicMock()
+
+        tab.query_one = MagicMock(side_effect=mock_query_one)
+        tab.notify = MagicMock()
+
+        tab.hash_string()
+
+        mock_manager.hash_string.assert_called_once_with("hello", "sha256", "")
+        self.assertEqual(mock_output.text, "fakehash")

@@ -258,7 +258,7 @@ KNOWN_COMMANDS = [
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
     "proxy-lab", "proxy",
-    "proc-lab", "proc", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
+    "proc-lab", "proc", "faker-lab", "faker", "fake", "geo-lab", "geo", "struct-lab", "struct", "bin", "chart-lab", "chart",
     "enc-lab", "enc", "encode", "pcap-lab", "pcap", "rss-lab", "rss", "fs-lab", "fs", "files",
     "ws-lab", "ws", "webhook-lab", "webhook", "hook", "hash-lab", "hash", "random-lab", "rand", "random",
     "browser-lab", "browser", "web",
@@ -2273,6 +2273,16 @@ def run_cbor_lab(args):
     success = run_cbor_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+def run_faker_lab(args):
+    """Runs the Faker Lab."""
+    if getattr(args, "tui", False):
+        run_tui(args, start_tab="tab-faker")
+        return
+    from shared.faker_lab import run_faker_lab_logic
+    success = run_faker_lab_logic(args)
+    if not success:
+        sys.exit(1)
 
 def run_geo_lab(args):
     """Runs the Geo Lab."""
@@ -16374,6 +16384,17 @@ def parse_args(argv=None):
     # proc check
     parser_proc_check = proc_subparsers.add_parser("check", help="Validate Procfile.")
 
+    # --- New 'faker-lab' command ---
+    parser_faker = subparsers.add_parser(
+        "faker-lab",
+        aliases=["faker", "fake"],
+        help="Generate fake data (person, internet, text, credit_card)."
+    )
+    parser_faker.add_argument("type", nargs="?", choices=["person", "internet", "text", "credit_card"], help="Type of fake data to generate")
+    parser_faker.add_argument("--count", "-c", type=int, default=1, help="Number of items to generate")
+    parser_faker.add_argument("--locale", "-l", type=str, default="en_US", help="Locale to use (e.g. en_US, fr_FR)")
+    parser_faker.add_argument("--tui", action="store_true", help="Launch Faker Lab TUI")
+
     # --- New 'geo-lab' command ---
     parser_geo = subparsers.add_parser(
         "geo-lab",
@@ -22711,6 +22732,10 @@ async def main():
 
     if args.command in ["brainfuck-lab", "brainfuck", "bf"]:
         run_brainfuck_lab_logic(args)
+        return
+
+    if args.command in ["faker-lab", "faker", "fake"]:
+        run_faker_lab(args)
         return
 
     if args.command in ["geo-lab", "geo"]:

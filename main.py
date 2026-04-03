@@ -244,7 +244,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
@@ -2698,6 +2698,13 @@ def run_jwt_lab(args):
 
     from shared.jwt_lab import run_jwt_lab_logic
     success = run_jwt_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_jwk_lab(args):
+    """Runs the JWK Lab."""
+    from shared.jwk_lab import run_jwk_lab_logic
+    success = run_jwk_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -14110,6 +14117,36 @@ def parse_args(argv=None):
     # jwt-lab tui
     parser_jwt_tui = jwt_subparsers.add_parser("tui", help="Launch JWT Lab TUI.")
 
+    # --- New 'jwk-lab' command ---
+    parser_jwk = subparsers.add_parser(
+        "jwk-lab",
+        aliases=["jwk"],
+        help="JWK utilities (generate, convert)."
+    )
+    jwk_subparsers = parser_jwk.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # jwk-lab generate
+    parser_jwk_gen = jwk_subparsers.add_parser("generate", help="Generate a new JWK.")
+    parser_jwk_gen.add_argument("--type", choices=["RSA", "EC"], default="RSA", help="Key type (RSA, EC).")
+    parser_jwk_gen.add_argument("--size", type=int, default=2048, help="RSA key size (default: 2048).")
+    parser_jwk_gen.add_argument("--curve", choices=["P-256", "P-384", "P-521"], default="P-256", help="EC curve (default: P-256).")
+    parser_jwk_gen.add_argument("--kid", help="Key ID (optional).")
+
+    # jwk-lab pem2jwk
+    parser_jwk_pem2jwk = jwk_subparsers.add_parser("pem2jwk", help="Convert PEM to JWK.")
+    parser_jwk_pem2jwk.add_argument("--pem", required=True, help="PEM data string.")
+    parser_jwk_pem2jwk.add_argument("--password", help="Password for encrypted PEM.")
+    parser_jwk_pem2jwk.add_argument("--kid", help="Key ID (optional).")
+
+    # jwk-lab jwk2pem
+    parser_jwk_jwk2pem = jwk_subparsers.add_parser("jwk2pem", help="Convert JWK to PEM.")
+    parser_jwk_jwk2pem.add_argument("--jwk", required=True, help="JWK JSON string.")
+    parser_jwk_jwk2pem.add_argument("--password", help="Password for private key PEM encryption.")
+
     # --- New 'ip-lab' command ---
     parser_ip = subparsers.add_parser(
         "ip-lab",
@@ -22947,6 +22984,10 @@ async def main():
 
     if args.command == "jwt-lab":
         run_jwt_lab(args)
+        return
+
+    if args.command in ["jwk-lab", "jwk"]:
+        run_jwk_lab(args)
         return
 
     if args.command in ["uuid-lab", "uuid"]:

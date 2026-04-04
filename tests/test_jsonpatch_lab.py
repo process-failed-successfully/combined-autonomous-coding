@@ -70,35 +70,27 @@ def test_run_logic_file_read(tmp_path, capsys):
 async def test_tui_jsonpatch():
     pytest.importorskip("textual")
     from shared.tui_jsonpatch import JsonPatchLabTab
-    from shared.tui import AgentTUI
+    from textual.app import App
 
-    from shared.database import init_db
-    import tempfile
+    class DummyApp(App):
+        def compose(self):
+            yield JsonPatchLabTab()
 
-    # Initialize a temporary DB to avoid "no such table" errors in other tabs
-    with tempfile.NamedTemporaryFile() as tmp:
-        init_db(tmp.name)
-        app = AgentTUI(project_dir=Path("."), start_tab="tab-jsonpatch")
-        async with app.run_test() as pilot:
-            # We don't have to navigate to the tab if we start with it, but just in case
-            await pilot.pause()
+    app = DummyApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
 
-            # The TUI component should be JsonPatchLabTab
-            # Find text areas
-            target_ta = app.query_one("#input-target")
-            patch_ta = app.query_one("#input-patch")
-            output_ta = app.query_one("#output-result")
+        target_ta = app.query_one("#input-target")
+        patch_ta = app.query_one("#input-patch")
+        output_ta = app.query_one("#output-result")
 
-            target_ta.load_text('{"a": 1}')
-            patch_ta.load_text('[{"op": "replace", "path": "/a", "value": 2}]')
+        target_ta.load_text('{"a": 1}')
+        patch_ta.load_text('[{"op": "replace", "path": "/a", "value": 2}]')
 
-            # Give textual time to react to the change events
-            await pilot.pause()
+        await pilot.pause()
+        assert '"a": 2' in output_ta.text
 
-            # Output should now contain the valid result
-            assert '"a": 2' in output_ta.text
-
-            # Test invalid patch handling
-            patch_ta.load_text('[{"op": "invalid", "path": "/a", "value": 2}]')
-            await pilot.pause()
-            assert 'Error' in output_ta.text
+        # Test invalid patch handling
+        patch_ta.load_text('[{"op": "invalid", "path": "/a", "value": 2}]')
+        await pilot.pause()
+        assert 'Error' in output_ta.text

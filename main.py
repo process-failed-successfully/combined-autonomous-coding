@@ -387,7 +387,8 @@ KNOWN_COMMANDS = [
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
     "regex-escape-lab", "regex-escape",
-    "alias-lab", "aliases"
+    "alias-lab", "aliases",
+    "tar-lab", "tar"
 ]
 
 if FileSystemEventHandler:
@@ -3326,6 +3327,32 @@ def run_json_lab(args):
 
     run_json_lab_logic(args)
     sys.exit(0)
+
+
+def run_tar_lab(args):
+    """Runs the Tar Lab."""
+    if not getattr(args, "action", None):
+        import argparse
+        print("Error: No action specified for tar-lab. Use --help to see available actions.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.action == "tui":
+        from shared.tui_tar import TarLabApp
+        print("Launching Tar Lab TUI...")
+        app = TarLabApp()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.tar_lab import run_tar_lab_logic
+        run_tar_lab_logic(args)
 
 
 def run_ini_lab(args):
@@ -19356,6 +19383,24 @@ Examples:
     isbn_convert = isbn_subparsers.add_parser("convert", help="Convert an ISBN-10 to ISBN-13.")
     isbn_convert.add_argument("isbn", help="The ISBN-10 string to convert.")
 
+    parser_tar = subparsers.add_parser(
+        "tar-lab", aliases=["tar"], help="Utilities for creating and extracting tar archives."
+    )
+    tar_subparsers = parser_tar.add_subparsers(dest="action", help="Action to perform")
+    tar_subparsers.add_parser("tui", help="Launch the interactive Tar Lab TUI.")
+
+    tar_create = tar_subparsers.add_parser("create", help="Create a tar archive.")
+    tar_create.add_argument("inputs", nargs="+", help="Input files or directories to include in the archive.")
+    tar_create.add_argument("-o", "--output", help="Output archive path (default: archive.tar.gz).")
+    tar_create.add_argument("-c", "--compression", choices=["gz", "bz2", "xz", "none"], default="gz", help="Compression to use (default: gz).")
+
+    tar_extract = tar_subparsers.add_parser("extract", help="Extract a tar archive.")
+    tar_extract.add_argument("input", help="Input archive to extract.")
+    tar_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
+
+    tar_list = tar_subparsers.add_parser("list", help="List the contents of a tar archive.")
+    tar_list.add_argument("input", help="Input archive to list.")
+
     parser_zip = subparsers.add_parser(
         "zip-lab", aliases=["zip"], help="Utilities for creating and extracting zip archives."
     )
@@ -23845,6 +23890,10 @@ async def main():
 
     if args.command in ["alias-lab", "aliases"]:
         run_alias_lab(args)
+        return
+
+    if args.command in ["tar-lab", "tar"]:
+        run_tar_lab(args)
         return
 
     if args.command in ["zip-lab", "zip"]:

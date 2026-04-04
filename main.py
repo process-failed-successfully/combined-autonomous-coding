@@ -375,6 +375,7 @@ KNOWN_COMMANDS = [
     "iban-lab", "iban",
     "case-lab", "case",
     "data-uri-lab", "data-uri",
+    "jsonpatch-lab", "jsonpatch",
     "morse-lab", "morse",
     "roman-lab", "roman",
     "bitwise-lab", "bits",
@@ -15557,6 +15558,17 @@ def parse_args(argv=None):
     parser_json_validate = json_subparsers.add_parser("validate", help="Validate JSON.")
     parser_json_validate.add_argument("input", help="JSON string or file path.")
 
+    # --- New 'jsonpatch-lab' command ---
+    parser_jsonpatch = subparsers.add_parser(
+        "jsonpatch-lab",
+        aliases=["jsonpatch"],
+        help="JSON Patch (RFC 6902) utilities."
+    )
+    parser_jsonpatch.add_argument("--target", help="Target JSON string or file path.")
+    parser_jsonpatch.add_argument("--patch", help="Patch JSON string or file path.")
+    parser_jsonpatch.add_argument("--action", choices=["apply", "tui"], default="apply", help="Action to perform (default: apply).")
+    parser_jsonpatch.add_argument("--tui", action="store_true", help="Launch JSONPatch Lab TUI.")
+
     # --- New 'ini-lab' command ---
     parser_ini = subparsers.add_parser(
         "ini-lab",
@@ -23152,6 +23164,11 @@ async def main():
 
     if args.command in ["sql-lab", "sql"]:
         await run_sql_lab(args)
+        return
+
+    if args.command in ["jsonpatch-lab", "jsonpatch"]:
+        from shared.jsonpatch_lab import run_jsonpatch_lab_logic
+        run_jsonpatch_lab_logic(args)
         return
 
     if args.command in ["json-lab", "json"]:

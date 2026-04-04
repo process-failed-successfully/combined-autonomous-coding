@@ -16,6 +16,7 @@ dependencies = [
     "nanoid>=2.0.0",
     "pyperclip",
     "typer",
+    "jsonpatch",
     "SQLAlchemy",
     "rich",
     "docker",

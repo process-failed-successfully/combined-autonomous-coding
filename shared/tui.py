@@ -308,6 +308,7 @@ from shared.tui_alias import AliasLabTab
 from shared.tui_json_schema import JsonSchemaTab
 from shared.tui_sqlformat import TabSqlFormat
 from shared.plugin_manager import PluginManager
+from shared.tui_regex_escape import RegexEscapeLabTab
 
 
 # Helper to get Git info safely
@@ -4122,6 +4123,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Markdown Lab", "switch_tab_markdown"),
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
         PaletteCommand("Go to JS Lab", "switch_tab_js"),
+        PaletteCommand("Go to Regex Escape Lab", "switch_tab_regex_escape"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Go to Bcrypt Lab", "switch_tab_bcrypt"),
@@ -4780,6 +4782,8 @@ class AgentTUI(App):
             with TabPane("JSON Patch", id="tab-jsonpatch"):
                 from shared.tui_jsonpatch import JsonPatchLabTab
                 yield JsonPatchLabTab()
+            with TabPane("Regex Escape", id="tab-regex-escape"):
+                yield RegexEscapeLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

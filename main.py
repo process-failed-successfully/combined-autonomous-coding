@@ -205,6 +205,7 @@ from shared.stego_lab import run_stego_lab_logic
 from shared.typegen_lab import run_typegen_lab_logic
 from shared.zip_lab import run_zip_lab_logic
 from shared.json_schema_lab import run_json_schema_lab_logic
+from shared.regex_escape_lab import run_regex_escape_lab_logic
 from shared import __version__
 import json
 import yaml
@@ -385,6 +386,7 @@ KNOWN_COMMANDS = [
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
+    "regex-escape-lab", "regex-escape",
     "alias-lab", "aliases"
 ]
 
@@ -19865,6 +19867,27 @@ async def run_logic_lab(args):
     sys.exit(0)
 
 
+def run_regex_escape_lab(args):
+    """Runs the Regex Escape Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Regex Escape Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-regex-escape")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    success = run_regex_escape_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
 async def run_regex(args):
     """Runs the Regex Lab."""
     from shared.regex_lab import RegexLabManager
@@ -22554,6 +22577,10 @@ async def main():
 
     if args.command == "regex":
         await run_regex(args)
+        return
+
+    if args.command in ["regex-escape-lab", "regex-escape"]:
+        run_regex_escape_lab(args)
         return
 
     if args.command == "braille-lab":

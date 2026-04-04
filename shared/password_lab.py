@@ -19,6 +19,34 @@ class PasswordLabManager:
     Manages Password Lab operations: generation, strength checking, and hashing.
     """
 
+    # A short list of common, distinct words for passphrase generation.
+    # In a full implementation, this could be the EFF short wordlist.
+    DEFAULT_WORDLIST = [
+        "apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew",
+        "kiwi", "lemon", "mango", "nectarine", "orange", "papaya", "quince", "raspberry",
+        "strawberry", "tangerine", "ugli", "vanilla", "watermelon", "xigua", "yellow", "zucchini",
+        "bird", "cat", "dog", "fish", "horse", "cow", "pig", "sheep", "goat", "chicken",
+        "duck", "goose", "turkey", "mouse", "rat", "rabbit", "hare", "squirrel", "chipmunk",
+        "red", "blue", "green", "yellow", "orange", "purple", "pink", "brown", "black", "white",
+        "circle", "square", "triangle", "rectangle", "oval", "star", "heart", "diamond",
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "sun", "moon", "star", "planet", "comet", "asteroid", "meteor", "galaxy", "universe",
+        "ocean", "sea", "river", "lake", "pond", "stream", "creek", "brook", "waterfall",
+        "mountain", "hill", "valley", "canyon", "cliff", "cave", "volcano", "island", "peninsula",
+        "tree", "flower", "grass", "bush", "shrub", "vine", "fern", "moss", "lichen",
+        "car", "truck", "bus", "train", "plane", "boat", "ship", "submarine", "bicycle"
+    ]
+
+    def generate_passphrase(self, words: int = 4, separator: str = "-") -> str:
+        """
+        Generates a passphrase consisting of randomly chosen words.
+        """
+        if words < 1:
+            raise ValueError("Passphrase must contain at least 1 word.")
+
+        chosen_words = [secrets.choice(self.DEFAULT_WORDLIST) for _ in range(words)]
+        return separator.join(chosen_words)
+
     def generate(self, length: int = 16, use_upper: bool = True, use_lower: bool = True, use_digits: bool = True, use_symbols: bool = True) -> str:
         """
         Generates a cryptographically secure random password.
@@ -214,6 +242,17 @@ def run_password_lab_logic(args):
             if args.verbose:
                 strength = manager.check_strength(pwd)
                 print(f"\nEntropy: {strength['entropy']} bits")
+        except ValueError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.action == "passphrase":
+        try:
+            pwd = manager.generate_passphrase(
+                words=args.words,
+                separator=args.separator
+            )
+            print(pwd)
         except ValueError as e:
             print(f"Error: {e}")
             sys.exit(1)

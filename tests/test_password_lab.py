@@ -1,6 +1,9 @@
 import unittest
 import string
-from shared.password_lab import PasswordLabManager
+from shared.password_lab import PasswordLabManager, run_password_lab_logic
+import io
+import sys
+from unittest.mock import patch
 
 class TestPasswordLab(unittest.TestCase):
     def setUp(self):
@@ -32,6 +35,22 @@ class TestPasswordLab(unittest.TestCase):
         self.assertTrue(has_lower)
         self.assertTrue(has_digit)
         self.assertTrue(has_symbol)
+
+    def test_generate_passphrase_length_and_separator(self):
+        # Default generator
+        pwd = self.manager.generate_passphrase()
+        # Default is 4 words separated by hyphen -> 3 hyphens
+        self.assertEqual(pwd.count("-"), 3)
+        self.assertEqual(len(pwd.split("-")), 4)
+
+        # Custom words and separator
+        pwd2 = self.manager.generate_passphrase(words=6, separator=" ")
+        self.assertEqual(pwd2.count(" "), 5)
+        self.assertEqual(len(pwd2.split(" ")), 6)
+
+    def test_generate_passphrase_invalid(self):
+        with self.assertRaises(ValueError):
+            self.manager.generate_passphrase(words=0)
 
     def test_check_strength(self):
         # Weak
@@ -93,5 +112,15 @@ class TestPasswordLab(unittest.TestCase):
         except ImportError:
             pass
 
-if __name__ == '__main__':
-    unittest.main()
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_password_lab_logic_passphrase(self, mock_stdout):
+        class Args:
+            action = "passphrase"
+            words = 5
+            separator = "_"
+
+        run_password_lab_logic(Args())
+
+        output = mock_stdout.getvalue().strip()
+        self.assertEqual(output.count("_"), 4)

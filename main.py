@@ -253,7 +253,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "csv2yaml-lab", "csv2yaml", "c2y", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
@@ -15411,6 +15411,18 @@ def parse_args(argv=None):
     parser_csv2toml.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
     parser_csv2toml.add_argument("--tui", action="store_true", help="Launch the CSV to TOML TUI.")
 
+    # --- New 'csv2yaml-lab' command ---
+    parser_csv2yaml = subparsers.add_parser(
+        "csv2yaml-lab",
+        aliases=["csv2yaml", "c2y"],
+        help="Convert CSV to YAML."
+    )
+    parser_csv2yaml.add_argument("--file", "-f", help="Input CSV file.")
+    parser_csv2yaml.add_argument("--text", "-t", help="Input CSV text.")
+    parser_csv2yaml.add_argument("--output", "-o", help="Output file path.")
+    parser_csv2yaml.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_csv2yaml.add_argument("--tui", action="store_true", help="Launch the CSV to YAML TUI.")
+
     # --- csv2html-lab command ---
     parser_csv2html = subparsers.add_parser(
         "csv2html-lab",
@@ -23367,6 +23379,11 @@ async def main():
     if args.command in ["csv2toml-lab", "csv2toml", "c2t"]:
         from shared.csv2toml_lab import run_csv2toml_lab_logic
         run_csv2toml_lab_logic(args)
+        return
+
+    if args.command in ["csv2yaml-lab", "csv2yaml", "c2y"]:
+        from shared.csv2yaml_lab import run_csv2yaml_lab_logic
+        run_csv2yaml_lab_logic(args)
         return
 
     if args.command in ["csv2html-lab", "csv2html", "c2h"]:

@@ -173,14 +173,25 @@ def test_run_xml2csv_lab_logic_unexpected_error(mock_convert, capsys):
     assert "Unexpected error" in captured.err
 
 
-@patch('shared.tui.AgentTUI')
-def test_run_xml2csv_lab_logic_tui(mock_tui_class, capsys):
-    # Mocking TUI execution to prevent full Textual app launch
+def test_run_xml2csv_lab_logic_tui(capsys):
+    args = argparse.Namespace(tui=True, action=None)
+
+    real_import = __builtins__["__import__"]
+    mock_module = MagicMock()
+    mock_tui_class = MagicMock()
     mock_app = MagicMock()
     mock_tui_class.return_value = mock_app
+    mock_module.AgentTUI = mock_tui_class
 
-    args = argparse.Namespace(tui=True, action=None)
-    success = run_xml2csv_lab_logic(args)
-    assert success is True
-    mock_tui_class.assert_called_once()
-    mock_app.run.assert_called_once()
+    def side_effect(name, *args, **kwargs):
+        if name == "shared.tui":
+            return mock_module
+        return real_import(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=side_effect):
+        success = run_xml2csv_lab_logic(args)
+        assert success is True
+        mock_tui_class.assert_called_once()
+
+        captured = capsys.readouterr()
+        assert "Launching Xml2Csv Lab TUI..." in captured.out

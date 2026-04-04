@@ -290,6 +290,7 @@ from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
 from shared.tui_html2md import Html2MdTab
 from shared.tui_html2jsx import Html2JsxLabTab
+from shared.tui_fs import FsLabTab
 from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_json2xml import Json2XmlTab
@@ -4139,6 +4140,7 @@ class AgentTUI(App):
         PaletteCommand("Go to CSV to MD Lab", "switch_tab_csv2md"),
         PaletteCommand("Go to CSV to JSON Lab", "switch_tab_csv2json"),
         PaletteCommand("Go to Size Lab", "switch_tab_size"),
+        PaletteCommand("Go to FS Lab", "switch_tab_fs"),
 
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4599,6 +4601,8 @@ class AgentTUI(App):
                 yield BrailleLabTab()
             with TabPane("CSV Lab", id="tab-csv"):
                 yield CsvLabTab(self.project_dir)
+            with TabPane("FS Lab", id="tab-fs"):
+                yield FsLabTab(self.project_dir)
             with TabPane("Diff Lab", id="tab-diff"):
                 yield DiffLabTab(self.project_dir)
             with TabPane("Image Lab", id="tab-image"):

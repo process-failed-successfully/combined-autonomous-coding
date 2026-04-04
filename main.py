@@ -2354,6 +2354,21 @@ def run_rss_lab(args):
 
 def run_fs_lab(args):
     """Runs the FS Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching FS Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-fs")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     run_fs_lab_logic(args)
     sys.exit(0)
 
@@ -16683,6 +16698,8 @@ def parse_args(argv=None):
     parser_fs_usage = fs_subparsers.add_parser("usage", help="Show disk usage tree.")
     parser_fs_usage.add_argument("--root", "-r", default=".", help="Root directory.")
     parser_fs_usage.add_argument("--depth", "-d", type=int, default=2, help="Depth of tree.")
+
+    fs_subparsers.add_parser("tui", help="Launch interactive TUI for FS Lab.")
 
     # --- New 'ws-lab' command ---
     parser_ws = subparsers.add_parser(

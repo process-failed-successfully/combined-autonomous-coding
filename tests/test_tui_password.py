@@ -55,6 +55,28 @@ class TestPasswordLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Entropy:", output)
             self.assertNotIn("Error:", output)
 
+    async def test_generate_passphrase(self):
+        app = PasswordLabApp()
+        async with app.run_test() as pilot:
+            # Set values
+            app.query_one("#pwd-passphrase-words", Input).value = "5"
+            app.query_one("#pwd-passphrase-separator", Input).value = "_"
+
+            # Click generate
+            await pilot.pause()
+            app.query_one("#btn-pwd-passphrase", Button).press()
+            await pilot.pause()
+
+            # Output should not be error
+            output = app.query_one("#pwd-passphrase-output", TextArea).text
+            self.assertIn("Passphrase:", output)
+            self.assertIn("Entropy:", output)
+            self.assertNotIn("Error:", output)
+
+            # The passphrase part should have 4 separators
+            passphrase_part = output.split("\n")[0].replace("Passphrase: ", "")
+            self.assertEqual(passphrase_part.count("_"), 4)
+
     async def test_hash_password(self):
         app = PasswordLabApp()
         async with app.run_test() as pilot:

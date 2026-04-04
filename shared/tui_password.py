@@ -32,6 +32,19 @@ class PasswordLabTab(Container):
                         yield Label("[bold]Generated Password[/bold]")
                         yield TextArea(id="pwd-gen-output", read_only=True)
 
+                # Passphrase
+                with TabPane("Passphrase"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Words:")
+                        yield Input(value="4", id="pwd-passphrase-words")
+                        yield Label("Separator:")
+                        yield Input(value="-", id="pwd-passphrase-separator")
+                        yield Button("Generate Passphrase", id="btn-pwd-passphrase", variant="primary")
+
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Generated Passphrase[/bold]")
+                        yield TextArea(id="pwd-passphrase-output", read_only=True)
+
                 # Strength Checker
                 with TabPane("Checker"):
                     with Vertical(classes="stat-box"):
@@ -84,6 +97,24 @@ class PasswordLabTab(Container):
             self.query_one("#pwd-gen-output", TextArea).text = output
         except Exception as e:
             self.query_one("#pwd-gen-output", TextArea).text = f"Error: {e}"
+
+    @on(Button.Pressed, "#btn-pwd-passphrase")
+    def on_generate_passphrase(self, event: Button.Pressed) -> None:
+        try:
+            words = int(self.query_one("#pwd-passphrase-words", Input).value)
+        except ValueError:
+            self.query_one("#pwd-passphrase-output", TextArea).text = "Error: Invalid word count."
+            return
+
+        separator = self.query_one("#pwd-passphrase-separator", Input).value
+
+        try:
+            pwd = self.manager.generate_passphrase(words=words, separator=separator)
+            strength = self.manager.check_strength(pwd)
+            output = f"Passphrase: {pwd}\nEntropy: {strength['entropy']} bits"
+            self.query_one("#pwd-passphrase-output", TextArea).text = output
+        except Exception as e:
+            self.query_one("#pwd-passphrase-output", TextArea).text = f"Error: {e}"
 
     @on(Button.Pressed, "#btn-pwd-chk")
     def on_check_strength(self, event: Button.Pressed) -> None:

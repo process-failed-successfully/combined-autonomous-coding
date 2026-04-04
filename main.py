@@ -14412,6 +14412,11 @@ def parse_args(argv=None):
         help="Action to perform."
     )
 
+    # password-lab passphrase
+    parser_pwd_passphrase = pwd_subparsers.add_parser("passphrase", help="Generate a secure random passphrase.")
+    parser_pwd_passphrase.add_argument("-w", "--words", type=int, default=4, help="Number of words in passphrase (default: 4).")
+    parser_pwd_passphrase.add_argument("-s", "--separator", type=str, default="-", help="Separator between words (default: '-').")
+
     # password-lab generate
     parser_pwd_gen = pwd_subparsers.add_parser("generate", help="Generate a secure random password.")
     parser_pwd_gen.add_argument("-l", "--length", type=int, default=16, help="Password length (default: 16).")

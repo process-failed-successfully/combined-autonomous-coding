@@ -387,7 +387,8 @@ KNOWN_COMMANDS = [
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
     "regex-escape-lab", "regex-escape",
-    "alias-lab", "aliases"
+    "alias-lab", "aliases",
+    "tar-lab", "tar"
 ]
 
 if FileSystemEventHandler:
@@ -19370,6 +19371,24 @@ Examples:
     zip_extract.add_argument("input", help="Input archive to extract.")
     zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
 
+    parser_tar = subparsers.add_parser(
+        "tar-lab", aliases=["tar"], help="Tar Lab utilities (create, extract, list tar archives)"
+    )
+    tar_subparsers = parser_tar.add_subparsers(dest="action", help="Tar actions")
+    tar_subparsers.add_parser("tui", help="Launch the interactive Tar Lab TUI.")
+
+    tar_create = tar_subparsers.add_parser("create", help="Create a tar archive.")
+    tar_create.add_argument("inputs", nargs="+", help="Input paths to archive")
+    tar_create.add_argument("-o", "--output", help="Output tar archive path")
+    tar_create.add_argument("-c", "--compression", choices=["gz", "bz2", "xz", ""], default="", help="Compression to use")
+
+    tar_extract = tar_subparsers.add_parser("extract", help="Extract a tar archive.")
+    tar_extract.add_argument("input", help="Path to the tar archive")
+    tar_extract.add_argument("-o", "--output", help="Output directory path")
+
+    tar_list = tar_subparsers.add_parser("list", help="List contents of a tar archive.")
+    tar_list.add_argument("input", help="Path to the tar archive")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -23849,6 +23868,11 @@ async def main():
 
     if args.command in ["zip-lab", "zip"]:
         run_zip_lab_logic(args)
+        return
+
+    if args.command in ["tar-lab", "tar"]:
+        from shared.tar_lab import run_tar_lab_logic
+        await run_tar_lab_logic(args)
         return
 
     # Initialize Agent Client

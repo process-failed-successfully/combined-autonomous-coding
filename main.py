@@ -2070,6 +2070,21 @@ def run_metrics_lab(args):
 
 def run_fuzz_lab(args):
     """Runs the Fuzz Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Fuzz Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-fuzz")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     run_fuzz_lab_logic(args)
     sys.exit(0)
 
@@ -18076,9 +18091,10 @@ Examples:
         aliases=["fuzz"],
         help="Fuzzing utilities (cli, function)."
     )
+    parser_fuzz.add_argument("--tui", action="store_true", help="Open Fuzz Lab TUI.")
     fuzz_subparsers = parser_fuzz.add_subparsers(
         dest="action",
-        required=True,
+        required=False,
         help="Action to perform."
     )
 
@@ -18092,6 +18108,9 @@ Examples:
     parser_fuzz_func = fuzz_subparsers.add_parser("function", aliases=["func"], help="Fuzz a Python function.")
     parser_fuzz_func.add_argument("target", help="Function target (e.g. 'shared/utils.py:format_date').")
     parser_fuzz_func.add_argument("--count", "-c", type=int, default=100, help="Number of iterations.")
+
+    # fuzz tui
+    parser_fuzz_tui = fuzz_subparsers.add_parser("tui", help="Open Fuzz Lab TUI.")
 
     # --- New 'static-lab' command ---
     parser_static = subparsers.add_parser(

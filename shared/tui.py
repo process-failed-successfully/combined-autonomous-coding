@@ -4773,6 +4773,9 @@ class AgentTUI(App):
                 yield AliasLabTab()
             with TabPane("JSON Schema", id="tab-json-schema"):
                 yield JsonSchemaTab()
+            with TabPane("JSON Patch", id="tab-jsonpatch"):
+                from shared.tui_jsonpatch import JsonPatchLabTab
+                yield JsonPatchLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

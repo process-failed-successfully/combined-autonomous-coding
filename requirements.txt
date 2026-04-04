@@ -41,6 +41,7 @@ pandas
 pyarrow
 pytesseract
 jsonpath-ng
+jsonpatch
 tiktoken
 ulid-py
 python-barcode

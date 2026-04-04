@@ -194,13 +194,16 @@ class TestHashValidatorLabCLI(unittest.TestCase):
         mock_exit.assert_called_with(1)
 
     @patch('sys.exit')
-    @patch('shared.tui.AgentTUI.run')
-    def test_tui_launch(self, mock_tui_run, mock_exit):
-        args = argparse.Namespace(action="tui", project_dir=Path("."))
-        run_hash_validator_lab_logic(args)
+    def test_tui_launch(self, mock_exit):
+        import pytest
+        pytest.importorskip("textual")
+        import shared.tui
+        with patch('shared.tui.AgentTUI.run') as mock_tui_run:
+            args = argparse.Namespace(action="tui", project_dir=Path("."))
+            run_hash_validator_lab_logic(args)
 
-        mock_tui_run.assert_called_once()
-        mock_exit.assert_called_with(0)
+            mock_tui_run.assert_called_once()
+            mock_exit.assert_called_with(0)
 
 
 class TestHashValidatorLabTUI(unittest.IsolatedAsyncioTestCase):

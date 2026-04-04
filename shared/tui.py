@@ -73,6 +73,7 @@ from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_sys import SysTab
 from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
+from shared.tui_csv2sql import Csv2SqlTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
@@ -4248,6 +4249,8 @@ class AgentTUI(App):
                 yield BsonLabTab()
             with TabPane("CBOR Lab", id="tab-cbor"):
                 yield CborTab()
+            with TabPane("CSV to SQL Lab", id="tab-csv2sql"):
+                yield Csv2SqlTab()
             with TabPane("Socket Lab", id="tab-sock"):
                 yield SockLabTab()
             with TabPane("Runner", id="tab-runner"):

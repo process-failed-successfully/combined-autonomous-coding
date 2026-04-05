@@ -135,6 +135,48 @@ class DiffLabManager:
 
         return results
 
+    def generate_directory_patch(self, dir1: Path, dir2: Path) -> str:
+        """
+        Generates a unified patch for two directories.
+        """
+        if not dir1.is_dir() or not dir2.is_dir():
+            raise ValueError("Both paths must be directories.")
+
+        results = self.compare_directories(dir1, dir2, output_json=True)
+        if results is None:
+            return ""
+
+        patch_lines = []
+        for res in results:
+            status = res["status"]
+            rel_path = res["path"]
+            f1 = dir1 / rel_path
+            f2 = dir2 / rel_path
+
+            # Only generate patch for Modified, Added, or Removed files
+            if status in ("Modified", "Added", "Removed"):
+                try:
+                    lines1 = []
+                    lines2 = []
+                    if status in ("Modified", "Removed") and f1.exists() and f1.is_file():
+                        with open(f1, "r", encoding="utf-8", errors="replace") as f:
+                            lines1 = f.readlines()
+                    if status in ("Modified", "Added") and f2.exists() and f2.is_file():
+                        with open(f2, "r", encoding="utf-8", errors="replace") as f:
+                            lines2 = f.readlines()
+
+                    diff = self.get_text_diff(
+                        lines1, lines2,
+                        fromfile=f"a/{rel_path}",
+                        tofile=f"b/{rel_path}"
+                    )
+                    patch_lines.extend(diff)
+                except Exception as e:
+                    # Ignore binary or unreadable files
+                    pass
+
+        return "".join(patch_lines)
+
     def get_text_diff(self, lines1: List[str], lines2: List[str], fromfile: str = "a", tofile: str = "b") -> List[str]:
         """
         Returns unified diff lines.
@@ -348,22 +390,30 @@ def run_diff_lab_logic(args):
     output = Path(args.output).resolve() if getattr(args, 'output', None) else None
 
     if file1.is_dir() and file2.is_dir():
-        is_json = getattr(args, 'json', False)
-        results = manager.compare_directories(file1, file2, output_json=is_json)
-        if is_json and results is not None:
-            output_str = json.dumps(results, indent=2)
+        if getattr(args, 'patch', False):
+            patch_str = manager.generate_directory_patch(file1, file2)
             if output:
-                output.write_text(output_str, encoding="utf-8")
-                print(f"✅ Saved JSON results to {output}")
+                output.write_text(patch_str, encoding="utf-8")
+                print(f"✅ Saved patch to {output}")
             else:
-                print(output_str)
-        elif output and not is_json:
-            # Output textual format to file if requested and not JSON
-            output_str = f"--- Directory Diff: {file1.name} vs {file2.name} ---\n"
-            for res in results:
-                output_str += f"{res['status']:<10} | {res['path']}\n"
-            output.write_text(output_str, encoding="utf-8")
-            print(f"✅ Saved textual results to {output}")
+                print(patch_str)
+        else:
+            is_json = getattr(args, 'json', False)
+            results = manager.compare_directories(file1, file2, output_json=is_json)
+            if is_json and results is not None:
+                output_str = json.dumps(results, indent=2)
+                if output:
+                    output.write_text(output_str, encoding="utf-8")
+                    print(f"✅ Saved JSON results to {output}")
+                else:
+                    print(output_str)
+            elif output and not is_json:
+                # Output textual format to file if requested and not JSON
+                output_str = f"--- Directory Diff: {file1.name} vs {file2.name} ---\n"
+                for res in results:
+                    output_str += f"{res['status']:<10} | {res['path']}\n"
+                output.write_text(output_str, encoding="utf-8")
+                print(f"✅ Saved textual results to {output}")
     else:
         manager.compare_files(file1, file2, ftype=getattr(args, 'type', None), output=output)
 

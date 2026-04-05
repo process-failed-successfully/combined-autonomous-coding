@@ -172,5 +172,41 @@ class TestDiffLab(unittest.TestCase):
         self.assertEqual(get_status("added.txt"), "Added")
         self.assertEqual(get_status("removed.txt"), "Removed")
 
+    def test_generate_directory_patch(self):
+        dir1 = Path(self.temp_dir) / "dir1"
+        dir2 = Path(self.temp_dir) / "dir2"
+        dir1.mkdir(exist_ok=True)
+        dir2.mkdir(exist_ok=True)
+
+        # Identical file
+        (dir1 / "identical.txt").write_text("same\n")
+        (dir2 / "identical.txt").write_text("same\n")
+
+        # Modified file
+        (dir1 / "modified.txt").write_text("v1\n")
+        (dir2 / "modified.txt").write_text("v2\n")
+
+        # Added file
+        (dir2 / "added.txt").write_text("new\n")
+
+        # Removed file
+        (dir1 / "removed.txt").write_text("old\n")
+
+        with patch('sys.stdout'):
+            patch_str = self.manager.generate_directory_patch(dir1, dir2)
+
+        self.assertIn("--- a/modified.txt", patch_str)
+        self.assertIn("+++ b/modified.txt", patch_str)
+        self.assertIn("-v1", patch_str)
+        self.assertIn("+v2", patch_str)
+
+        self.assertIn("--- a/removed.txt", patch_str)
+        self.assertIn("-old", patch_str)
+
+        self.assertIn("+++ b/added.txt", patch_str)
+        self.assertIn("+new", patch_str)
+
+        self.assertNotIn("identical.txt", patch_str)
+
 if __name__ == "__main__":
     unittest.main()

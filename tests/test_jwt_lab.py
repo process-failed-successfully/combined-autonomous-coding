@@ -44,7 +44,7 @@ class TestJWTManager(unittest.TestCase):
 
     def test_unsupported_algorithm(self):
         with self.assertRaises(ValueError):
-            self.manager.sign_token(self.payload, self.secret, "RS256")
+            self.manager.sign_token(self.payload, self.secret, "UNKNOWNALG")
 
     def test_malformed_token(self):
         with self.assertRaises(ValueError):
@@ -54,6 +54,83 @@ class TestJWTManager(unittest.TestCase):
         # Construct a token with invalid base64
         with self.assertRaises(ValueError):
             self.manager.decode_token("header.payload.signature")
+
+    def test_sign_and_verify_rs256(self):
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+
+        public_key = private_key.public_key()
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+
+        # Sign with private key
+        token = self.manager.sign_token(self.payload, private_pem, "RS256")
+        self.assertIsInstance(token, str)
+
+        # Verify with public key
+        decoded_pub = self.manager.verify_token(token, public_pem)
+        self.assertEqual(decoded_pub["payload"], self.payload)
+        self.assertEqual(decoded_pub["header"]["alg"], "RS256")
+
+        # Verify with private key (fallback functionality)
+        decoded_priv = self.manager.verify_token(token, private_pem)
+        self.assertEqual(decoded_priv["payload"], self.payload)
+
+    def test_verify_rs256_invalid_signature(self):
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+
+        private_key1 = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private_pem1 = private_key1.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+
+        private_key2 = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        public_pem2 = private_key2.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+
+        # Sign with key 1
+        token = self.manager.sign_token(self.payload, private_pem1, "RS256")
+
+        # Verify with key 2 (should fail)
+        with self.assertRaises(ValueError) as context:
+            self.manager.verify_token(token, public_pem2)
+        self.assertEqual(str(context.exception), "Invalid signature")
+
+    def test_key_confusion_vulnerability_prevention(self):
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        public_pem = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+
+        # Attacker creates a forged token with HS256, but signs it using the public key as the symmetric secret
+        forged_token = self.manager.sign_token(self.payload, public_pem, "HS256")
+
+        # System attempts to verify the token, expecting an RSA token, but the token says HS256
+        with self.assertRaises(ValueError) as context:
+            self.manager.verify_token(forged_token, public_pem)
+
+        self.assertEqual(str(context.exception), "Key confusion vulnerability detected: token specifies HMAC but an asymmetric key was provided.")
 
 if __name__ == '__main__':
     unittest.main()

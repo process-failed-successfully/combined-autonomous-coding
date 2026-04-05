@@ -254,6 +254,7 @@ KNOWN_COMMANDS = [
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
+    "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
@@ -16088,6 +16089,28 @@ def parse_args(argv=None):
     # xml-lab tui
     parser_xml_tui = xml_subparsers.add_parser("tui", help="Launch interactive XML Lab.")
 
+    # --- New 'ical-lab' parser ---
+    parser_ical_lab = subparsers.add_parser("ical-lab", aliases=["ical", "ics"], help="iCalendar generation and validation lab")
+    ical_subparsers = parser_ical_lab.add_subparsers(dest="action", help="ICal Lab Actions")
+
+    parser_ical_tui = ical_subparsers.add_parser("tui", help="Launch the ICal Lab TUI")
+
+    parser_ical_parse = ical_subparsers.add_parser("parse", help="Parse an iCalendar file")
+    parser_ical_parse.add_argument("--text", type=str, help="iCalendar text to parse")
+    parser_ical_parse.add_argument("--file", type=str, help="iCalendar file to parse")
+
+    parser_ical_validate = ical_subparsers.add_parser("validate", help="Validate an iCalendar file")
+    parser_ical_validate.add_argument("--text", type=str, help="iCalendar text to validate")
+    parser_ical_validate.add_argument("--file", type=str, help="iCalendar file to validate")
+
+    parser_ical_generate = ical_subparsers.add_parser("generate", help="Generate an iCalendar file")
+    parser_ical_generate.add_argument("--summary", type=str, required=True, help="Summary/Title of the event")
+    parser_ical_generate.add_argument("--start", type=str, required=True, help="Start time (YYYY-MM-DD HH:MM)")
+    parser_ical_generate.add_argument("--end", type=str, required=True, help="End time (YYYY-MM-DD HH:MM)")
+    parser_ical_generate.add_argument("--location", type=str, default="", help="Location of the event")
+    parser_ical_generate.add_argument("--description", type=str, default="", help="Description of the event")
+    parser_ical_lab.add_argument("--tui", action="store_true", help="Launch the TUI mode directly")
+
     # --- New 'markdown-lab' command ---
     parser_md = subparsers.add_parser(
         "markdown-lab",
@@ -22903,6 +22926,14 @@ async def main():
     if args.command in ["random-lab", "rand", "random"]:
         run_random_lab(args)
         return
+
+    # --- New 'ical-lab' command ---
+    if args.command in ["ical-lab", "ical", "ics"]:
+        from shared.ical_lab import run_ical_lab_logic
+        success = run_ical_lab_logic(args)
+        if success:
+            sys.exit(0)
+        sys.exit(1)
 
     if args.command in ["browser-lab", "browser", "web"]:
         await run_browser_lab(args)

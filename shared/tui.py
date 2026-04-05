@@ -151,6 +151,7 @@ from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
+from shared.tui_json2sql import Json2SqlTab
 from shared.tui_yaml2csv import Yaml2CsvTab
 from shared.tui_json2md import Json2MdTab
 from shared.tui_csv2md import Csv2MdTab
@@ -4115,6 +4116,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
         PaletteCommand("Go to JSON to MD Lab", "switch_tab_json2md"),
+            PaletteCommand("Go to JSON to SQL Lab", "switch_tab_tab-json2sql"),
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
@@ -4582,6 +4584,8 @@ class AgentTUI(App):
                 yield Yaml2CsvTab()
             with TabPane("JSON to CSV", id="tab-json2csv"):
                 yield Json2CsvTab(self.project_dir)
+            with TabPane("JSON to SQL", id="tab-json2sql"):
+                yield Json2SqlTab(self.project_dir)
             with TabPane("CSV to JSON", id="tab-csv2json"):
                 yield Csv2JsonTab()
             with TabPane("CSV to MD", id="tab-csv2md"):

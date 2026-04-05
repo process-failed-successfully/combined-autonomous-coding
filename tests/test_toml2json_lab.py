@@ -1,3 +1,27 @@
+
+from unittest.mock import patch
+import io
+import argparse
+from shared.toml2json_lab import run_toml2json_lab_logic
+
+def test_run_json2toml_lab_logic_cli_stdout():
+    args = argparse.Namespace(action="json2toml", input='{"hello": "world"}', output=None)
+    with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        success = run_toml2json_lab_logic(args)
+
+    assert success is True
+    output = mock_stdout.getvalue()
+    assert 'hello = "world"' in output
+
+def test_run_toml2json_lab_logic_cli_stdout():
+    args = argparse.Namespace(action="toml2json", input='hello = "world"', output=None)
+    with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        success = run_toml2json_lab_logic(args)
+
+    assert success is True
+    output = mock_stdout.getvalue()
+    assert '"hello": "world"' in output
+
 import pytest
 from textual.app import App
 from typing import Any

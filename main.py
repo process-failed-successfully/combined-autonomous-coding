@@ -253,7 +253,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
@@ -15270,6 +15270,23 @@ def parse_args(argv=None):
     toml2json_parser_j2t.add_argument("--input", "-i", required=True, help="Input JSON string or file.")
     toml2json_parser_j2t.add_argument("--output", "-o", help="Output file path (optional).")
 
+    # --- New 'json2toml-lab' command ---
+    parser_json2toml = subparsers.add_parser(
+        "json2toml-lab",
+        aliases=["json2toml", "j2t"],
+        help="Convert JSON to TOML."
+    )
+    json2toml_subparsers = parser_json2toml.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+    json2toml_subparsers.add_parser("tui", help="Launch TOML2JSON Lab TUI.")
+
+    json2toml_parser_j2t = json2toml_subparsers.add_parser("json2toml", help="Convert JSON to TOML.")
+    json2toml_parser_j2t.add_argument("--input", "-i", required=True, help="Input JSON string or file.")
+    json2toml_parser_j2t.add_argument("--output", "-o", help="Output file path (optional).")
+
+
     parser_yaml2csv = subparsers.add_parser(
         "yaml2csv-lab",
         aliases=["yaml2csv", "y2c"],
@@ -23344,6 +23361,14 @@ async def main():
         run_toml_lab(args)
 
     if args.command in ["toml2json-lab", "toml2json", "t2j"]:
+        run_toml2json_lab(args)
+        return
+
+    if args.command in ["json2toml-lab", "json2toml", "j2t"]:
+        if getattr(args, "action", None) is None:
+            args.action = "json2toml"
+        if getattr(args, "tui", False) or args.action == "tui" or not hasattr(args, 'input'):
+            args.action = "tui"
         run_toml2json_lab(args)
         return
 

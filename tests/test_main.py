@@ -19,6 +19,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
+    def test_parse_args_json2toml(self):
+        # We can just test that the parser doesn't crash on json2toml-lab
+        import main
+        args = main.parse_args(["json2toml-lab", "json2toml", "-i", '{"a": 1}'])
+        self.assertEqual(args.command, 'json2toml-lab')
+        self.assertEqual(args.action, 'json2toml')
+        self.assertEqual(args.input, '{"a": 1}')
+
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:
             parse_args()

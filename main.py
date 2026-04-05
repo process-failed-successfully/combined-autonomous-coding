@@ -17443,7 +17443,8 @@ Examples:
     parser_diff_lab.add_argument("file1", help="First file.")
     parser_diff_lab.add_argument("file2", help="Second file.")
     parser_diff_lab.add_argument("--type", choices=["json", "yaml", "image", "text"], help="Force comparison type.")
-    parser_diff_lab.add_argument("--output", help="Output path (for image diffs).")
+    parser_diff_lab.add_argument("--output", help="Output path (for image diffs or patch).")
+    parser_diff_lab.add_argument("--patch", action="store_true", help="Generate a unified patch file when comparing directories.")
 
     # --- New 'redis-lab' command ---
     parser_redis = subparsers.add_parser(

@@ -208,13 +208,16 @@ async def test_tui_create(temp_dir):
     app.manager.project_dir = temp_dir
 
     async with app.run_test() as pilot:
-        await pilot.click("#create-inputs")
+        app.query_one("#create-inputs").press()
+        await pilot.pause()
         await pilot.press(*str(file1))
 
-        await pilot.click("#create-output")
+        app.query_one("#create-output").press()
+        await pilot.pause()
         await pilot.press(*str(output_zip))
 
-        await pilot.click("#btn-create")
+        app.query_one("#btn-create").press()
+        await pilot.pause()
 
         status = app.query_one("#create-status")
         assert "Success!" in str(status.render())
@@ -226,7 +229,8 @@ async def test_tui_create_no_inputs():
     app = ZipLabApp()
 
     async with app.run_test() as pilot:
-        await pilot.click("#btn-create")
+        app.query_one("#btn-create").press()
+        await pilot.pause()
 
         status = app.query_one("#create-status")
         assert "Please provide input paths" in str(status.render())
@@ -267,13 +271,16 @@ async def test_tui_extract(temp_dir):
     app.manager.project_dir = temp_dir
 
     async with app.run_test() as pilot:
-        await pilot.click("#extract-input")
+        app.query_one("#extract-input").press()
+        await pilot.pause()
         await pilot.press(*str(input_zip))
 
-        await pilot.click("#extract-output")
+        app.query_one("#extract-output").press()
+        await pilot.pause()
         await pilot.press(*str(output_dir))
 
-        await pilot.click("#btn-extract")
+        app.query_one("#btn-extract").press()
+        await pilot.pause()
 
         status = app.query_one("#extract-status")
         assert "Success!" in str(status.render())
@@ -285,7 +292,8 @@ async def test_tui_extract_no_input():
     app = ZipLabApp()
 
     async with app.run_test() as pilot:
-        await pilot.click("#btn-extract")
+        app.query_one("#btn-extract").press()
+        await pilot.pause()
 
         status = app.query_one("#extract-status")
         assert "Please provide an input archive" in str(status.render())

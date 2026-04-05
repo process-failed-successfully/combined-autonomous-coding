@@ -32,7 +32,8 @@ class TestTypingLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#btn-typing-start").disabled = False
 
             # Click start
-            await pilot.click("#btn-typing-start")
+            app.query_one("#btn-typing-start").press()
+        await pilot.pause()
 
             self.assertTrue(tab.session_running)
             self.assertFalse(tab.query_one("#typing-input").disabled)

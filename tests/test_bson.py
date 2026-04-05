@@ -128,7 +128,8 @@ async def test_bson_lab_tui_encode(tui_app):
         input_area = tab.query_one("#input_area")
         input_area.text = '{"tui": "test"}'
 
-        await pilot.click("#btn_encode")
+        app.query_one("#btn_encode").press()
+        await pilot.pause()
 
         output_area = tab.query_one("#output_area")
         assert output_area.text != ""
@@ -146,7 +147,8 @@ async def test_bson_lab_tui_decode(tui_app):
         input_area = tab.query_one("#input_area")
         input_area.text = encoded_hex
 
-        await pilot.click("#btn_decode")
+        app.query_one("#btn_decode").press()
+        await pilot.pause()
 
         output_area = tab.query_one("#output_area")
         assert '"tui": "test"' in output_area.text
@@ -162,7 +164,8 @@ async def test_bson_lab_tui_decode_error(tui_app):
         input_area = tab.query_one("#input_area")
         input_area.text = "invalid_hex"
 
-        await pilot.click("#btn_decode")
+        app.query_one("#btn_decode").press()
+        await pilot.pause()
 
         assert "Decode Error:" in tab.error_message
 

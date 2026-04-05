@@ -25,7 +25,8 @@ class TestPresentationTab(unittest.IsolatedAsyncioTestCase):
 
         async with self.app.run_test() as pilot:
             # Click generate
-            await pilot.click("#btn-pres-generate")
+            app.query_one("#btn-pres-generate").press()
+        await pilot.pause()
 
             # Wait for background task
             await pilot.pause(0.5)

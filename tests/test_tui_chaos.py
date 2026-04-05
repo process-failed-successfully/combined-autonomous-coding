@@ -70,7 +70,8 @@ class TestChaosTab(unittest.IsolatedAsyncioTestCase):
             await pilot.press("enter")
 
             # Click run
-            await pilot.click("#btn-chaos-run")
+            app.query_one("#btn-chaos-run").press()
+        await pilot.pause()
 
             # Verify manager instantiated (happens inside run_experiment for the second time)
             # The first time is in __init__
@@ -99,7 +100,8 @@ class TestChaosTab(unittest.IsolatedAsyncioTestCase):
             chk.value = False
 
             # Click run
-            await pilot.click("#btn-chaos-run")
+            app.query_one("#btn-chaos-run").press()
+        await pilot.pause()
 
             # Verify manager called with dry_run=False
             # Get last call

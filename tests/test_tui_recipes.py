@@ -75,7 +75,8 @@ class TestRecipesTab(unittest.IsolatedAsyncioTestCase):
             steps_inp.value = "build, push"
 
             # Click create
-            await pilot.click("#btn-recipe-create")
+            app.query_one("#btn-recipe-create").press()
+        await pilot.pause()
 
             # Verify manager call
             self.mock_rm.add_recipe.assert_called_with("deploy", ["build", "push"])
@@ -98,7 +99,8 @@ class TestRecipesTab(unittest.IsolatedAsyncioTestCase):
             app.query_one("#btn-recipe-run").disabled = False
 
             # Click run
-            await pilot.click("#btn-recipe-run")
+            app.query_one("#btn-recipe-run").press()
+        await pilot.pause()
 
             # Verify manager run call
             self.mock_rm.run_recipe.assert_called_with("build", capture_output=True)

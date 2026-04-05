@@ -70,16 +70,19 @@ class TestRegexEscapeLabTUI(unittest.IsolatedAsyncioTestCase):
 
                 # Test escape
                 input_area.text = "a.b"
-                await pilot.click("#btn-regex-escape")
+                app.query_one("#btn-regex-escape").press()
+                await pilot.pause()
                 self.assertEqual(output_area.text, "a\\.b")
 
                 # Test unescape
                 input_area.text = "a\\.b"
-                await pilot.click("#btn-regex-unescape")
+                app.query_one("#btn-regex-unescape").press()
+                await pilot.pause()
                 self.assertEqual(output_area.text, "a.b")
 
                 # Test clear
-                await pilot.click("#btn-regex-clear")
+                app.query_one("#btn-regex-clear").press()
+                await pilot.pause()
                 self.assertEqual(input_area.text, "")
                 self.assertEqual(output_area.text, "")
 

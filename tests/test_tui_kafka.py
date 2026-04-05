@@ -74,12 +74,15 @@ class TestKafkaLabTab(unittest.IsolatedAsyncioTestCase):
                 # Also enable the button, as the listener would
                 tab.query_one("#btn-kafka-send").disabled = False
 
-                await pilot.click("#kafka-produce-key")
+                app.query_one("#kafka-produce-key").press()
+        await pilot.pause()
                 await pilot.press("k")
-                await pilot.click("#kafka-produce-value")
+                app.query_one("#kafka-produce-value").press()
+        await pilot.pause()
                 await pilot.press("v")
 
-                await pilot.click("#btn-kafka-send")
+                app.query_one("#btn-kafka-send").press()
+        await pilot.pause()
                 await pilot.pause()
                 await asyncio.sleep(0.1)
 

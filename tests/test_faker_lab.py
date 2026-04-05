@@ -105,41 +105,48 @@ class TestFakerLabTab(unittest.IsolatedAsyncioTestCase):
                 count_input = pilot.app.query_one("#faker-count")
 
                 # Test Generate Person
-                await pilot.click("#btn-faker-generate")
+                app.query_one("#btn-faker-generate").press()
+                await pilot.pause()
                 await pilot.pause()
                 log = pilot.app.query_one("#faker-output-log")
                 self.assertIsNotNone(log)
 
                 # Change type to internet
                 type_select.value = "internet"
-                await pilot.click("#btn-faker-generate")
+                app.query_one("#btn-faker-generate").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Change type to text
                 type_select.value = "text"
-                await pilot.click("#btn-faker-generate")
+                app.query_one("#btn-faker-generate").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Change type to credit_card
                 type_select.value = "credit_card"
-                await pilot.click("#btn-faker-generate")
+                app.query_one("#btn-faker-generate").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Change locale
                 locale_input.value = "fr_FR"
-                await pilot.click("#btn-faker-generate")
+                app.query_one("#btn-faker-generate").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Invalid count
                 count_input.value = "-5"
-                await pilot.click("#btn-faker-generate")
+                app.query_one("#btn-faker-generate").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Simulate Exception during generation
                 with patch.object(tab.manager, 'generate_credit_card', side_effect=Exception("Simulated TUI Error")):
                     type_select.value = "credit_card"
                     count_input.value = "1"
-                    await pilot.click("#btn-faker-generate")
+                    app.query_one("#btn-faker-generate").press()
+                    await pilot.pause()
                     await pilot.pause()
         finally:
             if hasattr(type(tab), 'app'):

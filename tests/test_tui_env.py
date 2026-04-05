@@ -41,7 +41,8 @@ class TestEnvTab(unittest.IsolatedAsyncioTestCase):
 
             # Click Init
             mock_instance.init.return_value = (True, "Initialized files")
-            await pilot.click("#btn-env-init")
+            app.query_one("#btn-env-init").press()
+        await pilot.pause()
 
             mock_instance.init.assert_called_once()
 
@@ -82,7 +83,8 @@ class TestEnvTab(unittest.IsolatedAsyncioTestCase):
 
             # Click Sync
             mock_instance.sync.return_value = (True, "Synced keys")
-            await pilot.click("#btn-env-sync")
+            app.query_one("#btn-env-sync").press()
+        await pilot.pause()
 
             mock_instance.sync.assert_called_once()
 

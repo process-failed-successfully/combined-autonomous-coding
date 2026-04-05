@@ -48,7 +48,8 @@ class TestSecurityTab(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(table.row_count, 0)
 
             # Click Scan Button
-            await pilot.click("#btn-sec-scan-all")
+            app.query_one("#btn-sec-scan-all").press()
+        await pilot.pause()
 
             # Wait for async operation (Textual tests usually wait for events)
             # Since run_scan calls auditor in a thread, we might need to wait a bit
@@ -83,7 +84,8 @@ class TestSecurityTab(unittest.IsolatedAsyncioTestCase):
             tab = self.app.query_one(SecurityTab)
 
             # Populate
-            await pilot.click("#btn-sec-scan-all")
+            app.query_one("#btn-sec-scan-all").press()
+        await pilot.pause()
             await pilot.pause()
 
             # Select row
@@ -103,7 +105,8 @@ class TestSecurityTab(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(tab.selected_finding["file"], "config.py")
 
             # Click Ignore
-            await pilot.click("#btn-sec-ignore-file")
+            app.query_one("#btn-sec-ignore-file").press()
+        await pilot.pause()
 
             # Verify auditor call
             mock_instance.add_ignore_pattern.assert_called_with("config.py")

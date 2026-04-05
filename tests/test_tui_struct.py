@@ -18,11 +18,13 @@ class TestStructLabTab(unittest.IsolatedAsyncioTestCase):
             tab.manager.calc_size = MagicMock(return_value=8)
 
             # Enter format
-            await pilot.click("#struct-calc-fmt")
+            app.query_one("#struct-calc-fmt").press()
+        await pilot.pause()
             await pilot.press("i", "i")
 
             # Click Calculate
-            await pilot.click("#btn-struct-calc")
+            app.query_one("#btn-struct-calc").press()
+        await pilot.pause()
 
             # Check result
             lbl = app.query_one("#struct-calc-result")
@@ -45,11 +47,13 @@ class TestStructLabTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             # Enter path
-            await pilot.click("#struct-hex-path")
+            app.query_one("#struct-hex-path").press()
+        await pilot.pause()
             await pilot.press("t", "e", "s", "t", ".", "b", "i", "n")
 
             # Click Dump
-            await pilot.click("#btn-struct-hex")
+            app.query_one("#btn-struct-hex").press()
+        await pilot.pause()
 
             # Check table
             table = app.query_one("#struct-hex-table")
@@ -69,17 +73,21 @@ class TestStructLabTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             # Fill inputs
-            await pilot.click("#struct-pack-fmt")
+            app.query_one("#struct-pack-fmt").press()
+        await pilot.pause()
             await pilot.press("i")
 
-            await pilot.click("#struct-pack-values")
+            app.query_one("#struct-pack-values").press()
+        await pilot.pause()
             await pilot.press("1")
 
-            await pilot.click("#struct-pack-out")
+            app.query_one("#struct-pack-out").press()
+        await pilot.pause()
             await pilot.press("o", "u", "t")
 
             # Click Pack
-            await pilot.click("#btn-struct-pack")
+            app.query_one("#btn-struct-pack").press()
+        await pilot.pause()
 
             # Check result
             lbl = app.query_one("#struct-pack-result")

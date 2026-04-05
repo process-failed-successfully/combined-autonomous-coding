@@ -33,10 +33,12 @@ class TestTokenLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(TokenLabTab)
             tab.notify = MagicMock()
 
-            await pilot.click("#btn-count")
+            app.query_one("#btn-count").press()
+        await pilot.pause()
             tab.notify.assert_called_with("Please enter text to encode.", severity="error")
 
-            await pilot.click("#btn-decode")
+            app.query_one("#btn-decode").press()
+        await pilot.pause()
             tab.notify.assert_called_with("Please enter tokens to decode.", severity="error")
 
 

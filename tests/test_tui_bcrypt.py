@@ -25,7 +25,8 @@ class TestTuiBcrypt(unittest.IsolatedAsyncioTestCase):
             rounds_select.value = 4
 
             # Click generate
-            await pilot.click("#btn-bcrypt-generate")
+            app.query_one("#btn-bcrypt-generate").press()
+        await pilot.pause()
 
             # Check result
             hashed = result_area.text
@@ -47,12 +48,14 @@ class TestTuiBcrypt(unittest.IsolatedAsyncioTestCase):
             pw_input.value = "mysecurepw"
             hash_input.value = hashed
 
-            await pilot.click("#btn-bcrypt-verify")
+            app.query_one("#btn-bcrypt-verify").press()
+        await pilot.pause()
 
             self.assertIn("Match: True", str(result_lbl.render()))
 
             # Verify wrong password
             pw_input.value = "wrongpw"
-            await pilot.click("#btn-bcrypt-verify")
+            app.query_one("#btn-bcrypt-verify").press()
+        await pilot.pause()
 
             self.assertIn("Match: False", str(result_lbl.render()))

@@ -59,7 +59,8 @@ class TestPlanTab(unittest.IsolatedAsyncioTestCase):
             spec_editor = app.query_one("#spec-editor", TextArea)
             spec_editor.text = "New Spec Content"
 
-            await pilot.click("#btn-save-spec")
+            app.query_one("#btn-save-spec").press()
+        await pilot.pause()
 
             spec_path = self.project_dir / "app_spec.txt"
             self.assertTrue(spec_path.exists())
@@ -78,7 +79,8 @@ class TestPlanTab(unittest.IsolatedAsyncioTestCase):
             plan_editor = app.query_one("#plan-editor", TextArea)
             plan_editor.text = '{"tasks": []}'
 
-            await pilot.click("#btn-save-plan")
+            app.query_one("#btn-save-plan").press()
+        await pilot.pause()
 
             plan_path = self.project_dir / "feature_list.json"
             self.assertTrue(plan_path.exists())
@@ -95,7 +97,8 @@ class TestPlanTab(unittest.IsolatedAsyncioTestCase):
         app = TestApp()
         async with app.run_test(size=(120, 40)) as pilot:
             # Click generate
-            await pilot.click("#btn-generate-plan")
+            app.query_one("#btn-generate-plan").press()
+        await pilot.pause()
 
             # Verify logic call
             self.mock_run_plan_logic.assert_called_with(

@@ -38,7 +38,8 @@ class TestGitGraphPane(unittest.IsolatedAsyncioTestCase):
 
                 # Test Refresh Button
                 mock_get_lines.return_value = ["* new_commit", "|"]
-                await pilot.click("#btn-refresh-graph")
+                app.query_one("#btn-refresh-graph").press()
+        await pilot.pause()
                 await pilot.pause(0.1)
 
                 self.assertIn("* new_commit", log_view.lines[0].text)

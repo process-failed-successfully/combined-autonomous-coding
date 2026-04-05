@@ -50,7 +50,8 @@ class TestPortLabTab(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(kill_btn.disabled, "Kill button should be enabled after selection")
 
                 # Click Kill
-                await pilot.click("#btn-kill-port")
+                app.query_one("#btn-kill-port").press()
+        await pilot.pause()
                 await pilot.pause()
 
                 # Verify kill called

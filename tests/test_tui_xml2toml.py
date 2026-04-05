@@ -26,13 +26,15 @@ async def test_xml2toml_tab_conversion_success():
 
         # Test XML to TOML
         input_area.text = "<data><name>Test</name></data>"
-        await pilot.click("#convert_btn")
+        app.query_one("#convert_btn").press()
+        await pilot.pause()
         assert "Test" in output_area.text
 
         # Test TOML to XML
         tab.mode = "toml2xml"
         input_area.text = 'name = "Test2"'
-        await pilot.click("#convert_btn")
+        app.query_one("#convert_btn").press()
+        await pilot.pause()
         assert "Test2" in output_area.text
 
 
@@ -45,7 +47,8 @@ async def test_xml2toml_tab_conversion_empty():
 
         # Test empty
         input_area.text = ""
-        await pilot.click("#convert_btn")
+        app.query_one("#convert_btn").press()
+        await pilot.pause()
         status = tab.query_one("#status_bar").renderable
         assert str(status) == "Error: Input is empty."
 
@@ -59,7 +62,8 @@ async def test_xml2toml_tab_conversion_error():
 
         # Test invalid XML
         input_area.text = "<data><name>Test</data>"
-        await pilot.click("#convert_btn")
+        app.query_one("#convert_btn").press()
+        await pilot.pause()
         status = tab.query_one("#status_bar").renderable
         assert "Error:" in str(status)
 
@@ -74,7 +78,8 @@ async def test_xml2toml_tab_clear():
 
         input_area.text = "test"
         output_area.text = "test"
-        await pilot.click("#clear_btn")
+        app.query_one("#clear_btn").press()
+        await pilot.pause()
         assert input_area.text == ""
         assert output_area.text == ""
 

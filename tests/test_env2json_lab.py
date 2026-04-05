@@ -54,7 +54,8 @@ class TestEnv2JsonLabTab(unittest.IsolatedAsyncioTestCase):
             mode_select = app.query_one("#env2json_mode_select", Select)
             mode_select.value = "env2json"
 
-            await pilot.click("#btn_convert")
+            app.query_one("#btn_convert").press()
+            await pilot.pause()
 
             output_ta = app.query_one("#env2json_output", TextArea)
             assert '"KEY": "value"' in output_ta.text
@@ -68,7 +69,8 @@ class TestEnv2JsonLabTab(unittest.IsolatedAsyncioTestCase):
             mode_select = app.query_one("#env2json_mode_select", Select)
             mode_select.value = "json2env"
 
-            await pilot.click("#btn_convert")
+            app.query_one("#btn_convert").press()
+            await pilot.pause()
 
             output_ta = app.query_one("#env2json_output", TextArea)
             assert 'KEY=value' in output_ta.text
@@ -76,7 +78,8 @@ class TestEnv2JsonLabTab(unittest.IsolatedAsyncioTestCase):
     async def test_empty_input_ui(self):
         app = DummyApp()
         async with app.run_test() as pilot:
-            await pilot.click("#btn_convert")
+            app.query_one("#btn_convert").press()
+            await pilot.pause()
             # Usually raises a notification, testing that it doesn't crash
             output_ta = app.query_one("#env2json_output", TextArea)
             assert output_ta.text == ""
@@ -90,7 +93,8 @@ class TestEnv2JsonLabTab(unittest.IsolatedAsyncioTestCase):
             mode_select = app.query_one("#env2json_mode_select", Select)
             mode_select.value = "json2env"
 
-            await pilot.click("#btn_convert")
+            app.query_one("#btn_convert").press()
+            await pilot.pause()
 
             # Expect notification or output to remain empty on failure
             output_ta = app.query_one("#env2json_output", TextArea)

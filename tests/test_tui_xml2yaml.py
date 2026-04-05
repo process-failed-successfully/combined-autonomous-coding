@@ -29,7 +29,8 @@ class TestXml2YamlTUI(unittest.IsolatedAsyncioTestCase):
             input_area.text = "<root><child>value</child></root>"
 
             # click convert button
-            await pilot.click("#convert_btn")
+            app.query_one("#convert_btn").press()
+        await pilot.pause()
 
             output_area = app.query_one("#output_area", TextArea)
             assert "root:" in output_area.text
@@ -54,7 +55,8 @@ class TestXml2YamlTUI(unittest.IsolatedAsyncioTestCase):
             input_area.text = "root:\n  child: value\n"
 
             # Click convert
-            await pilot.click("#convert_btn")
+            app.query_one("#convert_btn").press()
+        await pilot.pause()
 
             output_area = app.query_one("#output_area", TextArea)
             assert "<root>" in output_area.text
@@ -66,7 +68,8 @@ class TestXml2YamlTUI(unittest.IsolatedAsyncioTestCase):
             input_area = app.query_one("#input_area", TextArea)
             input_area.text = "<root><unclosed>error</root>"
 
-            await pilot.click("#convert_btn")
+            app.query_one("#convert_btn").press()
+        await pilot.pause()
 
             status = app.query_one("#status_bar", Static)
             assert "Error" in str(status.render())
@@ -77,7 +80,8 @@ class TestXml2YamlTUI(unittest.IsolatedAsyncioTestCase):
             input_area = app.query_one("#input_area", TextArea)
             input_area.text = "<test/>"
 
-            await pilot.click("#clear_btn")
+            app.query_one("#clear_btn").press()
+        await pilot.pause()
 
             assert input_area.text == ""
             output_area = app.query_one("#output_area", TextArea)

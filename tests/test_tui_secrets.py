@@ -96,7 +96,8 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.5)
 
             # Check if Init button is visible and click
-            await pilot.click("#btn-secret-init")
+            app.query_one("#btn-secret-init").press()
+        await pilot.pause()
 
             # Wait for event to be processed
             await pilot.pause(0.5)
@@ -126,7 +127,8 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
             val_inp.value = "super_secret"
 
             # Click Add
-            await pilot.click("#btn-secret-add")
+            app.query_one("#btn-secret-add").press()
+        await pilot.pause()
             await pilot.pause(0.5)
 
             if self.mock_manager.set_secret.call_count == 0:
@@ -156,7 +158,8 @@ class TestTUISecrets(unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.2)
 
                 # Click Delete
-                await pilot.click("#btn-secret-delete")
+                app.query_one("#btn-secret-delete").press()
+        await pilot.pause()
                 await pilot.pause(0.5)
 
                 if self.mock_manager.delete_secret.call_count == 0:

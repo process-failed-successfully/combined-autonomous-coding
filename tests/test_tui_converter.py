@@ -19,7 +19,8 @@ class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
             inp = app.query_one("#curl-input", TextArea)
             inp.text = "curl http://example.com"
 
-            await pilot.click("#btn-curl-convert")
+            app.query_one("#btn-curl-convert").press()
+        await pilot.pause()
 
             out = app.query_one("#curl-output", TextArea)
             self.assertIn("import requests", out.text)
@@ -36,7 +37,8 @@ class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
             inp = app.query_one("#type-input", TextArea)
             inp.text = '{"name": "test"}'
 
-            await pilot.click("#btn-type-convert")
+            app.query_one("#btn-type-convert").press()
+        await pilot.pause()
 
             out = app.query_one("#type-output", TextArea)
             self.assertIn("class RootModel(BaseModel):", out.text)
@@ -53,7 +55,8 @@ class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
             inp.text = '{"key": "value"}'
 
             # Default is JSON -> YAML
-            await pilot.click("#btn-fmt-convert")
+            app.query_one("#btn-fmt-convert").press()
+        await pilot.pause()
 
             out = app.query_one("#fmt-output", TextArea)
             self.assertIn("key: value", out.text)
@@ -66,7 +69,8 @@ class TestTuiConverter(unittest.IsolatedAsyncioTestCase):
             out = app.query_one("#curl-output", TextArea)
             out.text = "result"
 
-            await pilot.click("#btn-curl-clear")
+            app.query_one("#btn-curl-clear").press()
+        await pilot.pause()
 
             self.assertEqual(inp.text, "")
             self.assertEqual(out.text, "")

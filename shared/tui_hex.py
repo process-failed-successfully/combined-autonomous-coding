@@ -51,14 +51,15 @@ class HexTab(Container):
         self.cursor_byte_offset = 0 # Relative to current_offset
 
     def compose(self) -> ComposeResult:
-        with Horizontal(classes="hex-header"):
-            yield Label("File:", classes="label")
-            yield Input(placeholder="Path to file...", id="hex-file-input")
-            yield Button("Load", id="btn-hex-load", variant="primary")
-            yield Button("Save", id="btn-hex-save", variant="success", disabled=True)
+        with Vertical():
+            with Horizontal(classes="hex-header"):
+                yield Label("File:", classes="label")
+                yield Input(placeholder="Path to file...", id="hex-file-input")
+                yield Button("Load", id="btn-hex-load", variant="primary")
+                yield Button("Save", id="btn-hex-save", variant="success", disabled=True)
 
-        yield DataTable(id="hex-grid")
-        yield Label("Ready", id="hex-status", classes="hex-status")
+            yield DataTable(id="hex-grid")
+            yield Label("Ready", id="hex-status", classes="hex-status")
 
     def on_mount(self) -> None:
         table = self.query_one("#hex-grid", DataTable)

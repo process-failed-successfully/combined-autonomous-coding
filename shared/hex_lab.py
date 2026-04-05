@@ -71,25 +71,55 @@ class HexManager:
     def get_size(self) -> int:
         return self.size
 
+    def dump(self, offset: int = 0, length: Optional[int] = None) -> str:
+        """
+        Returns a formatted hex dump of the loaded file.
+        Format: 00000000: 48 65 6C 6C 6F 20 57 6F  72 6C 64 21 00 00 00 00 |Hello World!....|
+        """
+        if not self.file_path:
+            raise ValueError("No file loaded.")
+
+        if length is None:
+            length = self.size - offset
+
+        end = min(offset + length, self.size)
+        lines = []
+
+        for i in range(offset, end, 16):
+            chunk = self.buffer[i:min(i + 16, end)]
+            hex_part1 = " ".join(f"{b:02X}" for b in chunk[:8])
+            hex_part2 = " ".join(f"{b:02X}" for b in chunk[8:])
+
+            # Format hex part to exactly 49 chars (including the space between halves)
+            if len(chunk) > 8:
+                hex_str = f"{hex_part1}  {hex_part2}"
+            else:
+                hex_str = hex_part1
+
+            hex_str = f"{hex_str:<49}"
+
+            ascii_str = "".join(chr(b) if 32 <= b <= 126 else "." for b in chunk)
+
+            lines.append(f"{i:08X}: {hex_str}|{ascii_str}|")
+
+        return "\n".join(lines)
+
+
 def run_hex_lab_logic(args):
     """
-    CLI entry point. Launches the TUI.
+    CLI entry point. Handles dump or launches the TUI.
     """
-    # This function is intended to be called from main.py
-    # Since this is a TUI tool, we should launch the TUI.
-    # However, main.py usually handles TUI launching via `run_tui` or specific commands.
-    # If called as `hex-lab <file>`, we want to open that file in the TUI.
+    if getattr(args, "action", None) == "dump":
+        manager = HexManager(project_dir=getattr(args, 'project_dir', Path(".")))
+        try:
+            manager.load_file(Path(args.file))
+            print(manager.dump(offset=args.offset, length=args.length))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
 
     from shared.tui import AgentTUI
-
-    # We need to tell the TUI to open the HexTab and load the file.
-    # AgentTUI doesn't accept initial tab/file args easily in its constructor
-    # without modifying it significantly.
-    # But we can instantiate it and set state before running?
-    # Or just tell the user to use the TUI.
-
-    # Actually, let's try to modify AgentTUI to accept a `start_tab` and `start_context`.
-    # But for now, we'll just launch the TUI.
 
     print("Launching Hex Lab TUI...")
     app = AgentTUI(project_dir=args.project_dir, start_tab="tab-hex", hex_file=getattr(args, "file", None))

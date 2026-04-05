@@ -297,6 +297,7 @@ from shared.tui_fs import FsLabTab
 from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_json2xml import Json2XmlTab
+from shared.tui_csv2xml import Csv2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_xml2toml import Xml2TomlTab
@@ -4147,6 +4148,7 @@ class AgentTUI(App):
         PaletteCommand("Go to cURL Lab", "switch_tab_curl"),
         PaletteCommand("Go to Stego Lab", "switch_tab_stego"),
 
+        PaletteCommand("Go to CSV to XML Lab", "switch_tab_csv2xml"),
         PaletteCommand("Go to CSV to MD Lab", "switch_tab_csv2md"),
         PaletteCommand("Go to CSV to JSON Lab", "switch_tab_csv2json"),
         PaletteCommand("Go to Size Lab", "switch_tab_size"),
@@ -4594,6 +4596,8 @@ class AgentTUI(App):
                 yield Csv2MdTab()
             with TabPane("CSV to TOML", id="tab-csv2toml"):
                 yield Csv2TomlTab()
+            with TabPane("CSV to XML", id="tab-csv2xml"):
+                yield Csv2XmlTab()
             with TabPane("XML Lab", id="tab-xml"):
                 yield XmlLabTab(self.project_dir)
             with TabPane("XML to JSON", id="tab-xml2json"):

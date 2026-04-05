@@ -254,7 +254,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "csv2xml-lab", "csv2xml", "c2x", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
@@ -15366,6 +15366,25 @@ def parse_args(argv=None):
     json2yaml_parser_default.add_argument("input", help="JSON string or file path.")
     json2yaml_parser_default.add_argument("--output", "-o", help="Output file path.")
 
+    # --- New 'csv2xml-lab' command ---
+    parser_csv2xml = subparsers.add_parser(
+        "csv2xml-lab",
+        aliases=["csv2xml", "c2x"],
+        help="Convert CSV to XML."
+    )
+    csv2xml_subparsers = parser_csv2xml.add_subparsers(
+        dest="action", help="CSV to XML operations"
+    )
+    csv2xml_subparsers.add_parser("tui", help="Launch CSV2XML Lab TUI.")
+
+    csv2xml_parser_default = csv2xml_subparsers.add_parser("csv2xml", help="Convert CSV to XML.")
+    csv2xml_parser_default.add_argument("--file", "-f", help="Input CSV file.")
+    csv2xml_parser_default.add_argument("--text", "-t", help="Input CSV string.")
+    csv2xml_parser_default.add_argument("--output", "-o", help="Output file path.")
+    csv2xml_parser_default.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    csv2xml_parser_default.add_argument("--root-tag", default="root", help="XML root tag name (default: 'root').")
+    csv2xml_parser_default.add_argument("--row-tag", default="row", help="XML row tag name (default: 'row').")
+
     # --- New 'yaml2toml-lab' command ---
 
     # --- New 'xml2toml-lab' command ---
@@ -23431,6 +23450,16 @@ async def main():
             return
         from shared.yaml2json_lab import run_json2yaml_lab_logic
         run_json2yaml_lab_logic(args)
+        return
+
+    if args.command in ["csv2xml-lab", "csv2xml", "c2x"]:
+        if not getattr(args, "action", None) or args.action == "csv2xml":
+            args.action = "csv2xml"
+        if getattr(args, "tui", False) or args.action == "tui":
+            run_tui(args, "tab-csv2xml")
+            return
+        from shared.csv2xml_lab import run_csv2xml_lab_logic
+        run_csv2xml_lab_logic(args)
         return
 
     if args.command in ["yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t"]:

@@ -1,7 +1,10 @@
 import sys
 import json
 from typing import Any
-import jq
+try:
+    import jq
+except ImportError:
+    jq = None
 
 
 class JqLabManager:

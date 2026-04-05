@@ -99,6 +99,7 @@ from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
 from shared.yaml2json_lab import run_yaml2json_lab_logic
 from shared.yaml2csv_lab import run_yaml2csv_lab_logic
+from shared.xml2csv_lab import run_xml2csv_lab_logic
 from shared.xml2yaml_lab import run_xml2yaml_lab_logic
 from shared.xml2toml_lab import run_xml2toml_lab_logic
 from shared.changelog_lab import run_changelog_lab_logic
@@ -253,7 +254,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
@@ -15297,6 +15298,16 @@ def parse_args(argv=None):
     parser_yaml2csv.add_argument("--output", "-o", help="Output file path.")
     parser_yaml2csv.add_argument("--tui", action="store_true", help="Launch the YAML to CSV TUI.")
 
+    parser_xml2csv = subparsers.add_parser(
+        "xml2csv-lab",
+        aliases=["xml2csv", "x2c"],
+        help="Convert XML to CSV."
+    )
+    parser_xml2csv.add_argument("--file", "-f", help="Input XML file.")
+    parser_xml2csv.add_argument("--text", "-t", help="Input XML text.")
+    parser_xml2csv.add_argument("--output", "-o", help="Output file path.")
+    parser_xml2csv.add_argument("--tui", action="store_true", help="Launch the XML to CSV TUI.")
+
     # --- New 'yaml2json-lab' command ---
     parser_yaml2json = subparsers.add_parser(
         "yaml2json-lab",
@@ -23437,6 +23448,10 @@ async def main():
 
     if args.command in ["yaml2csv-lab", "yaml2csv", "y2c"]:
         run_yaml2csv_lab_logic(args)
+        return
+
+    if args.command in ["xml2csv-lab", "xml2csv", "x2c"]:
+        run_xml2csv_lab_logic(args)
         return
 
     if args.command in ["env2json-lab", "env2json", "json2env"]:

@@ -296,6 +296,7 @@ from shared.tui_fs import FsLabTab
 from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_json2xml import Json2XmlTab
+from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_xml2toml import Xml2TomlTab
 from shared.tui_bip39 import Bip39Tab
@@ -4118,6 +4119,7 @@ class AgentTUI(App):
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
         PaletteCommand("Go to XML Lab", "switch_tab_xml"),
+        PaletteCommand("Go to XML to CSV", "switch_tab_xml2csv"),
         PaletteCommand("Go to JSONPath Lab", "switch_tab_jsonpath"),
         PaletteCommand("Go to jq Lab", "switch_tab_jq"),
         PaletteCommand("Go to JMESPath Lab", "switch_tab_jmespath"),
@@ -4678,6 +4680,9 @@ class AgentTUI(App):
                 yield DiagramLabTab(self.project_dir)
             with TabPane("HTML2MD Lab", id="tab-html2md"):
                 yield Html2MdTab()
+
+            with TabPane("XML to CSV", id="tab-xml2csv"):
+                yield Xml2CsvTab()
 
             with TabPane("HTML to JSX Lab", id="tab-html2jsx"):
                 yield Html2JsxLabTab()

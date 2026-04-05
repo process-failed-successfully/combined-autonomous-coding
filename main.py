@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "xml2csv-lab", "xml2csv", "x2c", "json2xml-lab", "json2xml", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -3035,7 +3035,30 @@ def run_seo_lab(args):
     sys.exit(0)
 
 
+
+def run_xml2csv_lab(args):
+    """Runs the XML to CSV Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Xml2Csv Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-xml2csv")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.xml2csv_lab import run_xml2csv_lab_logic
+    run_xml2csv_lab_logic(args)
+    sys.exit(0)
+
 def run_xml2json_lab(args):
+
     """Runs the XML to JSON Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
         from shared.tui import AgentTUI
@@ -16043,6 +16066,18 @@ def parse_args(argv=None):
     parser_media_trim.add_argument("--end", help="End time (e.g. 00:00:20).")
     parser_media_trim.add_argument("--duration", help="Duration (e.g. 10).")
 
+    # --- New 'xml2csv-lab' command ---
+    parser_xml2csv = subparsers.add_parser(
+        "xml2csv-lab",
+        aliases=["xml2csv", "x2c"],
+        help="Convert XML to CSV."
+    )
+    parser_xml2csv.add_argument("--file", "-f", help="Input XML file.")
+    parser_xml2csv.add_argument("--text", "-t", help="Input XML string.")
+    parser_xml2csv.add_argument("--output", "-o", help="Output file to save the CSV.")
+    parser_xml2csv.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_xml2csv.add_argument("--tui", action="store_true", help="Launch interactive XML to CSV Lab.")
+
     # --- New 'xml2json-lab' command ---
     parser_xml2json = subparsers.add_parser(
         "xml2json-lab",
@@ -22840,9 +22875,15 @@ async def main():
         run_xml_lab(args)
         return
 
+
     if args.command in ["xml2json-lab", "xml2json"]:
         run_xml2json_lab(args)
         return
+
+    if args.command in ["xml2csv-lab", "xml2csv", "x2c"]:
+        run_xml2csv_lab(args)
+        return
+
 
     if args.command in ["json2xml-lab", "json2xml"]:
         run_json2xml_lab(args)

@@ -184,6 +184,7 @@ from shared.tui_zlib import ZlibTab
 from shared.tui_bcrypt import BcryptLabTab
 from shared.tui_brotli import BrotliLabTab
 from shared.tui_base91 import Base91LabTab
+from shared.tui_base92 import Base92LabTab
 from shared.tui_base64 import Base64LabTab
 from shared.tui_rot13 import Rot13LabTab
 from shared.tui_html_entity import HtmlEntityTab
@@ -4129,6 +4130,7 @@ class AgentTUI(App):
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
         PaletteCommand("Go to JS Lab", "switch_tab_js"),
         PaletteCommand("Go to Regex Escape Lab", "switch_tab_regex_escape"),
+        PaletteCommand("Go to Base92 Lab", "switch_tab_base92"),
         PaletteCommand("Go to Fuzz Lab", "switch_tab_fuzz"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
@@ -4542,6 +4544,8 @@ class AgentTUI(App):
                 yield Base62LabTab()
             with TabPane("Base91 Lab", id="tab-base91"):
                 yield Base91LabTab()
+            with TabPane("Base92 Lab", id="tab-base92"):
+                yield Base92LabTab()
             with TabPane("Base36 Lab", id="tab-base36"):
                 yield Base36LabTab()
             with TabPane("Base16 Lab", id="tab-base16"):

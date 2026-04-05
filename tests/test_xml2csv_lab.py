@@ -84,19 +84,32 @@ def test_run_xml2csv_lab_logic_tui(mock_get_running_loop):
     pass
 
 @pytest.mark.asyncio
-@patch('shared.tui_time.datetime')
-async def test_xml2csv_tab_ui(mock_datetime):
-    from datetime import datetime, timezone
-    mock_datetime.now.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
-    mock_datetime.utcnow.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
+async def test_xml2csv_tab_ui():
+    from textual.app import App
+    from shared.tui_xml2csv import Xml2CsvTab
 
-    from shared.tui import AgentTUI
-    from shared.database import init_db
+    class TestApp(App):
+        def compose(self):
+            yield Xml2CsvTab()
 
-    init_db(":memory:")
-    app = AgentTUI(project_dir=Path("."), start_tab="tab-xml2csv")
+    app = TestApp()
 
     async with app.run_test() as pilot:
+        await pilot.pause()
+
+        input_area = app.query_one("#xml2csv-input")
+        output_area = app.query_one("#xml2csv-output")
+
+        xml_data = """<?xml version="1.0"?><data><item><id>1</id></item></data>"""
+        input_area.load_text(xml_data)
+        await pilot.pause()
+        await pilot.click("#btn-convert-xml2csv")
+        await pilot.pause()
+
+        assert "id" in output_area.text
+        assert "1" in output_area.text
+
+        await pilot.click("#btn-clear-xml2csv")
         await pilot.pause()
 
         input_area = app.query_one("#xml2csv-input")

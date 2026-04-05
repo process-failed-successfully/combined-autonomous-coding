@@ -94,7 +94,7 @@ async def test_xml2csv_tab_ui():
 
     app = TestApp()
 
-    async with app.run_test() as pilot:
+    async with app.run_test(size=(100, 100)) as pilot:
         await pilot.pause()
 
         input_area = app.query_one("#xml2csv-input")

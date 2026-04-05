@@ -295,6 +295,7 @@ from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_fs import FsLabTab
 from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
+from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_xml2toml import Xml2TomlTab
@@ -4592,6 +4593,8 @@ class AgentTUI(App):
                 yield XmlLabTab(self.project_dir)
             with TabPane("XML to JSON", id="tab-xml2json"):
                 yield Xml2JsonTab()
+            with TabPane("XML to CSV", id="tab-xml2csv"):
+                yield Xml2CsvTab()
             with TabPane("JSON to XML", id="tab-json2xml"):
                 yield Json2XmlTab()
             with TabPane("BIP39 Lab", id="tab-bip39"):

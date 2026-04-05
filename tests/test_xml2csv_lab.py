@@ -84,7 +84,12 @@ def test_run_xml2csv_lab_logic_tui(mock_get_running_loop):
     pass
 
 @pytest.mark.asyncio
-async def test_xml2csv_tab_ui():
+@patch('shared.tui_time.datetime')
+async def test_xml2csv_tab_ui(mock_datetime):
+    from datetime import datetime, timezone
+    mock_datetime.now.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
+    mock_datetime.utcnow.return_value = datetime(2023, 1, 1, tzinfo=timezone.utc)
+
     from shared.tui import AgentTUI
     from shared.database import init_db
 

@@ -75,6 +75,7 @@ from shared.tui_sys import SysTab
 from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
 from shared.tui_csv2sql import Csv2SqlTab
+from shared.tui_json2sql import Json2SqlTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
@@ -4152,6 +4153,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Size Lab", "switch_tab_size"),
         PaletteCommand("Go to FS Lab", "switch_tab_fs"),
     PaletteCommand("Go to ICal Lab", "switch_tab_ical"),
+        PaletteCommand("Go to JSON to SQL Lab", "switch_tab_json2sql"),
         PaletteCommand("Go to Hash Validator Lab", "switch_tab_hash-validator"),
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
         PaletteCommand("Go to Hashids Lab", "switch_tab_hashids"),
@@ -4269,6 +4271,8 @@ class AgentTUI(App):
                 yield CborTab()
             with TabPane("CSV to SQL Lab", id="tab-csv2sql"):
                 yield Csv2SqlTab()
+            with TabPane("JSON to SQL", id="tab-json2sql"):
+                yield Json2SqlTab()
             with TabPane("Socket Lab", id="tab-sock"):
                 yield SockLabTab()
             with TabPane("Runner", id="tab-runner"):

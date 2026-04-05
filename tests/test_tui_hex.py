@@ -31,8 +31,8 @@ class TestHexTab(unittest.IsolatedAsyncioTestCase):
         async with app.run_test() as pilot:
             file_input = app.query_one("#hex-file-input", Input)
             file_input.value = str(self.test_file)
-            app.query_one("#btn-hex-load").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-hex-load").press()
+            await pilot.pause()
             await pilot.pause()
 
             table = app.query_one("#hex-grid", DataTable)
@@ -87,8 +87,8 @@ class TestHexTab(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(row_data[1], "AB")
 
             # Save the file
-            app.query_one("#btn-hex-save").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-hex-save").press()
+            await pilot.pause()
             await pilot.pause()
 
             content = self.test_file.read_bytes()

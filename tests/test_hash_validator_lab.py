@@ -225,51 +225,51 @@ class TestHashValidatorLabTUI(unittest.IsolatedAsyncioTestCase):
             log = app.query_one("#hash-validator-log", RichLog)
 
             # Test empty detect
-            app.query_one("#btn-hash-detect").press()
+            pilot.app.query_one("#btn-hash-detect").press()
             await pilot.pause()
             self.assertIn("No hash provided", str(list(log.lines)))
 
             # Test valid detect
             app.query_one("#hash-expected-input", Input).value = "098f6bcd4621d373cade4e832627b4f6"
-            app.query_one("#btn-hash-detect").press()
+            pilot.app.query_one("#btn-hash-detect").press()
             await pilot.pause()
             self.assertIn("md5", str(list(log.lines)))
 
             # Test invalid detect length
             app.query_one("#hash-expected-input", Input).value = "123"
-            app.query_one("#btn-hash-detect").press()
+            pilot.app.query_one("#btn-hash-detect").press()
             await pilot.pause()
             self.assertIn("Could not detect any standard hash algorithm", str(list(log.lines)))
 
             # Test verify without text
             app.query_one("#hash-expected-input", Input).value = "098f6bcd4621d373cade4e832627b4f6"
             app.query_one("#hash-text-input", TextArea).load_text("")
-            app.query_one("#btn-hash-verify").press()
+            pilot.app.query_one("#btn-hash-verify").press()
             await pilot.pause()
             self.assertIn("No input text provided", str(list(log.lines)))
 
             # Test verify success
             app.query_one("#hash-text-input", TextArea).load_text("test")
-            app.query_one("#btn-hash-verify").press()
+            pilot.app.query_one("#btn-hash-verify").press()
             await pilot.pause()
             self.assertIn("Match found!", str(list(log.lines)))
 
             # Test verify failure
             app.query_one("#hash-text-input", TextArea).load_text("wrong")
-            app.query_one("#btn-hash-verify").press()
+            pilot.app.query_one("#btn-hash-verify").press()
             await pilot.pause()
             self.assertIn("No match found.", str(list(log.lines)))
 
             # Test verify no hash
             app.query_one("#hash-expected-input", Input).value = ""
-            app.query_one("#btn-hash-verify").press()
+            pilot.app.query_one("#btn-hash-verify").press()
             await pilot.pause()
             self.assertIn("No expected hash provided", str(list(log.lines)))
 
             # Test verify empty detection
             app.query_one("#hash-expected-input", Input).value = "123"
             app.query_one("#hash-text-input", TextArea).load_text("test")
-            app.query_one("#btn-hash-verify").press()
+            pilot.app.query_one("#btn-hash-verify").press()
             await pilot.pause()
             self.assertIn("Could not detect hash algorithm", str(list(log.lines)))
 
@@ -277,12 +277,12 @@ class TestHashValidatorLabTUI(unittest.IsolatedAsyncioTestCase):
             app.query_one("#hash-expected-input", Input).value = "098f6bcd4621d373cade4e832627b4f6"
             app.query_one("#hash-text-input", TextArea).load_text("test")
             app.query_one("#hash-algo-input", Input).value = "unsupported-algo"
-            app.query_one("#btn-hash-verify").press()
+            pilot.app.query_one("#btn-hash-verify").press()
             await pilot.pause()
             self.assertIn("No match found.", str(list(log.lines)))
 
             # Test clear
-            app.query_one("#btn-hash-clear").press()
+            pilot.app.query_one("#btn-hash-clear").press()
             await pilot.pause()
             self.assertEqual(app.query_one("#hash-expected-input", Input).value, "")
             self.assertEqual(app.query_one("#hash-text-input", TextArea).text, "")

@@ -24,8 +24,8 @@ class TestSpeedLabTab(unittest.IsolatedAsyncioTestCase):
             tab.manager.check_internet_speed = MagicMock()
 
             # Trigger button
-            app.query_one("#btn-speed-internet").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-speed-internet").press()
+            await pilot.pause()
 
             # Wait for worker
             await pilot.pause()
@@ -41,8 +41,8 @@ class TestSpeedLabTab(unittest.IsolatedAsyncioTestCase):
             # Set input values
             tab.query_one("#speed-size", Input).value = "50"
 
-            app.query_one("#btn-speed-disk").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-speed-disk").press()
+            await pilot.pause()
             await pilot.pause()
 
             tab.manager.check_disk_speed.assert_called_with(size_mb=50, path=ANY)
@@ -56,8 +56,8 @@ class TestSpeedLabTab(unittest.IsolatedAsyncioTestCase):
             # Reuse size input for limit
             tab.query_one("#speed-size", Input).value = "1000"
 
-            app.query_one("#btn-speed-cpu").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-speed-cpu").press()
+            await pilot.pause()
             await pilot.pause()
 
             tab.manager.check_cpu_speed.assert_called_with(limit=1000)
@@ -70,8 +70,8 @@ class TestSpeedLabTab(unittest.IsolatedAsyncioTestCase):
 
             tab.query_one("#speed-size", Input).value = "200"
 
-            app.query_one("#btn-speed-memory").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-speed-memory").press()
+            await pilot.pause()
             await pilot.pause()
 
             tab.manager.check_memory_speed.assert_called_with(size_mb=200)

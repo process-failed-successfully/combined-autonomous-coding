@@ -38,8 +38,8 @@ async def test_barcode_lab_tui_generate():
             output_input.value = "test_barcode"
 
             # Click generate button
-            app.query_one("#btn-barcode-generate").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-barcode-generate").press()
+            await pilot.pause()
             await pilot.pause(0.1)
 
             mock_manager_instance.generate.assert_called_once_with("123456789012", "ean13", Path("test_barcode"))
@@ -67,8 +67,8 @@ async def test_barcode_lab_tui_validate():
             type_select.value = "ean13"
 
             # Click validate button
-            app.query_one("#btn-barcode-validate").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-barcode-validate").press()
+            await pilot.pause()
             await pilot.pause(0.1)
 
             mock_manager_instance.validate.assert_called_once_with("invalid_data", "ean13")

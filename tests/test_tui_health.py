@@ -48,8 +48,8 @@ class TestTuiHealth(unittest.IsolatedAsyncioTestCase):
 
         async with self.app.run_test() as pilot:
             # Click button
-            app.query_one("#btn-run-health").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-run-health").press()
+            await pilot.pause()
 
             # Wait for background task to complete and UI to update
             await pilot.pause(0.2)

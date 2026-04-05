@@ -47,8 +47,8 @@ class TestSentinelTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(SentinelTab)
 
             # Click Start
-            app.query_one("#btn-sentinel-toggle").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-sentinel-toggle").press()
+            await pilot.pause()
 
             # Verify Sentinel initialized
             self.mock_sentinel_cls.assert_called_once()
@@ -70,12 +70,12 @@ class TestSentinelTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(SentinelTab)
 
             # Start
-            app.query_one("#btn-sentinel-toggle").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-sentinel-toggle").press()
+            await pilot.pause()
 
             # Stop
-            app.query_one("#btn-sentinel-toggle").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-sentinel-toggle").press()
+            await pilot.pause()
 
             # Verify Stop called
             self.mock_sentinel.stop.assert_called_once()

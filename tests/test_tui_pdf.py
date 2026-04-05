@@ -28,8 +28,8 @@ class TestPdfLabTab(unittest.IsolatedAsyncioTestCase):
 
                 # Mock exists to return True for test.pdf
                 with patch('pathlib.Path.exists', return_value=True):
-                    app.query_one("#btn-pdf-info").press()
-        await pilot.pause()
+                    pilot.app.query_one("#btn-pdf-info").press()
+                    await pilot.pause()
 
                     # Check log
                     log = app.query_one("#pdf-log", RichLog)
@@ -49,8 +49,8 @@ class TestPdfLabTab(unittest.IsolatedAsyncioTestCase):
                 app.query_one("#pdf-input", Input).value = "test.pdf"
 
                 with patch('pathlib.Path.exists', return_value=True):
-                    app.query_one("#btn-pdf-text").press()
-        await pilot.pause()
+                    pilot.app.query_one("#btn-pdf-text").press()
+                    await pilot.pause()
 
                     log = app.query_one("#pdf-log", RichLog)
                     lines = [line.text for line in log.lines]
@@ -66,8 +66,8 @@ class TestPdfLabTab(unittest.IsolatedAsyncioTestCase):
                 app.query_one("#pdf-input", Input).value = "nonexistent.pdf"
 
                 with patch('pathlib.Path.exists', return_value=False):
-                    app.query_one("#btn-pdf-info").press()
-        await pilot.pause()
+                    pilot.app.query_one("#btn-pdf-info").press()
+                    await pilot.pause()
 
                     log = app.query_one("#pdf-log", RichLog)
                     lines = [line.text for line in log.lines]
@@ -85,8 +85,8 @@ class TestPdfLabTab(unittest.IsolatedAsyncioTestCase):
                 app.query_one("#pdf-input", Input).value = "test.pdf"
 
                 with patch('pathlib.Path.exists', return_value=True):
-                    app.query_one("#btn-pdf-split").press()
-        await pilot.pause()
+                    pilot.app.query_one("#btn-pdf-split").press()
+                    await pilot.pause()
 
                     log = app.query_one("#pdf-log", RichLog)
                     lines = [line.text for line in log.lines]

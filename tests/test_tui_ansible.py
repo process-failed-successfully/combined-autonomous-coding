@@ -58,8 +58,8 @@ class TestAnsibleLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#chk-ansible-check", Checkbox).value = True
 
             # Click Run
-            app.query_one("#btn-ansible-run").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-ansible-run").press()
+            await pilot.pause()
             await asyncio.sleep(0.1)
 
             # Verify manager call
@@ -88,8 +88,8 @@ class TestAnsibleLabTab(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0.1)
 
             # Click List Inventory
-            app.query_one("#btn-ansible-list-inv").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-ansible-list-inv").press()
+            await pilot.pause()
             await asyncio.sleep(0.2)
 
             # Verify call
@@ -112,8 +112,8 @@ class TestAnsibleLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#ansible-tabs", TabbedContent).active = "tab-lint"
             await asyncio.sleep(0.1)
 
-            app.query_one("#btn-ansible-lint").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-ansible-lint").press()
+            await pilot.pause()
             await asyncio.sleep(0.2)
             self.mock_manager.lint.assert_called_with(capture_output=True)
 

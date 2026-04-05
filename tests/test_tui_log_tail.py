@@ -31,8 +31,8 @@ async def test_log_tail_polling():
             tab.query_one("#btn-tail-start").disabled = False
 
             # Start tailing
-            app.query_one("#btn-tail-start").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-tail-start").press()
+            await pilot.pause()
             assert tab.is_tailing
 
             # Verify file position updated (read initial content)
@@ -52,7 +52,7 @@ async def test_log_tail_polling():
             assert tab.file_pos >= expected_pos
 
             # Stop tailing
-            app.query_one("#btn-tail-stop").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-tail-stop").press()
+            await pilot.pause()
             assert not tab.is_tailing
             assert tab.tail_timer is None

@@ -76,16 +76,16 @@ class TestSchedulerTab(unittest.IsolatedAsyncioTestCase):
             tab = self.app.query_one(SchedulerTab)
 
             # Start
-            app.query_one("#btn-sched-start").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-sched-start").press()
+            await pilot.pause()
             self.assertTrue(tab.scheduler_active)
             self.assertIsNotNone(tab.timer)
             self.assertTrue(tab.query_one("#btn-sched-start").disabled)
             self.assertFalse(tab.query_one("#btn-sched-stop").disabled)
 
             # Stop
-            app.query_one("#btn-sched-stop").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-sched-stop").press()
+            await pilot.pause()
             self.assertFalse(tab.scheduler_active)
             self.assertIsNone(tab.timer)
 

@@ -42,8 +42,8 @@ class TestStaticLabTab(unittest.IsolatedAsyncioTestCase):
 
             # Click Start
             start_btn = app.query_one("#btn-static-start")
-            app.query_one("#btn-static-start").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-static-start").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Ensure Manager was created with correct args
@@ -59,8 +59,8 @@ class TestStaticLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(stop_btn.disabled)
 
             # Click Stop
-            app.query_one("#btn-static-stop").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-static-stop").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Verify manager.stop was called

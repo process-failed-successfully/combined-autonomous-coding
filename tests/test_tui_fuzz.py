@@ -35,8 +35,8 @@ async def test_tui_fuzz_cli(tmp_path):
             await pilot.pause()
 
             # Switch to CLI pane (though it's default)
-            app.query_one("#fuzz-cli-pane").press()
-        await pilot.pause()
+            pilot.app.query_one("#fuzz-cli-pane").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Find and set inputs programmatically to avoid flaky press()
@@ -44,8 +44,8 @@ async def test_tui_fuzz_cli(tmp_path):
             app.query_one("#fuzz-cli-count", Input).value = "2"
 
             # Click fuzz button
-            app.query_one("#btn-fuzz-cli").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-fuzz-cli").press()
+            await pilot.pause()
 
             # Wait for fuzzing thread (we use asyncio.to_thread in FuzzLabTab)
             # We can pause a bit longer to allow the thread to finish
@@ -86,8 +86,8 @@ async def test_tui_fuzz_func(tmp_path):
             app.query_one("#fuzz-func-count", Input).value = "3"
 
             # Click fuzz button
-            app.query_one("#btn-fuzz-func").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-fuzz-func").press()
+            await pilot.pause()
 
             await asyncio.sleep(0.1)
             await pilot.pause()

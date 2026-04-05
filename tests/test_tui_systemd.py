@@ -58,8 +58,8 @@ class TestSystemdLabTab(unittest.IsolatedAsyncioTestCase):
             # But wait, cursor_type="row".
             # Simulate pressing 'enter' on the table to select? Or click.
 
-            app.query_one("#systemd-table").press()
-        await pilot.pause()  # Might click header or empty space
+            pilot.app.query_one("#systemd-table").press()
+            await pilot.pause()  # Might click header or empty space
 
             # Easier: direct method call to simulate logic if UI interaction is flaky in mock env
             # But we want to test wiring.
@@ -74,8 +74,8 @@ class TestSystemdLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(btn.disabled)
 
             # Click Start
-            app.query_one("#btn-systemd-start").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-systemd-start").press()
+            await pilot.pause()
 
             # Verify manager call
             self.mock_manager.control_service.assert_called_with("test.service", "start")
@@ -90,16 +90,16 @@ class TestSystemdLabTab(unittest.IsolatedAsyncioTestCase):
             # But we generated panes. Let's find by label?
             # Actually we can just input fields and click generate, assuming they are in DOM.
 
-            app.query_one("#gen-sys-name").press()
-        await pilot.pause()
+            pilot.app.query_one("#gen-sys-name").press()
+            await pilot.pause()
             await pilot.press("t", "e", "s", "t")
 
-            app.query_one("#gen-sys-cmd").press()
-        await pilot.pause()
+            pilot.app.query_one("#gen-sys-cmd").press()
+            await pilot.pause()
             await pilot.press("e", "c", "h", "o")
 
-            app.query_one("#btn-systemd-generate").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-systemd-generate").press()
+            await pilot.pause()
 
             # Verify manager call
             # Note: inputs might not fully update with 'press' if not focused correctly or timing.
@@ -107,8 +107,8 @@ class TestSystemdLabTab(unittest.IsolatedAsyncioTestCase):
             pilot.app.query_one("#gen-sys-name").value = "myservice"
             pilot.app.query_one("#gen-sys-cmd").value = "/bin/true"
 
-            app.query_one("#btn-systemd-generate").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-systemd-generate").press()
+            await pilot.pause()
 
             self.mock_manager.generate_unit_file.assert_called()
             args, kwargs = self.mock_manager.generate_unit_file.call_args

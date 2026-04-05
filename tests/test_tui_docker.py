@@ -66,8 +66,8 @@ class TestDockerTab(unittest.IsolatedAsyncioTestCase):
             tab._update_buttons({"Status": "Up", "ID": "123"})
 
             # Click Stop
-            app.query_one("#btn-docker-stop").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-docker-stop").press()
+            await pilot.pause()
             await pilot.pause(0.2)
 
             # Verify stop called.

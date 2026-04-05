@@ -25,8 +25,8 @@ class TestTuiBrotli(unittest.IsolatedAsyncioTestCase):
             sel = tab.query_one("#brotli-quality", Select)
             sel.value = 11
 
-            app.query_one("#btn-compress").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-compress").press()
+            await pilot.pause()
 
             compressed_area = tab.query_one("#brotli-compressed-text", TextArea)
             self.assertTrue(len(compressed_area.text) > 0)
@@ -34,8 +34,8 @@ class TestTuiBrotli(unittest.IsolatedAsyncioTestCase):
 
             # Verify decompression
             input_area.text = ""
-            app.query_one("#btn-decompress").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-decompress").press()
+            await pilot.pause()
             self.assertEqual(input_area.text, "Hex compress me")
 
     async def test_brotli_tab_compression_base64(self):
@@ -51,8 +51,8 @@ class TestTuiBrotli(unittest.IsolatedAsyncioTestCase):
             input_area = tab.query_one("#brotli-input-text", TextArea)
             input_area.text = "Base64 compress me"
 
-            app.query_one("#btn-compress").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-compress").press()
+            await pilot.pause()
 
             compressed_area = tab.query_one("#brotli-compressed-text", TextArea)
             self.assertTrue(len(compressed_area.text) > 0)
@@ -60,6 +60,6 @@ class TestTuiBrotli(unittest.IsolatedAsyncioTestCase):
 
             # Verify decompression
             input_area.text = ""
-            app.query_one("#btn-decompress").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-decompress").press()
+            await pilot.pause()
             self.assertEqual(input_area.text, "Base64 compress me")

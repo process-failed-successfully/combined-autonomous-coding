@@ -31,15 +31,15 @@ class TestGraphQLLabTab(unittest.IsolatedAsyncioTestCase):
         app = GraphQLLabTestApp()
         async with app.run_test() as pilot:
             # Set inputs
-            app.query_one("#gql-url").press()
-        await pilot.pause()
+            pilot.app.query_one("#gql-url").press()
+            await pilot.pause()
             app.query_one("#gql-url", Input).value = "http://test.com/graphql"
 
             app.query_one("#gql-query-editor", TextArea).text = "query { hello }"
 
             # Click execute
-            app.query_one("#btn-gql-execute").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-gql-execute").press()
+            await pilot.pause()
 
             # Verify manager called
             MockManager.assert_called_with("http://test.com/graphql", {})
@@ -59,8 +59,8 @@ class TestGraphQLLabTab(unittest.IsolatedAsyncioTestCase):
         async with app.run_test() as pilot:
             app.query_one("#gql-url", Input).value = "http://test.com/graphql"
 
-            app.query_one("#btn-gql-introspect").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-gql-introspect").press()
+            await pilot.pause()
 
             mock_instance.introspect.assert_called_once()
 
@@ -70,10 +70,10 @@ class TestGraphQLLabTab(unittest.IsolatedAsyncioTestCase):
             # Missing URL
             # Note: In a real app we might mock self.notify to verify the message
             # For now we ensure it doesn't crash
-            app.query_one("#btn-gql-execute").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-gql-execute").press()
+            await pilot.pause()
 
             app.query_one("#gql-url", Input).value = "http://valid.com"
             # Missing query
-            app.query_one("#btn-gql-execute").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-gql-execute").press()
+            await pilot.pause()

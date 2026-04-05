@@ -16,8 +16,8 @@ class TestColorLabTab(unittest.IsolatedAsyncioTestCase):
             # Inputs have default values #FFFFFF and #000000
 
             # Trigger check
-            app.query_one("#btn-cl-contrast").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-cl-contrast").press()
+            await pilot.pause()
 
             # Check results
             log = app.query_one("#cl-contrast-result", RichLog)
@@ -40,8 +40,8 @@ class TestColorLabTab(unittest.IsolatedAsyncioTestCase):
             app.query_one("#cl-convert-color", Input).value = "#ff0000"
 
             # Click convert
-            app.query_one("#btn-cl-convert").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-cl-convert").press()
+            await pilot.pause()
 
             log = app.query_one("#cl-convert-result", RichLog)
             text_content = "\n".join([str(line) for line in log.lines])
@@ -53,8 +53,8 @@ class TestColorLabTab(unittest.IsolatedAsyncioTestCase):
         app = ColorLabApp()
         async with app.run_test() as pilot:
             app.query_one("#cl-contrast-fg", Input).value = "invalid"
-            app.query_one("#btn-cl-contrast").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-cl-contrast").press()
+            await pilot.pause()
 
             log = app.query_one("#cl-contrast-result", RichLog)
             text_content = "\n".join([str(line) for line in log.lines])

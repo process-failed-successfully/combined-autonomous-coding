@@ -42,8 +42,8 @@ class TestChartLabTab(unittest.IsolatedAsyncioTestCase):
             with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread:
                 mock_to_thread.return_value = sample_data
 
-                app.query_one("#btn-chart-load-file").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-chart-load-file").press()
+                await pilot.pause()
 
                 # Check if data loaded
                 self.assertEqual(tab.current_data, sample_data)
@@ -60,8 +60,8 @@ class TestChartLabTab(unittest.IsolatedAsyncioTestCase):
                 tab.manager.plot_bar = MagicMock(return_value="[BAR CHART]")
 
                 # Trigger Plot
-                app.query_one("#btn-chart-plot").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-chart-plot").press()
+                await pilot.pause()
 
                 # Verify plot called
                 tab.manager.plot_bar.assert_called_with(sample_data, "X", "Y")

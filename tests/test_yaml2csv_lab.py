@@ -172,7 +172,7 @@ async def test_tui_yaml2csv():
         status_static = app.query_one("#yaml2csv-status", Static)
 
         # Test empty conversion
-        app.query_one("#yaml2csv-convert-btn").press()
+        pilot.app.query_one("#yaml2csv-convert-btn").press()
         await pilot.pause()
         await pilot.pause(0.1)
         assert "Input is empty" in str(status_static.render())
@@ -184,7 +184,7 @@ async def test_tui_yaml2csv():
           role: admin
         """
         input_ta.load_text(yaml_data)
-        app.query_one("#yaml2csv-convert-btn").press()
+        pilot.app.query_one("#yaml2csv-convert-btn").press()
         await pilot.pause()
         await pilot.pause(0.1)
 
@@ -194,7 +194,7 @@ async def test_tui_yaml2csv():
 
         # Test invalid conversion
         input_ta.load_text("invalid: [yaml: [")
-        app.query_one("#yaml2csv-convert-btn").press()
+        pilot.app.query_one("#yaml2csv-convert-btn").press()
         await pilot.pause()
         await pilot.pause(0.1)
 

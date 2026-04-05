@@ -105,7 +105,7 @@ class TestFakerLabTab(unittest.IsolatedAsyncioTestCase):
                 count_input = pilot.app.query_one("#faker-count")
 
                 # Test Generate Person
-                app.query_one("#btn-faker-generate").press()
+                pilot.app.query_one("#btn-faker-generate").press()
                 await pilot.pause()
                 await pilot.pause()
                 log = pilot.app.query_one("#faker-output-log")
@@ -113,31 +113,31 @@ class TestFakerLabTab(unittest.IsolatedAsyncioTestCase):
 
                 # Change type to internet
                 type_select.value = "internet"
-                app.query_one("#btn-faker-generate").press()
+                pilot.app.query_one("#btn-faker-generate").press()
                 await pilot.pause()
                 await pilot.pause()
 
                 # Change type to text
                 type_select.value = "text"
-                app.query_one("#btn-faker-generate").press()
+                pilot.app.query_one("#btn-faker-generate").press()
                 await pilot.pause()
                 await pilot.pause()
 
                 # Change type to credit_card
                 type_select.value = "credit_card"
-                app.query_one("#btn-faker-generate").press()
+                pilot.app.query_one("#btn-faker-generate").press()
                 await pilot.pause()
                 await pilot.pause()
 
                 # Change locale
                 locale_input.value = "fr_FR"
-                app.query_one("#btn-faker-generate").press()
+                pilot.app.query_one("#btn-faker-generate").press()
                 await pilot.pause()
                 await pilot.pause()
 
                 # Invalid count
                 count_input.value = "-5"
-                app.query_one("#btn-faker-generate").press()
+                pilot.app.query_one("#btn-faker-generate").press()
                 await pilot.pause()
                 await pilot.pause()
 
@@ -145,7 +145,7 @@ class TestFakerLabTab(unittest.IsolatedAsyncioTestCase):
                 with patch.object(tab.manager, 'generate_credit_card', side_effect=Exception("Simulated TUI Error")):
                     type_select.value = "credit_card"
                     count_input.value = "1"
-                    app.query_one("#btn-faker-generate").press()
+                    pilot.app.query_one("#btn-faker-generate").press()
                     await pilot.pause()
                     await pilot.pause()
         finally:

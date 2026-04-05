@@ -27,8 +27,8 @@ class TestRedisLabTab(unittest.IsolatedAsyncioTestCase):
 
             async with app.run_test() as pilot:
                 # Click Connect
-                app.query_one("#btn-redis-connect").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-redis-connect").press()
+                await pilot.pause()
 
                 # Check status label
                 status_lbl = app.query_one("#lbl-redis-status", Label)
@@ -65,8 +65,8 @@ class TestRedisLabTab(unittest.IsolatedAsyncioTestCase):
 
                 # Modify and Save
                 editor.text = "new_value"
-                app.query_one("#btn-redis-save").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-redis-save").press()
+                await pilot.pause()
 
                 # Verify set called
                 mock_instance.set.assert_called_with("test_key", "new_value")

@@ -208,15 +208,15 @@ async def test_tui_create(temp_dir):
     app.manager.project_dir = temp_dir
 
     async with app.run_test() as pilot:
-        app.query_one("#create-inputs").press()
+        pilot.app.query_one("#create-inputs").press()
         await pilot.pause()
         await pilot.press(*str(file1))
 
-        app.query_one("#create-output").press()
+        pilot.app.query_one("#create-output").press()
         await pilot.pause()
         await pilot.press(*str(output_zip))
 
-        app.query_one("#btn-create").press()
+        pilot.app.query_one("#btn-create").press()
         await pilot.pause()
 
         status = app.query_one("#create-status")
@@ -229,7 +229,7 @@ async def test_tui_create_no_inputs():
     app = ZipLabApp()
 
     async with app.run_test() as pilot:
-        app.query_one("#btn-create").press()
+        pilot.app.query_one("#btn-create").press()
         await pilot.pause()
 
         status = app.query_one("#create-status")
@@ -271,15 +271,15 @@ async def test_tui_extract(temp_dir):
     app.manager.project_dir = temp_dir
 
     async with app.run_test() as pilot:
-        app.query_one("#extract-input").press()
+        pilot.app.query_one("#extract-input").press()
         await pilot.pause()
         await pilot.press(*str(input_zip))
 
-        app.query_one("#extract-output").press()
+        pilot.app.query_one("#extract-output").press()
         await pilot.pause()
         await pilot.press(*str(output_dir))
 
-        app.query_one("#btn-extract").press()
+        pilot.app.query_one("#btn-extract").press()
         await pilot.pause()
 
         status = app.query_one("#extract-status")
@@ -292,7 +292,7 @@ async def test_tui_extract_no_input():
     app = ZipLabApp()
 
     async with app.run_test() as pilot:
-        app.query_one("#btn-extract").press()
+        pilot.app.query_one("#btn-extract").press()
         await pilot.pause()
 
         status = app.query_one("#extract-status")

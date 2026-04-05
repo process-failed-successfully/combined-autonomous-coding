@@ -32,8 +32,8 @@ class TestBrowserLabTab(unittest.IsolatedAsyncioTestCase):
                 await pilot.pause()
 
                 # Click Go
-                app.query_one("#btn-browser-go").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-browser-go").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Check results
@@ -61,8 +61,8 @@ class TestBrowserLabTab(unittest.IsolatedAsyncioTestCase):
                 url_input.value = "https://example.com"
                 await pilot.pause()
 
-                app.query_one("#btn-browser-shot").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-browser-shot").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 mock_instance.screenshot.assert_called()
@@ -79,8 +79,8 @@ class TestBrowserLabTab(unittest.IsolatedAsyncioTestCase):
                 url_input.value = "https://example.com"
                 await pilot.pause()
 
-                app.query_one("#btn-browser-go").press()
-        await pilot.pause()
+                pilot.app.query_one("#btn-browser-go").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Should not crash

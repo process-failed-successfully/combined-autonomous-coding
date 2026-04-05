@@ -94,12 +94,12 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(Base64ImgLabTab)
             with mock.patch.object(tab.manager, 'encode_image', return_value={"success": True, "result": "base64output"}):
                 # Set input
-                app.query_one("#input-encode-path").press()
+                pilot.app.query_one("#input-encode-path").press()
                 await pilot.pause()
                 await pilot.press(*list("dummy.png"))
 
                 # Click encode
-                app.query_one("#btn-encode").press()
+                pilot.app.query_one("#btn-encode").press()
                 await pilot.pause()
 
                 # Check output
@@ -114,7 +114,7 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
         async with app.run_test() as pilot:
             tab = app.query_one(Base64ImgLabTab)
             # Click encode without typing
-            app.query_one("#btn-encode").press()
+            pilot.app.query_one("#btn-encode").press()
             await pilot.pause()
             status = tab.query_one("#lbl-encode-status").renderable
             self.assertIn("Please provide a file path", str(status))
@@ -127,11 +127,11 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
                 # We need to manually update text area since typing might be tricky in tests
                 tab.query_one("#input-decode-base64").text = "base64string"
 
-                app.query_one("#input-decode-output").press()
+                pilot.app.query_one("#input-decode-output").press()
                 await pilot.pause()
                 await pilot.press(*list("out.png"))
 
-                app.query_one("#btn-decode").press()
+                pilot.app.query_one("#btn-decode").press()
                 await pilot.pause()
                 status = tab.query_one("#lbl-decode-status").renderable
 
@@ -142,7 +142,7 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
         async with app.run_test() as pilot:
             tab = app.query_one(Base64ImgLabTab)
             # Click decode without typing
-            app.query_one("#btn-decode").press()
+            pilot.app.query_one("#btn-decode").press()
             await pilot.pause()
             status = tab.query_one("#lbl-decode-status").renderable
             self.assertIn("Please provide a Base64 string", str(status))

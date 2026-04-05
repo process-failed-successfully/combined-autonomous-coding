@@ -25,8 +25,8 @@ class TestUlidLabTab(unittest.IsolatedAsyncioTestCase):
             self.tab.notify = MagicMock()
 
             # Click generate
-            app.query_one("#btn-ulid-generate").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-ulid-generate").press()
+            await pilot.pause()
             await pilot.pause()
 
             log = pilot.app.query_one("#log-ulid-generate")
@@ -44,8 +44,7 @@ class TestUlidLabTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             # Switch tab if needed, but we can just query the button
-            # app.query_one("#btn-ulid-inspect").press()
-        await pilot.pause() might fail due to bounds if not visible, we can just call it
+            # await pilot.click("#btn-ulid-inspect") might fail due to bounds if not visible, we can just call it
             self.tab.on_inspect()
 
             self.tab.notify.assert_called_with("Please enter a ULID.", severity="warning")

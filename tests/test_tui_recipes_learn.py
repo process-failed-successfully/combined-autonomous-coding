@@ -52,8 +52,8 @@ class TestRecipesLearn(unittest.IsolatedAsyncioTestCase):
             name_inp.value = "auto-recipe"
 
             # 2. Click Learn button
-            app.query_one("#btn-recipe-learn").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-recipe-learn").press()
+            await pilot.pause()
 
             # 3. Verify Learner was called
             # We need to verify RecipeLearner was instantiated with project_dir

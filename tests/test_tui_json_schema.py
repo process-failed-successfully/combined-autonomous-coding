@@ -19,8 +19,8 @@ class TestTuiJsonSchema(unittest.IsolatedAsyncioTestCase):
             input_widget.text = '{"name": "test", "age": 25}'
 
             # Click generate
-            app.query_one("#btn-generate-json-schema").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-generate-json-schema").press()
+            await pilot.pause()
 
             output_widget = tab.query_one("#json-schema-output", TextArea)
             status_widget = tab.query_one("#json-schema-status", Static)
@@ -39,8 +39,8 @@ class TestTuiJsonSchema(unittest.IsolatedAsyncioTestCase):
             input_widget = tab.query_one("#json-schema-input", TextArea)
             input_widget.text = '{"name": "test", "age": 25'  # Missing closing brace
 
-            app.query_one("#btn-generate-json-schema").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-generate-json-schema").press()
+            await pilot.pause()
 
             output_widget = tab.query_one("#json-schema-output", TextArea)
             status_widget = tab.query_one("#json-schema-status", Static)
@@ -55,14 +55,14 @@ class TestTuiJsonSchema(unittest.IsolatedAsyncioTestCase):
             input_widget = tab.query_one("#json-schema-input", TextArea)
             input_widget.text = '{"name": "test"}'
 
-            app.query_one("#btn-generate-json-schema").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-generate-json-schema").press()
+            await pilot.pause()
 
             output_widget = tab.query_one("#json-schema-output", TextArea)
             self.assertNotEqual(output_widget.text, "")
 
-            app.query_one("#btn-clear-json-schema").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-clear-json-schema").press()
+            await pilot.pause()
 
             self.assertEqual(input_widget.text, "")
             self.assertEqual(output_widget.text, "")

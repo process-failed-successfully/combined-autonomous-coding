@@ -60,7 +60,7 @@ class TestRun2ComposeLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("docker run", tab.input_area.text)
 
             # Click convert button
-            app.query_one("#btn_convert").press()
+            pilot.app.query_one("#btn_convert").press()
             await pilot.pause()
 
             # Verify output

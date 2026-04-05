@@ -41,8 +41,8 @@ class TestTuiJsonQuery(unittest.IsolatedAsyncioTestCase):
             query_input.value = "[i for i in data['items'] if i['id'] > 1]"
 
             # Run query
-            app.query_one("#btn-json-run-query").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-json-run-query").press()
+            await pilot.pause()
 
             # Wait for event processing
             await pilot.pause()

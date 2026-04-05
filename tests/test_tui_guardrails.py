@@ -43,8 +43,8 @@ class TestTUIGuardrails(unittest.IsolatedAsyncioTestCase):
         app = GuardrailsTestApp(self.test_dir)
         async with app.run_test() as pilot:
             # Click check button
-            app.query_one("#btn-gr-check").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-gr-check").press()
+            await pilot.pause()
 
             # Verify run was called
             mock_instance.run.assert_called()

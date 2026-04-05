@@ -32,19 +32,19 @@ class TestQuizTab(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(2.0)
 
             # Click Correct Answer Q1
-            app.query_one("#btn-opt-0").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-opt-0").press()
+            await pilot.pause()
             await pilot.pause(0.5)
 
             # Click Next Question
-            app.query_one("#btn-quiz-next").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-quiz-next").press()
+            await pilot.pause()
             await pilot.pause(0.5)
 
             # Click Incorrect Answer Q2 (Button 3)
             # This failed before due to screen size clipping
-            app.query_one("#btn-opt-3").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-opt-3").press()
+            await pilot.pause()
             await pilot.pause(0.5)
 
             # Verify feedback
@@ -52,8 +52,8 @@ class TestQuizTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Incorrect.", str(feedback.render()))
 
             # Click Next Question (End Game)
-            app.query_one("#btn-quiz-next").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-quiz-next").press()
+            await pilot.pause()
             await pilot.pause(0.5)
 
             # Verify Game Over

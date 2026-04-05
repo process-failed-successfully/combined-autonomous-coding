@@ -82,7 +82,7 @@ class TestToml2JsonLabTab(unittest.IsolatedAsyncioTestCase):
             mode_select.value = "toml2json"
 
             # Click convert
-            app.query_one("#toml2json-convert-btn").press()
+            pilot.app.query_one("#toml2json-convert-btn").press()
             await pilot.pause()
 
             # Check output
@@ -104,7 +104,7 @@ class TestToml2JsonLabTab(unittest.IsolatedAsyncioTestCase):
             mode_select.value = "json2toml"
 
             # Click convert
-            app.query_one("#toml2json-convert-btn").press()
+            pilot.app.query_one("#toml2json-convert-btn").press()
             await pilot.pause()
 
             # Check output
@@ -118,7 +118,7 @@ class TestToml2JsonLabTab(unittest.IsolatedAsyncioTestCase):
         app = DummyApp()
         async with app.run_test() as pilot:
             # Click convert without input
-            app.query_one("#toml2json-convert-btn").press()
+            pilot.app.query_one("#toml2json-convert-btn").press()
             await pilot.pause()
 
             status = app.query_one("#toml2json-status", Static)
@@ -136,7 +136,7 @@ class TestToml2JsonLabTab(unittest.IsolatedAsyncioTestCase):
             mode_select.value = "json2toml"
 
             # Click convert
-            app.query_one("#toml2json-convert-btn").press()
+            pilot.app.query_one("#toml2json-convert-btn").press()
             await pilot.pause()
 
             status = app.query_one("#toml2json-status", Static)

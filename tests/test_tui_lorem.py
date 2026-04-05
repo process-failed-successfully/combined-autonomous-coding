@@ -26,7 +26,7 @@ async def test_lorem_lab_generate_button():
     app = DummyApp()
     async with app.run_test() as pilot:
         # Click generate
-        app.query_one("#btn-generate-lorem").press()
+        pilot.app.query_one("#btn-generate-lorem").press()
         await pilot.pause()
 
         # Output should no longer be empty
@@ -41,12 +41,12 @@ async def test_lorem_lab_copy_button():
     with patch("pyperclip.copy") as mock_copy:
         async with app.run_test() as pilot:
             # First generate
-            app.query_one("#btn-generate-lorem").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-generate-lorem").press()
+            await pilot.pause()
 
             # Then copy
-            app.query_one("#btn-copy-lorem").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-copy-lorem").press()
+            await pilot.pause()
 
             # Assert copy was called
             assert mock_copy.called

@@ -41,8 +41,8 @@ class TestGrpcLabTab(unittest.IsolatedAsyncioTestCase):
             host_input.value = "localhost:50051"
 
             # Click list services
-            app.query_one("#btn-grpc-list-services").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-grpc-list-services").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Verify manager call
@@ -69,8 +69,8 @@ class TestGrpcLabTab(unittest.IsolatedAsyncioTestCase):
             # Let's do via interaction to be thorough
             host_input = pilot.app.query_one("#grpc-host")
             host_input.value = "localhost:50051"
-            app.query_one("#btn-grpc-list-services").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-grpc-list-services").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Select service
@@ -123,8 +123,8 @@ class TestGrpcLabTab(unittest.IsolatedAsyncioTestCase):
             # But let's be safe
             pilot.app.query_one("#btn-grpc-call").disabled = False
 
-            app.query_one("#btn-grpc-call").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-grpc-call").press()
+            await pilot.pause()
             await pilot.pause()
 
             mock_manager.call.assert_called_with(

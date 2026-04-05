@@ -47,8 +47,8 @@ class TestTodosLabTUI(unittest.IsolatedAsyncioTestCase):
 
         async with self.app.run_test() as pilot:
             # Trigger scan
-            app.query_one("#btn-todos-scan").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-todos-scan").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Verify table populated

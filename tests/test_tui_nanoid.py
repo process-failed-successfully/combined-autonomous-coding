@@ -23,7 +23,7 @@ async def test_nanoid_tui():
         alphabet_input.value = "a"
 
         btn = test_app.query_one("#btn-generate-nanoid", Button)
-        app.query_one("#btn-generate-nanoid").press()
+        pilot.app.query_one("#btn-generate-nanoid").press()
         await pilot.pause()
         await pilot.pause(0.2)
 

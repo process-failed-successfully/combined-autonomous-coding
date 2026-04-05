@@ -41,8 +41,8 @@ class TestHttpLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#http-url").value = "https://api.example.com"
 
             # Click send
-            app.query_one("#btn-http-send").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-http-send").press()
+            await pilot.pause()
 
             # Wait for any events
             await pilot.pause()
@@ -73,8 +73,8 @@ class TestHttpLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#http-curl-input").value = "curl -X POST https://api.example.com -d '{\"test\": 123}'"
 
             # Click import
-            app.query_one("#btn-http-import-curl").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-http-import-curl").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Verify UI was updated
@@ -94,8 +94,8 @@ class TestHttpLabTab(unittest.IsolatedAsyncioTestCase):
             tab.manager = mock_instance
             tab.query_one("#http-url").value = "https://fail.com"
 
-            app.query_one("#btn-http-send").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-http-send").press()
+            await pilot.pause()
             await pilot.pause()
 
             # It should show a notification, but checking notifications in test is hard.

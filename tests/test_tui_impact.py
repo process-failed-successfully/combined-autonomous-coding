@@ -45,8 +45,8 @@ class TestImpactTab(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(tab.query_one("#btn-impact-run-tests").disabled)
 
             # Click Analyze Button
-            app.query_one("#btn-impact-analyze").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-impact-analyze").press()
+            await pilot.pause()
             await pilot.pause() # Wait for thread
 
             # Verify tables populated
@@ -86,13 +86,13 @@ class TestImpactTab(unittest.IsolatedAsyncioTestCase):
             tab = self.app.query_one(ImpactTab)
 
             # Populate first
-            app.query_one("#btn-impact-analyze").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-impact-analyze").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Click Run Tests
-            app.query_one("#btn-impact-run-tests").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-impact-run-tests").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Check mock call

@@ -141,8 +141,8 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(len(log_list.children), 2)
 
             # Simulate refresh
-            app.query_one("#btn-log-refresh").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-log-refresh").press()
+            await pilot.pause()
             mock_get_logs.assert_called()
 
     @patch("shared.tui.OtpLabTab")

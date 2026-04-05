@@ -22,7 +22,7 @@ async def test_hashids_encode():
         numbers_input = app.query_one("#hashids-numbers", Input)
         numbers_input.value = "1 2 3"
 
-        app.query_one("#btn-hashids-encode").press()
+        pilot.app.query_one("#btn-hashids-encode").press()
         await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
@@ -40,7 +40,7 @@ async def test_hashids_decode():
         hash_input = app.query_one("#hashids-hash", Input)
         hash_input.value = "1dSoHw"
 
-        app.query_one("#btn-hashids-decode").press()
+        pilot.app.query_one("#btn-hashids-decode").press()
         await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
@@ -57,7 +57,7 @@ async def test_hashids_invalid_numbers():
         numbers_input = app.query_one("#hashids-numbers", Input)
         numbers_input.value = "abc 2 3"
 
-        app.query_one("#btn-hashids-encode").press()
+        pilot.app.query_one("#btn-hashids-encode").press()
         await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
@@ -72,7 +72,7 @@ async def test_hashids_decode_invalid():
         hash_input = app.query_one("#hashids-hash", Input)
         hash_input.value = "invalid_hash!"
 
-        app.query_one("#btn-hashids-decode").press()
+        pilot.app.query_one("#btn-hashids-decode").press()
         await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)

@@ -15,8 +15,8 @@ class TestUserAgentLabTab(unittest.IsolatedAsyncioTestCase):
             input_widget.value = "Mozilla/5.0 (Windows NT 10.0) Chrome/99.0"
 
             # Click Parse
-            app.query_one("#btn-ua-parse").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-ua-parse").press()
+            await pilot.pause()
 
             # Check Table
             table = pilot.app.query_one("#ua-parse-table")
@@ -41,8 +41,8 @@ class TestUserAgentLabTab(unittest.IsolatedAsyncioTestCase):
             browser_select.value = "Chrome"
 
             # Click Generate
-            app.query_one("#btn-ua-gen").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-ua-gen").press()
+            await pilot.pause()
 
             # Check Output
             output = pilot.app.query_one("#ua-gen-output")

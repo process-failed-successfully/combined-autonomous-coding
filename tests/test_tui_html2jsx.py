@@ -29,8 +29,8 @@ class TestHtml2JsxLabTui(unittest.IsolatedAsyncioTestCase):
             input_area.text = '<div class="test">content</div>'
 
             # Click convert
-            app.query_one("#btn-convert").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-convert").press()
+            await pilot.pause()
             await asyncio.sleep(0.05)
 
             # Check output
@@ -46,8 +46,8 @@ class TestHtml2JsxLabTui(unittest.IsolatedAsyncioTestCase):
             app.query_one("#input-component-name", Input).value = "TestComp"
 
             # Convert
-            app.query_one("#btn-convert").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-convert").press()
+            await pilot.pause()
             await asyncio.sleep(0.05)
 
             # Verify output
@@ -61,8 +61,8 @@ class TestHtml2JsxLabTui(unittest.IsolatedAsyncioTestCase):
             app.query_one("#html-input", TextArea).text = "<div>test</div>"
             app.query_one("#jsx-output", TextArea).text = "<div>test</div>"
 
-            app.query_one("#btn-clear").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-clear").press()
+            await pilot.pause()
             await asyncio.sleep(0.05)
 
             self.assertEqual(app.query_one("#html-input", TextArea).text, "")

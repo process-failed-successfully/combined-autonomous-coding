@@ -62,8 +62,8 @@ class TestCicdLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(btn.disabled)
 
             # Click trigger
-            app.query_one("#btn-cicd-trigger").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-cicd-trigger").press()
+            await pilot.pause()
 
             # Wait for async task
             await pilot.pause()

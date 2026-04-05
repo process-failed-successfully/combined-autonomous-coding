@@ -75,16 +75,16 @@ class TestADRTab(unittest.IsolatedAsyncioTestCase):
             tab = self.app.query_one(ADRTab)
 
             # Open create pane
-            app.query_one("#btn-adr-create").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-adr-create").press()
+            await pilot.pause()
 
             # Fill form
             input_title = tab.query_one("#adr-new-title")
             input_title.value = "New Decision"
 
             # Click submit
-            app.query_one("#btn-adr-submit").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-adr-submit").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Verify manager call

@@ -17,8 +17,8 @@ class TestHtmlEntityTUI(unittest.IsolatedAsyncioTestCase):
             input_widget.text = "<script>alert('xss');</script>"
 
             # Click encode
-            app.query_one("#btn-html-entity-encode").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-html-entity-encode").press()
+            await pilot.pause()
 
             # Verify output
             output_widget = app.query_one("#html-entity-output", TextArea)
@@ -37,8 +37,8 @@ class TestHtmlEntityTUI(unittest.IsolatedAsyncioTestCase):
             input_widget.text = "AT&amp;T &lt;html&gt;"
 
             # Click decode
-            app.query_one("#btn-html-entity-decode").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-html-entity-decode").press()
+            await pilot.pause()
 
             # Verify output
             output_widget = app.query_one("#html-entity-output", TextArea)
@@ -57,16 +57,16 @@ class TestHtmlEntityTUI(unittest.IsolatedAsyncioTestCase):
             input_widget.text = ""
 
             # Click encode
-            app.query_one("#btn-html-entity-encode").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-html-entity-encode").press()
+            await pilot.pause()
 
             # Verify status
             status_widget = app.query_one("#html-entity-status", Static)
             self.assertIn("Please enter text", str(status_widget.render()))
 
             # Click decode
-            app.query_one("#btn-html-entity-decode").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-html-entity-decode").press()
+            await pilot.pause()
 
             # Verify status
             status_widget = app.query_one("#html-entity-status", Static)
@@ -85,8 +85,8 @@ class TestHtmlEntityTUI(unittest.IsolatedAsyncioTestCase):
             status_widget.update("Status")
 
             # Click clear
-            app.query_one("#btn-html-entity-clear").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-html-entity-clear").press()
+            await pilot.pause()
 
             # Verify everything is cleared
             self.assertEqual(input_widget.text, "")

@@ -20,13 +20,13 @@ class TestTuiMd2Html(unittest.IsolatedAsyncioTestCase):
 
             # Test convert action
             input_md.text = "# Hello"
-            app.query_one("#btn-convert").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-convert").press()
+            await pilot.pause()
             self.assertIn("<h1>Hello</h1>", output_html.text)
 
             # Test clear action
-            app.query_one("#btn-clear").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-clear").press()
+            await pilot.pause()
             self.assertEqual(input_md.text, "")
             self.assertEqual(output_html.text, "")
 

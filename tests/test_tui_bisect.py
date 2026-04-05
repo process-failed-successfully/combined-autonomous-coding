@@ -86,8 +86,8 @@ class TestBisectTab(unittest.IsolatedAsyncioTestCase):
             app.query_one("#bisect-command", Input).value = "pytest"
 
             # Click Start
-            app.query_one("#btn-bisect-start").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-bisect-start").press()
+            await pilot.pause()
 
             # Wait for worker to finish
             # app.workers.wait_for_complete() is available in newer textual
@@ -120,8 +120,8 @@ class TestBisectTab(unittest.IsolatedAsyncioTestCase):
         tab = BisectTab(self.project_dir)
         app = BisectTestApp(tab)
         async with app.run_test() as pilot:
-            app.query_one("#btn-bisect-reset").press()
-        await pilot.pause()
+            pilot.app.query_one("#btn-bisect-reset").press()
+            await pilot.pause()
             await pilot.pause(0.1)
 
             # Verify reset call

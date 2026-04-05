@@ -4,12 +4,19 @@ import hmac
 import hashlib
 import time
 import sys
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+from cryptography.exceptions import InvalidSignature
 
 class JWTManager:
     ALGORITHMS = {
         "HS256": hashlib.sha256,
         "HS384": hashlib.sha384,
-        "HS512": hashlib.sha512
+        "HS512": hashlib.sha512,
+        "RS256": hashes.SHA256,
+        "RS384": hashes.SHA384,
+        "RS512": hashes.SHA512
     }
 
     @staticmethod
@@ -38,8 +45,23 @@ class JWTManager:
 
         signing_input = f"{header_b64}.{payload_b64}".encode('utf-8')
 
-        hash_func = JWTManager.ALGORITHMS[algo]
-        signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
+        if algo.startswith("HS"):
+            hash_func = JWTManager.ALGORITHMS[algo]
+            signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
+        elif algo.startswith("RS"):
+            try:
+                private_key = load_pem_private_key(secret.encode('utf-8'), password=None)
+            except Exception as e:
+                raise ValueError(f"Invalid RSA private key: {e}")
+
+            hash_func = JWTManager.ALGORITHMS[algo]()
+            signature = private_key.sign(
+                signing_input,
+                padding.PKCS1v15(),
+                hash_func
+            )
+        else:
+            raise ValueError(f"Unsupported algorithm type: {algo}")
 
         signature_b64 = JWTManager.base64url_encode(signature)
 
@@ -77,17 +99,50 @@ class JWTManager:
         if algo not in JWTManager.ALGORITHMS:
             raise ValueError(f"Unsupported algorithm for verification: {algo}")
 
+        # Mitigate Algorithm Substitution (Key Confusion) vulnerability
+        # If the token claims to use HMAC (HS*), but the secret provided is an asymmetric key (PEM format),
+        # reject it to prevent attackers from using the public key as an HMAC secret.
+        if algo.startswith("HS"):
+            if "-----BEGIN " in secret:
+                raise ValueError("Key confusion vulnerability detected: token specifies HMAC but an asymmetric key was provided.")
+
         parts = token.split('.')
         signing_input = f"{parts[0]}.{parts[1]}".encode('utf-8')
         signature_b64 = parts[2]
+        signature = JWTManager.base64url_decode(signature_b64)
 
-        hash_func = JWTManager.ALGORITHMS[algo]
-        expected_signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
-        expected_signature_b64 = JWTManager.base64url_encode(expected_signature)
+        if algo.startswith("HS"):
+            hash_func = JWTManager.ALGORITHMS[algo]
+            expected_signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
+            expected_signature_b64 = JWTManager.base64url_encode(expected_signature)
 
-        # Constant time comparison
-        if not hmac.compare_digest(signature_b64, expected_signature_b64):
-            raise ValueError("Invalid signature")
+            # Constant time comparison
+            if not hmac.compare_digest(signature_b64, expected_signature_b64):
+                raise ValueError("Invalid signature")
+        elif algo.startswith("RS"):
+            try:
+                # Try loading as public key first
+                public_key = load_pem_public_key(secret.encode('utf-8'))
+            except Exception:
+                try:
+                    # Fallback to loading as private key and extracting public key
+                    private_key = load_pem_private_key(secret.encode('utf-8'), password=None)
+                    public_key = private_key.public_key()
+                except Exception as e:
+                    raise ValueError(f"Invalid RSA public/private key: {e}")
+
+            hash_func = JWTManager.ALGORITHMS[algo]()
+            try:
+                public_key.verify(
+                    signature,
+                    signing_input,
+                    padding.PKCS1v15(),
+                    hash_func
+                )
+            except InvalidSignature:
+                raise ValueError("Invalid signature")
+        else:
+            raise ValueError(f"Unsupported algorithm type: {algo}")
 
         # Check expiration
         payload = decoded["payload"]

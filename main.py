@@ -345,6 +345,8 @@ KNOWN_COMMANDS = [
     "zlib-lab", "zlib", "compress", "inflate",
     "brotli-lab", "brotli",
     "base85-lab", "base85", "b85",
+    "base91-lab", "base91", "b91",
+    "base92-lab", "base92", "b92",
     "a85-lab", "a85", "ascii85",
     "octal-lab", "octal",
     "binary-lab", "binary",
@@ -817,6 +819,26 @@ def run_base91_lab(args):
 
     from shared.base91_lab import run_base91_lab_logic
     success = run_base91_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_base92_lab(args):
+    """Runs the Base92 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base92 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-base92")
+        if getattr(args, '_in_event_loop', False):
+            import asyncio
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base92_lab import run_base92_lab_logic
+    success = run_base92_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -17015,6 +17037,15 @@ Examples:
     b85_group.add_argument("--decode", "-d", type=str, help="Base85 text to decode.")
     b85_group.add_argument("--tui", action="store_true", help="Launch the interactive Base85 Lab TUI.")
 
+    parser_b92 = subparsers.add_parser(
+        "base92-lab", aliases=["base92", "b92"],
+        help="Base92 encode and decode strings."
+    )
+    b92_group = parser_b92.add_mutually_exclusive_group(required=False)
+    b92_group.add_argument("--encode", "-e", type=str, help="Text to encode.")
+    b92_group.add_argument("--decode", "-d", type=str, help="Base92 text to decode.")
+    b92_group.add_argument("--tui", action="store_true", help="Launch the interactive Base92 Lab TUI.")
+
     # nato-lab
     parser_nato = subparsers.add_parser(
         "nato-lab", aliases=["nato"],
@@ -23665,6 +23696,10 @@ async def main():
         return
     if args.command in ["base32-lab", "base32", "b32"]:
         run_base32_lab(args)
+        return
+
+    if args.command in ["base92-lab", "base92", "b92"]:
+        run_base92_lab(args)
         return
 
     if args.command in ["base36-lab", "base36", "b36"]:

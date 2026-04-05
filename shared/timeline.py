@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import io
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any
 from rich.console import Console
@@ -49,7 +49,7 @@ class TimelineCollector:
                 if len(parts) == 4:
                     dt_str, author, msg, h = parts
                     try:
-                        dt = datetime.fromisoformat(dt_str)
+                        dt = datetime.fromisoformat(dt_str).astimezone(timezone.utc)
                         events.append(TimelineEvent(
                             timestamp=dt,
                             type="git",
@@ -93,7 +93,7 @@ class TimelineCollector:
 
             try:
                 stat = log_file.stat()
-                dt = datetime.fromtimestamp(stat.st_ctime)
+                dt = datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc)
 
                 # Try to extract more info from log content
                 content = log_file.read_text(encoding="utf-8", errors="ignore")
@@ -138,7 +138,7 @@ class TimelineCollector:
                     # ref_names looks like "tag: v0.1.0, tag: v0.1.1" or "HEAD -> main, tag: v1.0"
                     if "tag:" in ref_names:
                         try:
-                            dt = datetime.fromisoformat(dt_str)
+                            dt = datetime.fromisoformat(dt_str).astimezone(timezone.utc)
                             # Extract tag names
                             refs = [r.strip() for r in ref_names.split(",")]
                             tags = [t.replace("tag:", "").strip() for t in refs if "tag:" in t]
@@ -171,7 +171,7 @@ class TimelineCollector:
 
                 if created:
                     events.append(TimelineEvent(
-                        timestamp=datetime.fromisoformat(created),
+                        timestamp=datetime.fromisoformat(created).astimezone(timezone.utc),
                         type="session",
                         title=f"Session Created: {name}",
                         description=data.get("description", ""),

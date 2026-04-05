@@ -253,7 +253,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "run2compose-lab", "run2compose", "r2c",
@@ -15472,6 +15472,18 @@ def parse_args(argv=None):
     parser_csv2sql.add_argument("--output", "-o", help="Output SQL file path.")
     parser_csv2sql.add_argument("--tui", action="store_true", help="Launch the CSV to SQL TUI.")
 
+    # --- json2sql-lab command ---
+    parser_json2sql = subparsers.add_parser(
+        "json2sql-lab",
+        aliases=["json2sql", "j2s"],
+        help="Convert JSON data to SQL INSERT statements."
+    )
+    parser_json2sql.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2sql.add_argument("--text", "-t", help="Input JSON string.")
+    parser_json2sql.add_argument("--table", help="Target table name (default: data_table).")
+    parser_json2sql.add_argument("--output", "-o", help="Output SQL file path.")
+    parser_json2sql.add_argument("--tui", action="store_true", help="Launch the JSON to SQL TUI.")
+
     # --- New 'csv-lab' command ---
     parser_csv = subparsers.add_parser(
         "csv-lab",
@@ -23503,6 +23515,25 @@ async def main():
 
         from shared.csv2sql_lab import run_csv2sql_lab_logic
         success = run_csv2sql_lab_logic(args)
+        sys.exit(0 if success else 1)
+
+    if args.command in ["json2sql-lab", "json2sql", "j2s"]:
+        if getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            import asyncio
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-json2sql")
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+            sys.exit(0)
+
+        from shared.json2sql_lab import run_json2sql_lab_logic
+        success = run_json2sql_lab_logic(args)
         sys.exit(0 if success else 1)
 
     if args.command in ["csv-lab", "csv"]:

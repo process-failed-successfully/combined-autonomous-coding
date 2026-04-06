@@ -4167,6 +4167,7 @@ class AgentTUI(App):
         PaletteCommand("Run Lint", "run_lint"),
         PaletteCommand("Toggle Dark Mode", "toggle_dark"),
         PaletteCommand("Quit", "quit"),
+        PaletteCommand("Go to OpenAPI Lab", "switch_tab_openapi"),
     ]
 
     def __init__(self, project_dir: Path, start_tab: str = None, hex_file: str = None, **kwargs) -> None:
@@ -4192,6 +4193,9 @@ class AgentTUI(App):
                 tab_id = action.replace("switch_tab_", "tab-")
                 if tab_id == "tab-branch_lab":
                     tab_id = "tab-branch-lab"
+                # For OpenAPI, ensuring the ID aligns with palette command
+                if tab_id == "tab-openapi":
+                    tab_id = "tab-openapi"
                 self.query_one("#main-tabs", TabbedContent).active = tab_id
             elif action == "refresh_dashboard":
                 self.action_refresh_dashboard()
@@ -4820,6 +4824,9 @@ class AgentTUI(App):
                 yield RegexEscapeLabTab()
             with TabPane("Fuzz Lab", id="tab-fuzz"):
                 yield FuzzLabTab(self.project_dir)
+            with TabPane("OpenAPI Lab", id="tab-openapi"):
+                from shared.tui_openapi import OpenAPILabTab
+                yield OpenAPILabTab(project_dir=self.project_dir)
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

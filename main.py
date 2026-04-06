@@ -12743,6 +12743,11 @@ def parse_args(argv=None):
         type=str,
         help="Model to use (overrides default)."
     )
+    parser_openapi.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the OpenAPI Lab TUI."
+    )
 
     # --- New 'docstring' command ---
     parser_docstring = subparsers.add_parser(
@@ -20370,16 +20375,36 @@ async def run_resolve_conflicts(args):
 
 async def run_openapi(args):
     """Generates an OpenAPI specification."""
+    if getattr(args, "tui", False):
+        import asyncio
+        from shared.tui import AgentTUI
+        print("Launching OpenAPI Lab TUI...")
+        app = AgentTUI(project_dir=Path("."), start_tab="tab-openapi")
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            app._run_async = True
+            await app.run_async()
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.openapi import OpenAPIGenerator
 
-    project_dir = args.project_dir.resolve()
-    output_path = Path(args.output).resolve()
+    project_dir = getattr(args, "project_dir", Path(".")).resolve()
+    output_path = Path(getattr(args, "output", "openapi.yaml")).resolve()
+    agent_type = getattr(args, "agent", "gemini")
+    model = getattr(args, "model", None)
 
     generator = OpenAPIGenerator(project_dir)
     success = await generator.generate(
         output_path=output_path,
-        agent_type=args.agent,
-        model=args.model
+        agent_type=agent_type,
+        model=model
     )
     sys.exit(0 if success else 1)
 

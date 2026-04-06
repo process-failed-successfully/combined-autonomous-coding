@@ -299,6 +299,7 @@ from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_fs import FsLabTab
 from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
+from shared.tui_magic_decode import MagicDecodeTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_xml2yaml import Xml2YamlTab
@@ -4170,6 +4171,7 @@ class AgentTUI(App):
         PaletteCommand("Toggle Dark Mode", "toggle_dark"),
         PaletteCommand("Quit", "quit"),
         PaletteCommand("Go to OpenAPI Lab", "switch_tab_openapi"),
+        PaletteCommand("Go to Magic Decode Lab", "switch_tab_magic_decode"),
     ]
 
     def __init__(self, project_dir: Path, start_tab: str = None, hex_file: str = None, **kwargs) -> None:
@@ -4713,6 +4715,8 @@ class AgentTUI(App):
 
             with TabPane("Run2Compose Lab", id="tab-run2compose"):
                 yield Run2ComposeLabTab(self.project_dir)
+            with TabPane("Magic Decode", id="tab-magic-decode"):
+                yield MagicDecodeTab()
 
             with TabPane("HTML Entity Lab", id="tab-html-entity"):
                 yield HtmlEntityTab()

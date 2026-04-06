@@ -167,6 +167,7 @@ from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_template import TemplateLabTab
 from shared.tui_hashids import HashidsLabTab
+from shared.tui_props import PropsLabTab
 from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
@@ -4164,6 +4165,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Hash Validator Lab", "switch_tab_hash-validator"),
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
         PaletteCommand("Go to Hashids Lab", "switch_tab_hashids"),
+        PaletteCommand("Go to Props Lab", "switch_tab_props"),
 
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4506,6 +4508,8 @@ class AgentTUI(App):
                 yield TextLabTab()
             with TabPane("Hashids Lab", id="tab-hashids"):
                 yield HashidsLabTab()
+            with TabPane("Props Lab", id="tab-props"):
+                yield PropsLabTab()
 
             with TabPane("NATO Lab", id="tab-nato"):
                 yield NatoLabTab()

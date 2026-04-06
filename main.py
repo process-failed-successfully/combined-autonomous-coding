@@ -107,6 +107,7 @@ from shared.changelog_lab import run_changelog_lab_logic
 from shared.toml_lab import run_toml_lab_logic
 from shared.toml2json_lab import run_toml2json_lab_logic
 from shared.csv_lab import run_csv_lab_logic
+from shared.props_lab import run_props_lab_logic
 from shared.excel_lab import run_excel_lab_logic
 from shared.template_lab import run_template_lab_logic
 from shared.unit_lab import run_unit_lab_logic
@@ -259,6 +260,7 @@ KNOWN_COMMANDS = [
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
+    "props-lab", "props", "properties",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -9717,6 +9719,14 @@ def parse_args(argv=None):
 
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
+
+    # Props Lab parser
+    props_parser = subparsers.add_parser("props-lab", aliases=["props", "properties"], help="Convert Java .properties to/from JSON and YAML.")
+    props_parser.add_argument("action", nargs="?", choices=["props2json", "json2props", "props2yaml", "yaml2props", "tui"], default="props2json", help="Action to perform (default: props2json)")
+    props_parser.add_argument("--text", type=str, help="Input string data.")
+    props_parser.add_argument("--file", type=str, help="Input file path.")
+    props_parser.add_argument("--output", type=str, help="Output file path (optional).")
+    props_parser.add_argument("--tui", action="store_true", help="Launch the interactive Props Lab TUI")
     parser_show_config = subparsers.add_parser("show-config", help="Show the final resolved configuration and exit")
     parser_version = subparsers.add_parser("version", help="Print the version of the agent and exit")
 
@@ -23087,6 +23097,12 @@ async def main():
 
         from shared.plist_lab import run_plist_lab_logic
         success = run_plist_lab_logic(args)
+        if success:
+            sys.exit(0)
+        sys.exit(1)
+
+    if args.command in ["props-lab", "props", "properties"]:
+        success = run_props_lab_logic(args)
         if success:
             sys.exit(0)
         sys.exit(1)

@@ -14878,6 +14878,10 @@ def parse_args(argv=None):
     parser_ul_norm = url_lab_subparsers.add_parser("normalize", help="Normalize a URL.")
     parser_ul_norm.add_argument("url", help="URL to normalize.")
 
+    # url-lab unshorten
+    parser_ul_unshorten = url_lab_subparsers.add_parser("unshorten", help="Follow a shortened or redirected URL to its final destination.")
+    parser_ul_unshorten.add_argument("url", help="The shortened URL to resolve.")
+
     # --- New 'cert-lab' command ---
     parser_cert = subparsers.add_parser(
         "cert-lab",

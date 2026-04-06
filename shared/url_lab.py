@@ -1,6 +1,7 @@
 import urllib.parse
 import json
 import sys
+import requests
 from typing import Any, Dict, List, Optional
 
 
@@ -119,6 +120,42 @@ class UrlLabManager:
         new_parsed = parsed._replace(scheme=scheme, netloc=netloc, query=sorted_query)
         return urllib.parse.urlunparse(new_parsed)
 
+    def unshorten(self, url: str) -> Dict[str, Any]:
+        """Resolves a URL following redirects and returns the final URL and trace."""
+        try:
+            # We use HEAD first to avoid downloading body content if possible
+            # We set a timeout and a user-agent to look like a normal client
+            headers = {"User-Agent": "CombinedAutonomousCodingAgent/1.0"}
+            response = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
+
+            # If the server doesn't support HEAD or throws an error on HEAD, fallback to GET
+            if response.status_code >= 400 and response.status_code != 404:
+                response = requests.get(url, allow_redirects=True, timeout=10, headers=headers, stream=True)
+
+            trace = []
+            for resp in response.history:
+                trace.append({
+                    "url": resp.url,
+                    "status_code": resp.status_code,
+                    "reason": resp.reason
+                })
+
+            trace.append({
+                "url": response.url,
+                "status_code": response.status_code,
+                "reason": response.reason
+            })
+
+            return {
+                "initial_url": url,
+                "final_url": response.url,
+                "status_code": response.status_code,
+                "redirects": len(response.history),
+                "trace": trace
+            }
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Failed to unshorten URL: {e}")
+
 
 def run_url_lab_logic(args):
     """CLI handler for URL Lab."""
@@ -163,5 +200,13 @@ def run_url_lab_logic(args):
 
     elif args.action == "normalize":
         print(manager.normalize(args.url))
+
+    elif args.action == "unshorten":
+        try:
+            result = manager.unshorten(args.url)
+            print(json.dumps(result, indent=2))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     sys.exit(0)

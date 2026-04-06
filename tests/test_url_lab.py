@@ -307,3 +307,53 @@ class TestRunUrlLabLogic(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(mock_stdout.getvalue().strip(), "http://example.com/foo")
+
+    @patch('shared.url_lab.requests.head')
+    def test_unshorten(self, mock_head):
+        # Setup mock for a successful redirect
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.url = "http://final.com"
+        mock_response.reason = "OK"
+
+        mock_history = MagicMock()
+        mock_history.url = "http://short.url"
+        mock_history.status_code = 301
+        mock_history.reason = "Moved Permanently"
+
+        mock_response.history = [mock_history]
+        mock_head.return_value = mock_response
+
+        manager = UrlLabManager()
+        result = manager.unshorten("http://short.url")
+
+        self.assertEqual(result["initial_url"], "http://short.url")
+        self.assertEqual(result["final_url"], "http://final.com")
+        self.assertEqual(result["status_code"], 200)
+        self.assertEqual(result["redirects"], 1)
+        self.assertEqual(len(result["trace"]), 2)
+        self.assertEqual(result["trace"][0]["url"], "http://short.url")
+        self.assertEqual(result["trace"][1]["url"], "http://final.com")
+
+    @patch('shared.url_lab.requests.head')
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_unshorten(self, mock_stdout, mock_head):
+        # Setup mock for a successful redirect
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.url = "http://final.com"
+        mock_response.reason = "OK"
+        mock_response.history = []
+        mock_head.return_value = mock_response
+
+        args = MagicMock()
+        args.action = "unshorten"
+        args.url = "http://short.url"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        output = mock_stdout.getvalue()
+        self.assertIn('"initial_url": "http://short.url"', output)
+        self.assertIn('"final_url": "http://final.com"', output)

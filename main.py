@@ -209,6 +209,8 @@ from shared.typegen_lab import run_typegen_lab_logic
 from shared.zip_lab import run_zip_lab_logic
 from shared.json_schema_lab import run_json_schema_lab_logic
 from shared.regex_escape_lab import run_regex_escape_lab_logic
+from shared.endian_lab import run_endian_lab_logic
+
 from shared import __version__
 import json
 import yaml
@@ -394,7 +396,7 @@ KNOWN_COMMANDS = [
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
-    "regex-escape-lab", "regex-escape",
+    "regex-escape-lab", "regex-escape", "endian-lab", "endian",
     "alias-lab", "aliases",
     "tar-lab", "tar",
     "pre-commit-lab", "precommit"
@@ -9709,6 +9711,13 @@ def parse_args(argv=None):
 
     # Subparsers for commands like 'configure'
     subparsers = parser.add_subparsers(dest="command", help="sub-command help")
+    # --- Endian Lab ---
+    endian_parser = subparsers.add_parser("endian-lab", aliases=["endian"], help="Endianness Converter Lab")
+    endian_parser.add_argument("action", nargs="?", choices=["hex", "int", "tui"], help="Action to perform (hex, int, or tui)")
+    endian_parser.add_argument("value", nargs="?", type=str, help="The hex string or integer value to convert")
+    endian_parser.add_argument("--size", type=int, choices=[2, 4, 8], default=4, help="Size in bytes for integer conversion (2, 4, or 8). Default: 4")
+    endian_parser.add_argument("--tui", action="store_true", help="Launch interactive TUI")
+
     parser_configure = subparsers.add_parser("configure", help="Run interactive configuration setup")
 
     # Subparser for 'config'
@@ -22892,6 +22901,26 @@ async def main():
         await run_regex(args)
         return
 
+
+    if args.command in ["endian-lab", "endian"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Endian Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-endian")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        run_endian_lab_logic(args)
+        return
     if args.command in ["regex-escape-lab", "regex-escape"]:
         run_regex_escape_lab(args)
         return

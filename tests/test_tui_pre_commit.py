@@ -33,8 +33,8 @@ class TestPreCommitTUI(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(PreCommitLabTab)
 
             # Check status labels
-            self.assertIn("Installed", str(tab.query_one("#pc-tool-status").renderable))
-            self.assertIn("Found", str(tab.query_one("#pc-config-status").renderable))
+            self.assertIn("Installed", str(tab.query_one("#pc-tool-status").render()))
+            self.assertIn("Found", str(tab.query_one("#pc-config-status").render()))
 
             # Check table
             table = tab.query_one("#pc-hooks-table")

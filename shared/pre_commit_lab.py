@@ -132,3 +132,81 @@ class PreCommitLabManager:
             return hooks
         except Exception:
             return []
+
+def run_pre_commit_lab_logic(args):
+    """CLI logic for the Pre-commit Lab."""
+    import sys
+    manager = PreCommitLabManager(args.project_dir)
+
+    if args.action == "install-tool":
+        print("Installing pre-commit tool...")
+        success = manager.install()
+        if success:
+            print("✅ Successfully installed pre-commit.")
+            sys.exit(0)
+        else:
+            print("❌ Failed to install pre-commit.")
+            sys.exit(1)
+
+    elif args.action == "create-config":
+        print("Creating default .pre-commit-config.yaml...")
+        success = manager.create_default_config()
+        if success:
+            print("✅ Successfully created config.")
+            sys.exit(0)
+        else:
+            print("❌ Failed to create config.")
+            sys.exit(1)
+
+    elif args.action == "install":
+        print("Installing pre-commit hooks...")
+        success, output = manager.install_hooks()
+        print(output)
+        if success:
+            print("✅ Successfully installed hooks.")
+            sys.exit(0)
+        else:
+            print("❌ Failed to install hooks.")
+            sys.exit(1)
+
+    elif args.action == "run-all":
+        print("Running all hooks...")
+        success, output = manager.run_all_hooks()
+        print(output)
+        if success:
+            print("✅ Hooks ran successfully.")
+            sys.exit(0)
+        else:
+            print("❌ Hooks failed.")
+            sys.exit(1)
+
+    elif args.action == "autoupdate":
+        print("Autoupdating hooks...")
+        success, output = manager.autoupdate_hooks()
+        print(output)
+        if success:
+            print("✅ Successfully autoupdated hooks.")
+            sys.exit(0)
+        else:
+            print("❌ Failed to autoupdate hooks.")
+            sys.exit(1)
+
+    elif args.action == "status":
+        print("--- Pre-commit Lab Status ---")
+        if manager.is_installed():
+            print("Tool: ✅ Installed")
+        else:
+            print("Tool: ❌ Not Installed")
+
+        if manager.config_exists():
+            print("Config: ✅ Found (.pre-commit-config.yaml)")
+            hooks = manager.get_hooks()
+            print(f"Hooks configured: {len(hooks)}")
+            for h in hooks:
+                print(f"  - {h['id']} ({h['repo']} @ {h['rev']})")
+        else:
+            print("Config: ❌ Missing")
+
+    else:
+        print(f"Unknown action: {args.action}", file=sys.stderr)
+        sys.exit(1)

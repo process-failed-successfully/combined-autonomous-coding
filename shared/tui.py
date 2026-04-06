@@ -159,6 +159,7 @@ from shared.tui_csv2md import Csv2MdTab
 from shared.tui_csv2toml import Csv2TomlTab
 from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_csv2yaml import Csv2YamlTab
+from shared.tui_endian import EndianLabTab
 from shared.tui_csv2html import Csv2HtmlLabTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
@@ -4451,6 +4452,8 @@ class AgentTUI(App):
                 yield GrpcLabTab()
             with TabPane("URL Lab", id="tab-url-lab"):
                 yield UrlLabTab()
+            with TabPane("Endian Lab", id="tab-endian"):
+                yield EndianLabTab()
             with TabPane("UrlEncode Lab", id="tab-urlencode"):
                 yield UrlEncodeLabTab()
             with TabPane("HTTP Status Lab", id="tab-http-status"):

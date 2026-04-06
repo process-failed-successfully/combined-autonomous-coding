@@ -258,6 +258,7 @@ KNOWN_COMMANDS = [
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
+    "plist-lab", "plist", "plist2json", "json2plist",
     "run2compose-lab", "run2compose", "r2c",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
@@ -15386,6 +15387,24 @@ def parse_args(argv=None):
 
     # --- New 'yaml2toml-lab' command ---
 
+    # --- New 'plist-lab' command ---
+    parser_plist = subparsers.add_parser(
+        "plist-lab",
+        aliases=["plist", "plist2json", "json2plist"],
+        help="Apple Property List (Plist) and JSON Converter Lab"
+    )
+    plist_subparsers = parser_plist.add_subparsers(
+        dest="action",
+        help="Action to perform (plist2json, json2plist, tui)."
+    )
+    plist_subparsers.add_parser("tui", help="Launch Plist Lab TUI.")
+    plist_parser_p2j = plist_subparsers.add_parser("plist2json", help="Convert Plist to JSON.")
+    plist_parser_p2j.add_argument("--input", "-i", required=True, help="Input Plist string or file path.")
+    plist_parser_p2j.add_argument("--output", "-o", help="Output file path (optional).")
+    plist_parser_j2p = plist_subparsers.add_parser("json2plist", help="Convert JSON to Plist.")
+    plist_parser_j2p.add_argument("--input", "-i", required=True, help="Input JSON string or file path.")
+    plist_parser_j2p.add_argument("--output", "-o", help="Output file path (optional).")
+
     # --- New 'xml2toml-lab' command ---
     parser_xml2toml = subparsers.add_parser(
         "xml2toml-lab",
@@ -23008,6 +23027,35 @@ async def main():
     if args.command in ["media-lab", "media"]:
         run_media_lab(args)
         return
+
+    if args.command in ["plist-lab", "plist", "plist2json", "json2plist"]:
+        if getattr(args, "action", None) is None:
+            if args.command in ["plist2json", "json2plist"]:
+                args.action = args.command
+            else:
+                args.action = "plist2json"
+
+        if getattr(args, "tui", False) or args.action == "tui" or not hasattr(args, 'input'):
+            from shared.tui import AgentTUI
+            print("Launching Plist Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-plist")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.plist_lab import run_plist_lab_logic
+        success = run_plist_lab_logic(args)
+        if success:
+            sys.exit(0)
+        sys.exit(1)
 
     if args.command in ["xml-lab", "xml"]:
         run_xml_lab(args)

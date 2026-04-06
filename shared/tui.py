@@ -60,6 +60,7 @@ from shared.tui_ip import IpLabTab
 from shared.tui_bencode import BencodeLabTab
 from shared.tui_msgpack import MsgpackLabTab
 from shared.tui_ical import ICalLabTab
+from shared.tui_plist import PlistLabTab
 from shared.tui_bson import BsonLabTab
 from shared.tui_cbor import CborTab
 from shared.tui_sentinel import SentinelTab
@@ -4156,7 +4157,8 @@ class AgentTUI(App):
         PaletteCommand("Go to CSV to YAML Lab", "switch_tab_csv2yaml"),
         PaletteCommand("Go to Size Lab", "switch_tab_size"),
         PaletteCommand("Go to FS Lab", "switch_tab_fs"),
-    PaletteCommand("Go to ICal Lab", "switch_tab_ical"),
+        PaletteCommand("Go to ICal Lab", "switch_tab_ical"),
+        PaletteCommand("Go to Plist Lab", "switch_tab_plist"),
         PaletteCommand("Go to JSON to SQL Lab", "switch_tab_json2sql"),
         PaletteCommand("Go to Hash Validator Lab", "switch_tab_hash-validator"),
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
@@ -4271,6 +4273,8 @@ class AgentTUI(App):
                 yield BencodeLabTab()
             with TabPane("iCal Lab", id="tab-ical"):
                 yield ICalLabTab()
+            with TabPane("Plist Lab", id="tab-plist"):
+                yield PlistLabTab()
             with TabPane("MessagePack Lab", id="tab-msgpack"):
                 yield MsgpackLabTab(project_dir=self.project_dir)
             with TabPane("BSON Lab", id="tab-bson"):

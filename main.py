@@ -393,7 +393,8 @@ KNOWN_COMMANDS = [
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
     "regex-escape-lab", "regex-escape",
     "alias-lab", "aliases",
-    "tar-lab", "tar"
+    "tar-lab", "tar",
+    "pre-commit-lab", "precommit"
 ]
 
 if FileSystemEventHandler:
@@ -17966,6 +17967,54 @@ Examples:
     parser_s3_rm.add_argument("key", help="Object key.")
 
     # s3 presign
+
+    # --- New 'pre-commit-lab' command ---
+
+    parser_pre_commit_lab = subparsers.add_parser(
+
+        "pre-commit-lab",
+
+        aliases=["precommit"],
+
+        help="Manage pre-commit hooks and configuration (install, run-all, etc.)"
+
+    )
+
+    parser_pre_commit_lab.add_argument(
+
+        "action",
+
+        nargs="?",
+
+        choices=["install-tool", "create-config", "install", "run-all", "autoupdate", "status", "tui"],
+
+        default="tui",
+
+        help="Action to perform (default: tui)"
+
+    )
+
+    parser_pre_commit_lab.add_argument(
+
+        "-p", "--project-dir",
+
+        type=Path,
+
+        default=Path("."),
+
+        help="Project directory to target"
+
+    )
+
+    parser_pre_commit_lab.add_argument(
+
+        "--tui",
+
+        action="store_true",
+
+        help="Launch the interactive TUI"
+
+    )
     parser_s3_presign = s3_subparsers.add_parser("presign", help="Generate presigned URL.")
     parser_s3_presign.add_argument("bucket", help="Bucket name.")
     parser_s3_presign.add_argument("key", help="Object key.")
@@ -22757,6 +22806,27 @@ async def main():
 
     if args.command in ["regex-escape-lab", "regex-escape"]:
         run_regex_escape_lab(args)
+        return
+
+    if args.command in ["pre-commit-lab", "precommit"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Pre-commit Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-pre-commit")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.pre_commit_lab import run_pre_commit_lab_logic
+        run_pre_commit_lab_logic(args)
         return
 
     if args.command == "braille-lab":

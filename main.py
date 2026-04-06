@@ -395,7 +395,8 @@ KNOWN_COMMANDS = [
     "regex-escape-lab", "regex-escape",
     "alias-lab", "aliases",
     "tar-lab", "tar",
-    "pre-commit-lab", "precommit"
+    "pre-commit-lab", "precommit",
+    "props-lab", "props", "properties"
 ]
 
 if FileSystemEventHandler:
@@ -19615,6 +19616,32 @@ Examples:
     zip_extract.add_argument("input", help="Input archive to extract.")
     zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
 
+    parser_props = subparsers.add_parser(
+        "props-lab", aliases=["props", "properties"], help="Properties Lab utilities (Java .properties to JSON/YAML)"
+    )
+    props_subparsers = parser_props.add_subparsers(dest="action", help="Properties actions")
+    props_subparsers.add_parser("tui", help="Launch the interactive Props Lab TUI.")
+
+    props2json = props_subparsers.add_parser("props2json", help="Convert .properties to JSON")
+    props2json.add_argument("-f", "--file", help="Input properties file")
+    props2json.add_argument("-t", "--text", help="Input properties string")
+    props2json.add_argument("-o", "--output", help="Output JSON file")
+
+    json2props = props_subparsers.add_parser("json2props", help="Convert JSON to .properties")
+    json2props.add_argument("-f", "--file", help="Input JSON file")
+    json2props.add_argument("-t", "--text", help="Input JSON string")
+    json2props.add_argument("-o", "--output", help="Output properties file")
+
+    props2yaml = props_subparsers.add_parser("props2yaml", help="Convert .properties to YAML")
+    props2yaml.add_argument("-f", "--file", help="Input properties file")
+    props2yaml.add_argument("-t", "--text", help="Input properties string")
+    props2yaml.add_argument("-o", "--output", help="Output YAML file")
+
+    yaml2props = props_subparsers.add_parser("yaml2props", help="Convert YAML to .properties")
+    yaml2props.add_argument("-f", "--file", help="Input YAML file")
+    yaml2props.add_argument("-t", "--text", help="Input YAML string")
+    yaml2props.add_argument("-o", "--output", help="Output properties file")
+
     parser_tar = subparsers.add_parser(
         "tar-lab", aliases=["tar"], help="Tar Lab utilities (create, extract, list tar archives)"
     )
@@ -24231,6 +24258,12 @@ async def main():
     if args.command in ["tar-lab", "tar"]:
         from shared.tar_lab import run_tar_lab_logic
         await run_tar_lab_logic(args)
+        return
+
+    if args.command in ["props-lab", "props", "properties"]:
+        from shared.props_lab import run_props_lab_logic
+        success = run_props_lab_logic(args)
+        sys.exit(0 if success else 1)
         return
 
     # Initialize Agent Client

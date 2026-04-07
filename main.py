@@ -256,7 +256,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -16300,6 +16300,23 @@ def parse_args(argv=None):
     # md-lab tui
     parser_md_tui = md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
 
+    # --- New 'endian-lab' command ---
+    parser_endian = subparsers.add_parser(
+        "endian-lab",
+        aliases=["endian"],
+        help="Endianness conversion for integers and hex strings."
+    )
+    endian_subparsers = parser_endian.add_subparsers(dest="action", required=True, help="Action to perform.")
+
+    parser_endian_hex = endian_subparsers.add_parser("hex", help="Swap endianness of a hex string.")
+    parser_endian_hex.add_argument("value", help="Hex string to swap (e.g., 0xAABBCCDD or AABBCCDD).")
+
+    parser_endian_int = endian_subparsers.add_parser("int", help="Swap endianness of an integer.")
+    parser_endian_int.add_argument("value", help="Integer value (dec, hex, or octal).")
+    parser_endian_int.add_argument("--bits", type=int, choices=[16, 32, 64], default=32, help="Bit size (16, 32, or 64). Default is 32.")
+
+    parser_endian_tui = endian_subparsers.add_parser("tui", help="Launch interactive TUI for Endian Lab.")
+
     # --- New 'net-lab' command ---
     parser_net = subparsers.add_parser(
         "net-lab",
@@ -23602,6 +23619,11 @@ async def main():
 
     if args.command in ["ini-lab", "ini"]:
         run_ini_lab(args)
+        return
+
+    if args.command in ["endian-lab", "endian"]:
+        from shared.endian_lab import run_endian_lab_logic
+        run_endian_lab_logic(args)
         return
 
     if args.command in ["run2compose-lab", "run2compose", "r2c"]:

@@ -236,6 +236,7 @@ from shared.tui_pattern import PatternLabTab
 from shared.tui_weather import WeatherLabTab
 from shared.tui_bandwidth import BandwidthLabTab
 from shared.tui_typing import TypingLabTab
+from shared.tui_endian import EndianLabTab
 from shared.tui_browser import BrowserLabTab
 from shared.tui_maze import MazeLabTab
 from shared.tui_ascii import AsciiLabTab
@@ -4078,6 +4079,7 @@ class AgentTUI(App):
 
     PALETTE_COMMANDS = [
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
+        PaletteCommand("Go to Endian Lab", "switch_tab_endian"),
         PaletteCommand("Go to Focus", "switch_tab_focus"),
         PaletteCommand("Go to Typing Lab", "switch_tab_typing"),
         PaletteCommand("Go to Browser Lab", "switch_tab_browser"),
@@ -4692,6 +4694,8 @@ class AgentTUI(App):
                 yield BandwidthLabTab()
             with TabPane("Typing Lab", id="tab-typing"):
                 yield TypingLabTab(self.project_dir)
+            with TabPane("Endian Lab", id="tab-endian"):
+                yield EndianLabTab()
             with TabPane("Browser Lab", id="tab-browser"):
                 yield BrowserLabTab(self.project_dir)
             with TabPane("Maze Lab", id="tab-maze"):

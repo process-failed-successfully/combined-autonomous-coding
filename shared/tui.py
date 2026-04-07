@@ -186,6 +186,7 @@ from shared.tui_binary import BinaryLabTab
 from shared.tui_base62 import Base62LabTab
 from shared.tui_base64img import Base64ImgLabTab
 from shared.tui_zlib import ZlibTab
+from shared.tui_slug import SlugLabTab
 from shared.tui_arn import ArnLabTab
 from shared.tui_bcrypt import BcryptLabTab
 from shared.tui_brotli import BrotliLabTab
@@ -4637,6 +4638,9 @@ class AgentTUI(App):
                 yield Bip39Tab()
             with TabPane("XML to YAML", id="tab-xml2yaml"):
                 yield Xml2YamlTab()
+
+            with TabPane("Slug Lab", id="tab-slug"):
+                yield SlugLabTab()
             with TabPane("TOML to CSV", id="tab-toml2csv"):
                 yield Toml2CsvLabTab()
             with TabPane("XML to TOML", id="tab-xml2toml"):

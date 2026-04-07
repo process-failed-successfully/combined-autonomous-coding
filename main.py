@@ -398,7 +398,7 @@ KNOWN_COMMANDS = [
     "alias-lab", "aliases",
     "tar-lab", "tar",
     "pre-commit-lab", "precommit",
-    "arn-lab", "arn"
+    "arn-lab", "arn", "slug-lab", "slug"
 ]
 
 if FileSystemEventHandler:
@@ -11136,6 +11136,21 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory."
+    )
+
+    parser_slug = subparsers.add_parser(
+        "slug-lab",
+        aliases=["slug"],
+        help="Slug Lab utilities (convert string to URL-friendly slug)"
+    )
+    parser_slug.add_argument(
+        "--text",
+        help="Text to slugify. If not provided, will try to read from stdin."
+    )
+    parser_slug.add_argument(
+        "--tui",
+        action="store_true",
+        help="Run Slug Lab in TUI mode."
     )
 
     # --- New 'quiz' command ---
@@ -24342,6 +24357,11 @@ async def main():
 
     if args.command in ["arn-lab", "arn"]:
         run_arn_lab(args)
+        return
+
+    if args.command in ["slug-lab", "slug"]:
+        from shared.slug_lab import run_slug_lab_logic
+        run_slug_lab_logic(args)
         return
 
     # Initialize Agent Client

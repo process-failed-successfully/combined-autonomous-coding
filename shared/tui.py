@@ -186,6 +186,7 @@ from shared.tui_binary import BinaryLabTab
 from shared.tui_base62 import Base62LabTab
 from shared.tui_base64img import Base64ImgLabTab
 from shared.tui_zlib import ZlibTab
+from shared.tui_arn import ArnLabTab
 from shared.tui_bcrypt import BcryptLabTab
 from shared.tui_brotli import BrotliLabTab
 from shared.tui_base91 import Base91LabTab
@@ -4584,6 +4585,8 @@ class AgentTUI(App):
                 yield Base64UrlLabTab()
             with TabPane("Base64Img Lab", id="tab-base64img"):
                 yield Base64ImgLabTab()
+            with TabPane("ARN Lab", id="tab-arn"):
+                yield ArnLabTab(self.project_dir)
             with TabPane("Zlib Lab", id="tab-zlib"):
                 yield ZlibTab()
             with TabPane("Brotli Lab", id="tab-brotli"):

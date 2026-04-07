@@ -397,7 +397,8 @@ KNOWN_COMMANDS = [
     "regex-escape-lab", "regex-escape",
     "alias-lab", "aliases",
     "tar-lab", "tar",
-    "pre-commit-lab", "precommit"
+    "pre-commit-lab", "precommit",
+    "arn-lab", "arn"
 ]
 
 if FileSystemEventHandler:
@@ -436,6 +437,17 @@ def run_rot13_lab(args):
     success = run_rot13_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+def run_arn_lab(args):
+    """Runs the ARN Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        print("Launching ARN Lab TUI...")
+        run_tui(args, start_tab="tab-arn")
+        return
+
+    from shared.arn_lab import run_arn_lab_logic
+    run_arn_lab_logic(args)
+    sys.exit(0)
 
 def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
@@ -13000,6 +13012,47 @@ def parse_args(argv=None):
     )
 
     # --- New 'cron-lab' command ---
+    parser_arn = subparsers.add_parser(
+        "arn-lab",
+        aliases=["arn"],
+        help="ARN Lab: Parse and construct Amazon Resource Names."
+    )
+    parser_arn.add_argument(
+        "action",
+        choices=["parse", "construct", "tui"],
+        help="Action to perform."
+    )
+    parser_arn.add_argument(
+        "--arn",
+        help="The ARN to parse."
+    )
+    parser_arn.add_argument(
+        "--service",
+        help="Service for ARN construction."
+    )
+    parser_arn.add_argument(
+        "--resource",
+        help="Resource for ARN construction."
+    )
+    parser_arn.add_argument(
+        "--partition",
+        help="Partition for ARN construction (default: aws)."
+    )
+    parser_arn.add_argument(
+        "--region",
+        help="Region for ARN construction."
+    )
+    parser_arn.add_argument(
+        "--account",
+        help="Account ID for ARN construction."
+    )
+    parser_arn.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory."
+    )
+
     parser_cron = subparsers.add_parser(
         "cron-lab",
         help="Cron Lab: Next, Explain, and Generate cron expressions."
@@ -24285,6 +24338,10 @@ async def main():
     if args.command in ["tar-lab", "tar"]:
         from shared.tar_lab import run_tar_lab_logic
         await run_tar_lab_logic(args)
+        return
+
+    if args.command in ["arn-lab", "arn"]:
+        run_arn_lab(args)
         return
 
     # Initialize Agent Client

@@ -323,6 +323,7 @@ from shared.tui_sqlformat import TabSqlFormat
 from shared.plugin_manager import PluginManager
 from shared.tui_regex_escape import RegexEscapeLabTab
 from shared.tui_fuzz import FuzzLabTab
+from shared.tui_slug import SlugLabTab
 
 
 # Helper to get Git info safely
@@ -4143,6 +4144,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Regex Escape Lab", "switch_tab_regex_escape"),
         PaletteCommand("Go to Base92 Lab", "switch_tab_base92"),
         PaletteCommand("Go to Fuzz Lab", "switch_tab_fuzz"),
+        PaletteCommand("Go to Slug Lab", "switch_tab_slug"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Go to Bcrypt Lab", "switch_tab_bcrypt"),
@@ -4847,6 +4849,8 @@ class AgentTUI(App):
                 yield RegexEscapeLabTab()
             with TabPane("Fuzz Lab", id="tab-fuzz"):
                 yield FuzzLabTab(self.project_dir)
+            with TabPane("Slug Lab", id="tab-slug"):
+                yield SlugLabTab()
             with TabPane("OpenAPI Lab", id="tab-openapi"):
                 from shared.tui_openapi import OpenAPILabTab
                 yield OpenAPILabTab(project_dir=self.project_dir)

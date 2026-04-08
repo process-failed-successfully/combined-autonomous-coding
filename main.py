@@ -339,6 +339,7 @@ KNOWN_COMMANDS = [
     "base16-lab", "base16", "b16",
     "base32-lab", "base32", "b32",
     "base58-lab", "base58", "b58",
+    "num2words-lab", "num2words",
     "base45-lab", "base45", "b45",
     "base62-lab", "base62", "b62",
     "base91-lab", "base91", "b91",
@@ -17160,6 +17161,14 @@ Examples:
     b58_group.add_argument("--decode", "-d", type=str, help="Base58 text to decode.")
     parser_b58.add_argument("--tui", action="store_true", help="Launch interactive TUI for Base58 Lab.")
 
+    # num2words-lab
+    parser_num2words = subparsers.add_parser(
+        "num2words-lab", aliases=["num2words"],
+        help="Convert numbers to English words."
+    )
+    parser_num2words.add_argument("number", nargs="?", help="The number to convert (or read from stdin).")
+    parser_num2words.add_argument("--tui", action="store_true", help="Launch interactive TUI for Num2Words Lab.")
+
     # base45-lab
     base45_parser = subparsers.add_parser(
         "base45-lab", aliases=["base45", "b45"],
@@ -24078,6 +24087,9 @@ async def main():
         return
     if args.command in ["base85-lab", "base85", "b85"]:
         run_base85_lab(args)
+    if args.command in ["num2words-lab", "num2words"]:
+        from shared.num2words_lab import run_num2words_lab_logic
+        run_num2words_lab_logic(args)
         return
 
     if args.command in ["base45-lab", "base45", "b45"]:

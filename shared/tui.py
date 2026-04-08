@@ -197,6 +197,7 @@ from shared.tui_rot13 import Rot13LabTab
 from shared.tui_html_entity import HtmlEntityTab
 from shared.tui_base64url import Base64UrlLabTab
 from shared.tui_base58 import Base58LabTab
+from shared.tui_num2words import TabNum2WordsLab
 from shared.tui_base36 import Base36LabTab
 from shared.tui_base32 import Base32LabTab
 from shared.tui_base16 import Base16LabTab
@@ -4561,6 +4562,8 @@ class AgentTUI(App):
                 yield A85LabTab()
             with TabPane("Base58 Lab", id="tab-base58"):
                 yield Base58LabTab()
+            with TabPane("Num2Words Lab", id="tab-num2words-lab"):
+                yield TabNum2WordsLab()
             with TabPane("Octal Lab", id="tab-octal"):
                 yield OctalLabTab()
             with TabPane("Binary Lab", id="tab-binary"):

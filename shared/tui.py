@@ -318,6 +318,7 @@ from shared.tui_yaml2json import Yaml2JsonLabTab
 from shared.tui_yaml2toml import Yaml2TomlLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
 from shared.tui_env2json import Env2JsonTab
+from shared.tui_size_compare import SizeCompareTab
 from shared.tui_toml2csv import Toml2CsvLabTab
 from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
@@ -4625,6 +4626,8 @@ class AgentTUI(App):
                 yield YamlLabTab(self.project_dir)
             with TabPane("TOML Lab", id="tab-toml"):
                 yield TomlLabTab(self.project_dir)
+            with TabPane("Size Compare", id="tab-size-compare"):
+                yield SizeCompareTab(self.project_dir)
             with TabPane("YAML to CSV", id="tab-yaml2csv"):
                 yield Yaml2CsvTab()
             with TabPane("JSON to CSV", id="tab-json2csv"):

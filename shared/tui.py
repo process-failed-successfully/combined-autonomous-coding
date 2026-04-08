@@ -160,6 +160,7 @@ from shared.tui_md2csv import Md2CsvTab
 from shared.tui_csv2toml import Csv2TomlTab
 from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_csv2yaml import Csv2YamlTab
+from shared.tui_csv2xml import Csv2XmlLabTab
 from shared.tui_csv2html import Csv2HtmlLabTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_mqtt import MqttLabTab
@@ -4166,6 +4167,7 @@ class AgentTUI(App):
         PaletteCommand("Go to MD to CSV Lab", "switch_tab_md2csv"),
         PaletteCommand("Go to CSV to JSON Lab", "switch_tab_csv2json"),
         PaletteCommand("Go to CSV to YAML Lab", "switch_tab_csv2yaml"),
+        PaletteCommand("Go to CSV to XML Lab", "switch_tab_csv2xml"),
         PaletteCommand("Go to Size Lab", "switch_tab_size"),
         PaletteCommand("Go to FS Lab", "switch_tab_fs"),
         PaletteCommand("Go to ICal Lab", "switch_tab_ical"),
@@ -4610,6 +4612,8 @@ class AgentTUI(App):
             with TabPane("JSON Lab", id="tab-json"):
                 yield JsonLabTab(self.project_dir)
 
+            with TabPane("CSV to XML", id="tab-csv2xml"):
+                yield Csv2XmlLabTab()
             with TabPane("CSV to HTML", id="tab-csv2html"):
                 yield Csv2HtmlLabTab(self.project_dir)
             with TabPane("JSON to MD", id="tab-json2md"):

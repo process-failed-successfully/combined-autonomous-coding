@@ -252,7 +252,7 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -15662,6 +15662,19 @@ def parse_args(argv=None):
     parser_md2csv.add_argument("--tui", action="store_true", help="Launch the Markdown to CSV TUI.")
 
     # --- New 'csv2toml-lab' command ---
+    parser_csv2xml = subparsers.add_parser(
+        "csv2xml-lab",
+        aliases=["csv2xml", "c2x"],
+        help="CSV to XML converter."
+    )
+    parser_csv2xml.add_argument("--file", "-f", help="Input CSV file.")
+    parser_csv2xml.add_argument("--text", "-t", help="Input CSV text.")
+    parser_csv2xml.add_argument("--output", "-o", help="Output file path.")
+    parser_csv2xml.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_csv2xml.add_argument("--root", default="root", help="Root element name (default: 'root').")
+    parser_csv2xml.add_argument("--item", default="item", help="Item element name (default: 'item').")
+    parser_csv2xml.add_argument("--tui", action="store_true", help="Launch the CSV to XML TUI.")
+
     parser_csv2toml = subparsers.add_parser(
         "csv2toml-lab",
         aliases=["csv2toml", "c2t"],
@@ -23935,6 +23948,27 @@ async def main():
         from shared.csv2toml_lab import run_csv2toml_lab_logic
         run_csv2toml_lab_logic(args)
         return
+
+    if args.command in ["csv2xml-lab", "csv2xml", "c2x"]:
+        from shared.csv2xml_lab import run_csv2xml_lab_logic
+        if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+            from shared.tui import AgentTUI
+            print("Launching CSV to XML Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-csv2xml")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        success = run_csv2xml_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["csv2html-lab", "csv2html", "c2h"]:
         if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":

@@ -4643,8 +4643,7 @@ class AgentTUI(App):
                 yield XmlLabTab(self.project_dir)
             with TabPane("XML to JSON", id="tab-xml2json"):
                 yield Xml2JsonTab()
-            with TabPane("JSON to Py", id="tab-json2py"):
-                yield Json2PyLabTab()
+            yield Json2PyLabTab()
             with TabPane("JSON to XML", id="tab-json2xml"):
                 yield Json2XmlTab()
             with TabPane("BIP39 Lab", id="tab-bip39"):

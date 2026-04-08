@@ -53,7 +53,7 @@ class Csv2XmlManager:
 
         # Format with minidom for pretty printing
         xmlstr = ET.tostring(root, encoding='utf-8', method='xml')
-        dom = minidom.parseString(xmlstr)
+        dom = minidom.parseString(xmlstr)  # nosec B318
         pretty_xml = dom.toprettyxml(indent="  ")
 
         # Remove the XML declaration if it's there

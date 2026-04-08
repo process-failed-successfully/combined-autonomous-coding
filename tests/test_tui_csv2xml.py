@@ -73,7 +73,7 @@ async def test_csv2xml_lab_tab_clear_all():
         app.query_one("#c2x-item", Input).value = "record"
 
         # Trigger clear_all action
-        await pilot.press("ctrl+c")
+        await pilot.press("ctrl+l")
 
         # Verify everything is cleared
         assert app.query_one("#c2x-input", TextArea).text == ""

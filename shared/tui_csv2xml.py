@@ -14,7 +14,7 @@ class Csv2XmlLabTab(TabPane):
 
     BINDINGS = [
         Binding("ctrl+r", "convert", "Convert CSV to XML", show=True),
-        Binding("ctrl+c", "clear_all", "Clear", show=True)
+        Binding("ctrl+l", "clear_all", "Clear", show=True)
     ]
 
     def __init__(self, **kwargs):

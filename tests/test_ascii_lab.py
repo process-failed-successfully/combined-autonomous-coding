@@ -3,12 +3,14 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 import sys
 
-# Mock Pillow before importing AsciiLabManager
-sys.modules['PIL'] = MagicMock()
-sys.modules['PIL.Image'] = MagicMock()
-sys.modules['PIL.ImageSequence'] = MagicMock()
-
+import shared.ascii_lab
 from shared.ascii_lab import AsciiLabManager
+
+# In case PIL isn't available, make sure Image and ImageSequence exist on the module
+if getattr(shared.ascii_lab, 'Image', None) is None:
+    shared.ascii_lab.Image = MagicMock()
+if getattr(shared.ascii_lab, 'ImageSequence', None) is None:
+    shared.ascii_lab.ImageSequence = MagicMock()
 
 class TestAsciiLab(unittest.TestCase):
     def setUp(self):
@@ -20,6 +22,7 @@ class TestAsciiLab(unittest.TestCase):
     def tearDown(self):
         self.patcher.stop()
 
+    @patch('shared.ascii_lab.HAS_PIL', True)
     @patch('shared.ascii_lab.Image.open')
     def test_convert_image_to_ascii(self, mock_open):
         # Mock Image object
@@ -51,6 +54,7 @@ class TestAsciiLab(unittest.TestCase):
         self.assertIn("@", result) # Should match 0
         self.assertIn(" ", result) # Should match 255 (if space is last char)
 
+    @patch('shared.ascii_lab.HAS_PIL', True)
     @patch('shared.ascii_lab.Image.open')
     @patch('shared.ascii_lab.ImageSequence.Iterator')
     @patch('time.sleep')

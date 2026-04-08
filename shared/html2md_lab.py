@@ -3,12 +3,13 @@ import re
 from pathlib import Path
 from html.parser import HTMLParser
 
+
 class HtmlToMarkdownParser(HTMLParser):
     def __init__(self):
         super().__init__()
         self.md = []
         self.list_level = 0
-        self.list_type = [] # 'ul' or 'ol'
+        self.list_type = []  # 'ul' or 'ol'
         self.list_counter = []
         self.in_pre = False
         self.in_code = False
@@ -110,11 +111,13 @@ class HtmlToMarkdownParser(HTMLParser):
         result = re.sub(r'\n{3,}', '\n\n', result)
         return result.strip()
 
+
 class Html2MdManager:
     def convert(self, html: str) -> str:
         parser = HtmlToMarkdownParser()
         parser.feed(html)
         return parser.get_markdown()
+
 
 def run_html2md_logic(args):
     manager = Html2MdManager()

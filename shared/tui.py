@@ -306,6 +306,7 @@ from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_magic_decode import MagicDecodeTab
 from shared.tui_json2xml import Json2XmlTab
+from shared.tui_json2ts import Json2TsTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_xml2toml import Xml2TomlTab
@@ -4127,6 +4128,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
+        PaletteCommand("Go to JSON to TS Lab", "switch_tab_json2ts"),
         PaletteCommand("Go to JSON to MD Lab", "switch_tab_json2md"),
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
@@ -4616,6 +4618,8 @@ class AgentTUI(App):
                 yield TomlLabTab(self.project_dir)
             with TabPane("YAML to CSV", id="tab-yaml2csv"):
                 yield Yaml2CsvTab()
+            with TabPane("JSON to TS", id="tab-json2ts"):
+                yield Json2TsTab()
             with TabPane("JSON to CSV", id="tab-json2csv"):
                 yield Json2CsvTab(self.project_dir)
             with TabPane("CSV to JSON", id="tab-csv2json"):

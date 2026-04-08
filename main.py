@@ -398,7 +398,7 @@ KNOWN_COMMANDS = [
     "alias-lab", "aliases",
     "tar-lab", "tar",
     "pre-commit-lab", "precommit",
-    "arn-lab", "arn"
+    "arn-lab", "arn", "slug-lab", "slug"
 ]
 
 if FileSystemEventHandler:
@@ -1308,6 +1308,29 @@ def run_size_lab(args):
 
     from shared.size_lab import run_size_lab_logic
     success = run_size_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_slug_lab(args):
+    """Runs the Slug Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Slug Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-slug")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.slug_lab import run_slug_lab_logic
+    success = run_slug_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -17249,6 +17272,14 @@ Examples:
     parser_rot13.add_argument("text", nargs="?", help="Text to process")
     parser_rot13.add_argument("--tui", action="store_true", help="Launch ROT13 Lab TUI")
 
+    # slug-lab
+    parser_slug = subparsers.add_parser(
+        "slug-lab", aliases=["slug"],
+        help="Convert a string to a URL-friendly slug."
+    )
+    parser_slug.add_argument("text", nargs="?", help="The string to convert to a slug.")
+    parser_slug.add_argument("--tui", action="store_true", help="Launch the Textual TUI for Slug Lab")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -24086,6 +24117,10 @@ async def main():
         return
     if args.command in ["rot13-lab", "rot13"]:
         run_rot13_lab(args)
+        return
+
+    if args.command in ["slug-lab", "slug"]:
+        run_slug_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

@@ -309,6 +309,7 @@ from shared.tui_compose2k8s import Compose2K8sLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_magic_decode import MagicDecodeTab
 from shared.tui_json2py import Json2PyLabTab
+from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_xml2yaml import Xml2YamlTab
@@ -4173,6 +4174,7 @@ class AgentTUI(App):
         PaletteCommand("Go to ICal Lab", "switch_tab_ical"),
         PaletteCommand("Go to Plist Lab", "switch_tab_plist"),
         PaletteCommand("Go to JSON to Py Lab", "switch_tab_json2py"),
+        PaletteCommand("Go to JSON to TS Lab", "switch_tab_json2ts"),
         PaletteCommand("Go to JSON to SQL Lab", "switch_tab_json2sql"),
         PaletteCommand("Go to Hash Validator Lab", "switch_tab_hash-validator"),
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
@@ -4645,6 +4647,8 @@ class AgentTUI(App):
                 yield Xml2JsonTab()
             with TabPane("JSON to Py", id="tab-json2py"):
                 yield Json2PyLabTab()
+            with TabPane("JSON to TS", id="tab-json2ts"):
+                yield Json2TsLabTab()
             with TabPane("JSON to XML", id="tab-json2xml"):
                 yield Json2XmlTab()
             with TabPane("BIP39 Lab", id="tab-bip39"):

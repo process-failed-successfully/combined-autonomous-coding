@@ -2346,6 +2346,25 @@ def run_faker_lab(args):
     if not success:
         sys.exit(1)
 
+def run_json2ts_lab(args):
+    """Runs the JSON to TypeScript Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Json2Ts Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-json2ts")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(app.run_async())
+        except RuntimeError:
+            app.run()
+        return
+
+    from shared.json2ts_lab import run_json2ts_lab_logic
+    success = run_json2ts_lab_logic(args)
+    if not success:
+        sys.exit(1)
+
 def run_geo_lab(args):
     """Runs the Geo Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -16330,6 +16349,19 @@ def parse_args(argv=None):
     parser_json2py.add_argument("--framework", choices=["dataclass", "pydantic"], default="dataclass", help="Framework to use.")
     parser_json2py.add_argument("--name", default="RootModel", help="Root class name.")
     parser_json2py.add_argument("--tui", action="store_true", help="Launch TUI.")
+
+    # --- New 'json2ts-lab' command ---
+    parser_json2ts = subparsers.add_parser(
+        "json2ts-lab",
+        aliases=["json2ts", "j2ts"],
+        help="Convert JSON to TypeScript interfaces."
+    )
+    parser_json2ts.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2ts.add_argument("--text", "-t", help="Input JSON text.")
+    parser_json2ts.add_argument("--output", "-o", help="Output file.")
+    parser_json2ts.add_argument("--name", default="RootInterface", help="Root interface name.")
+    parser_json2ts.add_argument("--tui", action="store_true", help="Launch TUI.")
+
     parser_json2xml = subparsers.add_parser(
         "json2xml-lab",
         aliases=["json2xml"],
@@ -23281,6 +23313,9 @@ async def main():
 
     if args.command in ["json2py-lab", "json2py", "j2py"]:
         run_json2py_lab(args)
+        return
+    if args.command in ["json2ts-lab", "json2ts", "j2ts"]:
+        run_json2ts_lab(args)
         return
     if args.command in ["json2xml-lab", "json2xml"]:
         run_json2xml_lab(args)

@@ -2,7 +2,6 @@ import pytest
 import io
 import argparse
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
 from textual.app import App, ComposeResult
 
@@ -122,7 +121,7 @@ def test_run_csv2xml_lab_logic_tui():
 
     with patch.dict('sys.modules', {'shared.tui': MagicMock(AgentTUI=mock_agent_tui)}):
         with patch('asyncio.get_running_loop') as mock_get_running_loop, \
-             patch('asyncio.ensure_future') as mock_ensure_future, \
+             patch('asyncio.ensure_future'), \
              patch('sys.exit') as mock_exit, \
              patch('sys.stdin.isatty', return_value=True):
             # Simulate no running loop

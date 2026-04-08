@@ -1,8 +1,8 @@
 import argparse
 import csv
 import sys
-import xml.etree.ElementTree as ET
-from xml.dom import minidom
+import xml.etree.ElementTree as ET  # nosec
+import defusedxml.minidom as minidom
 from pathlib import Path
 from io import StringIO
 from typing import Optional
@@ -24,7 +24,7 @@ class Csv2XmlManager:
             item = ET.SubElement(root, row_element)
             for key, value in row.items():
                 if key is None:
-                    continue # skip columns without headers
+                    continue  # skip columns without headers
 
                 # Sanitize XML tag name
                 tag_name = str(key).strip().replace(' ', '_').replace('/', '_')

@@ -1,8 +1,6 @@
 from textual.app import ComposeResult
 from textual.widgets import TextArea, Button, Static, Input, Select
 from textual.containers import Vertical, Horizontal, Container
-from textual import on
-import sys
 
 from shared.csv2xml_lab import Csv2XmlManager
 

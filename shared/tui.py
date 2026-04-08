@@ -304,6 +304,7 @@ from shared.tui_html2md import Html2MdTab
 from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_fs import FsLabTab
 from shared.tui_run2compose import Run2ComposeLabTab
+from shared.tui_compose2k8s import Compose2K8sLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_magic_decode import MagicDecodeTab
 from shared.tui_json2xml import Json2XmlTab
@@ -4173,6 +4174,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
         PaletteCommand("Go to Hashids Lab", "switch_tab_hashids"),
         PaletteCommand("Go to Props Lab", "switch_tab_props"),
+        PaletteCommand("Go to Compose2K8s Lab", "switch_tab_compose2k8s"),
 
         PaletteCommand("Refresh Dashboard", "refresh_dashboard"),
         PaletteCommand("Run Tests", "run_tests"),
@@ -4737,6 +4739,8 @@ class AgentTUI(App):
 
             with TabPane("Run2Compose Lab", id="tab-run2compose"):
                 yield Run2ComposeLabTab(self.project_dir)
+            with TabPane("Compose2K8s Lab", id="tab-compose2k8s"):
+                yield Compose2K8sLabTab(self.project_dir)
             with TabPane("Magic Decode", id="tab-magic-decode"):
                 yield MagicDecodeTab()
 

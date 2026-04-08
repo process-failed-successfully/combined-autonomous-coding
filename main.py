@@ -262,6 +262,7 @@ KNOWN_COMMANDS = [
     "plist-lab", "plist", "plist2json", "json2plist",
     "props-lab", "props", "properties",
     "run2compose-lab", "run2compose", "r2c",
+    "compose2k8s-lab", "compose2k8s", "c2k",
     "changelog-lab", "changelog",
     "pdf-lab", "pdf", "uni-lab", "uni", "docs-lab", "docs", "qr-lab", "qr", "barcode-lab", "barcode", "http-lab", "http", "req",
     "proxy-lab", "proxy",
@@ -15921,6 +15922,17 @@ def parse_args(argv=None):
     # changelog-lab tui
     parser_changelog_tui = changelog_subparsers.add_parser("tui", help="Launch Changelog Lab TUI.")
 
+    # --- New 'compose2k8s-lab' command ---
+    parser_compose2k8s = subparsers.add_parser(
+        "compose2k8s-lab",
+        aliases=["compose2k8s", "c2k"],
+        help="Convert docker-compose.yml to Kubernetes manifests."
+    )
+    parser_compose2k8s.add_argument("--file", "-f", help="The docker-compose.yml file to read from.")
+    parser_compose2k8s.add_argument("--text", "-t", help="Raw docker-compose YAML string.")
+    parser_compose2k8s.add_argument("--output", "-o", help="Optional file to save the generated Kubernetes YAML.")
+    parser_compose2k8s.add_argument("--tui", action="store_true", help="Launch TUI for Compose2K8s Lab.")
+
     # --- New 'run2compose-lab' command ---
     parser_run2compose = subparsers.add_parser(
         "run2compose-lab",
@@ -23713,6 +23725,27 @@ async def main():
         from shared.endian_lab import run_endian_lab_logic
         run_endian_lab_logic(args)
         return
+
+    if args.command in ["compose2k8s-lab", "compose2k8s", "c2k"]:
+        if getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            import asyncio
+            print("Launching Compose2K8s Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-compose2k8s")
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.compose2k8s_lab import run_compose2k8s_lab_logic
+        success = run_compose2k8s_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["run2compose-lab", "run2compose", "r2c"]:
         if getattr(args, "action", None) == "tui":

@@ -256,7 +256,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -3120,6 +3120,27 @@ def run_xml2json_lab(args):
     run_xml2json_lab_logic(args)
     sys.exit(0)
 
+
+def run_json2py_lab(args):
+    """Runs the JSON to Python Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Json2Py Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-json2py")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.json2py_lab import run_json2py_lab_logic
+    success = run_json2py_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_json2xml_lab(args):
     """Runs the JSON to XML Lab."""
@@ -16284,6 +16305,18 @@ def parse_args(argv=None):
     parser_xml2json.add_argument("--tui", action="store_true", help="Launch interactive XML to JSON Lab.")
 
     # --- New 'json2xml-lab' command ---
+
+    parser_json2py = subparsers.add_parser(
+        "json2py-lab",
+        aliases=["json2py", "j2py"],
+        help="Convert JSON to Python Dataclass or Pydantic."
+    )
+    parser_json2py.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2py.add_argument("--text", "-t", help="Input JSON text.")
+    parser_json2py.add_argument("--output", "-o", help="Output file.")
+    parser_json2py.add_argument("--framework", choices=["dataclass", "pydantic"], default="dataclass", help="Framework to use.")
+    parser_json2py.add_argument("--name", default="RootModel", help="Root class name.")
+    parser_json2py.add_argument("--tui", action="store_true", help="Launch TUI.")
     parser_json2xml = subparsers.add_parser(
         "json2xml-lab",
         aliases=["json2xml"],
@@ -23232,6 +23265,10 @@ async def main():
         run_xml2json_lab(args)
         return
 
+
+    if args.command in ["json2py-lab", "json2py", "j2py"]:
+        run_json2py_lab(args)
+        return
     if args.command in ["json2xml-lab", "json2xml"]:
         run_json2xml_lab(args)
         return

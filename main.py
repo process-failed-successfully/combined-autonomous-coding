@@ -256,7 +256,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "csv2xml-lab", "csv2xml", "c2x", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -15463,6 +15463,20 @@ def parse_args(argv=None):
     parser_xml2csv.add_argument("--output", "-o", help="Output file path.")
     parser_xml2csv.add_argument("--tui", action="store_true", help="Launch the XML to CSV TUI.")
 
+    # --- New 'csv2xml-lab' command ---
+    parser_csv2xml = subparsers.add_parser(
+        "csv2xml-lab",
+        aliases=["csv2xml", "c2x"],
+        help="Convert CSV to XML."
+    )
+    parser_csv2xml.add_argument("--file", "-f", help="Input CSV file.")
+    parser_csv2xml.add_argument("--text", "-t", help="Input CSV text.")
+    parser_csv2xml.add_argument("--output", "-o", help="Output file path.")
+    parser_csv2xml.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
+    parser_csv2xml.add_argument("--root", default="root", help="Root element tag for XML.")
+    parser_csv2xml.add_argument("--row", default="item", help="Row element tag for XML.")
+    parser_csv2xml.add_argument("--tui", action="store_true", help="Launch the CSV to XML TUI.")
+
     # --- New 'yaml2json-lab' command ---
     parser_yaml2json = subparsers.add_parser(
         "yaml2json-lab",
@@ -23859,6 +23873,11 @@ async def main():
 
     if args.command in ["xml2csv-lab", "xml2csv", "x2c"]:
         run_xml2csv_lab_logic(args)
+        return
+
+    if args.command in ["csv2xml-lab", "csv2xml", "c2x"]:
+        from shared.csv2xml_lab import run_csv2xml_lab_logic
+        run_csv2xml_lab_logic(args)
         return
 
     if args.command in ["toml2csv-lab", "toml2csv", "t2c"]:

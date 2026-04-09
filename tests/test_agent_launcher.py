@@ -1,6 +1,11 @@
 import pytest
-from typer.testing import CliRunner
 import sys
+
+pytest.importorskip("typer")
+pytest.importorskip("rich")
+pytest.importorskip("docker")
+
+from typer.testing import CliRunner
 from pathlib import Path
 import os
 

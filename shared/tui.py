@@ -312,6 +312,7 @@ from shared.tui_json2py import Json2PyLabTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_xml2yaml import Xml2YamlTab
+from shared.tui_yaml2xml import Yaml2XmlTab
 from shared.tui_xml2toml import Xml2TomlTab
 from shared.tui_bip39 import Bip39Tab
 from shared.tui_yaml2json import Yaml2JsonLabTab
@@ -4654,6 +4655,8 @@ class AgentTUI(App):
                 yield Bip39Tab()
             with TabPane("XML to YAML", id="tab-xml2yaml"):
                 yield Xml2YamlTab()
+            with TabPane("YAML to XML", id="tab-yaml2xml"):
+                yield Yaml2XmlTab()
 
             with TabPane("Slug Lab", id="tab-slug"):
                 yield SlugLabTab()

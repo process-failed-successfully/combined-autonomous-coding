@@ -15671,6 +15671,18 @@ def parse_args(argv=None):
     parser_csv2yaml.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
     parser_csv2yaml.add_argument("--tui", action="store_true", help="Launch CSV to YAML Lab TUI.")
 
+    # --- New 'yaml2xml-lab' command ---
+    parser_yaml2xml = subparsers.add_parser(
+        "yaml2xml-lab",
+        aliases=["yaml2xml", "y2x"],
+        help="Convert YAML data to XML format."
+    )
+    parser_yaml2xml.add_argument("--file", "-f", help="Input YAML file.")
+    parser_yaml2xml.add_argument("--text", "-t", help="Input YAML text.")
+    parser_yaml2xml.add_argument("--output", "-o", help="Output XML file path.")
+    parser_yaml2xml.add_argument("--root", "-r", default="root", help="XML root element name (default: 'root').")
+    parser_yaml2xml.add_argument("--tui", action="store_true", help="Launch YAML to XML Lab TUI.")
+
     # --- New 'csv2md-lab' command ---
     parser_csv2md = subparsers.add_parser(
         "csv2md-lab",
@@ -23889,6 +23901,11 @@ async def main():
             return
         from shared.yaml2json_lab import run_json2yaml_lab_logic
         run_json2yaml_lab_logic(args)
+        return
+
+    if args.command in ["yaml2xml-lab", "yaml2xml", "y2x"]:
+        from shared.yaml2xml_lab import run_yaml2xml_lab_logic
+        run_yaml2xml_lab_logic(args)
         return
 
     if args.command in ["yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t"]:

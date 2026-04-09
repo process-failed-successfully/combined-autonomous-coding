@@ -18,8 +18,10 @@ class TestMainXmlLab(unittest.TestCase):
             mock_logic.assert_called_once_with(args)
             mock_exit.assert_called_once_with(0)
 
-    @patch("shared.tui.AgentTUI")
-    def test_run_xml_lab_tui(self, mock_tui):
+    @patch.dict("sys.modules", {"shared.tui": MagicMock(AgentTUI=MagicMock())})
+    def test_run_xml_lab_tui(self):
+        mock_tui_module = sys.modules["shared.tui"]
+        mock_tui = mock_tui_module.AgentTUI
         args = Namespace(command="xml-lab", action="tui", project_dir=".")
         mock_app_instance = MagicMock()
         mock_tui.return_value = mock_app_instance

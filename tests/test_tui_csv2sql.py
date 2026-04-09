@@ -20,7 +20,7 @@ def app(tmp_path):
 
 @pytest.mark.asyncio
 async def test_csv2sqltab_renders(app):
-    async with app.run_test(size=(100, 100)):
+    async with app.run_test(size=(100, 100)) as pilot:
         tab = app.query_one(Csv2SqlTab)
         assert tab is not None
         assert tab.query_one("#csv2sql-table-input") is not None

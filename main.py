@@ -400,7 +400,8 @@ KNOWN_COMMANDS = [
     "alias-lab", "aliases",
     "tar-lab", "tar",
     "pre-commit-lab", "precommit",
-    "arn-lab", "arn", "slug-lab", "slug"
+    "arn-lab", "arn", "slug-lab", "slug",
+    "size-compare-lab", "size-compare", "scmp"
 ]
 
 if FileSystemEventHandler:
@@ -1310,6 +1311,29 @@ def run_size_lab(args):
 
     from shared.size_lab import run_size_lab_logic
     success = run_size_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_size_compare_lab(args):
+    """Runs the Size Compare Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Size Compare Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-size-compare")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.size_compare_lab import run_size_compare_lab_logic
+    success = run_size_compare_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -11175,6 +11199,15 @@ def parse_args(argv=None):
         action="store_true",
         help="Run Slug Lab in TUI mode."
     )
+
+    parser_size_compare = subparsers.add_parser(
+        "size-compare-lab",
+        aliases=["size-compare", "scmp"],
+        help="Compare serialization sizes (JSON, MsgPack, CBOR, BSON, YAML, TOML, XML)."
+    )
+    parser_size_compare.add_argument("--text", help="JSON text to compare.")
+    parser_size_compare.add_argument("--file", "-f", help="Path to JSON file to compare.")
+    parser_size_compare.add_argument("--tui", action="store_true", help="Open Size Compare Lab TUI.")
 
     # --- New 'quiz' command ---
     parser_quiz = subparsers.add_parser(
@@ -24478,6 +24511,10 @@ async def main():
     if args.command in ["slug-lab", "slug"]:
         from shared.slug_lab import run_slug_lab_logic
         run_slug_lab_logic(args)
+        return
+
+    if args.command in ["size-compare-lab", "size-compare", "scmp"]:
+        run_size_compare_lab(args)
         return
 
     # Initialize Agent Client

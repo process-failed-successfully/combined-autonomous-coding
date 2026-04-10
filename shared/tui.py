@@ -126,6 +126,7 @@ from shared.tui_jwt import JwtLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_calc import CalcLabTab
 from shared.tui_finance import FinanceLabTab
+from shared.tui_currency import CurrencyLabTab
 from shared.tui_unit import UnitLabTab
 from shared.tui_url import UrlLabTab
 from shared.tui_urlencode import UrlEncodeLabTab
@@ -4542,6 +4543,8 @@ class AgentTUI(App):
                 yield CalcLabTab()
             with TabPane("Finance Lab", id="tab-finance"):
                 yield FinanceLabTab()
+            with TabPane("Currency", id="tab-currency-lab"):
+                yield CurrencyLabTab()
             with TabPane("Unit Lab", id="tab-unit"):
                 yield UnitLabTab()
             with TabPane("Permissions", id="tab-permissions"):

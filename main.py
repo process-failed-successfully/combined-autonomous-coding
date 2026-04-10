@@ -250,7 +250,7 @@ KNOWN_COMMANDS = [
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
-    "codec-lab", "codec",
+    "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
     "bencode-lab", "bencode", "torrent",
@@ -14573,6 +14573,18 @@ def parse_args(argv=None):
     parser_ulid_bulk = ulid_subparsers.add_parser("bulk", help="Generate bulk ULIDs.")
     parser_ulid_bulk.add_argument("count", type=int, help="Number of ULIDs.")
 
+    # --- New 'currency-lab' command ---
+    parser_currency = subparsers.add_parser(
+        "currency-lab",
+        aliases=["currency", "cur"],
+        help="Currency conversion and exchange rates."
+    )
+    parser_currency.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
+    parser_currency.add_argument("--list", action="store_true", help="List supported currencies.")
+    parser_currency.add_argument("--amount", type=float, help="Amount to convert.")
+    parser_currency.add_argument("--from-cur", dest="from_cur", help="Source currency code (e.g. USD).")
+    parser_currency.add_argument("--to-cur", dest="to_cur", help="Target currency code (e.g. EUR).")
+
     parser_uuid = subparsers.add_parser(
         "uuid-lab",
         aliases=["uuid"],
@@ -21152,6 +21164,16 @@ def run_scaffold(args):
         sys.exit(0 if success else 1)
 
 
+def run_currency_lab(args):
+    """Runs the Currency Lab."""
+    if getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-currency-lab")
+    else:
+        from shared.currency_lab import run_currency_lab_logic
+        success = run_currency_lab_logic(args)
+        sys.exit(0 if success else 1)
+
+
 async def run_interact(args):
     """Starts an interactive session to guide the user through common commands."""
     import inspect
@@ -23596,6 +23618,10 @@ async def main():
 
     if args.command in ["finance-lab", "finance", "fin"]:
         run_finance_lab(args)
+        return
+
+    if args.command in ["currency-lab", "currency", "cur"]:
+        run_currency_lab(args)
         return
 
     if args.command in ["runner-lab", "runner"]:

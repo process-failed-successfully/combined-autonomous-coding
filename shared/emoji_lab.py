@@ -10,7 +10,10 @@ import random
 from typing import List, Tuple, Dict, Optional
 from rich.console import Console
 from rich.table import Table
-from rich.emoji import EMOJI
+try:
+    from rich.emoji import EMOJI
+except ImportError:
+    from rich._emoji_codes import EMOJI
 
 console = Console()
 

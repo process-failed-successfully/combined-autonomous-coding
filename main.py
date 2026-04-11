@@ -296,6 +296,7 @@ KNOWN_COMMANDS = [
     "metrics-lab", "metrics",
     "trace-lab", "trace",
     "fuzz-lab", "fuzz",
+    "sri-lab", "sri",
     "static-lab", "static", "serve-static",
     "notify-lab", "notify",
     "contract-lab", "contract",
@@ -18553,6 +18554,17 @@ Examples:
         help="Action to perform."
     )
 
+    # --- New 'sri-lab' command ---
+    parser_sri = subparsers.add_parser(
+        "sri-lab",
+        aliases=["sri"],
+        help="Subresource Integrity (SRI) Hash Generator."
+    )
+    parser_sri.add_argument("--source", "-s", help="URL or local file path to compute SRI hash for.")
+    parser_sri.add_argument("--algo", "-a", choices=["sha256", "sha384", "sha512"], default="sha384", help="Hash algorithm (default: sha384)")
+    parser_sri.add_argument("--all", action="store_true", help="Output all hashes instead of just the selected one.")
+    parser_sri.add_argument("--tui", action="store_true", help="Launch SRI Lab TUI.")
+
     # fuzz cli
     parser_fuzz_cli = fuzz_subparsers.add_parser("cli", help="Fuzz a CLI command.")
     parser_fuzz_cli.add_argument("target", help="Command to fuzz (e.g. 'python3 app.py').")
@@ -23642,6 +23654,11 @@ async def main():
 
     if args.command in ["fuzz-lab", "fuzz"]:
         run_fuzz_lab(args)
+        return
+
+    if args.command in ["sri-lab", "sri"]:
+        from shared.sri_lab import run_sri_lab_logic
+        run_sri_lab_logic(args)
         return
 
     if args.command in ["static-lab", "static", "serve-static"]:

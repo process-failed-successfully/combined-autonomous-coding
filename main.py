@@ -253,6 +253,7 @@ KNOWN_COMMANDS = [
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
+    "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -15746,6 +15747,15 @@ def parse_args(argv=None):
     parser_md2csv.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
     parser_md2csv.add_argument("--tui", action="store_true", help="Launch the Markdown to CSV TUI.")
 
+    # --- New 'filetype-lab' command ---
+    parser_filetype = subparsers.add_parser(
+        "filetype-lab",
+        aliases=["filetype", "magic-bytes"],
+        help="Detect file types by magic bytes."
+    )
+    parser_filetype.add_argument("file", nargs="?", help="File to detect.")
+    parser_filetype.add_argument("--action", choices=["tui"], help="Action to perform.")
+
     # --- New 'csv2toml-lab' command ---
     parser_csv2xml = subparsers.add_parser(
         "csv2xml-lab",
@@ -24085,6 +24095,13 @@ async def main():
     if args.command in ["csv2toml-lab", "csv2toml", "c2t"]:
         from shared.csv2toml_lab import run_csv2toml_lab_logic
         run_csv2toml_lab_logic(args)
+        return
+
+    if args.command in ["filetype-lab", "filetype", "magic-bytes"]:
+        from shared.filetype_lab import run_filetype_lab_logic
+        success = run_filetype_lab_logic(args)
+        if not success:
+            sys.exit(1)
         return
 
     if args.command in ["csv2xml-lab", "csv2xml", "c2x"]:

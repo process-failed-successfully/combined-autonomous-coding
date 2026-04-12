@@ -334,6 +334,7 @@ from shared.tui_sqlformat import TabSqlFormat
 from shared.plugin_manager import PluginManager
 from shared.tui_regex_escape import RegexEscapeLabTab
 from shared.tui_fuzz import FuzzLabTab
+from shared.tui_filetype import FileTypeLabTab
 
 
 # Helper to get Git info safely
@@ -4883,6 +4884,8 @@ class AgentTUI(App):
                 yield RegexEscapeLabTab()
             with TabPane("Fuzz Lab", id="tab-fuzz"):
                 yield FuzzLabTab(self.project_dir)
+            with TabPane("FileType Lab", id="tab-filetype"):
+                yield FileTypeLabTab()
             with TabPane("SRI Lab", id="tab-sri"):
                 yield SriLabTab()
             with TabPane("OpenAPI Lab", id="tab-openapi"):

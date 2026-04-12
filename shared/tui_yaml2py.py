@@ -1,0 +1,75 @@
+from textual.app import ComposeResult
+from textual.containers import Vertical, Horizontal
+from textual.widgets import TabPane, Label, Button, TextArea, Select, Input
+from shared.yaml2py_lab import Yaml2PyManager
+import pyperclip
+
+class Yaml2PyLabTab(TabPane):
+    """Tab pane for Yaml2Py Lab."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__("YAML to Py", id="tab-yaml2py", *args, **kwargs)
+        self.manager = Yaml2PyManager()
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="p-4"):
+            yield Label("YAML to Python Dataclass / Pydantic", classes="text-xl text-primary mb-4")
+
+            with Horizontal(classes="mb-4 h-auto"):
+                yield Label("Root Class Name:", classes="w-32")
+                yield Input(value="RootModel", id="input-yaml2py-root", classes="w-48 mr-4")
+
+                yield Label("Framework:", classes="w-24")
+                yield Select(
+                    [("Dataclass", "dataclass"), ("Pydantic", "pydantic")],
+                    value="dataclass",
+                    id="select-yaml2py-framework",
+                    classes="w-40 mr-4"
+                )
+
+                yield Button("Generate", variant="primary", id="btn-generate-yaml2py", classes="mr-4")
+                yield Button("Copy Output", variant="default", id="btn-copy-yaml2py")
+
+            with Horizontal():
+                with Vertical(classes="w-1-2 pr-2"):
+                    yield Label("Input (YAML):", classes="mb-2")
+                    yield TextArea(language="yaml", id="editor-yaml2py-in")
+                with Vertical(classes="w-1-2 pl-2"):
+                    yield Label("Output (Python):", classes="mb-2")
+                    yield TextArea(language="python", read_only=True, id="editor-yaml2py-out")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-generate-yaml2py":
+            in_editor = self.query_one("#editor-yaml2py-in", TextArea)
+            out_editor = self.query_one("#editor-yaml2py-out", TextArea)
+
+            root_name = self.query_one("#input-yaml2py-root", Input).value or "RootModel"
+            framework = self.query_one("#select-yaml2py-framework", Select).value or "dataclass"
+
+            yaml_str = in_editor.text
+            if not yaml_str.strip():
+                if hasattr(self.app, 'notify'):
+                    self.app.notify("Input YAML cannot be empty.", severity="warning")
+                return
+
+            try:
+                result = self.manager.generate(yaml_str, framework=framework, root_name=root_name)
+                out_editor.text = result
+                if hasattr(self.app, 'notify'):
+                    self.app.notify("Python code generated successfully.")
+            except Exception as e:
+                out_editor.text = f"Error generating code:\n{e}"
+                if hasattr(self.app, 'notify'):
+                    self.app.notify(f"Error: {e}", severity="error")
+
+        elif event.button.id == "btn-copy-yaml2py":
+            out_editor = self.query_one("#editor-yaml2py-out", TextArea)
+            content = out_editor.text
+            if content:
+                try:
+                    pyperclip.copy(content)
+                    if hasattr(self.app, 'notify'):
+                        self.app.notify("Copied to clipboard!", title="Success")
+                except Exception as e:
+                    if hasattr(self.app, 'notify'):
+                        self.app.notify(f"Failed to copy: {e}", title="Error", severity="error")

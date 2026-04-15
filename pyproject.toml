@@ -55,6 +55,7 @@ dependencies = [
     "cbor2",
     "msgpack",
     "brotli",
+    "zstandard",
     "python-gnupg>=0.5.0",
     "jmespath>=1.0.1",
     "jq>=1.11.0",

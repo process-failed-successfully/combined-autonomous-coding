@@ -192,6 +192,7 @@ from shared.tui_slug import SlugLabTab
 from shared.tui_arn import ArnLabTab
 from shared.tui_bcrypt import BcryptLabTab
 from shared.tui_brotli import BrotliLabTab
+from shared.tui_zstd import ZstdLabTab
 from shared.tui_base91 import Base91LabTab
 from shared.tui_base92 import Base92LabTab
 from shared.tui_base64 import Base64LabTab
@@ -4159,6 +4160,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Luhn Lab", "switch_tab_luhn"),
         PaletteCommand("Go to Bcrypt Lab", "switch_tab_bcrypt"),
         PaletteCommand("Go to Brotli Lab", "switch_tab_brotli"),
+        PaletteCommand("Go to Zstd Lab", "switch_tab_zstd"),
         PaletteCommand("Go to IBAN Lab", "switch_tab_iban"),
         PaletteCommand("Go to Data URI Lab", "switch_tab_data_uri"),
         PaletteCommand("Go to Geo Lab", "switch_tab_geo"),
@@ -4611,6 +4613,8 @@ class AgentTUI(App):
                 yield ZlibTab()
             with TabPane("Brotli Lab", id="tab-brotli"):
                 yield BrotliLabTab()
+            with TabPane("Zstd Lab", id="tab-zstd"):
+                yield ZstdLabTab()
 
             with TabPane("Bcrypt Lab", id="tab-bcrypt"):
                 yield BcryptLabTab()

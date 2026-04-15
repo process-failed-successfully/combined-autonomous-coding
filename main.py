@@ -351,7 +351,7 @@ KNOWN_COMMANDS = [
     "base64img-lab", "base64img", "b64img",
     "base64url-lab", "base64url", "b64url",
     "zlib-lab", "zlib", "compress", "inflate",
-    "brotli-lab", "brotli",
+    "brotli-lab", "brotli", "zstd-lab", "zstd",
     "base85-lab", "base85", "b85",
     "base91-lab", "base91", "b91",
     "base92-lab", "base92", "b92",
@@ -978,6 +978,25 @@ def run_brotli_lab(args):
 
     from shared.brotli_lab import run_brotli_lab_logic
     success = run_brotli_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_zstd_lab(args):
+    """Runs the Zstandard Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Zstandard Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-zstd")
+        app.run()
+        sys.exit(0)
+
+    # Logic path
+    if getattr(args, "compress", None) is None and getattr(args, "decompress", None) is None:
+        print("Error: must provide either --compress, --decompress, or --tui", file=sys.stderr)
+        sys.exit(1)
+
+    from shared.zstd_lab import run_zstd_lab_logic
+    success = run_zstd_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -17483,6 +17502,19 @@ Examples:
     parser_brotli.add_argument("--quality", "-q", type=int, choices=range(0, 12), default=11, help="Compression quality (0-11, default: 11).")
     parser_brotli.add_argument("--base64", "-b", action="store_true", help="Use base64 instead of hex for outputting/reading compressed data.")
 
+
+    # zstd-lab
+    parser_zstd = subparsers.add_parser(
+        "zstd-lab", aliases=["zstd"],
+        help="Compress and decompress data using Zstandard."
+    )
+    zstd_group = parser_zstd.add_mutually_exclusive_group(required=False)
+    zstd_group.add_argument("--compress", "-c", type=str, help="Text to compress.")
+    zstd_group.add_argument("--decompress", "-d", type=str, help="Data to decompress.")
+    zstd_group.add_argument("--tui", action="store_true", help="Launch the interactive Zstandard Lab TUI.")
+    parser_zstd.add_argument("--level", "-l", type=int, choices=range(1, 23), default=3, help="Compression level (1-22, default: 3).")
+    parser_zstd.add_argument("--base64", "-b", action="store_true", help="Use base64 instead of hex for outputting/reading compressed data.")
+
     parser_b64url = subparsers.add_parser(
         "base64url-lab", aliases=["base64url", "b64url"],
         help="Base64URL encode and decode strings."
@@ -24392,6 +24424,8 @@ async def main():
 
     if args.command in ["brotli-lab", "brotli"]:
         run_brotli_lab(args)
+    if args.command in ["zstd-lab", "zstd"]:
+        run_zstd_lab(args)
         return
 
     if args.command in ["base64url-lab", "base64url", "b64url"]:

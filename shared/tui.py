@@ -303,6 +303,7 @@ from shared.tui_uni import UniLabTab
 from shared.tui_vcard import VCardTab
 from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
+from shared.tui_whois import WhoisLabTab
 from shared.tui_html2md import Html2MdTab
 from shared.tui_html2jsx import Html2JsxLabTab
 from shared.tui_fs import FsLabTab
@@ -4760,6 +4761,9 @@ class AgentTUI(App):
                 yield DiagramLabTab(self.project_dir)
             with TabPane("HTML2MD Lab", id="tab-html2md"):
                 yield Html2MdTab()
+
+            with TabPane("Whois Lab", id="tab-whois"):
+                yield WhoisLabTab()
 
             with TabPane("XML to CSV", id="tab-xml2csv"):
                 yield Xml2CsvTab()

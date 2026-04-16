@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from textual.widgets import Input, Button, Label, RichLog
 import pytest
 
+pytest.importorskip("textual")
+
+from textual.widgets import Input, Button, Label, RichLog
 from shared.tui_whois import WhoisLabTab
 
 class TestWhoisLabTab(unittest.IsolatedAsyncioTestCase):

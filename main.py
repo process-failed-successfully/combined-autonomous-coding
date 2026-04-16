@@ -2704,6 +2704,12 @@ def run_dns_lab(args):
 
 def run_whois_lab(args):
     """Runs the Whois Lab."""
+    if hasattr(args, "tui") and args.tui:
+        run_tui(args, start_tab="tab-whois")
+        return
+    if not hasattr(args, 'action') or not args.action:
+        print("Error: Action is required unless --tui is specified.", file=sys.stderr)
+        sys.exit(1)
     run_whois_lab_logic(args)
     sys.exit(0)
 
@@ -18268,9 +18274,10 @@ Examples:
         aliases=["whois"],
         help="Whois utilities (lookup, check)."
     )
+    parser_whois.add_argument("--tui", action="store_true", help="Launch the interactive Whois Lab TUI.")
     whois_subparsers = parser_whois.add_subparsers(
         dest="action",
-        required=True,
+        required=False,
         help="Action to perform."
     )
 

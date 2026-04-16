@@ -277,6 +277,7 @@ KNOWN_COMMANDS = [
     "compose-lab", "compose",
     "k8s-lab", "k8s", "kube",
     "diff-lab",
+    "mongo-lab", "mongo", "mongodb",
     "redis-lab", "redis", "cache",
     "kafka-lab", "kafka",
     "github-lab", "github", "gh",
@@ -2634,6 +2635,17 @@ def run_code_query_cli(args):
     run_code_query(args)
     sys.exit(0)
 
+
+
+def run_mongo_lab(args):
+    """Runs the Mongo Lab."""
+    if args.action == "tui":
+        print("Launching Mongo Lab TUI...")
+        run_tui(args, start_tab="tab-mongo")
+        return
+
+    from shared.mongo_lab import run_mongo_lab_logic
+    run_mongo_lab_logic(args)
 
 def run_redis_lab(args):
     """Runs the Redis Lab."""
@@ -17877,6 +17889,47 @@ Examples:
     parser_diff_lab.add_argument("--output", help="Output path (for image diffs or patch).")
     parser_diff_lab.add_argument("--patch", action="store_true", help="Generate a unified patch file when comparing directories.")
 
+    # --- New 'mongo-lab' command ---
+    parser_mongo = subparsers.add_parser(
+        "mongo-lab",
+        aliases=["mongo", "mongodb"],
+        help="MongoDB utilities (connect, list-dbs, list-cols, find, insert, delete)."
+    )
+    parser_mongo.add_argument("--uri", help="MongoDB URI (default: mongodb://localhost:27017/)")
+    mongo_subparsers = parser_mongo.add_subparsers(dest="action", help="MongoDB actions")
+
+    # mongo-lab connect
+    mongo_subparsers.add_parser("connect", help="Test connection.")
+
+    # mongo-lab list-dbs
+    mongo_subparsers.add_parser("list-dbs", help="List databases.")
+
+    # mongo-lab list-cols
+    parser_mongo_cols = mongo_subparsers.add_parser("list-cols", help="List collections.")
+    parser_mongo_cols.add_argument("--db", required=True, help="Database name.")
+
+    # mongo-lab find
+    parser_mongo_find = mongo_subparsers.add_parser("find", help="Find documents.")
+    parser_mongo_find.add_argument("--db", required=True, help="Database name.")
+    parser_mongo_find.add_argument("--col", required=True, help="Collection name.")
+    parser_mongo_find.add_argument("--query", help="JSON query.")
+    parser_mongo_find.add_argument("--limit", type=int, default=50, help="Limit results.")
+
+    # mongo-lab insert
+    parser_mongo_insert = mongo_subparsers.add_parser("insert", help="Insert a document.")
+    parser_mongo_insert.add_argument("--db", required=True, help="Database name.")
+    parser_mongo_insert.add_argument("--col", required=True, help="Collection name.")
+    parser_mongo_insert.add_argument("--doc", required=True, help="JSON document.")
+
+    # mongo-lab delete
+    parser_mongo_delete = mongo_subparsers.add_parser("delete", help="Delete documents.")
+    parser_mongo_delete.add_argument("--db", required=True, help="Database name.")
+    parser_mongo_delete.add_argument("--col", required=True, help="Collection name.")
+    parser_mongo_delete.add_argument("--query", required=True, help="JSON query.")
+
+    # mongo-lab tui
+    mongo_subparsers.add_parser("tui", help="Launch interactive MongoDB Lab TUI.")
+
     # --- New 'redis-lab' command ---
     parser_redis = subparsers.add_parser(
         "redis-lab",
@@ -23575,6 +23628,10 @@ async def main():
 
     if args.command == "diff-lab":
         run_diff_lab_logic(args)
+        return
+
+    if args.command in ["mongo-lab", "mongo", "mongodb"]:
+        run_mongo_lab(args)
         return
 
     if args.command in ["redis-lab", "redis", "cache"]:

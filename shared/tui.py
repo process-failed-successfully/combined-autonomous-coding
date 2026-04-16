@@ -210,6 +210,7 @@ from shared.tui_image import ImageLabTab
 from shared.tui_media import MediaLabTab
 from shared.tui_qr import QrLabTab
 from shared.tui_barcode import BarcodeLabTab
+from shared.tui_mongo import MongoLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
@@ -4449,6 +4450,8 @@ class AgentTUI(App):
                 yield LogicLabTab()
             with TabPane("Database", id="tab-database"):
                 yield DatabaseTab(self.project_dir)
+            with TabPane("MongoDB", id="tab-mongo"):
+                yield MongoLabTab()
             with TabPane("Redis", id="tab-redis"):
                 yield RedisLabTab(self.project_dir)
             with TabPane("Kafka", id="tab-kafka"):

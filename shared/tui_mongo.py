@@ -1,8 +1,7 @@
 import json
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Input, TextArea, Label, ListView, ListItem, RichLog
-from textual import on
+from textual.widgets import Button, Input, TextArea, Label, RichLog
 from shared.mongo_lab import MongoLabManager
 
 
@@ -94,13 +93,13 @@ class MongoLabTab(Container):
             try:
                 self.manager = MongoLabManager(uri)
                 if self.manager.connect():
-                    status_lbl.update(f"Connected")
-                    self.notify(f"Connected to MongoDB")
+                    status_lbl.update("Connected")
+                    self.notify("Connected to MongoDB")
                 else:
                     status_lbl.update("Connection Failed")
                     self.notify("Failed to connect to MongoDB", severity="error")
             except Exception as e:
-                status_lbl.update(f"Error")
+                status_lbl.update("Error")
                 self.notify(f"Connection error: {e}", severity="error")
 
         elif btn_id == "btn-mongo-list-dbs":

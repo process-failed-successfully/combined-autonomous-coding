@@ -4,9 +4,7 @@ from typing import Dict, Any, List, Optional
 
 try:
     import pymongo
-    from pymongo.errors import ConnectionFailure, PyMongoError
     from bson.objectid import ObjectId
-    from bson.errors import InvalidId
 except ImportError:
     pymongo = None
 
@@ -34,7 +32,6 @@ class MongoLabManager:
             print(f"Error connecting to MongoDB at {self.uri}: {e}", file=sys.stderr)
             self.client = None
             return False
-
 
     def list_dbs(self) -> List[str]:
         """Lists all database names."""

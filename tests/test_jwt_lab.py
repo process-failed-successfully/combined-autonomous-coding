@@ -132,5 +132,69 @@ class TestJWTManager(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Key confusion vulnerability detected: token specifies HMAC but an asymmetric key was provided.")
 
+    def test_crack_token_success(self):
+        # Create a temporary wordlist
+        import tempfile
+        import os
+
+        token = self.manager.sign_token(self.payload, self.secret, "HS256")
+
+        fd, path = tempfile.mkstemp()
+        with os.fdopen(fd, 'w') as f:
+            f.write("wrongsecret1\n")
+            f.write("wrongsecret2\n")
+            f.write(self.secret + "\n")
+            f.write("wrongsecret3\n")
+
+        try:
+            cracked_secret = self.manager.crack_token(token, path)
+            self.assertEqual(cracked_secret, self.secret)
+        finally:
+            os.remove(path)
+
+    def test_crack_token_failure(self):
+        import tempfile
+        import os
+
+        token = self.manager.sign_token(self.payload, self.secret, "HS256")
+
+        fd, path = tempfile.mkstemp()
+        with os.fdopen(fd, 'w') as f:
+            f.write("wrongsecret1\n")
+            f.write("wrongsecret2\n")
+
+        try:
+            cracked_secret = self.manager.crack_token(token, path)
+            self.assertIsNone(cracked_secret)
+        finally:
+            os.remove(path)
+
+    def test_crack_token_unsupported_algo(self):
+        import tempfile
+        import os
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+
+        token = self.manager.sign_token(self.payload, private_pem, "RS256")
+
+        fd, path = tempfile.mkstemp()
+        with os.fdopen(fd, 'w') as f:
+            f.write("dummy\n")
+
+        try:
+            with self.assertRaises(ValueError) as context:
+                self.manager.crack_token(token, path)
+            self.assertIn("only supported for HMAC algorithms", str(context.exception))
+        finally:
+            os.remove(path)
+
+
 if __name__ == '__main__':
     unittest.main()

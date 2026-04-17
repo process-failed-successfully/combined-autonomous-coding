@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 import secrets
+import hmac
 import base64
 import sys
 from pathlib import Path
@@ -37,6 +38,29 @@ class CryptoLabManager:
         hasher = hashlib.new(algo)
         hasher.update(data_bytes)
         return hasher.hexdigest()
+
+    def hmac_data(self, input_data: Union[str, bytes], key: Union[str, bytes], algo: str = "sha256") -> str:
+        """
+        Calculates the HMAC digest of the input data using the specified key.
+        Supported algorithms: md5, sha1, sha256, sha512.
+        """
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+
+        if isinstance(key, str):
+            key_bytes = key.encode("utf-8")
+        else:
+            key_bytes = key
+
+        algo = algo.lower()
+        if algo not in hashlib.algorithms_available:
+            if algo not in ["md5", "sha1", "sha256", "sha512"]:
+                raise ValueError(f"Unsupported algorithm: {algo}")
+
+        mac = hmac.new(key_bytes, data_bytes, getattr(hashlib, algo))
+        return mac.hexdigest()
 
     def generate_key(self) -> bytes:
         """Generates a Fernet key."""
@@ -203,6 +227,44 @@ def run_crypto_lab_logic(args) -> bool:
                     return False
 
             result = manager.hash_data(data, args.algo)
+            print(result)
+            return True
+
+        elif args.action == "hmac":
+            data = None
+            if args.file:
+                path = Path(args.file)
+                if not path.exists():
+                    print(f"Error: File {path} not found.", file=sys.stderr)
+                    return False
+                data = path.read_bytes()
+            elif args.text:
+                data = args.text
+            else:
+                # Read from stdin
+                if not sys.stdin.isatty():
+                    try:
+                        data = sys.stdin.buffer.read()
+                    except Exception:
+                        data = sys.stdin.read().encode("utf-8")
+                else:
+                    print("Error: Input text or file required.", file=sys.stderr)
+                    return False
+
+            key = None
+            if args.key:
+                key = args.key
+            elif args.key_file:
+                path = Path(args.key_file)
+                if not path.exists():
+                    print(f"Error: Key file {path} not found.", file=sys.stderr)
+                    return False
+                key = path.read_bytes()
+            else:
+                print("Error: Key required (--key or --key-file).", file=sys.stderr)
+                return False
+
+            result = manager.hmac_data(data, key, args.algo)
             print(result)
             return True
 

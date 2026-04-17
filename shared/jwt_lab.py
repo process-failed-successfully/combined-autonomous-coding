@@ -156,6 +156,50 @@ class JWTManager:
 
         return decoded
 
+    @staticmethod
+    def crack_token(token: str, wordlist_path: str) -> str | None:
+        """
+        Attempts to crack the secret of an HMAC JWT token using a wordlist.
+        """
+        parts = token.split('.')
+        if len(parts) != 3:
+            raise ValueError("Invalid token format (expected 3 parts)")
+
+        header_b64, payload_b64, signature_b64 = parts
+
+        try:
+            header_json = JWTManager.base64url_decode(header_b64)
+            header = json.loads(header_json)
+        except Exception as e:
+            raise ValueError(f"Failed to decode token header: {e}")
+
+        algo = header.get("alg")
+        if not algo or not algo.startswith("HS"):
+            raise ValueError(f"Cracking is only supported for HMAC algorithms (HS256, HS384, HS512). Token uses: {algo}")
+
+        if algo not in JWTManager.ALGORITHMS:
+            raise ValueError(f"Unsupported algorithm: {algo}")
+
+        hash_func = JWTManager.ALGORITHMS[algo]
+        signing_input = f"{header_b64}.{payload_b64}".encode('utf-8')
+
+        try:
+            with open(wordlist_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    secret = line.strip()
+                    if not secret:
+                        continue
+
+                    expected_signature = hmac.new(secret.encode('utf-8'), signing_input, hash_func).digest()
+                    expected_signature_b64 = JWTManager.base64url_encode(expected_signature)
+
+                    if hmac.compare_digest(signature_b64, expected_signature_b64):
+                        return secret
+        except FileNotFoundError:
+            raise ValueError(f"Wordlist file not found: {wordlist_path}")
+
+        return None
+
 def run_jwt_lab_logic(args) -> bool:
     manager = JWTManager()
 
@@ -186,6 +230,24 @@ def run_jwt_lab_logic(args) -> bool:
                 return True
             except ValueError as e:
                 print(f"❌ Verification Failed: {e}", file=sys.stderr)
+                return False
+
+        elif args.action == "crack":
+            print(f"Attempting to crack token using wordlist: {args.wordlist}...")
+            start_time = time.time()
+            try:
+                secret = manager.crack_token(args.token, args.wordlist)
+                elapsed = time.time() - start_time
+                if secret:
+                    print(f"✅ CRACKED! Secret found: {secret}")
+                    print(f"Time taken: {elapsed:.2f}s")
+                    return True
+                else:
+                    print(f"❌ Failed to crack token. Secret not in wordlist.")
+                    print(f"Time taken: {elapsed:.2f}s")
+                    return False
+            except ValueError as e:
+                print(f"❌ Error: {e}", file=sys.stderr)
                 return False
 
     except Exception as e:

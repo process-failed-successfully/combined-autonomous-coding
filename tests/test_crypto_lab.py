@@ -22,6 +22,15 @@ def test_hash_data(crypto_manager):
     # Test Bytes
     assert crypto_manager.hash_data(b"hello world", "sha256") == expected
 
+def test_hmac_data(crypto_manager):
+    input_data = "hello world"
+    key = "secret"
+    expected = "734cc62f32841568f45715aeb9f4d7891324e6d948e4c6c60c0621cdac48623a"
+    assert crypto_manager.hmac_data(input_data, key, "sha256") == expected
+
+    # Test Bytes
+    assert crypto_manager.hmac_data(b"hello world", b"secret", "sha256") == expected
+
 def test_generate_key(crypto_manager):
     key = crypto_manager.generate_key()
     assert isinstance(key, bytes)
@@ -70,6 +79,19 @@ def test_cli_hash(capsys):
     run_crypto_lab_logic(args)
     captured = capsys.readouterr()
     assert "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08" in captured.out
+
+def test_cli_hmac(capsys):
+    args = MagicMock()
+    args.action = "hmac"
+    args.text = "hello world"
+    args.file = None
+    args.key = "secret"
+    args.key_file = None
+    args.algo = "sha256"
+
+    run_crypto_lab_logic(args)
+    captured = capsys.readouterr()
+    assert "734cc62f32841568f45715aeb9f4d7891324e6d948e4c6c60c0621cdac48623a" in captured.out
 
 def test_cli_gen_key(capsys):
     args = MagicMock()

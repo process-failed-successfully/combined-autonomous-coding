@@ -16242,6 +16242,14 @@ def parse_args(argv=None):
     parser_crypto_hash.add_argument("--file", help="Input file.")
     parser_crypto_hash.add_argument("--algo", default="sha256", help="Algorithm (md5, sha1, sha256, sha512).")
 
+    # crypto-lab hmac
+    parser_crypto_hmac = crypto_subparsers.add_parser("hmac", help="Calculate HMAC.")
+    parser_crypto_hmac.add_argument("--text", help="Input text.")
+    parser_crypto_hmac.add_argument("--file", help="Input file.")
+    parser_crypto_hmac.add_argument("--key", help="Key string.")
+    parser_crypto_hmac.add_argument("--key-file", help="Key file.")
+    parser_crypto_hmac.add_argument("--algo", default="sha256", help="Algorithm (md5, sha1, sha256, sha512).")
+
     # crypto-lab gen-key
     parser_crypto_gen = crypto_subparsers.add_parser("gen-key", help="Generate encryption key.")
     parser_crypto_gen.add_argument("--output", "-o", help="Save key to file.")

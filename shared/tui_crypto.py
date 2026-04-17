@@ -29,6 +29,21 @@ class CryptoLabTab(Container):
                         yield Label("[bold]Hash Output[/bold]")
                         yield TextArea(id="crypto-hash-output", read_only=True)
 
+                # HMAC
+                with TabPane("HMAC"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Input (Text):")
+                        yield TextArea(id="crypto-hmac-input")
+                        yield Label("Key:")
+                        yield Input(id="crypto-hmac-key")
+                        yield Label("Algorithm:")
+                        yield Select.from_values(["md5", "sha1", "sha256", "sha512"], id="crypto-hmac-algo", value="sha256")
+                        yield Button("Generate HMAC", id="btn-crypto-hmac", variant="primary")
+
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]HMAC Output[/bold]")
+                        yield TextArea(id="crypto-hmac-output", read_only=True)
+
                 # Encrypt
                 with TabPane("Encrypt"):
                     with Horizontal(classes="stat-box"):
@@ -110,6 +125,8 @@ class CryptoLabTab(Container):
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-crypto-hash":
             self.do_hash()
+        elif event.button.id == "btn-crypto-hmac":
+            self.do_hmac()
         elif event.button.id == "btn-crypto-gen-key":
             self.do_gen_key()
         elif event.button.id == "btn-crypto-encrypt":
@@ -142,6 +159,23 @@ class CryptoLabTab(Container):
             res = self.manager.hash_data(text, str(algo))
             out.text = res
             self.notify("Hash calculated.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_hmac(self) -> None:
+        text = self.query_one("#crypto-hmac-input", TextArea).text
+        key = self.query_one("#crypto-hmac-key", Input).value
+        algo = self.query_one("#crypto-hmac-algo", Select).value or "sha256"
+        out = self.query_one("#crypto-hmac-output", TextArea)
+
+        if not text or not key:
+            self.notify("Input and Key required.", severity="error")
+            return
+
+        try:
+            res = self.manager.hmac_data(text, key, str(algo))
+            out.text = res
+            self.notify("HMAC calculated.")
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")
 

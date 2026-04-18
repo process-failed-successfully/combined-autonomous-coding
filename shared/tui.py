@@ -337,6 +337,7 @@ from shared.tui_json_schema import JsonSchemaTab
 from shared.tui_sqlformat import TabSqlFormat
 from shared.plugin_manager import PluginManager
 from shared.tui_regex_escape import RegexEscapeLabTab
+from shared.tui_mask import MaskLabTab
 from shared.tui_fuzz import FuzzLabTab
 from shared.tui_filetype import FileTypeLabTab
 
@@ -4157,6 +4158,7 @@ class AgentTUI(App):
         PaletteCommand("Go to CSS Lab", "switch_tab_css"),
         PaletteCommand("Go to JS Lab", "switch_tab_js"),
         PaletteCommand("Go to Regex Escape Lab", "switch_tab_regex_escape"),
+        PaletteCommand("Go to Mask Lab", "switch_tab_mask"),
         PaletteCommand("Go to Base92 Lab", "switch_tab_base92"),
         PaletteCommand("Go to Fuzz Lab", "switch_tab_fuzz"),
         PaletteCommand("Go to Calc Lab", "switch_tab_calc"),
@@ -4897,6 +4899,8 @@ class AgentTUI(App):
                 yield JsonPatchLabTab()
             with TabPane("Regex Escape", id="tab-regex-escape"):
                 yield RegexEscapeLabTab()
+            with TabPane("Mask Lab", id="tab-mask"):
+                yield MaskLabTab()
             with TabPane("Fuzz Lab", id="tab-fuzz"):
                 yield FuzzLabTab(self.project_dir)
             with TabPane("FileType Lab", id="tab-filetype"):
@@ -4914,6 +4918,9 @@ class AgentTUI(App):
                     yield widget
 
         yield Footer()
+
+    def action_switch_tab_mask(self) -> None:
+        self.query_one(TabbedContent).active = "tab-mask"
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         # Handle dashboard buttons (bubble up)

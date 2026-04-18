@@ -243,7 +243,7 @@ KNOWN_COMMANDS = [
     "debt", "check-links", "security", "help", "cherry-pick", "rollback", "timeline",
     "analytics", "deps", "duplication", "unused", "risk", "impact", "a11y", "license",
     "bisect", "map", "architecture", "arch", "release", "openapi", "docstring", "refactor",
-    "polish", "resolve", "regex", "cron-lab", "braille-lab", "resolve-conflicts", "fix-conflicts",
+    "polish", "resolve", "regex", "cron-lab", "braille-lab", "resolve-conflicts", "fix-conflicts", "mask-lab", "pii-mask-lab",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
@@ -13077,6 +13077,24 @@ def parse_args(argv=None):
         help="Text or Braille to translate."
     )
 
+    # --- New 'mask-lab' command ---
+    parser_mask = subparsers.add_parser(
+        "mask-lab",
+        aliases=["pii-mask-lab"],
+        help="PII Data Masking Lab: mask emails, phones, SSNs, credit cards, etc."
+    )
+    parser_mask.add_argument(
+        "--text", "-t",
+        help="The text to mask. If omitted, will read from stdin."
+    )
+    parser_mask.add_argument("--email", action="store_true", help="Mask emails")
+    parser_mask.add_argument("--phone", action="store_true", help="Mask phone numbers")
+    parser_mask.add_argument("--credit-card", action="store_true", help="Mask credit cards")
+    parser_mask.add_argument("--ssn", action="store_true", help="Mask SSNs")
+    parser_mask.add_argument("--ipv4", action="store_true", help="Mask IPv4 addresses")
+    parser_mask.add_argument("--mask-char", "-m", default="*", help="The character to use for masking")
+    parser_mask.add_argument("--tui", action="store_true", help="Open the Mask Lab TUI")
+
     # --- New 'regex' command ---
     parser_regex = subparsers.add_parser(
         "regex",
@@ -20546,6 +20564,17 @@ async def run_logic_lab(args):
     sys.exit(0)
 
 
+def run_mask_lab(args):
+    """Runs the Mask Lab."""
+    if getattr(args, 'tui', False):
+        print("Launching Mask Lab TUI...")
+        from shared.tui import run_tui
+        run_tui(args, start_tab="tab-mask")
+        return
+
+    from shared.mask_lab import run_mask_lab_logic
+    run_mask_lab_logic(args)
+
 def run_regex_escape_lab(args):
     """Runs the Regex Escape Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -23288,6 +23317,9 @@ async def main():
         await run_regex(args)
         return
 
+    if args.command in ["mask-lab", "pii-mask-lab"]:
+        run_mask_lab(args)
+        return
     if args.command in ["regex-escape-lab", "regex-escape"]:
         run_regex_escape_lab(args)
         return

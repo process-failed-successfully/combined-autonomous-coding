@@ -1,0 +1,11 @@
+
+#flatten-buttons {
+    width: auto;
+    height: 100%;
+    align: center middle;
+    padding: 1;
+}
+
+#flatten-buttons Button {
+    margin: 1 0;
+}

@@ -3293,8 +3293,21 @@ def run_urlencode_lab(args):
     sys.exit(0 if success else 1)
 
 
-def run_urldecode_lab(args):
+def run_urldecode_lab(args, parser=None):
     """Runs the UrlDecode Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import run_tui
+        print("Launching UrlDecode Lab TUI...")
+        run_tui(args, start_tab="tab-urldecode")
+        return
+
+    if not getattr(args, "text", None):
+        if parser:
+            parser.error("--text is required when not using --tui")
+        else:
+            print("Error: --text is required when not using --tui.", file=sys.stderr)
+            sys.exit(1)
+
     from shared.urldecode_lab import run_urldecode_lab_logic
     success = run_urldecode_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -15058,7 +15071,8 @@ def parse_args(argv=None):
         "urldecode-lab", aliases=["urldecode"],
         help="URL decode strings."
     )
-    parser_urldecode.add_argument("--text", "-t", type=str, required=True, help="Text to decode.")
+    parser_urldecode.add_argument("--text", "-t", type=str, required=False, help="Text to decode.")
+    parser_urldecode.add_argument("--tui", action="store_true", help="Launch the TUI.")
 
     # --- New 'url-lab' command ---
     parser_url_lab = subparsers.add_parser(

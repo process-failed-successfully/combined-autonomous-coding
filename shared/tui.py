@@ -122,6 +122,7 @@ from shared.tui_database_diagram import DatabaseDiagramTab
 from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
+from shared.tui_date import DateLabTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_calc import CalcLabTab
@@ -4552,6 +4553,8 @@ class AgentTUI(App):
                 yield CryptoLabTab()
             with TabPane("Time Lab", id="tab-time"):
                 yield TimeLabTab()
+            with TabPane("Date Lab", id="tab-date"):
+                yield DateLabTab()
             with TabPane("Math Lab", id="tab-math"):
                 yield MathLabTab()
             with TabPane("Calc Lab", id="tab-calc"):

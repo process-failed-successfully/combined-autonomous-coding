@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
@@ -15183,6 +15183,47 @@ def parse_args(argv=None):
     # time-lab tui
     parser_time_tui = time_subparsers.add_parser("tui", help="Launch Time Lab TUI.")
 
+    # --- New 'date-lab' command ---
+    parser_date = subparsers.add_parser(
+        "date-lab",
+        aliases=["date"],
+        help="Date utilities (add, sub, diff, info, format)."
+    )
+    date_subparsers = parser_date.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # date-lab add
+    parser_date_add = date_subparsers.add_parser("add", help="Add days/weeks to a date.")
+    parser_date_add.add_argument("date", help="Base date string.")
+    parser_date_add.add_argument("--days", type=int, default=0, help="Days to add.")
+    parser_date_add.add_argument("--weeks", type=int, default=0, help="Weeks to add.")
+
+    # date-lab sub
+    parser_date_sub = date_subparsers.add_parser("sub", help="Subtract days/weeks from a date.")
+    parser_date_sub.add_argument("date", help="Base date string.")
+    parser_date_sub.add_argument("--days", type=int, default=0, help="Days to subtract.")
+    parser_date_sub.add_argument("--weeks", type=int, default=0, help="Weeks to subtract.")
+
+    # date-lab diff
+    parser_date_diff = date_subparsers.add_parser("diff", help="Calculate difference between dates.")
+    parser_date_diff.add_argument("date1", help="First date.")
+    parser_date_diff.add_argument("date2", help="Second date.")
+
+    # date-lab info
+    parser_date_info = date_subparsers.add_parser("info", help="Get info about a date.")
+    parser_date_info.add_argument("date", help="Date string.")
+
+    # date-lab format
+    parser_date_format = date_subparsers.add_parser("format", help="Format a date.")
+    parser_date_format.add_argument("date", help="Date string.")
+    parser_date_format.add_argument("format", help="Format string (e.g. '%%Y-%%m-%%d').")
+
+    # date-lab tui
+    parser_date_tui = date_subparsers.add_parser("tui", help="Launch Date Lab TUI.")
+
     # --- New 'pack' command ---
 
     # --- New 'converter-lab' command ---
@@ -24006,6 +24047,14 @@ async def main():
         return
     if args.command in ["time-lab", "time"]:
         run_time_lab(args)
+        return
+
+    if args.command in ["date-lab", "date"]:
+        if args.action == "tui":
+            run_tui(args, start_tab="tab-date")
+        else:
+            from shared.date_lab import run_date_lab_logic
+            run_date_lab_logic(args)
         return
 
     if args.command in ["math-lab", "math"]:

@@ -2,20 +2,23 @@ import pytest
 from unittest.mock import patch
 
 try:
-    from textual.widgets import Input, TextArea
-    from shared.database import init_db
+    from textual.app import App
+    from textual.widgets import Input, TextArea, TabbedContent
     from shared.tui_csv2sql import Csv2SqlTab
-    from shared.tui import AgentTUI
 except ImportError:
     pass
 
 pytest.importorskip('textual')
 
 
+class DummyApp(App):
+    def compose(self):
+        with TabbedContent():
+            yield Csv2SqlTab()
+
 @pytest.fixture
-def app(tmp_path):
-    init_db(tmp_path / "test.db")
-    return AgentTUI(project_dir=tmp_path, start_tab="tab-csv2sql")
+def app():
+    return DummyApp()
 
 
 @pytest.mark.asyncio
@@ -37,8 +40,8 @@ async def test_csv2sqltab_conversion_action(app):
         csv_input = tab.query_one("#csv2sql-input", TextArea)
         table_input = tab.query_one("#csv2sql-table-input", Input)
 
-        # Use load_text for TextArea
-        csv_input.load_text("id,name\n1,Alice\n2,Bob")
+        # Use text assignment
+        csv_input.text = "id,name\n1,Alice\n2,Bob"
         table_input.value = "users_table"
 
         tab.convert_csv()
@@ -57,7 +60,7 @@ async def test_csv2sqltab_clear_action(app):
         csv_input = tab.query_one("#csv2sql-input", TextArea)
         sql_output = tab.query_one("#csv2sql-output", TextArea)
 
-        csv_input.load_text("id,name\n1,Alice")
+        csv_input.text = "id,name\n1,Alice"
         tab.convert_csv()
         await pilot.pause()
         assert "INSERT" in sql_output.text
@@ -74,7 +77,7 @@ async def test_csv2sqltab_error_handling(app):
         tab = app.query_one(Csv2SqlTab)
 
         csv_input = tab.query_one("#csv2sql-input", TextArea)
-        csv_input.load_text("id,name\n1,Alice")
+        csv_input.text = "id,name\n1,Alice"
 
         with patch('shared.csv2sql_lab.Csv2SqlManager.convert', side_effect=Exception("Mock TUI Error")):
             tab.convert_csv()

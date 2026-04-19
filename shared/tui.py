@@ -320,6 +320,7 @@ from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2go import Json2GoLabTab
+from shared.tui_json2java import Json2JavaLabTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_yaml2xml import Yaml2XmlTab
 from shared.tui_yaml2py import Yaml2PyLabTab
@@ -4679,6 +4680,8 @@ class AgentTUI(App):
                 yield Json2TsLabTab()
             with TabPane("JSON to Go", id="tab-json2go"):
                 yield Json2GoLabTab()
+            with TabPane("JSON to Java", id="tab-json2java"):
+                yield Json2JavaLabTab()
             with TabPane("JSON to XML", id="tab-json2xml"):
                 yield Json2XmlTab()
             with TabPane("BIP39 Lab", id="tab-bip39"):

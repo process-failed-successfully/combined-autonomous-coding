@@ -15825,6 +15825,19 @@ def parse_args(argv=None):
     parser_json2ts.add_argument("--name", "-n", default="RootObject", help="Root interface name (default: 'RootObject').")
     parser_json2ts.add_argument("--tui", action="store_true", help="Launch JSON to TS Lab TUI.")
 
+    # --- New 'json2java-lab' command ---
+    parser_json2java = subparsers.add_parser(
+        "json2java-lab",
+        aliases=["json2java", "j2java"],
+        help="Convert JSON into Java Classes. Supports Jackson annotations and nested objects."
+    )
+    parser_json2java.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2java.add_argument("--text", "-t", help="Input JSON text.")
+    parser_json2java.add_argument("--output", "-o", help="Output Java file path.")
+    parser_json2java.add_argument("--name", "-n", default="RootObject", help="Root class name (default: 'RootObject').")
+    parser_json2java.add_argument("--package", "-p", default="com.example", help="Java package name (default: 'com.example').")
+    parser_json2java.add_argument("--tui", action="store_true", help="Launch JSON to Java Lab TUI.")
+
     # --- New 'json2go-lab' command ---
     parser_json2go = subparsers.add_parser(
         "json2go-lab",
@@ -24219,6 +24232,14 @@ async def main():
             return
         from shared.json2ts_lab import run_json2ts_lab_logic
         run_json2ts_lab_logic(args)
+        return
+
+    if args.command in ["json2java-lab", "json2java", "j2java"]:
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-json2java")
+            return
+        from shared.json2java_lab import run_json2java_lab_logic
+        run_json2java_lab_logic(args)
         return
 
     if args.command in ["json2go-lab", "json2go", "j2go"]:

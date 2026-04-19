@@ -321,6 +321,7 @@ from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2go import Json2GoLabTab
 from shared.tui_xml2yaml import Xml2YamlTab
+from shared.tui_flatten import FlattenLabTab
 from shared.tui_yaml2xml import Yaml2XmlTab
 from shared.tui_json2java import Json2JavaTab
 from shared.tui_yaml2py import Yaml2PyLabTab
@@ -4273,6 +4274,8 @@ class AgentTUI(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with TabbedContent(id="main-tabs", initial=self.start_tab):
+            if self.start_tab == "tab-flatten":
+                yield FlattenLabTab()
             with TabPane("Static Lab", id="tab-static"):
                 yield StaticLabTab(project_dir=self.project_dir)
             with TabPane("Dashboard", id="tab-dashboard"):

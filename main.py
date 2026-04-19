@@ -20083,6 +20083,24 @@ Examples:
     isbn_convert = isbn_subparsers.add_parser("convert", help="Convert an ISBN-10 to ISBN-13.")
     isbn_convert.add_argument("isbn", help="The ISBN-10 string to convert.")
 
+    parser_flatten = subparsers.add_parser(
+        "json-flatten-lab", aliases=["flatten", "unflatten"], help="Flatten and unflatten JSON structures."
+    )
+    flatten_subparsers = parser_flatten.add_subparsers(dest="action", help="Action to perform")
+    flatten_subparsers.add_parser("tui", help="Launch the interactive JSON Flatten Lab TUI.")
+
+    flatten_action = flatten_subparsers.add_parser("flatten", help="Flatten nested JSON.")
+    flatten_action.add_argument("--text", help="JSON string to flatten.")
+    flatten_action.add_argument("--file", help="JSON file to flatten.")
+    flatten_action.add_argument("--output", help="Output file path.")
+    flatten_action.add_argument("--separator", default=".", help="Separator for flattened keys (default: .).")
+
+    unflatten_action = flatten_subparsers.add_parser("unflatten", help="Unflatten flat JSON.")
+    unflatten_action.add_argument("--text", help="Flat JSON string to unflatten.")
+    unflatten_action.add_argument("--file", help="Flat JSON file to unflatten.")
+    unflatten_action.add_argument("--output", help="Output file path.")
+    unflatten_action.add_argument("--separator", default=".", help="Separator for flattened keys (default: .).")
+
     parser_zip = subparsers.add_parser(
         "zip-lab", aliases=["zip"], help="Utilities for creating and extracting zip archives."
     )
@@ -24075,6 +24093,13 @@ async def main():
     if args.command in ["time-lab", "time"]:
         run_time_lab(args)
         return
+
+    elif args.command in ["json-flatten-lab", "flatten", "unflatten"]:
+        if args.action == "tui":
+            run_tui(args, "tab-flatten")
+        else:
+            from shared.flatten_lab import run_flatten_lab_logic
+            run_flatten_lab_logic(args)
 
     if args.command in ["date-lab", "date"]:
         if args.action == "tui":

@@ -46,7 +46,8 @@ class TestTUIProductivity(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(ProductivityTab)
             self.assertTrue(tab.timer_active)
             self.assertEqual(tab.initial_duration, 15 * 60)
-            self.assertEqual(tab.remaining_seconds, 15 * 60)
+            # Time may have ticked down if the loop ran. We just check if it's close.
+            self.assertTrue(15 * 60 - 2 <= tab.remaining_seconds <= 15 * 60)
 
             # Stop the timer
             stop_btn = app.query_one("#btn-prod-stop", Button)
@@ -65,7 +66,8 @@ class TestTUIProductivity(unittest.IsolatedAsyncioTestCase):
 
             self.assertTrue(tab.timer_active)
             self.assertEqual(tab.initial_duration, 10 * 60)
-            self.assertEqual(tab.remaining_seconds, 10 * 60)
+            # Same for break time
+            self.assertTrue(10 * 60 - 2 <= tab.remaining_seconds <= 10 * 60)
 
             # Cleanup
             stop_btn.press()

@@ -151,6 +151,66 @@ class ImageLabManager:
 
         return output_path
 
+    def generate_favicon(self, input_path: Path, output_dir: Path) -> list[Path]:
+        """Generates standard favicon sizes from a source image."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        generated_files = []
+
+        with Image.open(input_path) as img:
+            # Ensure image is square for favicons
+            width, height = img.size
+            if width != height:
+                size = min(width, height)
+                # Center crop
+                left = (width - size) // 2
+                top = (height - size) // 2
+                right = (width + size) // 2
+                bottom = (height + size) // 2
+                img = img.crop((left, top, right, bottom))
+
+            # Ensure RGBA for transparency
+            img = img.convert("RGBA")
+
+            # 1. Standard favicon.ico (16x16, 32x32, 48x48 in one file)
+            icon_sizes = [(16, 16), (32, 32), (48, 48)]
+            icon_path = output_dir / "favicon.ico"
+            img.save(icon_path, format="ICO", sizes=icon_sizes)
+            generated_files.append(icon_path)
+
+            # 2. Apple Touch Icon (180x180)
+            apple_path = output_dir / "apple-touch-icon.png"
+            apple_img = img.resize((180, 180), Image.Resampling.LANCZOS)
+
+            # Apple touch icons typically shouldn't have transparency, but PNG supports it.
+            # We'll save as PNG to preserve corners if they aren't square, but a solid background is safer.
+            apple_bg = Image.new("RGB", apple_img.size, (255, 255, 255))
+            apple_bg.paste(apple_img, mask=apple_img.split()[3]) # paste using alpha as mask
+            apple_bg.save(apple_path, "PNG")
+            generated_files.append(apple_path)
+
+            # 3. Android Chrome Icons (192x192, 512x512)
+            for size in [192, 512]:
+                android_path = output_dir / f"android-chrome-{size}x{size}.png"
+                android_img = img.resize((size, size), Image.Resampling.LANCZOS)
+                android_img.save(android_path, "PNG")
+                generated_files.append(android_path)
+
+            # 4. Standard 32x32 PNG fallback
+            png_32_path = output_dir / "favicon-32x32.png"
+            img.resize((32, 32), Image.Resampling.LANCZOS).save(png_32_path, "PNG")
+            generated_files.append(png_32_path)
+
+            # 5. Standard 16x16 PNG fallback
+            png_16_path = output_dir / "favicon-16x16.png"
+            img.resize((16, 16), Image.Resampling.LANCZOS).save(png_16_path, "PNG")
+            generated_files.append(png_16_path)
+
+        return generated_files
+
     def create_placeholder(self, output_path: Path, width: int, height: int, color: str = "#CCCCCC", text: Optional[str] = None, text_color: str = "black") -> Path:
         """Generates a placeholder image."""
         self._check_pil()
@@ -321,6 +381,13 @@ def run_image_lab_logic(args):
                 text_color=args.text_color
             )
             console.print(f"[green]✅ Placeholder saved to {output}[/green]")
+
+        elif args.action == "favicon":
+            output_dir = Path(args.output)
+            generated = manager.generate_favicon(Path(args.input), output_dir)
+            console.print(f"[green]✅ Generated {len(generated)} favicons in {output_dir}[/green]")
+            for f in generated:
+                console.print(f"  - {f.name}")
 
         elif args.action == "exif":
             exif_data = manager.read_exif(Path(args.file))

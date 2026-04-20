@@ -16937,6 +16937,22 @@ def parse_args(argv=None):
     parser_qr_geo.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
     parser_qr_geo.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
+    # qr-lab vcard
+    parser_qr_vcard = qr_subparsers.add_parser("vcard", help="Generate VCard QR code.")
+    parser_qr_vcard.add_argument("--first-name", required=True, help="First name.")
+    parser_qr_vcard.add_argument("--last-name", default="", help="Last name.")
+    parser_qr_vcard.add_argument("--org", default="", help="Organization.")
+    parser_qr_vcard.add_argument("--title", default="", help="Job title.")
+    parser_qr_vcard.add_argument("--phone", default="", help="Phone number.")
+    parser_qr_vcard.add_argument("--email", default="", help="Email address.")
+    parser_qr_vcard.add_argument("--url", default="", help="Website URL.")
+    parser_qr_vcard.add_argument("--output", "-o", help="Output image file (PNG/SVG).")
+    parser_qr_vcard.add_argument("--fill-color", default="black", help="Fill color (default: black).")
+    parser_qr_vcard.add_argument("--back-color", default="white", help="Background color (default: white).")
+    parser_qr_vcard.add_argument("--logo", help="Path to an image file to embed in the center.")
+    parser_qr_vcard.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
+    parser_qr_vcard.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
+
     # qr-lab tui
     qr_subparsers.add_parser("tui", help="Launch interactive TUI.")
 

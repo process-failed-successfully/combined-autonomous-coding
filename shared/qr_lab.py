@@ -182,6 +182,37 @@ class QRLabManager:
         """Generates Geo URI."""
         return f"geo:{lat},{lon}"
 
+    def generate_vcard(self, first_name: str, last_name: str = "", org: str = "", title: str = "", phone: str = "", email: str = "", url: str = "") -> str:
+        """Generates a VCard string."""
+        lines = [
+            "BEGIN:VCARD",
+            "VERSION:3.0"
+        ]
+
+        name = first_name
+        if last_name:
+            name = f"{first_name} {last_name}"
+            lines.append(f"N:{last_name};{first_name};;;")
+        else:
+            lines.append(f"N:;{first_name};;;")
+
+        lines.append(f"FN:{name}")
+
+        if org:
+            lines.append(f"ORG:{org}")
+        if title:
+            lines.append(f"TITLE:{title}")
+        if phone:
+            lines.append(f"TEL:{phone}")
+        if email:
+            lines.append(f"EMAIL:{email}")
+        if url:
+            lines.append(f"URL:{url}")
+
+        lines.append("END:VCARD")
+
+        return "\n".join(lines)
+
 
 def run_qr_lab_logic(args):
     """Entry point for QR lab CLI."""
@@ -248,6 +279,23 @@ def run_qr_lab_logic(args):
             else:
                 console.print(f"Geo Config: [dim]{geo_str}[/dim]")
                 manager.generate(geo_str, **kwargs)
+
+        elif args.action == "vcard":
+            vcard_str = manager.generate_vcard(
+                first_name=args.first_name,
+                last_name=args.last_name,
+                org=args.org,
+                title=args.title,
+                phone=args.phone,
+                email=args.email,
+                url=args.url
+            )
+            output = Path(args.output) if args.output else None
+            if output:
+                manager.generate(vcard_str, output_path=output, **kwargs)
+            else:
+                console.print(f"VCard Config:\n[dim]{vcard_str}[/dim]")
+                manager.generate(vcard_str, **kwargs)
 
         elif args.action == "tui":
             from shared.tui import AgentTUI

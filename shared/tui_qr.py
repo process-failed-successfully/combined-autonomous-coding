@@ -69,6 +69,22 @@ class QrLabTab(Container):
                         yield Label("Longitude:")
                         yield Input(placeholder="-122.4194", id="qr-geo-lon")
 
+                    with TabPane("VCard", id="qr-tab-vcard"):
+                        yield Label("First Name:")
+                        yield Input(placeholder="Jane", id="qr-vcard-first")
+                        yield Label("Last Name:")
+                        yield Input(placeholder="Doe", id="qr-vcard-last")
+                        yield Label("Organization:")
+                        yield Input(placeholder="Company Inc.", id="qr-vcard-org")
+                        yield Label("Title:")
+                        yield Input(placeholder="Software Engineer", id="qr-vcard-title")
+                        yield Label("Phone:")
+                        yield Input(placeholder="+1234567890", id="qr-vcard-phone")
+                        yield Label("Email:")
+                        yield Input(placeholder="jane@example.com", id="qr-vcard-email")
+                        yield Label("URL:")
+                        yield Input(placeholder="https://example.com", id="qr-vcard-url")
+
                 yield Label("Settings:")
                 with Horizontal():
                     yield Label("Correction:")
@@ -133,6 +149,21 @@ class QrLabTab(Container):
             except ValueError:
                 self.notify("Invalid coordinates.", severity="error")
                 return ""
+
+        elif active_tab == "qr-tab-vcard":
+            first = self.query_one("#qr-vcard-first", Input).value
+            if not first:
+                self.notify("First Name is required for VCard.", severity="error")
+                return ""
+            last = self.query_one("#qr-vcard-last", Input).value
+            org = self.query_one("#qr-vcard-org", Input).value
+            title = self.query_one("#qr-vcard-title", Input).value
+            phone = self.query_one("#qr-vcard-phone", Input).value
+            email = self.query_one("#qr-vcard-email", Input).value
+            url = self.query_one("#qr-vcard-url", Input).value
+            return self.manager.generate_vcard(
+                first_name=first, last_name=last, org=org, title=title, phone=phone, email=email, url=url
+            )
 
         return ""
 

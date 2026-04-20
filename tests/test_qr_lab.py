@@ -49,6 +49,33 @@ class TestQRLabManager(unittest.TestCase):
         geo = self.manager.generate_geo(37.7749, -122.4194)
         self.assertEqual(geo, "geo:37.7749,-122.4194")
 
+    def test_generate_vcard(self):
+        vcard = self.manager.generate_vcard(
+            first_name="John",
+            last_name="Doe",
+            org="Acme Corp",
+            title="CEO",
+            phone="12345",
+            email="john@example.com",
+            url="https://acme.com"
+        )
+        self.assertIn("BEGIN:VCARD", vcard)
+        self.assertIn("VERSION:3.0", vcard)
+        self.assertIn("N:Doe;John;;;", vcard)
+        self.assertIn("FN:John Doe", vcard)
+        self.assertIn("ORG:Acme Corp", vcard)
+        self.assertIn("TITLE:CEO", vcard)
+        self.assertIn("TEL:12345", vcard)
+        self.assertIn("EMAIL:john@example.com", vcard)
+        self.assertIn("URL:https://acme.com", vcard)
+        self.assertIn("END:VCARD", vcard)
+
+        # Test minimal vcard
+        vcard_minimal = self.manager.generate_vcard(first_name="Jane")
+        self.assertIn("N:;Jane;;;", vcard_minimal)
+        self.assertIn("FN:Jane", vcard_minimal)
+        self.assertNotIn("ORG:", vcard_minimal)
+
     @patch("shared.qr_lab.qrcode.QRCode")
     def test_generate_ascii(self, mock_qr_cls):
         mock_qr = MagicMock()
@@ -113,6 +140,30 @@ class TestQRLabManager(unittest.TestCase):
         run_qr_lab_logic(args)
 
         mock_generate.assert_called_once_with("geo:10.0,20.0")
+
+    @patch("shared.qr_lab.QRLabManager.generate")
+    @patch("shared.qr_lab.console.print")
+    def test_run_qr_lab_logic_vcard(self, mock_print, mock_generate):
+        from shared.qr_lab import run_qr_lab_logic
+
+        class Args:
+            action = "vcard"
+            first_name = "Jane"
+            last_name = "Smith"
+            org = ""
+            title = ""
+            phone = ""
+            email = ""
+            url = ""
+            output = None
+
+        args = Args()
+        run_qr_lab_logic(args)
+
+        mock_generate.assert_called_once()
+        call_args = mock_generate.call_args[0][0]
+        self.assertIn("BEGIN:VCARD", call_args)
+        self.assertIn("FN:Jane Smith", call_args)
 
     @patch("asyncio.run")
     @patch("shared.tui.AgentTUI")

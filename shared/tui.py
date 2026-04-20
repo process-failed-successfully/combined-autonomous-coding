@@ -325,6 +325,7 @@ from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_flatten import FlattenLabTab
 from shared.tui_yaml2xml import Yaml2XmlTab
 from shared.tui_json2java import Json2JavaTab
+from shared.tui_json2kotlin import Json2KotlinTab
 from shared.tui_yaml2py import Yaml2PyLabTab
 from shared.tui_xml2toml import Xml2TomlTab
 from shared.tui_bip39 import Bip39Tab
@@ -4195,6 +4196,7 @@ class AgentTUI(App):
         PaletteCommand("Go to JSON to TS Lab", "switch_tab_json2ts"),
         PaletteCommand("Go to JSON to Go Lab", "switch_tab_json2go"),
         PaletteCommand("Go to JSON to Rust Lab", "switch_tab_json2rust"),
+        PaletteCommand("Go to JSON to Kotlin Lab", "switch_tab_json2kotlin"),
         PaletteCommand("Go to JSON to SQL Lab", "switch_tab_json2sql"),
         PaletteCommand("Go to Hash Validator Lab", "switch_tab_hash-validator"),
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
@@ -4696,6 +4698,7 @@ class AgentTUI(App):
             with TabPane("YAML to XML", id="tab-yaml2xml"):
                 yield Yaml2XmlTab()
             yield Json2JavaTab()
+            yield Json2KotlinTab()
             yield Yaml2PyLabTab()
 
 
@@ -4936,6 +4939,27 @@ class AgentTUI(App):
 
     def action_switch_tab_mask(self) -> None:
         self.query_one(TabbedContent).active = "tab-mask"
+
+    def action_switch_tab_json2rust(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2rust"
+
+    def action_switch_tab_json2kotlin(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2kotlin"
+
+    def action_switch_tab_json2md(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2md"
+
+    def action_switch_tab_json2py(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2py"
+
+    def action_switch_tab_json2ts(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2ts"
+
+    def action_switch_tab_json2go(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2go"
+
+    def action_switch_tab_json2sql(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2sql"
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         # Handle dashboard buttons (bubble up)

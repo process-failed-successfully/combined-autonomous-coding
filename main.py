@@ -15850,6 +15850,20 @@ def parse_args(argv=None):
     parser_json2go.add_argument("--name", "-n", default="RootStruct", help="Root struct name (default: 'RootStruct').")
     parser_json2go.add_argument("--tui", action="store_true", help="Launch JSON to Go Lab TUI.")
 
+
+    # --- New 'json2kotlin-lab' command ---
+    parser_json2kotlin = subparsers.add_parser(
+        "json2kotlin-lab",
+        aliases=["json2kotlin", "j2kt"],
+        help="Convert JSON payload to Kotlin data classes."
+    )
+    parser_json2kotlin.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2kotlin.add_argument("--text", "-t", help="Input JSON text.")
+    parser_json2kotlin.add_argument("--output", "-o", help="Output Kotlin file path.")
+    parser_json2kotlin.add_argument("--name", "-n", default="RootClass", help="Root class name (default: 'RootClass').")
+    parser_json2kotlin.add_argument("--package", "-p", default="com.example", help="Package name (default: 'com.example').")
+    parser_json2kotlin.add_argument("--tui", action="store_true", help="Launch JSON to Kotlin Lab TUI.")
+
     # --- New 'json2rust-lab' command ---
     parser_json2rust = subparsers.add_parser(
         "json2rust-lab",
@@ -23639,6 +23653,17 @@ async def main():
 
         from shared.plist_lab import run_plist_lab_logic
         success = run_plist_lab_logic(args)
+        if success:
+            sys.exit(0)
+        sys.exit(1)
+
+
+    if args.command in ["json2kotlin-lab", "json2kotlin", "j2kt"]:
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-json2kotlin")
+            return
+        from shared.json2kotlin_lab import run_json2kotlin_lab_logic
+        success = run_json2kotlin_lab_logic(args)
         if success:
             sys.exit(0)
         sys.exit(1)

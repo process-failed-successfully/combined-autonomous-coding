@@ -321,6 +321,7 @@ from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2go import Json2GoLabTab
 from shared.tui_json2rust import Json2RustLabTab
+from shared.tui_json2csharp import Json2CSharpTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_flatten import FlattenLabTab
 from shared.tui_yaml2xml import Yaml2XmlTab
@@ -4689,6 +4690,8 @@ class AgentTUI(App):
                 yield Json2GoLabTab()
             with TabPane("JSON to Rust", id="tab-json2rust"):
                 yield Json2RustLabTab()
+            with TabPane("JSON to C#", id="tab-json2csharp"):
+                yield Json2CSharpTab()
             with TabPane("JSON to XML", id="tab-json2xml"):
                 yield Json2XmlTab()
             with TabPane("BIP39 Lab", id="tab-bip39"):

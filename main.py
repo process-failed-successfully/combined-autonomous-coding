@@ -257,7 +257,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -15876,6 +15876,19 @@ def parse_args(argv=None):
     parser_json2rust.add_argument("--name", "-n", default="RootStruct", help="Root struct name (default: 'RootStruct').")
     parser_json2rust.add_argument("--tui", action="store_true", help="Launch JSON to Rust Lab TUI.")
 
+    # --- New 'json2csharp-lab' command ---
+    parser_json2csharp = subparsers.add_parser(
+        "json2csharp-lab",
+        aliases=["json2csharp", "j2cs"],
+        help="Convert JSON into C# classes. Supports stdin, file, or text input."
+    )
+    parser_json2csharp.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2csharp.add_argument("--text", "-t", help="Input JSON text.")
+    parser_json2csharp.add_argument("--output", "-o", help="Output C# file path.")
+    parser_json2csharp.add_argument("--name", "-n", default="RootClass", help="Name of the root class (default: RootClass).")
+    parser_json2csharp.add_argument("--namespace", default="MyNamespace", help="Namespace (default: MyNamespace).")
+    parser_json2csharp.add_argument("--tui", action="store_true", help="Launch JSON to C# Lab TUI.")
+
     # --- New 'yaml2py-lab' command ---
     parser_yaml2py = subparsers.add_parser(
         "yaml2py-lab",
@@ -24340,6 +24353,15 @@ async def main():
             sys.exit(0)
         sys.exit(1)
 
+    if args.command in ["json2csharp-lab", "json2csharp", "j2cs"]:
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-json2csharp")
+            return
+        from shared.json2csharp_lab import run_json2csharp_lab_logic
+        success = run_json2csharp_lab_logic(args)
+        if success:
+            sys.exit(0)
+        sys.exit(1)
 
     if args.command in ["yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t"]:
         if getattr(args, "action", None) == "tui":

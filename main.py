@@ -24307,7 +24307,7 @@ async def main():
             args.action = "json2yaml"
 
         if getattr(args, "tui", False) or args.action == "tui" or not hasattr(args, 'input'):
-            run_tui(args, "tab-yaml2json")
+            run_tui(args, "tab-json2yaml")
             return
         from shared.yaml2json_lab import run_json2yaml_lab_logic
         run_json2yaml_lab_logic(args)

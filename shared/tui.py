@@ -330,6 +330,7 @@ from shared.tui_json2kotlin import Json2KotlinTab
 from shared.tui_yaml2py import Yaml2PyLabTab
 from shared.tui_xml2toml import Xml2TomlTab
 from shared.tui_bip39 import Bip39Tab
+from shared.tui_json2yaml import Json2YamlLabTab
 from shared.tui_yaml2json import Yaml2JsonLabTab
 from shared.tui_yaml2toml import Yaml2TomlLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
@@ -4711,6 +4712,8 @@ class AgentTUI(App):
                 yield Toml2CsvLabTab()
             with TabPane("XML to TOML", id="tab-xml2toml"):
                 yield Xml2TomlTab()
+            with TabPane("JSON to YAML", id="tab-json2yaml"):
+                yield Json2YamlLabTab()
             with TabPane("YAML to JSON", id="tab-yaml2json"):
                 yield Yaml2JsonLabTab()
             with TabPane("YAML to TOML", id="tab-yaml2toml"):

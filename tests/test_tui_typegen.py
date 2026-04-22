@@ -46,6 +46,13 @@ class TestTypegenLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("@dataclass", output.text)
             self.assertIn("class Root:", output.text)
 
+            # Switch lang to zod
+            lang_select.value = "zod"
+            await pilot.click("#btn-typegen-generate")
+            self.assertIn('import { z } from "zod";', output.text)
+            self.assertIn("export const RootSchema = z.object({", output.text)
+            self.assertIn("name: z.string(),", output.text)
+
     async def test_clear_button(self):
         app = DummyApp()
         async with app.run_test() as pilot:

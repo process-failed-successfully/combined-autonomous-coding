@@ -60,33 +60,35 @@ class TypegenManager:
             self._generate_python(data, name)
         elif lang == "rust":
             self._generate_rust(data, name)
+        elif lang == "zod":
+            self._generate_zod(data, name)
         else:
             self.structs["Error"] = f"Unsupported language: {lang}"
 
     def _get_value_type(self, val: Any, key: str, lang: str) -> str:
         if val is None:
-            return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "Option<serde_json::Value>"
+            return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "Option<serde_json::Value>"
 
         if isinstance(val, bool):
-            return "boolean" if lang == "typescript" else "bool" if lang == "go" else "bool" if lang == "python" else "bool"
+            return "boolean" if lang == "typescript" else "bool" if lang == "go" else "bool" if lang == "python" else "z.boolean()" if lang == "zod" else "bool"
 
         if isinstance(val, int):
-            return "number" if lang == "typescript" else "int" if lang == "go" else "int" if lang == "python" else "i64"
+            return "number" if lang == "typescript" else "int" if lang == "go" else "int" if lang == "python" else "z.number()" if lang == "zod" else "i64"
 
         if isinstance(val, float):
-            return "number" if lang == "typescript" else "float64" if lang == "go" else "float" if lang == "python" else "f64"
+            return "number" if lang == "typescript" else "float64" if lang == "go" else "float" if lang == "python" else "z.number()" if lang == "zod" else "f64"
 
         if isinstance(val, str):
-            return "string" if lang == "typescript" else "string" if lang == "go" else "str" if lang == "python" else "String"
+            return "string" if lang == "typescript" else "string" if lang == "go" else "str" if lang == "python" else "z.string()" if lang == "zod" else "String"
 
         if isinstance(val, dict):
             nested_name = self._get_type_name(key)
             self._parse_dict(val, nested_name, lang)
-            return nested_name if lang != "go" else f"*{nested_name}"
+            return nested_name if lang not in ("go", "zod") else f"*{nested_name}" if lang == "go" else f"z.lazy(() => {nested_name}Schema)"
 
         if isinstance(val, list):
             if not val:
-                base = "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "serde_json::Value"
+                base = "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "serde_json::Value"
             else:
                 base = self._get_value_type(val[0], key, lang)
 
@@ -96,10 +98,12 @@ class TypegenManager:
                 return f"[]{base}"
             elif lang == "python":
                 return f"List[{base}]"
+            elif lang == "zod":
+                return f"z.array({base})"
             elif lang == "rust":
                 return f"Vec<{base}>"
 
-        return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "serde_json::Value"
+        return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "serde_json::Value"
 
     def _generate_typescript(self, data: Dict[str, Any], name: str):
         lines = [f"export interface {name} {{"]
@@ -147,6 +151,15 @@ class TypegenManager:
         lines.append("}")
         self.structs[name] = "\n".join(lines)
 
+    def _generate_zod(self, data: Dict[str, Any], name: str):
+        lines = [f"export const {name}Schema = z.object({{"]
+        for key, val in data.items():
+            zod_type = self._get_value_type(val, key, "zod")
+            lines.append(f"  {key}: {zod_type},")
+        lines.append("});")
+        lines.append(f"export type {name} = z.infer<typeof {name}Schema>;")
+        self.structs[name] = "\n".join(lines)
+
 
 
 
@@ -189,6 +202,8 @@ def run_typegen_lab_logic(args):
                     f.write("from dataclasses import dataclass\nfrom typing import Any, List\n\n")
                 elif args.lang == "rust" and "serde" in result:
                     f.write("use serde::{Serialize, Deserialize};\n\n")
+                elif args.lang == "zod" and "z.object" in result:
+                    f.write("import { z } from \"zod\";\n\n")
                 f.write(result)
             print(f"✅ Generated types saved to {args.output}")
         except Exception as e:
@@ -199,6 +214,8 @@ def run_typegen_lab_logic(args):
             print("from dataclasses import dataclass\nfrom typing import Any, List\n")
         elif args.lang == "rust" and "serde" in result:
             print("use serde::{Serialize, Deserialize};\n")
+        elif args.lang == "zod" and "z.object" in result:
+            print("import { z } from \"zod\";\n")
         print(result)
 
     return True

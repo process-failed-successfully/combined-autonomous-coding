@@ -20071,7 +20071,7 @@ Examples:
     typegen_generate = typegen_subparsers.add_parser("generate", help="Generate types from JSON")
     typegen_generate.add_argument("--json", help="JSON string to convert")
     typegen_generate.add_argument("--file", "-f", help="Path to JSON file")
-    typegen_generate.add_argument("--lang", "-l", choices=["typescript", "go", "python", "rust"], default="typescript", help="Target language")
+    typegen_generate.add_argument("--lang", "-l", choices=["typescript", "go", "python", "rust", "zod"], default="typescript", help="Target language")
     typegen_generate.add_argument("--name", "-n", default="Root", help="Name of the root struct/interface")
     typegen_generate.add_argument("--output", "-o", help="File to write generated types to")
 

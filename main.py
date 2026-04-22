@@ -209,6 +209,7 @@ from shared.typegen_lab import run_typegen_lab_logic
 from shared.zip_lab import run_zip_lab_logic
 from shared.json_schema_lab import run_json_schema_lab_logic
 from shared.regex_escape_lab import run_regex_escape_lab_logic
+from shared.auto_fix import run_auto_fix_logic
 from shared import __version__
 import json
 import yaml
@@ -9856,6 +9857,14 @@ def parse_args(argv=None):
         type=Path,
         default=Path("."),
         help="The project directory to check (default: current directory)",
+    )
+
+    parser_autofix = subparsers.add_parser("auto-fix", aliases=["fix"], help="Automatically fix missing directories, permissions, and settings.")
+    parser_autofix.add_argument(
+        "-p", "--project-dir",
+        type=Path,
+        default=Path("."),
+        help="The project directory to fix (default: current directory)",
     )
 
     # Subparser for 'init'
@@ -23024,6 +23033,11 @@ async def main():
     # Handle `doctor` command
     if args.command == "doctor":
         run_doctor(args)
+        return
+
+    # Handle `auto-fix` command
+    if args.command in ["auto-fix", "fix"]:
+        run_auto_fix_logic(args.project_dir)
         return
 
     # Handle `clean` command

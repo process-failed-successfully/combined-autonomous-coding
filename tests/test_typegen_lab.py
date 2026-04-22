@@ -49,6 +49,23 @@ class TestTypegenManager(unittest.TestCase):
         self.assertIn("pub r#type: String,", result)
         self.assertIn("#[serde(rename = \"type\")]", result)
 
+    def test_generate_zod(self):
+        json_str = '{"id": "abc", "count": 10, "isActive": true, "tags": ["admin"]}'
+        result = self.manager.generate(json_str, root_name="Response", lang="zod")
+        self.assertIn("export const ResponseSchema = z.object({", result)
+        self.assertIn("id: z.string(),", result)
+        self.assertIn("count: z.number(),", result)
+        self.assertIn("isActive: z.boolean(),", result)
+        self.assertIn("tags: z.array(z.string()),", result)
+        self.assertIn("export type Response = z.infer<typeof ResponseSchema>;", result)
+
+    def test_generate_zod_nested(self):
+        json_str = '{"user": {"name": "test"}}'
+        result = self.manager.generate(json_str, root_name="Root", lang="zod")
+        self.assertIn("export const UserSchema = z.object({", result)
+        self.assertIn("name: z.string(),", result)
+        self.assertIn("user: z.lazy(() => UserSchema),", result)
+
     def test_generate_nested(self):
         json_str = '{"user": {"name": "test"}}'
         result = self.manager.generate(json_str, root_name="Root", lang="typescript")

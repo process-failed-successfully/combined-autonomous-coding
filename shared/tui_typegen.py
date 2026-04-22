@@ -34,7 +34,7 @@ class TypegenLabTab(Container):
 
                 yield Label("Language:")
                 yield Select.from_values(
-                    ["typescript", "go", "python", "rust"],
+                    ["typescript", "go", "python", "rust", "zod"],
                     id="typegen-lang", value="typescript"
                 )
 
@@ -83,9 +83,11 @@ class TypegenLabTab(Container):
                 prefix = "from dataclasses import dataclass\nfrom typing import Any, List\n\n"
             elif lang == "rust":
                 prefix = "use serde::{Serialize, Deserialize};\n\n"
+            elif lang == "zod":
+                prefix = "import { z } from \"zod\";\n\n"
 
             output.text = prefix + result
-            output.language = lang if lang in ["typescript", "go", "python", "rust"] else None
+            output.language = "typescript" if lang == "zod" else (lang if lang in ["typescript", "go", "python", "rust"] else None)
             log.write("[bold green]✅ Types generated successfully[/bold green]")
         except Exception as e:
             log.write(f"[bold red]Unexpected Error: {e}[/bold red]")

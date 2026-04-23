@@ -16685,7 +16685,7 @@ def parse_args(argv=None):
     parser_json2py.add_argument("--file", "-f", help="Input JSON file.")
     parser_json2py.add_argument("--text", "-t", help="Input JSON text.")
     parser_json2py.add_argument("--output", "-o", help="Output file.")
-    parser_json2py.add_argument("--framework", choices=["dataclass", "pydantic"], default="dataclass", help="Framework to use.")
+    parser_json2py.add_argument("--framework", choices=["dataclass", "pydantic", "msgspec", "typeddict"], default="dataclass", help="Framework to use.")
     parser_json2py.add_argument("--name", default="RootModel", help="Root class name.")
     parser_json2py.add_argument("--tui", action="store_true", help="Launch TUI.")
     parser_json2xml = subparsers.add_parser(

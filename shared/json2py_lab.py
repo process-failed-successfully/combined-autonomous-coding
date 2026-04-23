@@ -36,6 +36,10 @@ class Json2PyManager:
             imports = "from dataclasses import dataclass\nfrom typing import Any, List, Optional\n\n"
         elif framework == "pydantic":
             imports = "from pydantic import BaseModel\nfrom typing import Any, List, Optional\n\n"
+        elif framework == "msgspec":
+            imports = "from msgspec import Struct\nfrom typing import Any, List, Optional\n\n"
+        elif framework == "typeddict":
+            imports = "from typing import Any, List, Optional, TypedDict\n\n"
 
         return imports + "\n\n".join(self.class_definitions)
 
@@ -60,6 +64,10 @@ class Json2PyManager:
             class_def = f"@dataclass\nclass {class_name}:\n"
         elif framework == "pydantic":
             class_def = f"class {class_name}(BaseModel):\n"
+        elif framework == "msgspec":
+            class_def = f"class {class_name}(Struct):\n"
+        elif framework == "typeddict":
+            class_def = f"class {class_name}(TypedDict, total=False):\n"
         else:
             raise ValueError(f"Unknown framework: {framework}")
 
@@ -67,7 +75,10 @@ class Json2PyManager:
             class_def += "    pass\n"
         else:
             for name, type_str in fields:
-                class_def += f"    {name}: Optional[{type_str}] = None\n"
+                if framework == "typeddict":
+                    class_def += f"    {name}: {type_str}\n"
+                else:
+                    class_def += f"    {name}: Optional[{type_str}] = None\n"
 
         self.class_definitions.append(class_def.rstrip())
 

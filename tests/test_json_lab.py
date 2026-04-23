@@ -73,6 +73,20 @@ class TestJsonLabManager(unittest.TestCase):
         minified = self.manager.minify(data)
         self.assertEqual(minified, '{"a":1,"b":2}')
 
+    def test_format(self):
+        data = {"b": 2, "a": 1}
+        # Test default format
+        formatted = self.manager.format(data)
+        self.assertEqual(formatted, '{\n  "b": 2,\n  "a": 1\n}')
+
+        # Test custom indent
+        formatted_indent_4 = self.manager.format(data, indent=4)
+        self.assertEqual(formatted_indent_4, '{\n    "b": 2,\n    "a": 1\n}')
+
+        # Test sort_keys
+        formatted_sorted = self.manager.format(data, sort_keys=True)
+        self.assertEqual(formatted_sorted, '{\n  "a": 1,\n  "b": 2\n}')
+
     def test_diff(self):
         d1 = {"a": 1, "b": 2}
         d2 = {"b": 2, "a": 1} # Same content, diff order

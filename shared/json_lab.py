@@ -162,6 +162,10 @@ class JsonLabManager:
         """Returns minified JSON string."""
         return json.dumps(data, separators=(',', ':'))
 
+    def format(self, data: Any, indent: int = 2, sort_keys: bool = False) -> str:
+        """Returns formatted JSON string."""
+        return json.dumps(data, indent=indent, sort_keys=sort_keys)
+
     def diff(self, data1: Any, data2: Any) -> str:
         """Returns a semantic diff of two JSON objects."""
         # Dump with sorted keys to ensure semantic comparison
@@ -270,6 +274,19 @@ def run_json_lab_logic(args):
             else:
                 data = manager.load_json(args.input)
             print(manager.minify(data))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "format":
+        try:
+            # Read from stdin if input is "-"
+            if args.input == "-":
+                content = sys.stdin.read()
+                data = json.loads(content)
+            else:
+                data = manager.load_json(args.input)
+            print(manager.format(data, indent=args.indent, sort_keys=args.sort_keys))
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)

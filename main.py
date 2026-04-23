@@ -16198,6 +16198,12 @@ def parse_args(argv=None):
     parser_json_minify = json_subparsers.add_parser("minify", help="Minify JSON.")
     parser_json_minify.add_argument("input", help="JSON string or file path.")
 
+    # json-lab format
+    parser_json_format = json_subparsers.add_parser("format", help="Format/pretty-print JSON.")
+    parser_json_format.add_argument("input", help="JSON string or file path.")
+    parser_json_format.add_argument("--indent", type=int, default=2, help="Indentation level (default: 2).")
+    parser_json_format.add_argument("--sort-keys", action="store_true", help="Sort keys in the output.")
+
     # json-lab diff
     parser_json_diff = json_subparsers.add_parser("diff", help="Diff two JSON files.")
     parser_json_diff.add_argument("file1", help="First file.")

@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -2880,6 +2880,27 @@ def run_jwk_lab(args):
     success = run_jwk_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+def run_ksuid_lab(args):
+    """Runs the KSUID Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching KSUID Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-ksuid")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.ksuid_lab import run_ksuid_lab_logic
+    run_ksuid_lab_logic(args)
+    sys.exit(0)
 
 def run_uuid_lab(args):
     """Runs the UUID Lab."""
@@ -14669,6 +14690,28 @@ def parse_args(argv=None):
     parser_currency.add_argument("--from-cur", dest="from_cur", help="Source currency code (e.g. USD).")
     parser_currency.add_argument("--to-cur", dest="to_cur", help="Target currency code (e.g. EUR).")
 
+    parser_ksuid = subparsers.add_parser(
+        "ksuid-lab",
+        aliases=["ksuid"],
+        help="KSUID Generator and Inspector."
+    )
+    ksuid_subparsers = parser_ksuid.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # ksuid generate
+    parser_ksuid_gen = ksuid_subparsers.add_parser("generate", aliases=["gen"], help="Generate KSUIDs.")
+    parser_ksuid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of KSUIDs to generate.")
+
+    # ksuid inspect
+    parser_ksuid_inspect = ksuid_subparsers.add_parser("inspect", aliases=["decode"], help="Inspect a KSUID.")
+    parser_ksuid_inspect.add_argument("ksuid", help="The KSUID to inspect.")
+
+    # ksuid tui
+    parser_ksuid_tui = ksuid_subparsers.add_parser("tui", help="Launch KSUID Lab TUI.")
+
     parser_uuid = subparsers.add_parser(
         "uuid-lab",
         aliases=["uuid"],
@@ -24083,6 +24126,10 @@ async def main():
 
     if args.command in ["jwk-lab", "jwk"]:
         run_jwk_lab(args)
+        return
+
+    if args.command in ["ksuid-lab", "ksuid"]:
+        run_ksuid_lab(args)
         return
 
     if args.command in ["uuid-lab", "uuid"]:

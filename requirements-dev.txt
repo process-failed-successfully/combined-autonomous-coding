@@ -11,3 +11,4 @@ pytest-asyncio
 pre-commit
 jsonpath-ng
 tiktoken
+cuid2>=2.0.0

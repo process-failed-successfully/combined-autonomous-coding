@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -14589,6 +14589,24 @@ def parse_args(argv=None):
     parser_hashids.add_argument("--numbers", nargs="+", type=int, help="Integers to encode.")
     parser_hashids.add_argument("--hashid", help="Hashid to decode.")
 
+    # --- New 'cuid2-lab' command ---
+    parser_cuid2 = subparsers.add_parser(
+        "cuid2-lab",
+        aliases=["cuid2"],
+        help="CUID2 Generator Lab."
+    )
+    cuid2_subparsers = parser_cuid2.add_subparsers(
+        dest="action", required=True, help="Action to perform."
+    )
+
+    # cuid2 generate
+    parser_cuid2_gen = cuid2_subparsers.add_parser("generate", aliases=["gen"], help="Generate CUID2s.")
+    parser_cuid2_gen.add_argument("--count", "-c", type=int, default=1, help="Number of CUID2s to generate.")
+    parser_cuid2_gen.add_argument("--length", "-l", type=int, default=24, help="Length of the CUID2.")
+
+    # cuid2 tui
+    parser_cuid2_tui = cuid2_subparsers.add_parser("tui", help="Launch CUID2 Lab TUI.")
+
     # --- New 'uuid-lab' command ---
     # ==========================================
     # ULID Lab
@@ -24130,6 +24148,11 @@ async def main():
 
     if args.command in ["ksuid-lab", "ksuid"]:
         run_ksuid_lab(args)
+        return
+
+    if args.command in ["cuid2-lab", "cuid2"]:
+        from shared.cuid2_lab import run_cuid2_lab_logic
+        run_cuid2_lab_logic(args)
         return
 
     if args.command in ["uuid-lab", "uuid"]:

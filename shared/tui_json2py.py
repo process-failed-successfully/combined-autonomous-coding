@@ -21,7 +21,7 @@ class Json2PyLabTab(TabPane):
 
                 yield Label("Framework:", classes="w-24")
                 yield Select(
-                    [("Dataclass", "dataclass"), ("Pydantic", "pydantic")],
+                    [("Dataclass", "dataclass"), ("Pydantic", "pydantic"), ("Msgspec", "msgspec"), ("TypedDict", "typeddict")],
                     value="dataclass",
                     id="select-json2py-framework",
                     classes="w-40 mr-4"

@@ -2,7 +2,13 @@ import unittest
 from unittest.mock import MagicMock, patch
 import io
 import json
+import pytest
 from shared.json_schema_lab import run_json_schema_lab_logic, JsonSchemaManager
+
+try:
+    import jsonschema
+except ImportError:
+    jsonschema = None
 
 
 class TestJsonSchemaLab(unittest.TestCase):
@@ -63,6 +69,7 @@ class TestJsonSchemaLab(unittest.TestCase):
             self.assertFalse(result)
             self.assertIn("Please provide JSON", mock_stderr.getvalue())
 
+    @pytest.mark.skipif(jsonschema is None, reason="jsonschema library is not installed")
     def test_manager_validate_valid(self):
         manager = JsonSchemaManager()
         data = {"name": "Test", "age": 30}
@@ -77,6 +84,7 @@ class TestJsonSchemaLab(unittest.TestCase):
         result = manager.validate(data, schema)
         self.assertTrue(result.get("success"))
 
+    @pytest.mark.skipif(jsonschema is None, reason="jsonschema library is not installed")
     def test_manager_validate_invalid(self):
         manager = JsonSchemaManager()
         data = {"name": 123, "age": 30}
@@ -90,6 +98,7 @@ class TestJsonSchemaLab(unittest.TestCase):
         self.assertFalse(result.get("success"))
         self.assertIn("123 is not of type 'string'", result.get("error"))
 
+    @pytest.mark.skipif(jsonschema is None, reason="jsonschema library is not installed")
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_run_logic_validate_success(self, mock_stdout):
         args = MagicMock()
@@ -105,6 +114,7 @@ class TestJsonSchemaLab(unittest.TestCase):
         self.assertTrue(result)
         self.assertIn("JSON is valid according to the schema", mock_stdout.getvalue())
 
+    @pytest.mark.skipif(jsonschema is None, reason="jsonschema library is not installed")
     @patch('sys.stderr', new_callable=io.StringIO)
     def test_run_logic_validate_failure(self, mock_stderr):
         args = MagicMock()

@@ -2,17 +2,15 @@ import pytest
 from typer.testing import CliRunner
 import sys
 from pathlib import Path
-import os
 
 # Ensure bin is in sys.path to import agent
 repo_root = Path(__file__).parent.parent
 sys.path.insert(0, str(repo_root))
 
-# Assuming we can import the app
-import bin.agent
 from bin.agent import app
 
 runner = CliRunner()
+
 
 def test_app_help():
     result = runner.invoke(app, ["--help"])
@@ -21,12 +19,14 @@ def test_app_help():
     assert "run" in result.stdout
     assert "list" in result.stdout
 
+
 @pytest.fixture
 def mock_config_path(tmp_path, monkeypatch):
     config_file = tmp_path / "agent_config.yaml"
     monkeypatch.setattr("bin.agent.get_config_path", lambda: config_file)
     monkeypatch.setattr("bin.agent.ensure_config_exists", lambda: config_file.touch() if not config_file.exists() else None)
     return config_file
+
 
 def test_config_set(mock_config_path):
     result = runner.invoke(app, ["config", "set", "max-iterations", "50"])
@@ -38,6 +38,7 @@ def test_config_set(mock_config_path):
         data = yaml.safe_load(f)
     assert data["max-iterations"] == 50
 
+
 def test_config_view(mock_config_path):
     import yaml
     with open(mock_config_path, "w") as f:
@@ -46,6 +47,7 @@ def test_config_view(mock_config_path):
     result = runner.invoke(app, ["config", "view"])
     assert result.exit_code == 0
     assert "test_key: test_value" in result.stdout
+
 
 def test_config_reset(mock_config_path):
     import yaml
@@ -61,7 +63,20 @@ def test_config_reset(mock_config_path):
     assert "model" not in data
     assert data["other"] == "value"
 
+
+def test_config_list_keys():
+    result = runner.invoke(app, ["config", "list-keys"])
+    assert result.exit_code == 0
+    assert "agent_type" in result.stdout
+    assert "max_iterations" in result.stdout
+    assert "timeout" in result.stdout
+    # Should exclude internal keys
+    assert "project_dir" not in result.stdout
+    assert "jira_ticket_key" not in result.stdout
+
 # Mock Docker and Subprocess for other commands
+
+
 @pytest.fixture(autouse=True)
 def mock_docker_subprocess(monkeypatch):
     def mock_run(cmd, *args, **kwargs):
@@ -73,12 +88,12 @@ def mock_docker_subprocess(monkeypatch):
     monkeypatch.setattr("bin.agent.subprocess.run", mock_run)
     monkeypatch.setattr("bin.agent.subprocess.Popen", mock_popen)
 
-
     class MockContainer:
         def __init__(self, name, short_id, status, tags):
             self.name = name
             self.short_id = short_id
             self.status = status
+
             class MockImage:
                 def __init__(self, t):
                     self.tags = t
@@ -109,6 +124,7 @@ def mock_docker_subprocess(monkeypatch):
 
     monkeypatch.setattr("bin.agent.get_docker_client", mock_get_docker_client)
 
+
 def test_list():
     result = runner.invoke(app, ["list"])
     assert result.exit_code == 0
@@ -117,26 +133,31 @@ def test_list():
     # other_container should not be listed as it doesn't match filter
     assert "other_container" not in result.stdout
 
+
 def test_attach_success():
     result = runner.invoke(app, ["attach", "test_agent_run"])
     assert result.exit_code == 0
     assert "Attaching to test_agent_run..." in result.stdout
+
 
 def test_attach_not_found():
     result = runner.invoke(app, ["attach", "nonexistent"])
     assert result.exit_code == 0
     assert "Container nonexistent not found" in result.stdout
 
+
 def test_logs_success():
     result = runner.invoke(app, ["logs", "test_agent_run"])
     assert result.exit_code == 0
     assert "Fetching logs for test_agent_run..." in result.stdout
+
 
 def test_stop_success():
     result = runner.invoke(app, ["stop", "test_agent_run"])
     assert result.exit_code == 0
     assert "Stopping test_agent_run..." in result.stdout
     assert "test_agent_run stopped successfully" in result.stdout
+
 
 def test_run_command():
     result = runner.invoke(app, ["run", "--spec", "my_spec.txt", "--detached", "--name", "my_agent"])

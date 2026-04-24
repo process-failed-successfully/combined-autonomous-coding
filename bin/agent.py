@@ -1,17 +1,16 @@
 import typer
 import subprocess
 import sys
-import os
 import yaml
 from pathlib import Path
 
 # Ensure we can import from shared
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from shared.config_loader import get_config_path, ensure_config_exists
 
-from rich.console import Console
-from rich.panel import Panel
+from shared.config_loader import get_config_path, ensure_config_exists
 from rich.table import Table
+from rich.panel import Panel
+from rich.console import Console
 
 try:
     import docker
@@ -24,6 +23,7 @@ app.add_typer(config_app, name="config")
 
 console = Console()
 
+
 def get_docker_client():
     if not docker:
         console.print("[red]Error:[/red] The 'docker' python library is not installed.")
@@ -34,6 +34,7 @@ def get_docker_client():
         console.print(f"[red]Error connecting to Docker:[/red] {e}")
         console.print("Make sure Docker is running and your user has permissions.")
         sys.exit(1)
+
 
 @app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
@@ -118,7 +119,7 @@ def attach(name: str):
     """Re-attach to a session."""
     client = get_docker_client()
     try:
-        container = client.containers.get(name)
+        client.containers.get(name)
         console.print(f"[cyan]Attaching to {name}...[/cyan]")
         subprocess.run(["docker", "attach", name])  # nosec
     except docker.errors.NotFound:
@@ -130,7 +131,7 @@ def logs(name: str):
     """View logs."""
     client = get_docker_client()
     try:
-        container = client.containers.get(name)
+        client.containers.get(name)
         console.print(f"[cyan]Fetching logs for {name}...[/cyan]")
         subprocess.run(["docker", "logs", "-f", name])  # nosec
     except docker.errors.NotFound:
@@ -155,10 +156,15 @@ def config_set(key: str, value: str):
     """Set a configuration value."""
     ensure_config_exists()
     path = get_config_path()
+    if not path:
+        console.print("[red]Error: Could not determine configuration path.[/red]")
+        return
+
     try:
         with open(path, "r") as f:
             data = yaml.safe_load(f) or {}
 
+        parsed_value: bool | int | float | str
         # Parse basic types
         if value.lower() in ("true", "yes"):
             parsed_value = True
@@ -187,6 +193,7 @@ def config_set(key: str, value: str):
     except Exception as e:
         console.print(f"[red]Error setting configuration:[/red] {e}")
 
+
 @config_app.command("view")
 def config_view():
     """View current configuration."""
@@ -202,6 +209,40 @@ def config_view():
         console.print(Panel(syntax, title=f"Configuration: {path}"))
     except Exception as e:
         console.print(f"[red]Error reading configuration:[/red] {e}")
+
+
+@config_app.command("list-keys")
+def config_list_keys():
+    """List all configurable settings with descriptions and defaults."""
+    import dataclasses
+    from shared.config import Config
+
+    table = Table("Key", "Type", "Default")
+
+    # Exclude internal fields not meant for user configuration via CLI
+    exclude_keys = {
+        "project_dir", "agent_id", "sprint_id", "jira_ticket_key",
+        "jira_spec_content", "spec_file", "jira"
+    }
+
+    for field in dataclasses.fields(Config):
+        if field.name in exclude_keys:
+            continue
+
+        type_name = str(field.type).replace("typing.", "")
+        if hasattr(field.type, "__name__"):
+            type_name = field.type.__name__
+
+        default_val = "None"
+        if field.default is not dataclasses.MISSING:
+            default_val = str(field.default)
+        elif field.default_factory is not dataclasses.MISSING:
+            default_val = "Factory"
+
+        table.add_row(field.name, type_name, default_val)
+
+    console.print(table)
+
 
 @config_app.command("reset")
 def config_reset(key: str):
@@ -231,6 +272,7 @@ def config_reset(key: str):
             console.print(f"[yellow]Key {key} not found.[/yellow]")
     except Exception as e:
         console.print(f"[red]Error resetting configuration:[/red] {e}")
+
 
 if __name__ == "__main__":
     app()

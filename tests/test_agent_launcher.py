@@ -21,20 +21,45 @@ def test_app_help():
     assert "run" in result.stdout
     assert "list" in result.stdout
 
-def test_config_view():
-    result = runner.invoke(app, ["config", "view"])
-    assert result.exit_code == 0
-    assert "Configuration viewer" in result.stdout
+@pytest.fixture
+def mock_config_path(tmp_path, monkeypatch):
+    config_file = tmp_path / "agent_config.yaml"
+    monkeypatch.setattr("bin.agent.get_config_path", lambda: config_file)
+    monkeypatch.setattr("bin.agent.ensure_config_exists", lambda: config_file.touch() if not config_file.exists() else None)
+    return config_file
 
-def test_config_set():
+def test_config_set(mock_config_path):
     result = runner.invoke(app, ["config", "set", "max-iterations", "50"])
     assert result.exit_code == 0
     assert "Set max-iterations = 50" in result.stdout
 
-def test_config_reset():
+    import yaml
+    with open(mock_config_path, "r") as f:
+        data = yaml.safe_load(f)
+    assert data["max-iterations"] == 50
+
+def test_config_view(mock_config_path):
+    import yaml
+    with open(mock_config_path, "w") as f:
+        yaml.dump({"test_key": "test_value"}, f)
+
+    result = runner.invoke(app, ["config", "view"])
+    assert result.exit_code == 0
+    assert "test_key: test_value" in result.stdout
+
+def test_config_reset(mock_config_path):
+    import yaml
+    with open(mock_config_path, "w") as f:
+        yaml.dump({"model": "gemini-1.5-pro", "other": "value"}, f)
+
     result = runner.invoke(app, ["config", "reset", "model"])
     assert result.exit_code == 0
     assert "Reset model" in result.stdout
+
+    with open(mock_config_path, "r") as f:
+        data = yaml.safe_load(f)
+    assert "model" not in data
+    assert data["other"] == "value"
 
 # Mock Docker and Subprocess for other commands
 @pytest.fixture(autouse=True)

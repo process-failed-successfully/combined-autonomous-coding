@@ -2,7 +2,13 @@ import typer
 import subprocess
 import sys
 import os
+import yaml
 from pathlib import Path
+
+# Ensure we can import from shared
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from shared.config_loader import get_config_path, ensure_config_exists
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -147,18 +153,84 @@ def stop(name: str):
 @config_app.command("set")
 def config_set(key: str, value: str):
     """Set a configuration value."""
-    # Dummy implementation for now, in a real app this would modify agent_config.yaml
-    console.print(f"Set {key} = {value}")
+    ensure_config_exists()
+    path = get_config_path()
+    try:
+        with open(path, "r") as f:
+            data = yaml.safe_load(f) or {}
+
+        # Parse basic types
+        if value.lower() in ("true", "yes"):
+            parsed_value = True
+        elif value.lower() in ("false", "no"):
+            parsed_value = False
+        else:
+            try:
+                parsed_value = int(value)
+            except ValueError:
+                try:
+                    parsed_value = float(value)
+                except ValueError:
+                    parsed_value = value
+
+        keys = key.split('.')
+        current = data
+        for k in keys[:-1]:
+            if k not in current or not isinstance(current[k], dict):
+                current[k] = {}
+            current = current[k]
+        current[keys[-1]] = parsed_value
+
+        with open(path, "w") as f:
+            yaml.dump(data, f, indent=2, sort_keys=False)
+        console.print(f"[green]Set {key} = {parsed_value}[/green]")
+    except Exception as e:
+        console.print(f"[red]Error setting configuration:[/red] {e}")
 
 @config_app.command("view")
 def config_view():
     """View current configuration."""
-    console.print("Configuration viewer")
+    path = get_config_path()
+    if not path or not path.exists():
+        console.print("[yellow]No configuration file found.[/yellow]")
+        return
+    try:
+        from rich.syntax import Syntax
+        with open(path, "r") as f:
+            content = f.read()
+        syntax = Syntax(content, "yaml", theme="monokai", line_numbers=True)
+        console.print(Panel(syntax, title=f"Configuration: {path}"))
+    except Exception as e:
+        console.print(f"[red]Error reading configuration:[/red] {e}")
 
 @config_app.command("reset")
 def config_reset(key: str):
     """Reset a configuration value to default."""
-    console.print(f"Reset {key}")
+    path = get_config_path()
+    if not path or not path.exists():
+        console.print("[yellow]No configuration file found.[/yellow]")
+        return
+    try:
+        with open(path, "r") as f:
+            data = yaml.safe_load(f) or {}
+
+        keys = key.split('.')
+        current = data
+        for k in keys[:-1]:
+            if k not in current or not isinstance(current[k], dict):
+                console.print(f"[yellow]Key {key} not found.[/yellow]")
+                return
+            current = current[k]
+
+        if keys[-1] in current:
+            del current[keys[-1]]
+            with open(path, "w") as f:
+                yaml.dump(data, f, indent=2, sort_keys=False)
+            console.print(f"[green]Reset {key}[/green]")
+        else:
+            console.print(f"[yellow]Key {key} not found.[/yellow]")
+    except Exception as e:
+        console.print(f"[red]Error resetting configuration:[/red] {e}")
 
 if __name__ == "__main__":
     app()

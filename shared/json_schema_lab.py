@@ -2,9 +2,14 @@ import sys
 import json
 from typing import Any, Dict
 
+try:
+    import jsonschema
+except ImportError:
+    jsonschema = None
+
 
 class JsonSchemaManager:
-    """Manages the generation of JSON Schema from JSON data."""
+    """Manages the generation and validation of JSON Schema from JSON data."""
 
     def generate(self, data: Any) -> Dict[str, Any]:
         """Generates a JSON Schema dictionary for the given data."""
@@ -43,6 +48,20 @@ class JsonSchemaManager:
             }
         else:
             return {}
+
+    def validate(self, data: Any, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Validates JSON data against a JSON schema."""
+        if jsonschema is None:
+            return {"success": False, "error": "The 'jsonschema' library is not installed."}
+        try:
+            jsonschema.validate(instance=data, schema=schema)
+            return {"success": True}
+        except jsonschema.exceptions.ValidationError as e:
+            return {"success": False, "error": e.message, "path": list(e.path)}
+        except jsonschema.exceptions.SchemaError as e:
+            return {"success": False, "error": f"Invalid schema: {e.message}"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
 
 def run_json_schema_lab_logic(args) -> bool:
@@ -92,18 +111,54 @@ def run_json_schema_lab_logic(args) -> bool:
         print(f"Error parsing JSON: {e}", file=sys.stderr)
         return False
 
-    schema = manager.generate(data)
-    schema_str = json.dumps(schema, indent=2)
-
-    if hasattr(args, "output") and args.output:
-        try:
-            with open(args.output, "w") as f:
-                f.write(schema_str)
-            print(f"✅ Generated JSON Schema saved to {args.output}")
-        except Exception as e:
-            print(f"Error writing to output file: {e}", file=sys.stderr)
+    if getattr(args, "action", None) == "validate":
+        schema_str = ""
+        if hasattr(args, "schema_file") and args.schema_file:
+            try:
+                with open(args.schema_file, "r") as f:
+                    schema_str = f.read()
+            except Exception as e:
+                print(f"Error reading schema file: {e}", file=sys.stderr)
+                return False
+        elif hasattr(args, "schema") and args.schema:
+            schema_str = args.schema
+        else:
+            print("Error: Please provide JSON schema via --schema-file or --schema.", file=sys.stderr)
             return False
-    else:
-        print(schema_str)
 
-    return True
+        if not schema_str.strip():
+            print("Error: No JSON schema provided.", file=sys.stderr)
+            return False
+
+        try:
+            schema_data = json.loads(schema_str)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON Schema: {e}", file=sys.stderr)
+            return False
+
+        result = manager.validate(data, schema_data)
+        if result["success"]:
+            print("✅ JSON is valid according to the schema.")
+            return True
+        else:
+            print(f"❌ Validation failed: {result.get('error')}", file=sys.stderr)
+            if result.get("path"):
+                print(f"   Path: /{'/'.join(map(str, result['path']))}", file=sys.stderr)
+            return False
+
+    else:
+        schema = manager.generate(data)
+        schema_str = json.dumps(schema, indent=2)
+
+        if hasattr(args, "output") and args.output:
+            try:
+                with open(args.output, "w") as f:
+                    f.write(schema_str)
+                print(f"✅ Generated JSON Schema saved to {args.output}")
+            except Exception as e:
+                print(f"Error writing to output file: {e}", file=sys.stderr)
+                return False
+        else:
+            print(schema_str)
+
+        return True

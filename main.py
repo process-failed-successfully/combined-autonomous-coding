@@ -20110,6 +20110,12 @@ Examples:
     js_generate.add_argument("--file", help="Input file containing JSON")
     js_generate.add_argument("--output", help="Output file to write to")
 
+    js_validate = json_schema_subparsers.add_parser("validate", help="Validate JSON against a JSON Schema")
+    js_validate.add_argument("--json", help="JSON data to validate")
+    js_validate.add_argument("--file", help="Input file containing JSON data")
+    js_validate.add_argument("--schema", help="JSON schema to validate against")
+    js_validate.add_argument("--schema-file", help="Input file containing JSON schema")
+
     json_schema_subparsers.add_parser("tui", help="Launch the JSON Schema Lab TUI")
 
     parser_hash_validator = subparsers.add_parser(

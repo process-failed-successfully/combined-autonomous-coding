@@ -63,6 +63,63 @@ class TestJsonSchemaLab(unittest.TestCase):
             self.assertFalse(result)
             self.assertIn("Please provide JSON", mock_stderr.getvalue())
 
+    def test_manager_validate_valid(self):
+        manager = JsonSchemaManager()
+        data = {"name": "Test", "age": 30}
+        schema = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"}
+            },
+            "required": ["name"]
+        }
+        result = manager.validate(data, schema)
+        self.assertTrue(result.get("success"))
+
+    def test_manager_validate_invalid(self):
+        manager = JsonSchemaManager()
+        data = {"name": 123, "age": 30}
+        schema = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"}
+            }
+        }
+        result = manager.validate(data, schema)
+        self.assertFalse(result.get("success"))
+        self.assertIn("123 is not of type 'string'", result.get("error"))
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_logic_validate_success(self, mock_stdout):
+        args = MagicMock()
+        args.json = '{"name": "John"}'
+        args.schema = '{"type": "object", "properties": {"name": {"type": "string"}}}'
+        args.file = None
+        args.schema_file = None
+        args.output = None
+        args.tui = False
+        args.action = "validate"
+
+        result = run_json_schema_lab_logic(args)
+        self.assertTrue(result)
+        self.assertIn("JSON is valid according to the schema", mock_stdout.getvalue())
+
+    @patch('sys.stderr', new_callable=io.StringIO)
+    def test_run_logic_validate_failure(self, mock_stderr):
+        args = MagicMock()
+        args.json = '{"name": 123}'
+        args.schema = '{"type": "object", "properties": {"name": {"type": "string"}}}'
+        args.file = None
+        args.schema_file = None
+        args.output = None
+        args.tui = False
+        args.action = "validate"
+
+        result = run_json_schema_lab_logic(args)
+        self.assertFalse(result)
+        self.assertIn("Validation failed", mock_stderr.getvalue())
+
 
 if __name__ == '__main__':
     pass  # To avoid pytest complaining

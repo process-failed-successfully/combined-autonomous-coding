@@ -265,6 +265,43 @@ class TestUrlLabTab(unittest.IsolatedAsyncioTestCase):
         self.mock_manager.normalize.assert_called_with("HTTP://EXAMPLE.COM")
         log.write.assert_called_with("http://example.com")
 
+    async def test_action_unshorten(self):
+        # Mock Inputs
+        input_widget = MagicMock(spec=Input)
+        input_widget.value = "http://short.url"
+        log = MagicMock(spec=RichLog)
+
+        def query_side_effect(selector, type=None):
+            if selector == "#url-unshorten-input":
+                return input_widget
+            if selector == "#url-unshorten-log":
+                return log
+            return MagicMock()
+        self.tab.query_one.side_effect = query_side_effect
+
+        # Mock Manager
+        mock_result = {
+            "initial_url": "http://short.url",
+            "final_url": "http://final.com",
+            "status_code": 200,
+            "redirects": 1,
+            "trace": []
+        }
+        self.mock_manager.unshorten.return_value = mock_result
+
+        # Run
+        # In a test environment without a real App, Textual's @work raises NoActiveAppError
+        # if we just call the decorated method. We can bypass the @work decorator to test
+        # the underlying coroutine directly via `_action_unshorten_impl`.
+        await self.tab._action_unshorten_impl()
+
+        # Verify
+        self.mock_manager.unshorten.assert_called_with("http://short.url")
+        # Check that clear was called (once before starting, once before writing results)
+        self.assertEqual(log.clear.call_count, 2)
+        # Check that write was called to write the JSON result
+        import json
+        log.write.assert_called_with(json.dumps(mock_result, indent=2))
 
 if __name__ == "__main__":
     unittest.main()

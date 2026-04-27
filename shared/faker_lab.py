@@ -2,7 +2,10 @@ import argparse
 import json
 import sys
 from typing import Any, Dict, List
-from faker import Faker
+try:
+    from faker import Faker
+except ImportError:
+    Faker = None
 
 
 class FakerLabManager:
@@ -12,7 +15,7 @@ class FakerLabManager:
         self.locale = locale
         try:
             self.fake = Faker(locale)
-        except AttributeError:
+        except Exception:
             # Fallback if invalid locale
             self.fake = Faker("en_US")
 

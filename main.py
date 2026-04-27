@@ -401,6 +401,7 @@ KNOWN_COMMANDS = [
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
     "regex-escape-lab", "regex-escape",
+    "htpasswd-lab", "htpasswd",
     "alias-lab", "aliases",
     "tar-lab", "tar",
     "pre-commit-lab", "precommit",
@@ -2851,6 +2852,17 @@ def run_media_lab(args):
     """Runs the Media Lab."""
     run_media_lab_logic(args)
     sys.exit(0)
+
+
+def run_htpasswd_lab(args):
+    """Runs the HTPasswd Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        run_tui(args, start_tab="tab-htpasswd")
+        return
+
+    from shared.htpasswd_lab import run_htpasswd_lab_logic
+    success = run_htpasswd_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 
 def run_sqlite_lab(args):
@@ -16664,6 +16676,17 @@ def parse_args(argv=None):
     parser_media_trim.add_argument("--end", help="End time (e.g. 00:00:20).")
     parser_media_trim.add_argument("--duration", help="Duration (e.g. 10).")
 
+    # --- New 'htpasswd-lab' command ---
+    parser_htpasswd = subparsers.add_parser(
+        "htpasswd-lab",
+        aliases=["htpasswd"],
+        help="Manage htpasswd credentials"
+    )
+    parser_htpasswd.add_argument("username", nargs="?", help="Username for htpasswd entry")
+    parser_htpasswd.add_argument("password", nargs="?", help="Password for htpasswd entry")
+    parser_htpasswd.add_argument("--algorithm", "-a", choices=["bcrypt", "md5", "sha1", "crypt", "plain"], default="bcrypt", help="Hashing algorithm to use")
+    parser_htpasswd.add_argument("--tui", action="store_true", help="Launch HTPasswd Lab TUI")
+
     # --- New 'xml2json-lab' command ---
     parser_xml2json = subparsers.add_parser(
         "xml2json-lab",
@@ -25066,6 +25089,10 @@ async def main():
 
     if args.command in ["stego-lab", "stego"]:
         run_stego_lab(args)
+        return
+
+    if args.command in ["htpasswd-lab", "htpasswd"]:
+        run_htpasswd_lab(args)
         return
 
     if args.command in ["alias-lab", "aliases"]:

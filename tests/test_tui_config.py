@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch, mock_open
 import sys
 import shutil
 import tempfile
+import pytest
+pytest.importorskip("yaml")
 import yaml
 
 # Ensure shared module is available

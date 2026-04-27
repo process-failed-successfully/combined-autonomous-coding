@@ -2,6 +2,8 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, DataTable, Input, Label, RichLog, TabbedContent, TabPane, Select
 import json
+from textual import work
+import asyncio
 
 from shared.url_lab import UrlLabManager
 
@@ -67,6 +69,15 @@ class UrlLabTab(Container):
                     yield Label("[bold]Normalized URL[/bold]")
                     yield RichLog(id="url-norm-log", wrap=True, highlight=True, markup=True)
 
+                with TabPane("Unshorten", id="url-tab-unshorten"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Enter Shortened URL:")
+                        yield Input(placeholder="http://short.url", id="url-unshorten-input")
+                        yield Button("Unshorten", id="btn-url-unshorten", variant="primary")
+
+                    yield Label("[bold]Unshorten Result (JSON)[/bold]")
+                    yield RichLog(id="url-unshorten-log", wrap=True, highlight=True, markup=True)
+
     def on_mount(self) -> None:
         table = self.query_one("#url-params-table", DataTable)
         table.cursor_type = "row"
@@ -85,6 +96,8 @@ class UrlLabTab(Container):
             self.action_param_remove()
         elif event.button.id == "btn-url-norm":
             self.action_normalize()
+        elif event.button.id == "btn-url-unshorten":
+            self.action_unshorten()
 
     def action_parse(self) -> None:
         url = self.query_one("#url-parse-input", Input).value
@@ -119,6 +132,34 @@ class UrlLabTab(Container):
             log.write(result)
         except Exception as e:
             log.write(f"[red]Error: {e}[/red]")
+
+    @work(exclusive=True)
+    async def action_unshorten(self) -> None:
+        await self._action_unshorten_impl()
+
+    async def _action_unshorten_impl(self) -> None:
+        url = self.query_one("#url-unshorten-input", Input).value
+        log = self.query_one("#url-unshorten-log", RichLog)
+        log.clear()
+
+        if not url:
+            log.write("[red]Please enter a URL.[/red]")
+            return
+
+        log.write("[yellow]Resolving URL (this may take a moment)...[/yellow]")
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+
+        try:
+            result = await loop.run_in_executor(None, self.manager.unshorten, url)
+            log.clear()
+            log.write(json.dumps(result, indent=2))
+        except Exception as e:
+            log.clear()
+            log.write(f"[red]Error unshortening URL: {e}[/red]")
 
     def action_decode(self) -> None:
         text = self.query_one("#url-enc-input", Input).value

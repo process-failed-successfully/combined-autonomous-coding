@@ -22,9 +22,14 @@ class TestHtpasswdLabManager(unittest.TestCase):
 
     def test_generate_md5(self):
         res = self.manager.generate("testuser", "testpass", "md5")
-        self.assertTrue(res["success"])
-        self.assertTrue(res["entry"].startswith("testuser:$1$"))
-        self.assertEqual(res["algorithm"], "md5-crypt")
+        import sys
+        if sys.version_info >= (3, 13):
+            self.assertFalse(res["success"])
+            self.assertEqual(res["error"], "crypt module is not available on this system.")
+        else:
+            self.assertTrue(res["success"])
+            self.assertTrue(res["entry"].startswith("testuser:$1$"))
+            self.assertEqual(res["algorithm"], "md5-crypt")
 
     def test_generate_sha1(self):
         res = self.manager.generate("testuser", "testpass", "sha1")
@@ -34,9 +39,14 @@ class TestHtpasswdLabManager(unittest.TestCase):
 
     def test_generate_crypt(self):
         res = self.manager.generate("testuser", "testpass", "crypt")
-        self.assertTrue(res["success"])
-        self.assertTrue(res["entry"].startswith("testuser:"))
-        self.assertEqual(res["algorithm"], "crypt")
+        import sys
+        if sys.version_info >= (3, 13):
+            self.assertFalse(res["success"])
+            self.assertEqual(res["error"], "crypt module is not available on this system.")
+        else:
+            self.assertTrue(res["success"])
+            self.assertTrue(res["entry"].startswith("testuser:"))
+            self.assertEqual(res["algorithm"], "crypt")
 
     def test_generate_plain(self):
         res = self.manager.generate("testuser", "testpass", "plain")

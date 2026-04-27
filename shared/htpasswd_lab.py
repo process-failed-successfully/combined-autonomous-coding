@@ -2,8 +2,11 @@ import argparse
 import sys
 import hashlib
 import base64
-import crypt
 import os
+try:
+    import crypt
+except ImportError:
+    crypt = None
 try:
     import bcrypt
 except ImportError:
@@ -25,11 +28,9 @@ class HtpasswdManager:
             return {"success": True, "entry": entry, "algorithm": algorithm}
 
         elif algorithm == "md5":
-            # APR1-MD5 implementation (simplified or fallback to crypt if available for apr1)
-            # Actually standard htpasswd -m uses apr1, which is tricky to implement without passlib.
-            # We will use crypt if it supports $apr1$ or fallback to a standard md5-crypt $1$
+            if not crypt:
+                return {"success": False, "error": "crypt module is not available on this system."}
             salt = base64.b64encode(os.urandom(6)).decode('utf-8')[:8]
-            # Standard md5 crypt format
             try:
                 hashed = crypt.crypt(password, f"$1${salt}$")
                 entry = f"{username}:{hashed}"
@@ -39,13 +40,14 @@ class HtpasswdManager:
 
         elif algorithm == "sha1":
             # {SHA} base64(sha1(password))
-            sha = hashlib.sha1(password.encode('utf-8')).digest()
+            sha = hashlib.sha1(password.encode('utf-8')).digest() # nosec B324
             b64_sha = base64.b64encode(sha).decode('utf-8')
             entry = f"{username}:{{SHA}}{b64_sha}"
             return {"success": True, "entry": entry, "algorithm": algorithm}
 
         elif algorithm == "crypt":
-            # standard UNIX crypt(3)
+            if not crypt:
+                return {"success": False, "error": "crypt module is not available on this system."}
             salt = base64.b64encode(os.urandom(2)).decode('utf-8')[:2]
             try:
                 hashed = crypt.crypt(password, salt)

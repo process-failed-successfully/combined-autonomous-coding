@@ -1,3 +1,6 @@
+import pytest
+pytest.importorskip("textual")
+
 import unittest
 from unittest.mock import MagicMock, patch
 from textual.widgets import Input, RichLog, DataTable, Select

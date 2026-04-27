@@ -77,6 +77,7 @@ from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
 from shared.tui_csv2sql import Csv2SqlTab
 from shared.tui_json2sql import Json2SqlTab
+from shared.tui_htpasswd import HtpasswdLabTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
@@ -4649,6 +4650,8 @@ class AgentTUI(App):
             with TabPane("Bcrypt Lab", id="tab-bcrypt"):
                 yield BcryptLabTab()
 
+            with TabPane("HTPasswd", id="tab-htpasswd"):
+                yield HtpasswdLabTab()
             with TabPane("Base32 Lab", id="tab-base32"):
                 yield Base32LabTab()
             with TabPane("Hash Lab", id="tab-hash"):

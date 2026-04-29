@@ -255,6 +255,24 @@ class TimeLabTab(Container):
                         yield Label("[bold]Difference:[/bold]")
                         yield Static(id="lbl-time-diff-result", classes="result-box")
 
+                # Math
+                with TabPane("Math"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Time Math (Add / Subtract)[/bold]")
+
+                        yield Label("Base Time (ISO Date or Timestamp):")
+                        yield Input(placeholder="e.g. 2023-01-01T12:00:00Z", id="input-time-math-base")
+
+                        yield Label("Duration (e.g. 1h 30m, 5m, 10s):")
+                        yield Input(placeholder="e.g. 1h 30m", id="input-time-math-duration")
+
+                        with Horizontal():
+                            yield Button("Add", id="btn-time-math-add", variant="primary")
+                            yield Button("Subtract", id="btn-time-math-sub", variant="warning")
+
+                        yield Label("[bold]Result:[/bold]")
+                        yield Static(id="lbl-time-math-result", classes="result-box")
+
                 # Timer
                 with TabPane("Timer"):
                     yield TimerWidget()
@@ -378,3 +396,33 @@ class TimeLabTab(Container):
              self.query_one("#lbl-time-diff-result", Static).update(f"[red]{result}[/red]")
         else:
              self.query_one("#lbl-time-diff-result", Static).update(f"[green]{result}[/green]")
+
+    @on(Button.Pressed, "#btn-time-math-add")
+    def on_math_add(self) -> None:
+        base = self.query_one("#input-time-math-base", Input).value
+        duration = self.query_one("#input-time-math-duration", Input).value
+
+        if not base or not duration:
+            self.notify("Both Base Time and Duration are required.", severity="error")
+            return
+
+        result = self.manager.add_time(base, duration)
+        if result.startswith("Error"):
+             self.query_one("#lbl-time-math-result", Static).update(f"[red]{result}[/red]")
+        else:
+             self.query_one("#lbl-time-math-result", Static).update(f"[green]{result}[/green]")
+
+    @on(Button.Pressed, "#btn-time-math-sub")
+    def on_math_sub(self) -> None:
+        base = self.query_one("#input-time-math-base", Input).value
+        duration = self.query_one("#input-time-math-duration", Input).value
+
+        if not base or not duration:
+            self.notify("Both Base Time and Duration are required.", severity="error")
+            return
+
+        result = self.manager.sub_time(base, duration)
+        if result.startswith("Error"):
+             self.query_one("#lbl-time-math-result", Static).update(f"[red]{result}[/red]")
+        else:
+             self.query_one("#lbl-time-math-result", Static).update(f"[green]{result}[/green]")

@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import zoneinfo
 from zoneinfo import ZoneInfo
 from typing import Dict, Any, List, Optional
@@ -103,6 +103,46 @@ class TimeLabManager:
         available = zoneinfo.available_timezones()
         return [z for z in common_zones if z in available]
 
+    def add_time(self, time_str: str, duration_str: str) -> str:
+        """Adds a duration to a given time."""
+        try:
+            # Parse duration
+            seconds = self.parse_duration(duration_str)
+
+            # Parse time
+            try:
+                ts = float(time_str)
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            except ValueError:
+                dt = datetime.fromisoformat(time_str)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+
+            new_dt = dt + timedelta(seconds=seconds)
+            return new_dt.isoformat()
+        except ValueError:
+            return "Error: Could not parse input time or duration."
+
+    def sub_time(self, time_str: str, duration_str: str) -> str:
+        """Subtracts a duration from a given time."""
+        try:
+            # Parse duration
+            seconds = self.parse_duration(duration_str)
+
+            # Parse time
+            try:
+                ts = float(time_str)
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            except ValueError:
+                dt = datetime.fromisoformat(time_str)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+
+            new_dt = dt - timedelta(seconds=seconds)
+            return new_dt.isoformat()
+        except ValueError:
+            return "Error: Could not parse input time or duration."
+
     def parse_duration(self, duration_str: str) -> int:
         """Parses a duration string (e.g. '1h 30m', '5m', '10s') into seconds."""
         if not duration_str:
@@ -174,5 +214,25 @@ def run_time_lab_logic(args) -> bool:
             for zone in zones:
                 print(f"  {zone}")
             print(f"\nTotal: {len(zones)}")
+
+    elif args.action == "add":
+        if not args.time or not args.duration:
+            print("Error: time and duration arguments are required.", file=sys.stderr)
+            return False
+        result = manager.add_time(args.time, args.duration)
+        if result.startswith("Error"):
+            print(result, file=sys.stderr)
+            return False
+        print(f"Result:\n{result}")
+
+    elif args.action == "sub":
+        if not args.time or not args.duration:
+            print("Error: time and duration arguments are required.", file=sys.stderr)
+            return False
+        result = manager.sub_time(args.time, args.duration)
+        if result.startswith("Error"):
+            print(result, file=sys.stderr)
+            return False
+        print(f"Result:\n{result}")
 
     return True

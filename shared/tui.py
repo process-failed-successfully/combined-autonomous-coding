@@ -324,6 +324,7 @@ from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2go import Json2GoLabTab
 from shared.tui_json2rust import Json2RustLabTab
+from shared.tui_json2dart import Json2DartLabTab
 from shared.tui_json2csharp import Json2CSharpTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_flatten import FlattenLabTab
@@ -4200,6 +4201,7 @@ class AgentTUI(App):
         PaletteCommand("Go to JSON to Py Lab", "switch_tab_json2py"),
         PaletteCommand("Go to JSON to TS Lab", "switch_tab_json2ts"),
         PaletteCommand("Go to JSON to Go Lab", "switch_tab_json2go"),
+        PaletteCommand("Go to JSON to Dart Lab", "switch_tab_json2dart"),
         PaletteCommand("Go to JSON to Rust Lab", "switch_tab_json2rust"),
         PaletteCommand("Go to JSON to Kotlin Lab", "switch_tab_json2kotlin"),
         PaletteCommand("Go to JSON to SQL Lab", "switch_tab_json2sql"),
@@ -4698,6 +4700,8 @@ class AgentTUI(App):
                 yield Json2TsLabTab()
             with TabPane("JSON to Go", id="tab-json2go"):
                 yield Json2GoLabTab()
+            with TabPane("JSON to Dart", id="tab-json2dart"):
+                yield Json2DartLabTab()
             with TabPane("JSON to Rust", id="tab-json2rust"):
                 yield Json2RustLabTab()
             with TabPane("JSON to C#", id="tab-json2csharp"):
@@ -4972,6 +4976,9 @@ class AgentTUI(App):
 
     def action_switch_tab_json2go(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2go"
+
+    def action_switch_tab_json2dart(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2dart"
 
     def action_switch_tab_json2sql(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2sql"

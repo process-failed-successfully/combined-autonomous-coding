@@ -58,6 +58,26 @@ class TestTimeLabManager(unittest.TestCase):
         self.assertIn("UTC", common)
         self.assertIn("America/Los_Angeles", common)
 
+    def test_add_time(self):
+        base = "2023-01-01T12:00:00+00:00"
+        duration = "1h 30m"
+        result = self.manager.add_time(base, duration)
+        self.assertIn("13:30:00", result)
+
+        # Invalid time
+        result = self.manager.add_time("invalid", "1h")
+        self.assertTrue(result.startswith("Error"))
+
+    def test_sub_time(self):
+        base = "2023-01-01T12:00:00+00:00"
+        duration = "1h 30m"
+        result = self.manager.sub_time(base, duration)
+        self.assertIn("10:30:00", result)
+
+        # Invalid time
+        result = self.manager.sub_time("invalid", "1h")
+        self.assertTrue(result.startswith("Error"))
+
     def test_parse_duration(self):
         # Seconds
         self.assertEqual(self.manager.parse_duration("30s"), 30)

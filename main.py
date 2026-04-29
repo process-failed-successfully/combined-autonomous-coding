@@ -15276,6 +15276,16 @@ def parse_args(argv=None):
     parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")
     parser_time_zones.add_argument("search", nargs="?", help="Search term.")
 
+    # time-lab add
+    parser_time_add = time_subparsers.add_parser("add", help="Add duration to a time.")
+    parser_time_add.add_argument("time", help="Base time (ISO format or Timestamp).")
+    parser_time_add.add_argument("duration", help="Duration to add (e.g. '1h 30m').")
+
+    # time-lab sub
+    parser_time_sub = time_subparsers.add_parser("sub", help="Subtract duration from a time.")
+    parser_time_sub.add_argument("time", help="Base time (ISO format or Timestamp).")
+    parser_time_sub.add_argument("duration", help="Duration to subtract (e.g. '1h 30m').")
+
     # time-lab tui
     parser_time_tui = time_subparsers.add_parser("tui", help="Launch Time Lab TUI.")
 

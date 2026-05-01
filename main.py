@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -14781,6 +14781,31 @@ def parse_args(argv=None):
     parser_uuid_extract.add_argument("--file", help="File to extract from.")
     parser_uuid_extract.add_argument("--unique", action="store_true", help="Return only unique UUIDs.")
 
+# --- New 'argon2-lab' command ---
+    parser_argon2 = subparsers.add_parser(
+        "argon2-lab",
+        aliases=["argon2"],
+        help="Argon2 password hashing and verification."
+    )
+    argon2_subparsers = parser_argon2.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # argon2-lab hash
+    parser_argon2_hash = argon2_subparsers.add_parser("hash", help="Hash a password.")
+    parser_argon2_hash.add_argument("password", nargs="?", help="Password to hash (prompts if omitted).")
+    parser_argon2_hash.add_argument("--time-cost", type=int, default=3, help="Time cost (iterations). Default: 3.")
+    parser_argon2_hash.add_argument("--memory-cost", type=int, default=65536, help="Memory cost in kibibytes. Default: 65536.")
+    parser_argon2_hash.add_argument("--parallelism", type=int, default=4, help="Number of threads. Default: 4.")
+    parser_argon2_hash.add_argument("--hash-len", type=int, default=32, help="Length of the hash. Default: 32.")
+
+    # argon2-lab verify
+    parser_argon2_verify = argon2_subparsers.add_parser("verify", help="Verify a password against an Argon2 hash.")
+    parser_argon2_verify.add_argument("password", nargs="?", help="Password to verify (prompts if omitted).")
+    parser_argon2_verify.add_argument("--hash", required=True, help="The Argon2 hash string to verify against.")
+
     # --- New 'password-lab' command ---
     parser_pwd = subparsers.add_parser(
         "password-lab",
@@ -24230,6 +24255,11 @@ async def main():
     if args.command in ["hashids-lab", "hashids"]:
         from shared.hashids_lab import run_hashids_lab_logic
         run_hashids_lab_logic(args)
+        return
+
+    if args.command in ["argon2-lab", "argon2"]:
+        from shared.argon2_lab import run_argon2_lab_logic
+        run_argon2_lab_logic(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

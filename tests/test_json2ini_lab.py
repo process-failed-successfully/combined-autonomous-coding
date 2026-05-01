@@ -72,7 +72,7 @@ class TestJson2IniLab(unittest.TestCase):
             run_json2ini_lab_logic(args)
             mock_exit.assert_called_with(1)
 
-    @patch('main.sys.exit')
+    @patch('sys.exit')
     def test_tui_launch(self, mock_exit):
         mock_agent_tui = MagicMock()
         mock_app = MagicMock()

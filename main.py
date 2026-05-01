@@ -260,7 +260,7 @@ KNOWN_COMMANDS = [
     "bson-lab", "bson",
     "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
     "ical-lab", "ical", "ics",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "ini2json-lab", "ini2json", "i2j", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
     "props-lab", "props", "properties",
     "run2compose-lab", "run2compose", "r2c",
@@ -15866,6 +15866,17 @@ def parse_args(argv=None):
     parser_json2ini.add_argument("--output", "-o", help="Output file path.")
     parser_json2ini.add_argument("--tui", action="store_true", help="Launch JSON to INI Lab TUI.")
 
+    # --- New 'ini2json-lab' command ---
+    parser_ini2json = subparsers.add_parser(
+        "ini2json-lab",
+        aliases=["ini2json", "i2j"],
+        help="INI to JSON converter utilities."
+    )
+    parser_ini2json.add_argument("--file", "-f", help="Input INI file.")
+    parser_ini2json.add_argument("--text", "-t", help="Input INI text.")
+    parser_ini2json.add_argument("--output", "-o", help="Output file path.")
+    parser_ini2json.add_argument("--tui", action="store_true", help="Launch INI to JSON Lab TUI.")
+
     # --- New 'json2csv-lab' command ---
     parser_json2csv = subparsers.add_parser(
         "json2csv-lab",
@@ -24588,6 +24599,11 @@ async def main():
     if args.command in ["json2ini-lab", "json2ini", "j2i"]:
         from shared.json2ini_lab import run_json2ini_lab_logic
         run_json2ini_lab_logic(args)
+        return
+
+    if args.command in ["ini2json-lab", "ini2json", "i2j"]:
+        from shared.ini2json_lab import run_ini2json_lab_logic
+        run_ini2json_lab_logic(args)
         return
 
     if args.command in ["json2csv-lab", "j2c"]:

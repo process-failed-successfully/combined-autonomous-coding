@@ -4661,6 +4661,9 @@ class AgentTUI(App):
                 yield HashLabTab(self.project_dir)
             with TabPane("JSON Lab", id="tab-json"):
                 yield JsonLabTab(self.project_dir)
+            with TabPane("INI to JSON", id="tab-ini2json"):
+                from shared.tui_ini2json import Ini2JsonTab
+                yield Ini2JsonTab(self.project_dir)
 
             with TabPane("CSV to XML", id="tab-csv2xml"):
                 yield Csv2XmlLabTab()

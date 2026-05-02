@@ -326,6 +326,7 @@ from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2go import Json2GoLabTab
 from shared.tui_json2rust import Json2RustLabTab
 from shared.tui_json2dart import Json2DartLabTab
+from shared.tui_json2swift import Json2SwiftLabTab
 from shared.tui_json2csharp import Json2CSharpTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_flatten import FlattenLabTab
@@ -4706,6 +4707,8 @@ class AgentTUI(App):
                 yield Json2GoLabTab()
             with TabPane("JSON to Dart", id="tab-json2dart"):
                 yield Json2DartLabTab()
+            with TabPane("JSON to Swift", id="tab-json2swift"):
+                yield Json2SwiftLabTab()
             with TabPane("JSON to Rust", id="tab-json2rust"):
                 yield Json2RustLabTab()
             with TabPane("JSON to C#", id="tab-json2csharp"):

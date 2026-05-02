@@ -14788,6 +14788,7 @@ def parse_args(argv=None):
         aliases=["argon2"],
         help="Argon2 password hashing and verification."
     )
+    parser_argon2.add_argument("--tui", action="store_true", help="Launch the interactive Argon2 Lab TUI.")
     argon2_subparsers = parser_argon2.add_subparsers(
         dest="action",
         required=True,
@@ -21687,6 +21688,29 @@ def run_scaffold(args):
         sys.exit(0 if success else 1)
 
 
+def run_argon2_lab(args):
+    """Runs the Argon2 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Argon2 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-argon2")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.argon2_lab import run_argon2_lab_logic
+    success = run_argon2_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
 def run_currency_lab(args):
     """Runs the Currency Lab."""
     if getattr(args, 'tui', False):
@@ -24293,8 +24317,7 @@ async def main():
         return
 
     if args.command in ["argon2-lab", "argon2"]:
-        from shared.argon2_lab import run_argon2_lab_logic
-        run_argon2_lab_logic(args)
+        run_argon2_lab(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

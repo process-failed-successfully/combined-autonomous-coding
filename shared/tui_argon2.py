@@ -10,9 +10,16 @@ class Argon2LabTab(Container):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.manager = Argon2LabManager()
+        try:
+            self.manager = Argon2LabManager()
+        except ImportError:
+            self.manager = None
 
     def compose(self) -> ComposeResult:
+        if self.manager is None:
+            yield Label("argon2-cffi library not installed. Please install it using 'pip install argon2-cffi'.", classes="error-text")
+            return
+
         with Vertical():
             yield Label("[bold]Argon2 Lab[/bold]", classes="welcome-text")
 

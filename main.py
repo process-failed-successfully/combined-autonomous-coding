@@ -254,6 +254,7 @@ KNOWN_COMMANDS = [
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
+    "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
@@ -16066,6 +16067,17 @@ def parse_args(argv=None):
     parser_md2csv.add_argument("--delimiter", "-d", default=",", help="CSV delimiter (default: ',').")
     parser_md2csv.add_argument("--tui", action="store_true", help="Launch the Markdown to CSV TUI.")
 
+    # --- New 'hexdump-lab' command ---
+    parser_hexdump = subparsers.add_parser(
+        "hexdump-lab",
+        aliases=["hexdump"],
+        help="Generate a hex dump of files or strings."
+    )
+    parser_hexdump.add_argument("--file", "-f", help="File to read from.")
+    parser_hexdump.add_argument("--text", "-t", help="Text to dump.")
+    parser_hexdump.add_argument("--offset", "-o", type=int, default=0, help="Starting byte offset.")
+    parser_hexdump.add_argument("--length", "-l", type=int, default=-1, help="Number of bytes to read (-1 for all).")
+
     # --- New 'filetype-lab' command ---
     parser_filetype = subparsers.add_parser(
         "filetype-lab",
@@ -24640,6 +24652,14 @@ async def main():
         from shared.csv2toml_lab import run_csv2toml_lab_logic
         run_csv2toml_lab_logic(args)
         return
+
+    if args.command in ["hexdump-lab", "hexdump"]:
+        from shared.hexdump_lab import run_hexdump_lab_logic
+        success = run_hexdump_lab_logic(args)
+        if success:
+            sys.exit(0)
+        else:
+            sys.exit(1)
 
     if args.command in ["filetype-lab", "filetype", "magic-bytes"]:
         from shared.filetype_lab import run_filetype_lab_logic

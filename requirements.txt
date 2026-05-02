@@ -58,3 +58,4 @@ jmespath>=1.0.1
 zstandard
 cuid2>=2.0.0
 jsonschema
+argon2-cffi

@@ -12,6 +12,8 @@ class FakerLabManager:
     """Manages the generation of fake data using Faker."""
 
     def __init__(self, locale: str = "en_US"):
+        if Faker is None:
+            raise ImportError("faker library not installed. Please install it using 'pip install faker'.")
         self.locale = locale
         try:
             self.fake = Faker(locale)

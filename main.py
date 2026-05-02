@@ -556,6 +556,7 @@ def run_css_lab(args):
             loop = None
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
+            return
         else:
             app.run()
             sys.exit(0)
@@ -579,6 +580,7 @@ def run_js_lab(args):
             loop = None
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
+            return
         else:
             app.run()
             sys.exit(0)
@@ -14791,7 +14793,7 @@ def parse_args(argv=None):
     parser_argon2.add_argument("--tui", action="store_true", help="Launch the interactive Argon2 Lab TUI.")
     argon2_subparsers = parser_argon2.add_subparsers(
         dest="action",
-        required=True,
+        required=False,
         help="Action to perform."
     )
 
@@ -21701,6 +21703,7 @@ def run_argon2_lab(args):
             loop = None
         if loop and loop.is_running():
             asyncio.ensure_future(app.run_async())
+            return
         else:
             app.run()
             sys.exit(0)

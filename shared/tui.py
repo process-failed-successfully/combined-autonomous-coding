@@ -195,6 +195,7 @@ from shared.tui_zlib import ZlibTab
 from shared.tui_slug import SlugLabTab
 from shared.tui_arn import ArnLabTab
 from shared.tui_bcrypt import BcryptLabTab
+from shared.tui_argon2 import Argon2LabTab
 from shared.tui_brotli import BrotliLabTab
 from shared.tui_zstd import ZstdLabTab
 from shared.tui_base91 import Base91LabTab
@@ -4653,6 +4654,9 @@ class AgentTUI(App):
 
             with TabPane("Bcrypt Lab", id="tab-bcrypt"):
                 yield BcryptLabTab()
+
+            with TabPane("Argon2 Lab", id="tab-argon2"):
+                yield Argon2LabTab()
 
             with TabPane("HTPasswd", id="tab-htpasswd"):
                 yield HtpasswdLabTab()

@@ -11,9 +11,16 @@ class FakerLabTab(Container):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.manager = FakerLabManager()
+        try:
+            self.manager = FakerLabManager()
+        except ImportError:
+            self.manager = None
 
     def compose(self) -> ComposeResult:
+        if self.manager is None:
+            yield Label("Faker library not installed. Please install it using 'pip install faker'.", classes="error-text")
+            return
+
         with Vertical():
             yield Label("[bold]Faker Lab - Generate Fake Data[/bold]", classes="welcome-text")
 

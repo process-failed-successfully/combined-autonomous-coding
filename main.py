@@ -389,6 +389,7 @@ KNOWN_COMMANDS = [
     "branch-lab", "bl",
     "luhn-lab", "luhn",
     "iban-lab", "iban",
+    "vin-lab", "vin",
     "case-lab", "case",
     "data-uri-lab", "data-uri",
     "jsonpatch-lab", "jsonpatch",
@@ -20185,6 +20186,23 @@ Examples:
     bitwise_not = bitwise_subparsers.add_parser("not", help="Perform bitwise NOT.")
     bitwise_not.add_argument("num", type=str, help="Number to NOT.")
 
+    # --- New 'vin-lab' command ---
+    parser_vin = subparsers.add_parser(
+        "vin-lab",
+        aliases=["vin"],
+        help="VIN validation and decoding tools."
+    )
+    vin_subparsers = parser_vin.add_subparsers(dest="action", required=False)
+    vin_subparsers.add_parser("tui", help="Launch the interactive VIN Lab TUI.")
+
+    # validate
+    vin_validate = vin_subparsers.add_parser("validate", help="Validate a VIN.")
+    vin_validate.add_argument("vin", type=str, help="The VIN to validate.")
+
+    # decode
+    vin_decode = vin_subparsers.add_parser("decode", help="Decode a VIN.")
+    vin_decode.add_argument("vin", type=str, help="The VIN to decode.")
+
     # --- New 'iban-lab' command ---
     parser_iban = subparsers.add_parser(
         "iban-lab",
@@ -21688,6 +21706,29 @@ def run_scaffold(args):
     elif args.action == "create":
         success = manager.scaffold(args.template, force=args.force)
         sys.exit(0 if success else 1)
+
+
+def run_vin_lab(args):
+    """Runs the VIN Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'action', None) is None:
+        from shared.tui import AgentTUI
+        print("Launching VIN Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-vin")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.vin_lab import run_vin_lab_logic
+        run_vin_lab_logic(args)
+        sys.exit(0)
 
 
 def run_argon2_lab(args):
@@ -25154,6 +25195,10 @@ async def main():
 
     if args.command in ["iban-lab", "iban"]:
         run_iban_lab(args)
+        return
+
+    if args.command in ["vin-lab", "vin"]:
+        run_vin_lab(args)
         return
 
     if args.command in ["case-lab", "case"]:

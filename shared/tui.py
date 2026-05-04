@@ -294,6 +294,7 @@ from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
 from shared.tui_luhn import LuhnLabTab
 from shared.tui_iban import IbanLabTab
+from shared.tui_vin import VinLabTab
 from shared.tui_isbn import IsbnLabTab
 from shared.tui_case import CaseLabTab
 from shared.tui_data_uri import DataUriLabTab
@@ -4896,6 +4897,8 @@ class AgentTUI(App):
                 yield LuhnLabTab()
             with TabPane("IBAN Lab", id="tab-iban"):
                 yield IbanLabTab()
+            with TabPane("VIN Lab", id="tab-vin"):
+                yield VinLabTab()
             with TabPane("Case Lab", id="tab-case"):
                 yield CaseLabTab()
 

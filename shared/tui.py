@@ -159,6 +159,7 @@ from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
 from shared.tui_json2ini import Json2IniLabTab
+from shared.tui_ini2json import Ini2JsonLabTab
 from shared.tui_yaml2csv import Yaml2CsvTab
 from shared.tui_json2md import Json2MdTab
 from shared.tui_csv2md import Csv2MdTab
@@ -4707,6 +4708,8 @@ class AgentTUI(App):
 
             with TabPane("JSON to INI", id="tab-json2ini"):
                 yield Json2IniLabTab()
+            with TabPane("INI to JSON", id="tab-ini2json"):
+                yield Ini2JsonLabTab()
             with TabPane("JSON to TS", id="tab-json2ts"):
                 yield Json2TsLabTab()
             with TabPane("JSON to Go", id="tab-json2go"):

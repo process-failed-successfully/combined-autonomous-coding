@@ -1,5 +1,6 @@
 import sys
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
+
 
 class VinManager:
     """
@@ -137,6 +138,7 @@ class VinManager:
             "region": region,
             "is_valid": is_valid
         }
+
 
 def run_vin_lab_logic(args):
     """

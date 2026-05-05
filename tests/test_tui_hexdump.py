@@ -51,7 +51,7 @@ class TestHexdumpLabTab(unittest.IsolatedAsyncioTestCase):
         # Default is text type radio button
 
         generate_btn = tab.query_one("#hexdump-generate-btn", Button)
-        await self.pilot.click(generate_btn.__class__)
+        await self.pilot.click("#hexdump-generate-btn")
 
         mock_hexdump.assert_called_once_with(b"test string", offset=0)
 

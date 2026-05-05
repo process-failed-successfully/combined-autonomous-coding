@@ -16093,6 +16093,7 @@ def parse_args(argv=None):
     parser_hexdump.add_argument("--text", "-t", help="Text to dump.")
     parser_hexdump.add_argument("--offset", "-o", type=int, default=0, help="Starting byte offset.")
     parser_hexdump.add_argument("--length", "-l", type=int, default=-1, help="Number of bytes to read (-1 for all).")
+    parser_hexdump.add_argument("--tui", action="store_true", help="Launch the Hexdump Lab TUI.")
 
     # --- New 'filetype-lab' command ---
     parser_filetype = subparsers.add_parser(
@@ -24733,6 +24734,22 @@ async def main():
         return
 
     if args.command in ["hexdump-lab", "hexdump"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Hexdump Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-hexdump")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
         from shared.hexdump_lab import run_hexdump_lab_logic
         success = run_hexdump_lab_logic(args)
         if success:

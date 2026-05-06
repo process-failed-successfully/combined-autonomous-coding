@@ -36,6 +36,19 @@ class UuidLabManager:
                 u = uuid.uuid4()
             elif version == 5:
                 u = uuid.uuid5(ns_uuid, name)
+            elif version == 7:
+                import time
+                import os
+                t_ms = int(time.time() * 1000)
+                t_bytes = t_ms.to_bytes(6, 'big')
+                rand = os.urandom(10)
+                b = bytearray(16)
+                b[0:6] = t_bytes
+                b[6] = 0x70 | (rand[0] & 0x0f)
+                b[7] = rand[1]
+                b[8] = 0x80 | (rand[2] & 0x3f)
+                b[9:] = rand[3:10]
+                u = uuid.UUID(bytes=bytes(b))
             else:
                 raise ValueError(f"Unsupported UUID version: {version}")
 
@@ -75,6 +88,16 @@ class UuidLabManager:
                 ts = (u.time - 0x01b21dd213814000) / 1e7
                 from datetime import datetime
                 info["timestamp_iso"] = datetime.fromtimestamp(ts).isoformat()
+            except Exception:
+                pass
+
+        elif u.version == 7:
+            # Time is 48-bit Unix Epoch in milliseconds
+            time_ms = int.from_bytes(u.bytes[:6], 'big')
+            info["time_ms"] = time_ms
+            try:
+                from datetime import datetime
+                info["timestamp_iso"] = datetime.fromtimestamp(time_ms / 1000.0).isoformat()
             except Exception:
                 pass
 
@@ -157,6 +180,11 @@ def run_uuid_lab_logic(args):
              print(f"  Clock:   {info['clock_seq']}")
              print(f"  Node:    {info['node']}")
              print(f"  MAC:     {info['mac']}")
+
+        elif info.get("version") == 7:
+             print(f"  Time MS: {info.get('time_ms')} (Unix Epoch)")
+             if "timestamp_iso" in info:
+                 print(f"  Date:    {info['timestamp_iso']}")
 
     elif args.action == "validate":
         if manager.validate(args.uuid):

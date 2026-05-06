@@ -42,6 +42,14 @@ class TestUuidLabManager(unittest.TestCase):
         u2 = uuid.uuid5(uuid.NAMESPACE_DNS, name)
         self.assertEqual(str(u2), u)
 
+    def test_generate_v7(self):
+        results = self.manager.generate(version=7, count=5)
+        self.assertEqual(len(results), 5)
+        for u in results:
+            self.assertTrue(self.manager.validate(u))
+            obj = uuid.UUID(u)
+            self.assertEqual(obj.version, 7)
+
     def test_inspect_v1(self):
         u = uuid.uuid1()
         info = self.manager.inspect(str(u))
@@ -49,6 +57,14 @@ class TestUuidLabManager(unittest.TestCase):
         self.assertEqual(info["version"], 1)
         self.assertIn("time", info)
         self.assertIn("mac", info)
+        self.assertIn("timestamp_iso", info)
+
+    def test_inspect_v7(self):
+        u = self.manager.generate(version=7)[0]
+        info = self.manager.inspect(u)
+        self.assertTrue(info["valid"])
+        self.assertEqual(info["version"], 7)
+        self.assertIn("time_ms", info)
         self.assertIn("timestamp_iso", info)
 
     def test_inspect_invalid(self):

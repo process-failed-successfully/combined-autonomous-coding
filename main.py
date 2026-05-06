@@ -14759,7 +14759,7 @@ def parse_args(argv=None):
 
     # uuid generate
     parser_uuid_gen = uuid_subparsers.add_parser("generate", aliases=["gen"], help="Generate UUIDs.")
-    parser_uuid_gen.add_argument("--version", "-v", type=int, choices=[1, 3, 4, 5], default=4, help="UUID version (default: 4).")
+    parser_uuid_gen.add_argument("--version", "-v", type=int, choices=[1, 3, 4, 5, 7], default=4, help="UUID version (default: 4).")
     parser_uuid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of UUIDs to generate.")
     parser_uuid_gen.add_argument("--namespace", "-ns", help="Namespace for v3/v5 (DNS, URL, OID, X500, or UUID).")
     parser_uuid_gen.add_argument("--name", "-n", help="Name for v3/v5.")

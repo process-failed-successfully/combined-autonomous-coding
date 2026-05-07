@@ -66,6 +66,18 @@ class TestTypegenManager(unittest.TestCase):
         self.assertIn("name: z.string(),", result)
         self.assertIn("user: z.lazy(() => UserSchema),", result)
 
+    def test_generate_graphql(self):
+        json_str = '{"id": "abc", "count": 10, "isActive": true, "tags": ["admin"], "settings": {"theme": "dark"}}'
+        result = self.manager.generate(json_str, root_name="Response", lang="graphql")
+        self.assertIn("type Response {", result)
+        self.assertIn("id: String", result)
+        self.assertIn("count: Int", result)
+        self.assertIn("isActive: Boolean", result)
+        self.assertIn("tags: [String]", result)
+        self.assertIn("settings: Settings", result)
+        self.assertIn("type Settings {", result)
+        self.assertIn("theme: String", result)
+
     def test_generate_nested(self):
         json_str = '{"user": {"name": "test"}}'
         result = self.manager.generate(json_str, root_name="Root", lang="typescript")

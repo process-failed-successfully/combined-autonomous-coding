@@ -62,24 +62,26 @@ class TypegenManager:
             self._generate_rust(data, name)
         elif lang == "zod":
             self._generate_zod(data, name)
+        elif lang == "graphql":
+            self._generate_graphql(data, name)
         else:
             self.structs["Error"] = f"Unsupported language: {lang}"
 
     def _get_value_type(self, val: Any, key: str, lang: str) -> str:
         if val is None:
-            return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "Option<serde_json::Value>"
+            return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "String" if lang == "graphql" else "Option<serde_json::Value>"
 
         if isinstance(val, bool):
-            return "boolean" if lang == "typescript" else "bool" if lang == "go" else "bool" if lang == "python" else "z.boolean()" if lang == "zod" else "bool"
+            return "boolean" if lang == "typescript" else "bool" if lang == "go" else "bool" if lang == "python" else "z.boolean()" if lang == "zod" else "Boolean" if lang == "graphql" else "bool"
 
         if isinstance(val, int):
-            return "number" if lang == "typescript" else "int" if lang == "go" else "int" if lang == "python" else "z.number()" if lang == "zod" else "i64"
+            return "number" if lang == "typescript" else "int" if lang == "go" else "int" if lang == "python" else "z.number()" if lang == "zod" else "Int" if lang == "graphql" else "i64"
 
         if isinstance(val, float):
-            return "number" if lang == "typescript" else "float64" if lang == "go" else "float" if lang == "python" else "z.number()" if lang == "zod" else "f64"
+            return "number" if lang == "typescript" else "float64" if lang == "go" else "float" if lang == "python" else "z.number()" if lang == "zod" else "Float" if lang == "graphql" else "f64"
 
         if isinstance(val, str):
-            return "string" if lang == "typescript" else "string" if lang == "go" else "str" if lang == "python" else "z.string()" if lang == "zod" else "String"
+            return "string" if lang == "typescript" else "string" if lang == "go" else "str" if lang == "python" else "z.string()" if lang == "zod" else "String" if lang == "graphql" else "String"
 
         if isinstance(val, dict):
             nested_name = self._get_type_name(key)
@@ -88,7 +90,7 @@ class TypegenManager:
 
         if isinstance(val, list):
             if not val:
-                base = "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "serde_json::Value"
+                base = "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "String" if lang == "graphql" else "serde_json::Value"
             else:
                 base = self._get_value_type(val[0], key, lang)
 
@@ -100,10 +102,12 @@ class TypegenManager:
                 return f"List[{base}]"
             elif lang == "zod":
                 return f"z.array({base})"
+            elif lang == "graphql":
+                return f"[{base}]"
             elif lang == "rust":
                 return f"Vec<{base}>"
 
-        return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "serde_json::Value"
+        return "any" if lang == "typescript" else "interface{}" if lang == "go" else "Any" if lang == "python" else "z.any()" if lang == "zod" else "String" if lang == "graphql" else "serde_json::Value"
 
     def _generate_typescript(self, data: Dict[str, Any], name: str):
         lines = [f"export interface {name} {{"]
@@ -158,6 +162,14 @@ class TypegenManager:
             lines.append(f"  {key}: {zod_type},")
         lines.append("});")
         lines.append(f"export type {name} = z.infer<typeof {name}Schema>;")
+        self.structs[name] = "\n".join(lines)
+
+    def _generate_graphql(self, data: Dict[str, Any], name: str):
+        lines = [f"type {name} {{"]
+        for key, val in data.items():
+            gql_type = self._get_value_type(val, key, "graphql")
+            lines.append(f"  {key}: {gql_type}")
+        lines.append("}")
         self.structs[name] = "\n".join(lines)
 
 

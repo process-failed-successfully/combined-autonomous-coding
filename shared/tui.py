@@ -182,6 +182,7 @@ from shared.tui_markdown import MarkdownLabTab
 from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
+from shared.tui_cookie import CookieLabTab
 from shared.tui_csv import CsvLabTab
 from shared.tui_braille import BrailleLabTab
 from shared.tui_css import CssLabTab
@@ -4580,6 +4581,8 @@ class AgentTUI(App):
                 yield CodecLabTab()
             with TabPane("Converter Lab", id="tab-converter"):
                 yield ConverterLabTab(self.project_dir)
+            with TabPane("Cookie Lab", id="tab-cookie"):
+                yield CookieLabTab()
             with TabPane("Crypto Lab", id="tab-crypto"):
                 yield CryptoLabTab()
             with TabPane("Time Lab", id="tab-time"):

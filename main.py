@@ -1091,6 +1091,13 @@ def run_host_lab(args):
     sys.exit(0)
 
 
+def run_cookie_lab(args):
+    """Runs the Cookie Lab."""
+    from shared.cookie_lab import run_cookie_lab_logic
+    run_cookie_lab_logic(args)
+    sys.exit(0)
+
+
 def run_clipboard_lab(args):
     """Runs the Clipboard Lab."""
     from shared.clipboard_lab import run_clipboard_lab_logic
@@ -17340,6 +17347,32 @@ def parse_args(argv=None):
     # geo-lab tui
     parser_geo_tui = geo_subparsers.add_parser("tui", help="Launch Geo Lab TUI.")
 
+    # --- New 'cookie-lab' command ---
+    parser_cookie = subparsers.add_parser(
+        "cookie-lab",
+        aliases=["cookie"],
+        help="Cookie Lab: Parse and generate HTTP cookies."
+    )
+    cookie_subparsers = parser_cookie.add_subparsers(
+        dest="action",
+        help="Action to perform (parse, generate, tui)."
+    )
+    cookie_subparsers.add_parser("tui", help="Launch the Cookie Lab TUI.")
+
+    parser_cookie_parse = cookie_subparsers.add_parser("parse", help="Parse a cookie string.")
+    parser_cookie_parse.add_argument("cookie_string", help="The cookie string to parse.")
+
+    parser_cookie_gen = cookie_subparsers.add_parser("generate", help="Generate a Set-Cookie string.")
+    parser_cookie_gen.add_argument("--name", required=True, help="Cookie name.")
+    parser_cookie_gen.add_argument("--value", required=True, help="Cookie value.")
+    parser_cookie_gen.add_argument("--domain", help="Domain attribute.")
+    parser_cookie_gen.add_argument("--path", help="Path attribute.")
+    parser_cookie_gen.add_argument("--max-age", help="Max-Age attribute.")
+    parser_cookie_gen.add_argument("--expires", help="Expires attribute.")
+    parser_cookie_gen.add_argument("--secure", action="store_true", help="Secure attribute.")
+    parser_cookie_gen.add_argument("--httponly", action="store_true", help="HttpOnly attribute.")
+    parser_cookie_gen.add_argument("--samesite", choices=["Strict", "Lax", "None"], help="SameSite attribute.")
+
     # --- New 'curl-lab' command ---
     parser_curl = subparsers.add_parser(
         "curl-lab",
@@ -24049,6 +24082,10 @@ async def main():
 
     if args.command in ["proc-lab", "proc"]:
         await run_proc_lab_logic(args)
+        return
+
+    if args.command in ["cookie-lab", "cookie"]:
+        run_cookie_lab(args)
         return
 
     if args.command in ["brainfuck-lab", "brainfuck", "bf"]:

@@ -25227,7 +25227,7 @@ async def main():
             from shared.phone_lab import run_phone_lab_logic
             run_phone_lab_logic(args)
         else:
-            import sys; sys.exit(0)
+            sys.exit(0)
         return
 
     if args.command in ["mac-lab", "mac"]:

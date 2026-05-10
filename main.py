@@ -14555,6 +14555,37 @@ def parse_args(argv=None):
     parser_ip_tui = ip_subparsers.add_parser("tui", help="Launch the IP Lab TUI.")
 
     # --- New 'mac-lab' command ---
+    # --- New 'phone-lab' command ---
+    parser_phone = subparsers.add_parser(
+        "phone-lab",
+        aliases=["phone"],
+        help="Phone number utilities (parse, format, validate, info)."
+    )
+    parser_phone.add_argument("--tui", action="store_true", help="Launch the Phone Lab TUI.")
+
+    phone_subparsers = parser_phone.add_subparsers(
+        dest="action",
+        required=False,
+        help="Action to perform."
+    )
+
+    parser_phone_parse = phone_subparsers.add_parser("parse", help="Parse a phone number.")
+    parser_phone_parse.add_argument("phone", help="The phone number.")
+    parser_phone_parse.add_argument("--region", "-r", help="Optional default region (e.g., US, GB).")
+
+    parser_phone_format = phone_subparsers.add_parser("format", help="Format a phone number.")
+    parser_phone_format.add_argument("phone", help="The phone number.")
+    parser_phone_format.add_argument("--region", "-r", help="Optional default region.")
+    parser_phone_format.add_argument("--format", "-f", choices=["e164", "international", "national", "rfc3966"], default="international", help="Output format.")
+
+    parser_phone_validate = phone_subparsers.add_parser("validate", help="Validate a phone number.")
+    parser_phone_validate.add_argument("phone", help="The phone number.")
+    parser_phone_validate.add_argument("--region", "-r", help="Optional default region.")
+
+    parser_phone_info = phone_subparsers.add_parser("info", help="Get information about a phone number.")
+    parser_phone_info.add_argument("phone", help="The phone number.")
+    parser_phone_info.add_argument("--region", "-r", help="Optional default region.")
+
     parser_mac = subparsers.add_parser(
         "mac-lab",
         aliases=["mac"],
@@ -25183,6 +25214,20 @@ async def main():
 
     if args.command in ["chemistry-lab", "chem", "periodic"]:
         run_chemistry_lab(args)
+        return
+
+    if args.command in ["phone-lab", "phone"]:
+        if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+            from shared.tui import AgentTUI
+            app = AgentTUI(project_dir=getattr(args, "project_dir", "."), start_tab="tab-phone")
+            import asyncio
+            asyncio.ensure_future(app.run_async())
+            return
+        elif getattr(args, "action", None):
+            from shared.phone_lab import run_phone_lab_logic
+            run_phone_lab_logic(args)
+        else:
+            sys.exit(1)
         return
 
     if args.command in ["mac-lab", "mac"]:

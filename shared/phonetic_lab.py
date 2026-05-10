@@ -42,10 +42,10 @@ class PhoneticLabManager:
                 result.append(code)
 
             if code != '0':
-                 last_code = code
+                last_code = code
             else:
-                 # Vowel breaks the sequence
-                 last_code = '0'
+                # Vowel breaks the sequence
+                last_code = '0'
 
         # Pad with zeros if necessary
         while len(result) < 4:

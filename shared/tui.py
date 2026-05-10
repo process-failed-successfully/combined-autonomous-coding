@@ -170,6 +170,7 @@ from shared.tui_csv2yaml import Csv2YamlTab
 from shared.tui_csv2xml import Csv2XmlLabTab
 from shared.tui_csv2html import Csv2HtmlLabTab
 from shared.tui_kafka import KafkaLabTab
+from shared.tui_amqp import AmqpLabTab
 from shared.tui_mqtt import MqttLabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
@@ -4487,6 +4488,9 @@ class AgentTUI(App):
                 yield RedisLabTab(self.project_dir)
             with TabPane("Kafka", id="tab-kafka"):
                 yield KafkaLabTab(project_dir=self.project_dir)
+
+            with TabPane("AMQP Lab", id="tab-amqp"):
+                yield AmqpLabTab(self.project_dir)
             with TabPane("MQTT Lab", id="tab-mqtt"):
                 yield MqttLabTab(self.project_dir)
             with TabPane("SQL Lab", id="tab-sql"):

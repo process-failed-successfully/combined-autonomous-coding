@@ -2483,6 +2483,29 @@ def run_magic_decode_lab(args):
     sys.exit(0 if success else 1)
 
 
+
+def run_amqp_lab(args):
+    """Runs the AMQP Lab."""
+    if args.action == "tui" or args.tui:
+        from shared.tui import AgentTUI
+        print("Launching AMQP Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-amqp")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.amqp_lab import run_amqp_lab_logic
+    run_amqp_lab_logic(args)
+    sys.exit(0)
+
 def run_pcap_lab(args):
     """Runs the PCAP Lab."""
     if args.tui:
@@ -17501,6 +17524,22 @@ def parse_args(argv=None):
     )
 
     # --- New 'pcap-lab' command ---
+
+    # --- New 'amqp-lab' command ---
+    parser_amqp = subparsers.add_parser(
+        "amqp-lab",
+        aliases=["amqp"],
+        help="Manage and inspect AMQP (RabbitMQ) brokers."
+    )
+    parser_amqp.add_argument("action", choices=["publish", "consume", "declare-queue", "declare-exchange", "bind", "tui"], help="Action to perform")
+    parser_amqp.add_argument("--url", default="amqp://guest:guest@localhost:5672/", help="AMQP connection URL")
+    parser_amqp.add_argument("--exchange", help="Exchange name")
+    parser_amqp.add_argument("--routing-key", help="Routing key")
+    parser_amqp.add_argument("--queue", help="Queue name")
+    parser_amqp.add_argument("--body", help="Message body to publish")
+    parser_amqp.add_argument("--limit", type=int, default=0, help="Number of messages to consume (0 for all)")
+    parser_amqp.add_argument("--tui", action="store_true", help="Launch interactive TUI")
+
     parser_pcap = subparsers.add_parser(
         "pcap-lab",
         aliases=["pcap"],
@@ -24108,6 +24147,11 @@ async def main():
 
     if args.command in ["magic-decode-lab", "magic-decode", "mdecode"]:
         run_magic_decode_lab(args)
+        return
+
+
+    if args.command in ["amqp-lab", "amqp"]:
+        run_amqp_lab(args)
         return
 
     if args.command in ["pcap-lab", "pcap"]:

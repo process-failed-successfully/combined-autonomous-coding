@@ -254,6 +254,7 @@ KNOWN_COMMANDS = [
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
+    "phonetic-lab", "phonetic", "soundex",
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
@@ -809,6 +810,29 @@ def run_base85_lab(args):
     success = run_base85_lab_logic(args)
     sys.exit(0 if success else 1)
 
+
+def run_phonetic_lab(args):
+    """Runs the Phonetic Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Phonetic Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-phonetic")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.phonetic_lab import run_phonetic_lab_logic
+    run_phonetic_lab_logic(args)
+    sys.exit(0)
 
 def run_nato_lab(args):
     """Runs the NATO Lab."""
@@ -17797,6 +17821,11 @@ Examples:
     b92_group.add_argument("--decode", "-d", type=str, help="Base92 text to decode.")
     b92_group.add_argument("--tui", action="store_true", help="Launch the interactive Base92 Lab TUI.")
 
+    # phonetic-lab
+    parser_phonetic_lab = subparsers.add_parser("phonetic-lab", aliases=["phonetic", "soundex"], help="Phonetic Algorithms Lab (Soundex)")
+    parser_phonetic_lab.add_argument("--text", help="Text to encode")
+    parser_phonetic_lab.add_argument("--tui", action="store_true", help="Launch the Phonetic Lab TUI")
+
     # nato-lab
     parser_nato = subparsers.add_parser(
         "nato-lab", aliases=["nato"],
@@ -25007,6 +25036,10 @@ async def main():
 
     if args.command in ["bip39-lab", "bip39"]:
         run_bip39_lab(args)
+        return
+
+    if args.command in ["phonetic-lab", "phonetic", "soundex"]:
+        run_phonetic_lab(args)
         return
 
     if args.command in ["octal-lab", "octal"]:

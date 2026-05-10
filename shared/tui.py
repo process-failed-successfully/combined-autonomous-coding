@@ -125,6 +125,7 @@ from shared.tui_disk_usage import DiskUsageTab
 from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
 from shared.tui_date import DateLabTab
+from shared.tui_phonetic import PhoneticLabTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_calc import CalcLabTab
@@ -4115,6 +4116,7 @@ class AgentTUI(App):
 
     PALETTE_COMMANDS = [
         PaletteCommand("Go to Dashboard", "switch_tab_dashboard"),
+        PaletteCommand("Go to Phonetic Lab", "switch_tab_phonetic"),
         PaletteCommand("Go to Endian Lab", "switch_tab_endian"),
         PaletteCommand("Go to Focus", "switch_tab_focus"),
         PaletteCommand("Go to Typing Lab", "switch_tab_typing"),
@@ -4292,6 +4294,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs", initial=self.start_tab):
             if self.start_tab == "tab-flatten":
                 yield FlattenLabTab()
+            with TabPane("Phonetic Lab", id="tab-phonetic"):
+                yield PhoneticLabTab(self.project_dir)
             with TabPane("Static Lab", id="tab-static"):
                 yield StaticLabTab(project_dir=self.project_dir)
             with TabPane("Dashboard", id="tab-dashboard"):
@@ -4972,6 +4976,9 @@ class AgentTUI(App):
                     yield widget
 
         yield Footer()
+
+    def action_switch_tab_phonetic(self) -> None:
+        self.query_one(TabbedContent).active = "tab-phonetic"
 
     def action_switch_tab_mask(self) -> None:
         self.query_one(TabbedContent).active = "tab-mask"

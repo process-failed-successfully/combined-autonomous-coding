@@ -176,6 +176,7 @@ from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_template import TemplateLabTab
+from shared.tui_ini2json import Ini2JsonLabTab
 from shared.tui_hashids import HashidsLabTab
 from shared.tui_props import PropsLabTab
 from shared.tui_random import RandomLabTab
@@ -4716,6 +4717,8 @@ class AgentTUI(App):
 
             with TabPane("JSON to INI", id="tab-json2ini"):
                 yield Json2IniLabTab()
+            with TabPane("INI to JSON", id="tab-ini2json"):
+                yield Ini2JsonLabTab()
             with TabPane("JSON to TS", id="tab-json2ts"):
                 yield Json2TsLabTab()
             with TabPane("JSON to Go", id="tab-json2go"):

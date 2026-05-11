@@ -15949,6 +15949,17 @@ def parse_args(argv=None):
     parser_json2ini.add_argument("--output", "-o", help="Output file path.")
     parser_json2ini.add_argument("--tui", action="store_true", help="Launch JSON to INI Lab TUI.")
 
+    # --- New 'ini2json-lab' command ---
+    parser_ini2json = subparsers.add_parser(
+        "ini2json-lab",
+        aliases=["ini2json", "i2j"],
+        help="INI to JSON converter utilities."
+    )
+    parser_ini2json.add_argument("--file", "-f", help="Input INI file.")
+    parser_ini2json.add_argument("--text", "-t", help="Input INI text.")
+    parser_ini2json.add_argument("--output", "-o", help="Output file path.")
+    parser_ini2json.add_argument("--tui", action="store_true", help="Launch INI to JSON Lab TUI.")
+
     # --- New 'json2csv-lab' command ---
     parser_json2csv = subparsers.add_parser(
         "json2csv-lab",
@@ -24784,6 +24795,11 @@ async def main():
     if args.command in ["json2ini-lab", "json2ini", "j2i"]:
         from shared.json2ini_lab import run_json2ini_lab_logic
         run_json2ini_lab_logic(args)
+        return
+
+    if args.command in ["ini2json-lab", "ini2json", "i2j"]:
+        from shared.ini2json_lab import run_ini2json_lab_logic
+        run_ini2json_lab_logic(args)
         return
 
     if args.command in ["json2csv-lab", "j2c"]:

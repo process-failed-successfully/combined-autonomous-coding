@@ -317,6 +317,7 @@ KNOWN_COMMANDS = [
     "runner-lab", "runner",
     "gitignore-lab", "gitignore", "gi",
     "permissions-lab", "perm", "chmod",
+    "chown-lab", "chown", "ownership",
     "ollama-lab", "ollama", "ol",
     "mqtt-lab", "mqtt", "mq",
     "path-lab", "path",
@@ -2058,6 +2059,29 @@ def run_mqtt_lab(args):
     from shared.mqtt_lab import run_mqtt_lab_logic
     run_mqtt_lab_logic(args)
     sys.exit(0)
+
+
+
+def run_chown_lab(args):
+    """Runs the Chown Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Chown Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-chown")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.chown_lab import run_chown_lab_logic
+        run_chown_lab_logic(args)
+        sys.exit(0)
 
 
 def run_permissions_lab(args):
@@ -19466,6 +19490,35 @@ Examples:
     parser_gi_append = gi_subparsers.add_parser("append", help="Append templates to .gitignore.")
     parser_gi_append.add_argument("--templates", required=True, help="Comma-separated list of templates.")
 
+
+    # --- New 'chown-lab' command ---
+    parser_chown = subparsers.add_parser(
+        "chown-lab",
+        aliases=["chown", "ownership"],
+        help="Manage Unix file ownership."
+    )
+    chown_subparsers = parser_chown.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # chown check
+    parser_chown_check = chown_subparsers.add_parser("check", help="Check ownership of a file.")
+    parser_chown_check.add_argument("file", help="Path to file.")
+
+    # chown set
+    parser_chown_set = chown_subparsers.add_parser("set", help="Set ownership of a file.")
+    parser_chown_set.add_argument("value", help="Ownership string (e.g. user:group).")
+    parser_chown_set.add_argument("file", help="Path to file.")
+
+    # chown list
+    parser_chown_list = chown_subparsers.add_parser("list", help="List users or groups.")
+    parser_chown_list.add_argument("type", choices=["users", "groups"], help="What to list.")
+
+    # chown tui
+    chown_subparsers.add_parser("tui", help="Launch interactive TUI for Chown Lab.")
+
     # --- New 'permissions-lab' command ---
     parser_perm = subparsers.add_parser(
         "permissions-lab",
@@ -25008,6 +25061,15 @@ async def main():
 
     if args.command in ["cq", "code-query"]:
         run_code_query_cli(args)
+        return
+
+
+    if args.command in ["chown-lab", "chown", "ownership"]:
+        run_chown_lab(args)
+        return
+
+    if args.command in ["permissions-lab", "permissions", "perm", "chmod"]:
+        run_permissions_lab(args)
         return
 
     if args.command in ["systemd-lab", "systemd", "service"]:

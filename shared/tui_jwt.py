@@ -1,7 +1,7 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Input, Label, RichLog, Select, TabbedContent, TabPane, TextArea
-from textual import on
+from textual import on, work
 import json
 from shared.jwt_lab import JWTManager
 
@@ -63,6 +63,18 @@ class JwtLabTab(Container):
                     yield Label("[bold]Verification Result[/bold]")
                     yield RichLog(id="jwt-verify-result", wrap=True, highlight=True, markup=True)
 
+                # Crack Pane
+                with TabPane("Crack"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Token:")
+                        yield TextArea(id="jwt-crack-token")
+                        yield Label("Wordlist Path:")
+                        yield Input(placeholder="/path/to/wordlist.txt", id="jwt-crack-wordlist")
+                        yield Button("Crack Token", id="btn-jwt-crack", variant="error")
+
+                    yield Label("[bold]Cracking Result[/bold]")
+                    yield RichLog(id="jwt-crack-result", wrap=True, highlight=True, markup=True)
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-jwt-decode":
             self.decode_token()
@@ -70,6 +82,8 @@ class JwtLabTab(Container):
             self.sign_token()
         elif event.button.id == "btn-jwt-verify":
             self.verify_token()
+        elif event.button.id == "btn-jwt-crack":
+            self.crack_token()
 
     def decode_token(self) -> None:
         token = self.query_one("#jwt-decode-input", TextArea).text.strip()
@@ -139,3 +153,47 @@ class JwtLabTab(Container):
         except Exception as e:
             result_log.write(f"[bold red]❌ Verification Failed: {e}[/bold red]")
             self.notify("Verification failed.", severity="error")
+
+    @work(exclusive=True, thread=True)
+    def crack_token_worker(self, token: str, wordlist_path: str) -> None:
+        # We must use call_from_thread to interact with widgets if not main thread,
+        # but self.notify is thread safe in Textual.
+        # Actually in Textual worker thread, updating widget is safer using app.call_from_thread
+
+        try:
+            secret = self.manager.crack_token(token, wordlist_path)
+            if secret:
+                self.app.call_from_thread(self._crack_success, secret)
+            else:
+                self.app.call_from_thread(self._crack_fail)
+        except Exception as e:
+            self.app.call_from_thread(self._crack_error, str(e))
+
+    def _crack_success(self, secret: str) -> None:
+        result_log = self.query_one("#jwt-crack-result", RichLog)
+        result_log.write(f"[bold green]✅ CRACKED! Secret found: {secret}[/bold green]")
+        self.notify("Token cracked successfully.")
+
+    def _crack_fail(self) -> None:
+        result_log = self.query_one("#jwt-crack-result", RichLog)
+        result_log.write(f"[bold red]❌ Failed to crack token. Secret not in wordlist.[/bold red]")
+        self.notify("Failed to crack token.", severity="error")
+
+    def _crack_error(self, err: str) -> None:
+        result_log = self.query_one("#jwt-crack-result", RichLog)
+        result_log.write(f"[bold red]❌ Error: {err}[/bold red]")
+        self.notify("Error cracking token.", severity="error")
+
+    def crack_token(self) -> None:
+        token = self.query_one("#jwt-crack-token", TextArea).text.strip()
+        wordlist_path = self.query_one("#jwt-crack-wordlist", Input).value
+        result_log = self.query_one("#jwt-crack-result", RichLog)
+
+        result_log.clear()
+
+        if not token or not wordlist_path:
+            self.notify("Token and Wordlist Path required.", severity="error")
+            return
+
+        result_log.write(f"Attempting to crack token using wordlist: {wordlist_path}...")
+        self.crack_token_worker(token, wordlist_path)

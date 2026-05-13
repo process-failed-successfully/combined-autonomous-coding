@@ -10,7 +10,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 try:
     import textual
     from textual.widgets import TextArea, Input, Select, RichLog
+    TEXTUAL_AVAILABLE = True
 except ImportError:
+    TEXTUAL_AVAILABLE = False
     # Create Mocks for sys.modules to satisfy imports in shared.tui_jwt
     mock_textual = MagicMock()
     sys.modules["textual"] = mock_textual
@@ -43,14 +45,34 @@ except ImportError:
     mock_widgets.TextArea = MagicMock()
     sys.modules["textual.widgets"] = mock_widgets
 
+    # We need to mock textual.work to just return the function itself for tests
+    def dummy_work(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
+    mock_textual.work = dummy_work
+
     # Assign local aliases for use in tests
     TextArea = mock_widgets.TextArea
     Input = mock_widgets.Input
     Select = mock_widgets.Select
     RichLog = mock_widgets.RichLog
 
+import pytest
+
+if TEXTUAL_AVAILABLE:
+    # Use real Textual Work decorator override for tests
+    # MUST be done before importing JwtLabTab
+    def dummy_work(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    textual.work = dummy_work
+
 from shared.tui_jwt import JwtLabTab
 
+# We want to run this test regardless, but mock the worker
 class TestJwtLabTab(unittest.TestCase):
     def setUp(self):
         # Patch JWTManager to avoid real crypto and verify logic isolation
@@ -71,7 +93,7 @@ class TestJwtLabTab(unittest.TestCase):
 
         def query_one_side_effect(selector, type=None):
             # Selector logic to return appropriate mock
-            if "secret" in selector:
+            if "secret" in selector or "wordlist" in selector:
                 return self.mock_input
 
             if "algo" in selector:
@@ -149,6 +171,35 @@ class TestJwtLabTab(unittest.TestCase):
         self.mock_manager.verify_token.assert_called_with("token.part.three", "secret")
         self.mock_rich_log.write.assert_called()
         self.tab.notify.assert_called_with("Verification successful.")
+
+    def test_crack_token(self):
+        # Setup inputs
+        self.mock_text_area.text = "token.part.three"
+        self.mock_input.value = "wordlist.txt"
+
+        self.mock_manager.crack_token.return_value = "cracked_secret"
+
+        # Execute
+        # Since it uses @work which calls the worker method, we can bypass the Textual
+        # dispatch and just call crack_token_worker directly to test the core logic
+        # that communicates with the manager. Or test them separately.
+        # However, for simple coverage, we can just call the worker synchronously here.
+        # But wait, crack_token_worker calls self.app.call_from_thread, which we also need to mock.
+
+        mock_app = MagicMock()
+        def call_from_thread_mock(func, *args, **kwargs):
+             func(*args, **kwargs)
+        mock_app.call_from_thread = call_from_thread_mock
+
+        # Mock self.app explicitly
+        type(self.tab).app = mock_app
+
+        self.tab.crack_token_worker("token.part.three", "wordlist.txt")
+
+        # Verify
+        self.mock_manager.crack_token.assert_called_with("token.part.three", "wordlist.txt")
+        self.mock_rich_log.write.assert_called()
+        self.tab.notify.assert_called_with("Token cracked successfully.")
 
 if __name__ == '__main__':
     unittest.main()

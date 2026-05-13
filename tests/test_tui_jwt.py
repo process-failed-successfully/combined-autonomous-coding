@@ -10,7 +10,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 try:
     import textual
     from textual.widgets import TextArea, Input, Select, RichLog
+    TEXTUAL_AVAILABLE = True
 except ImportError:
+    TEXTUAL_AVAILABLE = False
     # Create Mocks for sys.modules to satisfy imports in shared.tui_jwt
     mock_textual = MagicMock()
     sys.modules["textual"] = mock_textual
@@ -57,8 +59,20 @@ except ImportError:
     Select = mock_widgets.Select
     RichLog = mock_widgets.RichLog
 
+import pytest
+
+if TEXTUAL_AVAILABLE:
+    # Use real Textual Work decorator override for tests
+    # MUST be done before importing JwtLabTab
+    def dummy_work(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    textual.work = dummy_work
+
 from shared.tui_jwt import JwtLabTab
 
+# We want to run this test regardless, but mock the worker
 class TestJwtLabTab(unittest.TestCase):
     def setUp(self):
         # Patch JWTManager to avoid real crypto and verify logic isolation
@@ -172,10 +186,13 @@ class TestJwtLabTab(unittest.TestCase):
         # However, for simple coverage, we can just call the worker synchronously here.
         # But wait, crack_token_worker calls self.app.call_from_thread, which we also need to mock.
 
-        self.tab.app = MagicMock()
+        mock_app = MagicMock()
         def call_from_thread_mock(func, *args, **kwargs):
              func(*args, **kwargs)
-        self.tab.app.call_from_thread = call_from_thread_mock
+        mock_app.call_from_thread = call_from_thread_mock
+
+        # Mock self.app explicitly
+        type(self.tab).app = mock_app
 
         self.tab.crack_token_worker("token.part.three", "wordlist.txt")
 

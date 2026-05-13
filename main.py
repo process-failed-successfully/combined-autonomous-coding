@@ -9778,8 +9778,31 @@ def run_config(args):
     return 0
 
 
+import difflib
+
+
+class DidYouMeanArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        if "invalid choice:" in message and "(choose from" in message:
+            import re
+            match = re.search(r"invalid choice: '([^']+)' \(choose from (.+)\)", message)
+            if match:
+                invalid_choice = match.group(1)
+                choices_str = match.group(2)
+                choices = [c.strip("' ") for c in choices_str.split(',')]
+
+                matches = difflib.get_close_matches(invalid_choice, choices, n=3, cutoff=0.5)
+
+                if matches:
+                    suggestions = ", ".join([f"'{m}'" for m in matches])
+                    message = f"{message}\n\nDid you mean: {suggestions}?"
+
+        self.print_usage(sys.stderr)
+        args = {'prog': self.prog, 'message': message}
+        self.exit(2, ('%(prog)s: error: %(message)s\n') % args)
+
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description="Autonomous Coding Agent")
+    parser = DidYouMeanArgumentParser(description="Autonomous Coding Agent")
 
     # Core Configuration
     core_group = parser.add_argument_group("Core Configuration")

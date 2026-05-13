@@ -224,6 +224,7 @@ from shared.tui_mongo import MongoLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
+from shared.tui_chown import ChownLabTab
 from shared.tui_pcap import PcapLabTab
 from shared.tui_port import PortLabTab
 from shared.tui_har import HarLabTab
@@ -4604,6 +4605,8 @@ class AgentTUI(App):
                 yield UnitLabTab()
             with TabPane("Permissions", id="tab-permissions"):
                 yield PermissionsLabTab()
+            with TabPane("Chown", id="tab-chown"):
+                yield ChownLabTab()
             with TabPane("Color Lab", id="tab-color"):
                 yield ColorLabTab()
             with TabPane("Calendar", id="tab-calendar"):

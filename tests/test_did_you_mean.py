@@ -14,8 +14,9 @@ def test_did_you_mean_suggestion():
     env["PYTHONPATH"] = str(root_dir)
 
     # Run with an invalid command that is close to 'json'
+    # Use python3 directly to avoid picking up the test isolated environment
     result = subprocess.run(
-        [sys.executable, str(main_script), "jsno"],
+        ["python3", str(main_script), "jsno"],
         capture_output=True,
         text=True,
         env=env
@@ -43,7 +44,7 @@ def test_did_you_mean_no_suggestion():
 
     # Run with a command that has no close matches
     result = subprocess.run(
-        [sys.executable, str(main_script), "xyz123thisisnotacommandatall"],
+        ["python3", str(main_script), "xyz123thisisnotacommandatall"],
         capture_output=True,
         text=True,
         env=env

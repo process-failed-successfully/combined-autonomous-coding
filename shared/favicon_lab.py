@@ -76,7 +76,16 @@ class FaviconManager:
                     # Creating a copy of the image and using it avoids mutating the original
                     # image object inside PIL when saving with the sizes parameter
                     img_ico = img.copy()
+
+                    # Pillow saving as ICO with sizes requires the image to be at least the size
+                    # of the largest icon to be properly generated, and can sometimes result in
+                    # corrupted or empty files if the original is very small (like 1x1 in tests).
+                    img_ico = img_ico.resize((48, 48), resample=Image.Resampling.LANCZOS)
                     img_ico.save(ico_path, format="ICO", sizes=icon_sizes)
+
+                    # Verify the file is actually a valid image
+                    with Image.open(ico_path) as _:
+                        pass
                 except Exception as ico_e:
                     # Fallback if sizes param fails entirely on certain Pillow versions
                     img_small = img.resize((32, 32), resample=Image.Resampling.LANCZOS)

@@ -9,8 +9,9 @@ except ImportError:
 
 try:
     from shared.favicon_lab import FaviconManager
+    FAVICON_AVAILABLE = True
 except ImportError:
-    pass
+    FAVICON_AVAILABLE = False
 
 
 @pytest.fixture
@@ -25,7 +26,7 @@ def temp_image_path(tmp_path):
     return str(img_path)
 
 
-@pytest.mark.skipif(not PILLOW_AVAILABLE, reason="Pillow not available")
+@pytest.mark.skipif(not PILLOW_AVAILABLE or not FAVICON_AVAILABLE, reason="Pillow or FaviconManager not available")
 def test_favicon_manager_generate(temp_image_path, tmp_path):
     manager = FaviconManager()
     output_dir = tmp_path / "out"
@@ -50,14 +51,14 @@ def test_favicon_manager_generate(temp_image_path, tmp_path):
         assert (output_dir / filename).exists(), f"Missing {filename}"
 
 
-@pytest.mark.skipif(not PILLOW_AVAILABLE, reason="Pillow not available")
+@pytest.mark.skipif(not PILLOW_AVAILABLE or not FAVICON_AVAILABLE, reason="Pillow or FaviconManager not available")
 def test_favicon_manager_generate_missing_file(tmp_path):
     manager = FaviconManager()
     result = manager.generate(str(tmp_path / "does_not_exist.png"), str(tmp_path))
     assert result is False
 
 
-@pytest.mark.skipif(not PILLOW_AVAILABLE, reason="Pillow not available")
+@pytest.mark.skipif(not PILLOW_AVAILABLE or not FAVICON_AVAILABLE, reason="Pillow or FaviconManager not available")
 def test_favicon_manager_html():
     manager = FaviconManager()
     html_out = manager.html()

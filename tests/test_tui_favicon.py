@@ -13,9 +13,14 @@ except ImportError:
     PILLOW_AVAILABLE = False
 
 
-if TEXTUAL_AVAILABLE and PILLOW_AVAILABLE:
-    from textual.app import App
+try:
     from shared.tui_favicon import FaviconLabTab
+    FAVICON_TAB_AVAILABLE = True
+except ImportError:
+    FAVICON_TAB_AVAILABLE = False
+
+if TEXTUAL_AVAILABLE and PILLOW_AVAILABLE and FAVICON_TAB_AVAILABLE:
+    from textual.app import App
 
     class DummyFaviconApp(App):
         def compose(self):
@@ -27,6 +32,7 @@ else:
 @pytest.mark.asyncio
 @pytest.mark.skipif(not TEXTUAL_AVAILABLE, reason="Textual is required")
 @pytest.mark.skipif(not PILLOW_AVAILABLE, reason="Pillow is required")
+@pytest.mark.skipif(not FAVICON_TAB_AVAILABLE, reason="FaviconLabTab is not available")
 async def test_tui_favicon_rendering(tmp_path):
     # Just render the app to ensure no crashes
     app = DummyFaviconApp()

@@ -37,20 +37,20 @@ def test_get_html_tags():
 
 @pytest.mark.skipif(not HAS_FAVICON_DEPS, reason="Pillow is not installed")
 def test_generate_favicons(tmp_path):
-    # Need a real tiny image to test actual PIL processing
-    from PIL import Image
+    import base64
     manager = FaviconManager()
 
     input_img = tmp_path / "test_logo.png"
     out_dir = tmp_path / "public"
 
-    # Create a dummy image
-    with Image.new('RGB', (512, 512), color='red') as img:
-        img.save(str(input_img), format="PNG")
+    # Write a real 1x1 transparent PNG
+    png_data = b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    with open(input_img, "wb") as f:
+        f.write(base64.b64decode(png_data))
 
-    assert Path(str(input_img)).exists(), "Test image was not created!"
+    assert input_img.exists(), f"Test image was not created at {input_img}!"
 
-    result = manager.generate(Path(str(input_img)), Path(str(out_dir)))
+    result = manager.generate(input_img, out_dir)
 
     assert result["success"] is True
 

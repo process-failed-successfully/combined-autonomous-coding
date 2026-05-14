@@ -339,6 +339,7 @@ from shared.tui_json2csharp import Json2CSharpTab
 from shared.tui_xml2yaml import Xml2YamlTab
 from shared.tui_flatten import FlattenLabTab
 from shared.tui_yaml2xml import Yaml2XmlTab
+from shared.tui_favicon import FaviconLabTab
 from shared.tui_json2java import Json2JavaTab
 from shared.tui_json2kotlin import Json2KotlinTab
 from shared.tui_yaml2py import Yaml2PyLabTab
@@ -4298,6 +4299,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs", initial=self.start_tab):
             if self.start_tab == "tab-flatten":
                 yield FlattenLabTab()
+            with TabPane("Favicon Lab", id="tab-favicon"):
+                yield FaviconLabTab()
             with TabPane("Phonetic Lab", id="tab-phonetic"):
                 yield PhoneticLabTab(self.project_dir)
             with TabPane("Static Lab", id="tab-static"):

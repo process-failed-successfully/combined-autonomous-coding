@@ -227,6 +227,7 @@ AVAILABLE_AGENTS = {
 
 # Known CLI commands for recipe execution
 KNOWN_COMMANDS = [
+    "favicon-lab", "favicon",
     "nato-lab", "nato",
     "shell", "tui", "quiz", "kata", "prompt-lab", "knowledge", "chat", "ask", "do",
     "optimize", "perf", "debug", "code-review", "summarize", "explain", "init", "adr",
@@ -20565,6 +20566,19 @@ Examples:
     zip_extract.add_argument("input", help="Input archive to extract.")
     zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
 
+    parser_favicon = subparsers.add_parser(
+        "favicon-lab", aliases=["favicon"], help="Generate web favicons and manifest."
+    )
+    favicon_subparsers = parser_favicon.add_subparsers(dest="action", help="Action to perform", required=False)
+
+    favicon_generate = favicon_subparsers.add_parser("generate", help="Generate favicons.")
+    favicon_generate.add_argument("input", help="Path to input image.")
+    favicon_generate.add_argument("-o", "--output", default=".", help="Output directory.")
+
+    favicon_subparsers.add_parser("html", help="Print standard HTML tags for favicons.")
+    favicon_subparsers.add_parser("tui", help="Launch the interactive Favicon Lab TUI.")
+    parser_favicon.add_argument("--tui", action="store_true", help="Launch the interactive Favicon Lab TUI.")
+
     parser_tar = subparsers.add_parser(
         "tar-lab", aliases=["tar"], help="Tar Lab utilities (create, extract, list tar archives)"
     )
@@ -25512,6 +25526,31 @@ async def main():
 
     if args.command in ["size-lab", "size"]:
         run_size_lab(args)
+        return
+
+    if args.command in ["favicon-lab", "favicon"]:
+        if getattr(args, "tui", False) or args.action == "tui":
+            try:
+                from shared.tui_favicon import FaviconLabTab
+                from shared.tui import AgentTUI
+                app = AgentTUI(start_tab="tab-favicon")
+                asyncio.ensure_future(app.run_async())
+                return
+            except ImportError as e:
+                print(f"Error loading TUI: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        from shared.favicon_lab import FaviconManager
+        manager = FaviconManager()
+
+        if args.action == "html":
+            print(manager.html())
+        elif args.action == "generate":
+            success = manager.generate(args.input, args.output)
+            sys.exit(0 if success else 1)
+        else:
+            print("Please provide an action (e.g., generate, html, tui).")
+            sys.exit(1)
         return
 
     if args.command in ["stego-lab", "stego"]:

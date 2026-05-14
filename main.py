@@ -25562,7 +25562,7 @@ async def main():
             elif args.action == "html":
                 print(manager.get_html_tags())
         else:
-            parser_favicon.print_help()
+            print("Please specify an action (generate, html) or use --tui. Use --help for more info.")
         sys.exit(0)
 
     if args.command in ["tar-lab", "tar"]:

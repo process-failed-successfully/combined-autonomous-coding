@@ -46,12 +46,6 @@ class FaviconManager:
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
 
-                # Generate favicon.ico (multi-resolution: 16x16, 32x32, 48x48)
-                ico_path = output_dir / "favicon.ico"
-                icon_sizes = [(16, 16), (32, 32), (48, 48)]
-                img.save(ico_path, format="ICO", sizes=icon_sizes)
-                generated_files.append(str(ico_path))
-
                 # Generate Apple Touch Icon (180x180)
                 # Recommended to have a solid background, but we keep transparency or flatten depending on source.
                 # For simplicity, we just resize.
@@ -75,6 +69,22 @@ class FaviconManager:
                     img_android = img.resize(size, resample=Image.Resampling.LANCZOS)
                     img_android.save(android_path, format="PNG")
                     generated_files.append(str(android_path))
+
+                # Generate favicon.ico (multi-resolution: 16x16, 32x32, 48x48)
+                # Ensure this is after PNG generation, as saving ICO might mutate image context internally in some PIL versions
+                ico_path = output_dir / "favicon.ico"
+                icon_sizes = [(16, 16), (32, 32), (48, 48)]
+
+                try:
+                    img_ico = img.copy()
+                    img_ico.save(ico_path, format="ICO", sizes=icon_sizes)
+                except Exception as ico_e:
+                    # Fallback if sizes param fails
+                    img_small = img.resize((32, 32), resample=Image.Resampling.LANCZOS)
+                    img_small.save(ico_path, format="ICO")
+
+                generated_files.append(str(ico_path))
+
 
                 # Generate site.webmanifest
                 manifest_path = output_dir / "site.webmanifest"

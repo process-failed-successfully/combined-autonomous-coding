@@ -137,6 +137,7 @@ from shared.tui_urlencode import UrlEncodeLabTab
 from shared.tui_urldecode import UrlDecodeLabTab
 from shared.tui_user_agent import UserAgentLabTab
 from shared.tui_color import ColorLabTab
+from shared.tui_favicon import FaviconLabTab
 from shared.tui_calendar import CalendarTab
 from shared.tui_otp import OtpLabTab
 from shared.tui_devtools import DevToolsTab
@@ -4609,6 +4610,8 @@ class AgentTUI(App):
                 yield ChownLabTab()
             with TabPane("Color Lab", id="tab-color"):
                 yield ColorLabTab()
+            with TabPane("Favicon Lab", id="tab-favicon"):
+                yield FaviconLabTab()
             with TabPane("Calendar", id="tab-calendar"):
                 yield CalendarTab(self.project_dir)
             with TabPane("Notebooks", id="tab-notebooks"):

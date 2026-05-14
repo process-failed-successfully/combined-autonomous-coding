@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2", "favicon-lab", "favicon",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -20565,6 +20565,19 @@ Examples:
     zip_extract.add_argument("input", help="Input archive to extract.")
     zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
 
+    # --- New 'favicon-lab' command ---
+    parser_favicon = subparsers.add_parser(
+        "favicon-lab", aliases=["favicon"], help="Favicon Generator Lab utilities."
+    )
+    parser_favicon.add_argument("--tui", action="store_true", help="Launch Favicon Lab TUI")
+    favicon_subparsers = parser_favicon.add_subparsers(dest="action", required=False, help="Action to perform")
+
+    parser_favicon_gen = favicon_subparsers.add_parser("generate", help="Generate favicons from an image")
+    parser_favicon_gen.add_argument("image", help="Path to input image")
+    parser_favicon_gen.add_argument("--out", "-o", default="./public", help="Output directory (default: ./public)")
+
+    parser_favicon_html = favicon_subparsers.add_parser("html", help="Get HTML tags for favicons")
+
     parser_tar = subparsers.add_parser(
         "tar-lab", aliases=["tar"], help="Tar Lab utilities (create, extract, list tar archives)"
     )
@@ -25529,6 +25542,28 @@ async def main():
     if args.command in ["zip-lab", "zip"]:
         run_zip_lab_logic(args)
         return
+
+    if args.command in ["favicon-lab", "favicon"]:
+        if args.tui:
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-favicon")
+            asyncio.ensure_future(app.run_async())
+            return
+        elif getattr(args, "action", None):
+            from shared.favicon_lab import FaviconManager
+            manager = FaviconManager()
+            if args.action == "generate":
+                result = manager.generate(Path(args.image), Path(args.out))
+                if result.get("success"):
+                    print(f"✅ Generated favicons in {result['output_dir']}:")
+                    for f in result.get("generated_files", []):
+                        print(f"  - {f}")
+                else:
+                    print(f"❌ Error: {result.get('error')}", file=sys.stderr)
+            elif args.action == "html":
+                print(manager.get_html_tags())
+        else:
+            parser_favicon.print_help()
+        sys.exit(0)
 
     if args.command in ["tar-lab", "tar"]:
         from shared.tar_lab import run_tar_lab_logic

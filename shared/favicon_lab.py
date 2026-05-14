@@ -34,13 +34,13 @@ class FaviconManager:
         Returns:
             Dict with status and paths of generated files.
         """
-        if not input_image.exists():
-            raise FileNotFoundError(f"Input image not found: {input_image}")
-
-        output_dir.mkdir(parents=True, exist_ok=True)
-        generated_files = []
-
         try:
+            if not input_image.exists():
+                raise FileNotFoundError(f"Input image not found: {input_image}")
+
+            output_dir.mkdir(parents=True, exist_ok=True)
+            generated_files = []
+
             with Image.open(input_image) as img:
                 # Ensure it's in RGBA mode for transparency support
                 if img.mode != "RGBA":

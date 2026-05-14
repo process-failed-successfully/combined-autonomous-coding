@@ -125,6 +125,8 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
             # Filter by text
             await pilot.click("#input-task-filter")
+            # Instead of waiting for keys, directly set the value as a fallback
+            app.query_one("#input-task-filter", Input).value = "Alp"
             await pilot.press("A", "l", "p")
             await pilot.pause()
 

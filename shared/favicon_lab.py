@@ -75,7 +75,7 @@ class FaviconManager:
                 try:
                     # Creating a copy of the image and using it avoids mutating the original
                     # image object inside PIL when saving with the sizes parameter
-                    img_ico = img.copy()
+                    img_ico = img.copy().convert("RGBA")
 
                     # Pillow saving as ICO with sizes requires the image to be at least the size
                     # of the largest icon to be properly generated, and can sometimes result in

@@ -1,4 +1,3 @@
-import os
 import json
 from pathlib import Path
 import warnings
@@ -58,11 +57,12 @@ class FaviconManager:
                 ico_copy = img.copy()
                 if max(ico_copy.size) < 48:
                     ico_copy = ico_copy.resize((48, 48), Image.Resampling.LANCZOS)
-                ico_copy.save(
-                    out_dir / "favicon.ico",
-                    format="ICO",
-                    sizes=[(16, 16), (32, 32), (48, 48)]
-                )
+                with open(str(out_dir / "favicon.ico"), "wb") as f:
+                    ico_copy.save(
+                        f,
+                        format="ICO",
+                        sizes=[(16, 16), (32, 32), (48, 48)]
+                    )
 
             # Generate site.webmanifest
             manifest = {

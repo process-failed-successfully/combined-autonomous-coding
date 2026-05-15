@@ -1,6 +1,4 @@
-import os
 import pytest
-from pathlib import Path
 try:
     from PIL import Image
     PILLOW_AVAILABLE = True
@@ -22,7 +20,8 @@ def temp_image_path(tmp_path):
     img_path = tmp_path / "test_logo.png"
     # Create a small red image
     img = Image.new('RGB', (100, 100), color='red')
-    img.save(img_path)
+    with open(str(img_path), "wb") as f:
+        img.save(f, format="PNG")
     return str(img_path)
 
 
@@ -48,7 +47,7 @@ def test_favicon_manager_generate(temp_image_path, tmp_path):
     ]
 
     for filename in expected_files:
-        assert (output_dir / filename).exists(), f"Missing {filename}"
+        assert (output_dir / filename).is_file(), f"Missing {filename}"
 
 
 @pytest.mark.skipif(not PILLOW_AVAILABLE or not FAVICON_AVAILABLE, reason="Pillow or FaviconManager not available")

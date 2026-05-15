@@ -51,18 +51,20 @@ class FaviconManager:
 
                 for filename, size in sizes.items():
                     resized_img = img.resize(size, Image.Resampling.LANCZOS)
-                    resized_img.save(out_dir / filename, format="PNG")
+                    with open(str(out_dir / filename), 'wb') as f:
+                        resized_img.save(f, format="PNG")
 
                 # Generate favicon.ico using a copy as per memory instructions
                 # "When saving images in ICO format with multiple sizes using Pillow... operate on a copy of the image (img.copy())."
-                ico_copy = img.copy()
+                ico_copy = img.copy().convert('RGBA')
                 if max(ico_copy.size) < 48:
                     ico_copy = ico_copy.resize((48, 48), Image.Resampling.LANCZOS)
-                ico_copy.save(
-                    out_dir / "favicon.ico",
-                    format="ICO",
-                    sizes=[(16, 16), (32, 32), (48, 48)]
-                )
+                with open(str(out_dir / "favicon.ico"), 'wb') as f:
+                    ico_copy.save(
+                        f,
+                        format="ICO",
+                        sizes=[(16, 16), (32, 32), (48, 48)]
+                    )
 
             # Generate site.webmanifest
             manifest = {

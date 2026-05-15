@@ -12,11 +12,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from main import run_cherry_pick
 
+import tempfile
+
 class TestCherryPickCommand(unittest.TestCase):
     def setUp(self):
         """Set up a temporary git repository for testing."""
-        self.test_dir = Path("test_repo_cherry_pick")
-        self.test_dir.mkdir(exist_ok=True)
+        self.temp_dir_obj = tempfile.TemporaryDirectory()
+        self.test_dir = Path(self.temp_dir_obj.name)
 
         subprocess.run(["git", "init", "-b", "main"], cwd=self.test_dir, check=True, capture_output=True)
         subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.test_dir, check=True)
@@ -61,7 +63,7 @@ class TestCherryPickCommand(unittest.TestCase):
 
     def tearDown(self):
         """Remove the temporary directory."""
-        shutil.rmtree(self.test_dir)
+        self.temp_dir_obj.cleanup()
 
     @patch('sys.stdout')
     def test_cherry_pick_successful(self, mock_stdout):

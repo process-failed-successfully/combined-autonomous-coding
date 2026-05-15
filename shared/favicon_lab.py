@@ -49,7 +49,10 @@ class FaviconManager:
                 # Generate favicon.ico (multi-resolution: 16x16, 32x32, 48x48)
                 ico_path = output_dir / "favicon.ico"
                 icon_sizes = [(16, 16), (32, 32), (48, 48)]
-                img.save(ico_path, format="ICO", sizes=icon_sizes)
+                img_copy = img.copy()
+                if img_copy.mode != "RGBA":
+                    img_copy = img_copy.convert("RGBA")
+                img_copy.save(str(ico_path), format="ICO", sizes=icon_sizes)
                 generated_files.append(str(ico_path))
 
                 # Generate Apple Touch Icon (180x180)

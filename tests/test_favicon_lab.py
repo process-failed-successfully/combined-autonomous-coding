@@ -52,7 +52,7 @@ def test_generate_favicons(tmp_path):
 
     result = manager.generate(Path(str(input_img)), Path(str(out_dir)))
 
-    assert result["success"] is True
+    assert result["success"] is True, f"Favicon generation failed: {result.get('error')}"
 
     # Verify expected files exist
     assert (out_dir / "favicon.ico").exists()

@@ -49,7 +49,7 @@ class FaviconManager:
                 # Generate favicon.ico (multi-resolution: 16x16, 32x32, 48x48)
                 ico_path = output_dir / "favicon.ico"
                 icon_sizes = [(16, 16), (32, 32), (48, 48)]
-                img.save(ico_path, format="ICO", sizes=icon_sizes)
+                img.copy().resize((48, 48)).save(str(ico_path), format="ICO", sizes=icon_sizes)
                 generated_files.append(str(ico_path))
 
                 # Generate Apple Touch Icon (180x180)
@@ -57,7 +57,7 @@ class FaviconManager:
                 # For simplicity, we just resize.
                 apple_path = output_dir / "apple-touch-icon.png"
                 img_apple = img.resize((180, 180), resample=Image.Resampling.LANCZOS)
-                img_apple.save(apple_path, format="PNG")
+                img_apple.save(str(apple_path), format="PNG")
                 generated_files.append(str(apple_path))
 
                 # Generate standard size PNGs (32x32, 16x16)
@@ -65,7 +65,7 @@ class FaviconManager:
                 for size in png_sizes:
                     png_path = output_dir / f"favicon-{size[0]}x{size[1]}.png"
                     img_png = img.resize(size, resample=Image.Resampling.LANCZOS)
-                    img_png.save(png_path, format="PNG")
+                    img_png.save(str(png_path), format="PNG")
                     generated_files.append(str(png_path))
 
                 # Generate Android Chrome Icons
@@ -73,7 +73,7 @@ class FaviconManager:
                 for size in android_sizes:
                     android_path = output_dir / f"android-chrome-{size[0]}x{size[1]}.png"
                     img_android = img.resize(size, resample=Image.Resampling.LANCZOS)
-                    img_android.save(android_path, format="PNG")
+                    img_android.save(str(android_path), format="PNG")
                     generated_files.append(str(android_path))
 
                 # Generate site.webmanifest

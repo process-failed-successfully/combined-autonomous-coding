@@ -50,7 +50,8 @@ class FaviconManager:
                 ico_path = output_dir / "favicon.ico"
                 icon_sizes = [(16, 16), (32, 32), (48, 48)]
                 img_ico = img.copy()
-                img_ico.save(ico_path, format="ICO", sizes=icon_sizes)
+                with open(str(ico_path), 'wb') as f:
+                    img_ico.save(f, format="ICO", sizes=icon_sizes)
                 generated_files.append(str(ico_path))
 
                 # Generate Apple Touch Icon (180x180)

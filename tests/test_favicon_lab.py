@@ -46,23 +46,23 @@ def test_generate_favicons(tmp_path):
 
     # Create a dummy image
     img = Image.new('RGB', (512, 512), color='red')
-    img.save(input_img, format="PNG")
+    img.save(str(input_img), format="PNG")
     img.close()
 
-    assert input_img.exists(), "Test image was not created!"
+    assert input_img.is_file(), "Test image was not created!"
 
     result = manager.generate(input_img, out_dir)
 
     assert result["success"] is True
 
     # Verify expected files exist
-    assert (out_dir / "favicon.ico").exists()
-    assert (out_dir / "apple-touch-icon.png").exists()
-    assert (out_dir / "favicon-32x32.png").exists()
-    assert (out_dir / "favicon-16x16.png").exists()
-    assert (out_dir / "android-chrome-192x192.png").exists()
-    assert (out_dir / "android-chrome-512x512.png").exists()
-    assert (out_dir / "site.webmanifest").exists()
+    assert (out_dir / "favicon.ico").is_file()
+    assert (out_dir / "apple-touch-icon.png").is_file()
+    assert (out_dir / "favicon-32x32.png").is_file()
+    assert (out_dir / "favicon-16x16.png").is_file()
+    assert (out_dir / "android-chrome-192x192.png").is_file()
+    assert (out_dir / "android-chrome-512x512.png").is_file()
+    assert (out_dir / "site.webmanifest").is_file()
 
     # Verify site.webmanifest contents
     with open(out_dir / "site.webmanifest", "r") as f:

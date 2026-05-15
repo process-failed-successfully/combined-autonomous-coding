@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def test_did_you_mean_suggestion():
     """
     Test that running main.py with an invalid command suggests closely matching valid commands.
@@ -31,6 +32,7 @@ def test_did_you_mean_suggestion():
     # Our new DidYouMean suggestion should be there
     assert "Did you mean:" in result.stderr
     assert "'json'" in result.stderr
+
 
 def test_did_you_mean_no_suggestion():
     """

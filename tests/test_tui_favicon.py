@@ -17,7 +17,8 @@ except ImportError:
 def dummy_image(tmp_path):
     img_path = tmp_path / "test_logo.png"
     img = Image.new("RGBA", (512, 512), color="blue")
-    img.save(img_path)
+    with open(str(img_path), "wb") as f:
+        img.save(f, format="PNG")
     return img_path
 
 

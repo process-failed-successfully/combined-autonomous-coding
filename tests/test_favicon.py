@@ -13,7 +13,7 @@ def dummy_image(temp_dir):
     img_path = temp_dir / "logo.png"
     # Create a 512x512 dummy image
     img = Image.new("RGBA", (512, 512), color="red")
-    img.save(img_path)
+    img.save(str(img_path))
     return img_path
 
 def test_generate_favicons_success(temp_dir, dummy_image):

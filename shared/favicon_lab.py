@@ -49,7 +49,8 @@ class FaviconManager:
                 # Generate Apple Touch Icon (180x180)
                 apple_path = output_dir / "apple-touch-icon.png"
                 img_apple = img.resize((180, 180), resample=Image.Resampling.LANCZOS)
-                img_apple.save(apple_path, format="PNG")
+                with open(str(apple_path), "wb") as f:
+                    img_apple.save(f, format="PNG")
                 generated_files.append(str(apple_path))
 
                 # Generate standard size PNGs (32x32, 16x16)
@@ -57,7 +58,8 @@ class FaviconManager:
                 for size in png_sizes:
                     png_path = output_dir / f"favicon-{size[0]}x{size[1]}.png"
                     img_png = img.resize(size, resample=Image.Resampling.LANCZOS)
-                    img_png.save(png_path, format="PNG")
+                    with open(str(png_path), "wb") as f:
+                        img_png.save(f, format="PNG")
                     generated_files.append(str(png_path))
 
                 # Generate Android Chrome Icons
@@ -65,7 +67,8 @@ class FaviconManager:
                 for size in android_sizes:
                     android_path = output_dir / f"android-chrome-{size[0]}x{size[1]}.png"
                     img_android = img.resize(size, resample=Image.Resampling.LANCZOS)
-                    img_android.save(android_path, format="PNG")
+                    with open(str(android_path), "wb") as f:
+                        img_android.save(f, format="PNG")
                     generated_files.append(str(android_path))
 
                 # Generate favicon.ico (multi-resolution: 16x16, 32x32, 48x48)
@@ -81,7 +84,7 @@ class FaviconManager:
                     # of the largest icon to be properly generated, and can sometimes result in
                     # corrupted or empty files if the original is very small (like 1x1 in tests).
                     img_ico = img_ico.resize((48, 48), resample=Image.Resampling.LANCZOS)
-                    with open(ico_path, "wb") as f:
+                    with open(str(ico_path), "wb") as f:
                         img_ico.save(f, format="ICO", sizes=icon_sizes)
 
                     # Verify the file is actually a valid image
@@ -90,7 +93,7 @@ class FaviconManager:
                 except Exception as ico_e:
                     # Fallback if sizes param fails entirely on certain Pillow versions
                     img_small = img.resize((32, 32), resample=Image.Resampling.LANCZOS)
-                    with open(ico_path, "wb") as f:
+                    with open(str(ico_path), "wb") as f:
                         img_small.save(f, format="ICO")
 
                 generated_files.append(str(ico_path))

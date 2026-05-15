@@ -410,7 +410,8 @@ KNOWN_COMMANDS = [
     "tar-lab", "tar",
     "pre-commit-lab", "precommit",
     "arn-lab", "arn", "slug-lab", "slug",
-    "size-compare-lab", "size-compare", "scmp"
+    "size-compare-lab", "size-compare", "scmp",
+    "favicon-lab", "favicon"
 ]
 
 if FileSystemEventHandler:
@@ -16798,6 +16799,12 @@ def parse_args(argv=None):
 
     parser_exif.add_argument("--tui", action="store_true", help="Launch EXIF Lab TUI")
 
+    parser_favicon = subparsers.add_parser("favicon-lab", aliases=["favicon"], help="Generate favicons and site.webmanifest")
+    parser_favicon.add_argument("action", nargs="?", choices=["generate", "html", "tui"], help="Action to perform")
+    parser_favicon.add_argument("--input", "-i", type=str, help="Input image file")
+    parser_favicon.add_argument("--output", "-o", type=str, help="Output directory")
+    parser_favicon.add_argument("--tui", action="store_true", help="Launch the interactive Textual UI")
+
     parser_image = subparsers.add_parser(
         "image-lab",
         aliases=["img"],
@@ -21918,6 +21925,30 @@ def run_vin_lab(args):
         sys.exit(0)
 
 
+def run_favicon_lab(args):
+    """Runs the Favicon Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Favicon Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-favicon")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.favicon_lab import run_favicon_lab_logic
+    success = run_favicon_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
 def run_argon2_lab(args):
     """Runs the Argon2 Lab."""
     if getattr(args, "tui", False):
@@ -24554,6 +24585,10 @@ async def main():
 
     if args.command in ["argon2-lab", "argon2"]:
         run_argon2_lab(args)
+        return
+
+    if args.command in ["favicon-lab", "favicon"]:
+        run_favicon_lab(args)
         return
 
     if args.command in ["password-lab", "pwd-lab"]:

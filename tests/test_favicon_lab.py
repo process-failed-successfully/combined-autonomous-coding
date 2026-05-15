@@ -54,13 +54,13 @@ def test_generate_favicons(tmp_path):
     assert result["success"] is True
 
     # Verify expected files exist
-    assert (out_dir / "favicon.ico").exists()
-    assert (out_dir / "apple-touch-icon.png").exists()
-    assert (out_dir / "favicon-32x32.png").exists()
-    assert (out_dir / "favicon-16x16.png").exists()
-    assert (out_dir / "android-chrome-192x192.png").exists()
-    assert (out_dir / "android-chrome-512x512.png").exists()
-    assert (out_dir / "site.webmanifest").exists()
+    assert (out_dir / "favicon.ico").is_file()
+    assert (out_dir / "apple-touch-icon.png").is_file()
+    assert (out_dir / "favicon-32x32.png").is_file()
+    assert (out_dir / "favicon-16x16.png").is_file()
+    assert (out_dir / "android-chrome-192x192.png").is_file()
+    assert (out_dir / "android-chrome-512x512.png").is_file()
+    assert (out_dir / "site.webmanifest").is_file()
 
     # Verify site.webmanifest contents
     with open(out_dir / "site.webmanifest", "r") as f:

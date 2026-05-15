@@ -62,6 +62,8 @@ dependencies = [
     "jq>=1.11.0",
     "mnemonic>=0.21",
     "faker>=24.0.0",
+    "tiktoken",
+    "jsonpath_ng",
 ]
 requires-python = ">=3.11"
 

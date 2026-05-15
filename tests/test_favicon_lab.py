@@ -22,7 +22,8 @@ def temp_image_path(tmp_path):
     img_path = tmp_path / "test_logo.png"
     # Create a small red image
     img = Image.new('RGB', (100, 100), color='red')
-    img.save(img_path)
+    with open(str(img_path), 'wb') as f:
+        img.save(f, format='PNG')
     return str(img_path)
 
 

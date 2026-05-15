@@ -54,8 +54,12 @@ class FaviconManager:
                     resized_img.save(out_dir / filename, format="PNG")
 
                 # Generate favicon.ico using a copy as per memory instructions
-                # "When saving images in ICO format with multiple sizes using Pillow... operate on a copy of the image (img.copy())."
+                # "When saving images in ICO format with multiple sizes using Pillow... operate on a copy of the image (img.copy()).
+                # Additionally, Pillow requires the base image to be at least as large as the largest requested size (e.g., resize to 48x48 before saving)."
                 ico_copy = img.copy()
+                if ico_copy.size[0] < 48 or ico_copy.size[1] < 48:
+                    ico_copy = ico_copy.resize((48, 48), Image.Resampling.LANCZOS)
+
                 ico_copy.save(
                     out_dir / "favicon.ico",
                     format="ICO",

@@ -21124,6 +21124,7 @@ def run_mask_lab(args):
     from shared.mask_lab import run_mask_lab_logic
     run_mask_lab_logic(args)
 
+
 def run_regex_escape_lab(args):
     """Runs the Regex Escape Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):

@@ -12,10 +12,10 @@ def test_did_you_mean_suggestion():
 
     # Run with an invalid command that is close to 'json'
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(root_dir)
+    env["PYTHONPATH"] = str(root_dir) + (os.pathsep + env["PYTHONPATH"] if "PYTHONPATH" in env else "")
 
     result = subprocess.run(
-        ["python3", str(main_script), "jsno"],
+        [sys.executable, str(main_script), "jsno"],
         capture_output=True,
         text=True,
         env=env
@@ -39,10 +39,10 @@ def test_did_you_mean_no_suggestion():
 
     # Run with a command that has no close matches
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(root_dir)
+    env["PYTHONPATH"] = str(root_dir) + (os.pathsep + env["PYTHONPATH"] if "PYTHONPATH" in env else "")
 
     result = subprocess.run(
-        ["python3", str(main_script), "xyz123thisisnotacommandatall"],
+        [sys.executable, str(main_script), "xyz123thisisnotacommandatall"],
         capture_output=True,
         text=True,
         env=env

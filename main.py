@@ -98,6 +98,7 @@ from shared.sqlformat_lab import run_sqlformat_lab_logic
 from shared.json_lab import run_json_lab_logic
 from shared.yaml_lab import run_yaml_lab_logic
 from shared.yaml2json_lab import run_yaml2json_lab_logic
+import difflib
 from shared.yaml2csv_lab import run_yaml2csv_lab_logic
 from shared.xml2csv_lab import run_xml2csv_lab_logic
 from shared.toml2csv_lab import run_toml2csv_lab_logic
@@ -9778,9 +9779,6 @@ def run_config(args):
     return 0
 
 
-import difflib
-
-
 class DidYouMeanArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         if "invalid choice:" in message and "(choose from" in message:
@@ -9800,6 +9798,7 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
         self.print_usage(sys.stderr)
         args = {'prog': self.prog, 'message': message}
         self.exit(2, ('%(prog)s: error: %(message)s\n') % args)
+
 
 def parse_args(argv=None):
     parser = DidYouMeanArgumentParser(description="Autonomous Coding Agent")

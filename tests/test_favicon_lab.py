@@ -46,12 +46,13 @@ def test_generate_favicons(tmp_path):
 
     # Create a dummy image
     img = Image.new('RGB', (512, 512), color='red')
-    img.save(str(input_img), format="PNG")
+    with open(str(input_img), "wb") as f:
+        img.save(f, format="PNG")
     assert Path(str(input_img)).is_file(), "Test image was not created!"
 
     result = manager.generate(Path(str(input_img)), Path(str(out_dir)))
 
-    assert result["success"] is True
+    assert result["success"] is True, f"Favicon generation failed: {result.get('error')}"
 
     # Verify expected files exist
     assert (out_dir / "favicon.ico").is_file()

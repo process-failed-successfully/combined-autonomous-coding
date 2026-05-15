@@ -81,7 +81,8 @@ class FaviconManager:
                     # of the largest icon to be properly generated, and can sometimes result in
                     # corrupted or empty files if the original is very small (like 1x1 in tests).
                     img_ico = img_ico.resize((48, 48), resample=Image.Resampling.LANCZOS)
-                    img_ico.save(ico_path, format="ICO", sizes=icon_sizes)
+                    with open(ico_path, "wb") as f:
+                        img_ico.save(f, format="ICO", sizes=icon_sizes)
 
                     # Verify the file is actually a valid image
                     with Image.open(ico_path) as _:
@@ -89,7 +90,8 @@ class FaviconManager:
                 except Exception as ico_e:
                     # Fallback if sizes param fails entirely on certain Pillow versions
                     img_small = img.resize((32, 32), resample=Image.Resampling.LANCZOS)
-                    img_small.save(ico_path, format="ICO")
+                    with open(ico_path, "wb") as f:
+                        img_small.save(f, format="ICO")
 
                 generated_files.append(str(ico_path))
 

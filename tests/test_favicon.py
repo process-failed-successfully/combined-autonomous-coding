@@ -1,7 +1,14 @@
 import pytest
 import shutil
 from pathlib import Path
-from PIL import Image
+
+try:
+    from PIL import Image
+    PILLOW_AVAILABLE = True
+except ImportError:
+    Image = None
+    PILLOW_AVAILABLE = False
+
 from shared.favicon_lab import FaviconManager
 
 @pytest.fixture
@@ -10,12 +17,15 @@ def temp_dir(tmp_path):
 
 @pytest.fixture
 def dummy_image(temp_dir):
+    if not PILLOW_AVAILABLE:
+        pytest.skip("Pillow not installed")
     img_path = temp_dir / "logo.png"
     # Create a 512x512 dummy image
     img = Image.new("RGBA", (512, 512), color="red")
     img.save(img_path)
     return img_path
 
+@pytest.mark.skipif(not PILLOW_AVAILABLE, reason="Pillow is not installed")
 def test_generate_favicons_success(temp_dir, dummy_image):
     manager = FaviconManager()
     output_dir = temp_dir / "out"
@@ -39,6 +49,7 @@ def test_generate_favicons_success(temp_dir, dummy_image):
         p = output_dir / f
         assert p.is_file(), f"{f} was not generated."
 
+@pytest.mark.skipif(not PILLOW_AVAILABLE, reason="Pillow is not installed")
 def test_generate_favicons_missing_input(temp_dir):
     manager = FaviconManager()
     output_dir = temp_dir / "out"

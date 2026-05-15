@@ -1,6 +1,12 @@
 import pytest
 from pathlib import Path
-from PIL import Image
+
+try:
+    from PIL import Image
+    PILLOW_AVAILABLE = True
+except ImportError:
+    Image = None
+    PILLOW_AVAILABLE = False
 
 try:
     from textual.app import App
@@ -15,13 +21,15 @@ except ImportError:
 
 @pytest.fixture
 def dummy_image(tmp_path):
+    if not PILLOW_AVAILABLE:
+        pytest.skip("Pillow is not installed")
     img_path = tmp_path / "test_logo.png"
     img = Image.new("RGBA", (512, 512), color="blue")
     img.save(img_path)
     return img_path
 
 
-@pytest.mark.skipif(not TEXTUAL_AVAILABLE, reason="Textual is not installed")
+@pytest.mark.skipif(not TEXTUAL_AVAILABLE or not PILLOW_AVAILABLE, reason="Dependencies are not installed")
 @pytest.mark.asyncio
 async def test_tui_favicon_generate(tmp_path, dummy_image):
     class DummyApp(App):

@@ -41,7 +41,7 @@ class FaviconManager:
             output_dir.mkdir(parents=True, exist_ok=True)
             generated_files = []
 
-            with Image.open(input_image) as img:
+            with Image.open(str(input_image)) as img:
                 # Ensure it's in RGBA mode for transparency support
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
@@ -49,7 +49,7 @@ class FaviconManager:
                 # Generate Apple Touch Icon (180x180)
                 apple_path = output_dir / "apple-touch-icon.png"
                 img_apple = img.resize((180, 180), resample=Image.Resampling.LANCZOS)
-                img_apple.save(apple_path, format="PNG")
+                img_apple.save(str(apple_path), format="PNG")
                 generated_files.append(str(apple_path))
 
                 # Generate standard size PNGs (32x32, 16x16)
@@ -57,7 +57,7 @@ class FaviconManager:
                 for size in png_sizes:
                     png_path = output_dir / f"favicon-{size[0]}x{size[1]}.png"
                     img_png = img.resize(size, resample=Image.Resampling.LANCZOS)
-                    img_png.save(png_path, format="PNG")
+                    img_png.save(str(png_path), format="PNG")
                     generated_files.append(str(png_path))
 
                 # Generate Android Chrome Icons
@@ -65,7 +65,7 @@ class FaviconManager:
                 for size in android_sizes:
                     android_path = output_dir / f"android-chrome-{size[0]}x{size[1]}.png"
                     img_android = img.resize(size, resample=Image.Resampling.LANCZOS)
-                    img_android.save(android_path, format="PNG")
+                    img_android.save(str(android_path), format="PNG")
                     generated_files.append(str(android_path))
 
                 # Generate favicon.ico (multi-resolution: 16x16, 32x32, 48x48)
@@ -81,15 +81,15 @@ class FaviconManager:
                     # of the largest icon to be properly generated, and can sometimes result in
                     # corrupted or empty files if the original is very small (like 1x1 in tests).
                     img_ico = img_ico.resize((48, 48), resample=Image.Resampling.LANCZOS)
-                    img_ico.save(ico_path, format="ICO", sizes=icon_sizes)
+                    img_ico.save(str(ico_path), format="ICO", sizes=icon_sizes)
 
                     # Verify the file is actually a valid image
-                    with Image.open(ico_path) as _:
+                    with Image.open(str(ico_path)) as _:
                         pass
                 except Exception as ico_e:
                     # Fallback if sizes param fails entirely on certain Pillow versions
                     img_small = img.resize((32, 32), resample=Image.Resampling.LANCZOS)
-                    img_small.save(ico_path, format="ICO")
+                    img_small.save(str(ico_path), format="ICO")
 
                 generated_files.append(str(ico_path))
 

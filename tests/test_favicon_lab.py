@@ -46,10 +46,10 @@ def test_generate_favicons(tmp_path):
 
     # Create a dummy image
     img = Image.new('RGB', (512, 512), color='red')
-    img.save(input_img, format="PNG")
+    img.save(str(input_img), format="PNG")
     img.close()
 
-    assert input_img.exists(), "Test image was not created!"
+    assert input_img.is_file(), "Test image was not created!"
 
     result = manager.generate(input_img, out_dir)
 

@@ -1,7 +1,7 @@
 import subprocess
-import sys
 import os
 from pathlib import Path
+
 
 def test_did_you_mean_suggestion():
     """
@@ -29,6 +29,7 @@ def test_did_you_mean_suggestion():
     # Our new DidYouMean suggestion should be there
     assert "Did you mean:" in result.stderr
     assert "'json'" in result.stderr
+
 
 def test_did_you_mean_no_suggestion():
     """

@@ -450,6 +450,28 @@ def run_rot13_lab(args):
     sys.exit(0 if success else 1)
 
 
+def run_favicon_lab(args):
+    """Runs the Favicon Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Favicon Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-favicon")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.favicon_lab import run_favicon_lab_logic
+    success = run_favicon_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 def run_arn_lab(args):
     """Runs the ARN Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):

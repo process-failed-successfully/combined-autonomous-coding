@@ -16,7 +16,7 @@ def test_did_you_mean_suggestion():
 
     # Run with an invalid command that is close to 'json'
     result = subprocess.run(
-        ["python3", str(main_script), "jsno"],
+        [sys.executable, str(main_script), "jsno"],
         capture_output=True,
         text=True,
         env=env
@@ -44,7 +44,7 @@ def test_did_you_mean_no_suggestion():
 
     # Run with a command that has no close matches
     result = subprocess.run(
-        ["python3", str(main_script), "xyz123thisisnotacommandatall"],
+        [sys.executable, str(main_script), "xyz123thisisnotacommandatall"],
         capture_output=True,
         text=True,
         env=env

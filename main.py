@@ -25,6 +25,7 @@ from shared.cli_utils import (
 )
 import argparse
 import asyncio
+import difflib
 try:
     import argcomplete
 except ImportError:
@@ -9778,7 +9779,7 @@ def run_config(args):
     return 0
 
 
-import difflib
+
 
 
 class DidYouMeanArgumentParser(argparse.ArgumentParser):

@@ -9778,12 +9778,10 @@ def run_config(args):
     return 0
 
 
-import difflib
-
-
 class DidYouMeanArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         if "invalid choice:" in message and "(choose from" in message:
+            import difflib
             import re
             match = re.search(r"invalid choice: '([^']+)' \(choose from (.+)\)", message)
             if match:
@@ -9800,6 +9798,7 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
         self.print_usage(sys.stderr)
         args = {'prog': self.prog, 'message': message}
         self.exit(2, ('%(prog)s: error: %(message)s\n') % args)
+
 
 def parse_args(argv=None):
     parser = DidYouMeanArgumentParser(description="Autonomous Coding Agent")

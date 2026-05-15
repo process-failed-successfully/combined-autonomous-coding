@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def test_did_you_mean_suggestion():
     """
     Test that running main.py with an invalid command suggests closely matching valid commands.
@@ -15,7 +16,7 @@ def test_did_you_mean_suggestion():
 
     # Run with an invalid command that is close to 'json'
     result = subprocess.run(
-        ["python3", str(main_script), "jsno"],
+        [sys.executable, str(main_script), "jsno"],
         capture_output=True,
         text=True,
         env=env
@@ -30,6 +31,7 @@ def test_did_you_mean_suggestion():
     assert "Did you mean:" in result.stderr
     assert "'json'" in result.stderr
 
+
 def test_did_you_mean_no_suggestion():
     """
     Test that completely bogus commands don't crash and just fall back to no suggestions.
@@ -42,7 +44,7 @@ def test_did_you_mean_no_suggestion():
 
     # Run with a command that has no close matches
     result = subprocess.run(
-        ["python3", str(main_script), "xyz123thisisnotacommandatall"],
+        [sys.executable, str(main_script), "xyz123thisisnotacommandatall"],
         capture_output=True,
         text=True,
         env=env

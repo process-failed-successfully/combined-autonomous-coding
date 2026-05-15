@@ -64,6 +64,7 @@ dependencies = [
     "faker>=24.0.0",
     "jsonpath-ng",
     "tiktoken",
+    "pytest-asyncio",
 ]
 requires-python = ">=3.11"
 

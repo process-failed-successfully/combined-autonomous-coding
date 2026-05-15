@@ -1,0 +1,801 @@
+usage: main.py [-h] [--version] [--profile PROFILE] [-p PROJECT_DIR]
+               [-a {gemini,cursor,local,openrouter}] [-m MODEL] [-s SPEC] [-v]
+               [--max-iterations MAX_ITERATIONS] [--timeout TIMEOUT]
+               [--max-error-wait MAX_ERROR_WAIT] [--no-stream]
+               [--manager-frequency MANAGER_FREQUENCY]
+               [--manager-model MANAGER_MODEL] [--manager-first]
+               [--no-dashboard] [--dashboard-url DASHBOARD_URL] [--login]
+               [--sprint] [--max-agents MAX_AGENTS]
+               [--jira-ticket JIRA_TICKET | --jira-label JIRA_LABEL]
+               [--verify-creation] [--dind] [--dry-run]
+               {configure,config,validate,list-agents,props-lab,props,properties,show-config,version,models,doctor,auto-fix,fix,init,adr,glance,status,dashboard,summary,suggest,history,last,last-run-id,diff-summary,diff,log,logs,clean,archive,empty-trash,restore,trash,discard,undo,revert,rewind,worktrees,snapshot,archives,artifacts,workflow,plan,shell,tui,prompt-lab,tree,completion,cost,benchmark,sprint,branch,mutate,history-graph,test,report,lint,format,hooks,magic-decode-lab,magic-decode,mdecode,replay,recipes,macro,git,push,pull,patch,issues,pr,commit,feature,interact,profile,watch,why,next,optimize,prune,slug-lab,slug,size-compare-lab,size-compare,scmp,quiz,debug,blame,knowledge,chat,ask,do,code-review,summarize,explain,context,todos,search,smart-search,ssearch,replace,stash,onboard,session,secrets,db,database,playground,help,cherry-pick,rollback,timeline,analytics,deps,duplication,unused,risk,impact,a11y,bisect,map,architecture,arch,estimate,release,review,env,setup,scaffold,dockerize,cicd,verify,troubleshoot,sentinel,health,debt,check-links,security,openapi,docstring,refactor,polish,resolve,braille-lab,mask-lab,pii-mask-lab,regex,arn-lab,arn,cron-lab,resolve-conflicts,fix-conflicts,generate-tests,gentest,perf,snippets,dataset,frontend,mock,i18n,api-lab,research,presentation,serve,ide,scheduler,chaos,guardrails,logic-lab,devtools,kata,standup,network,tour,sanitize,gantt,kanban,resume,retro,smart-context,port,color-lab,data-lab,schema-lab,code-query,cq,badges,cidr-lab,cidr,sqlformat-lab,sqlformat,sqllint,sqlite-lab,sqlite,jwt-lab,jwk-lab,jwk,ip-lab,ip,phone-lab,phone,mac-lab,mac,physics-lab,phys,hashids-lab,hashids,cuid2-lab,cuid2,nanoid-lab,nanoid,snowflake-lab,snowflake,ulid-lab,ulid,currency-lab,currency,cur,ksuid-lab,ksuid,uuid-lab,uuid,argon2-lab,argon2,password-lab,pwd-lab,http-status-lab,http-status,status-code,text-lab,txt,html-entity-lab,entity-lab,entity,html-entity,html2jsx-lab,html2jsx,html-lab,html,html2md-lab,html2md,md2html-lab,md2html,bencode-lab,bencode,torrent,bip39-lab,bip39,msgpack-lab,msgpack,mpack,bson-lab,bson,cbor-lab,cbor,seo-lab,seo,urlencode-lab,urlencode,urldecode-lab,urldecode,url-lab,url,cert-lab,cert,time-lab,time,date-lab,date,converter-lab,convert,codec-lab,codec,pack,jmespath-lab,jmespath,jp,jsonpath-lab,jpath,jq-lab,jq,token-lab,tokens,mime-lab,mime,math-lab,math,calc-lab,calc,unit-lab,unit,semver-lab,semver,sys-lab,sys,log-lab,ll,sql-lab,sql,toml2json-lab,toml2json,t2j,json2toml-lab,json2toml,j2t,yaml2csv-lab,yaml2csv,y2c,toml2csv-lab,toml2csv,t2c,xml2csv-lab,xml2csv,x2c,yaml2json-lab,yaml2json,y2j,json2yaml-lab,json2yaml,j2y,plist-lab,plist,plist2json,json2plist,xml2toml-lab,xml2toml,toml2xml,x2t,yaml2toml-lab,yaml2toml,toml2yaml,y2t,json2ini-lab,json2ini,j2i,ini2json-lab,ini2json,i2j,json2csv-lab,j2c,json2md-lab,json2md,env2json-lab,env2json,json2env,csv2json-lab,c2j,csv2yaml-lab,csv2yaml,c2y,yaml2xml-lab,yaml2xml,y2x,json2ts-lab,json2ts,j2ts,json2java-lab,json2java,j2java,json2go-lab,json2go,j2go,json2kotlin-lab,json2kotlin,j2kt,json2rust-lab,json2rust,j2rs,json2dart-lab,json2dart,j2dart,json2swift-lab,json2swift,j2swift,json2csharp-lab,json2csharp,j2cs,yaml2py-lab,yaml2py,y2py,csv2md-lab,csv2md,md2csv-lab,md2csv,m2c,hexdump-lab,hexdump,filetype-lab,filetype,magic-bytes,csv2xml-lab,csv2xml,c2x,csv2toml-lab,csv2toml,c2t,csv2html-lab,csv2html,c2h,csv2sql-lab,csv2sql,c2s,json2sql-lab,json2sql,j2s,csv-lab,csv,excel-lab,xls,xlsx,excel,template-lab,tpl,template,json-lab,json,jsonpatch-lab,jsonpatch,ini-lab,ini,changelog-lab,changelog,compose2k8s-lab,compose2k8s,c2k,run2compose-lab,run2compose,r2c,yaml-lab,yaml,toml-lab,toml,crypto-lab,crypto,ocr-lab,ocr,exif-lab,exif,image-lab,img,media-lab,media,htpasswd-lab,htpasswd,xml2json-lab,xml2json,json2py-lab,json2py,j2py,json2xml-lab,json2xml,xml-lab,xml,ical-lab,ical,ics,markdown-lab,md,md-lab,endian-lab,endian,net-lab,net,pdf-lab,pdf,archive-lab,arc,uni-lab,uni,docs-lab,docs,qr-lab,qr,barcode-lab,barcode,http-lab,http,req,proxy-lab,proxy,webhook-lab,webhook,hook,proc-lab,proc,faker-lab,faker,fake,geo-lab,geo,curl-lab,curl,vcard-lab,vcard,brainfuck-lab,brainfuck,bf,struct-lab,struct,bin,chart-lab,chart,enc-lab,enc,encode,amqp-lab,amqp,pcap-lab,pcap,rss-lab,rss,fs-lab,fs,files,ws-lab,ws,hash-lab,hash,random-lab,rand,random,css-lab,css,alias-lab,aliases,js-lab,js,base16-lab,base16,b16,base32-lab,base32,b32,base36-lab,base36,b36,base58-lab,base58,b58,num2words-lab,num2words,base45-lab,base45,b45,base62-lab,base62,b62,punycode-lab,punycode,idn,base91-lab,base91,b91,octal-lab,octal,binary-lab,binary,a85-lab,a85,ascii85,base85-lab,base85,b85,base92-lab,base92,b92,phonetic-lab,phonetic,soundex,nato-lab,nato,rot13-lab,rot13,base64-lab,base64,b64,base64img-lab,base64img,b64img,zlib-lab,zlib,compress,inflate,bcrypt-lab,bcrypt,brotli-lab,brotli,zstd-lab,zstd,base64url-lab,base64url,b64url,browser-lab,browser,web,npm-lab,npm,pypi-lab,pypi,docker-lab,docker,container,compose-lab,compose,k8s-lab,k8s,kube,diff-lab,mongo-lab,mongo,mongodb,redis-lab,redis,cache,kafka-lab,kafka,github-lab,github,gh,email-lab,email,mail,smtp,sock-lab,sock,nc,netcat,pgp-lab,pgp,gpg,ssh-lab,ssh,tmux-lab,tmux,terraform-lab,tf,terraform,dns-lab,dns,whois-lab,whois,s3-lab,s3,pre-commit-lab,precommit,graphql-lab,gql,helm-lab,helm,notebook-lab,nb,grpc-lab,grpc,monitor-lab,monitor,mon,metrics-lab,metrics,trace-lab,trace,notify-lab,notify,fuzz-lab,fuzz,sri-lab,sri,static-lab,static,serve-static,contract-lab,contract,ansible-lab,ansible,hex-lab,hex,speed-lab,speed,load-lab,load,ast-lab,ast,otp-lab,otp,totp,mfa,cheatsheet-lab,cheatsheet,cheat,calendar-lab,calendar,cal,finance-lab,finance,fin,runner-lab,runner,gitignore-lab,gitignore,gi,chown-lab,chown,ownership,permissions-lab,permissions,perm,chmod,ollama-lab,ollama,ol,mqtt-lab,mqtt,mq,path-lab,path,systemd-lab,systemd,service,ascii-lab,ascii,weather-lab,weather,w,pattern-lab,pattern,design,http-server-lab,httpd,server,bandwidth-lab,bandwidth,bw,typing-lab,type,sound-lab,sound,audio,maze-lab,maze,license-lab,lic,license,rfc-lab,rfc,productivity-lab,prod,focus,rename-lab,rename,find-lab,find,locate,diagram-lab,diagram,draw,pipe-lab,pipe,stream,dict-lab,dict,define,synonym,antonym,thesaurus,parquet-lab,parquet,pq,emoji-lab,emoji,emoj,host-lab,hosts,host,clipboard-lab,clip,cp,copy,slides-lab,slides,present,test-lab,stats-lab,stats,codestats,disk-usage,du,usage,process-explorer,pex,htop,top,knowledge-lab,kg,graph,dash-lab,rebase-lab,rebase,cicd-lab,ci,actions,flashcards-lab,flash,learn,user-agent-lab,ua,cq-lab,quality,cql,set-lab,sets,transpiler-lab,transpile,branch-lab,bl,luhn-lab,luhn,lorem-lab,lorem,lipsum,roman-lab,roman,har-lab,har,morse-lab,morse,data-uri-lab,data-uri,case-lab,case,bitwise-lab,bits,vin-lab,vin,iban-lab,iban,json-schema-lab,jsonschema,hash-validator-lab,hash-validator,hval,typegen-lab,typegen,size-lab,size,stego-lab,stego,portscan-lab,portscan,pscan,isbn-lab,isbn,json-flatten-lab,flatten,unflatten,zip-lab,zip,tar-lab,tar}
+               ...
+
+Autonomous Coding Agent
+
+positional arguments:
+  {configure,config,validate,list-agents,props-lab,props,properties,show-config,version,models,doctor,auto-fix,fix,init,adr,glance,status,dashboard,summary,suggest,history,last,last-run-id,diff-summary,diff,log,logs,clean,archive,empty-trash,restore,trash,discard,undo,revert,rewind,worktrees,snapshot,archives,artifacts,workflow,plan,shell,tui,prompt-lab,tree,completion,cost,benchmark,sprint,branch,mutate,history-graph,test,report,lint,format,hooks,magic-decode-lab,magic-decode,mdecode,replay,recipes,macro,git,push,pull,patch,issues,pr,commit,feature,interact,profile,watch,why,next,optimize,prune,slug-lab,slug,size-compare-lab,size-compare,scmp,quiz,debug,blame,knowledge,chat,ask,do,code-review,summarize,explain,context,todos,search,smart-search,ssearch,replace,stash,onboard,session,secrets,db,database,playground,help,cherry-pick,rollback,timeline,analytics,deps,duplication,unused,risk,impact,a11y,bisect,map,architecture,arch,estimate,release,review,env,setup,scaffold,dockerize,cicd,verify,troubleshoot,sentinel,health,debt,check-links,security,openapi,docstring,refactor,polish,resolve,braille-lab,mask-lab,pii-mask-lab,regex,arn-lab,arn,cron-lab,resolve-conflicts,fix-conflicts,generate-tests,gentest,perf,snippets,dataset,frontend,mock,i18n,api-lab,research,presentation,serve,ide,scheduler,chaos,guardrails,logic-lab,devtools,kata,standup,network,tour,sanitize,gantt,kanban,resume,retro,smart-context,port,color-lab,data-lab,schema-lab,code-query,cq,badges,cidr-lab,cidr,sqlformat-lab,sqlformat,sqllint,sqlite-lab,sqlite,jwt-lab,jwk-lab,jwk,ip-lab,ip,phone-lab,phone,mac-lab,mac,physics-lab,phys,hashids-lab,hashids,cuid2-lab,cuid2,nanoid-lab,nanoid,snowflake-lab,snowflake,ulid-lab,ulid,currency-lab,currency,cur,ksuid-lab,ksuid,uuid-lab,uuid,argon2-lab,argon2,password-lab,pwd-lab,http-status-lab,http-status,status-code,text-lab,txt,html-entity-lab,entity-lab,entity,html-entity,html2jsx-lab,html2jsx,html-lab,html,html2md-lab,html2md,md2html-lab,md2html,bencode-lab,bencode,torrent,bip39-lab,bip39,msgpack-lab,msgpack,mpack,bson-lab,bson,cbor-lab,cbor,seo-lab,seo,urlencode-lab,urlencode,urldecode-lab,urldecode,url-lab,url,cert-lab,cert,time-lab,time,date-lab,date,converter-lab,convert,codec-lab,codec,pack,jmespath-lab,jmespath,jp,jsonpath-lab,jpath,jq-lab,jq,token-lab,tokens,mime-lab,mime,math-lab,math,calc-lab,calc,unit-lab,unit,semver-lab,semver,sys-lab,sys,log-lab,ll,sql-lab,sql,toml2json-lab,toml2json,t2j,json2toml-lab,json2toml,j2t,yaml2csv-lab,yaml2csv,y2c,toml2csv-lab,toml2csv,t2c,xml2csv-lab,xml2csv,x2c,yaml2json-lab,yaml2json,y2j,json2yaml-lab,json2yaml,j2y,plist-lab,plist,plist2json,json2plist,xml2toml-lab,xml2toml,toml2xml,x2t,yaml2toml-lab,yaml2toml,toml2yaml,y2t,json2ini-lab,json2ini,j2i,ini2json-lab,ini2json,i2j,json2csv-lab,j2c,json2md-lab,json2md,env2json-lab,env2json,json2env,csv2json-lab,c2j,csv2yaml-lab,csv2yaml,c2y,yaml2xml-lab,yaml2xml,y2x,json2ts-lab,json2ts,j2ts,json2java-lab,json2java,j2java,json2go-lab,json2go,j2go,json2kotlin-lab,json2kotlin,j2kt,json2rust-lab,json2rust,j2rs,json2dart-lab,json2dart,j2dart,json2swift-lab,json2swift,j2swift,json2csharp-lab,json2csharp,j2cs,yaml2py-lab,yaml2py,y2py,csv2md-lab,csv2md,md2csv-lab,md2csv,m2c,hexdump-lab,hexdump,filetype-lab,filetype,magic-bytes,csv2xml-lab,csv2xml,c2x,csv2toml-lab,csv2toml,c2t,csv2html-lab,csv2html,c2h,csv2sql-lab,csv2sql,c2s,json2sql-lab,json2sql,j2s,csv-lab,csv,excel-lab,xls,xlsx,excel,template-lab,tpl,template,json-lab,json,jsonpatch-lab,jsonpatch,ini-lab,ini,changelog-lab,changelog,compose2k8s-lab,compose2k8s,c2k,run2compose-lab,run2compose,r2c,yaml-lab,yaml,toml-lab,toml,crypto-lab,crypto,ocr-lab,ocr,exif-lab,exif,image-lab,img,media-lab,media,htpasswd-lab,htpasswd,xml2json-lab,xml2json,json2py-lab,json2py,j2py,json2xml-lab,json2xml,xml-lab,xml,ical-lab,ical,ics,markdown-lab,md,md-lab,endian-lab,endian,net-lab,net,pdf-lab,pdf,archive-lab,arc,uni-lab,uni,docs-lab,docs,qr-lab,qr,barcode-lab,barcode,http-lab,http,req,proxy-lab,proxy,webhook-lab,webhook,hook,proc-lab,proc,faker-lab,faker,fake,geo-lab,geo,curl-lab,curl,vcard-lab,vcard,brainfuck-lab,brainfuck,bf,struct-lab,struct,bin,chart-lab,chart,enc-lab,enc,encode,amqp-lab,amqp,pcap-lab,pcap,rss-lab,rss,fs-lab,fs,files,ws-lab,ws,hash-lab,hash,random-lab,rand,random,css-lab,css,alias-lab,aliases,js-lab,js,base16-lab,base16,b16,base32-lab,base32,b32,base36-lab,base36,b36,base58-lab,base58,b58,num2words-lab,num2words,base45-lab,base45,b45,base62-lab,base62,b62,punycode-lab,punycode,idn,base91-lab,base91,b91,octal-lab,octal,binary-lab,binary,a85-lab,a85,ascii85,base85-lab,base85,b85,base92-lab,base92,b92,phonetic-lab,phonetic,soundex,nato-lab,nato,rot13-lab,rot13,base64-lab,base64,b64,base64img-lab,base64img,b64img,zlib-lab,zlib,compress,inflate,bcrypt-lab,bcrypt,brotli-lab,brotli,zstd-lab,zstd,base64url-lab,base64url,b64url,browser-lab,browser,web,npm-lab,npm,pypi-lab,pypi,docker-lab,docker,container,compose-lab,compose,k8s-lab,k8s,kube,diff-lab,mongo-lab,mongo,mongodb,redis-lab,redis,cache,kafka-lab,kafka,github-lab,github,gh,email-lab,email,mail,smtp,sock-lab,sock,nc,netcat,pgp-lab,pgp,gpg,ssh-lab,ssh,tmux-lab,tmux,terraform-lab,tf,terraform,dns-lab,dns,whois-lab,whois,s3-lab,s3,pre-commit-lab,precommit,graphql-lab,gql,helm-lab,helm,notebook-lab,nb,grpc-lab,grpc,monitor-lab,monitor,mon,metrics-lab,metrics,trace-lab,trace,notify-lab,notify,fuzz-lab,fuzz,sri-lab,sri,static-lab,static,serve-static,contract-lab,contract,ansible-lab,ansible,hex-lab,hex,speed-lab,speed,load-lab,load,ast-lab,ast,otp-lab,otp,totp,mfa,cheatsheet-lab,cheatsheet,cheat,calendar-lab,calendar,cal,finance-lab,finance,fin,runner-lab,runner,gitignore-lab,gitignore,gi,chown-lab,chown,ownership,permissions-lab,permissions,perm,chmod,ollama-lab,ollama,ol,mqtt-lab,mqtt,mq,path-lab,path,systemd-lab,systemd,service,ascii-lab,ascii,weather-lab,weather,w,pattern-lab,pattern,design,http-server-lab,httpd,server,bandwidth-lab,bandwidth,bw,typing-lab,type,sound-lab,sound,audio,maze-lab,maze,license-lab,lic,license,rfc-lab,rfc,productivity-lab,prod,focus,rename-lab,rename,find-lab,find,locate,diagram-lab,diagram,draw,pipe-lab,pipe,stream,dict-lab,dict,define,synonym,antonym,thesaurus,parquet-lab,parquet,pq,emoji-lab,emoji,emoj,host-lab,hosts,host,clipboard-lab,clip,cp,copy,slides-lab,slides,present,test-lab,stats-lab,stats,codestats,disk-usage,du,usage,process-explorer,pex,htop,top,knowledge-lab,kg,graph,dash-lab,rebase-lab,rebase,cicd-lab,ci,actions,flashcards-lab,flash,learn,user-agent-lab,ua,cq-lab,quality,cql,set-lab,sets,transpiler-lab,transpile,branch-lab,bl,luhn-lab,luhn,lorem-lab,lorem,lipsum,roman-lab,roman,har-lab,har,morse-lab,morse,data-uri-lab,data-uri,case-lab,case,bitwise-lab,bits,vin-lab,vin,iban-lab,iban,json-schema-lab,jsonschema,hash-validator-lab,hash-validator,hval,typegen-lab,typegen,size-lab,size,stego-lab,stego,portscan-lab,portscan,pscan,isbn-lab,isbn,json-flatten-lab,flatten,unflatten,zip-lab,zip,tar-lab,tar}
+                        sub-command help
+    configure           Run interactive configuration setup
+    config              Manage agent configuration settings
+    validate            Validate the agent_config.yaml file
+    list-agents         List available agents
+    props-lab (props, properties)
+                        Convert Java .properties to/from JSON and YAML.
+    show-config         Show the final resolved configuration and exit
+    version             Print the version of the agent and exit
+    models              List recommended models for each agent
+    doctor              Run a comprehensive health check on the environment
+    auto-fix (fix)      Automatically fix missing directories, permissions,
+                        and settings.
+    init                Run an interactive setup wizard for a new project
+    adr                 Manage Architecture Decision Records (ADRs)
+    glance              Show a compact, high-level overview of the project
+                        status
+    status              Show the current status of the agent project
+    dashboard           Show a comprehensive dashboard of the project status
+    summary             Show a high-level summary of the agent project
+    suggest             Suggest next logical commands based on project state
+    history             Show the history of agent runs for the project
+    last                Show a summary of the last agent run.
+    last-run-id         Print the ID of the last agent run to stdout.
+    diff-summary        Show a summary of uncommitted git changes
+    diff                Show a detailed diff of uncommitted changes or a
+                        specific commit
+    log                 Show the git commit history for the project
+    logs                Show agent logs with advanced filtering
+    clean               Move agent-generated artifacts to a trash directory
+    archive             Archive all agent-generated artifacts to a timestamped
+                        directory
+    empty-trash         DEPRECATED: Use 'trash clear --all' instead.
+    restore             DEPRECATED: Use 'trash restore' instead.
+    trash               Manage the agent trash directory
+    discard             Discard uncommitted changes to specified files or all
+                        files
+    undo                Undo a 'discard' operation by restoring the stashed
+                        changes.
+    revert              Discard uncommitted changes to specified files or all
+                        files
+    rewind              Reset the project to a previous state (git commit)
+    worktrees           Manage agent-created git worktrees
+    snapshot            Manage snapshots of key agent artifacts
+    archives            Manage the agent archives directory
+    artifacts           Unified command to manage agent-generated artifacts
+                        (trash and archives)
+    workflow            Manually manage the agent's high-level workflow state
+                        (e.g., advancing from QA to Sign-off).
+    plan                Generate a feature plan from a spec file without
+                        executing any code.
+    shell               Start an interactive shell session
+    tui                 Start the interactive Textual TUI
+    prompt-lab          Run the Prompt Engineering Lab.
+    tree                Show a tree view of the project directory
+    completion          Display shell completion scripts. To install, use:
+                        'eval "$(main.py completion)"'
+    cost                Estimate the cost of an agent run based on token
+                        usage.
+    benchmark           Analyze and compare performance metrics from agent
+                        runs.
+    sprint              Observe and manage sprint progress.
+    branch              Manage a dedicated feature branch for the agent to
+                        work on.
+    mutate              Run mutation testing to evaluate test suite quality.
+    history-graph       Visualize agent history as a graph.
+    test                Automatically detect and run tests for the project.
+    report              Generate a summary report for a specific agent run.
+    lint                Automatically detect and run linters for the project.
+    format              Automatically detect and format code for the project.
+    hooks               Manage git hooks (pre-commit) for the project.
+    magic-decode-lab (magic-decode, mdecode)
+                        Automatically decode an opaque string
+    replay              Replay an agent run interactively.
+    recipes (macro)     Manage and run agent recipes (sequences of commands).
+    git                 Run git commands within a specific task's worktree.
+    push                Push the current feature branch to the remote
+                        repository with safety checks.
+    pull                Pull the latest changes from the remote repository
+                        with safety checks.
+    patch               Apply a patch from a file or stdin.
+    issues              List and manage GitHub issues.
+    pr                  Manage GitHub pull requests for the project.
+    commit              Stage all changes and create a git commit with safety
+                        checks.
+    feature             Run a guided workflow for a new feature: branch ->
+                        commit -> push -> pr.
+    interact            Start an interactive session to run common commands.
+    profile             Manage configuration profiles.
+    watch               Watch for file changes and run a command.
+    why                 Explain what a command does and why you might use it.
+    next                Suggest and execute the next logical command in the
+                        workflow.
+    optimize            Profile a Python script and suggest AI-driven
+                        optimizations.
+    prune               Identify and remove unused code and dependencies.
+    slug-lab (slug)     Slug Lab utilities (convert string to URL-friendly
+                        slug)
+    size-compare-lab (size-compare, scmp)
+                        Compare serialization sizes (JSON, MsgPack, CBOR,
+                        BSON, YAML, TOML, XML).
+    quiz                Run an interactive codebase quiz.
+    debug               Execute a command and ask the agent to explain
+                        failures.
+    blame               Show the agent Run ID or author for each line of a
+                        file, similar to git blame.
+    knowledge           Manage the agent's knowledge base and questions.
+    chat                Interactive chat with the agent.
+    ask                 Ask a question about the codebase.
+    do                  Translate a natural language instruction to a shell
+                        command.
+    code-review         Request an AI code review of specific files or git
+                        diffs.
+    summarize           Summarize git changes using AI.
+    explain             Explain source code files using AI.
+    context             Analyze the file context that the agent will use.
+    todos               Scan the codebase for TODO, FIXME, and other task
+                        tags.
+    search              Search the codebase for a text pattern.
+    smart-search (ssearch)
+                        Search the codebase using relevance ranking (BM25).
+    replace             Find and replace text in the codebase.
+    stash               Stash away uncommitted changes for later use.
+    onboard             Run an interactive onboarding wizard for new
+                        developers.
+    session             Manage work sessions (context, files, notes).
+    secrets             Manage encrypted secrets (API keys, passwords).
+    db (database)       Manage application database (init, migrate, seed,
+                        query).
+    playground          Manage a safe scratchpad for code experiments.
+    help                Show a structured and user-friendly help message.
+    cherry-pick         Apply the changes from a specific commit or Run ID
+                        onto the current branch.
+    rollback            Revert all commits associated with a specific agent
+                        Run ID.
+    timeline            Generate a chronological timeline of project events.
+    analytics           Display project analytics (git stats, code stats).
+    deps                Visualize project dependencies (Tree, Mermaid, JSON).
+    duplication         Scan for code duplication (Copy-Paste Detector).
+    unused              Scan for potentially unused code (dead code).
+    risk                Identify high-risk files based on complexity and churn
+                        (Hotspots).
+    impact              Predictively analyze the impact of changes (dependency
+                        graph).
+    a11y                Scan for accessibility issues (HTML, JSX, Vue).
+    bisect              Automate regression finding with git bisect and AI
+                        analysis.
+    map                 Visualize the project's internal structure (files,
+                        classes, functions).
+    architecture (arch)
+                        Validate project architecture against rules.
+    estimate            Estimate complexity and effort for a feature.
+    release             Manage releases (version bump, changelog, tagging).
+    review              Run an interactive QA review of the agent's completed
+                        work.
+    env                 Manage environment variables (.env files).
+    setup               Detect the project type and install its dependencies.
+    scaffold            Scaffold a new project from a template.
+    dockerize           Generate Dockerfile and docker-compose.yml for the
+                        project.
+    cicd                Generate CI/CD pipeline configuration files.
+    verify              Run comprehensive project verification (Lint, Type,
+                        Security, Test).
+    troubleshoot        Interactive troubleshooting assistant (Detect,
+                        Diagnose, Fix, Learn).
+    sentinel            Autonomous Sentinel: Watches files, runs checks, and
+                        auto-fixes issues.
+    health              Calculate the overall health score of the project.
+    debt                Generate a Technical Debt Report (Scorecard).
+    check-links         Scan project files for broken HTTP/HTTPS links.
+    security            Audit the project for security issues (SAST, secrets,
+                        dependencies).
+    openapi             Generate an OpenAPI specification from the codebase.
+    docstring           Manage Python docstrings (check and generate).
+    refactor            Refactor a file using AI based on a natural language
+                        instruction.
+    polish              Proactively find and refactor code quality issues
+                        (e.g. complexity).
+    resolve             Interactively resolve TODO/FIXME comments using AI.
+    braille-lab         Braille Lab: Encode and decode Braille.
+    mask-lab (pii-mask-lab)
+                        PII Data Masking Lab: mask emails, phones, SSNs,
+                        credit cards, etc.
+    regex               Regex Lab: Match, Explain, and Generate regular
+                        expressions.
+    arn-lab (arn)       ARN Lab: Parse and construct Amazon Resource Names.
+    cron-lab            Cron Lab: Next, Explain, and Generate cron
+                        expressions.
+    resolve-conflicts (fix-conflicts)
+                        Resolve git merge conflicts using AI.
+    generate-tests (gentest)
+                        Generate unit tests for a specific file.
+    perf                Performance profiling tools (run, report).
+    snippets            Manage code snippets and components.
+    dataset             Generate datasets for fine-tuning LLMs.
+    frontend            Frontend Verification (snapshot, verify).
+    mock                Mock Data Tools (generate, serve).
+    i18n                Manage Internationalization (translation,
+                        verification).
+    api-lab             Interactive API Lab (list endpoints, run requests).
+    research            Research a topic by crawling a URL and saving to
+                        Knowledge Base.
+    presentation        Generate a Marp-compatible Markdown presentation
+                        summarizing the project.
+    serve               Start a local development server with auto-detection.
+    ide                 Generate IDE configuration files (vscode, cursor).
+    scheduler           Run the autonomous maintenance scheduler.
+    chaos               Run chaos engineering experiments to test resilience.
+    guardrails          Enforce project policies and standards.
+    logic-lab           Truth Table Generator and Logic Lab.
+    devtools            Developer utilities (epoch, base64, uuid, hash, json).
+    kata                Play the Refactoring Kata game.
+    standup             Generate a daily standup report based on git activity.
+    network             Generate an interactive network graph of the codebase
+                        (files, imports, authors).
+    tour                Manage interactive code tours.
+    sanitize            Sanitize PII (Personally Identifiable Information)
+                        from files or text.
+    gantt               Visualize the sprint plan as a Gantt chart.
+    kanban              Manage tasks with a Kanban board.
+    resume              Generate a professional Project Resume (One-Pager).
+    retro               Conduct a retrospective on agent execution runs.
+    smart-context       Generate a dependency-aware context bundle for a file.
+    port                Manage network ports (check, list, kill).
+    color-lab           Color utilities (WCAG contrast, palette, blindness
+                        simulation).
+    data-lab            Data utilities (convert, validate, info).
+    schema-lab          Schema tools (infer from data, convert to
+                        TS/Pydantic).
+    code-query (cq)     Query the codebase structure (find classes, functions,
+                        etc.).
+    badges              Generate status badges for the project.
+    cidr-lab (cidr)     CIDR and IP utilities (info, contains, overlaps,
+                        subnet).
+    sqlformat-lab (sqlformat, sqllint)
+                        Format SQL queries.
+    sqlite-lab (sqlite)
+                        SQLite Database Lab.
+    jwt-lab             JWT utilities (decode, sign, verify).
+    jwk-lab (jwk)       JWK utilities (generate, convert).
+    ip-lab (ip)         IP Address utilities (public, geo, info).
+    phone-lab (phone)   Phone number utilities (parse, format, validate,
+                        info).
+    mac-lab (mac)       MAC address utilities (generate, format, validate,
+                        lookup).
+    physics-lab (phys)  Physics calculations (velocity, acceleration, force,
+                        energy).
+    hashids-lab (hashids)
+                        Hashids Generator Lab
+    cuid2-lab (cuid2)   CUID2 Generator Lab.
+    nanoid-lab (nanoid)
+                        NanoID Generator.
+    snowflake-lab (snowflake)
+                        Snowflake ID Generator and Inspector.
+    ulid-lab (ulid)     ULID Generator and Inspector.
+    currency-lab (currency, cur)
+                        Currency conversion and exchange rates.
+    ksuid-lab (ksuid)   KSUID Generator and Inspector.
+    uuid-lab (uuid)     UUID Generator and Inspector.
+    argon2-lab (argon2)
+                        Argon2 password hashing and verification.
+    password-lab (pwd-lab)
+                        Password utilities (generate, check, hash).
+    http-status-lab (http-status, status-code)
+                        HTTP Status Code utilities.
+    text-lab (txt)      Text utilities (transform, encode, info, diff).
+    html-entity-lab (entity-lab, entity, html-entity)
+                        Encode and decode HTML entities.
+    html2jsx-lab (html2jsx)
+                        Convert HTML to React JSX format.
+    html-lab (html)     HTML utilities (extract, clean, table, validate).
+    html2md-lab (html2md)
+                        Convert HTML to Markdown.
+    md2html-lab (md2html)
+                        Convert Markdown to HTML.
+    bencode-lab (bencode, torrent)
+                        Bencode encoding/decoding utilities.
+    bip39-lab (bip39)   BIP39 Mnemonic Seed Generator and Validator
+    msgpack-lab (msgpack, mpack)
+                        MessagePack utilities (encode, decode, tui).
+    bson-lab (bson)     BSON encoding/decoding utilities.
+    cbor-lab (cbor)     CBOR encoding/decoding utilities.
+    seo-lab (seo)       SEO Analysis Lab.
+    urlencode-lab (urlencode)
+                        URL encode and decode strings.
+    urldecode-lab (urldecode)
+                        URL decode strings.
+    url-lab (url)       URL utilities (parse, encode, decode, join, params,
+                        normalize).
+    cert-lab (cert)     Certificate utilities (inspect, generate).
+    time-lab (time)     Time utilities (now, convert, diff, epoch, zones).
+    date-lab (date)     Date utilities (add, sub, diff, info, format).
+    converter-lab (convert)
+                        Code & Format Converter (JSON/YAML/TOML/XML, CURL,
+                        Types).
+    codec-lab (codec)   Text Encoding and Decoding utilities (base64, hex,
+                        url, html, etc).
+    pack                Pack the codebase into a single file for LLM context.
+    jmespath-lab (jmespath, jp)
+                        Evaluate JMESPath expressions.
+    jsonpath-lab (jpath)
+                        Evaluate JSONPath expressions.
+    jq-lab (jq)         Evaluate jq expressions.
+    token-lab (tokens)  Tokenize, count, and decode text using tiktoken.
+    mime-lab (mime)     MIME Type and Magic Number Laboratory.
+    math-lab (math)     Math utilities (evaluate, stats, prime).
+    calc-lab (calc)     Programmer's Calculator.
+    unit-lab (unit)     Unit conversion utilities (storage, time, length,
+                        weight, temperature).
+    semver-lab (semver)
+                        SemVer utilities (parse, bump, compare, sort,
+                        satisfies).
+    sys-lab (sys)       System utilities (info, proc, kill, disk).
+    log-lab (ll)        Log analysis utilities (parse, filter, stats).
+    sql-lab (sql)       SQL utilities (run, list, schema, export).
+    toml2json-lab (toml2json, t2j)
+                        Convert between TOML and JSON.
+    json2toml-lab (json2toml, j2t)
+                        Convert JSON to TOML.
+    yaml2csv-lab (yaml2csv, y2c)
+                        YAML to CSV converter.
+    toml2csv-lab (toml2csv, t2c)
+                        Convert TOML to CSV.
+    xml2csv-lab (xml2csv, x2c)
+                        Convert XML to CSV.
+    yaml2json-lab (yaml2json, y2j)
+                        YAML to JSON and JSON to YAML Converter Lab
+    json2yaml-lab (json2yaml, j2y)
+                        JSON to YAML Converter Lab
+    plist-lab (plist, plist2json, json2plist)
+                        Apple Property List (Plist) and JSON Converter Lab
+    xml2toml-lab (xml2toml, toml2xml, x2t)
+                        XML to TOML and TOML to XML Converter Lab
+    yaml2toml-lab (yaml2toml, toml2yaml, y2t)
+                        YAML to TOML and TOML to YAML Converter Lab
+    json2ini-lab (json2ini, j2i)
+                        JSON to INI converter utilities.
+    ini2json-lab (ini2json, i2j)
+                        INI to JSON converter utilities.
+    json2csv-lab (j2c)  JSON to CSV converter utilities.
+    json2md-lab (json2md)
+                        JSON to Markdown Table Converter Lab
+    env2json-lab (env2json, json2env)
+                        Env to JSON and JSON to Env converter utilities.
+    csv2json-lab (c2j)  CSV to JSON converter utilities.
+    csv2yaml-lab (csv2yaml, c2y)
+                        CSV to YAML converter utilities.
+    yaml2xml-lab (yaml2xml, y2x)
+                        Convert YAML data to XML format.
+    json2ts-lab (json2ts, j2ts)
+                        Convert JSON into TypeScript interfaces. Supports
+                        dynamic type inference and nested objects.
+    json2java-lab (json2java, j2java)
+                        Convert JSON into Java Classes. Supports Jackson
+                        annotations and nested objects.
+    json2go-lab (json2go, j2go)
+                        Convert JSON into Go structs. Supports stdin, file, or
+                        text input.
+    json2kotlin-lab (json2kotlin, j2kt)
+                        Convert JSON payload to Kotlin data classes.
+    json2rust-lab (json2rust, j2rs)
+                        Convert JSON into Rust structs. Supports stdin, file,
+                        or text input.
+    json2dart-lab (json2dart, j2dart)
+                        Convert JSON to Dart Classes.
+    json2swift-lab (json2swift, j2swift)
+                        Convert JSON to Swift Structs.
+    json2csharp-lab (json2csharp, j2cs)
+                        Convert JSON into C# classes. Supports stdin, file, or
+                        text input.
+    yaml2py-lab (yaml2py, y2py)
+                        Convert YAML data to Python dataclass or Pydantic
+                        format.
+    csv2md-lab (csv2md)
+                        CSV to Markdown table converter.
+    md2csv-lab (md2csv, m2c)
+                        Convert Markdown tables to CSV
+    hexdump-lab (hexdump)
+                        Generate a hex dump of files or strings.
+    filetype-lab (filetype, magic-bytes)
+                        Detect file types by magic bytes.
+    csv2xml-lab (csv2xml, c2x)
+                        CSV to XML converter.
+    csv2toml-lab (csv2toml, c2t)
+                        CSV to TOML converter.
+    csv2html-lab (csv2html, c2h)
+                        Convert CSV data into HTML tables.
+    csv2sql-lab (csv2sql, c2s)
+                        Convert CSV data to SQL INSERT statements.
+    json2sql-lab (json2sql, j2s)
+                        Convert JSON data to SQL INSERT statements.
+    csv-lab (csv)       CSV utilities (read, stats, filter, sort, select,
+                        query).
+    excel-lab (xls, xlsx, excel)
+                        Excel utilities (info, read).
+    template-lab (tpl, template)
+                        Template utilities (render, inspect, lint).
+    json-lab (json)     JSON utilities (get, set, del, minify, diff, query,
+                        validate, tui).
+    jsonpatch-lab (jsonpatch)
+                        JSON Patch (RFC 6902) utilities.
+    ini-lab (ini)       INI utilities (get, set, del, sections, keys, to-json,
+                        from-json, tui).
+    changelog-lab (changelog)
+                        Changelog utilities (generate, tui).
+    compose2k8s-lab (compose2k8s, c2k)
+                        Convert docker-compose.yml to Kubernetes manifests.
+    run2compose-lab (run2compose, r2c)
+                        Convert docker run commands to docker-compose.yml
+    yaml-lab (yaml)     YAML utilities (get, set, del, format, merge, json,
+                        to-yaml, validate).
+    toml-lab (toml)     TOML utilities (get, set, del, format, json, to-toml,
+                        merge, validate).
+    crypto-lab (crypto)
+                        Crypto utilities (hash, encrypt, decrypt, gen-key,
+                        random).
+    ocr-lab (ocr)       OCR Lab for extracting text and data from images.
+    exif-lab (exif)     EXIF Metadata tools.
+    image-lab (img)     Image utilities (info, convert, resize, placeholder).
+    media-lab (media)   Media utilities (info, convert, resize, trim, extract-
+                        audio).
+    htpasswd-lab (htpasswd)
+                        Manage htpasswd credentials
+    xml2json-lab (xml2json)
+                        Convert XML to JSON.
+    json2py-lab (json2py, j2py)
+                        Convert JSON to Python Dataclass or Pydantic.
+    json2xml-lab (json2xml)
+                        Convert JSON to XML.
+    xml-lab (xml)       XML utilities (format, validate, xpath, edit, json).
+    ical-lab (ical, ics)
+                        iCalendar generation and validation lab
+    markdown-lab (md, md-lab)
+                        Markdown utilities (toc, stats, table, lint).
+    endian-lab (endian)
+                        Endianness conversion for integers and hex strings.
+    net-lab (net)       Network utilities (scan, dns, head, ping, ip).
+    pdf-lab (pdf)       PDF utilities (info, text, merge, split).
+    archive-lab (arc)   Archive utilities (list, extract, create, add, info).
+    uni-lab (uni)       Unicode utilities (inspect, search, escape, unescape).
+    docs-lab (docs)     Documentation Generator (generate, clean).
+    qr-lab (qr)         QR Code utilities (gen, wifi).
+    barcode-lab (barcode)
+                        1D Barcode utilities.
+    http-lab (http, req)
+                        HTTP Client Lab.
+    proxy-lab (proxy)   HTTP/HTTPS Proxy Server for debugging.
+    webhook-lab (webhook, hook)
+                        Webhook Lab: Capture, inspect, and replay HTTP
+                        requests.
+    proc-lab (proc)     Process Manager (start, list, run, check).
+    faker-lab (faker, fake)
+                        Generate fake data (person, internet, text,
+                        credit_card).
+    geo-lab (geo)       Geolocation utilities (locate, distance, map).
+    curl-lab (curl)     Convert cURL commands to Python, JS, and Go code.
+    vcard-lab (vcard)   vCard generator and parser tools.
+    brainfuck-lab (brainfuck, bf)
+                        Brainfuck Interpreter Lab.
+    struct-lab (struct, bin)
+                        Binary structure utilities (hex, pack, unpack, calc).
+    chart-lab (chart)   Chart utilities (bar, scatter, line).
+    enc-lab (enc, encode)
+                        Encoding utilities (base64, url, html, hex, rot13).
+    amqp-lab (amqp)     Manage and inspect AMQP (RabbitMQ) brokers.
+    pcap-lab (pcap)     Analyze and inspect PCAP files.
+    rss-lab (rss)       RSS/Atom Feed utilities (read, inspect).
+    fs-lab (fs, files)  FileSystem utilities (info, find, dedup, clean, shred,
+                        usage).
+    ws-lab (ws)         WebSocket Client (connect, send, listen).
+    hash-lab (hash)     Hash utilities (string, file, dir, compare, verify).
+    random-lab (rand, random)
+                        Random data generator (int, float, string, choice,
+                        pick, shuffle, uuid, coin, dice).
+    css-lab (css)       CSS format and minify.
+    alias-lab (aliases)
+                        Generate shell aliases for all lab commands.
+    js-lab (js)         JavaScript evaluator and minifier.
+    base16-lab (base16, b16)
+                        Base16 encoding/decoding utilities.
+    base32-lab (base32, b32)
+                        Base32 encode and decode strings.
+    base36-lab (base36, b36)
+                        Base36 encode and decode strings.
+    base58-lab (base58, b58)
+                        Base58 encode and decode strings.
+    num2words-lab (num2words)
+                        Convert numbers to English words.
+    base45-lab (base45, b45)
+                        Encode/Decode Base45 strings
+    base62-lab (base62, b62)
+                        Base62 encode and decode strings.
+    punycode-lab (punycode, idn)
+                        Encode and decode Punycode (IDNA) for
+                        internationalized domain names.
+    base91-lab (base91, b91)
+                        Base91 encode and decode strings.
+    octal-lab (octal)   Octal encode and decode strings.
+    binary-lab (binary)
+                        Binary encode and decode strings.
+    a85-lab (a85, ascii85)
+                        Ascii85 encode and decode strings.
+    base85-lab (base85, b85)
+                        Base85 encode and decode strings.
+    base92-lab (base92, b92)
+                        Base92 encode and decode strings.
+    phonetic-lab (phonetic, soundex)
+                        Phonetic Algorithms Lab (Soundex)
+    nato-lab (nato)     NATO Phonetic Alphabet encoding and decoding.
+    rot13-lab (rot13)   ROT13 Lab
+    base64-lab (base64, b64)
+                        Base64 encode and decode strings.
+    base64img-lab (base64img, b64img)
+                        Base64 encode and decode image files.
+    zlib-lab (zlib, compress, inflate)
+                        Compress and decompress data using zlib, deflate,
+                        gzip, bzip2, or lzma.
+    bcrypt-lab (bcrypt)
+                        Bcrypt hash generation and verification.
+    brotli-lab (brotli)
+                        Compress and decompress data using Brotli.
+    zstd-lab (zstd)     Compress and decompress data using Zstandard.
+    base64url-lab (base64url, b64url)
+                        Base64URL encode and decode strings.
+    browser-lab (browser, web)
+                        Browser automation utilities (screenshot, pdf, text,
+                        html, evaluate, inspect).
+    npm-lab (npm)       NPM Registry utilities (info, versions, deps, tags,
+                        search).
+    pypi-lab (pypi)     PyPI Registry utilities (info, releases, deps, files,
+                        download).
+    docker-lab (docker, container)
+                        Docker utilities (ps, images, start, stop, restart,
+                        rm, rmi, prune, logs, inspect, stats).
+    compose-lab (compose)
+                        Docker Compose utilities (up, down, ps, logs, stop,
+                        start, restart, build, pull, exec).
+    k8s-lab (k8s, kube)
+                        Kubernetes utilities (pods, ns, deploy, svc, ctx,
+                        logs, describe, apply, delete).
+    diff-lab            Smart comparison for various file formats (JSON, YAML,
+                        Image, Text).
+    mongo-lab (mongo, mongodb)
+                        MongoDB utilities (connect, list-dbs, list-cols, find,
+                        insert, delete).
+    redis-lab (redis, cache)
+                        Redis utilities (connect, get, set, del, keys, flush,
+                        info).
+    kafka-lab (kafka)   Kafka utilities (list, consume, produce, create,
+                        delete, describe).
+    github-lab (github, gh)
+                        GitHub utilities (user, repo, search, gists, tree,
+                        raw).
+    email-lab (email, mail, smtp)
+                        Email utilities (server, send, list, show, clear).
+    sock-lab (sock, nc, netcat)
+                        Raw socket tool (client/server).
+    pgp-lab (pgp, gpg)  PGP/GPG utilities (generate, encrypt, decrypt, sign,
+                        verify, list).
+    ssh-lab (ssh)       SSH utilities (keygen, list, fingerprint, config).
+    tmux-lab (tmux)     Tmux utilities (list, new, kill, attach, send,
+                        capture, windows, window).
+    terraform-lab (tf, terraform)
+                        Terraform utilities (init, plan, apply, destroy,
+                        validate, fmt, output, show).
+    dns-lab (dns)       DNS utilities (lookup, propagation).
+    whois-lab (whois)   Whois utilities (lookup, check).
+    s3-lab (s3)         S3 utilities (ls, mb, rb, cp, rm, presign).
+    pre-commit-lab (precommit)
+                        Manage pre-commit hooks and configuration (install,
+                        run-all, etc.)
+    graphql-lab (gql)   GraphQL utilities (query, schema).
+    helm-lab (helm)     Helm utilities (ls, install, uninstall, status, repo).
+    notebook-lab (nb)   Jupyter Notebook utilities (list, inspect, clean,
+                        convert, audit).
+    grpc-lab (grpc)     gRPC utilities (list, describe, call).
+    monitor-lab (monitor, mon)
+                        System monitoring utilities (stats, procs, kill,
+                        watch).
+    metrics-lab (metrics)
+                        Prometheus metrics utilities (scrape, lint, serve).
+    trace-lab (trace)   System call tracer with AI analysis.
+    notify-lab (notify)
+                        Send notifications to various channels.
+    fuzz-lab (fuzz)     Fuzzing utilities (cli, function).
+    sri-lab (sri)       Subresource Integrity (SRI) Hash Generator.
+    static-lab (static, serve-static)
+                        Advanced static file server with testing capabilities.
+    contract-lab (contract)
+                        Contract testing and verification.
+    ansible-lab (ansible)
+                        Ansible utilities (playbook, lint, inventory, doc,
+                        init).
+    hex-lab (hex)       Interactive Hex Editor TUI.
+    speed-lab (speed)   System performance benchmarks (internet, disk,
+                        network).
+    load-lab (load)     HTTP load testing tool.
+    ast-lab (ast)       Inspect Python AST.
+    otp-lab (otp, totp, mfa)
+                        Generate and verify One-Time Passwords (TOTP/HOTP).
+    cheatsheet-lab (cheatsheet, cheat)
+                        Developer cheat sheets.
+    calendar-lab (calendar, cal)
+                        Project Calendar.
+    finance-lab (finance, fin)
+                        Financial calculators (loan, compound, npv, roi,
+                        break-even, inflation).
+    runner-lab (runner)
+                        Task Runner (Makefile, package.json, etc).
+    gitignore-lab (gitignore, gi)
+                        Generate and check .gitignore files.
+    chown-lab (chown, ownership)
+                        Manage Unix file ownership.
+    permissions-lab (permissions, perm, chmod)
+                        Manage and calculate Unix permissions.
+    ollama-lab (ollama, ol)
+                        Manage local Ollama models.
+    mqtt-lab (mqtt, mq)
+                        MQTT Client (Publish, Subscribe, Check).
+    path-lab (path)     Path manipulation and analysis.
+    systemd-lab (systemd, service)
+                        Manage systemd units (generate, list, status).
+    ascii-lab (ascii)   ASCII Art Generator (Image, GIF).
+    weather-lab (weather, w)
+                        Weather Information (Current, Forecast).
+    pattern-lab (pattern, design)
+                        Design Pattern Generator.
+    http-server-lab (httpd, server)
+                        HTTP Server (Static, Echo, Upload).
+    bandwidth-lab (bandwidth, bw)
+                        Bandwidth Monitor (List, Monitor).
+    typing-lab (type)   Interactive Code Typing Tutor.
+    sound-lab (sound, audio)
+                        Sound Generation (Tone, Noise, DTMF, Morse).
+    maze-lab (maze)     Maze Generator and Solver.
+    license-lab (lic, license)
+                        License Management (Generate, Check, Explain).
+    rfc-lab (rfc)       RFC Search and Viewer.
+    productivity-lab (prod, focus)
+                        Productivity Tracking (Focus Timer, Distraction
+                        Logger).
+    rename-lab (rename)
+                        Batch Rename Utility (Regex, Transform, Sequence).
+    find-lab (find, locate)
+                        Advanced File Finder (Name, Size, Time, Type).
+    diagram-lab (diagram, draw)
+                        Interactive ASCII Diagram Editor.
+    pipe-lab (pipe, stream)
+                        Chainable Text/Data Pipeline.
+    dict-lab (dict, define, synonym, antonym, thesaurus)
+                        Dictionary and Thesaurus Utility.
+    parquet-lab (parquet, pq)
+                        Parquet File Utilities
+    emoji-lab (emoji, emoj)
+                        Emoji Search and Discovery Tool.
+    host-lab (hosts, host)
+                        Manage /etc/hosts entries.
+    clipboard-lab (clip, cp, copy)
+                        Clipboard Manager.
+    slides-lab (slides, present)
+                        Markdown Slides Presentation TUI.
+    test-lab            Interactive Test Lab TUI.
+    stats-lab (stats, codestats)
+                        Codebase Statistics (LOC, Languages).
+    disk-usage (du, usage)
+                        Interactive Disk Usage TUI.
+    process-explorer (pex, htop, top)
+                        Interactive Process Explorer TUI.
+    knowledge-lab (kg, graph)
+                        Interactive Knowledge Graph Lab TUI.
+    dash-lab            Interactive Dash Lab TUI (Dashboard Builder).
+    rebase-lab (rebase)
+                        Interactive Git Rebase Lab.
+    cicd-lab (ci, actions)
+                        Interactive CI/CD Lab TUI (GitHub Actions).
+    flashcards-lab (flash, learn)
+                        Interactive Flashcards Lab (Spaced Repetition
+                        Learning).
+    user-agent-lab (ua)
+                        Manage User Agent strings
+    cq-lab (quality, cql)
+                        Interactive Code Quality Lab (Complexity, Duplication,
+                        Security, Debt).
+    set-lab (sets)      Set Operations Lab
+    transpiler-lab (transpile)
+                        AI Code Transpiler
+    branch-lab (bl)     Git Branch Manager Lab
+    luhn-lab (luhn)     Luhn algorithm tools (credit cards, IMEI, etc.).
+    lorem-lab (lorem, lipsum)
+                        Lorem Ipsum generator.
+    roman-lab (roman)   Roman Numeral Lab (convert integer <-> roman, TUI)
+    har-lab (har)       HAR Lab utilities for analyzing HTTP Archive files.
+    morse-lab (morse)   Morse Code Lab (encode, decode, audio)
+    data-uri-lab (data-uri)
+                        Encode text or files into Data URIs and decode Data
+                        URIs.
+    case-lab (case)     String case conversions (camel, snake, kebab, etc.).
+    bitwise-lab (bits)  Bitwise operations and numerical base conversions.
+    vin-lab (vin)       VIN validation and decoding tools.
+    iban-lab (iban)     IBAN validation, generation, and parsing tools.
+    json-schema-lab (jsonschema)
+                        Generate JSON Schema from JSON
+    hash-validator-lab (hash-validator, hval)
+                        Detect hash types and verify if an input matches a
+                        given hash.
+    typegen-lab (typegen)
+                        Generate type definitions from JSON.
+    size-lab (size)     Format byte sizes into human readable strings and vice
+                        versa.
+    stego-lab (stego)   Steganography tools.
+    portscan-lab (portscan, pscan)
+                        Scan open ports on a host.
+    isbn-lab (isbn)     Manage International Standard Book Numbers (ISBN-10,
+                        ISBN-13)
+    json-flatten-lab (flatten, unflatten)
+                        Flatten and unflatten JSON structures.
+    zip-lab (zip)       Utilities for creating and extracting zip archives.
+    tar-lab (tar)       Tar Lab utilities (create, extract, list tar archives)
+
+options:
+  -h, --help            show this help message and exit
+
+Core Configuration:
+  --version             Print the agent version and exit.
+  --profile PROFILE     Select a configuration profile from agent_config.yaml.
+  -p PROJECT_DIR, --project-dir PROJECT_DIR
+                        Directory where the project will be created/modified
+                        (default: current directory)
+  -a {gemini,cursor,local,openrouter}, --agent {gemini,cursor,local,openrouter}
+                        Which agent to use (default: gemini)
+  -m MODEL, --model MODEL
+                        Model to use (overrides default). Can also be set via
+                        config.
+  -s SPEC, --spec SPEC  Path to app_spec.txt (required for new projects)
+  -v, --verbose         Enable verbose logging
+
+Execution Control:
+  --max-iterations MAX_ITERATIONS
+                        Maximum number of agent iterations. Can also be set
+                        via config.
+  --timeout TIMEOUT     Timeout in seconds for agent execution (default:
+                        600.0). Can also be set via config.
+  --max-error-wait MAX_ERROR_WAIT
+                        Maximum wait time in seconds for agent error backoff
+                        (default: 600.0). Can also be set via config.
+  --no-stream           Disable streaming output
+
+Manager Agent:
+  --manager-frequency MANAGER_FREQUENCY
+                        How often the manager agent runs (default: 10
+                        iterations). Can also be set via config.
+  --manager-model MANAGER_MODEL
+                        Model to use for the manager agent. Can also be set
+                        via config.
+  --manager-first       Run the manager agent before the first coding session
+
+Dashboard:
+  --no-dashboard        Disable the standalone dashboard server (enabled by
+                        default)
+  --dashboard-url DASHBOARD_URL
+                        URL of the dashboard server (default:
+                        http://localhost:7654)
+  --login               Run the agent in login/authentication mode (exit after
+                        login)
+
+Sprint Mode:
+  --sprint              Run in Sprint Mode (Concurrent Agents)
+  --max-agents MAX_AGENTS
+                        Maximum number of simultaneous agents in Sprint Mode.
+                        Can also be set via config.
+
+Jira Integration:
+  --jira-ticket JIRA_TICKET
+                        Jira ticket ID to work on (e.g., PROJ-123)
+  --jira-label JIRA_LABEL
+                        Jira label to search for (picks first 'To Do' ticket)
+
+Advanced:
+  --verify-creation     Run verification test (dummy mode)
+  --dind, --docker-in-docker
+                        Enable Docker-in-Docker support (mounts docker
+                        socket). Can also be set via config.
+  --dry-run             DEPRECATED: Use the 'show-config' command instead.
+                        Prints the final configuration and exits.

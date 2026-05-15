@@ -25,7 +25,7 @@ def dummy_image(tmp_path):
         pytest.skip("Pillow is not installed")
     img_path = tmp_path / "test_logo.png"
     img = Image.new("RGBA", (512, 512), color="blue")
-    img.save(img_path)
+    img.save(str(img_path))
     return img_path
 
 

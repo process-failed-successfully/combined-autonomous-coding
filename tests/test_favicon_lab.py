@@ -1,11 +1,12 @@
-import pytest
-from pathlib import Path
-from PIL import Image
-import tempfile
-import sys
 import argparse
+import pytest
+import tempfile
+from pathlib import Path
 
-from shared.favicon_lab import FaviconManager, run_favicon_lab_logic
+Image = pytest.importorskip('PIL.Image')
+
+from shared.favicon_lab import FaviconManager, run_favicon_lab_logic  # noqa: E402
+
 
 def test_generate_favicons():
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -39,6 +40,7 @@ def test_generate_favicons():
             file_path = out_dir / file
             assert file_path.is_file()
 
+
 def test_generate_favicons_too_small():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
@@ -55,12 +57,14 @@ def test_generate_favicons_too_small():
         assert success is False
         assert not (tmp_path / "out_dir").exists()
 
+
 def test_generate_favicons_missing_file():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         manager = FaviconManager(tmp_path)
         success = manager.generate("missing.png", "out_dir")
         assert success is False
+
 
 def test_html_snippet():
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -72,6 +76,7 @@ def test_html_snippet():
         assert "favicon-32x32.png" in html
         assert "favicon-16x16.png" in html
         assert "site.webmanifest" in html
+
 
 def test_run_favicon_lab_logic_generate(monkeypatch):
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -93,6 +98,7 @@ def test_run_favicon_lab_logic_generate(monkeypatch):
         assert success is True
         assert (tmp_path / "out" / "favicon.ico").is_file()
 
+
 def test_run_favicon_lab_logic_generate_missing_image():
     with tempfile.TemporaryDirectory() as tmpdir:
         args = argparse.Namespace(
@@ -103,6 +109,7 @@ def test_run_favicon_lab_logic_generate_missing_image():
         )
         success = run_favicon_lab_logic(args)
         assert success is False
+
 
 def test_run_favicon_lab_logic_html(capsys):
     with tempfile.TemporaryDirectory() as tmpdir:

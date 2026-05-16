@@ -1,9 +1,10 @@
 import pytest
 from pathlib import Path
-from PIL import Image
 import tempfile
 import sys
 import argparse
+
+Image = pytest.importorskip("PIL.Image")
 
 from shared.favicon_lab import FaviconManager, run_favicon_lab_logic
 

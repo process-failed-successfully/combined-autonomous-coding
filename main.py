@@ -260,7 +260,7 @@ KNOWN_COMMANDS = [
     "bencode-lab", "bencode", "torrent",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "favicon-lab", "favicon", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
+    "crypto-lab", "crypto", "json-lab", "json", "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "favicon-lab", "favicon", "entropy-lab", "entropy", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -16249,6 +16249,16 @@ def parse_args(argv=None):
     parser_hexdump.add_argument("--length", "-l", type=int, default=-1, help="Number of bytes to read (-1 for all).")
     parser_hexdump.add_argument("--tui", action="store_true", help="Launch the Hexdump Lab TUI.")
 
+    # --- New 'entropy-lab' command ---
+    parser_entropy = subparsers.add_parser(
+        "entropy-lab",
+        aliases=["entropy"],
+        help="Entropy Lab: Calculate Shannon entropy and analyze data."
+    )
+    parser_entropy.add_argument("--file", "-f", help="File to read from.")
+    parser_entropy.add_argument("--text", "-t", help="Text to analyze.")
+    parser_entropy.add_argument("--tui", action="store_true", help="Launch the Entropy Lab TUI.")
+
     # --- New 'filetype-lab' command ---
     parser_filetype = subparsers.add_parser(
         "filetype-lab",
@@ -25398,6 +25408,25 @@ async def main():
             from shared.phone_lab import run_phone_lab_logic
             run_phone_lab_logic(args)
         else:
+            sys.exit(1)
+        return
+
+    if args.command in ["entropy-lab", "entropy"]:
+        # TUI mode
+        if getattr(args, "tui", False):
+            print("Launching Entropy Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-entropy")
+            if hasattr(app, "run_async"):
+                import asyncio
+                asyncio.run(app.run_async())
+            else:
+                app.run()
+            return
+
+        # CLI mode
+        from shared.entropy_lab import run_entropy_lab_logic
+        success = run_entropy_lab_logic(args)
+        if not success:
             sys.exit(1)
         return
 

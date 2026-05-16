@@ -23,9 +23,8 @@ async def test_favicon_lab_tui_load_and_generate(temp_project_dir):
 
         # Prepare a valid source image
         img_path = temp_project_dir / "logo.png"
-        with open(str(img_path), "wb") as f:
-            img = Image.new("RGBA", (512, 512), color="red")
-            img.save(f, format="PNG")
+        img = Image.new("RGBA", (512, 512), color="red")
+        img.save(str(img_path))
 
         app.query_one("#favicon-image-input").value = "logo.png"
         app.query_one("#favicon-output-input").value = "out_dir"

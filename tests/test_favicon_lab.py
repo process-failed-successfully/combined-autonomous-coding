@@ -13,9 +13,8 @@ def test_generate_favicons():
         img_path = tmp_path / "logo.png"
 
         # Create a valid 512x512 mock image
-        with open(str(img_path), "wb") as f:
-            img = Image.new("RGBA", (512, 512), color="red")
-            img.save(f, format="PNG")
+        img = Image.new("RGBA", (512, 512), color="red")
+        img.save(str(img_path))
 
         manager = FaviconManager(tmp_path)
         success = manager.generate("logo.png", "out_dir")
@@ -45,9 +44,8 @@ def test_generate_favicons_too_small():
         img_path = tmp_path / "small.png"
 
         # Create an invalid 256x256 mock image
-        with open(str(img_path), "wb") as f:
-            img = Image.new("RGBA", (256, 256), color="red")
-            img.save(f, format="PNG")
+        img = Image.new("RGBA", (256, 256), color="red")
+        img.save(str(img_path))
 
         manager = FaviconManager(tmp_path)
         success = manager.generate("small.png", "out_dir")
@@ -78,9 +76,8 @@ def test_run_favicon_lab_logic_generate(monkeypatch):
         tmp_path = Path(tmpdir)
         img_path = tmp_path / "logo.png"
 
-        with open(str(img_path), "wb") as f:
-            img = Image.new("RGBA", (512, 512), color="blue")
-            img.save(f, format="PNG")
+        img = Image.new("RGBA", (512, 512), color="blue")
+        img.save(str(img_path))
 
         args = argparse.Namespace(
             project_dir=tmp_path,

@@ -1,8 +1,6 @@
 import subprocess
 import sys
-import os
 from pathlib import Path
-
 
 def test_did_you_mean_suggestion():
     """
@@ -11,18 +9,11 @@ def test_did_you_mean_suggestion():
     root_dir = Path(__file__).parent.parent
     main_script = root_dir / "main.py"
 
-    env = os.environ.copy()
-    if "PYTHONPATH" in env:
-        env["PYTHONPATH"] = f"{root_dir}{os.pathsep}{env['PYTHONPATH']}"
-    else:
-        env["PYTHONPATH"] = str(root_dir)
-
     # Run with an invalid command that is close to 'json'
     result = subprocess.run(
-        [sys.executable, str(main_script), "jsno"],
+        ["python3", str(main_script), "jsno"],
         capture_output=True,
-        text=True,
-        env=env
+        text=True
     )
 
     assert result.returncode == 2
@@ -34,7 +25,6 @@ def test_did_you_mean_suggestion():
     assert "Did you mean:" in result.stderr
     assert "'json'" in result.stderr
 
-
 def test_did_you_mean_no_suggestion():
     """
     Test that completely bogus commands don't crash and just fall back to no suggestions.
@@ -42,18 +32,11 @@ def test_did_you_mean_no_suggestion():
     root_dir = Path(__file__).parent.parent
     main_script = root_dir / "main.py"
 
-    env = os.environ.copy()
-    if "PYTHONPATH" in env:
-        env["PYTHONPATH"] = f"{root_dir}{os.pathsep}{env['PYTHONPATH']}"
-    else:
-        env["PYTHONPATH"] = str(root_dir)
-
     # Run with a command that has no close matches
     result = subprocess.run(
-        [sys.executable, str(main_script), "xyz123thisisnotacommandatall"],
+        ["python3", str(main_script), "xyz123thisisnotacommandatall"],
         capture_output=True,
-        text=True,
-        env=env
+        text=True
     )
 
     assert result.returncode == 2

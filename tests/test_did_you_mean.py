@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 def test_did_you_mean_suggestion():
@@ -11,7 +12,8 @@ def test_did_you_mean_suggestion():
 
     # Run with an invalid command that is close to 'json'
     result = subprocess.run(
-        ["python3", str(main_script), "jsno"],
+        [sys.executable, str(main_script), "jsno"],
+        env={**os.environ, "PYTHONPATH": str(root_dir) + os.pathsep + os.environ.get("PYTHONPATH", "")},
         capture_output=True,
         text=True
     )
@@ -34,7 +36,8 @@ def test_did_you_mean_no_suggestion():
 
     # Run with a command that has no close matches
     result = subprocess.run(
-        ["python3", str(main_script), "xyz123thisisnotacommandatall"],
+        [sys.executable, str(main_script), "xyz123thisisnotacommandatall"],
+        env={**os.environ, "PYTHONPATH": str(root_dir) + os.pathsep + os.environ.get("PYTHONPATH", "")},
         capture_output=True,
         text=True
     )

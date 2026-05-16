@@ -35,7 +35,6 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
-import difflib
 from collections import deque
 try:
     from watchdog.observers import Observer
@@ -9790,6 +9789,7 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         if "invalid choice:" in message and "(choose from" in message:
             import re
+            import difflib
             match = re.search(r"invalid choice: '([^']+)' \(choose from (.+)\)", message)
             if match:
                 invalid_choice = match.group(1)

@@ -41,7 +41,7 @@ class FaviconManager:
                 ico_sizes = [(16, 16), (32, 32), (48, 48)]
                 ico_path = out_dir / "favicon.ico"
                 with open(str(ico_path), 'wb') as f:
-                    img.save(f, format='ICO', sizes=ico_sizes)
+                    img.copy().save(f, format='ICO', sizes=ico_sizes)
                 print(f"✅ Generated {ico_path}")
 
                 # Generate apple-touch-icon.png

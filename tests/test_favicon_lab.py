@@ -3,7 +3,6 @@ from pathlib import Path
 import tempfile
 import argparse
 
-
 from shared.favicon_lab import FaviconManager, run_favicon_lab_logic
 
 Image = pytest.importorskip("PIL.Image")

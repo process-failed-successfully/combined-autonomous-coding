@@ -2,7 +2,6 @@ import pytest
 from pathlib import Path
 import tempfile
 
-
 from shared.tui import AgentTUI
 
 Image = pytest.importorskip("PIL.Image")

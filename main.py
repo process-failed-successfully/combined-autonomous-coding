@@ -35,6 +35,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import time
+import difflib
 from collections import deque
 try:
     from watchdog.observers import Observer
@@ -483,6 +484,7 @@ def run_arn_lab(args):
     run_arn_lab_logic(args)
     sys.exit(0)
 
+
 def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
     if getattr(args, "tui", False):
@@ -856,6 +858,7 @@ def run_phonetic_lab(args):
     from shared.phonetic_lab import run_phonetic_lab_logic
     run_phonetic_lab_logic(args)
     sys.exit(0)
+
 
 def run_nato_lab(args):
     """Runs the NATO Lab."""
@@ -2468,6 +2471,7 @@ def run_faker_lab(args):
     if not success:
         sys.exit(1)
 
+
 def run_geo_lab(args):
     """Runs the Geo Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -2551,6 +2555,7 @@ def run_amqp_lab(args):
     from shared.amqp_lab import run_amqp_lab_logic
     run_amqp_lab_logic(args)
     sys.exit(0)
+
 
 def run_pcap_lab(args):
     """Runs the PCAP Lab."""
@@ -2745,6 +2750,7 @@ def run_mongo_lab(args):
 
     from shared.mongo_lab import run_mongo_lab_logic
     run_mongo_lab_logic(args)
+
 
 def run_redis_lab(args):
     """Runs the Redis Lab."""
@@ -3010,6 +3016,7 @@ def run_ksuid_lab(args):
     from shared.ksuid_lab import run_ksuid_lab_logic
     run_ksuid_lab_logic(args)
     sys.exit(0)
+
 
 def run_uuid_lab(args):
     """Runs the UUID Lab."""
@@ -3335,6 +3342,7 @@ def run_json2py_lab(args):
     from shared.json2py_lab import run_json2py_lab_logic
     success = run_json2py_lab_logic(args)
     sys.exit(0 if success else 1)
+
 
 def run_json2xml_lab(args):
     """Runs the JSON to XML Lab."""
@@ -9800,9 +9808,6 @@ def run_config(args):
     return 0
 
 
-import difflib
-
-
 class DidYouMeanArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         if "invalid choice:" in message and "(choose from" in message:
@@ -9822,6 +9827,7 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
         self.print_usage(sys.stderr)
         args = {'prog': self.prog, 'message': message}
         self.exit(2, ('%(prog)s: error: %(message)s\n') % args)
+
 
 def parse_args(argv=None):
     parser = DidYouMeanArgumentParser(description="Autonomous Coding Agent")
@@ -21145,6 +21151,7 @@ def run_mask_lab(args):
     from shared.mask_lab import run_mask_lab_logic
     run_mask_lab_logic(args)
 
+
 def run_regex_escape_lab(args):
     """Runs the Regex Escape Lab."""
     if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
@@ -24904,7 +24911,8 @@ async def main():
 
 
     if args.command in ["favicon-lab", "favicon"]:
-        run_favicon_lab(args)
+        from shared.favicon_lab import run_favicon_lab_logic
+        run_favicon_lab_logic(args)
         return
 
     if args.command in ["json2ini-lab", "json2ini", "j2i"]:

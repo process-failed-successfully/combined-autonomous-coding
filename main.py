@@ -264,6 +264,7 @@ KNOWN_COMMANDS = [
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
+    "cookie-lab", "cookie",
     "props-lab", "props", "properties",
     "run2compose-lab", "run2compose", "r2c",
     "compose2k8s-lab", "compose2k8s", "c2k",
@@ -9962,6 +9963,21 @@ def parse_args(argv=None):
 
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
+
+    # Cookie Lab parser
+    parser_cookie = subparsers.add_parser("cookie-lab", aliases=["cookie"], help="Parse and generate HTTP Cookie and Set-Cookie headers.")
+    parser_cookie.add_argument("--tui", action="store_true", help="Launch the Cookie Lab TUI")
+    parser_cookie.add_argument("action", nargs="?", choices=["parse", "generate", "tui"], help="Action to perform")
+    parser_cookie.add_argument("--string", type=str, help="Cookie string to parse")
+    parser_cookie.add_argument("--key", type=str, help="Key for cookie generation")
+    parser_cookie.add_argument("--value", type=str, help="Value for cookie generation")
+    parser_cookie.add_argument("--domain", type=str, help="Domain for generated cookie")
+    parser_cookie.add_argument("--path", type=str, help="Path for generated cookie")
+    parser_cookie.add_argument("--expires", type=str, help="Expires string for generated cookie")
+    parser_cookie.add_argument("--max-age", type=int, help="Max-Age integer for generated cookie")
+    parser_cookie.add_argument("--secure", action="store_true", help="Set Secure flag for generated cookie")
+    parser_cookie.add_argument("--httponly", action="store_true", help="Set HttpOnly flag for generated cookie")
+    parser_cookie.add_argument("--samesite", type=str, choices=["Strict", "Lax", "None"], help="SameSite value for generated cookie")
 
     # Props Lab parser
     props_parser = subparsers.add_parser("props-lab", aliases=["props", "properties"], help="Convert Java .properties to/from JSON and YAML.")
@@ -21952,6 +21968,28 @@ def run_argon2_lab(args):
     sys.exit(0 if success else 1)
 
 
+def run_cookie_lab(args):
+    """Runs the Cookie Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Cookie Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-cookie")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.cookie_lab import run_cookie_lab_logic
+    success = run_cookie_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
 def run_currency_lab(args):
     """Runs the Currency Lab."""
     if getattr(args, 'tui', False):
@@ -24604,6 +24642,10 @@ async def main():
 
     if args.command in ["url-lab", "url"]:
         run_url_lab(args)
+        return
+
+    if args.command in ["cookie-lab", "cookie"]:
+        run_cookie_lab(args)
         return
 
     if args.command in ["urlencode-lab", "urlencode"]:

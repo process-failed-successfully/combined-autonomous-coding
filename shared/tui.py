@@ -77,6 +77,7 @@ from shared.tui_docker import DockerTab
 from shared.tui_k8s import K8sTab
 from shared.tui_csv2sql import Csv2SqlTab
 from shared.tui_json2sql import Json2SqlTab
+from shared.tui_cookie import CookieLabTab
 from shared.tui_htpasswd import HtpasswdLabTab
 from shared.tui_entropy import EntropyLabTab
 from shared.tui_terraform import TerraformTab
@@ -4323,6 +4324,8 @@ class AgentTUI(App):
                 yield PasswordLabTab()
             with TabPane("Systemd", id="tab-systemd"):
                 yield SystemdLabTab(self.project_dir)
+            with TabPane("Cookie Lab", id="tab-cookie"):
+                yield CookieLabTab(project_dir=self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):
                 yield PortLabTab()
             with TabPane("Roman Lab", id="tab-roman"):

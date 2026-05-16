@@ -357,6 +357,7 @@ KNOWN_COMMANDS = [
     "base64url-lab", "base64url", "b64url",
     "zlib-lab", "zlib", "compress", "inflate",
     "brotli-lab", "brotli", "zstd-lab", "zstd",
+    "cookie-lab", "cookie",
     "base85-lab", "base85", "b85",
     "base91-lab", "base91", "b91",
     "base92-lab", "base92", "b92",
@@ -18027,7 +18028,22 @@ Examples:
     parser_bcrypt.add_argument("--rounds", type=int, default=12, help="Cost factor (rounds) for hashing (default: 12).")
     parser_bcrypt.add_argument("--hash-value", type=str, help="Hash string to verify against (required if using --verify).")
 
-    # brotli-lab
+
+    # cookie-lab
+    parser_cookie = subparsers.add_parser(
+        "cookie-lab", aliases=["cookie"],
+        help="Parse and generate HTTP Cookie strings."
+    )
+    cookie_subparsers = parser_cookie.add_subparsers(dest="action", required=True)
+
+    parser_cookie_parse = cookie_subparsers.add_parser("parse", help="Parse a raw Cookie string.")
+    parser_cookie_parse.add_argument("--cookie", type=str, required=True, help="Raw cookie string to parse.")
+
+    parser_cookie_generate = cookie_subparsers.add_parser("generate", help="Generate Set-Cookie strings.")
+    parser_cookie_generate.add_argument("--json", type=str, required=True, help="JSON array of cookie objects.")
+
+    parser_cookie_tui = cookie_subparsers.add_parser("tui", help="Launch interactive Cookie Lab TUI.")
+# brotli-lab
     parser_brotli = subparsers.add_parser(
         "brotli-lab", aliases=["brotli"],
         help="Compress and decompress data using Brotli."
@@ -24282,6 +24298,27 @@ async def main():
         if success:
             sys.exit(0)
         sys.exit(1)
+
+    if args.command in ["cookie-lab", "cookie"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Cookie Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-cookie")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.cookie_lab import run_cookie_lab_logic
+        success = run_cookie_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["browser-lab", "browser", "web"]:
         await run_browser_lab(args)

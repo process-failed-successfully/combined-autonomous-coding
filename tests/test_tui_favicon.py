@@ -1,3 +1,21 @@
+import textual
+def dummy_work(*args, **kwargs):
+    return lambda func: func
+textual.work = dummy_work
+
+import textual
+
+def dummy_work(*args, **kwargs):
+    return lambda func: func
+
+textual.work = dummy_work
+import pytest
+import textual
+
+def dummy_work(*args, **kwargs):
+    return lambda func: func
+
+textual.work = dummy_work
 import pytest
 from pathlib import Path
 import tempfile

@@ -30,6 +30,7 @@ try:
 except ImportError:
     argcomplete = None
 import sys
+import difflib
 import os
 import shutil
 import subprocess
@@ -9800,7 +9801,6 @@ def run_config(args):
     return 0
 
 
-import difflib
 
 
 class DidYouMeanArgumentParser(argparse.ArgumentParser):
@@ -9822,6 +9822,7 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
         self.print_usage(sys.stderr)
         args = {'prog': self.prog, 'message': message}
         self.exit(2, ('%(prog)s: error: %(message)s\n') % args)
+
 
 def parse_args(argv=None):
     parser = DidYouMeanArgumentParser(description="Autonomous Coding Agent")

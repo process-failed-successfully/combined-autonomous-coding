@@ -3,9 +3,9 @@ from pathlib import Path
 import tempfile
 import argparse
 
-from shared.favicon_lab import FaviconManager, run_favicon_lab_logic
-
 Image = pytest.importorskip("PIL.Image")
+
+from shared.favicon_lab import FaviconManager, run_favicon_lab_logic  # noqa: E402
 
 
 def test_generate_favicons():

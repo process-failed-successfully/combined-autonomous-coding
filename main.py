@@ -14896,6 +14896,11 @@ def parse_args(argv=None):
     # uuid tui
     parser_uuid_tui = uuid_subparsers.add_parser("tui", help="Launch UUID Lab TUI.")
 
+    # uuid format
+    parser_uuid_format = uuid_subparsers.add_parser("format", aliases=["fmt"], help="Format a UUID.")
+    parser_uuid_format.add_argument("uuid", help="The UUID to format.")
+    parser_uuid_format.add_argument("--type", choices=["standard", "hex", "urn", "int", "base64", "base64url"], default="standard", help="The output format type.")
+
     # uuid validate
     parser_uuid_validate = uuid_subparsers.add_parser("validate", aliases=["check"], help="Validate a UUID.")
     parser_uuid_validate.add_argument("uuid", help="The UUID to validate.")

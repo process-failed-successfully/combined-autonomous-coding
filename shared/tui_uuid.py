@@ -50,6 +50,23 @@ class UuidLabTab(Container):
                         yield Label("[bold]Details:[/bold]")
                         yield RichLog(id="log-uuid-inspect", wrap=True, highlight=True, markup=True)
 
+                # Format Tab
+                with TabPane("Format"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Format UUID[/bold]")
+                        yield Input(placeholder="Enter UUID...", id="input-uuid-format")
+                        with Horizontal():
+                            yield Label("Output Type:")
+                            yield Select.from_values(
+                                ["standard", "hex", "urn", "int", "base64", "base64url"],
+                                id="select-uuid-format",
+                                value="standard"
+                            )
+                            yield Button("Format", id="btn-uuid-format", variant="primary")
+
+                        yield Label("[bold]Result:[/bold]")
+                        yield Input(id="input-uuid-format-result", readonly=True)
+
                 # Validate Tab
                 with TabPane("Validate"):
                     with Vertical(classes="stat-box"):
@@ -134,6 +151,24 @@ class UuidLabTab(Container):
             log.write(f"Date: {info.get('timestamp_iso')}")
 
         log.write(f"\nURN: {info['urn']}")
+
+    @on(Button.Pressed, "#btn-uuid-format")
+    def on_format(self) -> None:
+        val = self.query_one("#input-uuid-format", Input).value.strip()
+        out_type = self.query_one("#select-uuid-format", Select).value
+        result_input = self.query_one("#input-uuid-format-result", Input)
+
+        if not val:
+            self.notify("Please enter a UUID.", severity="warning")
+            return
+
+        try:
+            formatted = self.manager.format(val, format_type=out_type)
+            result_input.value = formatted
+            self.notify("Successfully formatted UUID.")
+        except Exception as e:
+            result_input.value = ""
+            self.notify(f"Formatting failed: {e}", severity="error")
 
     @on(Button.Pressed, "#btn-uuid-validate")
     def on_validate(self) -> None:

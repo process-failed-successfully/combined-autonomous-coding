@@ -127,6 +127,7 @@ from shared.tui_text import TextLabTab
 from shared.tui_time import TimeLabTab
 from shared.tui_date import DateLabTab
 from shared.tui_phonetic import PhoneticLabTab
+from shared.tui_cookie import CookieLabTab
 from shared.tui_jwt import JwtLabTab
 from shared.tui_math import MathLabTab
 from shared.tui_calc import CalcLabTab
@@ -4301,6 +4302,8 @@ class AgentTUI(App):
                 yield FlattenLabTab()
             with TabPane("Phonetic Lab", id="tab-phonetic"):
                 yield PhoneticLabTab(self.project_dir)
+            with TabPane("Cookie Lab", id="tab-cookie"):
+                yield CookieLabTab(self.project_dir)
             with TabPane("Static Lab", id="tab-static"):
                 yield StaticLabTab(project_dir=self.project_dir)
             with TabPane("Dashboard", id="tab-dashboard"):

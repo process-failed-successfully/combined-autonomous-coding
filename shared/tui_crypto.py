@@ -29,6 +29,28 @@ class CryptoLabTab(Container):
                         yield Label("[bold]Hash Output[/bold]")
                         yield TextArea(id="crypto-hash-output", read_only=True)
 
+                # PBKDF2
+                with TabPane("PBKDF2"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Password:")
+                        yield Input(id="crypto-pbkdf2-password", password=True)
+                        yield Label("Salt:")
+                        yield Input(id="crypto-pbkdf2-salt")
+                        yield Label("Algorithm:")
+                        yield Select.from_values(["md5", "sha1", "sha256", "sha512"], id="crypto-pbkdf2-algo", value="sha256")
+                        with Horizontal():
+                            with Vertical():
+                                yield Label("Iterations:")
+                                yield Input(value="100000", id="crypto-pbkdf2-iterations", type="integer")
+                            with Vertical():
+                                yield Label("Derived Key Length:")
+                                yield Input(value="32", id="crypto-pbkdf2-dklen", type="integer")
+                        yield Button("Derive Key", id="btn-crypto-pbkdf2", variant="primary")
+
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Derived Key Output (Hex)[/bold]")
+                        yield TextArea(id="crypto-pbkdf2-output", read_only=True)
+
                 # HMAC
                 with TabPane("HMAC"):
                     with Vertical(classes="stat-box"):
@@ -125,6 +147,8 @@ class CryptoLabTab(Container):
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-crypto-hash":
             self.do_hash()
+        elif event.button.id == "btn-crypto-pbkdf2":
+            self.do_pbkdf2()
         elif event.button.id == "btn-crypto-hmac":
             self.do_hmac()
         elif event.button.id == "btn-crypto-gen-key":
@@ -159,6 +183,27 @@ class CryptoLabTab(Container):
             res = self.manager.hash_data(text, str(algo))
             out.text = res
             self.notify("Hash calculated.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_pbkdf2(self) -> None:
+        password = self.query_one("#crypto-pbkdf2-password", Input).value
+        salt = self.query_one("#crypto-pbkdf2-salt", Input).value
+        algo = self.query_one("#crypto-pbkdf2-algo", Select).value or "sha256"
+        iters_str = self.query_one("#crypto-pbkdf2-iterations", Input).value
+        dklen_str = self.query_one("#crypto-pbkdf2-dklen", Input).value
+        out = self.query_one("#crypto-pbkdf2-output", TextArea)
+
+        if not password or not salt:
+            self.notify("Password and Salt required.", severity="error")
+            return
+
+        try:
+            iterations = int(iters_str) if iters_str else 100000
+            dklen = int(dklen_str) if dklen_str else 32
+            res = self.manager.pbkdf2_hmac(password, salt, str(algo), iterations, dklen)
+            out.text = res
+            self.notify("PBKDF2 key derived.")
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")
 

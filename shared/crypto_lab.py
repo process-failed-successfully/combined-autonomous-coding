@@ -39,6 +39,29 @@ class CryptoLabManager:
         hasher.update(data_bytes)
         return hasher.hexdigest()
 
+    def pbkdf2_hmac(self, password: Union[str, bytes], salt: Union[str, bytes], algo: str = "sha256", iterations: int = 100000, dklen: int = 32) -> str:
+        """
+        Derives a key from a password and salt using PBKDF2-HMAC.
+        Supported algorithms: md5, sha1, sha256, sha512.
+        """
+        if isinstance(password, str):
+            password_bytes = password.encode("utf-8")
+        else:
+            password_bytes = password
+
+        if isinstance(salt, str):
+            salt_bytes = salt.encode("utf-8")
+        else:
+            salt_bytes = salt
+
+        algo = algo.lower()
+        if algo not in hashlib.algorithms_available:
+            if algo not in ["md5", "sha1", "sha256", "sha512"]:
+                raise ValueError(f"Unsupported algorithm: {algo}")
+
+        derived_key = hashlib.pbkdf2_hmac(algo, password_bytes, salt_bytes, iterations, dklen)
+        return derived_key.hex()
+
     def hmac_data(self, input_data: Union[str, bytes], key: Union[str, bytes], algo: str = "sha256") -> str:
         """
         Calculates the HMAC digest of the input data using the specified key.
@@ -229,6 +252,22 @@ def run_crypto_lab_logic(args) -> bool:
             result = manager.hash_data(data, args.algo)
             print(result)
             return True
+
+        elif args.action == "pbkdf2":
+            password = args.password
+            salt = args.salt
+
+            if not password or not salt:
+                print("Error: Password and Salt required.", file=sys.stderr)
+                return False
+
+            try:
+                result = manager.pbkdf2_hmac(password, salt, args.algo, args.iterations, args.dklen)
+                print(result)
+                return True
+            except Exception as e:
+                print(f"Error during PBKDF2: {e}", file=sys.stderr)
+                return False
 
         elif args.action == "hmac":
             data = None

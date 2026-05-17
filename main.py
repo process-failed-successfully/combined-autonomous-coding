@@ -15082,6 +15082,12 @@ def parse_args(argv=None):
     parser_tl_random.add_argument("--charset", "-c", choices=["alphanumeric", "alpha", "numeric", "hex",
                                   "ascii"], default="alphanumeric", help="Character set to use (default: alphanumeric).")
 
+    # text-lab distance
+    parser_tl_distance = text_lab_subparsers.add_parser("distance", help="Calculate string distance.")
+    parser_tl_distance.add_argument("text1", help="First text.")
+    parser_tl_distance.add_argument("text2", help="Second text.")
+    parser_tl_distance.add_argument("--algo", "-a", choices=["levenshtein"], default="levenshtein", help="Distance algorithm.")
+
     text_lab_subparsers.add_parser("tui", help="Launch the Text Lab TUI.")
 
     # --- New 'html-entity-lab' command ---

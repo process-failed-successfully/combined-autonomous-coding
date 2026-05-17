@@ -239,6 +239,28 @@ class TextLabManager:
         )
         return "\n".join(diff)
 
+    def distance(self, text1: str, text2: str, algo: str = "levenshtein") -> int:
+        algo = algo.lower()
+        if algo == "levenshtein":
+            m, n = len(text1), len(text2)
+            dp = [[0] * (n + 1) for _ in range(m + 1)]
+
+            for i in range(m + 1):
+                for j in range(n + 1):
+                    if i == 0:
+                        dp[i][j] = j
+                    elif j == 0:
+                        dp[i][j] = i
+                    elif text1[i - 1] == text2[j - 1]:
+                        dp[i][j] = dp[i - 1][j - 1]
+                    else:
+                        dp[i][j] = 1 + min(dp[i][j - 1],      # Insert
+                                           dp[i - 1][j],      # Remove
+                                           dp[i - 1][j - 1])  # Replace
+            return dp[m][n]
+        else:
+            raise ValueError(f"Unknown distance algorithm: {algo}")
+
     def _to_camel(self, text: str) -> str:
         # split by space, underscore, hyphen
         words = re.split(r'[\s_\-]+', text)
@@ -477,5 +499,14 @@ def run_text_lab_logic(args):
             print(f"Error: {e}", file=sys.stderr)
             return False
 
+    elif args.action == "distance":
+        if args.text1 is None or args.text2 is None:
+            print("Error: Two text inputs required for distance.", file=sys.stderr)
+            return False
+        try:
+            print(manager.distance(args.text1, args.text2, getattr(args, 'algo', 'levenshtein')))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return False
 
     return True

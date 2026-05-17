@@ -410,6 +410,7 @@ KNOWN_COMMANDS = [
     "htpasswd-lab", "htpasswd",
     "alias-lab", "aliases",
     "tar-lab", "tar",
+    "jsonl-lab", "jsonl",
     "pre-commit-lab", "precommit",
     "arn-lab", "arn", "slug-lab", "slug",
     "size-compare-lab", "size-compare", "scmp"
@@ -20638,6 +20639,22 @@ Examples:
     tar_list = tar_subparsers.add_parser("list", help="List contents of a tar archive.")
     tar_list.add_argument("input", help="Path to the tar archive")
 
+    parser_jsonl = subparsers.add_parser(
+        "jsonl-lab", aliases=["jsonl"], help="JSON Lines utilities (json2jsonl, jsonl2json, validate)"
+    )
+    jsonl_subparsers = parser_jsonl.add_subparsers(dest="action", help="JSON Lines actions")
+
+    jsonl_j2j = jsonl_subparsers.add_parser("json2jsonl", help="Convert JSON array to JSON Lines.")
+    jsonl_j2j.add_argument("input", help="JSON string or file path.")
+    jsonl_j2j.add_argument("-o", "--output", help="Output file path.")
+
+    jsonl_l2j = jsonl_subparsers.add_parser("jsonl2json", help="Convert JSON Lines to JSON array.")
+    jsonl_l2j.add_argument("input", help="JSON Lines string or file path.")
+    jsonl_l2j.add_argument("-o", "--output", help="Output file path.")
+
+    jsonl_val = jsonl_subparsers.add_parser("validate", help="Validate a JSON Lines file.")
+    jsonl_val.add_argument("input", help="JSON Lines string or file path.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -25633,6 +25650,11 @@ async def main():
     if args.command in ["tar-lab", "tar"]:
         from shared.tar_lab import run_tar_lab_logic
         await run_tar_lab_logic(args)
+        return
+
+    if args.command in ["jsonl-lab", "jsonl"]:
+        from shared.jsonl_lab import run_jsonl_lab_logic
+        run_jsonl_lab_logic(args)
         return
 
     if args.command in ["arn-lab", "arn"]:

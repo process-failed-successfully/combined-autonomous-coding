@@ -258,6 +258,7 @@ KNOWN_COMMANDS = [
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
+    "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
     "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy",
@@ -15173,6 +15174,28 @@ def parse_args(argv=None):
     # html-lab tui
     parser_html_tui = html_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
+
+    # --- New 'favicon-lab' command ---
+    favicon_lab_parser = subparsers.add_parser(
+        "favicon-lab",
+        aliases=["favicon"],
+        help="Favicon Lab: Generate favicons and manifests."
+    )
+    favicon_lab_subparsers = favicon_lab_parser.add_subparsers(dest="action", required=True, help="Action to perform")
+
+    # favicon-lab generate
+    favicon_gen_parser = favicon_lab_subparsers.add_parser("generate", help="Generate favicons from image.")
+    favicon_gen_parser.add_argument("--source", type=str, required=True, help="Source image path")
+    favicon_gen_parser.add_argument("--output", type=str, required=True, help="Output directory")
+    favicon_gen_parser.add_argument("--bg-color", type=str, default="#ffffff", help="Background color")
+    favicon_gen_parser.add_argument("--theme-color", type=str, default="#ffffff", help="Theme color")
+    favicon_gen_parser.add_argument("--app-name", type=str, default="My App", help="App name")
+
+    # favicon-lab html
+    favicon_lab_subparsers.add_parser("html", help="Show HTML tags for favicons.")
+
+    # favicon-lab tui
+    favicon_lab_subparsers.add_parser("tui", help="Start the Favicon Lab TUI.")
     # --- New 'bencode-lab' command ---
     parser_bencode_lab = subparsers.add_parser(
         "bencode-lab",
@@ -24651,6 +24674,11 @@ async def main():
         run_urldecode_lab(args)
         return
 
+
+    if args.command in ["favicon-lab", "favicon"]:
+        from shared.favicon_lab import run_favicon_lab_logic
+        run_favicon_lab_logic(args)
+        return
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
         return

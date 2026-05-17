@@ -22,6 +22,17 @@ def test_hash_data(crypto_manager):
     # Test Bytes
     assert crypto_manager.hash_data(b"hello world", "sha256") == expected
 
+def test_pbkdf2_hmac(crypto_manager):
+    password = "secret_password"
+    salt = "salty_salt"
+
+    # Pre-calculated PBKDF2 hash using pbkdf2_hmac('sha256', b'secret_password', b'salty_salt', 100000, 32).hex()
+    expected = "7d9b0ca692ff57bae7513128a694833020d402c112face31e0a2849867175575"
+    assert crypto_manager.pbkdf2_hmac(password, salt, "sha256", 100000, 32) == expected
+
+    # Test Bytes
+    assert crypto_manager.pbkdf2_hmac(b"secret_password", b"salty_salt", "sha256", 100000, 32) == expected
+
 def test_hmac_data(crypto_manager):
     input_data = "hello world"
     key = "secret"
@@ -79,6 +90,20 @@ def test_cli_hash(capsys):
     run_crypto_lab_logic(args)
     captured = capsys.readouterr()
     assert "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08" in captured.out
+
+def test_cli_pbkdf2(capsys):
+    args = MagicMock()
+    args.action = "pbkdf2"
+    args.password = "secret"
+    args.salt = "salty"
+    args.algo = "sha256"
+    args.iterations = 100000
+    args.dklen = 32
+
+    run_crypto_lab_logic(args)
+    captured = capsys.readouterr()
+    expected_hash = "2ae5b47935dccabaf61792f4394bd046d085e128ab64400f80dcb4c1364bb85c"
+    assert expected_hash in captured.out
 
 def test_cli_hmac(capsys):
     args = MagicMock()

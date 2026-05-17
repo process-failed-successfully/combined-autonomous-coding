@@ -16736,6 +16736,14 @@ def parse_args(argv=None):
     parser_crypto_hash.add_argument("--file", help="Input file.")
     parser_crypto_hash.add_argument("--algo", default="sha256", help="Algorithm (md5, sha1, sha256, sha512).")
 
+    # crypto-lab pbkdf2
+    parser_crypto_pbkdf2 = crypto_subparsers.add_parser("pbkdf2", help="Derive key using PBKDF2.")
+    parser_crypto_pbkdf2.add_argument("--password", help="Password string.")
+    parser_crypto_pbkdf2.add_argument("--salt", help="Salt string.")
+    parser_crypto_pbkdf2.add_argument("--algo", default="sha256", help="Algorithm (md5, sha1, sha256, sha512).")
+    parser_crypto_pbkdf2.add_argument("--iterations", type=int, default=100000, help="Number of iterations.")
+    parser_crypto_pbkdf2.add_argument("--dklen", type=int, default=32, help="Derived key length.")
+
     # crypto-lab hmac
     parser_crypto_hmac = crypto_subparsers.add_parser("hmac", help="Calculate HMAC.")
     parser_crypto_hmac.add_argument("--text", help="Input text.")

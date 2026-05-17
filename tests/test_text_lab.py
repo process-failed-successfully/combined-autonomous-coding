@@ -178,6 +178,16 @@ class TestTextLab(unittest.TestCase):
         self.assertIn("-bar", diff)
         self.assertIn("+baz", diff)
 
+    def test_distance_levenshtein(self):
+        self.assertEqual(self.manager.distance("kitten", "sitting", "levenshtein"), 3)
+        self.assertEqual(self.manager.distance("flaw", "lawn", "levenshtein"), 2)
+        self.assertEqual(self.manager.distance("", "abc", "levenshtein"), 3)
+        self.assertEqual(self.manager.distance("abc", "", "levenshtein"), 3)
+        self.assertEqual(self.manager.distance("abc", "abc", "levenshtein"), 0)
+
+        with self.assertRaises(ValueError):
+            self.manager.distance("a", "b", "unknown_algo")
+
     def test_hash_text(self):
         text = "hello"
         md5_hash = self.manager.hash_text(text, "md5")

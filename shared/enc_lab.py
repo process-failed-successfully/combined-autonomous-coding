@@ -73,6 +73,22 @@ def run_enc_lab_logic(args) -> bool:
     """CLI handler for Encoding Lab."""
     manager = EncLabManager()
 
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        import asyncio
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-enc")
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return True
+        else:
+            app.run()
+            return True
+
     # Helper to get input
     def get_input(arg_val):
         if arg_val:

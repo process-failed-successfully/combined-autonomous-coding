@@ -178,6 +178,7 @@ from shared.tui_mqtt import MqttLabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_enc import EncLabTab
 from shared.tui_template import TemplateLabTab
 from shared.tui_ini2json import Ini2JsonLabTab
 from shared.tui_hashids import HashidsLabTab
@@ -4931,6 +4932,8 @@ class AgentTUI(App):
                 yield TypegenLabTab()
             with TabPane("Hash Validator Lab", id="tab-hash-validator"):
                 yield HashValidatorLabTab()
+            with TabPane("Enc Lab", id="tab-enc"):
+                yield EncLabTab()
             with TabPane("Size Lab", id="tab-size"):
                 yield SizeLabTab()
             with TabPane("Hexdump Lab", id="tab-hexdump"):

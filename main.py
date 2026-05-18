@@ -17686,6 +17686,9 @@ def parse_args(argv=None):
     # rot13 doesn't need --decode really, but we'll accept it to not break shared logic if passed
     parser_enc_rot13.add_argument("--decode", "-d", action="store_true", help="Ignored for ROT13.")
 
+    # enc-lab tui
+    parser_enc_tui = enc_subparsers.add_parser("tui", help="Launch Encoding Lab TUI.")
+
     # --- New 'rss-lab' command ---
     parser_rss = subparsers.add_parser(
         "rss-lab",

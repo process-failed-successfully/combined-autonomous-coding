@@ -334,6 +334,7 @@ KNOWN_COMMANDS = [
     "license-lab", "lic", "license",
     "rfc-lab", "rfc",
     "productivity-lab", "prod", "focus",
+    "float-lab", "float", "ieee754",
     "rename-lab", "rename",
     "diagram-lab", "diagram", "draw",
     "pipe-lab", "pipe", "stream",
@@ -502,6 +503,32 @@ def run_flashcards_lab(args):
     else:
         app.run()
     sys.exit(0)
+
+
+
+def run_float_lab(args):
+    """Runs the Float Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        from shared.tui import AgentTUI
+        print("Launching Float Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-float")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        if getattr(args, 'action', None) is None:
+            print("Error: Action is required unless --tui is specified.", file=sys.stderr)
+            sys.exit(1)
+        from shared.float_lab import run_float_lab_logic
+        success = run_float_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 
 def run_rename_lab(args):
@@ -20028,6 +20055,30 @@ Examples:
     # rfc update
     rfc_subparsers.add_parser("update", help="Update RFC Index.")
 
+
+    # --- New 'float-lab' command ---
+    parser_float = subparsers.add_parser(
+        "float-lab",
+        aliases=["float", "ieee754"],
+        help="IEEE 754 Floating-Point Converter."
+    )
+    float_subparsers = parser_float.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+
+    # encode
+    parser_float_encode = float_subparsers.add_parser("encode", help="Convert float to IEEE 754.")
+    parser_float_encode.add_argument("value", type=float, help="Float value to encode.")
+    parser_float_encode.add_argument("--precision", choices=["single", "double"], default="single", help="Precision (default: single).")
+
+    # decode
+    parser_float_decode = float_subparsers.add_parser("decode", help="Convert IEEE 754 to float.")
+    parser_float_decode.add_argument("hex", type=str, help="Hex string to decode.")
+    parser_float_decode.add_argument("--precision", choices=["single", "double"], default="single", help="Precision (default: single).")
+
+    parser_float.add_argument("--tui", action="store_true", help="Launch Float Lab TUI")
+
     # --- New 'productivity-lab' command ---
     parser_prod = subparsers.add_parser(
         "productivity-lab",
@@ -25243,6 +25294,11 @@ async def main():
 
     if args.command in ["rfc-lab", "rfc"]:
         run_rfc_lab(args)
+        return
+
+
+    if args.command in ["float-lab", "float", "ieee754"]:
+        run_float_lab(args)
         return
 
     if args.command in ["productivity-lab", "prod", "focus"]:

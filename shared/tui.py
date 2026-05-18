@@ -71,6 +71,7 @@ from shared.tui_env import EnvTab
 from shared.tui_log_explorer import LogExplorerTab
 from shared.tui_log_tail import LogTailTab
 from shared.tui_productivity import ProductivityTab
+from shared.tui_float import FloatLabTab
 from shared.tui_services import ServicesTab
 from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_sys import SysTab
@@ -4309,6 +4310,10 @@ class AgentTUI(App):
                 yield DashboardTab(self.project_dir)
             with TabPane("Focus", id="tab-focus"):
                 yield ProductivityTab(self.project_dir)
+
+            with TabPane("Float", id="tab-float"):
+                yield FloatLabTab(self.project_dir)
+
             with TabPane("Monitor", id="tab-monitor"):
                 yield SystemMonitorTab(self.project_dir)
             with TabPane("Terminal", id="tab-terminal"):

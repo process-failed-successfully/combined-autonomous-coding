@@ -261,7 +261,7 @@ KNOWN_COMMANDS = [
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy",
+    "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -16263,6 +16263,19 @@ def parse_args(argv=None):
     parser_json2csharp.add_argument("--namespace", default="MyNamespace", help="Namespace (default: MyNamespace).")
     parser_json2csharp.add_argument("--tui", action="store_true", help="Launch JSON to C# Lab TUI.")
 
+    # --- New 'toml2py-lab' command ---
+    parser_toml2py = subparsers.add_parser(
+        "toml2py-lab",
+        aliases=["toml2py", "t2py"],
+        help="Convert TOML data to Python dataclass or Pydantic format."
+    )
+    parser_toml2py.add_argument("--file", "-f", help="Input TOML file.")
+    parser_toml2py.add_argument("--text", "-t", help="Input TOML text.")
+    parser_toml2py.add_argument("--output", "-o", help="Output file path.")
+    parser_toml2py.add_argument("--framework", choices=["dataclass", "pydantic"], default="dataclass", help="Framework to use.")
+    parser_toml2py.add_argument("--name", default="RootModel", help="Root class name.")
+    parser_toml2py.add_argument("--tui", action="store_true", help="Launch TOML to Py Lab TUI.")
+
     # --- New 'yaml2py-lab' command ---
     parser_yaml2py = subparsers.add_parser(
         "yaml2py-lab",
@@ -24972,6 +24985,14 @@ async def main():
         run_yaml2xml_lab_logic(args)
         return
 
+
+    if args.command in ["toml2py-lab", "toml2py", "t2py"]:
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-toml2py")
+            return
+        from shared.toml2py_lab import run_toml2py_lab_logic
+        run_toml2py_lab_logic(args)
+        return
 
     if args.command in ["yaml2py-lab", "yaml2py", "y2py"]:
         if getattr(args, "tui", False):

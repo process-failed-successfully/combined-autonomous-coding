@@ -624,6 +624,29 @@ def run_js_lab(args):
     sys.exit(0 if success else 1)
 
 
+def run_base100_lab(args):
+    """Runs the Base100 Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Base100 Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, "project_dir", None), start_tab="tab-base100")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
+    from shared.base100_lab import run_base100_lab_logic
+    success = run_base100_lab_logic(args)
+    sys.exit(0 if success else 1)
+
 def run_base16_lab(args):
     """Runs the Base16 Lab."""
     if getattr(args, 'tui', False):
@@ -17891,6 +17914,15 @@ Examples:
     parser_js.add_argument("--output", "-o", help="Output JS file.")
     parser_js.add_argument("--tui", action="store_true", help="Launch the interactive JS Lab TUI.")
 
+    # base100-lab
+    base100_parser = subparsers.add_parser(
+        "base100-lab", aliases=["base100", "b100"],
+        help="Base100 Encoding/Decoding utilities (emoji encoding)."
+    )
+    base100_parser.add_argument("--encode", help="Text to encode", type=str)
+    base100_parser.add_argument("--decode", help="Base100 string to decode", type=str)
+    base100_parser.add_argument("--tui", help="Launch interactive TUI", action="store_true")
+
     # base16-lab
     parser_b16 = subparsers.add_parser(
         "base16-lab", aliases=["base16", "b16"],
@@ -25355,6 +25387,10 @@ async def main():
 
     if args.command in ["js-lab", "js"]:
         run_js_lab(args)
+        return
+
+    if args.command in ["base100-lab", "base100", "b100"]:
+        run_base100_lab(args)
         return
 
     if args.command in ["base16-lab", "base16", "b16"]:

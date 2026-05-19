@@ -218,6 +218,7 @@ from shared.tui_num2words import TabNum2WordsLab
 from shared.tui_base36 import Base36LabTab
 from shared.tui_base32 import Base32LabTab
 from shared.tui_base16 import Base16LabTab
+from shared.tui_base100 import Base100LabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_diff_lab import DiffLabTab
 from shared.tui_image import ImageLabTab
@@ -4660,6 +4661,8 @@ class AgentTUI(App):
                 yield Base92LabTab()
             with TabPane("Base36 Lab", id="tab-base36"):
                 yield Base36LabTab()
+            with TabPane("Base100 Lab", id="tab-base100"):
+                yield Base100LabTab()
             with TabPane("Base16 Lab", id="tab-base16"):
                 yield Base16LabTab()
             with TabPane("ROT13 Lab", id="tab-rot13"):

@@ -33,6 +33,8 @@ class TextLabManager:
             return self._to_dot(text)
         elif type == "path":
             return self._to_path(text)
+        elif type == "leet":
+            return self._to_leet(text)
         else:
             raise ValueError(f"Unknown transform type: {type}")
 
@@ -290,6 +292,18 @@ class TextLabManager:
 
     def _to_path(self, text: str) -> str:
         return self._to_snake(text).replace('_', '/')
+
+    def _to_leet(self, text: str) -> str:
+        leet_map = {
+            'A': '4', 'a': '4',
+            'E': '3', 'e': '3',
+            'I': '1', 'i': '1',
+            'L': '1', 'l': '1',
+            'O': '0', 'o': '0',
+            'S': '5', 's': '5',
+            'T': '7', 't': '7'
+        }
+        return ''.join(leet_map.get(c, c) for c in text)
 
     def lorem_ipsum(self, words: int = 100) -> str:
         import random

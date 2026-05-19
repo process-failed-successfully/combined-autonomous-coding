@@ -248,7 +248,12 @@ class TestTextLab(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.generate_random_string(charset="unknown")
 
-
+    def test_transform_leet(self):
+        # Leet
+        self.assertEqual(self.manager.transform("Leetcode", "leet"), "1337c0d3")
+        self.assertEqual(self.manager.transform("LEETCODE", "leet"), "1337C0D3")
+        self.assertEqual(self.manager.transform("Hello World", "leet"), "H3110 W0r1d")
+        self.assertEqual(self.manager.transform("aeilostAEILOST", "leet"), "43110574311057")
 
 if __name__ == '__main__':
     unittest.main()

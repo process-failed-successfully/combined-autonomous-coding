@@ -384,6 +384,7 @@ KNOWN_COMMANDS = [
     "shell-lab",
     "chemistry-lab", "chem", "periodic",
     "mac-lab", "mac",
+    "saml-lab", "saml",
     "physics-lab", "phys",
     "set-lab", "sets",
     "ip-lab", "ip",
@@ -14677,6 +14678,20 @@ def parse_args(argv=None):
 
     parser_ip_tui = ip_subparsers.add_parser("tui", help="Launch the IP Lab TUI.")
 
+    # --- New 'saml-lab' command ---
+    parser_saml = subparsers.add_parser(
+        "saml-lab", aliases=["saml"],
+        help="SAML utilities (decode AuthnRequest/Response)"
+    )
+    saml_subparsers = parser_saml.add_subparsers(dest="action", help="SAML actions")
+
+    saml_subparsers.add_parser("tui", help="Launch the SAML Lab TUI")
+
+    saml_decode = saml_subparsers.add_parser("decode", help="Decode a SAML string")
+    saml_decode.add_argument("--decode", help="SAML string to decode")
+    saml_decode.add_argument("--file", help="File containing SAML string")
+    saml_decode.add_argument("--inflate", action="store_true", help="Inflate with zlib (used in HTTP-Redirect)")
+
     # --- New 'mac-lab' command ---
     # --- New 'phone-lab' command ---
     parser_phone = subparsers.add_parser(
@@ -25621,6 +25636,17 @@ async def main():
             sys.exit(0)
         else:
             run_mac_lab(args)
+        return
+
+    if args.command in ["saml-lab", "saml"]:
+        if getattr(args, "action", None) == "tui":
+            from shared.tui import AgentTUI
+            app = AgentTUI(project_dir=args.project_dir, start_tab="tab-saml")
+            await app.run_async()
+            sys.exit(0)
+        else:
+            from shared.saml_lab import run_saml_lab_logic
+            run_saml_lab_logic(args)
         return
 
     if args.command in ["ip-lab", "ip"]:

@@ -113,6 +113,7 @@ from shared.tui_net_diag import NetDiagTab
 from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_mac import MacLabTab
+from shared.tui_saml import SamlLabTab
 from shared.tui_size import SizeLabTab
 from shared.tui_typegen import TypegenLabTab
 from shared.tui_hexdump import HexdumpLabTab
@@ -4922,6 +4923,8 @@ class AgentTUI(App):
                 yield TokenLabTab(self.project_dir)
             with TabPane("MAC Lab", id="tab-mac"):
                 yield MacLabTab()
+            with TabPane("SAML Lab", id="tab-saml"):
+                yield SamlLabTab()
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
             with TabPane("Load Lab", id="tab-load"):

@@ -3,7 +3,8 @@ import argparse
 import base64
 import zlib
 import urllib.parse
-import xml.dom.minidom
+import defusedxml.minidom
+
 
 class SamlLabManager:
     """Manager for SAML operations."""
@@ -59,11 +60,12 @@ class SamlLabManager:
 
         # Pretty print if it's XML
         try:
-            dom = xml.dom.minidom.parseString(decoded_str)
+            dom = defusedxml.minidom.parseString(decoded_str)
             return dom.toprettyxml(indent="  ")
         except Exception:
             # Not valid XML, just return the decoded string
             return decoded_str
+
 
 def run_saml_lab_logic(args: argparse.Namespace):
     """CLI handler for SAML Lab."""

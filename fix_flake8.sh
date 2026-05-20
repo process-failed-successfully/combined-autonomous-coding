@@ -1,3 +1,9 @@
+#!/bin/bash
+sed -i 's/[ \t]*$//' shared/saml_lab.py
+sed -i 's/[ \t]*$//' tests/test_saml_lab.py
+sed -i 's/[ \t]*$//' tests/test_tui_saml.py
+
+cat << 'INNER_EOF' > tests/test_tui_saml.py
 import unittest
 import base64
 from unittest.mock import MagicMock
@@ -51,3 +57,4 @@ class TestSamlLabTab(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == '__main__':
     unittest.main()
+INNER_EOF

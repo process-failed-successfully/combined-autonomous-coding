@@ -5,6 +5,7 @@ import argparse
 from unittest.mock import patch
 from shared.saml_lab import SamlLabManager, run_saml_lab_logic
 
+
 class TestSamlLabManager(unittest.TestCase):
     def setUp(self):
         self.manager = SamlLabManager()
@@ -48,6 +49,7 @@ class TestSamlLabManager(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.decode("")
 
+
 class TestSamlLabCLI(unittest.TestCase):
     @patch('builtins.print')
     def test_cli_decode(self, mock_print):
@@ -66,6 +68,7 @@ class TestSamlLabCLI(unittest.TestCase):
             if "hello" in call_args[0][0]:
                 called_with_xml = True
         self.assertTrue(called_with_xml)
+
 
 if __name__ == '__main__':
     unittest.main()

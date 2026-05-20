@@ -414,8 +414,31 @@ KNOWN_COMMANDS = [
     "jsonl-lab", "jsonl",
     "pre-commit-lab", "precommit",
     "arn-lab", "arn", "slug-lab", "slug",
-    "size-compare-lab", "size-compare", "scmp"
+    "size-compare-lab", "size-compare", "scmp",
+    "nginx-lab", "nginx"
 ]
+
+def run_nginx_lab(args):
+    """Runs the Nginx Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Nginx Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-nginx")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.nginx_lab import run_nginx_lab_logic
+    success = run_nginx_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 if FileSystemEventHandler:
     class CommandEventHandler(FileSystemEventHandler):
@@ -11453,6 +11476,17 @@ def parse_args(argv=None):
     parser_size_compare.add_argument("--text", help="JSON text to compare.")
     parser_size_compare.add_argument("--file", "-f", help="Path to JSON file to compare.")
     parser_size_compare.add_argument("--tui", action="store_true", help="Open Size Compare Lab TUI.")
+
+    parser_nginx = subparsers.add_parser(
+        "nginx-lab", aliases=["nginx"],
+        help="Generate Nginx configurations."
+    )
+    parser_nginx.add_argument("action", choices=["proxy", "static", "loadbalancer", "tui"], help="Config to generate or run TUI.")
+    parser_nginx.add_argument("--domain", help="Domain name.")
+    parser_nginx.add_argument("--port", type=int, help="Port for proxy pass.")
+    parser_nginx.add_argument("--path", help="Root path for static site.")
+    parser_nginx.add_argument("--upstreams", help="Comma separated list of upstream servers (e.g., 10.0.0.1:80,10.0.0.2:80).")
+    parser_nginx.add_argument("--tui", action="store_true", help="Launch the Nginx Lab TUI.")
 
     # --- New 'quiz' command ---
     parser_quiz = subparsers.add_parser(
@@ -25789,6 +25823,10 @@ async def main():
 
     if args.command in ["size-compare-lab", "size-compare", "scmp"]:
         run_size_compare_lab(args)
+        return
+
+    if args.command in ["nginx-lab", "nginx"]:
+        run_nginx_lab(args)
         return
 
     # Initialize Agent Client

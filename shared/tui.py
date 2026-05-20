@@ -207,6 +207,7 @@ from shared.tui_bcrypt import BcryptLabTab
 from shared.tui_argon2 import Argon2LabTab
 from shared.tui_brotli import BrotliLabTab
 from shared.tui_zstd import ZstdLabTab
+from shared.tui_nginx import NginxLabTab
 from shared.tui_base91 import Base91LabTab
 from shared.tui_base92 import Base92LabTab
 from shared.tui_base64 import Base64LabTab
@@ -4311,6 +4312,8 @@ class AgentTUI(App):
                 yield StaticLabTab(project_dir=self.project_dir)
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            with TabPane("Nginx Lab", id="tab-nginx"):
+                yield NginxLabTab()
             with TabPane("Focus", id="tab-focus"):
                 yield ProductivityTab(self.project_dir)
 

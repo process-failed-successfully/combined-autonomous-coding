@@ -21451,6 +21451,20 @@ async def run_cron_lab(args):
             print(f"❌ Cron Error: {result['error']}", file=sys.stderr)
             sys.exit(1)
 
+    elif args.action == "parse":
+        if not args.expression:
+            print("Error: --expression is required for 'parse' action.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.parse(args.expression)
+        if result["success"]:
+            import json
+            print(json.dumps(result, indent=2))
+            sys.exit(0)
+        else:
+            print(f"❌ Cron Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
     elif args.action == "next":
         if not args.expression:
             print("Error: --expression is required for 'next' action.", file=sys.stderr)

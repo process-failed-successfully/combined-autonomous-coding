@@ -75,3 +75,24 @@ class TestCronLabCLI(unittest.IsolatedAsyncioTestCase):
         await run_cron_lab(args)
 
         mock_run_tui.assert_called_once_with(args, start_tab="tab-cron")
+
+    @patch("sys.stdout")
+    async def test_run_cron_lab_parse(self, mock_stdout):
+        from main import run_cron_lab
+        import json
+        args = MagicMock()
+        args.action = "parse"
+        args.expression = "* * * * *"
+
+        with self.assertRaises(SystemExit) as cm:
+            await run_cron_lab(args)
+
+        self.assertEqual(cm.exception.code, 0)
+
+        # Check that it attempts to parse and output
+        # It should print json output representing success
+        # The mock stdout will capture print(json.dumps(result, indent=2))
+        args_list = [call_args[0][0] for call_args in mock_stdout.write.call_args_list]
+        output = "".join(args_list)
+        self.assertIn('"success": true', output)
+        self.assertIn('"minute": "*"', output)

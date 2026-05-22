@@ -258,6 +258,7 @@ KNOWN_COMMANDS = [
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
+    "caesar-lab", "caesar",
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -452,6 +453,29 @@ def run_rot13_lab(args):
 
     from shared.rot13_lab import run_rot13_lab_logic
     success = run_rot13_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_caesar_lab(args):
+    """Runs the Caesar Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Caesar Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-caesar")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.caesar_lab import run_caesar_lab_logic
+    success = run_caesar_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -18108,6 +18132,16 @@ Examples:
     parser_rot13.add_argument("text", nargs="?", help="Text to process")
     parser_rot13.add_argument("--tui", action="store_true", help="Launch ROT13 Lab TUI")
 
+    # caesar-lab
+    parser_caesar = subparsers.add_parser(
+        "caesar-lab", aliases=["caesar"],
+        help="Caesar Cipher Lab"
+    )
+    parser_caesar.add_argument("text", nargs="?", help="Text to process")
+    parser_caesar.add_argument("--shift", type=int, default=13, help="Shift amount (default: 13)")
+    parser_caesar.add_argument("--decode", "-d", action="store_true", help="Decode mode")
+    parser_caesar.add_argument("--tui", action="store_true", help="Launch Caesar Lab TUI")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -25515,6 +25549,9 @@ async def main():
         return
     if args.command in ["rot13-lab", "rot13"]:
         run_rot13_lab(args)
+
+    if args.command in ["caesar-lab", "caesar"]:
+        run_caesar_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

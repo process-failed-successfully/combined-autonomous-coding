@@ -316,6 +316,7 @@ from shared.tui_geo import GeoLabTab
 from shared.tui_brainfuck import BrainfuckLabTab
 from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
+from shared.tui_caesar import CaesarLabTab
 from shared.tui_stego import StegoLabTab
 from shared.tui_exif import ExifLabTab
 from shared.tui_lorem import LoremLabTab
@@ -4674,6 +4675,8 @@ class AgentTUI(App):
                 yield Base16LabTab()
             with TabPane("ROT13 Lab", id="tab-rot13"):
                 yield Rot13LabTab()
+            with TabPane("Caesar Lab", id="tab-caesar"):
+                yield CaesarLabTab()
             with TabPane("Base64 Lab", id="tab-base64"):
                 yield Base64LabTab()
             with TabPane("Base64Url Lab", id="tab-base64url"):

@@ -58,7 +58,7 @@ class NginxLabTab(Vertical):
         yield Button("Generate", id="btn_generate_nginx", variant="primary")
 
         yield Label("Generated Configuration:")
-        self.output_area = TextArea(language="nginx", id="nginx_output", read_only=False)
+        self.output_area = TextArea(id="nginx_output", read_only=False)
         self.output_area.disabled = True
         yield self.output_area
 

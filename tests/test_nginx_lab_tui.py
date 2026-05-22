@@ -1,25 +1,28 @@
 import unittest
-import pytest
 import os
 import sys
 
 # Ensure shared can be found
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-textual = pytest.importorskip("textual")
+# Only run if textual is installed to prevent ModuleNotFoundError
+try:
+    pass
+    from textual.app import App
+    from shared.tui_nginx import NginxLabTab
+    from textual.widgets import Select, Input, TextArea
+    HAS_TEXTUAL = True
+except ImportError:
+    HAS_TEXTUAL = False
 
-from textual.app import App  # noqa: E402
-from shared.tui_nginx import NginxLabTab  # noqa: E402
-from textual.widgets import Select, Input, TextArea  # noqa: E402
 
-
-class DummyApp(App):
-    def compose(self):
-        yield NginxLabTab()
-
-
+@unittest.skipIf(not HAS_TEXTUAL, "Textual library is not available")
 class TestNginxLabTUI(unittest.IsolatedAsyncioTestCase):
     async def test_tui_rendering_and_action(self):
+        class DummyApp(App):
+            def compose(self):
+                yield NginxLabTab()
+
         app = DummyApp()
         async with app.run_test() as pilot:
             # wait for mount

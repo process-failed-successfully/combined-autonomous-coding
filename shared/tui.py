@@ -183,6 +183,7 @@ from shared.tui_xml import XmlLabTab
 from shared.tui_template import TemplateLabTab
 from shared.tui_ini2json import Ini2JsonLabTab
 from shared.tui_hashids import HashidsLabTab
+from shared.tui_nginx import NginxLabTab
 from shared.tui_props import PropsLabTab
 from shared.tui_random import RandomLabTab
 from shared.tui_markdown import MarkdownLabTab
@@ -4306,6 +4307,9 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs", initial=self.start_tab):
             if self.start_tab == "tab-flatten":
                 yield FlattenLabTab()
+
+            elif self.start_tab == "tab-nginx":
+                yield NginxLabTab()
             with TabPane("Phonetic Lab", id="tab-phonetic"):
                 yield PhoneticLabTab(self.project_dir)
             with TabPane("Static Lab", id="tab-static"):

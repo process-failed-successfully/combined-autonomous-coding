@@ -20737,6 +20737,16 @@ Examples:
     zip_create.add_argument("-o", "--output", help="Output archive path (default: archive.zip).")
 
     zip_extract = zip_subparsers.add_parser("extract", help="Extract a zip archive.")
+
+    parser_nginx = subparsers.add_parser("nginx-lab", aliases=["nginx"], help="Generate Nginx configuration snippets")
+    parser_nginx.add_argument("action", choices=["proxy", "static", "loadbalancer", "tui"], nargs="?", help="Action to perform")
+    parser_nginx.add_argument("--server-name", default="example.com", help="Server name for the configuration")
+    parser_nginx.add_argument("--port", type=int, default=80, help="Listen port")
+    parser_nginx.add_argument("--backend", help="Backend URL (for proxy)")
+    parser_nginx.add_argument("--root", help="Root directory path (for static)")
+    parser_nginx.add_argument("--upstreams", nargs="+", help="Upstream servers (for loadbalancer)")
+    parser_nginx.add_argument("--tui", action="store_true", help="Launch interactive TUI")
+
     zip_extract.add_argument("input", help="Input archive to extract.")
     zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
 
@@ -25812,6 +25822,28 @@ async def main():
         from shared.tar_lab import run_tar_lab_logic
         await run_tar_lab_logic(args)
         return
+
+
+    if args.command in ["nginx-lab", "nginx"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Nginx Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-nginx")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.nginx_lab import run_nginx_lab_logic
+        success = run_nginx_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["jsonl-lab", "jsonl"]:
         from shared.jsonl_lab import run_jsonl_lab_logic

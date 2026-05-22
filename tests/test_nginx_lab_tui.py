@@ -1,7 +1,16 @@
 import unittest
-from textual.app import App
-from shared.tui_nginx import NginxLabTab
-from textual.widgets import Select, Input, TextArea
+import pytest
+import os
+import sys
+
+# Ensure shared can be found
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+textual = pytest.importorskip("textual")
+
+from textual.app import App  # noqa: E402
+from shared.tui_nginx import NginxLabTab  # noqa: E402
+from textual.widgets import Select, Input, TextArea  # noqa: E402
 
 
 class DummyApp(App):

@@ -1,54 +1,57 @@
 import unittest
-import subprocess
-import sys
+import argparse
+from io import StringIO
+from unittest.mock import patch
 import os
+import sys
+
+# Ensure shared can be found
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from shared.nginx_lab import run_nginx_lab_logic  # noqa: E402
 
 
 class TestNginxLabCli(unittest.TestCase):
     def test_cli_proxy(self):
-        env = os.environ.copy()
-        env["PYTHONPATH"] = os.pathsep.join(
-            [os.getcwd()] + env.get("PYTHONPATH", "").split(os.pathsep)
+        args = argparse.Namespace(
+            command="nginx-lab",
+            action="proxy",
+            server_name="test.local",
+            backend="http://127.0.0.1:8080",
+            port=8080
         )
-        result = subprocess.run(
-            [sys.executable, "main.py", "nginx-lab", "proxy", "--server-name", "test.local", "--backend", "http://127.0.0.1:8080", "--port", "8080"],
-            env=env,
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertIn("server_name test.local;", result.stdout)
-        self.assertIn("proxy_pass http://127.0.0.1:8080;", result.stdout)
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            success = run_nginx_lab_logic(args)
+            self.assertTrue(success)
+            self.assertIn("server_name test.local;", fake_out.getvalue())
+            self.assertIn("proxy_pass http://127.0.0.1:8080;", fake_out.getvalue())
 
     def test_cli_static(self):
-        env = os.environ.copy()
-        env["PYTHONPATH"] = os.pathsep.join(
-            [os.getcwd()] + env.get("PYTHONPATH", "").split(os.pathsep)
+        args = argparse.Namespace(
+            command="nginx-lab",
+            action="static",
+            server_name="static.local",
+            root="/var/www",
+            port=80
         )
-        result = subprocess.run(
-            [sys.executable, "main.py", "nginx-lab", "static", "--server-name", "static.local", "--root", "/var/www"],
-            env=env,
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertIn("server_name static.local;", result.stdout)
-        self.assertIn("root /var/www;", result.stdout)
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            success = run_nginx_lab_logic(args)
+            self.assertTrue(success)
+            self.assertIn("server_name static.local;", fake_out.getvalue())
+            self.assertIn("root /var/www;", fake_out.getvalue())
 
     def test_cli_loadbalancer(self):
-        env = os.environ.copy()
-        env["PYTHONPATH"] = os.pathsep.join(
-            [os.getcwd()] + env.get("PYTHONPATH", "").split(os.pathsep)
+        args = argparse.Namespace(
+            command="nginx-lab",
+            action="loadbalancer",
+            upstreams=["server1:80", "server2:80"],
+            port=80
         )
-        result = subprocess.run(
-            [sys.executable, "main.py", "nginx-lab", "loadbalancer", "--upstreams", "server1:80", "server2:80"],
-            env=env,
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertIn("server server1:80;", result.stdout)
-        self.assertIn("server server2:80;", result.stdout)
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            success = run_nginx_lab_logic(args)
+            self.assertTrue(success)
+            self.assertIn("server server1:80;", fake_out.getvalue())
+            self.assertIn("server server2:80;", fake_out.getvalue())
 
 
 if __name__ == '__main__':

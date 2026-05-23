@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 import json
 
+
 class FaviconManager:
     """Manages generation of web favicons."""
 
@@ -121,6 +122,7 @@ class FaviconManager:
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="manifest" href="/site.webmanifest">"""
         return snippet
+
 
 def run_favicon_lab_logic(args) -> bool:
     manager = FaviconManager(args.project_dir)

@@ -36,6 +36,8 @@ class CurlLabTab(ScrollableContainer):
                             yield TextArea(id="curl-output-js", language="javascript", read_only=True)
                         with TabPane("Go (net/http)"):
                             yield TextArea(id="curl-output-go", language="go", read_only=True)
+                        with TabPane("PowerShell (Invoke-WebRequest)"):
+                            yield TextArea(id="curl-output-ps", disabled=True)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-curl-convert":
@@ -57,10 +59,12 @@ class CurlLabTab(ScrollableContainer):
             py_code = self.manager.to_python_requests(parsed)
             js_code = self.manager.to_js_fetch(parsed)
             go_code = self.manager.to_go_http(parsed)
+            ps_code = self.manager.to_powershell_iwr(parsed)
 
             self.query_one("#curl-output-python", TextArea).text = py_code
             self.query_one("#curl-output-js", TextArea).text = js_code
             self.query_one("#curl-output-go", TextArea).text = go_code
+            self.query_one("#curl-output-ps", TextArea).text = ps_code
 
             self.app.notify("cURL command successfully converted.")
         except Exception as e:
@@ -71,4 +75,5 @@ class CurlLabTab(ScrollableContainer):
         self.query_one("#curl-output-python", TextArea).text = ""
         self.query_one("#curl-output-js", TextArea).text = ""
         self.query_one("#curl-output-go", TextArea).text = ""
+        self.query_one("#curl-output-ps", TextArea).text = ""
         self.app.notify("Fields cleared.")

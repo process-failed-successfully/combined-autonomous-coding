@@ -241,6 +241,50 @@ class CurlLabManager:
 
         return "\n".join(lines)
 
+    def to_powershell_iwr(self, parsed: Dict[str, Any]) -> str:
+        """
+        Converts parsed cURL data into PowerShell Invoke-WebRequest code.
+        """
+        lines = []
+        method = parsed['method']
+        url = parsed['url']
+
+        cmd_parts = ["Invoke-WebRequest", f"-Uri '{url}'", f"-Method {method}"]
+
+        if parsed['headers']:
+            lines.append("$headers = @{")
+            for k, v in parsed['headers'].items():
+                lines.append(f"  '{k}' = '{v}'")
+            lines.append("}")
+            cmd_parts.append("-Headers $headers")
+
+        if parsed['auth']:
+            user, pwd = parsed['auth']
+            # Creating credentials in PS
+            lines.append(f"$user = '{user}'")
+            lines.append(f"$pass = '{pwd}' | ConvertTo-SecureString -AsPlainText -Force")
+            lines.append("$cred = New-Object System.Management.Automation.PSCredential ($user, $pass)")
+            cmd_parts.append("-Credential $cred")
+
+        if parsed['data'] is not None:
+            # Check if json
+            is_json = parsed['headers'].get('Content-Type', '').lower() == 'application/json'
+            if is_json:
+                try:
+                    json_data = json.loads(parsed['data'])
+                    # Let powershell format it
+                    lines.append(f"$body = @'")
+                    lines.append(json.dumps(json_data, indent=2))
+                    lines.append("'@")
+                except json.JSONDecodeError:
+                    lines.append(f"$body = '{parsed['data']}'")
+            else:
+                lines.append(f"$body = '{parsed['data']}'")
+            cmd_parts.append("-Body $body")
+
+        lines.append(" ".join(cmd_parts))
+        return "\n".join(lines)
+
     def to_json(self, parsed: Dict[str, Any]) -> str:
         """
         Converts parsed cURL data into a formatted JSON string.
@@ -285,10 +329,12 @@ def run_curl_lab_logic(args):
             print(manager.to_js_fetch(parsed))
         elif target == 'go':
             print(manager.to_go_http(parsed))
+        elif target == 'powershell':
+            print(manager.to_powershell_iwr(parsed))
         elif target == 'json':
             print(manager.to_json(parsed))
         else:
-            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, json.", file=sys.stderr)
+            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, powershell, json.", file=sys.stderr)
             sys.exit(1)
 
     except Exception as e:

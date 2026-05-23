@@ -138,6 +138,24 @@ class TestCurlLabManager(unittest.TestCase):
         self.assertIn('"data": "{\\"key\\": \\"value\\"}"', json_output)
         self.assertIn('"auth": [\n    "user",\n    "pass"\n  ]', json_output)
 
+    def test_to_powershell_iwr(self):
+        parsed = {
+            'url': 'https://api.example.com',
+            'method': 'POST',
+            'headers': {'Content-Type': 'application/json'},
+            'data': '{"key": "value"}',
+            'auth': ['user', 'pass']
+        }
+
+        code = self.manager.to_powershell_iwr(parsed)
+        self.assertIn("Invoke-WebRequest -Uri 'https://api.example.com' -Method POST", code)
+        self.assertIn("$headers = @{", code)
+        self.assertIn("'Content-Type' = 'application/json'", code)
+        self.assertIn("$user = 'user'", code)
+        self.assertIn("$pass = 'pass' | ConvertTo-SecureString", code)
+        self.assertIn("$body = @'", code)
+        self.assertIn('"key": "value"', code)
+
     def test_parse_curl_argparse_error(self):
         # argparse error like an unknown flag will be ignored by parse_known_args
         # But if the user provides an invalid option like --help or -h it would exit.
@@ -185,5 +203,20 @@ class TestCurlLabCli(unittest.TestCase):
 
         self.assertIn('"url": "https://api.example.com"', output)
         self.assertIn('"method": "GET"', output)
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_cli_powershell(self, mock_stdout):
+        args = MagicMock()
+        args.tui = False
+        args.command_str = "curl https://api.example.com"
+        args.target = "powershell"
+
+        run_curl_lab_logic(args)
+        output = mock_stdout.getvalue()
+
+        self.assertIn("Invoke-WebRequest", output)
+        self.assertIn("-Uri 'https://api.example.com'", output)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -264,7 +264,7 @@ KNOWN_COMMANDS = [
     "bson-lab", "bson",
     "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy",
     "ical-lab", "ical", "ics",
-    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc",
+    "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc", "makefile-lab", "makefile",
     "plist-lab", "plist", "plist2json", "json2plist",
     "props-lab", "props", "properties",
     "run2compose-lab", "run2compose", "r2c",
@@ -16772,6 +16772,15 @@ def parse_args(argv=None):
     parser_yaml_validate = yaml_subparsers.add_parser("validate", help="Validate YAML.")
     parser_yaml_validate.add_argument("input", help="YAML string or file path.")
 
+    # --- New 'makefile-lab' command ---
+    parser_makefile_lab = subparsers.add_parser(
+        "makefile-lab",
+        aliases=["makefile"],
+        help="Generate standard Makefiles based on language profiles."
+    )
+    parser_makefile_lab.add_argument("--lang", type=str, required=True, help="The programming language profile (e.g., python, node, go, rust, generic)")
+    parser_makefile_lab.add_argument("--output", type=str, help="Output file path (default: stdout)")
+
     # --- New 'toml-lab' command ---
     parser_toml = subparsers.add_parser(
         "toml-lab",
@@ -25606,6 +25615,11 @@ async def main():
 
     if args.command in ["stats-lab", "stats", "codestats"]:
         run_stats_lab(args)
+        return
+
+    if args.command in ["makefile-lab", "makefile"]:
+        from shared.makefile_lab import run_makefile_lab_logic
+        run_makefile_lab_logic(args)
         return
 
     if args.command in ["disk-usage", "du", "usage"]:

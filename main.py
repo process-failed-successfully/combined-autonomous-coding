@@ -3041,7 +3041,21 @@ def run_jwt_lab(args):
 
 def run_jwk_lab(args):
     """Runs the JWK Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        from shared.tui import AgentTUI
+        print("Launching JWK Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-jwk")
+        app.run()
+        return
+
+    # If action is None, we should probably default to help or fail
+    if getattr(args, 'action', None) is None:
+        print("Error: Action is required (e.g. generate, pem2jwk, jwk2pem, tui).")
+        import sys
+        sys.exit(1)
+
     from shared.jwk_lab import run_jwk_lab_logic
+    import sys
     success = run_jwk_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -14658,9 +14672,12 @@ def parse_args(argv=None):
     )
     jwk_subparsers = parser_jwk.add_subparsers(
         dest="action",
-        required=True,
+        required=False,
         help="Action to perform."
     )
+
+    # jwk-lab tui
+    parser_jwk_tui = jwk_subparsers.add_parser("tui", help="Launch JWK Lab TUI.")
 
     # jwk-lab generate
     parser_jwk_gen = jwk_subparsers.add_parser("generate", help="Generate a new JWK.")

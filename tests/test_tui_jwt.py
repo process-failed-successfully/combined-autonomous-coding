@@ -8,7 +8,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 # Handle Textual dependency: use real if available (CI), mock if not (Local)
 try:
-    import textual
     from textual.widgets import TextArea, Input, Select, RichLog
 except ImportError:
     # Create Mocks for sys.modules to satisfy imports in shared.tui_jwt
@@ -31,7 +30,7 @@ except ImportError:
     # If we make Button a MagicMock instance, Button.Pressed works.
     # If we make it a class, we need to ensure Pressed is on it.
     mock_button = MagicMock()
-    mock_button.Pressed = MagicMock() # Ensure Pressed exists
+    mock_button.Pressed = MagicMock()  # Ensure Pressed exists
     mock_widgets.Button = mock_button
 
     mock_widgets.Input = MagicMock()
@@ -49,12 +48,13 @@ except ImportError:
     Select = mock_widgets.Select
     RichLog = mock_widgets.RichLog
 
-from shared.tui_jwt import JwtLabTab
+from shared.tui_jwt import JwtLabTab  # noqa: E402
+
 
 class TestJwtLabTab(unittest.TestCase):
     def setUp(self):
         # Patch JWTManager to avoid real crypto and verify logic isolation
-        with patch('shared.tui_jwt.JWTManager') as MockManager:
+        with patch('shared.tui_jwt.JWTManager'):
             self.tab = JwtLabTab()
             # self.tab.manager is now the mock instance
             self.mock_manager = self.tab.manager
@@ -71,7 +71,7 @@ class TestJwtLabTab(unittest.TestCase):
 
         def query_one_side_effect(selector, type=None):
             # Selector logic to return appropriate mock
-            if "secret" in selector:
+            if "secret" in selector or "wordlist" in selector:
                 return self.mock_input
 
             if "algo" in selector:
@@ -117,7 +117,7 @@ class TestJwtLabTab(unittest.TestCase):
 
     def test_sign_token(self):
         # Setup inputs
-        self.mock_text_area.text = '{"sub": "123"}' # Payload text
+        self.mock_text_area.text = '{"sub": "123"}'  # Payload text
         self.mock_input.value = "secret"
         self.mock_select.value = "HS256"
 
@@ -149,6 +149,42 @@ class TestJwtLabTab(unittest.TestCase):
         self.mock_manager.verify_token.assert_called_with("token.part.three", "secret")
         self.mock_rich_log.write.assert_called()
         self.tab.notify.assert_called_with("Verification successful.")
+
+    def test_crack_token_success(self):
+        # Setup inputs
+        self.mock_text_area.text = "token.to.crack"
+        self.mock_input.value = "/path/to/wordlist.txt"
+
+        self.mock_manager.crack_token.return_value = "cracked_secret_123"
+
+        # Execute
+        self.tab.crack_token()
+
+        # Verify
+        self.mock_manager.crack_token.assert_called_with("token.to.crack", "/path/to/wordlist.txt")
+        self.mock_rich_log.write.assert_called()
+        # Assert the success message contains the cracked secret
+        write_call_args = self.mock_rich_log.write.call_args[0][0]
+        self.assertIn("cracked_secret_123", write_call_args)
+        self.tab.notify.assert_called_with("Token successfully cracked.")
+
+    def test_crack_token_failure(self):
+        # Setup inputs
+        self.mock_text_area.text = "token.to.crack"
+        self.mock_input.value = "/path/to/wordlist.txt"
+
+        self.mock_manager.crack_token.return_value = None
+
+        # Execute
+        self.tab.crack_token()
+
+        # Verify
+        self.mock_manager.crack_token.assert_called_with("token.to.crack", "/path/to/wordlist.txt")
+        self.mock_rich_log.write.assert_called()
+        write_call_args = self.mock_rich_log.write.call_args[0][0]
+        self.assertIn("Failed to crack token", write_call_args)
+        self.tab.notify.assert_called_with("Token cracking failed.")
+
 
 if __name__ == '__main__':
     unittest.main()

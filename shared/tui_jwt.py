@@ -1,9 +1,9 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Input, Label, RichLog, Select, TabbedContent, TabPane, TextArea
-from textual import on
 import json
 from shared.jwt_lab import JWTManager
+
 
 class JwtLabTab(Container):
     """Tab for JWT operations (Decode, Sign, Verify)."""
@@ -63,6 +63,18 @@ class JwtLabTab(Container):
                     yield Label("[bold]Verification Result[/bold]")
                     yield RichLog(id="jwt-verify-result", wrap=True, highlight=True, markup=True)
 
+                # Crack Pane
+                with TabPane("Crack"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Token:")
+                        yield TextArea(id="jwt-crack-token")
+                        yield Label("Wordlist Path:")
+                        yield Input(placeholder="Path to wordlist file...", id="jwt-crack-wordlist")
+                        yield Button("Crack Token", id="btn-jwt-crack", variant="error")
+
+                    yield Label("[bold]Crack Result[/bold]")
+                    yield RichLog(id="jwt-crack-result", wrap=True, highlight=True, markup=True)
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-jwt-decode":
             self.decode_token()
@@ -70,6 +82,8 @@ class JwtLabTab(Container):
             self.sign_token()
         elif event.button.id == "btn-jwt-verify":
             self.verify_token()
+        elif event.button.id == "btn-jwt-crack":
+            self.crack_token()
 
     def decode_token(self) -> None:
         token = self.query_one("#jwt-decode-input", TextArea).text.strip()
@@ -139,3 +153,26 @@ class JwtLabTab(Container):
         except Exception as e:
             result_log.write(f"[bold red]❌ Verification Failed: {e}[/bold red]")
             self.notify("Verification failed.", severity="error")
+
+    def crack_token(self) -> None:
+        token = self.query_one("#jwt-crack-token", TextArea).text.strip()
+        wordlist = self.query_one("#jwt-crack-wordlist", Input).value.strip()
+        result_log = self.query_one("#jwt-crack-result", RichLog)
+
+        result_log.clear()
+
+        if not token or not wordlist:
+            self.notify("Token and Wordlist Path required.", severity="error")
+            return
+
+        try:
+            secret = self.manager.crack_token(token, wordlist)
+            if secret:
+                result_log.write(f"[bold green]✅ CRACKED! Secret found: {secret}[/bold green]")
+                self.notify("Token successfully cracked.")
+            else:
+                result_log.write("[bold red]❌ Failed to crack token. Secret not in wordlist.[/bold red]")
+                self.notify("Token cracking failed.")
+        except Exception as e:
+            result_log.write(f"[bold red]❌ Error: {e}[/bold red]")
+            self.notify(f"Error cracking token: {e}", severity="error")

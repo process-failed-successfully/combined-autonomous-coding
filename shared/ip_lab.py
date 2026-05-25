@@ -60,6 +60,40 @@ class IPLabManager:
         except ValueError:
             return None
 
+    @staticmethod
+    def get_subnet_info(cidr_str):
+        """Returns subnet information for a given CIDR block."""
+        import ipaddress
+        try:
+            net = ipaddress.ip_network(cidr_str, strict=False)
+            info = {
+                'network_address': str(net.network_address),
+                'netmask': str(net.netmask),
+                'hostmask': str(net.hostmask),
+                'prefixlen': net.prefixlen,
+                'num_addresses': net.num_addresses,
+                'version': net.version,
+            }
+            if net.version == 4:
+                info['broadcast_address'] = str(net.broadcast_address)
+                # For IPv4, usable hosts are num_addresses - 2 (network and broadcast), unless /32 or /31
+                if net.prefixlen >= 31:
+                    info['usable_hosts'] = net.num_addresses
+                    info['host_range'] = f"{net.network_address} - {net.broadcast_address}"
+                else:
+                    info['usable_hosts'] = net.num_addresses - 2
+                    info['host_range'] = f"{net.network_address + 1} - {net.broadcast_address - 1}"
+            elif net.version == 6:
+                # IPv6 has no broadcast address, anycast could be considered but generally host count is just num_addresses
+                info['usable_hosts'] = net.num_addresses
+                if net.num_addresses > 1:
+                    info['host_range'] = f"{net[0]} - {net[-1]}"
+                else:
+                    info['host_range'] = f"{net[0]} - {net[0]}"
+            return info
+        except ValueError:
+            return None
+
 
 def run_ip_lab_logic(args):
     """CLI logic for ip-lab."""
@@ -121,6 +155,28 @@ def run_ip_lab_logic(args):
                 print(f"Hex: {info['hex']}")
         else:
             print(f"Invalid IP address: {args.ip}")
+            return False
+
+    elif args.action == 'subnet':
+        if not args.cidr:
+            print("CIDR string required for subnet action.")
+            return False
+
+        info = manager.get_subnet_info(args.cidr)
+        if info:
+            print(f"CIDR: {args.cidr}")
+            print(f"Version: IPv{info['version']}")
+            print(f"Network Address: {info['network_address']}")
+            print(f"Netmask: {info['netmask']}")
+            print(f"Hostmask: {info['hostmask']}")
+            if 'broadcast_address' in info:
+                print(f"Broadcast Address: {info['broadcast_address']}")
+            print(f"Total Addresses: {info['num_addresses']}")
+            print(f"Usable Hosts: {info['usable_hosts']}")
+            if 'host_range' in info:
+                print(f"Host Range: {info['host_range']}")
+        else:
+            print(f"Invalid CIDR format: {args.cidr}")
             return False
 
     return True

@@ -14717,6 +14717,9 @@ def parse_args(argv=None):
     parser_ip_info = ip_subparsers.add_parser("info", help="Get information about an IP address.")
     parser_ip_info.add_argument("ip", help="The IP address to inspect.")
 
+    parser_ip_subnet = ip_subparsers.add_parser("subnet", help="Get information about a CIDR subnet block.")
+    parser_ip_subnet.add_argument("cidr", help="The CIDR block to inspect (e.g. 192.168.1.0/24).")
+
     parser_ip_tui = ip_subparsers.add_parser("tui", help="Launch the IP Lab TUI.")
 
     # --- New 'saml-lab' command ---

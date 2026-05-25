@@ -59,6 +59,37 @@ class TestIPLabManager(unittest.TestCase):
         info = self.manager.get_info('invalid')
         self.assertIsNone(info)
 
+    def test_get_subnet_info_ipv4(self):
+        info = self.manager.get_subnet_info('192.168.1.0/24')
+        self.assertEqual(info['version'], 4)
+        self.assertEqual(info['network_address'], '192.168.1.0')
+        self.assertEqual(info['netmask'], '255.255.255.0')
+        self.assertEqual(info['hostmask'], '0.0.0.255')
+        self.assertEqual(info['broadcast_address'], '192.168.1.255')
+        self.assertEqual(info['num_addresses'], 256)
+        self.assertEqual(info['usable_hosts'], 254)
+        self.assertEqual(info['host_range'], '192.168.1.1 - 192.168.1.254')
+
+    def test_get_subnet_info_ipv4_32(self):
+        info = self.manager.get_subnet_info('10.0.0.1/32')
+        self.assertEqual(info['version'], 4)
+        self.assertEqual(info['num_addresses'], 1)
+        self.assertEqual(info['usable_hosts'], 1)
+        self.assertEqual(info['host_range'], '10.0.0.1 - 10.0.0.1')
+
+    def test_get_subnet_info_ipv6(self):
+        info = self.manager.get_subnet_info('2001:db8::/32')
+        self.assertEqual(info['version'], 6)
+        self.assertEqual(info['network_address'], '2001:db8::')
+        self.assertEqual(info['netmask'], 'ffff:ffff::')
+        self.assertEqual(info['num_addresses'], 2**(128-32))
+        self.assertEqual(info['usable_hosts'], 2**(128-32))
+        self.assertTrue('2001:db8:: - 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff' in info['host_range'])
+
+    def test_get_subnet_info_invalid(self):
+        info = self.manager.get_subnet_info('invalid')
+        self.assertIsNone(info)
+
 
 class TestIPLabCLI(unittest.TestCase):
     @patch('shared.ip_lab.IPLabManager.get_public_ip')
@@ -96,6 +127,26 @@ class TestIPLabCLI(unittest.TestCase):
             self.assertTrue(result)
             mock_print.assert_any_call("Geolocating 1.2.3.4...")
             mock_print.assert_any_call("City: Test City")
+
+    @patch('shared.ip_lab.IPLabManager.get_subnet_info')
+    def test_run_subnet(self, mock_get_subnet_info):
+        mock_get_subnet_info.return_value = {
+            'version': 4,
+            'network_address': '192.168.1.0',
+            'netmask': '255.255.255.0',
+            'hostmask': '0.0.0.255',
+            'broadcast_address': '192.168.1.255',
+            'num_addresses': 256,
+            'usable_hosts': 254,
+            'host_range': '192.168.1.1 - 192.168.1.254'
+        }
+        args = argparse.Namespace(action='subnet', cidr='192.168.1.0/24')
+
+        with patch('builtins.print') as mock_print:
+            result = run_ip_lab_logic(args)
+            self.assertTrue(result)
+            mock_print.assert_any_call("CIDR: 192.168.1.0/24")
+            mock_print.assert_any_call("Network Address: 192.168.1.0")
 
 
 if __name__ == '__main__':

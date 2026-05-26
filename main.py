@@ -2559,6 +2559,22 @@ def run_chart_lab(args):
 
 def run_enc_lab(args):
     """Runs the Encoding Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Encoding Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-enc")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
     success = run_enc_lab_logic(args)
     sys.exit(0 if success else 1)
 
@@ -17794,6 +17810,7 @@ def parse_args(argv=None):
     def add_enc_args(p):
         p.add_argument("text", nargs="?", help="Input text (optional, reads from stdin if omitted).")
         p.add_argument("--decode", "-d", action="store_true", help="Decode input.")
+        p.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
 
     # enc-lab base64
     parser_enc_b64 = enc_subparsers.add_parser("base64", help="Base64 encode/decode.")
@@ -17816,6 +17833,10 @@ def parse_args(argv=None):
     parser_enc_rot13.add_argument("text", nargs="?", help="Input text.")
     # rot13 doesn't need --decode really, but we'll accept it to not break shared logic if passed
     parser_enc_rot13.add_argument("--decode", "-d", action="store_true", help="Ignored for ROT13.")
+    parser_enc_rot13.add_argument("--tui", action="store_true", help="Launch interactive TUI.")
+
+    # enc-lab tui
+    enc_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
     # --- New 'rss-lab' command ---
     parser_rss = subparsers.add_parser(

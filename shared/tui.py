@@ -370,6 +370,7 @@ from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
 from shared.tui_alias import AliasLabTab
 from shared.tui_json_schema import JsonSchemaTab
+from shared.tui_jsonl import JsonlLabTab
 from shared.tui_sqlformat import TabSqlFormat
 from shared.plugin_manager import PluginManager
 from shared.tui_regex_escape import RegexEscapeLabTab
@@ -4231,6 +4232,7 @@ class AgentTUI(App):
         PaletteCommand("Go to JSON to Kotlin Lab", "switch_tab_json2kotlin"),
         PaletteCommand("Go to TOML to Py Lab", "switch_tab_toml2py"),
         PaletteCommand("Go to JSON to SQL Lab", "switch_tab_json2sql"),
+        PaletteCommand("Go to JSONL Lab", "switch_tab_jsonl"),
         PaletteCommand("Go to Hash Validator Lab", "switch_tab_hash-validator"),
         PaletteCommand("Go to Hash Lab", "switch_tab_hash"),
         PaletteCommand("Go to Hashids Lab", "switch_tab_hashids"),
@@ -5008,6 +5010,8 @@ class AgentTUI(App):
             with TabPane("JSON Patch", id="tab-jsonpatch"):
                 from shared.tui_jsonpatch import JsonPatchLabTab
                 yield JsonPatchLabTab()
+            with TabPane("JSONL Lab", id="tab-jsonl"):
+                yield JsonlLabTab()
             with TabPane("Regex Escape", id="tab-regex-escape"):
                 yield RegexEscapeLabTab()
             with TabPane("Mask Lab", id="tab-mask"):
@@ -5062,6 +5066,9 @@ class AgentTUI(App):
 
     def action_switch_tab_json2sql(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2sql"
+
+    def action_switch_tab_jsonl(self) -> None:
+        self.query_one(TabbedContent).active = "tab-jsonl"
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         # Handle dashboard buttons (bubble up)

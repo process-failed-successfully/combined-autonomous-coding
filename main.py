@@ -20868,6 +20868,8 @@ Examples:
     jsonl_val = jsonl_subparsers.add_parser("validate", help="Validate a JSON Lines file.")
     jsonl_val.add_argument("input", help="JSON Lines string or file path.")
 
+    jsonl_tui = jsonl_subparsers.add_parser("tui", help="Launch JSON Lines Lab TUI.")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -25938,6 +25940,22 @@ async def main():
         sys.exit(0 if success else 1)
 
     if args.command in ["jsonl-lab", "jsonl"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching JSON Lines Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-jsonl")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
         from shared.jsonl_lab import run_jsonl_lab_logic
         run_jsonl_lab_logic(args)
         return

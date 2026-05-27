@@ -243,7 +243,7 @@ KNOWN_COMMANDS = [
     "setup", "scaffold", "dockerize", "cicd", "verify", "troubleshoot", "sentinel", "health",
     "debt", "check-links", "security", "help", "cherry-pick", "rollback", "timeline",
     "analytics", "deps", "duplication", "unused", "risk", "impact", "a11y", "license",
-    "bisect", "map", "architecture", "arch", "release", "openapi", "docstring", "refactor",
+    "bisect", "map", "architecture", "arch", "release", "openapi", "openapi-ui-lab", "docstring", "refactor",
     "polish", "resolve", "regex", "cron-lab", "braille-lab", "resolve-conflicts", "fix-conflicts", "mask-lab", "pii-mask-lab",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
@@ -13189,6 +13189,22 @@ def parse_args(argv=None):
     )
 
     # --- New 'docstring' command ---
+
+    parser_openapi_ui = subparsers.add_parser(
+        "openapi-ui-lab",
+        help="Serve an interactive Swagger UI for an OpenAPI spec."
+    )
+    parser_openapi_ui.add_argument(
+        "spec_file",
+        help="Path to the OpenAPI specification file (YAML or JSON)."
+    )
+    parser_openapi_ui.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to serve the UI on (default: 8080)."
+    )
+
     parser_docstring = subparsers.add_parser(
         "docstring",
         help="Manage Python docstrings (check and generate)."
@@ -24212,6 +24228,13 @@ async def main():
 
     if args.command == "openapi":
         await run_openapi(args)
+        return
+
+
+    if args.command == "openapi-ui-lab":
+        from shared.openapi_ui_lab import run_openapi_ui_lab_logic
+        success = run_openapi_ui_lab_logic(args)
+        sys.exit(0 if success else 1)
         return
 
     if args.command == "docstring":

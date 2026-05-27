@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import json
 import sys
 from io import StringIO
+from pathlib import Path
 from shared.seo_lab import SeoAnalyzer, SeoLabManager, run_seo_lab_logic
 
 class TestSeoAnalyzer(unittest.TestCase):
@@ -123,6 +124,31 @@ class TestSeoLabManager(unittest.TestCase):
         self.assertIn('"exists": true', output)
         json_output = json.loads(output)
         self.assertEqual(json_output["title"]["text"], "Test")
+
+class TestSeoLabCLI(unittest.TestCase):
+    @patch("shared.tui.AgentTUI")
+    @patch("main.sys.exit")
+    def test_run_seo_lab_tui(self, mock_exit, mock_agent_tui):
+        from main import run_seo_lab
+        mock_exit.side_effect = SystemExit
+
+        # Setup mock args
+        args = MagicMock()
+        args.action = "tui"
+        args.project_dir = Path("/tmp/dummy")
+
+        # Setup mock TUI app instance
+        mock_app_instance = MagicMock()
+        mock_agent_tui.return_value = mock_app_instance
+
+        # Call the function
+        with self.assertRaises(SystemExit):
+            run_seo_lab(args)
+
+        # Assertions
+        mock_agent_tui.assert_called_once_with(project_dir=Path("/tmp/dummy"), start_tab="tab-seo")
+        mock_app_instance.run.assert_called_once()
+        mock_exit.assert_called_once_with(0)
 
 if __name__ == '__main__':
     unittest.main()

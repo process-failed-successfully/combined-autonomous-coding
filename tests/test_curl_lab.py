@@ -138,6 +138,23 @@ class TestCurlLabManager(unittest.TestCase):
         self.assertIn('"data": "{\\"key\\": \\"value\\"}"', json_output)
         self.assertIn('"auth": [\n    "user",\n    "pass"\n  ]', json_output)
 
+    def test_to_rust_reqwest(self):
+        parsed = {
+            'url': 'https://api.example.com',
+            'method': 'POST',
+            'headers': {'Content-Type': 'application/json'},
+            'data': '{"key": "value"}',
+            'auth': ['user', 'pass']
+        }
+
+        code = self.manager.to_rust_reqwest(parsed)
+        self.assertIn("use reqwest::Client;", code)
+        self.assertIn("let mut request = client.post(\"https://api.example.com\");", code)
+        self.assertIn("request = request.basic_auth(\"user\", Some(\"pass\"));", code)
+        self.assertIn("let body = r#\"{", code)
+        self.assertIn('"key": "value"', code)
+        self.assertIn("request = request.body(body.to_owned());", code)
+
     def test_to_powershell_iwr(self):
         parsed = {
             'url': 'https://api.example.com',

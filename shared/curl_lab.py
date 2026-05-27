@@ -241,6 +241,63 @@ class CurlLabManager:
 
         return "\n".join(lines)
 
+    def to_rust_reqwest(self, parsed: Dict[str, Any]) -> str:
+        """
+        Converts parsed cURL data into Rust reqwest code.
+        """
+        lines = [
+            "use reqwest::Client;",
+            "use std::error::Error;",
+            "",
+            "#[tokio::main]",
+            "async fn main() -> Result<(), Box<dyn Error>> {",
+            "    let client = Client::new();",
+        ]
+
+        if parsed['headers']:
+            lines.append("    let mut headers = reqwest::header::HeaderMap::new();")
+            for k, v in parsed['headers'].items():
+                lines.append(f"    headers.insert({json.dumps(k)}, {json.dumps(v)}.parse()?);")
+
+        req_method = parsed['method'].lower()
+        # rust reqwest method syntax e.g. client.get, client.post
+        lines.append(f"    let mut request = client.{req_method}({json.dumps(parsed['url'])});")
+
+        if parsed['headers']:
+            lines.append("    request = request.headers(headers);")
+
+        if parsed['auth']:
+            user, pwd = parsed['auth']
+            # basic_auth(username, Some(password))
+            lines.append(f"    request = request.basic_auth({json.dumps(user)}, Some({json.dumps(pwd)}));")
+
+        if parsed['data'] is not None:
+            # Check if json
+            is_json = parsed['headers'].get('Content-Type', '').lower() == 'application/json'
+            if is_json:
+                try:
+                    # formatting json object string in Rust isn't strictly necessary but helpful to pass a raw string
+                    # or serde_json macro
+                    json_data = json.loads(parsed['data'])
+                    json_str = json.dumps(json_data, indent=4)
+                    # use raw string literal for json
+                    lines.append(f"    let body = r#\"{json_str}\"#;")
+                    # We can use .body or since we know it's json, reqwest has .body() taking anything impl Into<Body>
+                    lines.append("    request = request.body(body.to_owned());")
+                except json.JSONDecodeError:
+                    lines.append(f"    request = request.body(r#\"{parsed['data']}\"#.to_owned());")
+            else:
+                lines.append(f"    request = request.body(r#\"{parsed['data']}\"#.to_owned());")
+
+        lines.append("")
+        lines.append("    let response = request.send().await?;")
+        lines.append("    println!(\"Status: {}\", response.status());")
+        lines.append("    println!(\"Body:\\n{}\", response.text().await?);")
+        lines.append("")
+        lines.append("    Ok(())")
+        lines.append("}")
+        return "\n".join(lines)
+
     def to_powershell_iwr(self, parsed: Dict[str, Any]) -> str:
         """
         Converts parsed cURL data into PowerShell Invoke-WebRequest code.
@@ -331,10 +388,12 @@ def run_curl_lab_logic(args):
             print(manager.to_go_http(parsed))
         elif target == 'powershell':
             print(manager.to_powershell_iwr(parsed))
+        elif target == 'rust':
+            print(manager.to_rust_reqwest(parsed))
         elif target == 'json':
             print(manager.to_json(parsed))
         else:
-            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, powershell, json.", file=sys.stderr)
+            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, powershell, rust, json.", file=sys.stderr)
             sys.exit(1)
 
     except Exception as e:

@@ -377,6 +377,7 @@ from shared.tui_regex_escape import RegexEscapeLabTab
 from shared.tui_mask import MaskLabTab
 from shared.tui_fuzz import FuzzLabTab
 from shared.tui_filetype import FileTypeLabTab
+from shared.tui_seo import SeoLabTab
 
 
 # Helper to get Git info safely
@@ -5020,6 +5021,8 @@ class AgentTUI(App):
                 yield FuzzLabTab(self.project_dir)
             with TabPane("FileType Lab", id="tab-filetype"):
                 yield FileTypeLabTab()
+            with TabPane("SEO Lab", id="tab-seo"):
+                yield SeoLabTab()
             with TabPane("SRI Lab", id="tab-sri"):
                 yield SriLabTab()
             with TabPane("OpenAPI Lab", id="tab-openapi"):

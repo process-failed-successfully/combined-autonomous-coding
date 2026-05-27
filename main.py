@@ -3374,6 +3374,21 @@ def run_md2html_lab(args):
 
 def run_seo_lab(args):
     """Runs the SEO Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching SEO Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-seo")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
     from shared.seo_lab import run_seo_lab_logic
     run_seo_lab_logic(args)
     sys.exit(0)
@@ -15447,9 +15462,22 @@ def parse_args(argv=None):
         aliases=["seo"],
         help="SEO Analysis Lab."
     )
+    seo_subparsers = parser_seo.add_subparsers(dest="action", help="Action to perform.")
+
+    # Analyze command
+    parser_seo_analyze = seo_subparsers.add_parser("analyze", help="Analyze a URL or File")
+    parser_seo_analyze.add_argument("--url", help="URL to analyze")
+    parser_seo_analyze.add_argument("--file", help="Local file to analyze")
+    parser_seo_analyze.add_argument("--format", choices=["text", "json"], default="text", help="Output report format")
+
+    # Compatibility: Add arguments to main parser so old commands work without 'analyze'
     parser_seo.add_argument("--url", help="URL to analyze")
     parser_seo.add_argument("--file", help="Local file to analyze")
     parser_seo.add_argument("--format", choices=["text", "json"], default="text", help="Output report format")
+
+    # TUI command
+    parser_seo_tui = seo_subparsers.add_parser("tui", help="Launch the SEO Lab TUI.")
+    parser_seo.add_argument("--tui", action="store_true", help="Launch the SEO Lab TUI")
 
     parser_urlencode = subparsers.add_parser(
         "urlencode-lab", aliases=["urlencode"],

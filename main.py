@@ -384,7 +384,7 @@ KNOWN_COMMANDS = [
     "subtitle-lab", "sub",
     "shell-lab",
     "chemistry-lab", "chem", "periodic",
-    "mac-lab", "mac",
+    "mac-lab", "mac", "tree-lab",
     "saml-lab", "saml",
     "physics-lab", "phys",
     "set-lab", "sets",
@@ -14784,6 +14784,15 @@ def parse_args(argv=None):
     saml_decode.add_argument("--inflate", action="store_true", help="Inflate with zlib (used in HTTP-Redirect)")
 
     # --- New 'mac-lab' command ---
+    # --- New 'tree-lab' command ---
+    parser_tree_lab = subparsers.add_parser(
+        "tree-lab",
+        help="Generate ASCII directory trees."
+    )
+    parser_tree_lab.add_argument("dir", nargs="?", default=".", help="Directory to generate tree for (default: .)")
+    parser_tree_lab.add_argument("--max-depth", type=int, default=-1, help="Maximum depth to traverse (-1 for infinite).")
+    parser_tree_lab.add_argument("--exclude", nargs="*", help="Directories or files to exclude.")
+
     # --- New 'phone-lab' command ---
     parser_phone = subparsers.add_parser(
         "phone-lab",
@@ -25308,6 +25317,11 @@ async def main():
     if args.command in ["md2csv-lab", "md2csv", "m2c"]:
         from shared.md2csv_lab import run_md2csv_lab_logic
         run_md2csv_lab_logic(args)
+        return
+
+    if args.command == "tree-lab":
+        from shared.tree_lab import run_tree_lab_logic
+        run_tree_lab_logic(args)
         return
 
     if args.command in ["csv2toml-lab", "csv2toml", "c2t"]:

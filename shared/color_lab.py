@@ -155,6 +155,17 @@ class Color:
 
         return Color(f"rgb({fr},{fg},{fb})")
 
+    def mix(self, other: 'Color', weight: float = 0.5) -> 'Color':
+        """Blends this color with another color based on a weight (0.0 to 1.0)."""
+        weight = max(0.0, min(1.0, weight))
+
+        # Simple RGB interpolation
+        r = int(self.r * (1 - weight) + other.r * weight)
+        g = int(self.g * (1 - weight) + other.g * weight)
+        b = int(self.b * (1 - weight) + other.b * weight)
+
+        return Color(f"rgb({r},{g},{b})")
+
     def palette(self, type: str) -> List['Color']:
         """Generates a palette based on this color."""
         h, s, l = self.hsl
@@ -290,6 +301,18 @@ def run_color_lab_logic(action: str, **kwargs):
             table.add_row("Large Text (18pt+)", grade(ratio, "large"), grade(ratio, "large"))
 
             console.print(table)
+
+        elif action == "mix":
+            c1 = Color(kwargs["color1"])
+            c2 = Color(kwargs["color2"])
+            weight = float(kwargs.get("weight", 0.5))
+
+            result = c1.mix(c2, weight)
+
+            console.print(Panel(f"[bold]Color Mix ({int(weight*100):.0f}%)[/bold]"))
+            _print_color_swatch(c1, "Color 1")
+            _print_color_swatch(c2, "Color 2")
+            _print_color_swatch(result, "Result")
 
         elif action == "palette":
             base = Color(kwargs["base"])

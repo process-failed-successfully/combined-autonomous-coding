@@ -45,6 +45,23 @@ class TestColorLab(unittest.TestCase):
         # In protanopia, red (#ff0000) becomes much darker/brownish
         self.assertNotEqual(c.hex, sim.hex)
 
+    def test_mix(self):
+        c1 = Color("#000000")
+        c2 = Color("#ffffff")
+
+        # 50% mix
+        mixed = c1.mix(c2, 0.5)
+        self.assertEqual(mixed.rgb, (127, 127, 127))
+        self.assertEqual(mixed.hex, "#7f7f7f")
+
+        # 0% mix (should be c1)
+        mixed = c1.mix(c2, 0.0)
+        self.assertEqual(mixed.rgb, (0, 0, 0))
+
+        # 100% mix (should be c2)
+        mixed = c1.mix(c2, 1.0)
+        self.assertEqual(mixed.rgb, (255, 255, 255))
+
     def test_cmyk(self):
         c = Color("#ff0000")  # Red
         # Cyan=0, Magenta=1, Yellow=1, Black=0

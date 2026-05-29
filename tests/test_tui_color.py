@@ -47,6 +47,30 @@ class TestColorLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertIn("(255, 0, 0)", text_content)
             self.assertIn("hsl(0.0, 100.0%, 50.0%)", text_content)
 
+    async def test_color_lab_mix_tab(self):
+        app = ColorLabApp()
+        async with app.run_test() as pilot:
+            # Activate Mix Tab
+            tabbed = app.query_one("TabbedContent")
+            tabbed.active = "cl-tab-mix"
+            await pilot.pause()
+
+            # Set inputs
+            app.query_one("#cl-mix-c1", Input).value = "#000000"
+            app.query_one("#cl-mix-c2", Input).value = "#ffffff"
+            app.query_one("#cl-mix-weight", Input).value = "0.5"
+
+            # Trigger mix
+            await pilot.click("#btn-cl-mix")
+
+            log = app.query_one("#cl-mix-result", RichLog)
+            text_content = "\n".join([str(line) for line in log.lines])
+
+            self.assertIn("Color 1", text_content)
+            self.assertIn("Color 2", text_content)
+            self.assertIn("Result (50%)", text_content)
+            self.assertIn("#7f7f7f", text_content)
+
     async def test_invalid_color(self):
         app = ColorLabApp()
         async with app.run_test() as pilot:

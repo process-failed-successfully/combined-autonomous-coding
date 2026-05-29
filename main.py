@@ -258,7 +258,7 @@ KNOWN_COMMANDS = [
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
-    "caesar-lab", "caesar",
+    "caesar-lab", "caesar", "vigenere-lab", "vigenere",
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -453,6 +453,31 @@ def run_rot13_lab(args):
 
     from shared.rot13_lab import run_rot13_lab_logic
     success = run_rot13_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+
+def run_vigenere_lab(args):
+    """Runs the Vigenère Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Vigenère Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-vigenere")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.vigenere_lab import run_vigenere_lab_logic
+    import sys
+    success = run_vigenere_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -18241,6 +18266,17 @@ Examples:
     parser_rot13.add_argument("text", nargs="?", help="Text to process")
     parser_rot13.add_argument("--tui", action="store_true", help="Launch ROT13 Lab TUI")
 
+
+    # vigenere-lab
+    parser_vigenere = subparsers.add_parser(
+        "vigenere-lab", aliases=["vigenere"],
+        help="Vigenère Cipher Lab"
+    )
+    parser_vigenere.add_argument("text", nargs="?", help="Text to process")
+    parser_vigenere.add_argument("--key", type=str, help="Cipher key (required unless using --tui)")
+    parser_vigenere.add_argument("--decode", "-d", action="store_true", help="Decode mode")
+    parser_vigenere.add_argument("--tui", action="store_true", help="Launch Vigenère Lab TUI")
+
     # caesar-lab
     parser_caesar = subparsers.add_parser(
         "caesar-lab", aliases=["caesar"],
@@ -25675,6 +25711,10 @@ async def main():
 
     if args.command in ["caesar-lab", "caesar"]:
         run_caesar_lab(args)
+        return
+
+    if args.command in ["vigenere-lab", "vigenere"]:
+        run_vigenere_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

@@ -41,6 +41,17 @@ class ColorLabTab(Container):
                         yield Button("Simulate", id="btn-cl-blind", variant="primary")
                         yield RichLog(id="cl-blind-result", wrap=True, highlight=False, markup=True)
 
+                with TabPane("Mix", id="cl-tab-mix"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Color 1:")
+                        yield Input(placeholder="#000000", id="cl-mix-c1", value="#000000")
+                        yield Label("Color 2:")
+                        yield Input(placeholder="#FFFFFF", id="cl-mix-c2", value="#FFFFFF")
+                        yield Label("Weight (0.0 to 1.0):")
+                        yield Input(placeholder="0.5", id="cl-mix-weight", value="0.5")
+                        yield Button("Mix Colors", id="btn-cl-mix", variant="primary")
+                        yield RichLog(id="cl-mix-result", wrap=True, highlight=False, markup=True)
+
                 with TabPane("Converter", id="cl-tab-converter"):
                     with Vertical(classes="stat-box"):
                         yield Label("Color to Convert:")
@@ -121,6 +132,32 @@ class ColorLabTab(Container):
             for type in ["protanopia", "deuteranopia", "tritanopia"]:
                 sim = c.simulate_blindness(type)
                 render_swatch(sim, type.capitalize())
+
+        except ValueError as e:
+            log.write(f"[bold red]Error: {e}[/bold red]")
+
+    @on(Button.Pressed, "#btn-cl-mix")
+    def on_mix(self) -> None:
+        c1_str = self.query_one("#cl-mix-c1", Input).value
+        c2_str = self.query_one("#cl-mix-c2", Input).value
+        weight_str = self.query_one("#cl-mix-weight", Input).value
+        log = self.query_one("#cl-mix-result", RichLog)
+        log.clear()
+
+        try:
+            c1 = Color(c1_str)
+            c2 = Color(c2_str)
+            weight = float(weight_str)
+            result = c1.mix(c2, weight)
+
+            def render_swatch(col, label):
+                text_col = "black" if col.luminance > 0.5 else "white"
+                log.write(f"[{text_col} on {col.hex}] {label:<15} {col.hex} [/{text_col} on {col.hex}]")
+
+            render_swatch(c1, "Color 1")
+            render_swatch(c2, "Color 2")
+            log.write("")  # Spacer
+            render_swatch(result, f"Result ({int(weight*100):.0f}%)")
 
         except ValueError as e:
             log.write(f"[bold red]Error: {e}[/bold red]")

@@ -323,6 +323,7 @@ from shared.tui_roman import RomanLabTab
 from shared.tui_ocr import OcrLabTab
 from shared.tui_caesar import CaesarLabTab
 from shared.tui_vigenere import VigenereLabTab
+from shared.tui_atbash import AtbashLabTab
 from shared.tui_stego import StegoLabTab
 from shared.tui_exif import ExifLabTab
 from shared.tui_lorem import LoremLabTab
@@ -4692,6 +4693,8 @@ class AgentTUI(App):
                 yield CaesarLabTab()
             with TabPane("Vigenère Lab", id="tab-vigenere"):
                 yield VigenereLabTab()
+            with TabPane("Atbash Lab", id="tab-atbash"):
+                yield AtbashLabTab()
             with TabPane("Base64 Lab", id="tab-base64"):
                 yield Base64LabTab()
             with TabPane("Base64Url Lab", id="tab-base64url"):

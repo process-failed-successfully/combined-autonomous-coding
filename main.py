@@ -258,7 +258,7 @@ KNOWN_COMMANDS = [
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
-    "caesar-lab", "caesar", "vigenere-lab", "vigenere",
+    "caesar-lab", "caesar", "vigenere-lab", "vigenere", "atbash-lab", "atbash",
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
@@ -478,6 +478,30 @@ def run_vigenere_lab(args):
     from shared.vigenere_lab import run_vigenere_lab_logic
     import sys
     success = run_vigenere_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_atbash_lab(args):
+    """Runs the Atbash Lab."""
+    if getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Atbash Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-atbash")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.atbash_lab import run_atbash_lab_logic
+    import sys
+    success = run_atbash_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -18277,6 +18301,14 @@ Examples:
     parser_vigenere.add_argument("--decode", "-d", action="store_true", help="Decode mode")
     parser_vigenere.add_argument("--tui", action="store_true", help="Launch Vigenère Lab TUI")
 
+    # atbash-lab
+    parser_atbash = subparsers.add_parser(
+        "atbash-lab", aliases=["atbash"],
+        help="Atbash Cipher Lab"
+    )
+    parser_atbash.add_argument("text", nargs="?", help="Text to process")
+    parser_atbash.add_argument("--tui", action="store_true", help="Launch Atbash Lab TUI")
+
     # caesar-lab
     parser_caesar = subparsers.add_parser(
         "caesar-lab", aliases=["caesar"],
@@ -25715,6 +25747,10 @@ async def main():
 
     if args.command in ["vigenere-lab", "vigenere"]:
         run_vigenere_lab(args)
+        return
+
+    if args.command in ["atbash-lab", "atbash"]:
+        run_atbash_lab(args)
         return
 
     if args.command in ["base64-lab", "base64", "b64"]:

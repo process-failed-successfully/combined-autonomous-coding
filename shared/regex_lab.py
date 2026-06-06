@@ -57,6 +57,33 @@ class RegexLabManager:
                 "error": str(e)
             }
 
+    def extract_regex(self, pattern: str, text: str, flags: int = 0) -> Dict[str, Any]:
+        """
+        Extracts all matches of a regex pattern from text.
+
+        Args:
+            pattern: The regex pattern.
+            text: The text to search.
+            flags: Regex flags (e.g. re.IGNORECASE).
+
+        Returns:
+            Dict containing the list of extracted matching strings.
+        """
+        try:
+            matches = list(re.finditer(pattern, text, flags))
+            results: List[str] = [match.group(0) for match in matches]
+
+            return {
+                "success": True,
+                "count": len(results),
+                "matches": results
+            }
+        except re.error as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
     def replace_regex(self, pattern: str, replacement: str, text: str, flags: int = 0) -> Dict[str, Any]:
         """
         Replaces text matching a regex pattern.

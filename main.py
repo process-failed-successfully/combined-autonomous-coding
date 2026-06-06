@@ -13466,7 +13466,7 @@ def parse_args(argv=None):
     )
     parser_regex.add_argument(
         "action",
-        choices=["match", "explain", "generate", "game", "replace"],
+        choices=["match", "explain", "generate", "game", "replace", "extract"],
         help="Action to perform."
     )
     parser_regex.add_argument(
@@ -21615,6 +21615,24 @@ async def run_regex(args):
                     print(f"    Groups: {m['groups']}")
                 if m['group_dict']:
                     print(f"    Named Groups: {m['group_dict']}")
+        else:
+            print(f"❌ Regex Error: {result['error']}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "extract":
+        if not args.pattern:
+            print("Error: --pattern is required for 'extract' action.", file=sys.stderr)
+            sys.exit(1)
+        if args.text is None:
+            print("Error: --text is required for 'extract' action.", file=sys.stderr)
+            sys.exit(1)
+
+        result = manager.extract_regex(args.pattern, args.text, flags)
+
+        if result["success"]:
+            print(f"✅ Extracted {result['count']} matches.")
+            for m in result["matches"]:
+                print(f"  {m!r}")
         else:
             print(f"❌ Regex Error: {result['error']}", file=sys.stderr)
             sys.exit(1)

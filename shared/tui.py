@@ -330,6 +330,7 @@ from shared.tui_lorem import LoremLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
 from shared.tui_uni import UniLabTab
+from shared.tui_sqids import SqidsLabTab
 from shared.tui_vcard import VCardTab
 from shared.tui_curl import CurlLabTab
 from shared.tui_portscan import PortScanTab
@@ -4572,6 +4573,9 @@ class AgentTUI(App):
                 yield UuidLabTab()
             with TabPane("CUID2 Lab", id="tab-cuid2"):
                 yield Cuid2LabTab()
+
+            with TabPane("Sqids Lab", id="tab-sqids"):
+                yield SqidsLabTab()
 
             with TabPane("NanoID Lab", id="tab-nanoid"):
                 yield NanoIDLab()

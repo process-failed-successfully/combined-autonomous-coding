@@ -249,7 +249,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -3187,6 +3187,29 @@ def run_nanoid_lab(args):
         sys.exit(0)
     from shared.nanoid_lab import run_nanoid_lab_logic
     run_nanoid_lab_logic(args)
+
+
+def run_sqids_lab(args):
+    """Runs the Sqids Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Sqids Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-sqids")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+        return
+
+    from shared.sqids_lab import run_sqids_lab_logic
+    success = run_sqids_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 
 def run_ulid_lab(args):
@@ -15060,6 +15083,17 @@ def parse_args(argv=None):
     parser_ulid_bulk = ulid_subparsers.add_parser("bulk", help="Generate bulk ULIDs.")
     parser_ulid_bulk.add_argument("count", type=int, help="Number of ULIDs.")
 
+    # sqids lab
+    parser_sqids = subparsers.add_parser(
+        "sqids-lab",
+        aliases=["sqids"],
+        help="Sqids encode/decode arrays of numbers."
+    )
+    parser_sqids.add_argument("--encode", type=str, help="Comma-separated numbers to encode.")
+    parser_sqids.add_argument("--decode", type=str, help="Sqid string to decode.")
+    parser_sqids.add_argument("--tui", action="store_true", help="Launch Sqids Lab TUI.")
+    parser_sqids.add_argument("action", nargs="?", default=None, choices=["tui"], help="Action to perform (e.g. tui).")
+
     # --- New 'currency-lab' command ---
     parser_currency = subparsers.add_parser(
         "currency-lab",
@@ -24997,6 +25031,10 @@ async def main():
         return
     if args.command in ["snowflake-lab", "snowflake"]:
         run_snowflake_lab(args)
+        return
+
+    if args.command in ["sqids-lab", "sqids"]:
+        run_sqids_lab(args)
         return
 
     if args.command in ["ulid-lab", "ulid"]:

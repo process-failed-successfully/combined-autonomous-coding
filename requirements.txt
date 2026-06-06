@@ -60,3 +60,4 @@ cuid2>=2.0.0
 jsonschema
 argon2-cffi
 phonenumbers
+sqids>=0.5.2

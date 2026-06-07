@@ -148,7 +148,7 @@ class PasswordLabManager:
         Checks if the password has been exposed in data breaches using the Have I Been Pwned API.
         Returns the number of times it has appeared, or 0 if it hasn't.
         """
-        sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
+        sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()  # nosec B324
         prefix = sha1_hash[:5]
         suffix = sha1_hash[5:]
 
@@ -156,7 +156,7 @@ class PasswordLabManager:
         req = urllib.request.Request(url, headers={'User-Agent': 'Combined-Autonomous-Coding-Agent'})
 
         try:
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req) as response:  # nosec B310
                 res_body = response.read().decode('utf-8')
 
                 for line in res_body.splitlines():

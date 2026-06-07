@@ -206,3 +206,30 @@ def test_cli_rsa_keygen(capsys):
     captured = capsys.readouterr()
     assert "BEGIN PRIVATE KEY" in captured.out
     assert "BEGIN PUBLIC KEY" in captured.out
+
+def test_ed25519_keygen(crypto_manager):
+    priv, pub = crypto_manager.generate_ed25519_keypair()
+    assert b"BEGIN PRIVATE KEY" in priv
+    assert b"BEGIN PUBLIC KEY" in pub
+
+def test_ed25519_sign_verify(crypto_manager):
+    priv, pub = crypto_manager.generate_ed25519_keypair()
+    test_str = "secret_data"
+    signature = crypto_manager.ed25519_sign(test_str, priv)
+
+    is_valid = crypto_manager.ed25519_verify(test_str, signature, pub)
+    assert is_valid
+
+    # Test invalid signature
+    is_invalid = crypto_manager.ed25519_verify(test_str, b"bad_signature_padding12345", pub)
+    assert not is_invalid
+
+def test_cli_ed25519_keygen(capsys):
+    args = MagicMock()
+    args.action = "ed25519-keygen"
+    args.output = None
+
+    run_crypto_lab_logic(args)
+    captured = capsys.readouterr()
+    assert "BEGIN PRIVATE KEY" in captured.out
+    assert "BEGIN PUBLIC KEY" in captured.out

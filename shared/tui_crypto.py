@@ -128,6 +128,30 @@ class CryptoLabTab(Container):
                         yield Label("[bold]Output (Text or Base64)[/bold]")
                         yield TextArea(id="crypto-rsa-output", read_only=True)
 
+                # Ed25519
+                with TabPane("Ed25519"):
+                    with Horizontal(classes="stat-box"):
+                        with Vertical():
+                            yield Label("Private Key:")
+                            yield TextArea(id="crypto-ed-priv")
+                        with Vertical():
+                            yield Label("Public Key:")
+                            yield TextArea(id="crypto-ed-pub")
+                    with Vertical(classes="stat-box"):
+                        yield Label("Input Text:")
+                        yield TextArea(id="crypto-ed-input")
+                    with Horizontal():
+                        yield Button("Generate Keypair", id="btn-crypto-ed-gen", variant="success")
+                        yield Button("Sign", id="btn-crypto-ed-sign", variant="primary")
+                        yield Button("Verify", id="btn-crypto-ed-verify", variant="primary")
+                    with Horizontal(classes="stat-box"):
+                        with Vertical():
+                            yield Label("Signature (Base64) (for Verify):")
+                            yield TextArea(id="crypto-ed-signature")
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Output (Text or Base64)[/bold]")
+                        yield TextArea(id="crypto-ed-output", read_only=True)
+
                 # Random
                 with TabPane("Random"):
                     with Horizontal(classes="stat-box"):
@@ -169,6 +193,12 @@ class CryptoLabTab(Container):
             self.do_rsa_sign()
         elif event.button.id == "btn-crypto-rsa-verify":
             self.do_rsa_verify()
+        elif event.button.id == "btn-crypto-ed-gen":
+            self.do_ed_gen()
+        elif event.button.id == "btn-crypto-ed-sign":
+            self.do_ed_sign()
+        elif event.button.id == "btn-crypto-ed-verify":
+            self.do_ed_verify()
 
     def do_hash(self) -> None:
         text = self.query_one("#crypto-hash-input", TextArea).text
@@ -183,6 +213,51 @@ class CryptoLabTab(Container):
             res = self.manager.hash_data(text, str(algo))
             out.text = res
             self.notify("Hash calculated.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_ed_gen(self) -> None:
+        try:
+            priv, pub = self.manager.generate_ed25519_keypair()
+            self.query_one("#crypto-ed-priv", TextArea).text = priv.decode("utf-8")
+            self.query_one("#crypto-ed-pub", TextArea).text = pub.decode("utf-8")
+            self.notify("Ed25519 Keypair generated.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_ed_sign(self) -> None:
+        priv = self.query_one("#crypto-ed-priv", TextArea).text
+        text = self.query_one("#crypto-ed-input", TextArea).text
+        out = self.query_one("#crypto-ed-output", TextArea)
+
+        if not priv or not text:
+            self.notify("Private key and input required.", severity="error")
+            return
+
+        try:
+            import base64
+            res = self.manager.ed25519_sign(text, priv.encode("utf-8"))
+            out.text = base64.b64encode(res).decode("utf-8")
+            self.notify("Signed.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_ed_verify(self) -> None:
+        pub = self.query_one("#crypto-ed-pub", TextArea).text
+        text = self.query_one("#crypto-ed-input", TextArea).text
+        sig_text = self.query_one("#crypto-ed-signature", TextArea).text.strip()
+        if not pub or not text or not sig_text:
+            self.notify("Public key, input text, and signature required.", severity="error")
+            return
+
+        try:
+            import base64
+            sig = base64.b64decode(sig_text)
+            is_valid = self.manager.ed25519_verify(text, sig, pub.encode("utf-8"))
+            if is_valid:
+                self.notify("Signature is VALID.", severity="information")
+            else:
+                self.notify("Signature is INVALID.", severity="error")
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")
 

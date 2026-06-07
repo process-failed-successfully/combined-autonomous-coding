@@ -15234,6 +15234,10 @@ def parse_args(argv=None):
     parser_pwd_verify.add_argument("password", nargs="?", help="Password to verify (prompts if omitted).")
     parser_pwd_verify.add_argument("--hash", required=True, help="The hash to verify against.")
 
+    # password-lab pwned
+    parser_pwd_pwned = pwd_subparsers.add_parser("pwned", help="Check if a password has been seen in data breaches.")
+    parser_pwd_pwned.add_argument("password", nargs="?", help="Password to check (prompts if omitted).")
+
     # password-lab tui
     pwd_subparsers.add_parser("tui", help="Launch interactive TUI for Password Lab.")
 

@@ -5,6 +5,8 @@ import hashlib
 import base64
 import os
 import sys
+import urllib.request
+import urllib.error
 from typing import Dict, Any, List, Optional
 
 try:
@@ -140,6 +142,32 @@ class PasswordLabManager:
             "feedback": feedback,
             "length": length
         }
+
+    def check_pwned(self, password: str) -> int:
+        """
+        Checks if the password has been exposed in data breaches using the Have I Been Pwned API.
+        Returns the number of times it has appeared, or 0 if it hasn't.
+        """
+        sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()  # nosec B324
+        prefix = sha1_hash[:5]
+        suffix = sha1_hash[5:]
+
+        url = f"https://api.pwnedpasswords.com/range/{prefix}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Combined-Autonomous-Coding-Agent'})
+
+        try:
+            with urllib.request.urlopen(req) as response:  # nosec B310
+                res_body = response.read().decode('utf-8')
+
+                for line in res_body.splitlines():
+                    if line.startswith(suffix):
+                        _, count_str = line.split(':')
+                        return int(count_str)
+        except urllib.error.URLError:
+            pass # Return 0 or raise? Better to just fail silently or raise exception. Let's raise to let the UI know it failed.
+            raise RuntimeError("Failed to contact Have I Been Pwned API.")
+
+        return 0
 
     def hash_password(self, password: str, algo: str = "scrypt", salt: Optional[str] = None) -> str:
         """
@@ -288,6 +316,25 @@ def run_password_lab_logic(args):
         try:
             hashed = manager.hash_password(password, algo=args.algo, salt=args.salt)
             print(hashed)
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.action == "pwned":
+        if not getattr(args, 'password', None):
+            import getpass
+            password = getpass.getpass("Enter password to check if pwned: ")
+        else:
+            password = args.password
+
+        try:
+            count = manager.check_pwned(password)
+            if count > 0:
+                print(f"⚠️ Oh no! This password has been seen {count} times before in data breaches.")
+                sys.exit(1)
+            else:
+                print("✅ Good news! This password wasn't found in any known data breaches.")
+                sys.exit(0)
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

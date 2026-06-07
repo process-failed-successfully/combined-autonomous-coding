@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Union
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import rsa, padding, ed25519
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.exceptions import InvalidSignature
 
@@ -215,6 +215,47 @@ class CryptoLabManager:
                 ),
                 hashes.SHA256()
             )
+            return True
+        except InvalidSignature:
+            return False
+
+    def generate_ed25519_keypair(self) -> tuple[bytes, bytes]:
+        """Generates an Ed25519 private and public key pair."""
+        private_key = ed25519.Ed25519PrivateKey.generate()
+        private_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        public_key = private_key.public_key()
+        public_bytes = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        return private_bytes, public_bytes
+
+    def ed25519_sign(self, input_data: Union[str, bytes], private_key_bytes: bytes) -> bytes:
+        """Signs data using an Ed25519 private key."""
+        private_key = serialization.load_pem_private_key(
+            private_key_bytes,
+            password=None,
+        )
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+        signature = private_key.sign(data_bytes)
+        return signature
+
+    def ed25519_verify(self, input_data: Union[str, bytes], signature: bytes, public_key_bytes: bytes) -> bool:
+        """Verifies a signature using an Ed25519 public key."""
+        public_key = serialization.load_pem_public_key(public_key_bytes)
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+        try:
+            public_key.verify(signature, data_bytes)
             return True
         except InvalidSignature:
             return False
@@ -505,6 +546,64 @@ def run_crypto_lab_logic(args) -> bool:
                 return False
 
             if manager.rsa_verify(data, signature, key):
+                print("Signature Verified: OK")
+                return True
+            else:
+                print("Signature Verified: FAILED", file=sys.stderr)
+                return False
+
+        elif args.action == "ed25519-keygen":
+            priv, pub = manager.generate_ed25519_keypair()
+            if args.output:
+                Path(f"{args.output}").write_bytes(priv)
+                Path(f"{args.output}.pub").write_bytes(pub)
+                print(f"Keypair saved to {args.output} and {args.output}.pub")
+            else:
+                print("--- Private Key ---")
+                print(priv.decode('utf-8'))
+                print("--- Public Key ---")
+                print(pub.decode('utf-8'))
+            return True
+
+        elif args.action == "ed25519-sign":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                key = Path(args.key_file).read_bytes()
+            if not key:
+                print("Error: Private key required.", file=sys.stderr)
+                return False
+
+            data = args.text if args.text else Path(args.file).read_bytes() if args.file else sys.stdin.buffer.read()
+            signature = manager.ed25519_sign(data, key)
+            if args.output:
+                Path(args.output).write_bytes(signature)
+            else:
+                print(base64.b64encode(signature).decode('utf-8'))
+            return True
+
+        elif args.action == "ed25519-verify":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                key = Path(args.key_file).read_bytes()
+            if not key:
+                print("Error: Public key required.", file=sys.stderr)
+                return False
+
+            data = args.text if args.text else Path(args.file).read_bytes() if args.file else sys.stdin.buffer.read()
+
+            if args.signature:
+                signature = base64.b64decode(args.signature)
+            elif args.signature_file:
+                signature = Path(args.signature_file).read_bytes()
+            else:
+                print("Error: Signature required.", file=sys.stderr)
+                return False
+
+            if manager.ed25519_verify(data, signature, key):
                 print("Signature Verified: OK")
                 return True
             else:

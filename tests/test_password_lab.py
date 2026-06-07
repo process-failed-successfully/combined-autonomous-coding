@@ -113,6 +113,37 @@ class TestPasswordLab(unittest.TestCase):
             pass
 
 
+    @patch('urllib.request.urlopen')
+    def test_check_pwned_found(self, mock_urlopen):
+        # mock a response for "password" (SHA1 starts with 5BAA6)
+        # We need the response to look like:
+        # 1E4C9B93F3F0682250B6CF8331B7EE68FD8:52256179
+        import io
+        mock_response = io.BytesIO(b"00000000000000000000000000000000000:1\r\n1E4C9B93F3F0682250B6CF8331B7EE68FD8:52256179\r\n")
+
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        count = self.manager.check_pwned("password")
+        self.assertEqual(count, 52256179)
+
+    @patch('urllib.request.urlopen')
+    def test_check_pwned_not_found(self, mock_urlopen):
+        import io
+        mock_response = io.BytesIO(b"00000000000000000000000000000000000:1\r\n")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        count = self.manager.check_pwned("some_super_secret_password_nobody_knows")
+        self.assertEqual(count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_check_pwned_api_error(self, mock_urlopen):
+        import urllib.error
+        mock_urlopen.side_effect = urllib.error.URLError("Failed")
+
+        with self.assertRaises(RuntimeError):
+            self.manager.check_pwned("password")
+
+
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_run_password_lab_logic_passphrase(self, mock_stdout):
         class Args:

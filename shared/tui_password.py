@@ -51,6 +51,7 @@ class PasswordLabTab(Container):
                         yield Label("Password:")
                         yield Input(password=True, id="pwd-chk-input")
                         yield Button("Check Strength", id="btn-pwd-chk", variant="primary")
+                        yield Button("Check Pwned", id="btn-pwd-pwned", variant="warning")
 
                     with Vertical(classes="stat-box"):
                         yield Label("[bold]Strength Analysis[/bold]")
@@ -138,6 +139,22 @@ class PasswordLabTab(Container):
                     output += f"  - {item}\n"
 
             self.query_one("#pwd-chk-output", TextArea).text = output
+        except Exception as e:
+            self.query_one("#pwd-chk-output", TextArea).text = f"Error: {e}"
+
+    @on(Button.Pressed, "#btn-pwd-pwned")
+    def on_check_pwned(self, event: Button.Pressed) -> None:
+        pwd = self.query_one("#pwd-chk-input", Input).value
+        if not pwd:
+            self.query_one("#pwd-chk-output", TextArea).text = "Error: Please enter a password."
+            return
+
+        try:
+            count = self.manager.check_pwned(pwd)
+            if count > 0:
+                self.query_one("#pwd-chk-output", TextArea).text = f"⚠️ Oh no! This password has been seen {count} times before in data breaches."
+            else:
+                self.query_one("#pwd-chk-output", TextArea).text = "✅ Good news! This password wasn't found in any known data breaches."
         except Exception as e:
             self.query_one("#pwd-chk-output", TextArea).text = f"Error: {e}"
 

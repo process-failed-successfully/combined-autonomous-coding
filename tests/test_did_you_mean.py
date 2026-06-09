@@ -21,6 +21,9 @@ def test_did_you_mean_suggestion():
     # Standard argparse output should be there
     assert "invalid choice: 'jsno'" in result.stderr
 
+    # Assert that the choose from list is NOT there to keep output clean
+    assert "(choose from" not in result.stderr
+
     # Our new DidYouMean suggestion should be there
     assert "Did you mean:" in result.stderr
     assert "'json'" in result.stderr
@@ -41,6 +44,9 @@ def test_did_you_mean_no_suggestion():
 
     assert result.returncode == 2
     assert "invalid choice: 'xyz123thisisnotacommandatall'" in result.stderr
+
+    # Assert that the choose from list is NOT there to keep output clean
+    assert "(choose from" not in result.stderr
 
     # There shouldn't be a suggestion for something completely random
     assert "Did you mean:" not in result.stderr

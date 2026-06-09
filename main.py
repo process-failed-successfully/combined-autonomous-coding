@@ -228,6 +228,7 @@ AVAILABLE_AGENTS = {
 # Known CLI commands for recipe execution
 KNOWN_COMMANDS = [
     "nato-lab", "nato",
+    "csp-lab", "csp",
     "shell", "tui", "quiz", "kata", "prompt-lab", "knowledge", "chat", "ask", "do",
     "optimize", "perf", "debug", "code-review", "summarize", "explain", "init", "adr",
     "onboard", "session", "secrets", "db", "database", "playground", "completion",
@@ -1115,6 +1116,29 @@ def run_bcrypt_lab(args):
     from shared.bcrypt_lab import run_bcrypt_lab_logic
     success = run_bcrypt_lab_logic(args)
     sys.exit(0 if success else 1)
+
+
+
+def run_csp_lab(args):
+    """Runs the CSP Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching CSP Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-csp")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.create_task(app.run_async())
+        else:
+            asyncio.run(app.run_async())
+        return
+    from shared.csp_lab import run_csp_lab_logic
+    success = run_csp_lab_logic(args)
+    if not success:
+        sys.exit(1)
 
 
 def run_brotli_lab(args):
@@ -18417,7 +18441,23 @@ Examples:
     parser_cookie_generate.add_argument("--json", type=str, required=True, help="JSON array of cookie objects.")
 
     parser_cookie_tui = cookie_subparsers.add_parser("tui", help="Launch interactive Cookie Lab TUI.")
-# brotli-lab
+
+    # csp-lab
+    parser_csp = subparsers.add_parser(
+        "csp-lab", aliases=["csp"],
+        help="Content Security Policy Lab (parse, generate, validate)"
+    )
+    csp_subparsers = parser_csp.add_subparsers(dest="action", required=True)
+
+    csp_parse = csp_subparsers.add_parser("parse", help="Parse a CSP string.")
+    csp_parse.add_argument("policy", type=str, help="CSP string to parse")
+
+    csp_validate = csp_subparsers.add_parser("validate", help="Validate a CSP string.")
+    csp_validate.add_argument("policy", type=str, help="CSP string to validate")
+
+    csp_tui = csp_subparsers.add_parser("tui", help="Launch interactive CSP Lab TUI.")
+
+    # brotli-lab
     parser_brotli = subparsers.add_parser(
         "brotli-lab", aliases=["brotli"],
         help="Compress and decompress data using Brotli."
@@ -25829,6 +25869,9 @@ async def main():
         run_bcrypt_lab(args)
         return
 
+    if args.command in ["csp-lab", "csp"]:
+        run_csp_lab(args)
+        return
     if args.command in ["brotli-lab", "brotli"]:
         run_brotli_lab(args)
     if args.command in ["zstd-lab", "zstd"]:

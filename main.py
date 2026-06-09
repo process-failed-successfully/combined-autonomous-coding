@@ -10014,7 +10014,9 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
 
                 if matches:
                     suggestions = ", ".join([f"'{m}'" for m in matches])
-                    message = f"{message}\n\nDid you mean: {suggestions}?"
+                    message = f"invalid choice: '{invalid_choice}'\n\nDid you mean: {suggestions}?"
+                else:
+                    message = f"invalid choice: '{invalid_choice}'"
 
         self.print_usage(sys.stderr)
         args = {'prog': self.prog, 'message': message}

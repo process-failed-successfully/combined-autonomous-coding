@@ -16,9 +16,12 @@ class RobotsTxtManager:
                 url += "/"
             url += "robots.txt"
 
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return "Error: Only http:// and https:// URLs are allowed."
+
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req) as response:  # nosec B310 - URL schemes are validated above
                 return response.read().decode('utf-8')
         except urllib.error.URLError as e:
             return f"Error fetching {url}: {e}"

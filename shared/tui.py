@@ -58,6 +58,7 @@ from shared.tui_guardrails import GuardrailsTab
 from shared.tui_hash import HashLabTab
 from shared.tui_ip import IpLabTab
 from shared.tui_bencode import BencodeLabTab
+from shared.tui_robots_txt import RobotsTxtLabTab
 from shared.tui_enc import EncLabTab
 from shared.tui_favicon import FaviconLabTab
 from shared.tui_msgpack import MsgpackLabTab
@@ -4365,6 +4366,7 @@ class AgentTUI(App):
                 yield IsbnLabTab()
             with TabPane("Bencode Lab", id="tab-bencode"):
                 yield BencodeLabTab()
+            yield RobotsTxtLabTab()
             with TabPane("Encoding Lab", id="tab-enc"):
                 yield EncLabTab()
             yield FaviconLabTab(self.project_dir)

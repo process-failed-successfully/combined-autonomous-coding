@@ -259,6 +259,7 @@ KNOWN_COMMANDS = [
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
+    "robots-txt-lab", "robots", "robotstxt",
     "caesar-lab", "caesar", "vigenere-lab", "vigenere", "atbash-lab", "atbash",
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
@@ -2475,6 +2476,29 @@ def run_http_lab(args):
 
     run_http_lab_logic(args)
     sys.exit(0)
+
+
+def run_robots_txt_lab(args):
+    """Runs the Robots.txt Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Robots.txt Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-robots")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.robots_txt_lab import run_robots_txt_lab_logic
+    success = run_robots_txt_lab_logic(args)
+    if not success:
+        sys.exit(1)
 
 
 def run_bencode_lab(args):
@@ -15487,6 +15511,37 @@ def parse_args(argv=None):
 
     # favicon-lab tui
     favicon_lab_subparsers.add_parser("tui", help="Start the Favicon Lab TUI.")
+    # --- New 'robots-txt-lab' command ---
+    parser_robots_txt_lab = subparsers.add_parser(
+        "robots-txt-lab",
+        aliases=["robots", "robotstxt"],
+        help="Robots.txt parsing and validation tools."
+    )
+    robots_txt_lab_subparsers = parser_robots_txt_lab.add_subparsers(
+        dest="action",
+        help="Action to perform",
+        required=True
+    )
+
+    # robots-txt-lab tui
+    robots_txt_lab_subparsers.add_parser("tui", help="Launch Robots.txt Lab TUI.")
+
+    # robots-txt-lab fetch
+    parser_robots_fetch = robots_txt_lab_subparsers.add_parser("fetch", help="Fetch robots.txt from a URL.")
+    parser_robots_fetch.add_argument("url", help="The URL to fetch from (e.g., https://example.com).")
+
+    # robots-txt-lab parse
+    parser_robots_parse = robots_txt_lab_subparsers.add_parser("parse", help="Parse a robots.txt file or content.")
+    parser_robots_parse.add_argument("--file", help="Path to robots.txt file.")
+    parser_robots_parse.add_argument("--content", help="Raw robots.txt content as a string.")
+
+    # robots-txt-lab check
+    parser_robots_check = robots_txt_lab_subparsers.add_parser("check", help="Check if a user-agent can fetch a path.")
+    parser_robots_check.add_argument("--file", help="Path to robots.txt file.")
+    parser_robots_check.add_argument("--content", help="Raw robots.txt content as a string.")
+    parser_robots_check.add_argument("--user-agent", required=True, help="User agent to check.")
+    parser_robots_check.add_argument("--path", required=True, help="Path to check.")
+
     # --- New 'bencode-lab' command ---
     parser_bencode_lab = subparsers.add_parser(
         "bencode-lab",
@@ -25169,6 +25224,10 @@ async def main():
         return
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
+        return
+
+    if args.command in ["robots-txt-lab", "robots", "robotstxt"]:
+        run_robots_txt_lab(args)
         return
 
     if args.command in ["msgpack-lab", "msgpack", "mpack"]:

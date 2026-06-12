@@ -91,5 +91,48 @@ class TestMediaLabManager(unittest.TestCase):
         self.assertIn("-to", args)
         self.assertIn("00:00:20", args)
 
+    def test_extract_frames_timestamp(self):
+        self.manager.ffmpeg_bin = "/bin/ffmpeg"
+        mock_input = MagicMock(spec=Path)
+        mock_input.exists.return_value = True
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = True
+
+        self.manager.extract_frames(mock_input, mock_output_dir, timestamp="00:00:05")
+
+        args = self.mock_subprocess_run.call_args[0][0]
+        self.assertIn("-ss", args)
+        self.assertIn("00:00:05", args)
+        self.assertIn("-vframes", args)
+        self.assertIn("1", args)
+
+    def test_extract_frames_rate(self):
+        self.manager.ffmpeg_bin = "/bin/ffmpeg"
+        mock_input = MagicMock(spec=Path)
+        mock_input.exists.return_value = True
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = True
+
+        self.manager.extract_frames(mock_input, mock_output_dir, rate="1")
+
+        args = self.mock_subprocess_run.call_args[0][0]
+        self.assertIn("-r", args)
+        self.assertIn("1", args)
+
+    def test_extract_frames_errors(self):
+        self.manager.ffmpeg_bin = "/bin/ffmpeg"
+        mock_input = MagicMock(spec=Path)
+        mock_input.exists.return_value = True
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = True
+
+        # Both
+        with self.assertRaisesRegex(ValueError, "Cannot specify both"):
+            self.manager.extract_frames(mock_input, mock_output_dir, rate="1", timestamp="00:00:05")
+
+        # Neither
+        with self.assertRaisesRegex(ValueError, "Must specify either"):
+            self.manager.extract_frames(mock_input, mock_output_dir)
+
 if __name__ == '__main__':
     unittest.main()

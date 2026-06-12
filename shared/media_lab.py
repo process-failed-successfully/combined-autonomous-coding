@@ -127,6 +127,43 @@ class MediaLabManager:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"ffmpeg extract audio failed: {e}")
 
+    def extract_frames(self, input_path: Path, output_dir: Path, rate: Optional[str] = None, timestamp: Optional[str] = None) -> Path:
+        """
+        Extracts frames from video.
+        """
+        self._check_ffmpeg()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+        if rate and timestamp:
+            raise ValueError("Cannot specify both rate and timestamp.")
+        if not rate and not timestamp:
+            raise ValueError("Must specify either rate or timestamp.")
+
+        cmd = [self.ffmpeg_bin, "-y"]
+
+        if timestamp:
+            cmd.extend(["-ss", timestamp])
+
+        cmd.extend(["-i", str(input_path)])
+
+        if timestamp:
+            cmd.extend(["-vframes", "1"])
+            output_file = output_dir / "frame.jpg"
+            cmd.append(str(output_file))
+        else:
+            cmd.extend(["-r", rate])
+            output_file = output_dir / "frame_%04d.jpg"
+            cmd.append(str(output_file))
+
+        try:
+            subprocess.run(cmd, check=True)
+            return output_dir
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"ffmpeg extract frames failed: {e}")
+
     def trim(self, input_path: Path, output_path: Path, start: str, end: Optional[str] = None, duration: Optional[str] = None) -> Path:
         """
         Trims media file.
@@ -192,6 +229,16 @@ def run_media_lab_logic(args):
                 duration=args.duration
             )
             print(f"✅ Trimmed media saved to {output}")
+
+        elif args.action == "extract-frames":
+            output_dir = Path(args.output_dir)
+            manager.extract_frames(
+                Path(args.input),
+                output_dir,
+                rate=args.rate,
+                timestamp=args.timestamp
+            )
+            print(f"✅ Frames extracted to {output_dir}")
 
     except Exception as e:
         print(f"❌ Error: {e}", file=sys.stderr)

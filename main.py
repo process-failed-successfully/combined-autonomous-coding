@@ -17322,6 +17322,13 @@ def parse_args(argv=None):
     parser_media_trim.add_argument("--end", help="End time (e.g. 00:00:20).")
     parser_media_trim.add_argument("--duration", help="Duration (e.g. 10).")
 
+    # media-lab extract-frames
+    parser_media_frames = media_subparsers.add_parser("extract-frames", help="Extract frames from video.")
+    parser_media_frames.add_argument("input", help="Input file.")
+    parser_media_frames.add_argument("output_dir", help="Output directory for extracted frames.")
+    parser_media_frames.add_argument("--rate", help="Frame rate to extract (e.g., '1' for 1 frame per second).")
+    parser_media_frames.add_argument("--timestamp", help="Timestamp of a single frame to extract (e.g., '00:00:05').")
+
     # --- New 'htpasswd-lab' command ---
     parser_htpasswd = subparsers.add_parser(
         "htpasswd-lab",

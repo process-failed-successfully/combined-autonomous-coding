@@ -1,7 +1,7 @@
 import sys
 import urllib.request
 import urllib.error
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 from typing import List, Dict, Any, Union
 
 class SitemapManager:

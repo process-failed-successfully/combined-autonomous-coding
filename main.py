@@ -15754,6 +15754,11 @@ def parse_args(argv=None):
     parser_ul_unshorten = url_lab_subparsers.add_parser("unshorten", help="Follow a shortened or redirected URL to its final destination.")
     parser_ul_unshorten.add_argument("url", help="The shortened URL to resolve.")
 
+    # url-lab diff
+    parser_ul_diff = url_lab_subparsers.add_parser("diff", help="Compare two URLs and show the differences.")
+    parser_ul_diff.add_argument("url1", help="First URL to compare.")
+    parser_ul_diff.add_argument("url2", help="Second URL to compare.")
+
     # --- New 'cert-lab' command ---
     parser_cert = subparsers.add_parser(
         "cert-lab",

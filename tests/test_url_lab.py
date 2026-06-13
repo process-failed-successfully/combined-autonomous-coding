@@ -335,6 +335,37 @@ class TestRunUrlLabLogic(unittest.TestCase):
         self.assertEqual(result["trace"][0]["url"], "http://short.url")
         self.assertEqual(result["trace"][1]["url"], "http://final.com")
 
+    def test_diff(self):
+        manager = UrlLabManager()
+        url1 = "http://example.com/api?foo=bar"
+        url2 = "https://example.com/api?foo=baz&id=1"
+        result = manager.diff(url1, url2)
+
+        self.assertEqual(result["scheme"]["url1"], "http")
+        self.assertEqual(result["scheme"]["url2"], "https")
+        self.assertIn("added", result["query_params"])
+        self.assertEqual(result["query_params"]["added"]["id"], ["1"])
+        self.assertIn("changed", result["query_params"])
+        self.assertEqual(result["query_params"]["changed"]["foo"]["url1"], ["bar"])
+        self.assertEqual(result["query_params"]["changed"]["foo"]["url2"], ["baz"])
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_diff(self, mock_stdout):
+        args = MagicMock()
+        args.action = "diff"
+        args.url1 = "http://example.com/api?foo=bar"
+        args.url2 = "https://example.com/api?foo=baz&id=1"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        output = mock_stdout.getvalue()
+        self.assertIn('"scheme"', output)
+        self.assertIn('"added"', output)
+        self.assertIn('"changed"', output)
+
+
     @patch('shared.url_lab.requests.head')
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_run_unshorten(self, mock_stdout, mock_head):

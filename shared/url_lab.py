@@ -120,6 +120,34 @@ class UrlLabManager:
         new_parsed = parsed._replace(scheme=scheme, netloc=netloc, query=sorted_query)
         return urllib.parse.urlunparse(new_parsed)
 
+    def diff(self, url1: str, url2: str) -> Dict[str, Any]:
+        """Compares two URLs and returns the differences."""
+        p1 = self.parse(url1)
+        p2 = self.parse(url2)
+        diff_result = {}
+
+        for key in ["scheme", "netloc", "path", "fragment"]:
+            if p1[key] != p2[key]:
+                diff_result[key] = {"url1": p1[key], "url2": p2[key]}
+
+        q1 = p1["query_params"]
+        q2 = p2["query_params"]
+
+        added = {k: q2[k] for k in q2 if k not in q1}
+        removed = {k: q1[k] for k in q1 if k not in q2}
+        changed = {k: {"url1": q1[k], "url2": q2[k]} for k in q1 if k in q2 and q1[k] != q2[k]}
+
+        if added or removed or changed:
+            diff_result["query_params"] = {}
+            if added:
+                diff_result["query_params"]["added"] = added
+            if removed:
+                diff_result["query_params"]["removed"] = removed
+            if changed:
+                diff_result["query_params"]["changed"] = changed
+
+        return diff_result
+
     def unshorten(self, url: str) -> Dict[str, Any]:
         """Resolves a URL following redirects and returns the final URL and trace."""
         try:
@@ -208,5 +236,9 @@ def run_url_lab_logic(args):
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
+
+    elif args.action == "diff":
+        result = manager.diff(args.url1, args.url2)
+        print(json.dumps(result, indent=2))
 
     sys.exit(0)

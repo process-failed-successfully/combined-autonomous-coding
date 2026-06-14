@@ -168,6 +168,8 @@ from shared.tui_notebook import NotebookLabTab
 from shared.tui_ollama import OllamaLabTab
 from shared.tui_json import JsonLabTab
 from shared.tui_json2csv import Json2CsvTab
+from shared.tui_jsonl2csv import Jsonl2CsvLabTab
+from shared.tui_csv2jsonl import Csv2JsonlLabTab
 from shared.tui_json2ini import Json2IniLabTab
 from shared.tui_yaml2csv import Yaml2CsvTab
 from shared.tui_json2md import Json2MdTab
@@ -4187,6 +4189,8 @@ class AgentTUI(App):
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
+        PaletteCommand("Go to JSONL2CSV Lab", "switch_tab_jsonl2csv"),
+        PaletteCommand("Go to CSV2JSONL Lab", "switch_tab_csv2jsonl"),
         PaletteCommand("Go to JSON to MD Lab", "switch_tab_json2md"),
         PaletteCommand("Go to TOML Lab", "switch_tab_toml"),
         PaletteCommand("Go to YAML Lab", "switch_tab_yaml"),
@@ -4751,6 +4755,10 @@ class AgentTUI(App):
                 yield Yaml2CsvTab()
             with TabPane("JSON to CSV", id="tab-json2csv"):
                 yield Json2CsvTab(self.project_dir)
+            with TabPane("JSONL2CSV Lab", id="tab-jsonl2csv"):
+                yield Jsonl2CsvLabTab()
+            with TabPane("CSV2JSONL Lab", id="tab-csv2jsonl"):
+                yield Csv2JsonlLabTab()
             with TabPane("CSV to JSON", id="tab-csv2json"):
                 yield Csv2JsonTab()
             with TabPane("CSV to YAML", id="tab-csv2yaml"):
@@ -5063,6 +5071,12 @@ class AgentTUI(App):
 
     def action_switch_tab_json2kotlin(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2kotlin"
+
+    def action_switch_tab_jsonl2csv(self) -> None:
+        self.query_one(TabbedContent).active = "tab-jsonl2csv"
+
+    def action_switch_tab_csv2jsonl(self) -> None:
+        self.query_one(TabbedContent).active = "tab-csv2jsonl"
 
     def action_switch_tab_json2md(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2md"

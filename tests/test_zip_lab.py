@@ -92,6 +92,37 @@ def test_zip_manager_extract_invalid_format(temp_dir):
     with pytest.raises(ValueError, match="Invalid archive format"):
         manager.extract(invalid_file, output_dir)
 
+def test_zip_manager_list(temp_dir):
+    """Test listing contents of a zip archive with ZipManager."""
+    manager = ZipManager(project_dir=temp_dir)
+
+    file1 = temp_dir / "file1.txt"
+    file1.write_text("List me!")
+    input_zip = temp_dir / "list_test.zip"
+    manager.create([file1], input_zip)
+
+    contents = manager.list_contents(input_zip)
+    assert "file1.txt" in contents
+    assert len(contents) == 1
+
+def test_zip_manager_list_not_found(temp_dir):
+    """Test listing contents of a non-existent zip archive."""
+    manager = ZipManager(project_dir=temp_dir)
+    input_zip = temp_dir / "non_existent.zip"
+
+    with pytest.raises(FileNotFoundError, match="Archive not found"):
+        manager.list_contents(input_zip)
+
+def test_zip_manager_list_invalid_format(temp_dir):
+    """Test listing contents of a file that is not a zip archive."""
+    manager = ZipManager(project_dir=temp_dir)
+    invalid_file = temp_dir / "invalid.txt"
+    invalid_file.write_text("Not a zip")
+
+    with pytest.raises(ValueError, match="Invalid archive format"):
+        manager.list_contents(invalid_file)
+
+
 def test_run_zip_lab_logic_create(temp_dir, capsys):
     """Test the CLI logic for creating a zip."""
     file1 = temp_dir / "test.txt"
@@ -147,6 +178,33 @@ def test_run_zip_lab_logic_extract_no_input():
     args.action = "extract"
     args.input = None
     args.output = "out_dir"
+
+    with pytest.raises(SystemExit) as e:
+        run_zip_lab_logic(args)
+    assert e.value.code == 1
+
+def test_run_zip_lab_logic_list(temp_dir, capsys):
+    """Test the CLI logic for listing a zip."""
+    manager = ZipManager()
+    file1 = temp_dir / "test.txt"
+    file1.write_text("CLI list test")
+    input_zip = temp_dir / "cli_list.zip"
+    manager.create([file1], input_zip)
+
+    args = MagicMock()
+    args.action = "list"
+    args.input = str(input_zip)
+
+    run_zip_lab_logic(args)
+
+    captured = capsys.readouterr()
+    assert "test.txt" in captured.out
+
+def test_run_zip_lab_logic_list_no_input():
+    """Test CLI logic list with missing input."""
+    args = MagicMock()
+    args.action = "list"
+    args.input = None
 
     with pytest.raises(SystemExit) as e:
         run_zip_lab_logic(args)

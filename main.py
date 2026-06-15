@@ -21119,6 +21119,11 @@ Examples:
     zip_create.add_argument("-o", "--output", help="Output archive path (default: archive.zip).")
 
     zip_extract = zip_subparsers.add_parser("extract", help="Extract a zip archive.")
+    zip_extract.add_argument("input", help="Input archive to extract.")
+    zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
+
+    zip_list = zip_subparsers.add_parser("list", help="List contents of a zip archive.")
+    zip_list.add_argument("input", help="Input archive to list.")
 
     parser_nginx = subparsers.add_parser("nginx-lab", aliases=["nginx"], help="Generate Nginx configuration snippets")
     parser_nginx.add_argument("action", choices=["proxy", "static", "loadbalancer", "tui"], nargs="?", help="Action to perform")
@@ -21128,9 +21133,6 @@ Examples:
     parser_nginx.add_argument("--root", help="Root directory path (for static)")
     parser_nginx.add_argument("--upstreams", nargs="+", help="Upstream servers (for loadbalancer)")
     parser_nginx.add_argument("--tui", action="store_true", help="Launch interactive TUI")
-
-    zip_extract.add_argument("input", help="Input archive to extract.")
-    zip_extract.add_argument("-o", "--output", help="Output directory path (default: current directory).")
 
     parser_tar = subparsers.add_parser(
         "tar-lab", aliases=["tar"], help="Tar Lab utilities (create, extract, list tar archives)"

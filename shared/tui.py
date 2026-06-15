@@ -197,6 +197,7 @@ from shared.tui_codec import CodecLabTab
 from shared.tui_converter import ConverterLabTab
 from shared.tui_crypto import CryptoLabTab
 from shared.tui_csv import CsvLabTab
+from shared.tui_tree import TreeLabTab
 from shared.tui_phone import PhoneLabTab
 from shared.tui_braille import BrailleLabTab
 from shared.tui_css import CssLabTab
@@ -4186,6 +4187,7 @@ class AgentTUI(App):
         PaletteCommand("Go to Branch Lab", "switch_tab_branch_lab"),
         PaletteCommand("Go to Transpiler Lab", "switch_tab_transpiler"),
         PaletteCommand("Go to Dictionary Lab", "switch_tab_dict"),
+        PaletteCommand("Go to Tree Lab", "switch_tab_tree"),
         PaletteCommand("Go to Day Planner", "switch_tab_day_planner"),
         PaletteCommand("Go to Set Lab", "switch_tab_set"),
         PaletteCommand("Go to JSON Lab", "switch_tab_json"),
@@ -5051,6 +5053,8 @@ class AgentTUI(App):
             with TabPane("OpenAPI Lab", id="tab-openapi"):
                 from shared.tui_openapi import OpenAPILabTab
                 yield OpenAPILabTab(project_dir=self.project_dir)
+            with TabPane("Tree Lab", id="tab-tree"):
+                yield TreeLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():
@@ -5074,6 +5078,9 @@ class AgentTUI(App):
 
     def action_switch_tab_jsonl2csv(self) -> None:
         self.query_one(TabbedContent).active = "tab-jsonl2csv"
+
+    def action_switch_tab_tree(self) -> None:
+        self.query_one("#main-tabs", TabbedContent).active = "tab-tree"
 
     def action_switch_tab_csv2jsonl(self) -> None:
         self.query_one(TabbedContent).active = "tab-csv2jsonl"

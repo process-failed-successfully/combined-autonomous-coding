@@ -14920,6 +14920,7 @@ def parse_args(argv=None):
     parser_tree_lab.add_argument("dir", nargs="?", default=".", help="Directory to generate tree for (default: .)")
     parser_tree_lab.add_argument("--max-depth", type=int, default=-1, help="Maximum depth to traverse (-1 for infinite).")
     parser_tree_lab.add_argument("--exclude", nargs="*", help="Directories or files to exclude.")
+    parser_tree_lab.add_argument("--tui", action="store_true", help="Launch the Tree Lab TUI.")
 
     # --- New 'phone-lab' command ---
     parser_phone = subparsers.add_parser(
@@ -25603,6 +25604,11 @@ async def main():
         return
 
     if args.command == "tree-lab":
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            app = AgentTUI(project_dir=args.project_dir, start_tab="tab-tree")
+            app.run()
+            sys.exit(0)
         from shared.tree_lab import run_tree_lab_logic
         run_tree_lab_logic(args)
         return

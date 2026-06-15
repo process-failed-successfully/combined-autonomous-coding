@@ -48,6 +48,18 @@ class ZipManager:
             zf.extractall(output_dir)
         return output_dir
 
+    def list_contents(self, input_path: Path) -> List[str]:
+        """Lists the contents of a zip archive."""
+        if not input_path.exists():
+            raise FileNotFoundError(f"Archive not found: {input_path}")
+        if not input_path.is_file() or not input_path.name.endswith(".zip"):
+            raise ValueError(f"Invalid archive format: {input_path}")
+
+        contents = []
+        with zipfile.ZipFile(input_path, "r") as zf:
+            contents = zf.namelist()
+        return contents
+
 
 def run_zip_lab_logic(args):
     """Entry point for Zip Lab CLI."""
@@ -90,6 +102,15 @@ def run_zip_lab_logic(args):
             input_path = Path(args.input)
             final_path = manager.extract(input_path, output_dir)
             print(f"Archive extracted to {final_path}")
+
+        elif args.action == "list":
+            if not getattr(args, "input", None):
+                print("Error: Input archive is required to list contents.", file=sys.stderr)
+                sys.exit(1)
+            input_path = Path(args.input)
+            contents = manager.list_contents(input_path)
+            for item in contents:
+                print(item)
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 import argparse
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+import asyncio
 
 from shared.tree_lab import TreeLabManager, run_tree_lab_logic
 
@@ -79,3 +80,25 @@ class TestTreeLabManager(unittest.TestCase):
             self.assertTrue(output.startswith(f"{self.temp_dir.resolve().name}/"))
             self.assertIn("a_dir", output)
             self.assertNotIn(".git", output)
+
+    @patch("shared.tui.AgentTUI")
+    @patch("main.sys.exit")
+    def test_tree_lab_tui_cli(self, mock_exit, mock_agent_tui):
+        from main import main
+        from pathlib import Path
+        import sys
+
+        mock_exit.side_effect = SystemExit
+
+        mock_app_instance = MagicMock()
+        mock_agent_tui.return_value = mock_app_instance
+
+        test_args = ["main.py", "-p", "/tmp/dummy", "tree-lab", "--tui"]
+
+        with patch.object(sys, 'argv', test_args):
+            with self.assertRaises(SystemExit):
+                asyncio.run(main())
+
+        mock_agent_tui.assert_called_once_with(project_dir=Path("/tmp/dummy"), start_tab="tab-tree")
+        mock_app_instance.run.assert_called_once()
+        mock_exit.assert_called_once_with(0)

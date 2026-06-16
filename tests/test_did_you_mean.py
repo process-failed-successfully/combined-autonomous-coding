@@ -50,3 +50,41 @@ def test_did_you_mean_no_suggestion():
 
     # There shouldn't be a suggestion for something completely random
     assert "Did you mean:" not in result.stderr
+
+def test_did_you_mean_global_argument():
+    """
+    Test that mistyping a global optional argument suggests the correct one.
+    """
+    root_dir = Path(__file__).parent.parent
+    main_script = root_dir / "main.py"
+
+    result = subprocess.run(
+        ["python3", str(main_script), "--prject-dir"],
+        capture_output=True,
+        text=True
+    )
+
+    assert result.returncode == 2
+    assert "unrecognized argument: '--prject-dir'" in result.stderr
+    assert "Did you mean: '--project-dir', '--spec', '--sprint'?" in result.stderr
+    assert "Did you mean:" in result.stderr
+
+
+
+def test_did_you_mean_subcommand_argument():
+    """
+    Test that mistyping a subcommand argument suggests the correct one for that subcommand.
+    """
+    root_dir = Path(__file__).parent.parent
+    main_script = root_dir / "main.py"
+
+    result = subprocess.run(
+        ["python3", str(main_script), "serve", "--prt", "8080"],
+        capture_output=True,
+        text=True
+    )
+
+    assert result.returncode == 2
+    assert "unrecognized argument: '--prt'" in result.stderr
+    assert "Did you mean: '--port'" in result.stderr
+    assert "Did you mean:" in result.stderr

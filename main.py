@@ -10041,7 +10041,36 @@ class DidYouMeanArgumentParser(argparse.ArgumentParser):
                     message = f"invalid choice: '{invalid_choice}'\n\nDid you mean: {suggestions}?"
                 else:
                     message = f"invalid choice: '{invalid_choice}'"
+        elif "unrecognized arguments:" in message:
+            import re
+            match = re.match(r"unrecognized arguments:\s+([^\s]+)", message)
+            if match:
+                invalid_arg = match.group(1)
 
+                valid_options = []
+                import sys
+                args = sys.argv[1:]
+
+                # Check for active subparser to get subparser options
+                current_parser = self
+                for action in current_parser._actions:
+                    if isinstance(action, argparse._SubParsersAction):
+                        for sub_args in args:
+                            if sub_args in action.choices:
+                                current_parser = action.choices[sub_args]
+                                break
+
+                for action in current_parser._actions:
+                    valid_options.extend(action.option_strings)
+
+                matches = difflib.get_close_matches(invalid_arg, valid_options, n=3, cutoff=0.5)
+                if matches:
+                    suggestions = ", ".join([f"'{m}'" for m in matches])
+                    message = f"unrecognized argument: '{invalid_arg}'\n\nDid you mean: {suggestions}?"
+                else:
+                    message = f"unrecognized argument: '{invalid_arg}'"
+
+        import sys
         self.print_usage(sys.stderr)
         args = {'prog': self.prog, 'message': message}
         self.exit(2, ('%(prog)s: error: %(message)s\n') % args)

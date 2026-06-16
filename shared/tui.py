@@ -352,6 +352,7 @@ from shared.tui_json2py import Json2PyLabTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
 from shared.tui_json2ts import Json2TsLabTab
+from shared.tui_json2zod import Json2ZodLabTab
 from shared.tui_json2go import Json2GoLabTab
 from shared.tui_json2rust import Json2RustLabTab
 from shared.tui_toml2py import Toml2PyLabTab
@@ -4786,6 +4787,8 @@ class AgentTUI(App):
                 yield Ini2JsonLabTab()
             with TabPane("JSON to TS", id="tab-json2ts"):
                 yield Json2TsLabTab()
+            with TabPane("JSON to Zod", id="tab-json2zod"):
+                yield Json2ZodLabTab()
             with TabPane("JSON to Go", id="tab-json2go"):
                 yield Json2GoLabTab()
             with TabPane("JSON to Dart", id="tab-json2dart"):

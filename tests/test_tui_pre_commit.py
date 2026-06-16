@@ -55,7 +55,8 @@ class TestPreCommitTUI(unittest.IsolatedAsyncioTestCase):
         app = PreCommitApp(self.project_dir)
         async with app.run_test() as pilot:
             # Click create config button
-            await pilot.click("#btn-pc-create-config")
+            pilot.app.query_one("#btn-pc-create-config").press()
+            await pilot.pause()
 
             # Verify manager called
             mock_create.assert_called_once()
@@ -74,7 +75,8 @@ class TestPreCommitTUI(unittest.IsolatedAsyncioTestCase):
 
         app = PreCommitApp(self.project_dir)
         async with app.run_test() as pilot:
-            await pilot.click("#btn-pc-run-all")
+            pilot.app.query_one("#btn-pc-run-all").press()
+            await pilot.pause()
 
             mock_run.assert_called_once()
 

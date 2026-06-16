@@ -29,7 +29,8 @@ class TestTuiStego(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#stego-hide-out").value = "out.png"
 
             # Click hide button
-            await pilot.click("#btn-stego-hide")
+            pilot.app.query_one("#btn-stego-hide").press()
+            await pilot.pause()
 
             mock_manager.hide.assert_called_once_with(Path("dummy.png"), Path("out.png"), "hello")
 
@@ -45,7 +46,8 @@ class TestTuiStego(unittest.IsolatedAsyncioTestCase):
             tab.selected_file = Path("dummy.png")
 
             # Click extract button
-            await pilot.click("#btn-stego-extract")
+            pilot.app.query_one("#btn-stego-extract").press()
+            await pilot.pause()
 
             mock_manager.extract.assert_called_once_with(Path("dummy.png"))
 

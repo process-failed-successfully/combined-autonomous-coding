@@ -61,7 +61,8 @@ class TestServicesTab(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(btn_start.disabled)
 
             # Click Start
-            await pilot.click("#btn-services-start")
+            pilot.app.query_one("#btn-services-start").press()
+            await pilot.pause()
             await pilot.pause()
 
             mock_instance.start_service.assert_called_with("test")

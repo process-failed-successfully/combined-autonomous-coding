@@ -22,7 +22,8 @@ async def test_hashids_encode():
         numbers_input = app.query_one("#hashids-numbers", Input)
         numbers_input.value = "1 2 3"
 
-        await pilot.click("#btn-hashids-encode")
+        pilot.app.query_one("#btn-hashids-encode").press()
+        await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
         assert "Encoded:" in str(output.render())
@@ -39,7 +40,8 @@ async def test_hashids_decode():
         hash_input = app.query_one("#hashids-hash", Input)
         hash_input.value = "1dSoHw"
 
-        await pilot.click("#btn-hashids-decode")
+        pilot.app.query_one("#btn-hashids-decode").press()
+        await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
         # It should decode back to "1 2 3"
@@ -55,7 +57,8 @@ async def test_hashids_invalid_numbers():
         numbers_input = app.query_one("#hashids-numbers", Input)
         numbers_input.value = "abc 2 3"
 
-        await pilot.click("#btn-hashids-encode")
+        pilot.app.query_one("#btn-hashids-encode").press()
+        await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
         assert "must be space-separated integers" in str(output.render())
@@ -69,7 +72,8 @@ async def test_hashids_decode_invalid():
         hash_input = app.query_one("#hashids-hash", Input)
         hash_input.value = "invalid_hash!"
 
-        await pilot.click("#btn-hashids-decode")
+        pilot.app.query_one("#btn-hashids-decode").press()
+        await pilot.pause()
 
         output = app.query_one("#hashids-output", Static)
         assert "Could not decode" in str(output.render())

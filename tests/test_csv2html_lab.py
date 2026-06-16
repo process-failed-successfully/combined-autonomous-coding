@@ -112,19 +112,22 @@ class TestCsv2HtmlLabTUI(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(tab)
 
             # Test empty convert
-            await pilot.click("#btn-convert-csv2html")
+            pilot.app.query_one("#btn-convert-csv2html").press()
+            await pilot.pause()
             log = app.query_one("#csv2html-log", RichLog)
             self.assertIn("No input CSV provided.", str(list(log.lines)))
 
             # Test valid convert
             app.query_one("#csv-input", TextArea).load_text("a,b\n1,2")
-            await pilot.click("#btn-convert-csv2html")
+            pilot.app.query_one("#btn-convert-csv2html").press()
+            await pilot.pause()
             output = app.query_one("#html-output", TextArea).text
             self.assertIn("<table>", output)
             self.assertIn("<th>a</th>", output)
 
             # Test clear
-            await pilot.click("#btn-clear-csv2html")
+            pilot.app.query_one("#btn-clear-csv2html").press()
+            await pilot.pause()
             self.assertEqual(app.query_one("#csv-input", TextArea).text, "")
             self.assertEqual(app.query_one("#html-output", TextArea).text, "")
 

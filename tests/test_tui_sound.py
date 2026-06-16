@@ -22,7 +22,8 @@ class TestSoundLabTUI(unittest.IsolatedAsyncioTestCase):
 
             # Find generate button
             btn = app.query_one("#btn-gen-tone")
-            await pilot.click("#btn-gen-tone")
+            pilot.app.query_one("#btn-gen-tone").press()
+            await pilot.pause()
 
             # Check visualizer updated
             vis = app.query_one("#sound-visualizer")

@@ -25,7 +25,8 @@ async def test_braille_tab():
         assert braille_output.text == "⠓⠑⠇⠇⠕"
 
         # Click clear
-        await pilot.click("#braille-clear-btn")
+        pilot.app.query_one("#braille-clear-btn").press()
+        await pilot.pause()
         await pilot.pause(0.1)
         assert text_input.text == ""
         assert braille_output.text == ""

@@ -53,7 +53,8 @@ class TestGitignoreTab(unittest.IsolatedAsyncioTestCase):
             list_view.index = 0
 
             # Click append
-            await pilot.click("#btn-gitignore-append")
+            pilot.app.query_one("#btn-gitignore-append").press()
+            await pilot.pause()
 
             # Check editor content
             editor = app.tab.query_one("#gitignore-editor")
@@ -64,13 +65,15 @@ class TestGitignoreTab(unittest.IsolatedAsyncioTestCase):
         app = GitignoreTestApp(self.project_dir)
         async with app.run_test() as pilot:
             # Type path
-            await pilot.click("#gitignore-check-input")
+            pilot.app.query_one("#gitignore-check-input").press()
+            await pilot.pause()
             # pilot.type is not available in this version, set value directly
             input_widget = app.tab.query_one("#gitignore-check-input")
             input_widget.value = "test.pyc"
 
             # Click check
-            await pilot.click("#btn-gitignore-check")
+            pilot.app.query_one("#btn-gitignore-check").press()
+            await pilot.pause()
 
             # Verify manager called
             self.mock_manager.check_ignore.assert_called_with("test.pyc")

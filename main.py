@@ -19855,10 +19855,19 @@ Examples:
     parser_hex = subparsers.add_parser(
         "hex-lab",
         aliases=["hex"],
-        help="Interactive Hex Editor TUI."
+        help="Interactive Hex Editor TUI and Dump."
     )
-    # The TUI usually takes over, but we can accept a file argument to open immediately
-    parser_hex.add_argument("file", nargs="?", help="Path to file to open in Hex Editor.")
+    hex_subparsers = parser_hex.add_subparsers(dest="action", help="Hex Lab actions")
+
+    # hex-lab tui
+    parser_hex_tui = hex_subparsers.add_parser("tui", help="Launch interactive Hex Editor TUI.")
+    parser_hex_tui.add_argument("file", nargs="?", help="Path to file to open in Hex Editor.")
+
+    # hex-lab dump
+    parser_hex_dump = hex_subparsers.add_parser("dump", help="Dump file contents as hex.")
+    parser_hex_dump.add_argument("file", help="Path to file to dump.")
+    parser_hex_dump.add_argument("--offset", type=int, default=0, help="Offset to start dumping.")
+    parser_hex_dump.add_argument("--length", type=int, help="Number of bytes to dump.")
 
     # --- New 'speed-lab' command ---
     parser_speed = subparsers.add_parser(

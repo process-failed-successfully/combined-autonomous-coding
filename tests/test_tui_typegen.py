@@ -32,7 +32,8 @@ class TestTypegenLabTab(unittest.IsolatedAsyncioTestCase):
             json_input = pilot.app.query_one("#typegen-json-input")
             json_input.text = '{"name": "John"}'
 
-            await pilot.click("#btn-typegen-generate")
+            pilot.app.query_one("#btn-typegen-generate").press()
+            await pilot.pause()
 
             output = pilot.app.query_one("#typegen-output")
             self.assertIn("export interface Root {", output.text)
@@ -42,7 +43,8 @@ class TestTypegenLabTab(unittest.IsolatedAsyncioTestCase):
             lang_select = pilot.app.query_one("#typegen-lang")
             lang_select.value = "python"
 
-            await pilot.click("#btn-typegen-generate")
+            pilot.app.query_one("#btn-typegen-generate").press()
+            await pilot.pause()
             self.assertIn("@dataclass", output.text)
             self.assertIn("class Root:", output.text)
 
@@ -56,7 +58,8 @@ class TestTypegenLabTab(unittest.IsolatedAsyncioTestCase):
     async def test_clear_button(self):
         app = DummyApp()
         async with app.run_test() as pilot:
-            await pilot.click("#btn-typegen-clear")
+            pilot.app.query_one("#btn-typegen-clear").press()
+            await pilot.pause()
             self.assertEqual(pilot.app.query_one("#typegen-json-input").text, "")
             self.assertEqual(pilot.app.query_one("#typegen-output").text, "")
 
@@ -66,7 +69,8 @@ class TestTypegenLabTab(unittest.IsolatedAsyncioTestCase):
             json_input = pilot.app.query_one("#typegen-json-input")
             json_input.text = '{invalid}'
 
-            await pilot.click("#btn-typegen-generate")
+            pilot.app.query_one("#btn-typegen-generate").press()
+            await pilot.pause()
 
             log = pilot.app.query_one("#typegen-log")
             log_text = "\n".join(str(line.text) for line in log.lines)

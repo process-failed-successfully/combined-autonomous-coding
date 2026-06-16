@@ -101,7 +101,8 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
 
             initial_count = self.mock_tm.fetch_all_tasks.call_count
 
-            await pilot.click("#btn-tasks-refresh")
+            pilot.app.query_one("#btn-tasks-refresh").press()
+            await pilot.pause()
             await pilot.pause()
 
             self.assertGreater(self.mock_tm.fetch_all_tasks.call_count, initial_count)
@@ -124,7 +125,8 @@ class TestTUITasks(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(table.row_count, 2)
 
             # Filter by text
-            await pilot.click("#input-task-filter")
+            pilot.app.query_one("#input-task-filter").press()
+            await pilot.pause()
             await pilot.press("A", "l", "p")
             await pilot.pause()
 

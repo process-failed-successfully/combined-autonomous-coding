@@ -53,7 +53,8 @@ class TestTuiTaskRunner(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(btn_run.disabled)
 
                 # Click run
-                await pilot.click("#btn-runner-run")
+                pilot.app.query_one("#btn-runner-run").press()
+                await pilot.pause()
 
                 # Verify run_task called
                 # It's in a thread, so might take a moment?

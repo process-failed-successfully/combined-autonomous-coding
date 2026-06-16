@@ -67,7 +67,8 @@ class TestSqlLabTab(unittest.IsolatedAsyncioTestCase):
             tab.manager = mock_manager
 
             # Set input
-            await pilot.click("#sql-ai-input")
+            pilot.app.query_one("#sql-ai-input").press()
+            await pilot.pause()
             await pilot.press("S", "h", "o", "w", " ", "u", "s", "e", "r", "s")
 
             # Ensure input value is set (Textual inputs might need time or explicit setting in tests if typing is flaky)
@@ -78,7 +79,8 @@ class TestSqlLabTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#btn-sql-ai-generate").disabled = False
 
             # Click Generate
-            await pilot.click("#btn-sql-ai-generate")
+            pilot.app.query_one("#btn-sql-ai-generate").press()
+            await pilot.pause()
 
             # Verify generate_sql called
             mock_generate_sql.assert_called_once()
@@ -109,7 +111,8 @@ class TestSqlLabTab(unittest.IsolatedAsyncioTestCase):
             # Mock notify to verify warning
             tab.notify = MagicMock()
 
-            await pilot.click("#btn-sql-ai-generate")
+            pilot.app.query_one("#btn-sql-ai-generate").press()
+            await pilot.pause()
 
             tab.notify.assert_called_with("Not connected.", severity="warning")
 

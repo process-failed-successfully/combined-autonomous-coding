@@ -57,7 +57,8 @@ class TestA11yLabTab(unittest.IsolatedAsyncioTestCase):
 
             # Select a row to check details log
             # We can programmatically fire the row selected event or just simulate it
-            await pilot.click("#a11y-table")
+            pilot.app.query_one("#a11y-table").press()
+            await pilot.pause()
             # Textual's DataTable is tricky to click rows precisely, we can manually call the handler
             row_key = list(table.rows.keys())[0]
             # Create a mock event and call the handler directly to test the log logic

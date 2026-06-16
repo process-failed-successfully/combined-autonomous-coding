@@ -25,7 +25,8 @@ class TestUlidLabTab(unittest.IsolatedAsyncioTestCase):
             self.tab.notify = MagicMock()
 
             # Click generate
-            await pilot.click("#btn-ulid-generate")
+            pilot.app.query_one("#btn-ulid-generate").press()
+            await pilot.pause()
             await pilot.pause()
 
             log = pilot.app.query_one("#log-ulid-generate")

@@ -78,17 +78,20 @@ class TestTuiJson2Md(unittest.IsolatedAsyncioTestCase):
         async with app.run_test() as pilot:
             tab = app.query_one(Json2MdTab)
             # Test empty convert
-            await pilot.click("#btn-json2md-convert")
+            pilot.app.query_one("#btn-json2md-convert").press()
+            await pilot.pause()
 
             # Input valid JSON
             input_area = app.query_one("#json2md-input")
             input_area.text = '{"hello": "world"}'
-            await pilot.click("#btn-json2md-convert")
+            pilot.app.query_one("#btn-json2md-convert").press()
+            await pilot.pause()
 
             output_area = app.query_one("#json2md-output")
             self.assertIn("| hello | world |", output_area.text)
 
             # Test clear
-            await pilot.click("#btn-json2md-clear")
+            pilot.app.query_one("#btn-json2md-clear").press()
+            await pilot.pause()
             self.assertEqual(input_area.text, "")
             self.assertEqual(output_area.text, "")

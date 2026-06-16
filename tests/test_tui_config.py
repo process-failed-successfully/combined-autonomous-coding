@@ -88,7 +88,8 @@ class TestConfigTab(unittest.IsolatedAsyncioTestCase):
             # in the test scope usually works if ConfigTab calls open().
             with patch("builtins.open", mock_open()) as m_open:
                 # Click save
-                await pilot.click("#btn-cfg-save")
+                pilot.app.query_one("#btn-cfg-save").press()
+                await pilot.pause()
 
                 # Check if file was opened for writing
                 m_open.assert_called_with(self.config_path, "w")

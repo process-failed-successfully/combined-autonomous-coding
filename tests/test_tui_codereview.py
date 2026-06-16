@@ -83,7 +83,8 @@ class TestCodeReviewTab(unittest.IsolatedAsyncioTestCase):
             # The list should have file1.py and new_file.py selected by default
 
             # Click Review Selected
-            await pilot.click("#btn-review-selected")
+            pilot.app.query_one("#btn-review-selected").press()
+            await pilot.pause()
 
             # Verify logic call
             self.mock_logic.assert_called_once()
@@ -107,7 +108,8 @@ class TestCodeReviewTab(unittest.IsolatedAsyncioTestCase):
         app = TestApp()
         async with app.run_test() as pilot:
             # Click Review All
-            await pilot.click("#btn-review-all")
+            pilot.app.query_one("#btn-review-all").press()
+            await pilot.pause()
 
             # Verify logic call
             self.mock_logic.assert_called_once()
@@ -130,7 +132,8 @@ class TestCodeReviewTab(unittest.IsolatedAsyncioTestCase):
             initial_count = self.mock_subprocess.call_count
 
             # Click Refresh
-            await pilot.click("#btn-review-refresh")
+            pilot.app.query_one("#btn-review-refresh").press()
+            await pilot.pause()
 
             # Verify called again
             # Note: call_count increases by 1

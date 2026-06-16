@@ -41,10 +41,12 @@ class TestXml2JsonTui(unittest.IsolatedAsyncioTestCase):
         app = DummyApp()
         async with app.run_test() as pilot:
             # Type something into the input
-            await pilot.click("#xml2json-input")
+            pilot.app.query_one("#xml2json-input").press()
+            await pilot.pause()
             # Set the text attribute directly since it's a TextArea
             app.query_one("#xml2json-input").text = "<root><item>Test</item></root>"
-            await pilot.click("#btn-convert-xml2json")
+            pilot.app.query_one("#btn-convert-xml2json").press()
+            await pilot.pause()
 
             # Check the output
             # Need a slight pause for text generation

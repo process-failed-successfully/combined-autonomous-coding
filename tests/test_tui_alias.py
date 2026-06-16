@@ -36,7 +36,8 @@ class TestAliasLabTab(unittest.IsolatedAsyncioTestCase):
                 shell_select.value = "fish"
 
                 # Click generate button
-                await pilot.click("#btn-generate-aliases")
+                pilot.app.query_one("#btn-generate-aliases").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Check output log
@@ -49,7 +50,8 @@ class TestAliasLabTab(unittest.IsolatedAsyncioTestCase):
 
                 # Test error path by simulating empty KNOWN_COMMANDS
                 main.KNOWN_COMMANDS = []
-                await pilot.click("#btn-generate-aliases")
+                pilot.app.query_one("#btn-generate-aliases").press()
+                await pilot.pause()
                 await pilot.pause()
 
                 # Notification should be shown, output shouldn't change

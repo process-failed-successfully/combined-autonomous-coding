@@ -15,7 +15,8 @@ class TestPasswordLabTab(unittest.IsolatedAsyncioTestCase):
         app = PasswordLabApp()
         async with app.run_test() as pilot:
             # Set values
-            await pilot.click("#pwd-gen-length")
+            pilot.app.query_one("#pwd-gen-length").press()
+            await pilot.pause()
             app.query_one("#pwd-gen-length", Input).value = "10"
 
             # Click generate

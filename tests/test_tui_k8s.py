@@ -87,7 +87,8 @@ class TestK8sTab(unittest.IsolatedAsyncioTestCase):
             tab.query_one("#btn-k8s-logs").disabled = False
 
             # Click Logs
-            await pilot.click("#btn-k8s-logs")
+            pilot.app.query_one("#btn-k8s-logs").press()
+            await pilot.pause()
             await pilot.pause(0.2)
 
             # We can't easily assert the mock call because of threading,

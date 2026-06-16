@@ -36,12 +36,14 @@ class TestTerraformTab(unittest.IsolatedAsyncioTestCase):
             tab.manager = mock_instance
 
             # Click Init
-            await pilot.click("#btn-tf-init")
+            pilot.app.query_one("#btn-tf-init").press()
+            await pilot.pause()
             await pilot.pause()
             mock_instance.init.assert_called()
 
             # Click Plan
-            await pilot.click("#btn-tf-plan")
+            pilot.app.query_one("#btn-tf-plan").press()
+            await pilot.pause()
             await pilot.pause()
             mock_instance.plan.assert_called()
 
@@ -55,11 +57,13 @@ class TestTerraformTab(unittest.IsolatedAsyncioTestCase):
             tab.manager = mock_instance
 
             # Click Destroy
-            await pilot.click("#btn-tf-destroy")
+            pilot.app.query_one("#btn-tf-destroy").press()
+            await pilot.pause()
             await pilot.pause()
 
             # Confirm
-            await pilot.click("#confirm")
+            pilot.app.query_one("#confirm").press()
+            await pilot.pause()
             await pilot.pause()
 
             mock_instance.destroy.assert_called_with(auto_approve=True)
@@ -95,7 +99,8 @@ class TestTerraformTab(unittest.IsolatedAsyncioTestCase):
             tab.manager = mock_instance
 
             # Refresh state
-            await pilot.click("#btn-tf-refresh")
+            pilot.app.query_one("#btn-tf-refresh").press()
+            await pilot.pause()
             await pilot.pause()
 
             mock_instance.show.assert_called_with(json_format=True)

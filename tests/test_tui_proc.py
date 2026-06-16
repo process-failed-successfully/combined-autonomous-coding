@@ -61,7 +61,8 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(tab.query_one("#btn-proc-stop", Button).disabled)
 
             # Click Start
-            await pilot.click("#btn-proc-start")
+            pilot.app.query_one("#btn-proc-start").press()
+            await pilot.pause()
 
             # Verify start_process called
             manager.start_process.assert_awaited_with("web", on_output=tab.on_process_output)
@@ -81,7 +82,8 @@ class TestProcLabTab(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(tab.query_one("#btn-proc-stop", Button).disabled)
 
             # Click Stop
-            await pilot.click("#btn-proc-stop")
+            pilot.app.query_one("#btn-proc-stop").press()
+            await pilot.pause()
             manager.stop_process.assert_awaited_with("web")
 
     @patch("shared.tui_proc.ProcLabManager")

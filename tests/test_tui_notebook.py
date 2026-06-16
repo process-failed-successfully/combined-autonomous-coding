@@ -81,7 +81,8 @@ class TestNotebookLabTab(unittest.IsolatedAsyncioTestCase):
             manager.inspect_notebook.assert_called_with(nb_path)
 
             # Test Clean
-            await pilot.click("#btn-notebook-clean")
+            pilot.app.query_one("#btn-notebook-clean").press()
+            await pilot.pause()
             # clean_notebook runs in thread, wait a bit
             await pilot.pause()
             # Since we mocked it as a synchronous method but called it via asyncio.to_thread,
@@ -104,12 +105,14 @@ class TestNotebookLabTab(unittest.IsolatedAsyncioTestCase):
             mock_out_path.read_text.return_value = "print('hello')"
             manager.convert_to_script.return_value = mock_out_path
 
-            await pilot.click("#btn-notebook-convert")
+            pilot.app.query_one("#btn-notebook-convert").press()
+            await pilot.pause()
             await pilot.pause()
             manager.convert_to_script.assert_called_with(nb_path)
 
             # Test Audit
-            await pilot.click("#btn-notebook-audit")
+            pilot.app.query_one("#btn-notebook-audit").press()
+            await pilot.pause()
             manager.audit_notebook.assert_called_with(nb_path)
 
 if __name__ == "__main__":

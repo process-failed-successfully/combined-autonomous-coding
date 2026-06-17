@@ -17339,6 +17339,28 @@ def parse_args(argv=None):
     parser_image_remove_exif.add_argument("input", help="Input image file.")
     parser_image_remove_exif.add_argument("output", help="Output image file.")
 
+    # image-lab crop
+    parser_image_crop = image_subparsers.add_parser("crop", help="Crop image.")
+    parser_image_crop.add_argument("input", help="Input image file.")
+    parser_image_crop.add_argument("output", help="Output image file.")
+    parser_image_crop.add_argument("--left", type=int, required=True, help="Left coordinate.")
+    parser_image_crop.add_argument("--top", type=int, required=True, help="Top coordinate.")
+    parser_image_crop.add_argument("--right", type=int, required=True, help="Right coordinate.")
+    parser_image_crop.add_argument("--bottom", type=int, required=True, help="Bottom coordinate.")
+
+    # image-lab rotate
+    parser_image_rotate = image_subparsers.add_parser("rotate", help="Rotate image.")
+    parser_image_rotate.add_argument("input", help="Input image file.")
+    parser_image_rotate.add_argument("output", help="Output image file.")
+    parser_image_rotate.add_argument("--degrees", type=float, required=True, help="Degrees to rotate (counter-clockwise).")
+    parser_image_rotate.add_argument("--expand", action="store_true", help="Expand the output image to fit the rotated image.")
+
+    # image-lab flip
+    parser_image_flip = image_subparsers.add_parser("flip", help="Flip image.")
+    parser_image_flip.add_argument("input", help="Input image file.")
+    parser_image_flip.add_argument("output", help="Output image file.")
+    parser_image_flip.add_argument("--direction", choices=["horizontal", "vertical"], required=True, help="Direction to flip.")
+
     # image-lab hide
     parser_img_hide = image_subparsers.add_parser("hide", help="Hide a secret message in an image.")
     parser_img_hide.add_argument("input", help="Input image path.")

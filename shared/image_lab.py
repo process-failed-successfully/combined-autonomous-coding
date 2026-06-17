@@ -151,6 +151,48 @@ class ImageLabManager:
 
         return output_path
 
+    def crop(self, input_path: Path, output_path: Path, left: int, top: int, right: int, bottom: int) -> Path:
+        """Crops an image."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        with Image.open(input_path) as img:
+            cropped_img = img.crop((left, top, right, bottom))
+            cropped_img.save(output_path)
+
+        return output_path
+
+    def rotate(self, input_path: Path, output_path: Path, degrees: float, expand: bool = False) -> Path:
+        """Rotates an image."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        with Image.open(input_path) as img:
+            rotated_img = img.rotate(degrees, expand=expand)
+            rotated_img.save(output_path)
+
+        return output_path
+
+    def flip(self, input_path: Path, output_path: Path, direction: str) -> Path:
+        """Flips an image horizontally or vertically."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        with Image.open(input_path) as img:
+            if direction == "horizontal":
+                flipped_img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            elif direction == "vertical":
+                flipped_img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            else:
+                raise ValueError("Direction must be 'horizontal' or 'vertical'")
+
+            flipped_img.save(output_path)
+
+        return output_path
+
     def create_placeholder(self, output_path: Path, width: int, height: int, color: str = "#CCCCCC", text: Optional[str] = None, text_color: str = "black") -> Path:
         """Generates a placeholder image."""
         self._check_pil()
@@ -309,6 +351,37 @@ def run_image_lab_logic(args):
                 maintain_aspect=not args.no_aspect
             )
             console.print(f"[green]✅ Resized image saved to {output}[/green]")
+
+        elif args.action == "crop":
+            output = Path(args.output)
+            manager.crop(
+                Path(args.input),
+                output,
+                left=args.left,
+                top=args.top,
+                right=args.right,
+                bottom=args.bottom
+            )
+            console.print(f"[green]✅ Cropped image saved to {output}[/green]")
+
+        elif args.action == "rotate":
+            output = Path(args.output)
+            manager.rotate(
+                Path(args.input),
+                output,
+                degrees=args.degrees,
+                expand=args.expand
+            )
+            console.print(f"[green]✅ Rotated image saved to {output}[/green]")
+
+        elif args.action == "flip":
+            output = Path(args.output)
+            manager.flip(
+                Path(args.input),
+                output,
+                direction=args.direction
+            )
+            console.print(f"[green]✅ Flipped image saved to {output}[/green]")
 
         elif args.action == "placeholder":
             output = Path(args.output)

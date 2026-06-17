@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch, call
 from pathlib import Path
@@ -150,6 +151,64 @@ class TestImageLabManager(unittest.TestCase):
 
             args, _ = mock_img_instance.resize.call_args
             self.assertEqual(args[0], (500, 500))
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
+    def test_crop(self, mock_image):
+        mock_img_instance = MagicMock()
+        mock_image.open.return_value.__enter__.return_value = mock_img_instance
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_in, \
+             tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_out:
+            input_path = Path(tmp_in.name)
+            output_path = Path(tmp_out.name)
+
+            result = self.manager.crop(input_path, output_path, 10, 20, 30, 40)
+
+            mock_image.open.assert_called_with(input_path)
+            mock_img_instance.crop.assert_called_with((10, 20, 30, 40))
+            mock_img_instance.crop.return_value.save.assert_called_with(output_path)
+            self.assertEqual(result, output_path)
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
+    def test_rotate(self, mock_image):
+        mock_img_instance = MagicMock()
+        mock_image.open.return_value.__enter__.return_value = mock_img_instance
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_in, \
+             tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_out:
+            input_path = Path(tmp_in.name)
+            output_path = Path(tmp_out.name)
+
+            result = self.manager.rotate(input_path, output_path, 45.0, expand=True)
+
+            mock_image.open.assert_called_with(input_path)
+            mock_img_instance.rotate.assert_called_with(45.0, expand=True)
+            mock_img_instance.rotate.return_value.save.assert_called_with(output_path)
+            self.assertEqual(result, output_path)
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
+    def test_flip(self, mock_image):
+        mock_img_instance = MagicMock()
+        mock_image.open.return_value.__enter__.return_value = mock_img_instance
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_in, \
+             tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_out:
+            input_path = Path(tmp_in.name)
+            output_path = Path(tmp_out.name)
+
+            result = self.manager.flip(input_path, output_path, "horizontal")
+
+            mock_image.open.assert_called_with(input_path)
+            mock_img_instance.transpose.assert_called_with(mock_image.Transpose.FLIP_LEFT_RIGHT)
+            mock_img_instance.transpose.return_value.save.assert_called_with(output_path)
+            self.assertEqual(result, output_path)
+
+            # Test vertical
+            result2 = self.manager.flip(input_path, output_path, "vertical")
+            mock_img_instance.transpose.assert_called_with(mock_image.Transpose.FLIP_TOP_BOTTOM)
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")

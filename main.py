@@ -260,6 +260,7 @@ KNOWN_COMMANDS = [
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
     "robots-txt-lab", "robots", "robotstxt",
+    "sitemap-lab", "sitemap",
     "caesar-lab", "caesar", "vigenere-lab", "vigenere", "atbash-lab", "atbash",
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
@@ -2497,6 +2498,14 @@ def run_robots_txt_lab(args):
 
     from shared.robots_txt_lab import run_robots_txt_lab_logic
     success = run_robots_txt_lab_logic(args)
+    if not success:
+        sys.exit(1)
+
+
+def run_sitemap_lab(args):
+    """Runs the Sitemap Lab."""
+    from shared.sitemap_lab import run_sitemap_lab_logic
+    success = run_sitemap_lab_logic(args)
     if not success:
         sys.exit(1)
 
@@ -15572,6 +15581,28 @@ def parse_args(argv=None):
     parser_robots_check.add_argument("--user-agent", required=True, help="User agent to check.")
     parser_robots_check.add_argument("--path", required=True, help="Path to check.")
 
+
+    # --- New 'sitemap-lab' command ---
+    parser_sitemap_lab = subparsers.add_parser(
+        "sitemap-lab",
+        aliases=["sitemap"],
+        help="XML Sitemap parsing and fetching tools."
+    )
+    sitemap_lab_subparsers = parser_sitemap_lab.add_subparsers(
+        dest="action",
+        help="Action to perform",
+        required=True
+    )
+
+    # sitemap-lab fetch
+    parser_sitemap_fetch = sitemap_lab_subparsers.add_parser("fetch", help="Fetch sitemap.xml from a URL.")
+    parser_sitemap_fetch.add_argument("url", help="The URL to fetch from (e.g., https://example.com/sitemap.xml).")
+
+    # sitemap-lab parse
+    parser_sitemap_parse = sitemap_lab_subparsers.add_parser("parse", help="Parse an XML sitemap file or content.")
+    parser_sitemap_parse.add_argument("--file", help="Path to sitemap.xml file.")
+    parser_sitemap_parse.add_argument("--content", help="Raw sitemap.xml content as a string.")
+
     # --- New 'bencode-lab' command ---
     parser_bencode_lab = subparsers.add_parser(
         "bencode-lab",
@@ -25330,6 +25361,10 @@ async def main():
 
     if args.command in ["robots-txt-lab", "robots", "robotstxt"]:
         run_robots_txt_lab(args)
+        return
+
+    if args.command in ["sitemap-lab", "sitemap"]:
+        run_sitemap_lab(args)
         return
 
     if args.command in ["msgpack-lab", "msgpack", "mpack"]:

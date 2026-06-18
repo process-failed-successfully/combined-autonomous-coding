@@ -38,6 +38,7 @@ dependencies = [
     "jira",
     "textual",
     "watchdog",
+    "defusedxml",
     "argcomplete",
     "google-generativeai",
     "sqlparse>=0.4.4",

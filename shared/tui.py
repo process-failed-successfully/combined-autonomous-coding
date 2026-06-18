@@ -4257,6 +4257,8 @@ class AgentTUI(App):
         PaletteCommand("Run Lint", "run_lint"),
         PaletteCommand("Toggle Dark Mode", "toggle_dark"),
         PaletteCommand("Quit", "quit"),
+        PaletteCommand("Go to Bencode Lab", "switch_tab_bencode"),
+        PaletteCommand("Go to QR Lab", "switch_tab_qr"),
         PaletteCommand("Go to OpenAPI Lab", "switch_tab_openapi"),
         PaletteCommand("Go to Magic Decode Lab", "switch_tab_magic_decode"),
     ]

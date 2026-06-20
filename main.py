@@ -2195,6 +2195,12 @@ def run_runner_lab(args):
 
 def run_gitignore_lab(args):
     """Runs the Gitignore Lab."""
+    if getattr(args, "tui", False):
+        run_tui(args, start_tab="tab-gitignore-lab")
+        return
+    if not getattr(args, "action", None):
+        print("Error: Action is required unless --tui is specified.", file=sys.stderr)
+        sys.exit(1)
     from shared.gitignore_lab import run_gitignore_lab_logic
     run_gitignore_lab_logic(args)
 
@@ -20089,9 +20095,9 @@ Examples:
         aliases=["gitignore", "gi"],
         help="Generate and check .gitignore files."
     )
+    parser_gi.add_argument("--tui", action="store_true", help="Launch the TUI mode")
     gi_subparsers = parser_gi.add_subparsers(
         dest="action",
-        required=True,
         help="Action to perform."
     )
 

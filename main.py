@@ -250,7 +250,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -14840,6 +14840,39 @@ def parse_args(argv=None):
     # tui
     sqlite_subparsers.add_parser("tui", help="Launch interactive TUI for SQLite Lab.")
 
+    # --- New 'paseto-lab' command ---
+    parser_paseto = subparsers.add_parser(
+        "paseto-lab",
+        aliases=["paseto"],
+        help="PASETO token utilities (decode, sign, verify)."
+    )
+    paseto_subparsers = parser_paseto.add_subparsers(dest="action", required=False)
+
+    paseto_decode = paseto_subparsers.add_parser("decode", help="Decode a PASETO token.")
+    paseto_decode.add_argument("token", help="The PASETO token to decode")
+    paseto_decode.add_argument("--key", help="The secret/public key to verify the token")
+    paseto_decode.add_argument("--version", type=int, default=4, help="PASETO version (default: 4)")
+    paseto_decode.add_argument("--purpose", choices=["local", "public"], default="local", help="PASETO purpose (default: local)")
+    paseto_decode.add_argument("--implicit", default="", help="Implicit assertion (optional)")
+
+    paseto_sign = paseto_subparsers.add_parser("sign", help="Sign a PASETO token.")
+    paseto_sign.add_argument("payload", help="The JSON payload to sign")
+    paseto_sign.add_argument("key", help="The secret/private key")
+    paseto_sign.add_argument("--version", type=int, default=4, help="PASETO version (default: 4)")
+    paseto_sign.add_argument("--purpose", choices=["local", "public"], default="local", help="PASETO purpose (default: local)")
+    paseto_sign.add_argument("--footer", help="The JSON footer (optional)")
+    paseto_sign.add_argument("--implicit", default="", help="Implicit assertion (optional)")
+
+    paseto_verify = paseto_subparsers.add_parser("verify", help="Verify a PASETO token signature.")
+    paseto_verify.add_argument("token", help="The PASETO token to verify")
+    paseto_verify.add_argument("key", help="The secret/public key")
+    paseto_verify.add_argument("--version", type=int, default=4, help="PASETO version (default: 4)")
+    paseto_verify.add_argument("--purpose", choices=["local", "public"], default="local", help="PASETO purpose (default: local)")
+    paseto_verify.add_argument("--implicit", default="", help="Implicit assertion (optional)")
+    paseto_verify.add_argument("-v", "--verbose", action="store_true", help="Print decoded token if valid")
+
+    paseto_subparsers.add_parser("tui", help="Launch interactive PASETO Lab TUI.")
+
     # --- New 'jwt-lab' command ---
     parser_jwt = subparsers.add_parser(
         "jwt-lab",
@@ -25231,6 +25264,19 @@ async def main():
 
         run_sqlformat_lab_logic(args)
         return
+
+    if args.command in ["paseto-lab", "paseto"]:
+        if args.action == "tui":
+            from shared.tui_paseto import run_tui_async
+            await run_tui_async()
+            return
+        elif not args.action:
+            print("Error: Action is required (decode, sign, verify, tui).", file=sys.stderr)
+            sys.exit(1)
+        from shared.paseto_lab import run_paseto_lab_logic
+        if run_paseto_lab_logic(args):
+            return
+        sys.exit(1)
 
     if args.command == "jwt-lab":
         run_jwt_lab(args)

@@ -61,3 +61,4 @@ jsonschema
 argon2-cffi
 phonenumbers
 sqids>=0.5.2
+pyseto>=1.7.0

@@ -387,6 +387,7 @@ from shared.tui_mask import MaskLabTab
 from shared.tui_fuzz import FuzzLabTab
 from shared.tui_filetype import FileTypeLabTab
 from shared.tui_seo import SeoLabTab
+from shared.tui_typeid import TypeIDLabTab
 
 
 # Helper to get Git info safely
@@ -4585,6 +4586,8 @@ class AgentTUI(App):
                 yield UuidLabTab()
             with TabPane("CUID2 Lab", id="tab-cuid2"):
                 yield Cuid2LabTab()
+            with TabPane("TypeID Lab", id="tab-typeid"):
+                yield TypeIDLabTab()
 
             with TabPane("Sqids Lab", id="tab-sqids"):
                 yield SqidsLabTab()

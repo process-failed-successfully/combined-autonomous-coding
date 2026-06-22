@@ -250,7 +250,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -15113,6 +15113,29 @@ def parse_args(argv=None):
     # cuid2 tui
     parser_cuid2_tui = cuid2_subparsers.add_parser("tui", help="Launch CUID2 Lab TUI.")
 
+    # --- New 'typeid-lab' command ---
+    parser_typeid = subparsers.add_parser(
+        "typeid-lab",
+        aliases=["typeid"],
+        help="TypeID Lab Utilities."
+    )
+    typeid_subparsers = parser_typeid.add_subparsers(
+        dest="action", required=False, help="Action to perform."
+    )
+
+    # typeid generate
+    parser_typeid_gen = typeid_subparsers.add_parser("generate", aliases=["gen"], help="Generate TypeIDs.")
+    parser_typeid_gen.add_argument("prefix", type=str, help="Prefix for the TypeID.")
+    parser_typeid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of TypeIDs to generate.")
+
+    # typeid parse
+    parser_typeid_parse = typeid_subparsers.add_parser("parse", aliases=["decode"], help="Parse a TypeID.")
+    parser_typeid_parse.add_argument("typeid", type=str, help="TypeID to parse.")
+
+    # typeid tui
+    parser_typeid_tui = typeid_subparsers.add_parser("tui", help="Launch TypeID Lab TUI.")
+
+
     # --- New 'uuid-lab' command ---
     # ==========================================
     # ULID Lab
@@ -25293,6 +25316,11 @@ async def main():
     if args.command in ["cuid2-lab", "cuid2"]:
         from shared.cuid2_lab import run_cuid2_lab_logic
         run_cuid2_lab_logic(args)
+        return
+
+    if args.command in ["typeid-lab", "typeid"]:
+        from shared.typeid_lab import run_typeid_lab_logic
+        run_typeid_lab_logic(args)
         return
 
     if args.command in ["uuid-lab", "uuid"]:

@@ -260,6 +260,7 @@ KNOWN_COMMANDS = [
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
     "robots-txt-lab", "robots", "robotstxt",
+    "sitemap-lab", "sitemap",
     "caesar-lab", "caesar", "vigenere-lab", "vigenere", "atbash-lab", "atbash",
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
@@ -2483,6 +2484,27 @@ def run_http_lab(args):
     run_http_lab_logic(args)
     sys.exit(0)
 
+
+def run_sitemap_lab(args):
+    """Runs the Sitemap Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Sitemap Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-sitemap")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.sitemap_lab import run_sitemap_lab_logic
+    success = run_sitemap_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_robots_txt_lab(args):
     """Runs the Robots.txt Lab."""
@@ -15603,6 +15625,29 @@ def parse_args(argv=None):
 
     # favicon-lab tui
     favicon_lab_subparsers.add_parser("tui", help="Start the Favicon Lab TUI.")
+    # --- New 'sitemap-lab' command ---
+    parser_sitemap_lab = subparsers.add_parser(
+        "sitemap-lab",
+        aliases=["sitemap"],
+        help="Sitemap parsing and validation tools."
+    )
+    sitemap_lab_subparsers = parser_sitemap_lab.add_subparsers(
+        dest="action",
+        help="Action to perform"
+    )
+
+    # sitemap-lab tui
+    sitemap_lab_subparsers.add_parser("tui", help="Launch Sitemap Lab TUI.")
+
+    # sitemap-lab fetch
+    parser_sitemap_fetch = sitemap_lab_subparsers.add_parser("fetch", help="Fetch sitemap from a URL.")
+    parser_sitemap_fetch.add_argument("url", help="The URL to fetch from (e.g., https://example.com/sitemap.xml).")
+
+    # sitemap-lab parse
+    parser_sitemap_parse = sitemap_lab_subparsers.add_parser("parse", help="Parse a sitemap file or content.")
+    parser_sitemap_parse.add_argument("--file", help="Path to sitemap file.")
+    parser_sitemap_parse.add_argument("--content", help="Raw sitemap content as a string.")
+
     # --- New 'robots-txt-lab' command ---
     parser_robots_txt_lab = subparsers.add_parser(
         "robots-txt-lab",
@@ -25409,6 +25454,10 @@ async def main():
         return
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
+        return
+
+    if args.command in ["sitemap-lab", "sitemap"]:
+        run_sitemap_lab(args)
         return
 
     if args.command in ["robots-txt-lab", "robots", "robotstxt"]:

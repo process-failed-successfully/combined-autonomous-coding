@@ -60,6 +60,7 @@ from shared.tui_ip import IpLabTab
 from shared.tui_bencode import BencodeLabTab
 from shared.tui_robots_txt import RobotsTxtLabTab
 from shared.tui_enc import EncLabTab
+from shared.tui_sitemap import SitemapLabTab
 from shared.tui_favicon import FaviconLabTab
 from shared.tui_msgpack import MsgpackLabTab
 from shared.tui_ical import ICalLabTab
@@ -4340,6 +4341,7 @@ class AgentTUI(App):
                 yield StaticLabTab(project_dir=self.project_dir)
             with TabPane("Dashboard", id="tab-dashboard"):
                 yield DashboardTab(self.project_dir)
+            yield SitemapLabTab()
             with TabPane("Focus", id="tab-focus"):
                 yield ProductivityTab(self.project_dir)
 

@@ -227,6 +227,23 @@ def run_notebook_lab_logic(args):
     """
     CLI Entry point for Notebook Lab.
     """
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Notebook Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-notebooks")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            # Wait for the future to finish
+            task = asyncio.ensure_future(app.run_async())
+            loop.run_until_complete(task)
+        else:
+            app.run()
+        return
+
     project_dir = args.project_dir.resolve()
     manager = NotebookLabManager(project_dir)
 

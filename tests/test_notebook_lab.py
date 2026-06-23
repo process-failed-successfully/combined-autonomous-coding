@@ -102,6 +102,24 @@ class TestNotebookLab(unittest.TestCase):
         self.assertIn("# !ls -la", content) # Magic commented out
         self.assertIn("# %pip install pandas", content)
 
+    def test_tui_action(self):
+        import argparse
+        import sys
+        from unittest.mock import patch
+        from shared.notebook_lab import run_notebook_lab_logic
+
+        args = argparse.Namespace(action="tui", project_dir=self.test_dir)
+
+        with patch('shared.tui.AgentTUI') as MockAgentTUI, \
+             patch('builtins.print') as mock_print:
+
+            mock_app_instance = MockAgentTUI.return_value
+
+            run_notebook_lab_logic(args)
+
+            MockAgentTUI.assert_called_once_with(project_dir=self.test_dir, start_tab="tab-notebooks")
+            mock_app_instance.run.assert_called_once()
+
     def test_audit_notebook(self):
         # 1. Linear execution check (fail)
         # 2. Large output check (fail)

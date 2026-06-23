@@ -19696,6 +19696,9 @@ Examples:
     # nb list
     nb_subparsers.add_parser("list", help="List notebooks.")
 
+    # nb tui
+    nb_subparsers.add_parser("tui", help="Launch the interactive Notebook Lab TUI.")
+
     # nb inspect
     parser_nb_inspect = nb_subparsers.add_parser("inspect", help="Inspect notebook metadata.")
     parser_nb_inspect.add_argument("file", help="Notebook file path.")

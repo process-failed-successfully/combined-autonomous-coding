@@ -1,5 +1,5 @@
 import sys
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import urllib.request
 import urllib.error
 
@@ -13,7 +13,7 @@ class SitemapManager:
 
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req) as response:  # nosec B310 - URL schemes are validated above
                 return response.read().decode('utf-8')
         except urllib.error.URLError as e:
             return f"Error fetching {url}: {e}"

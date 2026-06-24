@@ -4,11 +4,13 @@ import secrets
 import hmac
 import base64
 import sys
+import os
 from pathlib import Path
 from typing import Union
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric import rsa, padding, ed25519
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import serialization, hashes, padding as symmetric_padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.exceptions import InvalidSignature
 
 class CryptoLabManager:
@@ -106,6 +108,64 @@ class CryptoLabManager:
         """
         f = Fernet(key)
         return f.decrypt(input_data)
+
+    def aes_encrypt(self, input_data: Union[str, bytes], key: bytes, mode: str = "GCM", iv: bytes = None) -> tuple[bytes, bytes, bytes]:
+        """
+        Encrypts data using AES (GCM or CBC).
+        Key must be 16, 24, or 32 bytes.
+        Returns: (ciphertext, iv, tag) where tag is None for CBC.
+        """
+        if isinstance(input_data, str):
+            data_bytes = input_data.encode("utf-8")
+        else:
+            data_bytes = input_data
+
+        if mode.upper() == "GCM":
+            iv = iv or os.urandom(12)
+            cipher = Cipher(algorithms.AES(key), modes.GCM(iv))
+            encryptor = cipher.encryptor()
+            ciphertext = encryptor.update(data_bytes) + encryptor.finalize()
+            return ciphertext, iv, encryptor.tag
+        elif mode.upper() == "CBC":
+            iv = iv or os.urandom(16)
+            cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+            encryptor = cipher.encryptor()
+
+            # PKCS7 Padding
+            padder = symmetric_padding.PKCS7(128).padder()
+            padded_data = padder.update(data_bytes) + padder.finalize()
+
+            ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+            return ciphertext, iv, None
+        else:
+            raise ValueError("Unsupported mode. Use GCM or CBC.")
+
+    def aes_decrypt(self, ciphertext: bytes, key: bytes, mode: str = "GCM", iv: bytes = None, tag: bytes = None) -> bytes:
+        """
+        Decrypts data using AES (GCM or CBC).
+        """
+        if mode.upper() == "GCM":
+            if not iv or not tag:
+                raise ValueError("GCM requires both IV and Tag.")
+            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag))
+            decryptor = cipher.decryptor()
+            return decryptor.update(ciphertext) + decryptor.finalize()
+        elif mode.upper() == "CBC":
+            if not iv:
+                raise ValueError("CBC requires IV.")
+            cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+            decryptor = cipher.decryptor()
+            padded_data = decryptor.update(ciphertext) + decryptor.finalize()
+
+            # PKCS7 Unpadding
+            unpadder = symmetric_padding.PKCS7(128).unpadder()
+            try:
+                data = unpadder.update(padded_data) + unpadder.finalize()
+            except ValueError as e:
+                raise ValueError("Invalid padding.") from e
+            return data
+        else:
+            raise ValueError("Unsupported mode. Use GCM or CBC.")
 
     def generate_random(self, length: int = 32, type: str = "hex") -> str:
         """
@@ -609,6 +669,46 @@ def run_crypto_lab_logic(args) -> bool:
             else:
                 print("Signature Verified: FAILED", file=sys.stderr)
                 return False
+
+        elif args.action == "aes-encrypt":
+            key = bytes.fromhex(args.key)
+            iv = bytes.fromhex(args.iv) if args.iv else None
+
+            if args.file:
+                data = Path(args.file).read_bytes()
+            elif args.text:
+                data = args.text.encode("utf-8")
+            else:
+                print("Must provide --text or --file.", file=sys.stderr)
+                return False
+
+            ciphertext, final_iv, tag = manager.aes_encrypt(data, key, args.mode, iv)
+            print(f"Ciphertext (base64): {base64.b64encode(ciphertext).decode('utf-8')}")
+            print(f"IV (hex): {final_iv.hex()}")
+            if tag:
+                print(f"Tag (hex): {tag.hex()}")
+            return True
+
+        elif args.action == "aes-decrypt":
+            key = bytes.fromhex(args.key)
+            iv = bytes.fromhex(args.iv) if args.iv else None
+            tag = bytes.fromhex(args.tag) if args.tag else None
+
+            if args.file:
+                ciphertext = Path(args.file).read_bytes()
+            elif args.input:
+                ciphertext = base64.b64decode(args.input)
+            else:
+                print("Must provide --input or --file.", file=sys.stderr)
+                return False
+
+            plaintext = manager.aes_decrypt(ciphertext, key, args.mode, iv, tag)
+            # Try to decode as utf-8, fallback to hex if binary
+            try:
+                print(plaintext.decode('utf-8'))
+            except UnicodeDecodeError:
+                print(plaintext.hex())
+            return True
 
         elif args.action == "random":
             result = manager.generate_random(args.length, args.type)

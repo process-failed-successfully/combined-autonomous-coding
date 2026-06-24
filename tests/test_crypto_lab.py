@@ -233,3 +233,70 @@ def test_cli_ed25519_keygen(capsys):
     captured = capsys.readouterr()
     assert "BEGIN PRIVATE KEY" in captured.out
     assert "BEGIN PUBLIC KEY" in captured.out
+
+def test_aes_encrypt_decrypt_gcm(crypto_manager):
+    key = os.urandom(32)
+    test_str = "secret_data"
+
+    # Encrypt
+    ciphertext, iv, tag = crypto_manager.aes_encrypt(test_str, key, mode="GCM")
+    assert ciphertext is not None
+    assert iv is not None
+    assert tag is not None
+
+    # Decrypt
+    decrypted = crypto_manager.aes_decrypt(ciphertext, key, mode="GCM", iv=iv, tag=tag)
+    assert decrypted.decode("utf-8") == test_str
+
+def test_aes_encrypt_decrypt_cbc(crypto_manager):
+    key = os.urandom(32)
+    test_str = "secret_data_with_cbc_padding"
+
+    # Encrypt
+    ciphertext, iv, tag = crypto_manager.aes_encrypt(test_str, key, mode="CBC")
+    assert ciphertext is not None
+    assert iv is not None
+    assert tag is None
+
+    # Decrypt
+    decrypted = crypto_manager.aes_decrypt(ciphertext, key, mode="CBC", iv=iv)
+    assert decrypted.decode("utf-8") == test_str
+
+def test_cli_aes_encrypt_decrypt(capsys):
+    import base64
+    key = os.urandom(32).hex()
+    test_str = "cli_secret_message"
+
+    # Encrypt
+    args_enc = MagicMock()
+    args_enc.action = "aes-encrypt"
+    args_enc.key = key
+    args_enc.text = test_str
+    args_enc.file = None
+    args_enc.mode = "GCM"
+    args_enc.iv = None
+
+    run_crypto_lab_logic(args_enc)
+    captured_enc = capsys.readouterr()
+
+    out_lines = captured_enc.out.strip().split('\n')
+    assert len(out_lines) == 3
+
+    ciphertext_b64 = out_lines[0].split(": ")[1]
+    iv_hex = out_lines[1].split(": ")[1]
+    tag_hex = out_lines[2].split(": ")[1]
+
+    # Decrypt
+    args_dec = MagicMock()
+    args_dec.action = "aes-decrypt"
+    args_dec.key = key
+    args_dec.input = ciphertext_b64
+    args_dec.file = None
+    args_dec.mode = "GCM"
+    args_dec.iv = iv_hex
+    args_dec.tag = tag_hex
+
+    run_crypto_lab_logic(args_dec)
+    captured_dec = capsys.readouterr()
+
+    assert captured_dec.out.strip() == test_str

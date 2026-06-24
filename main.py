@@ -17370,6 +17370,23 @@ def parse_args(argv=None):
     parser_crypto_rsa_verify.add_argument("--key", help="Public key string.")
     parser_crypto_rsa_verify.add_argument("--key-file", help="Public key file.")
 
+    # crypto-lab aes-encrypt
+    parser_crypto_aes_enc = crypto_subparsers.add_parser("aes-encrypt", help="Encrypt data using AES (GCM/CBC).")
+    parser_crypto_aes_enc.add_argument("--key", required=True, help="AES Key (16, 24, or 32 bytes) in hex format.")
+    parser_crypto_aes_enc.add_argument("--text", help="Input text.")
+    parser_crypto_aes_enc.add_argument("--file", help="Input file.")
+    parser_crypto_aes_enc.add_argument("--mode", choices=["GCM", "CBC"], default="GCM", help="AES mode (GCM or CBC). Default: GCM.")
+    parser_crypto_aes_enc.add_argument("--iv", help="Optional IV in hex. Randomly generated if not provided.")
+
+    # crypto-lab aes-decrypt
+    parser_crypto_aes_dec = crypto_subparsers.add_parser("aes-decrypt", help="Decrypt AES (GCM/CBC) data.")
+    parser_crypto_aes_dec.add_argument("--key", required=True, help="AES Key (16, 24, or 32 bytes) in hex format.")
+    parser_crypto_aes_dec.add_argument("--input", help="Ciphertext (base64 encoded).")
+    parser_crypto_aes_dec.add_argument("--file", help="Ciphertext file (raw bytes).")
+    parser_crypto_aes_dec.add_argument("--mode", choices=["GCM", "CBC"], default="GCM", help="AES mode (GCM or CBC). Default: GCM.")
+    parser_crypto_aes_dec.add_argument("--iv", required=True, help="IV used during encryption (hex format).")
+    parser_crypto_aes_dec.add_argument("--tag", help="Authentication tag in hex (required for GCM mode).")
+
     # --- New 'image-lab' command ---
 
     parser_ocr = subparsers.add_parser(

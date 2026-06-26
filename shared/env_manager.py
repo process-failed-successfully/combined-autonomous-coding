@@ -170,3 +170,63 @@ class EnvManager:
             f.writelines(new_lines)
 
         return secret
+
+    def get(self, key: str) -> Optional[str]:
+        """Gets a value from .env."""
+        env_vars = self._parse_env(self.env_path)
+        return env_vars.get(key)
+
+    def set(self, key: str, value: str) -> Tuple[bool, str]:
+        """Sets a value in .env, adding it if it doesn't exist."""
+        lines = []
+        if self.env_path.exists():
+            with open(self.env_path, "r") as f:
+                lines = f.readlines()
+
+        key_found = False
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith(f"{key}="):
+                new_lines.append(f"{key}={value}\n")
+                key_found = True
+            else:
+                new_lines.append(line)
+
+        if not key_found:
+            if new_lines and not new_lines[-1].endswith("\n"):
+                new_lines.append("\n")
+            new_lines.append(f"{key}={value}\n")
+
+        with open(self.env_path, "w") as f:
+            f.writelines(new_lines)
+
+        action = "Updated" if key_found else "Added"
+        return True, f"{action} key '{key}' in .env."
+
+    def unset(self, key: str) -> Tuple[bool, str]:
+        """Removes a value from .env."""
+        if not self.env_path.exists():
+            return False, "File .env does not exist."
+
+        with open(self.env_path, "r") as f:
+            lines = f.readlines()
+
+        key_found = False
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith(f"{key}="):
+                key_found = True
+            else:
+                new_lines.append(line)
+
+        if not key_found:
+            return False, f"Key '{key}' not found in .env."
+
+        with open(self.env_path, "w") as f:
+            f.writelines(new_lines)
+
+        return True, f"Removed key '{key}' from .env."
+
+    def list_vars(self) -> Dict[str, Optional[str]]:
+        """Lists all variables in .env."""
+        return self._parse_env(self.env_path)

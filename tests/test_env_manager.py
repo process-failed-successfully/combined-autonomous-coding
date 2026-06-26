@@ -103,5 +103,40 @@ class TestEnvManager(unittest.TestCase):
         env_content = (self.test_dir / ".env").read_text()
         self.assertIn("KEY1=VAL1\nKEY2=", env_content)
 
+    def test_get_set_unset_list(self):
+        self.manager.init()
+
+        # Test set
+        success, msg = self.manager.set("API_URL", "https://api.example.com")
+        self.assertTrue(success)
+        self.assertEqual(msg, "Added key 'API_URL' in .env.")
+
+        # Test get
+        val = self.manager.get("API_URL")
+        self.assertEqual(val, "https://api.example.com")
+
+        # Test update (set existing)
+        success, msg = self.manager.set("API_URL", "https://v2.api.example.com")
+        self.assertTrue(success)
+        self.assertEqual(msg, "Updated key 'API_URL' in .env.")
+        self.assertEqual(self.manager.get("API_URL"), "https://v2.api.example.com")
+
+        # Test list_vars
+        self.manager.set("DEBUG", "true")
+        vars_dict = self.manager.list_vars()
+        self.assertEqual(vars_dict.get("API_URL"), "https://v2.api.example.com")
+        self.assertEqual(vars_dict.get("DEBUG"), "true")
+
+        # Test unset
+        success, msg = self.manager.unset("DEBUG")
+        self.assertTrue(success)
+        self.assertEqual(msg, "Removed key 'DEBUG' from .env.")
+        self.assertIsNone(self.manager.get("DEBUG"))
+
+        # Test unset non-existent
+        success, msg = self.manager.unset("NON_EXISTENT")
+        self.assertFalse(success)
+        self.assertEqual(msg, "Key 'NON_EXISTENT' not found in .env.")
+
 if __name__ == "__main__":
     unittest.main()

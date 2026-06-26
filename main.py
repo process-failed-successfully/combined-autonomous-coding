@@ -13013,6 +13013,27 @@ def parse_args(argv=None):
     parser_env_generate.add_argument("-l", "--length", type=int, default=32, help="Length of the secret (default: 32).")
     parser_env_generate.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
 
+    # Env 'get'
+    parser_env_get = env_subparsers.add_parser("get", help="Get a value from .env.")
+    parser_env_get.add_argument("key", help="Key to get.")
+    parser_env_get.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Env 'set'
+    parser_env_set = env_subparsers.add_parser("set", help="Set a value in .env.")
+    parser_env_set.add_argument("key", help="Key to set.")
+    parser_env_set.add_argument("value", help="Value to set.")
+    parser_env_set.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Env 'unset'
+    parser_env_unset = env_subparsers.add_parser("unset", help="Remove a value from .env.")
+    parser_env_unset.add_argument("key", help="Key to remove.")
+    parser_env_unset.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
+    # Env 'list'
+    parser_env_list = env_subparsers.add_parser("list", help="List all variables in .env.")
+    parser_env_list.add_argument("--reveal", action="store_true", help="Reveal secrets instead of masking them.")
+    parser_env_list.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+
     # --- New 'setup' command ---
     parser_setup = subparsers.add_parser(
         "setup",
@@ -22571,8 +22592,6 @@ def run_env(args):
         from shared.tui import AgentTUI
         print("Launching Env Lab TUI...")
         app = AgentTUI(project_dir=project_dir, start_tab="tab-env")
-        import asyncio
-        import sys
 
         if sys.platform == "win32":
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -22582,6 +22601,60 @@ def run_env(args):
 
     from shared.env_manager import EnvManager
     manager = EnvManager(project_dir)
+
+    if args.action == "list":
+        from rich.console import Console
+        from rich.table import Table
+
+        vars_dict = manager.list_vars()
+        if not vars_dict:
+            print("No variables found in .env.")
+            sys.exit(0)
+
+        console = Console()
+        table = Table(title="Environment Variables", show_header=True)
+        table.add_column("Key", style="cyan")
+        table.add_column("Value", style="magenta")
+
+        secret_keywords = ["KEY", "SECRET", "TOKEN", "PASSWORD", "PASS", "CREDENTIAL"]
+
+        for k, v in sorted(vars_dict.items()):
+            val_to_show = v
+            if val_to_show is not None and not args.reveal:
+                # Mask if it contains secret keywords
+                if any(kw in k.upper() for kw in secret_keywords):
+                    val_to_show = "********"
+            table.add_row(k, val_to_show if val_to_show is not None else "")
+
+        console.print(table)
+        sys.exit(0)
+
+    elif args.action == "get":
+        val = manager.get(args.key)
+        if val is None:
+            print(f"Key '{args.key}' not found.")
+            sys.exit(1)
+        print(val)
+        sys.exit(0)
+
+    elif args.action == "set":
+        success, msg = manager.set(args.key, args.value)
+        if success:
+            print(f"✅ {msg}")
+            sys.exit(0)
+        else:
+            print(f"❌ {msg}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.action == "unset":
+        success, msg = manager.unset(args.key)
+        if success:
+            print(f"✅ {msg}")
+            sys.exit(0)
+        else:
+            print(f"❌ {msg}", file=sys.stderr)
+            sys.exit(1)
+
     print(f"--- Environment Manager in: {project_dir} ---")
 
     if args.action == "init":

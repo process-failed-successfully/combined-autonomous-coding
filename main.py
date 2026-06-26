@@ -409,6 +409,7 @@ KNOWN_COMMANDS = [
     "brainfuck-lab", "brainfuck",
     "vcard-lab", "vcard",
     "curl-lab", "curl",
+    "sec-headers-lab", "sec-headers",
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
@@ -18109,6 +18110,16 @@ def parse_args(argv=None):
     parser_curl.add_argument("command_str", nargs="?", help="The cURL command string to convert.")
     parser_curl.add_argument("--target", choices=["python", "js", "go", "rust", "powershell", "json"], default="python", help="Target language for CLI conversion (default: python).")
 
+    # --- New 'sec-headers-lab' command ---
+    parser_sec_headers = subparsers.add_parser(
+        "sec-headers-lab",
+        aliases=["sec-headers"],
+        help="Analyze HTTP security headers for a URL."
+    )
+    parser_sec_headers.add_argument("--url", "-u", help="The URL to analyze.")
+    parser_sec_headers.add_argument("--json", action="store_true", help="Output results in JSON format.")
+    parser_sec_headers.add_argument("--tui", action="store_true", help="Launch the TUI interface.")
+
     # --- New 'vcard-lab' command ---
     parser_vcard = subparsers.add_parser(
         "vcard-lab",
@@ -26446,6 +26457,11 @@ async def main():
 
     if args.command in ["vcard-lab", "vcard"]:
         run_vcard_lab(args)
+        return
+
+    if args.command in ["sec-headers-lab", "sec-headers"]:
+        from shared.sec_headers_lab import run_sec_headers_lab_logic
+        await run_sec_headers_lab_logic(args)
         return
 
     if args.command in ["portscan-lab", "portscan", "pscan"]:

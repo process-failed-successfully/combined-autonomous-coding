@@ -288,6 +288,7 @@ from shared.tui_html import HtmlLabTab
 from shared.tui_clipboard import ClipboardTab
 from shared.tui_host import HostLabTab
 from shared.tui_test import TestLabTab
+from shared.tui_sec_headers import SecHeadersLabTab
 from shared.tui_stats import StatsTab
 from shared.tui_knowledge_graph import KnowledgeGraphTab
 from shared.tui_day_planner import DayPlannerTab
@@ -4941,6 +4942,8 @@ class AgentTUI(App):
                 yield HostLabTab(self.project_dir)
             with TabPane("Test Lab", id="tab-test-lab"):
                 yield TestLabTab(self.project_dir)
+            with TabPane("Security Headers Lab", id="tab-sec-headers-lab"):
+                yield SecHeadersLabTab(self.project_dir)
             with TabPane("Stats Lab", id="tab-stats"):
                 yield StatsTab(self.project_dir)
             with TabPane("Dash Lab", id="tab-dash-lab"):

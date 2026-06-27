@@ -64,6 +64,7 @@ dependencies = [
     "mnemonic>=0.21",
     "faker>=24.0.0",
     "pyseto>=1.7.0",
+    "duckdb",
 ]
 requires-python = ">=3.11"
 

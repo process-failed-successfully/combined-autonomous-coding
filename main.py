@@ -254,7 +254,8 @@ KNOWN_COMMANDS = [
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
-    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
+    "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "duckdb-lab", "duckdb", "ddb",
+    "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
     "phonetic-lab", "phonetic", "soundex",
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
@@ -3157,6 +3158,17 @@ def run_htpasswd_lab(args):
 
     from shared.htpasswd_lab import run_htpasswd_lab_logic
     success = run_htpasswd_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+
+def run_duckdb_lab(args):
+    """Runs the DuckDB Lab."""
+    if args.action == "tui":
+        run_tui(args, start_tab="tab-duckdb")
+        return
+    from shared.duckdb_lab import run_duckdb_lab_logic
+    success = run_duckdb_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -14859,6 +14871,29 @@ def parse_args(argv=None):
     parser_sqlformat.add_argument("--tui", action="store_true", help="Launch TUI.")
 
     # --- New 'sqlite-lab' command ---
+
+    parser_duckdb = subparsers.add_parser(
+        "duckdb-lab",
+        aliases=["duckdb", "ddb"],
+        help="DuckDB Database Lab."
+    )
+    duckdb_subparsers = parser_duckdb.add_subparsers(dest="action", required=True)
+
+    # query
+    parser_duckdb_query = duckdb_subparsers.add_parser("query", help="Execute a SQL query.")
+    parser_duckdb_query.add_argument("query", help="The SQL query to execute.")
+    parser_duckdb_query.add_argument("--db", default=":memory:", help="Database file path (default: :memory:).")
+    parser_duckdb_query.add_argument("--format", choices=["json", "csv"], default="json", help="Output format.")
+
+    # tables
+    parser_duckdb_tables = duckdb_subparsers.add_parser("tables", help="List all tables.")
+    parser_duckdb_tables.add_argument("--db", default=":memory:", help="Database file path.")
+
+    # schema
+    parser_duckdb_schema = duckdb_subparsers.add_parser("schema", help="Show table schemas.")
+    parser_duckdb_schema.add_argument("--db", default=":memory:", help="Database file path.")
+    parser_duckdb_schema.add_argument("--table", help="Specific table to show schema for.")
+
     parser_sqlite = subparsers.add_parser(
         "sqlite-lab",
         aliases=["sqlite"],
@@ -25413,6 +25448,10 @@ async def main():
         run_cidr_lab(args)
         return
 
+
+    if args.command in ["duckdb-lab", "duckdb", "ddb"]:
+        run_duckdb_lab(args)
+        return
     if args.command in ["sqlite-lab", "sqlite"]:
         run_sqlite_lab(args)
         return

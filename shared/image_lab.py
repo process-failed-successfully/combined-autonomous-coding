@@ -193,6 +193,67 @@ class ImageLabManager:
 
         return output_path
 
+    def add_watermark(self, input_path: Path, output_path: Path, text: str, position: str = "bottom-right") -> Path:
+        """Adds a text watermark to an image."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        with Image.open(input_path) as img:
+            # Need to convert to RGBA to support text transparency potentially, but RGB is okay for basic
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+
+            # Make a blank image for the text, initialized to transparent text color
+            txt = Image.new('RGBA', img.size, (255,255,255,0))
+
+            # get a font
+            try:
+                # Basic scaling attempt
+                font = ImageFont.load_default()
+            except IOError:
+                font = ImageFont.load_default()
+
+            draw = ImageDraw.Draw(txt)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            padding = 10
+
+            if position == "bottom-right":
+                x = img.width - text_width - padding
+                y = img.height - text_height - padding
+            elif position == "bottom-left":
+                x = padding
+                y = img.height - text_height - padding
+            elif position == "top-right":
+                x = img.width - text_width - padding
+                y = padding
+            elif position == "top-left":
+                x = padding
+                y = padding
+            elif position == "center":
+                x = (img.width - text_width) / 2
+                y = (img.height - text_height) / 2
+            else:
+                x = padding
+                y = padding
+
+            # White text with semi-transparency (alpha=128)
+            draw.text((x, y), text, font=font, fill=(255, 255, 255, 128))
+
+            # Combine
+            watermarked = Image.alpha_composite(img, txt)
+
+            # Convert back to RGB for saving if it's JPEG
+            if output_path.suffix.lower() in ['.jpg', '.jpeg']:
+                watermarked = watermarked.convert('RGB')
+
+            watermarked.save(output_path)
+
+        return output_path
+
     def create_placeholder(self, output_path: Path, width: int, height: int, color: str = "#CCCCCC", text: Optional[str] = None, text_color: str = "black") -> Path:
         """Generates a placeholder image."""
         self._check_pil()
@@ -382,6 +443,16 @@ def run_image_lab_logic(args):
                 direction=args.direction
             )
             console.print(f"[green]✅ Flipped image saved to {output}[/green]")
+
+        elif args.action == "watermark":
+            output = Path(args.output)
+            manager.add_watermark(
+                Path(args.input),
+                output,
+                text=args.text,
+                position=args.position
+            )
+            console.print(f"[green]✅ Watermarked image saved to {output}[/green]")
 
         elif args.action == "placeholder":
             output = Path(args.output)

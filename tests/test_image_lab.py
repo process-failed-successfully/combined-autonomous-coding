@@ -232,7 +232,70 @@ class TestImageLabManager(unittest.TestCase):
         mock_draw_instance.text.assert_called()
         mock_img_instance.save.assert_called_with(output_path)
 
-    @patch("shared.image_lab.HAS_PIL", False)
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
+    @patch("shared.image_lab.ImageDraw")
+    @patch("shared.image_lab.ImageFont")
+    def test_add_watermark(self, mock_font, mock_draw, mock_image):
+        mock_input_img = MagicMock()
+        mock_input_img.mode = 'RGB'
+        mock_input_img.size = (100, 100)
+        mock_input_img.width = 100
+        mock_input_img.height = 100
+        mock_input_img.convert.return_value = mock_input_img
+
+        mock_txt_img = MagicMock()
+        mock_image.new.return_value = mock_txt_img
+
+        mock_watermarked_img = MagicMock()
+        mock_watermarked_img.convert.return_value = mock_watermarked_img
+        mock_image.alpha_composite.return_value = mock_watermarked_img
+
+        mock_image.open.return_value.__enter__.return_value = mock_input_img
+
+        mock_draw_instance = MagicMock()
+        mock_draw.Draw.return_value = mock_draw_instance
+        mock_draw_instance.textbbox.return_value = (0, 0, 50, 20) # width 50, height 20
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_in, \
+             tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_out:
+            input_path = Path(tmp_in.name)
+            output_path = Path(tmp_out.name)
+
+            self.manager.add_watermark(input_path, output_path, text="Test", position="bottom-right")
+
+            mock_image.open.assert_called_with(input_path)
+            mock_image.new.assert_called_with('RGBA', (100, 100), (255, 255, 255, 0))
+
+            # 100 - 50 - 10 = 40 (x)
+            # 100 - 20 - 10 = 70 (y)
+            mock_draw_instance.text.assert_called_with((40.0, 70.0), "Test", font=mock_font.load_default.return_value, fill=(255, 255, 255, 128))
+
+            mock_image.alpha_composite.assert_called_with(mock_input_img, mock_txt_img)
+            mock_watermarked_img.save.assert_called_with(output_path)
+
+    @patch('shared.image_lab.ImageLabManager.add_watermark')
+    @patch('shared.image_lab.console.print')
+    def test_run_image_lab_watermark(self, mock_print, mock_add_watermark):
+        from shared.image_lab import run_image_lab_logic
+        args = argparse.Namespace(
+            action="watermark",
+            input="in.jpg",
+            output="out.jpg",
+            text="Watermark",
+            position="center",
+            project_dir=Path(".")
+        )
+
+        with patch("sys.exit"):
+            run_image_lab_logic(args)
+
+        mock_add_watermark.assert_called_with(
+            Path("in.jpg"), Path("out.jpg"), text="Watermark", position="center"
+        )
+        mock_print.assert_called()
+    @patch('shared.image_lab.HAS_PIL', False)
+
     def test_missing_pil_dependency(self):
         with self.assertRaises(ImportError) as context:
             # We bypass _check_pil on init, but call it on methods

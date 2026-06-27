@@ -17569,6 +17569,13 @@ def parse_args(argv=None):
     parser_img_reveal = image_subparsers.add_parser("reveal", help="Reveal a secret message from an image.")
     parser_img_reveal.add_argument("input", help="Input image path.")
 
+    # image-lab watermark
+    parser_img_watermark = image_subparsers.add_parser("watermark", help="Add a text watermark to an image.")
+    parser_img_watermark.add_argument("input", help="Input image path.")
+    parser_img_watermark.add_argument("output", help="Output image path.")
+    parser_img_watermark.add_argument("--text", required=True, help="Watermark text.")
+    parser_img_watermark.add_argument("--position", choices=["bottom-right", "bottom-left", "top-right", "top-left", "center"], default="bottom-right", help="Position of the watermark.")
+
     # image-lab tui
     image_subparsers.add_parser("tui", help="Launch the Image Lab TUI.")
 

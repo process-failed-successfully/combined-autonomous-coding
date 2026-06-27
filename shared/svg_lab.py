@@ -28,7 +28,8 @@ class SvgLabManager:
             else:
                 print(f"❌ Document does not appear to be an SVG (root tag: {tag})", file=sys.stderr)
                 return False
-        except ET.ParseError as e:
+        except Exception as e:
+            # We catch generic Exception here since ParseError from defusedxml might not be explicitly imported
             print(f"❌ Invalid SVG/XML format in {filepath}: {e}", file=sys.stderr)
             return False
         except Exception as e:

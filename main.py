@@ -267,6 +267,7 @@ KNOWN_COMMANDS = [
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
     "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2zod-lab", "json2zod", "j2zod", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy", "jsonl2csv-lab", "csv2jsonl-lab",
+    "svg-lab", "svg",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc", "makefile-lab", "makefile",
     "plist-lab", "plist", "plist2json", "json2plist",
@@ -21445,6 +21446,12 @@ Examples:
 
     jsonl_tui = jsonl_subparsers.add_parser("tui", help="Launch JSON Lines Lab TUI.")
 
+    svg_lab_parser = subparsers.add_parser("svg-lab", aliases=["svg"], help="SVG Lab utilities")
+    svg_lab_parser.add_argument("action", nargs="?", choices=["validate", "minify", "tui"], help="Action to perform")
+    svg_lab_parser.add_argument("--file", "-f", help="Input SVG file")
+    svg_lab_parser.add_argument("--output", "-o", help="Output file (for minify)")
+    svg_lab_parser.add_argument("--tui", action="store_true", help="Launch the SVG Lab TUI")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -25136,6 +25143,27 @@ async def main():
     if args.command in ["docs-lab", "docs"]:
         run_docs_lab(args)
         return
+
+    if args.command in ["svg-lab", "svg"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching SVG Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-svg")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.svg_lab import run_svg_lab_logic
+        success = run_svg_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["qr-lab", "qr"]:
         run_qr_lab(args)

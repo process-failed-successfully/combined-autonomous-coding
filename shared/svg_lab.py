@@ -1,6 +1,6 @@
 import argparse
 import sys
-import xml.etree.ElementTree as ET
+from defusedxml.ElementTree import parse as defused_parse
 import re
 from pathlib import Path
 
@@ -15,9 +15,7 @@ class SvgLabManager:
             return False
 
         try:
-            # Note: defusedxml should ideally be used here for safe XML parsing,
-            # but elementtree is used as per spec with low deps.
-            tree = ET.parse(filepath) # nosec B314
+            tree = defused_parse(filepath)
             root = tree.getroot()
             # Basic check for SVG tag
             tag = root.tag

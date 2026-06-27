@@ -1,5 +1,5 @@
 import re
-import xml.etree.ElementTree as ET
+from defusedxml.ElementTree import parse as defused_parse
 from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Static, Input, Button, Label, Markdown, TabPane
@@ -41,7 +41,7 @@ class SvgLabTab(TabPane):
 
         if event.button.id == "svg-validate-btn":
             try:
-                tree = ET.parse(filepath)
+                tree = defused_parse(filepath)
                 root = tree.getroot()
                 if "svg" in root.tag.lower():
                     output_widget.update(f"✅ **Valid SVG!**\n\nRoot tag: `{root.tag}`")

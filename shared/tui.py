@@ -274,6 +274,7 @@ from shared.tui_pattern import PatternLabTab
 from shared.tui_weather import WeatherLabTab
 from shared.tui_bandwidth import BandwidthLabTab
 from shared.tui_typing import TypingLabTab
+from shared.tui_pipeline import PipelineLabTab
 from shared.tui_endian import EndianLabTab
 from shared.tui_browser import BrowserLabTab
 from shared.tui_maze import MazeLabTab
@@ -4333,6 +4334,8 @@ class AgentTUI(App):
         with TabbedContent(id="main-tabs", initial=self.start_tab):
             if self.start_tab == "tab-flatten":
                 yield FlattenLabTab()
+            elif self.start_tab == "tab-pipeline":
+                yield PipelineLabTab()
 
             elif self.start_tab == "tab-nginx":
                 yield NginxLabTab()
@@ -5068,6 +5071,8 @@ class AgentTUI(App):
                 yield OpenAPILabTab(project_dir=self.project_dir)
             with TabPane("Tree Lab", id="tab-tree"):
                 yield TreeLabTab()
+            with TabPane("Pipeline Lab", id="tab-pipeline"):
+                yield PipelineLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

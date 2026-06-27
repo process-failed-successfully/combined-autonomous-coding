@@ -1969,6 +1969,23 @@ def run_diagram_lab(args):
 
 def run_pipeline_lab(args):
     """Runs the Pipeline Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Pipeline Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-pipeline")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+            return
+        else:
+            app.run()
+            sys.exit(0)
+            return
+
     from shared.pipeline_lab import run_pipeline_lab_logic
     run_pipeline_lab_logic(args)
     sys.exit(0)

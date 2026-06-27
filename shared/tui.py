@@ -98,6 +98,7 @@ from shared.tui_webhook import WebhookLabTab
 from shared.tui_regex import RegexLabTab
 from shared.tui_changelog import ChangelogLabTab
 from shared.tui_rss import RssLabTab
+from shared.tui_svg import SvgLabTab
 from shared.tui_s3 import S3LabTab
 from shared.tui_git import GitTab
 from shared.tui_gitignore import GitignoreTab
@@ -4336,6 +4337,8 @@ class AgentTUI(App):
 
             elif self.start_tab == "tab-nginx":
                 yield NginxLabTab()
+            elif self.start_tab == "tab-svg":
+                yield SvgLabTab(self.project_dir)
             with TabPane("Phonetic Lab", id="tab-phonetic"):
                 yield PhoneticLabTab(self.project_dir)
             with TabPane("Static Lab", id="tab-static"):

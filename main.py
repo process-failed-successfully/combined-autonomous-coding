@@ -19205,11 +19205,12 @@ Examples:
         "diff-lab",
         help="Smart comparison for various file formats (JSON, YAML, Image, Text)."
     )
-    parser_diff_lab.add_argument("file1", help="First file.")
-    parser_diff_lab.add_argument("file2", help="Second file.")
+    parser_diff_lab.add_argument("file1", nargs="?", help="First file.")
+    parser_diff_lab.add_argument("file2", nargs="?", help="Second file.")
     parser_diff_lab.add_argument("--type", choices=["json", "yaml", "image", "text"], help="Force comparison type.")
     parser_diff_lab.add_argument("--output", help="Output path (for image diffs or patch).")
     parser_diff_lab.add_argument("--patch", action="store_true", help="Generate a unified patch file when comparing directories.")
+    parser_diff_lab.add_argument("--tui", action="store_true", help="Launch interactive Diff Lab TUI.")
 
     # --- New 'mongo-lab' command ---
     parser_mongo = subparsers.add_parser(
@@ -25307,6 +25308,26 @@ async def main():
         return
 
     if args.command == "diff-lab":
+        if getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Diff Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-diff")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                await app.run_async()
+            else:
+                app.run()
+            sys.exit(0)
+            return
+
+        if not args.file1 or not args.file2:
+            print("Error: file1 and file2 are required unless --tui is specified.", file=sys.stderr)
+            sys.exit(1)
+
         run_diff_lab_logic(args)
         return
 

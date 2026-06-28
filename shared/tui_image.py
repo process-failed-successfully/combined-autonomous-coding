@@ -89,6 +89,22 @@ class ImageLabTab(Container):
                         yield Input(placeholder="e.g. 600", id="img-resize-h", type="integer")
                         yield Button("Resize", id="btn-img-resize", variant="warning")
 
+                    with TabPane("Transform"):
+                        yield Label("--- Crop ---")
+                        yield Horizontal(
+                            Input(placeholder="Left", id="img-crop-left", type="integer"),
+                            Input(placeholder="Top", id="img-crop-top", type="integer"),
+                            Input(placeholder="Right", id="img-crop-right", type="integer"),
+                            Input(placeholder="Bottom", id="img-crop-bottom", type="integer")
+                        )
+                        yield Button("Crop", id="btn-img-crop", variant="warning")
+                        yield Label("--- Rotate ---")
+                        yield Input(placeholder="Degrees (e.g. 90)", id="img-rotate-deg", type="number")
+                        yield Button("Rotate", id="btn-img-rotate", variant="warning")
+                        yield Label("--- Flip ---")
+                        yield Select.from_values(["horizontal", "vertical"], id="img-flip-dir", value="horizontal")
+                        yield Button("Flip", id="btn-img-flip", variant="warning")
+
                     with TabPane("Steganography"):
                         yield Label("Message (to hide):")
                         yield Input(placeholder="Secret message...", id="img-stego-msg")
@@ -180,6 +196,15 @@ class ImageLabTab(Container):
         elif event.button.id == "btn-img-resize":
             await self.run_resize()
 
+        elif event.button.id == "btn-img-crop":
+            await self.run_crop()
+
+        elif event.button.id == "btn-img-rotate":
+            await self.run_rotate()
+
+        elif event.button.id == "btn-img-flip":
+            await self.run_flip()
+
         elif event.button.id == "btn-img-hide":
             await self.run_hide()
 
@@ -229,6 +254,71 @@ class ImageLabTab(Container):
             self.query_one("#img-tree", DirectoryTree).reload()
         except Exception as e:
             self.notify(f"Resize failed: {e}", severity="error")
+
+    async def run_crop(self) -> None:
+        l_str = self.query_one("#img-crop-left", Input).value
+        t_str = self.query_one("#img-crop-top", Input).value
+        r_str = self.query_one("#img-crop-right", Input).value
+        b_str = self.query_one("#img-crop-bottom", Input).value
+
+        if not all([l_str, t_str, r_str, b_str]):
+            self.notify("All 4 coordinates (Left, Top, Right, Bottom) are required for cropping.", severity="error")
+            return
+
+        try:
+            left = int(l_str)
+            top = int(t_str)
+            right = int(r_str)
+            bottom = int(b_str)
+        except ValueError:
+            self.notify("Coordinates must be integers.", severity="error")
+            return
+
+        out_name = f"{self.selected_file.stem}_cropped{self.selected_file.suffix}"
+        output_path = self.selected_file.parent / out_name
+
+        try:
+            self.manager.crop(self.selected_file, output_path, left=left, top=top, right=right, bottom=bottom)
+            self.notify(f"Cropped image saved to {output_path.name}")
+            self.query_one("#img-tree", DirectoryTree).reload()
+        except Exception as e:
+            self.notify(f"Crop failed: {e}", severity="error")
+
+    async def run_rotate(self) -> None:
+        deg_str = self.query_one("#img-rotate-deg", Input).value
+
+        if not deg_str:
+            self.notify("Degrees are required for rotation.", severity="error")
+            return
+
+        try:
+            degrees = float(deg_str)
+        except ValueError:
+            self.notify("Degrees must be a number.", severity="error")
+            return
+
+        out_name = f"{self.selected_file.stem}_rotated{self.selected_file.suffix}"
+        output_path = self.selected_file.parent / out_name
+
+        try:
+            self.manager.rotate(self.selected_file, output_path, degrees=degrees, expand=True)
+            self.notify(f"Rotated image saved to {output_path.name}")
+            self.query_one("#img-tree", DirectoryTree).reload()
+        except Exception as e:
+            self.notify(f"Rotate failed: {e}", severity="error")
+
+    async def run_flip(self) -> None:
+        direction = self.query_one("#img-flip-dir", Select).value
+
+        out_name = f"{self.selected_file.stem}_flipped_{direction}{self.selected_file.suffix}"
+        output_path = self.selected_file.parent / out_name
+
+        try:
+            self.manager.flip(self.selected_file, output_path, direction=direction)
+            self.notify(f"Flipped image saved to {output_path.name}")
+            self.query_one("#img-tree", DirectoryTree).reload()
+        except Exception as e:
+            self.notify(f"Flip failed: {e}", severity="error")
 
     async def run_hide(self) -> None:
         msg = self.query_one("#img-stego-msg", Input).value

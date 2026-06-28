@@ -81,6 +81,48 @@ class TestImageLabTab(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs['width'], 100)
         self.assertEqual(kwargs['height'], 100)
 
+    async def test_run_crop(self):
+        self.tab.selected_file = Path("test.png")
+        self.tab.query_one("#img-crop-left").value = "10"
+        self.tab.query_one("#img-crop-top").value = "20"
+        self.tab.query_one("#img-crop-right").value = "30"
+        self.tab.query_one("#img-crop-bottom").value = "40"
+
+        await self.tab.run_crop()
+
+        self.tab.manager.crop.assert_called()
+        args, kwargs = self.tab.manager.crop.call_args
+        self.assertEqual(kwargs['left'], 10)
+        self.assertEqual(kwargs['top'], 20)
+        self.assertEqual(kwargs['right'], 30)
+        self.assertEqual(kwargs['bottom'], 40)
+        self.tab.notify.assert_called()
+
+    async def test_run_rotate(self):
+        self.tab.selected_file = Path("test.png")
+        self.tab.query_one("#img-rotate-deg").value = "90.5"
+
+        await self.tab.run_rotate()
+
+        self.tab.manager.rotate.assert_called()
+        args, kwargs = self.tab.manager.rotate.call_args
+        self.assertEqual(kwargs['degrees'], 90.5)
+        self.assertEqual(kwargs['expand'], True)
+        self.tab.notify.assert_called()
+
+    async def test_run_flip(self):
+        self.tab.selected_file = Path("test.png")
+        mock_select = MagicMock()
+        mock_select.value = "vertical"
+        self.mock_widgets["#img-flip-dir"] = mock_select
+
+        await self.tab.run_flip()
+
+        self.tab.manager.flip.assert_called()
+        args, kwargs = self.tab.manager.flip.call_args
+        self.assertEqual(kwargs['direction'], "vertical")
+        self.tab.notify.assert_called()
+
     async def test_run_stego_hide(self):
         self.tab.selected_file = Path("test.png")
         self.tab.query_one("#img-stego-msg").value = "secret"

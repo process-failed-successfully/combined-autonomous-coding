@@ -266,7 +266,7 @@ KNOWN_COMMANDS = [
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2zod-lab", "json2zod", "j2zod", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy", "jsonl2csv-lab", "csv2jsonl-lab",
+    "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2zod-lab", "json2zod", "j2zod", "json2proto-lab", "json2proto", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy", "jsonl2csv-lab", "csv2jsonl-lab",
     "svg-lab", "svg",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc", "makefile-lab", "makefile",
@@ -16743,6 +16743,18 @@ def parse_args(argv=None):
     parser_json2java.add_argument("--package", "-p", default="com.example", help="Java package name (default: 'com.example').")
     parser_json2java.add_argument("--tui", action="store_true", help="Launch JSON to Java Lab TUI.")
 
+    # --- New 'json2proto-lab' command ---
+    parser_json2proto = subparsers.add_parser(
+        "json2proto-lab",
+        aliases=["json2proto"],
+        help="Convert JSON into Protobuf schema. Supports stdin, file, or text input."
+    )
+    parser_json2proto.add_argument("--file", "-f", help="Input JSON file.")
+    parser_json2proto.add_argument("--text", "-t", help="Input JSON text.")
+    parser_json2proto.add_argument("--output", "-o", help="Output Protobuf file path.")
+    parser_json2proto.add_argument("--name", "-n", default="RootMessage", help="Root message name (default: 'RootMessage').")
+    parser_json2proto.add_argument("--tui", action="store_true", help="Launch JSON to Protobuf Lab TUI.")
+
     # --- New 'json2go-lab' command ---
     parser_json2go = subparsers.add_parser(
         "json2go-lab",
@@ -25892,6 +25904,16 @@ async def main():
         from shared.json2java_lab import run_json2java_lab_logic
         run_json2java_lab_logic(args)
         return
+
+    if args.command in ["json2proto-lab", "json2proto"]:
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-json2proto")
+            return
+        from shared.json2proto_lab import run_json2proto_lab_logic
+        success = run_json2proto_lab_logic(args)
+        if success:
+            sys.exit(0)
+        sys.exit(1)
 
     if args.command in ["json2go-lab", "json2go", "j2go"]:
         if getattr(args, "tui", False):

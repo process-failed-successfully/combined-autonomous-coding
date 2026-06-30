@@ -182,6 +182,7 @@ from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_csv2yaml import Csv2YamlTab
 from shared.tui_csv2xml import Csv2XmlLabTab
 from shared.tui_csv2html import Csv2HtmlLabTab
+from shared.tui_json2proto import Json2ProtoLabTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_amqp import AmqpLabTab
 from shared.tui_mqtt import MqttLabTab
@@ -4803,6 +4804,8 @@ class AgentTUI(App):
                 yield Json2TsLabTab()
             with TabPane("JSON to Zod", id="tab-json2zod"):
                 yield Json2ZodLabTab()
+            with TabPane("JSON to Protobuf", id="tab-json2proto"):
+                yield Json2ProtoLabTab()
             with TabPane("JSON to Go", id="tab-json2go"):
                 yield Json2GoLabTab()
             with TabPane("JSON to Dart", id="tab-json2dart"):
@@ -5117,6 +5120,9 @@ class AgentTUI(App):
 
     def action_switch_tab_json2ts(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2ts"
+
+    def action_switch_tab_json2proto(self) -> None:
+        self.query_one(TabbedContent).active = "tab-json2proto"
 
     def action_switch_tab_json2go(self) -> None:
         self.query_one(TabbedContent).active = "tab-json2go"

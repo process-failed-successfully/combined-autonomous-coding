@@ -393,6 +393,7 @@ from shared.tui_fuzz import FuzzLabTab
 from shared.tui_filetype import FileTypeLabTab
 from shared.tui_seo import SeoLabTab
 from shared.tui_typeid import TypeIDLabTab
+from shared.tui_grok import GrokLabTab
 
 
 # Helper to get Git info safely
@@ -5079,6 +5080,8 @@ class AgentTUI(App):
                 yield TreeLabTab()
             with TabPane("Pipeline Lab", id="tab-pipeline"):
                 yield PipelineLabTab()
+            with TabPane("Grok Lab", id="tab-grok-lab"):
+                yield GrokLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

@@ -21472,6 +21472,24 @@ Examples:
     svg_lab_parser.add_argument("--output", "-o", help="Output file (for minify)")
     svg_lab_parser.add_argument("--tui", action="store_true", help="Launch the SVG Lab TUI")
 
+    # --- New 'grok-lab' command ---
+    parser_grok = subparsers.add_parser(
+        "grok-lab", aliases=["grok"], help="Grok pattern parsing utilities."
+    )
+    grok_subparsers = parser_grok.add_subparsers(dest="action", required=False)
+
+    grok_subparsers.add_parser("tui", help="Launch Grok Lab TUI.")
+
+    grok_parse = grok_subparsers.add_parser("parse", help="Parse text with a Grok pattern.")
+    grok_parse.add_argument("--pattern", required=True, help="Grok pattern string.")
+    grok_parse.add_argument("--text", required=True, help="Text to parse.")
+    grok_parse.add_argument("--json", action="store_true", help="Output in JSON format.")
+
+    grok_patterns = grok_subparsers.add_parser("patterns", help="List available Grok patterns.")
+    grok_patterns.add_argument("--json", action="store_true", help="Output in JSON format.")
+
+    parser_grok.add_argument("--tui", action="store_true", help="Launch Grok Lab TUI")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -25729,6 +25747,11 @@ async def main():
         else:
             from shared.date_lab import run_date_lab_logic
             run_date_lab_logic(args)
+        return
+
+    if args.command in ["grok-lab", "grok"]:
+        from shared.grok_lab import run_grok_lab_logic
+        run_grok_lab_logic(args)
         return
 
     if args.command in ["math-lab", "math"]:

@@ -64,3 +64,4 @@ sqids>=0.5.2
 pyseto>=1.7.0
 typeid-python>=0.3.10
 duckdb
+pymemcache==4.0.0

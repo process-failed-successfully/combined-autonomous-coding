@@ -289,6 +289,7 @@ KNOWN_COMMANDS = [
     "diff-lab",
     "mongo-lab", "mongo", "mongodb",
     "redis-lab", "redis", "cache",
+    "memcached-lab", "memcached", "memcache",
     "kafka-lab", "kafka",
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
@@ -2966,6 +2967,17 @@ def run_mongo_lab(args):
 def run_redis_lab(args):
     """Runs the Redis Lab."""
     run_redis_lab_logic(args)
+    sys.exit(0)
+
+
+def run_memcached_lab(args):
+    """Runs the Memcached Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-memcached")
+        return
+
+    from shared.memcached_lab import run_memcached_lab_logic
+    run_memcached_lab_logic(args)
     sys.exit(0)
 
 
@@ -19306,6 +19318,40 @@ Examples:
     # redis-lab info
     redis_subparsers.add_parser("info", help="Get server info.")
 
+    # --- New 'memcached-lab' command ---
+    parser_memcached = subparsers.add_parser(
+        "memcached-lab",
+        aliases=["memcached", "memcache"],
+        help="Memcached utilities (connect, get, set, del, flush, stats)."
+    )
+    parser_memcached.add_argument("--host", default="localhost", help="Memcached host (default: localhost)")
+    parser_memcached.add_argument("--port", type=int, default=11211, help="Memcached port (default: 11211)")
+    parser_memcached.add_argument("--tui", action="store_true", help="Launch interactive Memcached Lab TUI")
+    memcached_subparsers = parser_memcached.add_subparsers(
+        dest="action",
+        required=False,
+        help="Action to perform."
+    )
+
+    memcached_subparsers.add_parser("connect", help="Test connection.")
+
+    parser_memcached_get = memcached_subparsers.add_parser("get", help="Get a value.")
+    parser_memcached_get.add_argument("key", help="Key to get.")
+
+    parser_memcached_set = memcached_subparsers.add_parser("set", help="Set a value.")
+    parser_memcached_set.add_argument("key", help="Key to set.")
+    parser_memcached_set.add_argument("value", help="Value to set.")
+    parser_memcached_set.add_argument("--ex", type=int, default=0, help="Expiry in seconds.")
+
+    parser_memcached_del = memcached_subparsers.add_parser("del", help="Delete a key.")
+    parser_memcached_del.add_argument("key", help="Key to delete.")
+
+    parser_memcached_flush = memcached_subparsers.add_parser("flush", help="Flush database.")
+    parser_memcached_flush.add_argument("--force", "-f", action="store_true", help="Skip confirmation.")
+
+    memcached_subparsers.add_parser("stats", help="Get server stats.")
+    memcached_subparsers.add_parser("tui", help="Launch Memcached Lab TUI.")
+
     # --- New 'kafka-lab' command ---
     parser_kafka = subparsers.add_parser(
         "kafka-lab",
@@ -25349,6 +25395,13 @@ async def main():
 
     if args.command in ["redis-lab", "redis", "cache"]:
         run_redis_lab(args)
+        return
+
+    if args.command in ["memcached-lab", "memcached", "memcache"]:
+        if not getattr(args, 'action', None) and not getattr(args, 'tui', False):
+            print("Error: Missing action or --tui flag.", file=sys.stderr)
+            sys.exit(1)
+        run_memcached_lab(args)
         return
 
     if args.command in ["kafka-lab", "kafka"]:

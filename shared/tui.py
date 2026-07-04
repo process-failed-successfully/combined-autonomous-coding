@@ -239,6 +239,7 @@ from shared.tui_qr import QrLabTab
 from shared.tui_barcode import BarcodeLabTab
 from shared.tui_mongo import MongoLabTab
 from shared.tui_redis import RedisLabTab
+from shared.tui_memcached import MemcachedLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_permissions import PermissionsLabTab
 from shared.tui_chown import ChownLabTab
@@ -4545,6 +4546,8 @@ class AgentTUI(App):
                 yield MongoLabTab()
             with TabPane("Redis", id="tab-redis"):
                 yield RedisLabTab(self.project_dir)
+            with TabPane("Memcached", id="tab-memcached"):
+                yield MemcachedLabTab()
             with TabPane("Kafka", id="tab-kafka"):
                 yield KafkaLabTab(project_dir=self.project_dir)
 

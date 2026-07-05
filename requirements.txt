@@ -65,3 +65,4 @@ pyseto>=1.7.0
 typeid-python>=0.3.10
 duckdb
 pymemcache==4.0.0
+pymacaroons==0.13.0

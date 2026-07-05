@@ -251,7 +251,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "macaroon-lab", "macaroon", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -3210,6 +3210,23 @@ def run_sqlite_lab(args):
         return
     from shared.sqlite_lab import run_sqlite_lab_logic
     success = run_sqlite_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_macaroon_lab(args):
+    """Runs the Macaroon Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-macaroon")
+        return
+
+    if not getattr(args, 'action', None):
+        print("Error: No action provided and --tui flag not set.")
+        import sys
+        sys.exit(1)
+
+    from shared.macaroon_lab import run_macaroon_lab_logic
+    success = run_macaroon_lab_logic(args)
+    import sys
     sys.exit(0 if success else 1)
 
 
@@ -15017,6 +15034,43 @@ def parse_args(argv=None):
     # jwt-lab tui
     parser_jwt_tui = jwt_subparsers.add_parser("tui", help="Launch JWT Lab TUI.")
 
+    # --- New 'macaroon-lab' command ---
+    parser_macaroon = subparsers.add_parser(
+        "macaroon-lab",
+        aliases=["macaroon"],
+        help="Macaroon authorization token utilities (generate, inspect, caveat, verify, tui)."
+    )
+    macaroon_subparsers = parser_macaroon.add_subparsers(
+        dest="action",
+        required=False,
+        help="Action to perform."
+    )
+    parser_macaroon.add_argument("--tui", action="store_true", help="Launch interactive Macaroon Lab TUI.")
+
+    # macaroon-lab generate
+    parser_macaroon_gen = macaroon_subparsers.add_parser("generate", aliases=["gen"], help="Generate a Macaroon token.")
+    parser_macaroon_gen.add_argument("--location", required=True, help="Location of the Macaroon.")
+    parser_macaroon_gen.add_argument("--identifier", required=True, help="Identifier for the Macaroon.")
+    parser_macaroon_gen.add_argument("--secret", required=True, help="Secret key.")
+
+    # macaroon-lab inspect
+    parser_macaroon_inspect = macaroon_subparsers.add_parser("inspect", help="Inspect a Macaroon token.")
+    parser_macaroon_inspect.add_argument("token", help="The Macaroon token.")
+
+    # macaroon-lab caveat
+    parser_macaroon_caveat = macaroon_subparsers.add_parser("caveat", aliases=["add-caveat"], help="Add a first-party caveat to a Macaroon.")
+    parser_macaroon_caveat.add_argument("--token", required=True, help="The Macaroon token.")
+    parser_macaroon_caveat.add_argument("--caveat", required=True, help="The caveat string (e.g., 'time < 2024-01-01').")
+
+    # macaroon-lab verify
+    parser_macaroon_verify = macaroon_subparsers.add_parser("verify", help="Verify a Macaroon token.")
+    parser_macaroon_verify.add_argument("--token", required=True, help="The Macaroon token.")
+    parser_macaroon_verify.add_argument("--secret", required=True, help="Secret key.")
+    parser_macaroon_verify.add_argument("--satisfy", action='append', help="Caveats to satisfy (can be used multiple times).")
+
+    # macaroon-lab tui
+    parser_macaroon_tui = macaroon_subparsers.add_parser("tui", help="Launch Macaroon Lab TUI.")
+
     # --- New 'jwk-lab' command ---
     parser_jwk = subparsers.add_parser(
         "jwk-lab",
@@ -25644,6 +25698,10 @@ async def main():
 
     if args.command == "jwt-lab":
         run_jwt_lab(args)
+        return
+
+    if args.command in ["macaroon-lab", "macaroon"]:
+        run_macaroon_lab(args)
         return
 
     if args.command in ["jwk-lab", "jwk"]:

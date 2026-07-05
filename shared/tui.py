@@ -137,6 +137,7 @@ from shared.tui_time import TimeLabTab
 from shared.tui_date import DateLabTab
 from shared.tui_phonetic import PhoneticLabTab
 from shared.tui_jwt import JwtLabTab
+from shared.tui_macaroon import MacaroonLabTab
 from shared.tui_jwk import JwkLabTab
 
 from shared.tui_math import MathLabTab
@@ -4354,6 +4355,7 @@ class AgentTUI(App):
             yield SitemapLabTab()
             with TabPane("Focus", id="tab-focus"):
                 yield ProductivityTab(self.project_dir)
+            yield MacaroonLabTab()
 
             with TabPane("Float", id="tab-float"):
                 yield FloatLabTab(self.project_dir)

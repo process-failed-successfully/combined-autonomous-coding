@@ -1,8 +1,7 @@
 import argparse
-import json
 from typing import Dict, Any, List, Optional
-import pymacaroons
 from pymacaroons import Macaroon, Verifier
+
 
 class MacaroonManager:
     @staticmethod

@@ -3221,12 +3221,10 @@ def run_macaroon_lab(args):
 
     if not getattr(args, 'action', None):
         print("Error: No action provided and --tui flag not set.")
-        import sys
         sys.exit(1)
 
     from shared.macaroon_lab import run_macaroon_lab_logic
     success = run_macaroon_lab_logic(args)
-    import sys
     sys.exit(0 if success else 1)
 
 

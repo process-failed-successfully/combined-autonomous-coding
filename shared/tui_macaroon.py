@@ -1,4 +1,3 @@
-import json
 from textual import work
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal
@@ -6,6 +5,7 @@ from textual.widgets import TabPane, Label, Input, Button, RichLog
 from textual.binding import Binding
 
 from shared.macaroon_lab import MacaroonManager
+
 
 class MacaroonLabTab(TabPane):
     """TUI Tab for Macaroon Lab."""

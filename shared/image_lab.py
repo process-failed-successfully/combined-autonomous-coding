@@ -47,7 +47,7 @@ class ImageLabManager:
                 "info": img.info
             }
 
-    def read_exif(self, filepath: Path) -> Dict[str, Any]:
+    def read_exif(self, filepath: Path) -> Dict[Union[str, int], Any]:
         """Reads EXIF data from an image."""
         self._check_pil()
         if not filepath.exists():
@@ -89,7 +89,7 @@ class ImageLabManager:
 
             # Save the image without EXIF, but preserving other metadata
             # For most formats in PIL, omit the 'exif' kwarg or explicitly pass None
-            out_img.save(output_path, format=fmt, **info)
+            out_img.save(output_path, format=fmt, **{str(k): v for k, v in info.items()})
 
         return output_path
 
@@ -104,7 +104,7 @@ class ImageLabManager:
             target_format = format or (output_path.suffix.lstrip(".").upper() if output_path.suffix else None)
 
             if target_format == "JPEG" and img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
+                img = img.convert("RGB") # type: ignore
 
             save_kwargs = {}
             if kwargs.get("quality") is not None:
@@ -227,7 +227,7 @@ class ImageLabManager:
         with Image.open(input_path) as img:
             # Need to convert to RGBA to support text transparency potentially, but RGB is okay for basic
             if img.mode != 'RGBA':
-                img = img.convert('RGBA')
+                img = img.convert('RGBA') # type: ignore
 
             # Make a blank image for the text, initialized to transparent text color
             txt = Image.new('RGBA', img.size, (255,255,255,0))
@@ -329,7 +329,7 @@ class ImageLabManager:
         message_len = len(binary_message)
 
         with Image.open(input_path) as img:
-            img = img.convert("RGB")  # Ensure RGB
+            img = img.convert("RGB") # type: ignore  # Ensure RGB
             width, height = img.size
             pixels = list(img.getdata())
 
@@ -381,7 +381,7 @@ class ImageLabManager:
             raise FileNotFoundError(f"File not found: {input_path}")
 
         with Image.open(input_path) as img:
-            img = img.convert("RGB")
+            img = img.convert("RGB") # type: ignore
             pixels = list(img.getdata())
 
             binary_message = ""

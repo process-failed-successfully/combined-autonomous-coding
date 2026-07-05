@@ -31,16 +31,16 @@ def generate_ascii_preview(image_path: Path, width: int = 80) -> str:
         aspect_ratio = img.height / img.width
         height = int(width * aspect_ratio * 0.55)
 
-        img = img.resize((width, height))
-        img = img.convert("L") # Grayscale
+        img = img.resize((width, height)) # type: ignore
+        img = img.convert("L") # type: ignore
 
-        pixels = img.getdata()
+        pixels = list(img.getdata()) # type: ignore
         chars = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
 
         new_pixels = [chars[pixel // 25] for pixel in pixels]
-        new_pixels = "".join(new_pixels)
+        new_pixels_str = "".join(new_pixels)
 
-        ascii_image = "\n".join([new_pixels[index:(index+width)] for index in range(0, len(new_pixels), width)])
+        ascii_image = "\n".join([new_pixels_str[index:(index+width)] for index in range(0, len(new_pixels_str), width)])
         return ascii_image
     except Exception as e:
         return f"Error generating preview: {e}"
@@ -226,7 +226,10 @@ class ImageLabTab(Container):
             await self.run_remove_exif()
 
     async def run_convert(self) -> None:
-        fmt = self.query_one("#img-conv-format", Select).value
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
+        fmt = str(self.query_one("#img-conv-format", Select).value)
         out_name = self.query_one("#img-conv-output", Input).value
 
         if not out_name:
@@ -243,6 +246,9 @@ class ImageLabTab(Container):
             self.notify(f"Conversion failed: {e}", severity="error")
 
     async def run_resize(self) -> None:
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
         w_str = self.query_one("#img-resize-w", Input).value
         h_str = self.query_one("#img-resize-h", Input).value
 
@@ -264,6 +270,9 @@ class ImageLabTab(Container):
             self.notify(f"Resize failed: {e}", severity="error")
 
     async def run_crop(self) -> None:
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
         l_str = self.query_one("#img-crop-left", Input).value
         t_str = self.query_one("#img-crop-top", Input).value
         r_str = self.query_one("#img-crop-right", Input).value
@@ -293,6 +302,9 @@ class ImageLabTab(Container):
             self.notify(f"Crop failed: {e}", severity="error")
 
     async def run_rotate(self) -> None:
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
         deg_str = self.query_one("#img-rotate-deg", Input).value
 
         if not deg_str:
@@ -316,7 +328,10 @@ class ImageLabTab(Container):
             self.notify(f"Rotate failed: {e}", severity="error")
 
     async def run_flip(self) -> None:
-        direction = self.query_one("#img-flip-dir", Select).value
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
+        direction = str(self.query_one("#img-flip-dir", Select).value)
 
         out_name = f"{self.selected_file.stem}_flipped_{direction}{self.selected_file.suffix}"
         output_path = self.selected_file.parent / out_name
@@ -329,7 +344,10 @@ class ImageLabTab(Container):
             self.notify(f"Flip failed: {e}", severity="error")
 
     async def run_filter(self) -> None:
-        filter_type = self.query_one("#img-filter-type", Select).value
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
+        filter_type = str(self.query_one("#img-filter-type", Select).value)
 
         if not filter_type:
             self.notify("Filter type is required.", severity="error")
@@ -346,6 +364,9 @@ class ImageLabTab(Container):
             self.notify(f"Filter failed: {e}", severity="error")
 
     async def run_hide(self) -> None:
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
         msg = self.query_one("#img-stego-msg", Input).value
         if not msg:
             self.notify("Message required.", severity="error")
@@ -365,6 +386,9 @@ class ImageLabTab(Container):
             self.notify(f"Stego failed: {e}", severity="error")
 
     async def run_reveal(self) -> None:
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
         log = self.query_one("#img-stego-log", RichLog)
         log.clear()
 
@@ -379,6 +403,9 @@ class ImageLabTab(Container):
             log.write(f"[red]Error: {e}[/red]")
 
     async def run_remove_exif(self) -> None:
+        if not self.selected_file:
+            self.notify("No image selected.", severity="error")
+            return
         out_name = self.query_one("#img-exif-out", Input).value
         if not out_name:
             out_name = f"{self.selected_file.stem}_noexif{self.selected_file.suffix}"

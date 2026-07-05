@@ -207,6 +207,7 @@ from shared.morse_lab import run_morse_lab_logic
 from shared.stego_lab import run_stego_lab_logic
 from shared.typegen_lab import run_typegen_lab_logic
 from shared.zip_lab import run_zip_lab_logic
+from shared.ntp_lab import run_ntp_lab_logic
 from shared.json_schema_lab import run_json_schema_lab_logic
 from shared.regex_escape_lab import run_regex_escape_lab_logic
 from shared.auto_fix import run_auto_fix_logic
@@ -21513,6 +21514,14 @@ Examples:
     jsonl_tui = jsonl_subparsers.add_parser("tui", help="Launch JSON Lines Lab TUI.")
 
     svg_lab_parser = subparsers.add_parser("svg-lab", aliases=["svg"], help="SVG Lab utilities")
+
+    parser_ntp = subparsers.add_parser("ntp-lab", aliases=["ntp"], help="NTP Lab: query NTP servers")
+    ntp_subparsers = parser_ntp.add_subparsers(dest="action", help="Action to perform.")
+    ntp_query = ntp_subparsers.add_parser("query", help="Query an NTP server.")
+    ntp_query.add_argument("server", help="The NTP server address (e.g. pool.ntp.org)")
+    ntp_query.add_argument("--port", "-p", type=int, default=123, help="The NTP server port (default 123)")
+    ntp_query.add_argument("--timeout", "-t", type=int, default=5, help="Timeout in seconds (default 5)")
+    ntp_subparsers.add_parser("tui", help="Launch interactive NTP Lab TUI.")
     svg_lab_parser.add_argument("action", nargs="?", choices=["validate", "minify", "tui"], help="Action to perform")
     svg_lab_parser.add_argument("--file", "-f", help="Input SVG file")
     svg_lab_parser.add_argument("--output", "-o", help="Output file (for minify)")
@@ -26771,6 +26780,13 @@ async def main():
 
     if args.command in ["zip-lab", "zip"]:
         run_zip_lab_logic(args)
+        return
+
+    if args.command in ["ntp-lab", "ntp"]:
+        if getattr(args, "action", None) == "tui":
+            run_tui(args, start_tab="tab-ntp")
+        else:
+            run_ntp_lab_logic(args)
         return
 
     if args.command in ["tar-lab", "tar"]:

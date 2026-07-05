@@ -17563,6 +17563,12 @@ def parse_args(argv=None):
     parser_image_remove_exif.add_argument("input", help="Input image file.")
     parser_image_remove_exif.add_argument("output", help="Output image file.")
 
+    # image-lab filter
+    parser_image_filter = image_subparsers.add_parser("filter", help="Apply a filter to an image.")
+    parser_image_filter.add_argument("input", help="Input image file.")
+    parser_image_filter.add_argument("output", help="Output image file.")
+    parser_image_filter.add_argument("--filter-type", required=True, choices=["blur", "contour", "detail", "edge_enhance", "emboss", "sharpen", "smooth"], help="Filter type to apply.")
+
     # image-lab crop
     parser_image_crop = image_subparsers.add_parser("crop", help="Crop image.")
     parser_image_crop.add_argument("input", help="Input image file.")

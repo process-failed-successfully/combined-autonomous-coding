@@ -13,7 +13,7 @@ from rich.table import Table
 from rich.panel import Panel
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
     from PIL.ExifTags import TAGS
     HAS_PIL = True
 except ImportError:
@@ -148,6 +148,31 @@ class ImageLabManager:
 
             resized_img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
             resized_img.save(output_path)
+
+        return output_path
+
+    def apply_filter(self, input_path: Path, output_path: Path, filter_type: str) -> Path:
+        """Applies a filter to an image."""
+        self._check_pil()
+        if not input_path.exists():
+            raise FileNotFoundError(f"File not found: {input_path}")
+
+        filters = {
+            "blur": ImageFilter.BLUR,
+            "contour": ImageFilter.CONTOUR,
+            "detail": ImageFilter.DETAIL,
+            "edge_enhance": ImageFilter.EDGE_ENHANCE,
+            "emboss": ImageFilter.EMBOSS,
+            "sharpen": ImageFilter.SHARPEN,
+            "smooth": ImageFilter.SMOOTH,
+        }
+
+        if filter_type not in filters:
+            raise ValueError(f"Unknown filter type: {filter_type}")
+
+        with Image.open(input_path) as img:
+            filtered_img = img.filter(filters[filter_type])
+            filtered_img.save(output_path)
 
         return output_path
 
@@ -412,6 +437,15 @@ def run_image_lab_logic(args):
                 maintain_aspect=not args.no_aspect
             )
             console.print(f"[green]✅ Resized image saved to {output}[/green]")
+
+        elif args.action == "filter":
+            output = Path(args.output)
+            manager.apply_filter(
+                Path(args.input),
+                output,
+                filter_type=args.filter_type
+            )
+            console.print(f"[green]✅ Filtered image saved to {output}[/green]")
 
         elif args.action == "crop":
             output = Path(args.output)

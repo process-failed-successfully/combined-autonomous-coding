@@ -105,6 +105,11 @@ class ImageLabTab(Container):
                         yield Select.from_values(["horizontal", "vertical"], id="img-flip-dir", value="horizontal")
                         yield Button("Flip", id="btn-img-flip", variant="warning")
 
+                    with TabPane("Filter"):
+                        yield Label("Filter Type:")
+                        yield Select([("blur", "blur"), ("contour", "contour"), ("detail", "detail"), ("edge_enhance", "edge_enhance"), ("emboss", "emboss"), ("sharpen", "sharpen"), ("smooth", "smooth")], id="img-filter-type")
+                        yield Button("Apply Filter", id="btn-img-filter", variant="primary")
+
                     with TabPane("Steganography"):
                         yield Label("Message (to hide):")
                         yield Input(placeholder="Secret message...", id="img-stego-msg")
@@ -204,6 +209,9 @@ class ImageLabTab(Container):
 
         elif event.button.id == "btn-img-flip":
             await self.run_flip()
+
+        elif event.button.id == "btn-img-filter":
+            await self.run_filter()
 
         elif event.button.id == "btn-img-hide":
             await self.run_hide()
@@ -319,6 +327,23 @@ class ImageLabTab(Container):
             self.query_one("#img-tree", DirectoryTree).reload()
         except Exception as e:
             self.notify(f"Flip failed: {e}", severity="error")
+
+    async def run_filter(self) -> None:
+        filter_type = self.query_one("#img-filter-type", Select).value
+
+        if not filter_type:
+            self.notify("Filter type is required.", severity="error")
+            return
+
+        out_name = f"{self.selected_file.stem}_filtered_{filter_type}{self.selected_file.suffix}"
+        output_path = self.selected_file.parent / out_name
+
+        try:
+            self.manager.apply_filter(self.selected_file, output_path, filter_type=filter_type)
+            self.notify(f"Filtered image saved to {output_path.name}")
+            self.query_one("#img-tree", DirectoryTree).reload()
+        except Exception as e:
+            self.notify(f"Filter failed: {e}", severity="error")
 
     async def run_hide(self) -> None:
         msg = self.query_one("#img-stego-msg", Input).value

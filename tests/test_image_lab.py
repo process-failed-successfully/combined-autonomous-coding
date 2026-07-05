@@ -13,6 +13,54 @@ class TestImageLabManager(unittest.TestCase):
 
     @patch("shared.image_lab.HAS_PIL", True)
     @patch("shared.image_lab.Image")
+    @patch("shared.image_lab.ImageFilter")
+    def test_apply_filter(self, mock_image_filter, mock_image):
+        mock_img_instance = MagicMock()
+        mock_image.open.return_value.__enter__.return_value = mock_img_instance
+
+        mock_filtered_img = MagicMock()
+        mock_img_instance.filter.return_value = mock_filtered_img
+
+        mock_image_filter.BLUR = "MOCK_BLUR"
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_in, \
+             tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_out:
+            input_path = Path(tmp_in.name)
+            output_path = Path(tmp_out.name)
+
+            self.manager.apply_filter(input_path, output_path, "blur")
+
+            mock_image.open.assert_called_with(input_path)
+            mock_img_instance.filter.assert_called_with("MOCK_BLUR")
+            mock_filtered_img.save.assert_called_with(output_path)
+
+    def test_apply_filter_invalid(self):
+        with self.assertRaises(ValueError):
+            with tempfile.NamedTemporaryFile(suffix=".jpg") as tmp_in:
+                self.manager.apply_filter(Path(tmp_in.name), Path("out.jpg"), "invalid_filter")
+
+    @patch('shared.image_lab.ImageLabManager.apply_filter')
+    @patch('shared.image_lab.console.print')
+    def test_run_image_lab_filter(self, mock_print, mock_apply_filter):
+        from shared.image_lab import run_image_lab_logic
+        args = argparse.Namespace(
+            action="filter",
+            input="in.jpg",
+            output="out.jpg",
+            filter_type="blur",
+            project_dir=Path(".")
+        )
+
+        with patch("sys.exit"):
+            run_image_lab_logic(args)
+
+        mock_apply_filter.assert_called_with(
+            Path("in.jpg"), Path("out.jpg"), filter_type="blur"
+        )
+        mock_print.assert_called()
+
+    @patch("shared.image_lab.HAS_PIL", True)
+    @patch("shared.image_lab.Image")
     def test_get_info(self, mock_image):
         mock_img_instance = MagicMock()
         mock_img_instance.format = "JPEG"

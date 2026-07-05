@@ -64,6 +64,7 @@ dependencies = [
     "mnemonic>=0.21",
     "faker>=24.0.0",
     "pyseto>=1.7.0",
+    "pymacaroons>=0.13.0",
     "duckdb",
     "pymacaroons==0.13.0",
 ]

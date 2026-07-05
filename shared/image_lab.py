@@ -47,7 +47,7 @@ class ImageLabManager:
                 "info": img.info
             }
 
-    def read_exif(self, filepath: Path) -> Dict[Union[str, int], Any]:
+    def read_exif(self, filepath: Path) -> dict[str | int, Any]:
         """Reads EXIF data from an image."""
         self._check_pil()
         if not filepath.exists():

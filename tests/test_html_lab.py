@@ -83,5 +83,11 @@ class TestHTMLLabManager(unittest.TestCase):
         self.assertTrue(len(errors) > 0)
         self.assertIn("Mismatched closing tag", errors[0])
 
+    def test_minify(self):
+        html = "<html>\n  <!-- A comment -->\n  <body>\n    <h1>Title</h1>\n  </body>\n</html>"
+        expected = "<html><body><h1>Title</h1></body></html>"
+        result = self.manager.minify(html)
+        self.assertEqual(result, expected)
+
 if __name__ == '__main__':
     unittest.main()

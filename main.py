@@ -15740,6 +15740,9 @@ def parse_args(argv=None):
     # html-lab validate
     parser_html_validate = html_subparsers.add_parser("validate", help="Validate HTML structure.")
 
+    # html-lab minify
+    parser_html_minify = html_subparsers.add_parser("minify", help="Minify HTML.")
+
     # html-lab tui
     parser_html_tui = html_subparsers.add_parser("tui", help="Launch interactive TUI.")
 

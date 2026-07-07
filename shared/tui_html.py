@@ -39,6 +39,7 @@ class HtmlLabTab(Container):
 
                 yield Label("[bold]Text Content[/bold]")
                 yield RichLog(id="html-text-log", wrap=True, highlight=False)
+                yield Button("Minify Content", id="btn-html-minify", variant="success")
 
     def on_mount(self) -> None:
         table = self.query_one("#html-attr-table", DataTable)
@@ -177,3 +178,21 @@ class HtmlLabTab(Container):
             log.write(node_data.text)
         else:
             log.write("[italic]No text content[/italic]")
+
+    @on(Button.Pressed, "#btn-html-minify")
+    def on_minify_pressed(self, event: Button.Pressed) -> None:
+        if not self.current_file:
+            self.notify("Please select an HTML file first.", severity="warning")
+            return
+
+        try:
+            content = self.current_file.read_text(encoding="utf-8")
+            minified = self.manager.minify(content)
+
+            log = self.query_one("#html-text-log", RichLog)
+            log.clear()
+            log.write(minified)
+
+            self.notify("HTML Minified and displayed in log.", severity="information")
+        except Exception as e:
+            self.notify(f"Error minifying HTML: {e}", severity="error")

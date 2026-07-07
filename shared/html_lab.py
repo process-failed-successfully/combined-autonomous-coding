@@ -1,6 +1,7 @@
 import sys
 import json
 import csv
+import re
 from html.parser import HTMLParser
 from typing import List, Optional, Any, Dict
 from dataclasses import dataclass, field
@@ -225,6 +226,14 @@ class HTMLLabManager:
         parser.feed(html_content)
         return parser.root
 
+    def minify(self, html_content: str) -> str:
+        # Remove HTML comments
+        minified = re.sub(r'<!--(.*?)-->', '', html_content, flags=re.DOTALL)
+        # Collapse whitespace between tags
+        minified = re.sub(r'>\s+<', '><', minified)
+        # Trim leading/trailing whitespace
+        return minified.strip()
+
 def run_html_lab_logic(args):
     manager = HTMLLabManager()
 
@@ -272,5 +281,8 @@ def run_html_lab_logic(args):
         else:
             print("✅ HTML structure seems valid (basic check).")
             sys.exit(0)
+
+    elif args.action == "minify":
+        print(manager.minify(content))
 
     sys.exit(0)

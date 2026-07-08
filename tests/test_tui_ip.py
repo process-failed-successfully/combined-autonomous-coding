@@ -101,6 +101,54 @@ class TestIpLabTab(unittest.IsolatedAsyncioTestCase):
                 mock_markdown_update.assert_called()
                 self.assertIn("Invalid IP address format", mock_markdown_update.call_args[0][0])
 
+    @patch('shared.ip_lab.IPLabManager.get_subnet_info')
+    async def test_subnet_info(self, mock_get_subnet_info):
+        mock_get_subnet_info.return_value = {
+            'version': 4,
+            'network_address': '192.168.1.0',
+            'netmask': '255.255.255.0',
+            'hostmask': '0.0.0.255',
+            'broadcast_address': '192.168.1.255',
+            'num_addresses': 256,
+            'usable_hosts': 254,
+            'host_range': '192.168.1.1 - 192.168.1.254'
+        }
+
+        app = DummyApp()
+        async with app.run_test(size=(80, 24)) as pilot:
+            with patch.object(Markdown, 'update', new_callable=MagicMock) as mock_markdown_update:
+                cidr_input = app.query_one("#cidr-input", Input)
+                cidr_input.value = "192.168.1.0/24"
+
+                tab = app.query_one(IpLabTab)
+                btn = app.query_one("#btn-subnet-info", Button)
+                tab.on_button_pressed(Button.Pressed(btn))
+                await pilot.pause()
+
+                mock_markdown_update.assert_called()
+                called_text = mock_markdown_update.call_args[0][0]
+                self.assertIn("192.168.1.0", called_text)
+                self.assertIn("255.255.255.0", called_text)
+                self.assertIn("192.168.1.1 - 192.168.1.254", called_text)
+
+    @patch('shared.ip_lab.IPLabManager.get_subnet_info')
+    async def test_subnet_info_invalid(self, mock_get_subnet_info):
+        mock_get_subnet_info.return_value = None
+
+        app = DummyApp()
+        async with app.run_test(size=(80, 24)) as pilot:
+            with patch.object(Markdown, 'update', new_callable=MagicMock) as mock_markdown_update:
+                cidr_input = app.query_one("#cidr-input", Input)
+                cidr_input.value = "invalid_cidr"
+
+                tab = app.query_one(IpLabTab)
+                btn = app.query_one("#btn-subnet-info", Button)
+                tab.on_button_pressed(Button.Pressed(btn))
+                await pilot.pause()
+
+                mock_markdown_update.assert_called()
+                self.assertIn("Invalid CIDR format", mock_markdown_update.call_args[0][0])
+
     async def test_clear_button(self):
         app = DummyApp()
         async with app.run_test(size=(80, 24)) as pilot:
@@ -108,12 +156,16 @@ class TestIpLabTab(unittest.IsolatedAsyncioTestCase):
                 ip_input = app.query_one("#ip-input", Input)
                 ip_input.value = "1.2.3.4"
 
+                cidr_input = app.query_one("#cidr-input", Input)
+                cidr_input.value = "192.168.1.0/24"
+
                 tab = app.query_one(IpLabTab)
                 btn = app.query_one("#btn-clear", Button)
                 tab.on_button_pressed(Button.Pressed(btn))
                 await pilot.pause()
 
                 self.assertEqual(ip_input.value, "")
+                self.assertEqual(cidr_input.value, "")
                 mock_markdown_update.assert_called()
                 self.assertIn("Results cleared", mock_markdown_update.call_args[0][0])
 

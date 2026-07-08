@@ -21,6 +21,10 @@ class IpLabTab(Vertical):
             yield Button("Info & Geolocation", id="btn-ip-info", variant="success")
             yield Button("Clear", id="btn-clear", variant="warning")
 
+        with Horizontal(id="subnet-controls", classes="mt-2"):
+            yield Input(placeholder="Enter CIDR (e.g., 192.168.1.0/24)", id="cidr-input", classes="flex-1")
+            yield Button("Subnet Info", id="btn-subnet-info", variant="primary")
+
         yield Markdown("Results will appear here.", id="ip-lab-results")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -86,6 +90,34 @@ class IpLabTab(Vertical):
 
             results_view.update(md_content)
 
+        elif button_id == "btn-subnet-info":
+            cidr_input = self.query_one("#cidr-input", Input)
+            cidr = cidr_input.value.strip()
+
+            if not cidr:
+                results_view.update("❌ Please enter a CIDR block.")
+                return
+
+            info = self.manager.get_subnet_info(cidr)
+            if info:
+                md_content = f"### Subnet Information for `{cidr}`\n\n"
+                md_content += f"- **Version:** IPv{info['version']}\n"
+                md_content += f"- **Network Address:** `{info['network_address']}`\n"
+                md_content += f"- **Netmask:** `{info['netmask']}`\n"
+                md_content += f"- **Hostmask:** `{info['hostmask']}`\n"
+                if 'broadcast_address' in info:
+                    md_content += f"- **Broadcast Address:** `{info['broadcast_address']}`\n"
+                md_content += f"- **Total Addresses:** {info['num_addresses']}\n"
+                md_content += f"- **Usable Hosts:** {info['usable_hosts']}\n"
+                if 'host_range' in info:
+                    md_content += f"- **Host Range:** `{info['host_range']}`\n"
+
+                results_view.update(md_content)
+            else:
+                results_view.update(f"❌ Invalid CIDR format: `{cidr}`")
+
         elif button_id == "btn-clear":
             ip_input.value = ""
+            if self.query("#cidr-input"):
+                self.query_one("#cidr-input", Input).value = ""
             results_view.update("Results cleared.")

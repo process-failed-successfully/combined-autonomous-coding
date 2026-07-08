@@ -1079,6 +1079,28 @@ def run_base64img_lab(args):
     sys.exit(0 if success else 1)
 
 
+
+def run_gzip_lab(args):
+    """Runs the Gzip Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Gzip Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-gzip")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    from shared.gzip_lab import run_gzip_lab_logic
+    success = run_gzip_lab_logic(args)
+    sys.exit(0 if success else 1)
 def run_zlib_lab(args):
     """Runs the Zlib Lab."""
     if getattr(args, "tui", False):
@@ -18862,6 +18884,19 @@ Examples:
     parser_base64img.add_argument("--output", "-o", type=str, help="Output file path (required for decode, optional for encode).")
 
     # zlib-lab
+
+    # gzip-lab
+    parser_gzip = subparsers.add_parser(
+        "gzip-lab", aliases=["gzip"],
+        help="Compress and decompress files and strings using gzip."
+    )
+    parser_gzip.add_argument("action", nargs="?", choices=["compress", "decompress", "tui"], help="Action to perform")
+    parser_gzip.add_argument("--string", "-s", type=str, help="Text to compress or decompress.")
+    parser_gzip.add_argument("--file", "-f", type=str, help="File to compress or decompress.")
+    parser_gzip.add_argument("--output", "-o", type=str, help="Output file path.")
+    parser_gzip.add_argument("--level", "-l", type=int, default=9, help="Compression level (1-9).")
+    parser_gzip.add_argument("--base64", "-b", action="store_true", help="Use base64 instead of hex for string operations.")
+    parser_gzip.add_argument("--tui", action="store_true", help="Launch the interactive Gzip Lab TUI.")
     parser_zlib = subparsers.add_parser(
         "zlib-lab", aliases=["zlib", "compress", "inflate"],
         help="Compress and decompress data using zlib, deflate, gzip, bzip2, or lzma."
@@ -26541,6 +26576,10 @@ async def main():
         run_base64img_lab(args)
         return
 
+
+    if args.command in ["gzip-lab", "gzip"]:
+        run_gzip_lab(args)
+        return
     if args.command in ["zlib-lab", "zlib", "compress", "inflate"]:
         run_zlib_lab(args)
         return

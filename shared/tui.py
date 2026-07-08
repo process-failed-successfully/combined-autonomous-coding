@@ -215,6 +215,7 @@ from shared.tui_binary import BinaryLabTab
 from shared.tui_base62 import Base62LabTab
 from shared.tui_base64img import Base64ImgLabTab
 from shared.tui_zlib import ZlibTab
+from shared.tui_gzip import GzipLabTab
 from shared.tui_slug import SlugLabTab
 from shared.tui_arn import ArnLabTab
 from shared.tui_bcrypt import BcryptLabTab
@@ -4740,6 +4741,8 @@ class AgentTUI(App):
                 yield ArnLabTab(self.project_dir)
             with TabPane("Zlib Lab", id="tab-zlib"):
                 yield ZlibTab()
+            with TabPane("Gzip Lab", id="tab-gzip"):
+                yield GzipLabTab()
             with TabPane("Brotli Lab", id="tab-brotli"):
                 yield BrotliLabTab()
             with TabPane("Zstd Lab", id="tab-zstd"):

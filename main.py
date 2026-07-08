@@ -2287,6 +2287,22 @@ def run_permissions_lab(args):
         sys.exit(0)
 
 
+
+def run_dockerfile_lab(args):
+    """Runs the Dockerfile Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-dockerfile")
+        return
+
+    if not getattr(args, 'action', None):
+        print("Error: No action provided. Use 'main.py dockerfile-lab -h' for help.", file=sys.stderr)
+        sys.exit(1)
+
+    from shared.dockerfile_lab import run_dockerfile_lab_logic
+    success = run_dockerfile_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
 def run_systemd_lab(args):
     """Runs the Systemd Lab."""
     from shared.systemd_lab import run_systemd_lab_logic
@@ -20608,6 +20624,33 @@ Examples:
     parser_path_glob.add_argument("pattern", help="Glob pattern.")
     parser_path_glob.add_argument("--recursive", "-r", action="store_true", help="Recursive glob.")
 
+
+    # --- New 'dockerfile-lab' command ---
+    parser_dockerfile = subparsers.add_parser(
+        "dockerfile-lab",
+        aliases=["dockerfile"],
+        help="Generate Dockerfiles interactively or via CLI."
+    )
+    dockerfile_subparsers = parser_dockerfile.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+
+    # dockerfile-lab generate
+    parser_df_gen = dockerfile_subparsers.add_parser("generate", help="Generate a Dockerfile.")
+    parser_df_gen.add_argument("--base-image", required=True, help="Base image (e.g. ubuntu:22.04).")
+    parser_df_gen.add_argument("--type", default="generic", help="Project type (generic, python, node, go, rust).")
+    parser_df_gen.add_argument("--workdir", default="/app", help="Working directory.")
+    parser_df_gen.add_argument("--ports", help="Comma-separated list of ports to expose.")
+    parser_df_gen.add_argument("--env", help="Comma-separated list of env vars (KEY=VAL).")
+    parser_df_gen.add_argument("--entrypoint", default="", help="ENTRYPOINT instruction.")
+    parser_df_gen.add_argument("--cmd", default="", help="CMD instruction.")
+    parser_df_gen.add_argument("--output", "-o", help="Output file path (default prints to stdout).")
+
+    # dockerfile-lab tui
+    parser_df_tui = dockerfile_subparsers.add_parser("tui", help="Launch Dockerfile Lab TUI.")
+    parser_dockerfile.add_argument("--tui", action="store_true", help="Launch Dockerfile Lab TUI.")
+
     # --- New 'systemd-lab' command ---
     parser_systemd = subparsers.add_parser(
         "systemd-lab",
@@ -26347,6 +26390,11 @@ async def main():
 
     if args.command in ["permissions-lab", "permissions", "perm", "chmod"]:
         run_permissions_lab(args)
+        return
+
+
+    if args.command in ["dockerfile-lab", "dockerfile"]:
+        run_dockerfile_lab(args)
         return
 
     if args.command in ["systemd-lab", "systemd", "service"]:

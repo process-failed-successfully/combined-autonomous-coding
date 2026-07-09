@@ -229,6 +229,7 @@ AVAILABLE_AGENTS = {
 # Known CLI commands for recipe execution
 KNOWN_COMMANDS = [
     "nato-lab", "nato",
+    "grok-lab", "grok",
     "csp-lab", "csp",
     "shell", "tui", "quiz", "kata", "prompt-lab", "knowledge", "chat", "ask", "do",
     "optimize", "perf", "debug", "code-review", "summarize", "explain", "init", "adr",
@@ -1146,6 +1147,13 @@ def run_csp_lab(args):
     success = run_csp_lab_logic(args)
     if not success:
         sys.exit(1)
+
+
+def run_grok_lab(args):
+    """Runs the Grok Lab."""
+    from shared.grok_lab import run_grok_lab_logic
+    success = run_grok_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 
 def run_brotli_lab(args):
@@ -18916,6 +18924,18 @@ Examples:
 
     csp_tui = csp_subparsers.add_parser("tui", help="Launch interactive CSP Lab TUI.")
 
+    # grok-lab
+    parser_grok = subparsers.add_parser("grok-lab", aliases=["grok"], help="Parse and extract data using Grok patterns")
+    parser_grok.add_argument("--tui", action="store_true", help="Launch interactive Grok Lab TUI")
+    grok_subparsers = parser_grok.add_subparsers(dest="action", help="Grok Lab actions")
+
+    grok_parse = grok_subparsers.add_parser("parse", help="Parse text using a Grok pattern")
+    grok_parse.add_argument("--pattern", required=True, help="The Grok pattern")
+    grok_parse.add_argument("--text", required=True, help="The text to parse")
+
+    grok_patterns = grok_subparsers.add_parser("patterns", help="List common Grok patterns")
+    grok_tui = grok_subparsers.add_parser("tui", help="Launch interactive Grok Lab TUI")
+
     # brotli-lab
     parser_brotli = subparsers.add_parser(
         "brotli-lab", aliases=["brotli"],
@@ -26551,6 +26571,9 @@ async def main():
 
     if args.command in ["csp-lab", "csp"]:
         run_csp_lab(args)
+        return
+    if args.command in ["grok-lab", "grok"]:
+        run_grok_lab(args)
         return
     if args.command in ["brotli-lab", "brotli"]:
         run_brotli_lab(args)

@@ -235,6 +235,7 @@ from shared.tui_base16 import Base16LabTab
 from shared.tui_base100 import Base100LabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_diff_lab import DiffLabTab
+from shared.tui_cron2systemd import Cron2SystemdTab
 from shared.tui_image import ImageLabTab
 from shared.tui_media import MediaLabTab
 from shared.tui_qr import QrLabTab
@@ -4997,6 +4998,9 @@ class AgentTUI(App):
                 yield NtpLabTab()
             with TabPane("SAML Lab", id="tab-saml"):
                 yield SamlLabTab()
+
+            with TabPane("Cron2Systemd", id="tab-cron2systemd"):
+                yield Cron2SystemdTab()
             with TabPane("A11y Lab", id="tab-a11y"):
                 yield A11yLabTab(self.project_dir)
             with TabPane("Load Lab", id="tab-load"):

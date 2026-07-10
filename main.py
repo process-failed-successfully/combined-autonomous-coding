@@ -258,7 +258,7 @@ KNOWN_COMMANDS = [
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "duckdb-lab", "duckdb", "ddb",
     "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
-    "cron2systemd-lab", "cron2systemd", "c2s",
+    "cron2systemd-lab", "cron2systemd", "c2sys",
     "phonetic-lab", "phonetic", "soundex",
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
@@ -13742,7 +13742,7 @@ def parse_args(argv=None):
     # --- New 'cron2systemd-lab' command ---
     parser_cron2systemd = subparsers.add_parser(
         "cron2systemd-lab",
-        aliases=["cron2systemd", "c2s"],
+        aliases=["cron2systemd", "c2sys"],
         help="Cron to Systemd Lab: Convert cron lines to systemd units."
     )
     parser_cron2systemd.add_argument(
@@ -25080,7 +25080,7 @@ async def main():
         await run_cron_lab(args)
         return
 
-    if args.command in ["cron2systemd-lab", "cron2systemd", "c2s"]:
+    if args.command in ["cron2systemd-lab", "cron2systemd", "c2sys"]:
         run_cron2systemd_lab_logic(args)
         return
 

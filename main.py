@@ -181,6 +181,7 @@ from shared.load_lab import run_load_lab_logic
 from shared.ast_lab import run_ast_lab_logic
 from shared.systemd_lab import run_systemd_lab_logic
 from shared.http_server_lab import run_http_server_lab_logic
+from shared.cron2systemd_lab import run_cron2systemd_lab_logic
 from shared.productivity_lab import run_productivity_lab_logic
 from shared.rename_lab import run_rename_lab_logic
 from shared.dict_lab import run_dict_lab_logic
@@ -257,6 +258,7 @@ KNOWN_COMMANDS = [
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "duckdb-lab", "duckdb", "ddb",
     "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
+    "cron2systemd-lab", "cron2systemd", "c2s",
     "phonetic-lab", "phonetic", "soundex",
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
@@ -13736,6 +13738,42 @@ def parse_args(argv=None):
         "cron-lab",
         help="Cron Lab: Next, Explain, and Generate cron expressions."
     )
+
+    # --- New 'cron2systemd-lab' command ---
+    parser_cron2systemd = subparsers.add_parser(
+        "cron2systemd-lab",
+        aliases=["cron2systemd", "c2s"],
+        help="Cron to Systemd Lab: Convert cron lines to systemd units."
+    )
+    parser_cron2systemd.add_argument(
+        "action",
+        nargs="?",
+        choices=["convert", "tui"],
+        help="Action to perform (convert or tui)."
+    )
+    parser_cron2systemd.add_argument(
+        "--cron-line",
+        help="The cron line to convert."
+    )
+    parser_cron2systemd.add_argument(
+        "--name",
+        default="cronjob",
+        help="The name of the service/timer (defaults to cronjob)."
+    )
+    parser_cron2systemd.add_argument(
+        "--description",
+        help="Optional description for the unit files."
+    )
+    parser_cron2systemd.add_argument(
+        "--out-dir",
+        help="Directory to save the generated .service and .timer files."
+    )
+    parser_cron2systemd.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the interactive Textual UI."
+    )
+
     parser_cron.add_argument(
         "action",
         choices=["next", "explain", "generate", "tui", "parse"],
@@ -25040,6 +25078,10 @@ async def main():
 
     if args.command == "cron-lab":
         await run_cron_lab(args)
+        return
+
+    if args.command in ["cron2systemd-lab", "cron2systemd", "c2s"]:
+        run_cron2systemd_lab_logic(args)
         return
 
     if args.command in ["resolve-conflicts", "fix-conflicts"]:

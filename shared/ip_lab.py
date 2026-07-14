@@ -5,6 +5,8 @@ IP Lab
 Provides utilities for IP address parsing, validation, geolocation, and information gathering.
 """
 
+from typing import Any
+
 import requests
 from ipaddress import ip_address
 
@@ -46,7 +48,7 @@ class IPLabManager:
         """Returns information about an IP address."""
         try:
             ip = ip_address(ip_str)
-            info = {
+            info: dict[str, Any] = {
                 'version': ip.version,
                 'is_private': ip.is_private,
                 'is_global': ip.is_global,
@@ -66,7 +68,7 @@ class IPLabManager:
         import ipaddress
         try:
             net = ipaddress.ip_network(cidr_str, strict=False)
-            info = {
+            info: dict[str, Any] = {
                 'network_address': str(net.network_address),
                 'netmask': str(net.netmask),
                 'hostmask': str(net.hostmask),

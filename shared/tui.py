@@ -340,6 +340,7 @@ from shared.tui_atbash import AtbashLabTab
 from shared.tui_stego import StegoLabTab
 from shared.tui_exif import ExifLabTab
 from shared.tui_lorem import LoremLabTab
+from shared.tui_grok import GrokLabTab
 from shared.tui_csp import CspLabTab
 from shared.tui_morse import MorseLabTab
 from shared.tui_bitwise import BitwiseLabTab
@@ -5045,6 +5046,8 @@ class AgentTUI(App):
                 yield StegoLabTab(self.project_dir)
             with TabPane("EXIF Lab", id="tab-exif"):
                 yield ExifLabTab(self.project_dir)
+            with TabPane("Grok Lab", id="tab-grok"):
+                yield GrokLabTab()
             with TabPane("CSP Lab", id="tab-csp"):
                 yield CspLabTab(self.project_dir)
             with TabPane("Morse Lab", id="tab-morse"):

@@ -130,6 +130,12 @@ def run_docker_lab_logic(args):
     """
     CLI Entry point for Docker Lab.
     """
+    if args.action == "tui":
+        from main import run_tui
+        print("Launching Docker Lab TUI...")
+        run_tui(args, start_tab="tab-docker")
+        return
+
     lab = DockerLabManager()
 
     if args.action in ["ps", "list"]:

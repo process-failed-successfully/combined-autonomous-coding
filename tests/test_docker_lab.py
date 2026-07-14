@@ -81,5 +81,13 @@ class TestDockerLabCLI(unittest.TestCase):
 
         mock_lab.stats.assert_called_once_with("123")
 
+    @patch('main.run_tui')
+    def test_tui_action(self, mock_run_tui):
+        args = Namespace(action="tui")
+
+        run_docker_lab_logic(args)
+
+        mock_run_tui.assert_called_once_with(args, start_tab="tab-docker")
+
 if __name__ == '__main__':
     unittest.main()

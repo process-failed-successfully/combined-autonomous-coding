@@ -19212,6 +19212,9 @@ Examples:
     parser_docker_stats = docker_subparsers.add_parser("stats", help="Get container stats.")
     parser_docker_stats.add_argument("container", help="Container ID or name.")
 
+    # docker-lab tui
+    parser_docker_tui = docker_subparsers.add_parser("tui", help="Launch interactive Docker Lab TUI.")
+
     # --- New 'compose-lab' command ---
     parser_compose = subparsers.add_parser(
         "compose-lab",

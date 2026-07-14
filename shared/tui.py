@@ -90,6 +90,7 @@ from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
 from shared.tui_process_explorer import ProcessExplorerTab
 from shared.tui_password import PasswordLabTab
+from shared.tui_dockerfile import DockerfileLabTab
 from shared.tui_systemd import SystemdLabTab
 from shared.tui_task_runner import TaskRunnerTab
 from shared.tui_proxy import ProxyLabTab
@@ -4375,6 +4376,8 @@ class AgentTUI(App):
                 yield ProcessExplorerTab(self.project_dir)
             with TabPane("Password Lab", id="tab-password-lab"):
                 yield PasswordLabTab()
+            with TabPane("Dockerfile Lab", id="tab-dockerfile"):
+                yield DockerfileLabTab()
             with TabPane("Systemd", id="tab-systemd"):
                 yield SystemdLabTab(self.project_dir)
             with TabPane("Cookie Lab", id="tab-cookie"):

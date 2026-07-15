@@ -155,3 +155,41 @@ class TestSysLabManager(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class TestSysLabCLI(unittest.TestCase):
+    @patch("main.run_tui")
+    def test_run_sys_lab_tui_flag(self, mock_run_tui):
+        from main import run_sys_lab
+        args = MagicMock()
+        args.tui = True
+        args.action = None
+        run_sys_lab(args)
+        mock_run_tui.assert_called_once_with(args, "tab-sys")
+
+    @patch("main.run_tui")
+    def test_run_sys_lab_tui_action(self, mock_run_tui):
+        from main import run_sys_lab
+        args = MagicMock()
+        args.tui = False
+        args.action = "tui"
+        run_sys_lab(args)
+        mock_run_tui.assert_called_once_with(args, "tab-sys")
+
+    @patch("shared.sys_lab.run_sys_lab_logic")
+    def test_run_sys_lab_cli_action(self, mock_run_logic):
+        from main import run_sys_lab
+        args = MagicMock()
+        args.tui = False
+        args.action = "info"
+        mock_run_logic.return_value = True
+        run_sys_lab(args)
+        mock_run_logic.assert_called_once_with(args)
+
+    @patch("main.sys.exit")
+    def test_run_sys_lab_no_action(self, mock_exit):
+        from main import run_sys_lab
+        args = MagicMock()
+        args.tui = False
+        args.action = None
+        run_sys_lab(args)
+        mock_exit.assert_called_with(1)

@@ -3872,12 +3872,6 @@ def run_unit_lab(args):
         sys.exit(0 if success else 1)
 
 
-def run_sys_lab(args):
-    """Runs the System Lab."""
-    run_sys_lab_logic(args)
-    sys.exit(0)
-
-
 def run_log_lab(args):
     """Runs the Log Lab."""
     run_log_lab_logic(args)
@@ -4014,6 +4008,21 @@ def run_toml2json_lab(args):
         sys.exit(0)
     sys.exit(0)
 
+
+def run_sys_lab(args):
+    """Runs the Sys Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        run_tui(args, "tab-sys")
+        return
+
+    if not getattr(args, "action", None):
+        print("Error: Action is required unless --tui is specified.", file=sys.stderr)
+        sys.exit(1)
+
+    from shared.sys_lab import run_sys_lab_logic
+    success = run_sys_lab_logic(args)
+    if not success:
+        sys.exit(1)
 
 def run_semver_lab(args):
     """Runs the SemVer Lab."""
@@ -16437,9 +16446,10 @@ def parse_args(argv=None):
         aliases=["sys"],
         help="System utilities (info, proc, kill, disk)."
     )
+    parser_sys.add_argument("--tui", action="store_true", help="Launch the interactive Sys Lab TUI.")
     sys_subparsers = parser_sys.add_subparsers(
         dest="action",
-        required=True,
+        required=False,
         help="Action to perform."
     )
 
@@ -16464,6 +16474,9 @@ def parse_args(argv=None):
     parser_sys_disk = sys_subparsers.add_parser("disk", help="Analyze disk usage.")
     parser_sys_disk.add_argument("path", nargs="?", default=".", help="Directory to analyze.")
     parser_sys_disk.add_argument("--limit", type=int, default=20, help="Limit number of items.")
+
+    # sys-lab tui
+    sys_subparsers.add_parser("tui", help="Launch interactive Sys Lab TUI.")
 
     # --- New 'log-lab' command ---
     parser_log_lab = subparsers.add_parser(

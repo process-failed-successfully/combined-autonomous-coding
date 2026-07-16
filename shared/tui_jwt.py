@@ -56,8 +56,10 @@ class JwtLabTab(Container):
                     with Vertical(classes="stat-box"):
                         yield Label("Token:")
                         yield TextArea(id="jwt-verify-token")
-                        yield Label("Secret:")
-                        yield Input(placeholder="Secret key...", id="jwt-verify-secret", password=True)
+                        yield Label("Secret (HMAC/PEM):")
+                        yield Input(placeholder="Secret key... (Leave empty if using JWKS)", id="jwt-verify-secret", password=True)
+                        yield Label("Or JWKS URL:")
+                        yield Input(placeholder="https://example.com/.well-known/jwks.json", id="jwt-verify-jwks-url")
                         yield Button("Verify Signature", id="btn-jwt-verify", variant="success")
 
                     yield Label("[bold]Verification Result[/bold]")
@@ -133,17 +135,22 @@ class JwtLabTab(Container):
 
     def verify_token(self) -> None:
         token = self.query_one("#jwt-verify-token", TextArea).text.strip()
-        secret = self.query_one("#jwt-verify-secret", Input).value
+        secret = self.query_one("#jwt-verify-secret", Input).value.strip()
+        jwks_url = self.query_one("#jwt-verify-jwks-url", Input).value.strip()
         result_log = self.query_one("#jwt-verify-result", RichLog)
 
         result_log.clear()
 
-        if not token or not secret:
-            self.notify("Token and Secret required.", severity="error")
+        if not token:
+            self.notify("Token is required.", severity="error")
+            return
+
+        if not secret and not jwks_url:
+            self.notify("Either Secret or JWKS URL is required.", severity="error")
             return
 
         try:
-            decoded = self.manager.verify_token(token, secret)
+            decoded = self.manager.verify_token(token, secret=secret, jwks_url=jwks_url)
             result_log.write("[bold green]✅ Signature Verified[/bold green]")
             result_log.write("\n[bold]Header:[/bold]")
             result_log.write(json.dumps(decoded["header"], indent=2))

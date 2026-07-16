@@ -15091,7 +15091,11 @@ def parse_args(argv=None):
     # jwt-lab verify
     parser_jwt_verify = jwt_subparsers.add_parser("verify", help="Verify a JWT token signature.")
     parser_jwt_verify.add_argument("token", help="The JWT token.")
-    parser_jwt_verify.add_argument("--secret", required=True, help="Secret key.")
+
+    jwt_verify_group = parser_jwt_verify.add_mutually_exclusive_group(required=True)
+    jwt_verify_group.add_argument("--secret", help="Secret key (HMAC or PEM string).")
+    jwt_verify_group.add_argument("--jwks-url", help="URL to a JWKS endpoint (e.g. .well-known/jwks.json).")
+
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
     # jwt-lab crack

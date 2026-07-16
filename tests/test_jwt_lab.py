@@ -169,6 +169,80 @@ class TestJWTManager(unittest.TestCase):
         finally:
             os.remove(path)
 
+    def test_verify_jwks_success(self):
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+        from unittest.mock import patch
+        import json
+
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+
+        public_numbers = private_key.public_key().public_numbers()
+
+        # Convert e and n to base64url format for JWKS
+        e_bytes = public_numbers.e.to_bytes((public_numbers.e.bit_length() + 7) // 8, byteorder='big')
+        n_bytes = public_numbers.n.to_bytes((public_numbers.n.bit_length() + 7) // 8, byteorder='big')
+
+        e_b64 = JWTManager.base64url_encode(e_bytes)
+        n_b64 = JWTManager.base64url_encode(n_bytes)
+
+        kid = "test-key-id"
+
+        jwks_data = {
+            "keys": [
+                {
+                    "kty": "RSA",
+                    "kid": kid,
+                    "use": "sig",
+                    "n": n_b64,
+                    "e": e_b64
+                }
+            ]
+        }
+
+        # Sign token with custom kid in header
+        algo = "RS256"
+        header = {"typ": "JWT", "alg": algo, "kid": kid}
+        header_b64 = JWTManager.base64url_encode(json.dumps(header).encode('utf-8'))
+        payload_b64 = JWTManager.base64url_encode(json.dumps(self.payload).encode('utf-8'))
+
+        signing_input = f"{header_b64}.{payload_b64}".encode('utf-8')
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import padding
+        signature = private_key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
+        signature_b64 = JWTManager.base64url_encode(signature)
+
+        token = f"{header_b64}.{payload_b64}.{signature_b64}"
+
+        with patch("shared.jwt_lab.urllib.request.urlopen") as mock_urlopen:
+            mock_response = mock_urlopen.return_value.__enter__.return_value
+            mock_response.status = 200
+            mock_response.read.return_value = json.dumps(jwks_data).encode('utf-8')
+
+            # Verify using JWKS
+            decoded = self.manager.verify_token(token, jwks_url="https://example.com/.well-known/jwks.json")
+            self.assertEqual(decoded["payload"], self.payload)
+
+            # Test key not found
+            bad_header = {"typ": "JWT", "alg": algo, "kid": "wrong-kid"}
+            bad_header_b64 = JWTManager.base64url_encode(json.dumps(bad_header).encode('utf-8'))
+            bad_token = f"{bad_header_b64}.{payload_b64}.{signature_b64}"
+            with self.assertRaisesRegex(ValueError, "Key with kid 'wrong-kid' not found"):
+                self.manager.verify_token(bad_token, jwks_url="https://example.com/.well-known/jwks.json")
+
+            # Test vulnerability prevention: token specifies HS256 but requests JWKS validation
+            vuln_header = {"typ": "JWT", "alg": "HS256", "kid": kid}
+            vuln_header_b64 = JWTManager.base64url_encode(json.dumps(vuln_header).encode('utf-8'))
+            vuln_token = f"{vuln_header_b64}.{payload_b64}.{signature_b64}"
+            with self.assertRaisesRegex(ValueError, "token specifies HMAC but JWKS requires asymmetric keys"):
+                self.manager.verify_token(vuln_token, jwks_url="https://example.com/.well-known/jwks.json")
+
+
     def test_crack_token_unsupported_algo(self):
         import tempfile
         import os

@@ -4,6 +4,8 @@ import hmac
 import hashlib
 import time
 import sys
+import urllib.request
+import urllib.error
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
@@ -91,13 +93,67 @@ class JWTManager:
             raise ValueError(f"Failed to decode token: {e}")
 
     @staticmethod
-    def verify_token(token: str, secret: str) -> dict:
+    def fetch_jwks(jwks_url: str) -> dict:
+        if not jwks_url.startswith("https://") and not jwks_url.startswith("http://"):
+            raise ValueError("JWKS URL must use http or https scheme")
+
+        try:
+            req = urllib.request.Request(jwks_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
+                if response.status == 200:
+                    data = response.read().decode('utf-8')
+                    return json.loads(data)
+                else:
+                    raise ValueError(f"Failed to fetch JWKS: HTTP {response.status}")
+        except urllib.error.URLError as e:
+            raise ValueError(f"Failed to fetch JWKS from URL: {e}")
+        except json.JSONDecodeError:
+            raise ValueError("Failed to parse JWKS JSON response.")
+
+    @staticmethod
+    def get_public_key_from_jwks(jwks: dict, kid: str) -> str:
+        keys = jwks.get("keys", [])
+        for key in keys:
+            if key.get("kid") == kid:
+                if key.get("kty") == "RSA":
+                    # Convert JWK RSA parts (n, e) to PEM format
+                    from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+                    from cryptography.hazmat.primitives import serialization
+
+                    e_bytes = JWTManager.base64url_decode(key["e"])
+                    n_bytes = JWTManager.base64url_decode(key["n"])
+
+                    e = int.from_bytes(e_bytes, byteorder='big')
+                    n = int.from_bytes(n_bytes, byteorder='big')
+
+                    public_numbers = RSAPublicNumbers(e, n)
+                    public_key = public_numbers.public_key()
+                    pem = public_key.public_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PublicFormat.SubjectPublicKeyInfo
+                    )
+                    return pem.decode('utf-8')
+                else:
+                    raise ValueError(f"Unsupported JWK key type (kty): {key.get('kty')}")
+        raise ValueError(f"Key with kid '{kid}' not found in JWKS.")
+
+    @staticmethod
+    def verify_token(token: str, secret: str = "", jwks_url: str = "") -> dict:
         decoded = JWTManager.decode_token(token)
         header = decoded["header"]
 
         algo = header.get("alg")
         if algo not in JWTManager.ALGORITHMS:
             raise ValueError(f"Unsupported algorithm for verification: {algo}")
+
+        if jwks_url and not secret:
+            if algo.startswith("HS"):
+                raise ValueError("Key confusion vulnerability detected: token specifies HMAC but JWKS requires asymmetric keys.")
+            kid = header.get("kid")
+            if not kid:
+                raise ValueError("Token header missing 'kid', required for JWKS verification.")
+            jwks = JWTManager.fetch_jwks(jwks_url)
+            secret = JWTManager.get_public_key_from_jwks(jwks, kid)
 
         # Mitigate Algorithm Substitution (Key Confusion) vulnerability
         # If the token claims to use HMAC (HS*), but the secret provided is an asymmetric key (PEM format),
@@ -223,7 +279,14 @@ def run_jwt_lab_logic(args) -> bool:
 
         elif args.action == "verify":
             try:
-                result = manager.verify_token(args.token, args.secret)
+                secret = getattr(args, 'secret', None) or ""
+                jwks_url = getattr(args, 'jwks_url', None) or ""
+
+                if not secret and not jwks_url:
+                    print("Error: Either --secret or --jwks-url is required.", file=sys.stderr)
+                    return False
+
+                result = manager.verify_token(args.token, secret=secret, jwks_url=jwks_url)
                 print("✅ Signature Verified")
                 if hasattr(args, 'verbose') and args.verbose:
                     print(json.dumps(result, indent=2))

@@ -4027,9 +4027,13 @@ def run_sys_lab(args):
 
 def run_semver_lab(args):
     """Runs the SemVer Lab."""
-    from shared.semver_lab import run_semver_lab_logic
-    run_semver_lab_logic(args)
-    sys.exit(0)
+    if getattr(args, 'action', None) == 'tui':
+        run_tui(args, start_tab="tab-semver")
+        return
+    else:
+        from shared.semver_lab import run_semver_lab_logic
+        run_semver_lab_logic(args)
+        sys.exit(0)
 
 
 def run_gantt(args):
@@ -16485,6 +16489,9 @@ def parse_args(argv=None):
     parser_sv_satisfies = semver_subparsers.add_parser("satisfies", help="Check if a version satisfies a range.")
     parser_sv_satisfies.add_argument("version", help="Version string.")
     parser_sv_satisfies.add_argument("range", help="Range string (e.g., '>=1.0.0').")
+
+    # semver-lab tui
+    parser_sv_tui = semver_subparsers.add_parser("tui", help="Launch the interactive SemVer Lab TUI.")
 
     # --- New 'sys-lab' command ---
     parser_sys = subparsers.add_parser(

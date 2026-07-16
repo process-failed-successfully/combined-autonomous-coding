@@ -151,6 +151,7 @@ from shared.pypi_lab import run_pypi_lab_logic
 from shared.docker_lab import run_docker_lab_logic
 from shared.compose_lab import run_compose_lab_logic
 from shared.k8s_lab import run_k8s_lab_logic
+from shared.dockerfile_lab import run_dockerfile_lab_logic
 from shared.diff_lab import run_diff_lab_logic
 from shared.redis_lab import run_redis_lab_logic
 from shared.kafka_lab import run_kafka_lab_logic
@@ -13137,7 +13138,25 @@ def parse_args(argv=None):
     parser_scaffold_create.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Base directory.")
     parser_scaffold_create.add_argument("-f", "--force", action="store_true", help="Overwrite existing files.")
 
-    # --- New 'dockerize' command ---
+    # --- New 'dockerfile-lab' command ---
+    parser_dockerfile_lab = subparsers.add_parser(
+        "dockerfile-lab",
+        aliases=["dockerfile"],
+        help="Generate Docker configurations (Dockerfile, docker-compose) for your project"
+    )
+    dockerfile_lab_subparsers = parser_dockerfile_lab.add_subparsers(
+        dest="action",
+        required=False,
+        help="Action to perform."
+    )
+    dockerfile_lab_subparsers.add_parser("tui", help="Launch interactive Dockerfile Lab TUI.")
+    parser_dockerfile_gen = dockerfile_lab_subparsers.add_parser("generate", help="Generate Docker configurations.")
+    parser_dockerfile_gen.add_argument("-p", "--project-dir", type=Path, default=Path("."), help="Project directory.")
+    parser_dockerfile_gen.add_argument("-f", "--force", action="store_true", help="Overwrite existing files.")
+    parser_dockerfile_gen.add_argument("--dry-run", action="store_true", help="Print contents without writing files.")
+    parser_dockerfile_lab.add_argument("--tui", action="store_true", help="Launch interactive Dockerfile Lab TUI.")
+
+    # --- Legacy 'dockerize' command (kept for backwards compatibility) ---
     parser_dockerize = subparsers.add_parser(
         "dockerize",
         help="Generate Dockerfile and docker-compose.yml for the project."
@@ -24944,6 +24963,14 @@ async def main():
 
     if args.command == "scaffold":
         run_scaffold(args)
+        return
+
+    if getattr(args, "command", None) in ["dockerfile-lab", "dockerfile"]:
+        # Subcommands are optional for TUI, handle required check manually
+        if not getattr(args, "action", None) and not getattr(args, "tui", False):
+            print("Error: Action is required unless --tui flag is used. Use 'dockerfile-lab -h' for help.", file=sys.stderr)
+            sys.exit(1)
+        run_dockerfile_lab_logic(args)
         return
 
     if args.command == "dockerize":

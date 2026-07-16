@@ -79,6 +79,7 @@ from shared.tui_services import ServicesTab
 from shared.tui_system_monitor import SystemMonitorTab
 from shared.tui_sys import SysTab
 from shared.tui_docker import DockerTab
+from shared.tui_dockerfile import DockerfileLabTab
 from shared.tui_k8s import K8sTab
 from shared.tui_csv2sql import Csv2SqlTab
 from shared.tui_json2sql import Json2SqlTab
@@ -4417,6 +4418,7 @@ class AgentTUI(App):
                 yield TaskRunnerTab(self.project_dir)
             with TabPane("Docker", id="tab-docker"):
                 yield DockerTab(self.project_dir)
+            yield DockerfileLabTab(self.project_dir)
             with TabPane("K8s", id="tab-k8s"):
                 yield K8sTab(self.project_dir)
             with TabPane("Terraform", id="tab-terraform"):

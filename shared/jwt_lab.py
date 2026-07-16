@@ -94,9 +94,12 @@ class JWTManager:
 
     @staticmethod
     def fetch_jwks(jwks_url: str) -> dict:
+        if not jwks_url.startswith("https://") and not jwks_url.startswith("http://"):
+            raise ValueError("JWKS URL must use http or https scheme")
+
         try:
             req = urllib.request.Request(jwks_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
                 if response.status == 200:
                     data = response.read().decode('utf-8')
                     return json.loads(data)

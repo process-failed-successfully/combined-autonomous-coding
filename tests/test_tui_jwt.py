@@ -71,6 +71,9 @@ class TestJwtLabTab(unittest.TestCase):
 
         def query_one_side_effect(selector, type=None):
             # Selector logic to return appropriate mock
+            if "jwks-url" in selector:
+                return MagicMock(value="") # Empty default
+
             if "secret" in selector or "wordlist" in selector:
                 return self.mock_input
 
@@ -146,7 +149,7 @@ class TestJwtLabTab(unittest.TestCase):
         self.tab.verify_token()
 
         # Verify
-        self.mock_manager.verify_token.assert_called_with("token.part.three", "secret")
+        self.mock_manager.verify_token.assert_called_with("token.part.three", secret="secret", jwks_url="")
         self.mock_rich_log.write.assert_called()
         self.tab.notify.assert_called_with("Verification successful.")
 

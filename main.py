@@ -247,7 +247,7 @@ KNOWN_COMMANDS = [
     "debt", "check-links", "security", "help", "cherry-pick", "rollback", "timeline",
     "analytics", "deps", "duplication", "unused", "risk", "impact", "a11y", "license",
     "bisect", "map", "architecture", "arch", "release", "openapi", "openapi-ui-lab", "docstring", "refactor",
-    "polish", "resolve", "regex", "cron-lab", "braille-lab", "resolve-conflicts", "fix-conflicts", "mask-lab", "pii-mask-lab",
+    "polish", "resolve", "regex", "cron-lab", "crontab-lab", "crontab", "braille-lab", "resolve-conflicts", "fix-conflicts", "mask-lab", "pii-mask-lab",
     "generate-tests", "gentest", "dataset", "snippets", "mock", "frontend", "i18n",
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
@@ -13748,6 +13748,29 @@ def parse_args(argv=None):
         help="Cron Lab: Next, Explain, and Generate cron expressions."
     )
 
+    # --- New 'crontab-lab' command ---
+    parser_crontab = subparsers.add_parser(
+        "crontab-lab",
+        aliases=["crontab"],
+        help="Crontab Lab: Manage system crontabs (list, edit, clear, backup, restore)."
+    )
+    crontab_subparsers = parser_crontab.add_subparsers(
+        dest="action",
+        help="Action to perform."
+    )
+    crontab_subparsers.add_parser("list", help="List current user crontab")
+
+    parser_crontab_edit = crontab_subparsers.add_parser("edit", help="Edit crontab from file")
+    parser_crontab_edit.add_argument("--file", "-f", required=True, help="File to read crontab from")
+
+    crontab_subparsers.add_parser("clear", help="Clear current user crontab")
+    crontab_subparsers.add_parser("backup", help="Backup current crontab")
+
+    parser_crontab_restore = crontab_subparsers.add_parser("restore", help="Restore crontab from backup")
+    parser_crontab_restore.add_argument("--file", "-f", required=True, help="Backup file to restore from")
+
+    crontab_subparsers.add_parser("tui", help="Launch interactive TUI")
+
     # --- New 'cron2systemd-lab' command ---
     parser_cron2systemd = subparsers.add_parser(
         "cron2systemd-lab",
@@ -25098,6 +25121,11 @@ async def main():
 
     if args.command in ["cron2systemd-lab", "cron2systemd", "c2sys"]:
         run_cron2systemd_lab_logic(args)
+        return
+
+    if args.command in ["crontab-lab", "crontab"]:
+        from shared.crontab_lab import run_crontab_lab_logic
+        run_crontab_lab_logic(args)
         return
 
     if args.command in ["resolve-conflicts", "fix-conflicts"]:

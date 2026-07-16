@@ -105,6 +105,7 @@ from shared.tui_gitignore import GitignoreTab
 from shared.tui_quiz import QuizTab
 from shared.tui_flashcards import FlashcardsTab
 from shared.tui_cron import CronLabTab
+from shared.tui_crontab import CrontabLabTab
 from shared.tui_datalab import DataLabTab
 from shared.tui_semver import SemVerTab
 from shared.tui_logic import LogicLabTab
@@ -4645,6 +4646,8 @@ class AgentTUI(App):
                 yield RssLabTab(self.project_dir)
             with TabPane("Cron Lab", id="tab-cron"):
                 yield CronLabTab(self.project_dir)
+            with TabPane("Crontab Lab", id="tab-crontab"):
+                yield CrontabLabTab()
             with TabPane("Text Lab", id="tab-text"):
                 yield TextLabTab()
             with TabPane("Hashids Lab", id="tab-hashids"):

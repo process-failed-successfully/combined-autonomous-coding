@@ -243,6 +243,8 @@ from shared.tui_media import MediaLabTab
 from shared.tui_qr import QrLabTab
 from shared.tui_barcode import BarcodeLabTab
 from shared.tui_mongo import MongoLabTab
+from shared.tui_postgres import PostgresLabTab
+
 from shared.tui_redis import RedisLabTab
 from shared.tui_memcached import MemcachedLabTab
 from shared.tui_pdf import PdfLabTab
@@ -4341,6 +4343,7 @@ class AgentTUI(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with TabbedContent(id="main-tabs", initial=self.start_tab):
+            yield PostgresLabTab()
             if self.start_tab == "tab-flatten":
                 yield FlattenLabTab()
             elif self.start_tab == "tab-pipeline":

@@ -292,6 +292,7 @@ KNOWN_COMMANDS = [
     "k8s-lab", "k8s", "kube",
     "diff-lab",
     "mongo-lab", "mongo", "mongodb",
+    "postgres-lab", "postgres", "pg",
     "redis-lab", "redis", "cache",
     "memcached-lab", "memcached", "memcache",
     "kafka-lab", "kafka",
@@ -2957,6 +2958,20 @@ def run_code_query_cli(args):
     sys.exit(0)
 
 
+
+
+def run_postgres_lab(args):
+    """Runs the Postgres Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        print("Launching Postgres Lab TUI...")
+        from main import run_tui
+        run_tui(args, start_tab="tab-postgres")
+        return
+
+    from shared.postgres_lab import run_postgres_lab_logic
+    success = run_postgres_lab_logic(args)
+    if not success:
+        sys.exit(1)
 
 def run_mongo_lab(args):
     """Runs the Mongo Lab."""
@@ -19405,6 +19420,27 @@ Examples:
     parser_diff_lab.add_argument("--patch", action="store_true", help="Generate a unified patch file when comparing directories.")
     parser_diff_lab.add_argument("--tui", action="store_true", help="Launch interactive Diff Lab TUI.")
 
+
+    # --- New 'postgres-lab' command ---
+    parser_postgres = subparsers.add_parser(
+        "postgres-lab",
+        aliases=["postgres", "pg"],
+        help="PostgreSQL Database Lab (connect, query, schema, tables)."
+    )
+    parser_postgres.add_argument("--uri", default="postgresql://postgres:postgres@localhost:5432/postgres", help="PostgreSQL URI")
+    postgres_subparsers = parser_postgres.add_subparsers(dest="action", required=True)
+
+    parser_postgres_query = postgres_subparsers.add_parser("query", help="Execute a SQL query.")
+    parser_postgres_query.add_argument("query", help="The SQL query to execute.")
+    parser_postgres_query.add_argument("--format", choices=["json", "csv"], default="json", help="Output format.")
+
+    parser_postgres_tables = postgres_subparsers.add_parser("tables", help="List all tables.")
+
+    parser_postgres_schema = postgres_subparsers.add_parser("schema", help="Show table schemas.")
+    parser_postgres_schema.add_argument("--table", help="Specific table to show schema for.")
+
+    postgres_subparsers.add_parser("tui", help="Launch interactive TUI for Postgres Lab.")
+
     # --- New 'mongo-lab' command ---
     parser_mongo = subparsers.add_parser(
         "mongo-lab",
@@ -25582,6 +25618,10 @@ async def main():
 
         run_diff_lab_logic(args)
         return
+
+
+    if args.command in ["postgres-lab", "postgres", "pg"]:
+        run_postgres_lab(args)
 
     if args.command in ["mongo-lab", "mongo", "mongodb"]:
         run_mongo_lab(args)

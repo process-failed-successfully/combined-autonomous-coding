@@ -32,6 +32,7 @@ dependencies = [
     "gitpython",
     "prometheus-client",
     "psutil",
+    "psycopg2-binary>=2.9.9",
     "platformdirs",
     "jaraco.context>=6.1.0",
     "cryptography",

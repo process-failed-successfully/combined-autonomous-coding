@@ -246,6 +246,7 @@ from shared.tui_mongo import MongoLabTab
 from shared.tui_redis import RedisLabTab
 from shared.tui_memcached import MemcachedLabTab
 from shared.tui_pdf import PdfLabTab
+from shared.tui_grok import GrokLabTab
 from shared.tui_permissions import PermissionsLabTab
 from shared.tui_chown import ChownLabTab
 from shared.tui_pcap import PcapLabTab
@@ -5077,6 +5078,7 @@ class AgentTUI(App):
                 yield JsonPatchLabTab()
             with TabPane("JSONL Lab", id="tab-jsonl"):
                 yield JsonlLabTab()
+            yield GrokLabTab()
             with TabPane("Regex Escape", id="tab-regex-escape"):
                 yield RegexEscapeLabTab()
             with TabPane("Mask Lab", id="tab-mask"):

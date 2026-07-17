@@ -290,7 +290,7 @@ KNOWN_COMMANDS = [
     "docker-lab", "docker", "container",
     "compose-lab", "compose",
     "k8s-lab", "k8s", "kube",
-    "diff-lab",
+    "diff-lab", "grok-lab", "grok",
     "mongo-lab", "mongo", "mongodb",
     "redis-lab", "redis", "cache",
     "memcached-lab", "memcached", "memcache",
@@ -19394,6 +19394,19 @@ Examples:
     parser_k8s_delete.add_argument("--namespace", "-n", help="Namespace.")
 
     # --- New 'diff-lab' command ---
+
+    parser_grok = subparsers.add_parser("grok-lab", aliases=["grok"], help="Grok Lab: Parse logs with Grok patterns")
+    parser_grok.add_argument("--tui", action="store_true", help="Launch the Textual UI")
+    grok_subparsers = parser_grok.add_subparsers(dest="action", help="Action to perform")
+
+    grok_parse = grok_subparsers.add_parser("parse", help="Parse text using a Grok pattern")
+    grok_parse.add_argument("--pattern", required=True, help="The Grok pattern (e.g. %{IPV4:ip})")
+    grok_parse.add_argument("--text", required=True, help="The text to parse")
+
+    grok_patterns = grok_subparsers.add_parser("patterns", help="List available Grok patterns")
+
+    grok_tui = grok_subparsers.add_parser("tui", help="Launch the Textual UI")
+
     parser_diff_lab = subparsers.add_parser(
         "diff-lab",
         help="Smart comparison for various file formats (JSON, YAML, Image, Text)."
@@ -25558,6 +25571,28 @@ async def main():
     if args.command in ["k8s-lab", "k8s", "kube"]:
         run_k8s_lab(args)
         return
+
+
+    if args.command in ["grok-lab", "grok"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Grok Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-grok")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        from shared.grok_lab import run_grok_lab_logic
+        success = run_grok_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command == "diff-lab":
         if getattr(args, "tui", False):

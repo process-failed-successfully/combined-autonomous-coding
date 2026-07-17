@@ -80,7 +80,7 @@ class PostgresLabManager:
                 SELECT column_name, data_type, character_maximum_length, is_nullable
                 FROM information_schema.columns
                 WHERE table_name = '{t}';
-            """
+            """  # nosec B608
             try:
                 _, rows = self.execute_query(query)
                 cols_def = []

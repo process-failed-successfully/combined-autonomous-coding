@@ -120,6 +120,7 @@ from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_mac import MacLabTab
 from shared.tui_ntp import NtpLabTab
+from shared.tui_pkce import PkceLabTab
 from shared.tui_saml import SamlLabTab
 from shared.tui_size import SizeLabTab
 from shared.tui_typegen import TypegenLabTab
@@ -5005,6 +5006,8 @@ class AgentTUI(App):
                 yield MacLabTab()
             with TabPane("NTP Lab", id="tab-ntp"):
                 yield NtpLabTab()
+            with TabPane("PKCE Lab", id="tab-pkce"):
+                yield PkceLabTab()
             with TabPane("SAML Lab", id="tab-saml"):
                 yield SamlLabTab()
 

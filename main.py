@@ -210,6 +210,7 @@ from shared.stego_lab import run_stego_lab_logic
 from shared.typegen_lab import run_typegen_lab_logic
 from shared.zip_lab import run_zip_lab_logic
 from shared.ntp_lab import run_ntp_lab_logic
+from shared.pkce_lab import run_pkce_lab_logic
 from shared.json_schema_lab import run_json_schema_lab_logic
 from shared.regex_escape_lab import run_regex_escape_lab_logic
 from shared.auto_fix import run_auto_fix_logic
@@ -21733,6 +21734,23 @@ Examples:
 
     svg_lab_parser = subparsers.add_parser("svg-lab", aliases=["svg"], help="SVG Lab utilities")
 
+    parser_pkce = subparsers.add_parser("pkce-lab", aliases=["pkce"], help="PKCE Lab: Generate and verify Proof Key for Code Exchange")
+    pkce_subparsers = parser_pkce.add_subparsers(dest="action", help="Action to perform.")
+
+    pkce_gen = pkce_subparsers.add_parser("generate", help="Generate a code verifier")
+    pkce_gen.add_argument("--length", type=int, default=43, help="Length of the code verifier (43-128)")
+
+    pkce_challenge = pkce_subparsers.add_parser("challenge", help="Generate a code challenge from a verifier")
+    pkce_challenge.add_argument("--verifier", required=True, help="The code verifier")
+    pkce_challenge.add_argument("--method", choices=["S256", "plain"], default="S256", help="The challenge method")
+
+    pkce_verify = pkce_subparsers.add_parser("verify", help="Verify a code verifier against a challenge")
+    pkce_verify.add_argument("--verifier", required=True, help="The code verifier")
+    pkce_verify.add_argument("--challenge", required=True, help="The code challenge")
+    pkce_verify.add_argument("--method", choices=["S256", "plain"], default="S256", help="The challenge method")
+
+    pkce_subparsers.add_parser("tui", help="Launch interactive PKCE Lab TUI")
+
     parser_ntp = subparsers.add_parser("ntp-lab", aliases=["ntp"], help="NTP Lab: query NTP servers")
     ntp_subparsers = parser_ntp.add_subparsers(dest="action", help="Action to perform.")
     ntp_query = ntp_subparsers.add_parser("query", help="Query an NTP server.")
@@ -25436,6 +25454,10 @@ async def main():
 
     if args.command in ["net-lab", "net"]:
         run_net_lab_logic(args)
+        return
+
+    if args.command in ["pkce-lab", "pkce"]:
+        run_pkce_lab_logic(args)
         return
 
     if args.command in ["pdf-lab", "pdf"]:

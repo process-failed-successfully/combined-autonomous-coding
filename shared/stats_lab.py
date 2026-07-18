@@ -30,8 +30,9 @@ class CodeStatsManager:
         "Text": {"ext": [".txt"], "comment": None},
     }
 
-    def __init__(self, project_dir: Path):
+    def __init__(self, project_dir: Path, exclude: List[str] = None):
         self.project_dir = project_dir.resolve()
+        self.exclude = exclude or []
 
     def scan(self) -> Dict[str, Dict[str, int]]:
         """
@@ -53,8 +54,8 @@ class CodeStatsManager:
 
         # Walk
         for root, dirs, files in os.walk(self.project_dir):
-            # Skip hidden dirs (like .git, .venv)
-            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            # Skip hidden dirs (like .git, .venv) and excluded dirs
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in self.exclude]
 
             for file in files:
                 if file.startswith("."): continue
@@ -142,9 +143,13 @@ def run_stats_lab_logic(args):
     from shared.charts import draw_ascii_bar_chart
 
     project_dir = args.project_dir.resolve()
-    manager = CodeStatsManager(project_dir)
+    exclude = getattr(args, "exclude", [])
+    manager = CodeStatsManager(project_dir, exclude=exclude)
 
-    print(f"Scanning {project_dir}...")
+    if exclude:
+        print(f"Scanning {project_dir}... (excluding: {', '.join(exclude)})")
+    else:
+        print(f"Scanning {project_dir}...")
     stats = manager.scan()
 
     if args.format == "json":

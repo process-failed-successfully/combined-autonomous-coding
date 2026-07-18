@@ -21256,6 +21256,7 @@ Examples:
     )
     parser_stats_lab.add_argument("--format", choices=["text", "json"], default="text", help="Output format.")
     parser_stats_lab.add_argument("--action", choices=["cli", "tui"], default="cli", help="Run mode (cli or tui). Defaults to cli.")
+    parser_stats_lab.add_argument("--exclude", nargs="*", help="List of directories to exclude (e.g. node_modules venv).", default=[])
 
     # --- New 'disk-usage' command ---
     parser_disk_usage = subparsers.add_parser(

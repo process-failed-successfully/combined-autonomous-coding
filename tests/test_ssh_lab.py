@@ -131,6 +131,29 @@ Host github.com
         content = self.manager.read_public_key("id_missing")
         self.assertIsNone(content)
 
+    @patch("main.run_tui")
+    def test_run_ssh_lab_tui(self, mock_run_tui):
+        import argparse
+        import sys
+        from main import run_ssh_lab
+
+        # Test args.action == "tui"
+        args = argparse.Namespace(action="tui", tui=False)
+        try:
+            run_ssh_lab(args)
+        except SystemExit:
+            pass
+        mock_run_tui.assert_called_once_with(args, start_tab="tab-ssh")
+        mock_run_tui.reset_mock()
+
+        # Test args.tui == True
+        args = argparse.Namespace(action="list", tui=True)
+        try:
+            run_ssh_lab(args)
+        except SystemExit:
+            pass
+        mock_run_tui.assert_called_once_with(args, start_tab="tab-ssh")
+
     @patch("pathlib.Path.unlink")
     @patch("pathlib.Path.exists")
     def test_delete_key(self, mock_exists, mock_unlink):

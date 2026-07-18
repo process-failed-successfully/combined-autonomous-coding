@@ -3036,6 +3036,10 @@ def run_pgp_lab(args):
 
 def run_ssh_lab(args):
     """Runs the SSH Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        run_tui(args, start_tab="tab-ssh")
+        return
+
     run_ssh_lab_logic(args)
     sys.exit(0)
 
@@ -19769,6 +19773,9 @@ Examples:
         required=True,
         help="Action to perform."
     )
+
+    # ssh-lab tui
+    ssh_subparsers.add_parser("tui", help="Launch SSH Lab TUI.")
 
     # ssh-lab list
     ssh_subparsers.add_parser("list", help="List SSH keys.")

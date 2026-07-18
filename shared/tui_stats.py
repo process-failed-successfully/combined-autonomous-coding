@@ -1,7 +1,7 @@
 from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Container, Vertical
-from textual.widgets import Label, DataTable, Button, RichLog
+from textual.widgets import Label, DataTable, Button, RichLog, Input
 from textual import on
 from shared.stats_lab import CodeStatsManager
 from shared.charts import draw_ascii_bar_chart
@@ -26,6 +26,7 @@ class StatsTab(Container):
             # Table Area
             with Vertical(classes="stat-box", id="stats-table-container"):
                 yield Label("[bold]Detailed Breakdown[/bold]")
+                yield Input(placeholder="Exclude dirs (comma-separated, e.g. tests,node_modules)", id="stats-exclude-input")
                 yield DataTable(id="stats-table")
 
             yield Button("Refresh", id="btn-stats-refresh", variant="primary")
@@ -43,6 +44,10 @@ class StatsTab(Container):
 
     def refresh_stats(self) -> None:
         self.notify("Scanning codebase...")
+
+        exclude_val = self.query_one("#stats-exclude-input", Input).value.strip()
+        excludes = [x.strip() for x in exclude_val.split(",")] if exclude_val else []
+        self.manager = CodeStatsManager(self.project_dir, exclude=excludes)
 
         # Run in thread to avoid blocking UI
         import asyncio

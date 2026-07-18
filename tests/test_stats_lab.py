@@ -87,5 +87,28 @@ function test() {
         self.assertEqual(stats["Python"]["files"], 1)
         self.assertEqual(stats["JavaScript"]["files"], 1)
 
+    def test_stats_with_exclude(self):
+        # Create src/
+        src_dir = self.test_dir / "src"
+        src_dir.mkdir()
+        (src_dir / "main.py").touch()
+
+        # Create node_modules/
+        nm_dir = self.test_dir / "node_modules"
+        nm_dir.mkdir()
+        (nm_dir / "index.js").touch()
+
+        # Test without exclude
+        manager_no_exclude = CodeStatsManager(self.test_dir)
+        stats_no_exclude = manager_no_exclude.scan()
+        self.assertIn("Python", stats_no_exclude)
+        self.assertIn("JavaScript", stats_no_exclude)
+
+        # Test with exclude
+        manager_with_exclude = CodeStatsManager(self.test_dir, exclude=["node_modules"])
+        stats_with_exclude = manager_with_exclude.scan()
+        self.assertIn("Python", stats_with_exclude)
+        self.assertNotIn("JavaScript", stats_with_exclude)
+
 if __name__ == "__main__":
     unittest.main()

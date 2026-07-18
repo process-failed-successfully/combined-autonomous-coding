@@ -20503,6 +20503,9 @@ Examples:
     parser_otp_url.add_argument("--label", required=True, help="Account label (e.g. user@example.com).")
     parser_otp_url.add_argument("--issuer", help="Issuer name (e.g. MyApp).")
 
+    # otp tui
+    parser_otp_tui = otp_subparsers.add_parser("tui", help="Launch OTP Lab TUI.")
+
     # --- New 'cheatsheet-lab' command ---
     parser_cheat = subparsers.add_parser(
         "cheatsheet-lab",

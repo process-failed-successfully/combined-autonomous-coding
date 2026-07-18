@@ -154,3 +154,7 @@ def run_otp_lab_logic(args):
             issuer=args.issuer
         )
         print(url)
+
+    elif args.action == "tui":
+        from main import run_tui
+        run_tui(args, "tab-otp")

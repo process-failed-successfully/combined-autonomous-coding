@@ -89,6 +89,12 @@ class TestOtpLab(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("INVALID", mock_stdout.getvalue())
 
+    @patch('main.run_tui')
+    def test_cli_tui(self, mock_run_tui):
+        args = argparse.Namespace(action="tui")
+        run_otp_lab_logic(args)
+        mock_run_tui.assert_called_once_with(args, "tab-otp")
+
 
 if __name__ == '__main__':
     unittest.main()

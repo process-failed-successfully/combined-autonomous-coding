@@ -256,7 +256,7 @@ KNOWN_COMMANDS = [
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "macaroon-lab", "macaroon", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
-    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
+    "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert", "wol-lab", "wol",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "duckdb-lab", "duckdb", "ddb",
@@ -15663,6 +15663,16 @@ def parse_args(argv=None):
     # password-lab tui
     pwd_subparsers.add_parser("tui", help="Launch interactive TUI for Password Lab.")
 
+    # --- New 'wol-lab' command ---
+    parser_wol = subparsers.add_parser(
+        "wol-lab",
+        aliases=["wol"],
+        help="Wake-on-LAN (WoL) Magic Packet Generator."
+    )
+    parser_wol.add_argument("--mac", required=True, help="Target MAC address (e.g., 00:11:22:33:44:55).")
+    parser_wol.add_argument("--ip", default="255.255.255.255", help="Target IP address or broadcast address (default: 255.255.255.255).")
+    parser_wol.add_argument("--port", type=int, default=9, help="Target UDP port (default: 9).")
+
     # --- New 'text-lab' command ---
     parser_http_status_lab = subparsers.add_parser(
         "http-status-lab",
@@ -25961,6 +25971,11 @@ async def main():
     if args.command in ["cuid2-lab", "cuid2"]:
         from shared.cuid2_lab import run_cuid2_lab_logic
         run_cuid2_lab_logic(args)
+        return
+
+    if args.command in ["wol-lab", "wol"]:
+        from shared.wol_lab import run_wol_lab_logic
+        run_wol_lab_logic(args)
         return
 
     if args.command in ["typeid-lab", "typeid"]:

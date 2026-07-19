@@ -208,6 +208,7 @@ from shared.brainfuck_lab import run_brainfuck_lab_logic
 from shared.morse_lab import run_morse_lab_logic
 from shared.stego_lab import run_stego_lab_logic
 from shared.typegen_lab import run_typegen_lab_logic
+from shared.osv_lab import run_osv_lab_logic
 from shared.zip_lab import run_zip_lab_logic
 from shared.ntp_lab import run_ntp_lab_logic
 from shared.pkce_lab import run_pkce_lab_logic
@@ -21610,6 +21611,18 @@ Examples:
     size_format.add_argument("bytes", type=int, help="Bytes value to format")
     size_format.add_argument("--si", action="store_true", help="Use SI decimal units instead of IEC binary units")
 
+    # --- New 'osv-lab' command ---
+    parser_osv = subparsers.add_parser(
+        "osv-lab",
+        aliases=["osv", "vuln", "cve"],
+        help="Query the Open Source Vulnerability (OSV) database."
+    )
+    parser_osv.add_argument("--tui", action="store_true", help="Launch the OSV Lab TUI.")
+    parser_osv.add_argument("-p", "--package", help="The name of the package (e.g., jinja2, requests).")
+    parser_osv.add_argument("-e", "--ecosystem", help="The ecosystem of the package (e.g., PyPI, npm, Go).")
+    parser_osv.add_argument("-v", "--version", help="The version of the package to query.")
+    parser_osv.add_argument("--json", action="store_true", help="Output results in JSON format.")
+
     parser_stego = subparsers.add_parser(
         "stego-lab", aliases=["stego"],
         help="Steganography tools."
@@ -27057,6 +27070,15 @@ async def main():
             return
 
         run_typegen_lab_logic(args)
+        return
+
+    if args.command in ["osv-lab", "osv", "vuln", "cve"]:
+        if getattr(args, "tui", False):
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-osv-lab")
+            app.run()
+            return
+
+        run_osv_lab_logic(args)
         return
 
     if args.command in ["size-lab", "size"]:

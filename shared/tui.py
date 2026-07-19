@@ -384,6 +384,7 @@ from shared.tui_xml2toml import Xml2TomlTab
 from shared.tui_bip39 import Bip39Tab
 from shared.tui_json2yaml import Json2YamlLabTab
 from shared.tui_yaml2json import Yaml2JsonLabTab
+from shared.tui_osv import OsvLabTab
 from shared.tui_yaml2toml import Yaml2TomlLabTab
 from shared.tui_toml2json import Toml2JsonLabTab
 from shared.tui_env2json import Env2JsonTab
@@ -4399,6 +4400,7 @@ class AgentTUI(App):
             with TabPane("Bencode Lab", id="tab-bencode"):
                 yield BencodeLabTab()
             yield RobotsTxtLabTab()
+            yield OsvLabTab()
             with TabPane("Encoding Lab", id="tab-enc"):
                 yield EncLabTab()
             yield FaviconLabTab(self.project_dir)

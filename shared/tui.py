@@ -363,6 +363,7 @@ from shared.tui_run2compose import Run2ComposeLabTab
 from shared.tui_compose2k8s import Compose2K8sLabTab
 from shared.tui_xml2json import Xml2JsonTab
 from shared.tui_magic_decode import MagicDecodeTab
+from shared.tui_json2graphql import Json2GraphQLLabTab
 from shared.tui_json2py import Json2PyLabTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
@@ -5071,6 +5072,8 @@ class AgentTUI(App):
                 yield VCardTab(self.project_dir)
             with TabPane("cURL Lab", id="tab-curl"):
                 yield CurlLabTab(self.project_dir)
+            with TabPane("JSON2GraphQL", id="tab-json2graphql"):
+                yield Json2GraphQLLabTab()
             with TabPane("PortScan", id="tab-portscan"):
                 yield PortScanTab()
             with TabPane("Lorem Lab", id="tab-lorem"):

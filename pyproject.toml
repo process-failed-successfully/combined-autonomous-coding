@@ -23,6 +23,7 @@ dependencies = [
     "rich",
     "docker",
     "requests",
+    "types-requests",
     "PyYAML",
     "Jinja2",
     "python-dotenv",

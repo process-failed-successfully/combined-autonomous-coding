@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import sys
 import json
 from shared.osv_lab import OsvLabManager, run_osv_lab_logic
+
 
 class TestOsvLab(unittest.TestCase):
     def setUp(self):
@@ -69,6 +69,7 @@ class TestOsvLab(unittest.TestCase):
         called_arg = mock_print.call_args[0][0]
         parsed = json.loads(called_arg)
         self.assertEqual(parsed, {"vulns": [{"id": "CVE-TEST"}]})
+
 
 if __name__ == '__main__':
     unittest.main()

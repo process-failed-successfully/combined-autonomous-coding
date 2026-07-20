@@ -4,6 +4,7 @@ from textual.widgets import Input, Button, Label, Markdown
 from textual.widgets import TabPane
 from shared.osv_lab import OsvLabManager
 
+
 class OsvLabTab(TabPane):
     """TUI Tab for OSV Lab."""
 

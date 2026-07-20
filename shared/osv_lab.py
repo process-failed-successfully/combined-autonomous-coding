@@ -8,8 +8,8 @@ Utilities for querying the Open Source Vulnerability (OSV) database.
 import sys
 import json
 import requests
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, asdict
+from typing import Dict, Any, Optional
+
 
 class OsvLabManager:
     """Manages queries to the OSV API."""
@@ -77,6 +77,7 @@ class OsvLabManager:
             output += f"\nDetails: {details}"
         output += "\n" + "-" * 40
         return output
+
 
 def run_osv_lab_logic(args):
     """CLI logic for OSV Lab."""

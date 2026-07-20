@@ -85,7 +85,7 @@ def run_osv_lab_logic(args):
 
     if getattr(args, "tui", False):
         from main import run_tui
-        run_tui("tab-osv-lab")
+        run_tui(args, start_tab="tab-osv-lab")
         sys.exit(0)
 
     name = args.package

@@ -17,6 +17,24 @@
       "duration": 1.0618679523468018,
       "task_id": "free_focus",
       "notes": ""
+    },
+    {
+      "id": "1784566358",
+      "type": "work",
+      "start_time": 1784566358.8617873,
+      "end_time": 1784566358.9770336,
+      "duration": 0.11524629592895508,
+      "task_id": "free_focus",
+      "notes": ""
+    },
+    {
+      "id": "1784566359",
+      "type": "break",
+      "start_time": 1784566359.1470425,
+      "end_time": 1784566359.2857637,
+      "duration": 0.13872122764587402,
+      "task_id": "free_focus",
+      "notes": ""
     }
   ],
   "distractions": [],

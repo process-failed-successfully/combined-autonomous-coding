@@ -31,7 +31,8 @@ class Json2GraphQLLabTab(Static):
 
                 with Vertical(classes="w-1-2 p-1 h-full"):
                     yield Label("Output GraphQL:", classes="text-bold mb-1")
-                    yield TextArea(id="json2graphql-output-ta", language="graphql", classes="h-full", read_only=True)
+                    # Using "text" or "javascript" as Textual's TextArea doesn't support "graphql" out of the box natively
+                    yield TextArea(id="json2graphql-output-ta", language="javascript", classes="h-full", read_only=True)
 
             yield Static("", id="json2graphql-status", classes="p-1 h-auto")
 

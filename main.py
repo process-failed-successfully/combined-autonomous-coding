@@ -272,7 +272,7 @@ KNOWN_COMMANDS = [
     "favicon-lab", "favicon",
     "msgpack-lab", "msgpack", "mpack",
     "bson-lab", "bson",
-    "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2zod-lab", "json2zod", "j2zod", "json2proto-lab", "json2proto", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy", "jsonl2csv-lab", "csv2jsonl-lab",
+    "csv-lab", "csv", "csv2sql-lab", "csv2sql", "c2s", "json2sql-lab", "json2sql", "j2s", "csv2html-lab", "csv2html", "c2h", "json2csv-lab", "j2c", "json2ini-lab", "json2ini", "j2i", "csv2json-lab", "c2j", "csv2yaml-lab", "csv2yaml", "c2y", "env2json-lab", "env2json", "json2env", "json2md-lab", "json2md", "csv2md-lab", "csv2md", "md2csv-lab", "md2csv", "m2c", "csv2toml-lab", "csv2toml", "c2t", "yaml2csv-lab", "yaml2csv", "y2c", "xml2csv-lab", "xml2csv", "x2c", "toml2csv-lab", "toml2csv", "t2c", "yaml2json-lab", "yaml2json", "y2j", "json2py-lab", "json2py", "j2py", "toml2py-lab", "toml2py", "t2py", "json2yaml-lab", "json2yaml", "j2y", "yaml2toml-lab", "yaml2toml", "toml2yaml", "y2t", "xml2toml-lab", "xml2toml", "toml2xml", "x2t", "json2toml-lab", "json2toml", "j2t", "xml2yaml-lab", "xml2yaml", "x2y", "yaml2xml-lab", "yaml2xml", "y2x", "yaml2py-lab", "yaml2py", "y2py", "json2ts-lab", "json2ts", "j2ts", "json2zod-lab", "json2zod", "j2zod", "json2graphql-lab", "json2graphql", "j2gql", "json2proto-lab", "json2proto", "json2go-lab", "json2go", "j2go", "json2dart-lab", "json2dart", "j2dart", "json2swift-lab", "json2swift", "j2swift", "json2csharp-lab", "json2csharp", "j2cs", "json2rust-lab", "json2rust", "j2rs", "excel-lab", "xls", "xlsx", "excel", "template-lab", "tpl", "image-lab", "img", "exif-lab", "exif", "ocr-lab", "ocr", "media-lab", "media", "xml-lab", "xml", "lorem-lab", "lorem", "lipsum", "bip39-lab", "bip39", "magic-decode-lab", "magic-decode", "mdecode", "endian-lab", "endian", "entropy-lab", "entropy", "jsonl2csv-lab", "csv2jsonl-lab",
     "svg-lab", "svg",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc", "makefile-lab", "makefile",
@@ -10360,6 +10360,14 @@ def parse_args(argv=None):
 
     parser_validate = subparsers.add_parser("validate", help="Validate the agent_config.yaml file")
     parser_list_agents = subparsers.add_parser("list-agents", help="List available agents")
+
+    # Json2GraphQL Lab parser
+    json2graphql_parser = subparsers.add_parser("json2graphql-lab", aliases=["json2graphql", "j2gql"], help="Convert JSON to GraphQL type definitions.")
+    json2graphql_parser.add_argument("--text", type=str, help="Input JSON string.")
+    json2graphql_parser.add_argument("--file", type=str, help="Input JSON file path.")
+    json2graphql_parser.add_argument("--name", type=str, default="RootObject", help="Root GraphQL type name.")
+    json2graphql_parser.add_argument("--output", type=str, help="Output file path.")
+    json2graphql_parser.add_argument("--tui", action="store_true", help="Launch the TUI interface.")
 
     # Props Lab parser
     props_parser = subparsers.add_parser("props-lab", aliases=["props", "properties"], help="Convert Java .properties to/from JSON and YAML.")
@@ -26268,6 +26276,14 @@ async def main():
         from shared.json2zod_lab import run_json2zod_lab_logic
         run_json2zod_lab_logic(args)
         return
+
+    if args.command in ["json2graphql-lab", "json2graphql", "j2gql"]:
+        if getattr(args, "tui", False):
+            run_tui(args, "tab-json2graphql")
+            return
+        from shared.json2graphql_lab import run_json2graphql_lab_logic
+        success = run_json2graphql_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["json2java-lab", "json2java", "j2java"]:
         if getattr(args, "tui", False):

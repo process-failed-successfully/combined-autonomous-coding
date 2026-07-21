@@ -21789,6 +21789,12 @@ Examples:
     ntp_query.add_argument("--port", "-p", type=int, default=123, help="The NTP server port (default 123)")
     ntp_query.add_argument("--timeout", "-t", type=int, default=5, help="Timeout in seconds (default 5)")
     ntp_subparsers.add_parser("tui", help="Launch interactive NTP Lab TUI.")
+
+    # --- New 'wol-lab' command ---
+    parser_wol = subparsers.add_parser("wol-lab", aliases=["wol"], help="Wake-on-LAN: send magic packets")
+    parser_wol.add_argument("--mac", required=True, help="The target MAC address")
+    parser_wol.add_argument("--ip", default="255.255.255.255", help="The target IP broadcast address (default: 255.255.255.255)")
+    parser_wol.add_argument("--port", type=int, default=9, help="The target UDP port (default: 9)")
     svg_lab_parser.add_argument("action", nargs="?", choices=["validate", "minify", "tui"], help="Action to perform")
     svg_lab_parser.add_argument("--file", "-f", help="Input SVG file")
     svg_lab_parser.add_argument("--output", "-o", help="Output file (for minify)")
@@ -23211,6 +23217,13 @@ def run_vin_lab(args):
         from shared.vin_lab import run_vin_lab_logic
         run_vin_lab_logic(args)
         sys.exit(0)
+
+
+def run_wol_lab(args):
+    """Runs the Wol Lab."""
+    from shared.wol_lab import run_wol_lab_logic
+    run_wol_lab_logic(args)
+    sys.exit(0)
 
 
 def run_argon2_lab(args):
@@ -27122,6 +27135,10 @@ async def main():
             run_tui(args, start_tab="tab-ntp")
         else:
             run_ntp_lab_logic(args)
+        return
+
+    if args.command in ["wol-lab", "wol"]:
+        run_wol_lab(args)
         return
 
     if args.command in ["tar-lab", "tar"]:

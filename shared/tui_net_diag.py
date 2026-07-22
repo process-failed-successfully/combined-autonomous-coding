@@ -66,6 +66,17 @@ class NetDiagTab(Container):
                         yield Label("Local IP: ?", id="lbl-local-ip")
                         yield Label("Public IP: ?", id="lbl-public-ip")
 
+                with TabPane("Traceroute"):
+                    with Vertical(classes="stat-box"):
+                        with Horizontal():
+                            yield Label("Host:", classes="label")
+                            yield Input(placeholder="e.g. google.com", id="traceroute-host")
+                            yield Label("Max Hops:", classes="label")
+                            yield Input(placeholder="30", id="traceroute-max-hops", type="integer", value="30")
+                            yield Button("Traceroute", id="btn-traceroute", variant="primary")
+                        yield RichLog(id="traceroute-log", wrap=True, highlight=True, markup=True)
+
+
     def on_mount(self) -> None:
         table = self.query_one("#scan-table", DataTable)
         table.cursor_type = "row"
@@ -82,6 +93,8 @@ class NetDiagTab(Container):
             await self.run_http()
         elif event.button.id == "btn-ip":
             await self.run_ip()
+        elif event.button.id == "btn-traceroute":
+            await self.run_traceroute()
 
     async def run_ping(self) -> None:
         host = self.query_one("#ping-host", Input).value
@@ -191,3 +204,26 @@ class NetDiagTab(Container):
 
         self.query_one("#lbl-local-ip", Label).update(f"Local IP: [bold green]{info.get('local_ip')}[/bold green]")
         self.query_one("#lbl-public-ip", Label).update(f"Public IP: [bold green]{info.get('public_ip')}[/bold green]")
+
+    async def run_traceroute(self) -> None:
+        host = self.query_one("#traceroute-host", Input).value
+        max_hops_str = self.query_one("#traceroute-max-hops", Input).value
+        max_hops = int(max_hops_str) if max_hops_str else 30
+
+        if not host:
+            self.notify("Host required.", severity="error")
+            return
+
+        log = self.query_one("#traceroute-log", RichLog)
+        log.clear()
+        log.write(f"Tracing route to {host} (max {max_hops} hops)...")
+        self.notify("Tracerouting...")
+
+        result = await asyncio.to_thread(self.manager.traceroute, host, max_hops)
+
+        if result.get("success"):
+            log.write(result.get("output", ""))
+            self.notify("Traceroute complete.")
+        else:
+            log.write(f"[bold red]Error: {result.get('error')}[/bold red]")
+            self.notify("Traceroute failed.", severity="error")

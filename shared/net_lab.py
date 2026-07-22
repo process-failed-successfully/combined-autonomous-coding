@@ -91,6 +91,29 @@ class NetLabManager:
         except Exception:
             return False
 
+    def traceroute(self, host: str, max_hops: int = 30) -> Dict[str, Any]:
+        """
+        Traceroutes a host using the system command.
+        """
+        cmd = 'tracert' if platform.system().lower() == 'windows' else 'traceroute'
+
+        # Determine the flag for max hops based on the command
+        if cmd == 'tracert':
+            command = [cmd, '-h', str(max_hops), host]
+        else:
+            command = [cmd, '-m', str(max_hops), host]
+
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                return {"success": True, "output": result.stdout}
+            else:
+                return {"success": False, "error": result.stderr or result.stdout or "Command failed"}
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "Traceroute timed out."}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def get_ip_info(self) -> Dict[str, str]:
         """
         Gets local and public IP addresses.
@@ -208,6 +231,18 @@ def run_net_lab_logic(args):
             sys.exit(0)
         else:
             print("\n❌ Ping failed.")
+            sys.exit(1)
+
+    elif args.action == "traceroute":
+        host = args.host
+        max_hops = args.max_hops
+        print(f"--- Traceroute to {host} (max {max_hops} hops) ---")
+        result = manager.traceroute(host, max_hops)
+        if result.get("success"):
+            print(result.get("output", ""))
+            sys.exit(0)
+        else:
+            print(f"❌ Error: {result.get('error')}", file=sys.stderr)
             sys.exit(1)
 
     elif args.action == "ip":

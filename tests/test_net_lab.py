@@ -53,6 +53,29 @@ class TestNetLabManager(unittest.TestCase):
         mock_call.return_value = 1
         self.assertFalse(self.manager.ping("localhost"))
 
+    @patch("subprocess.run")
+    def test_traceroute_success(self, mock_run):
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "traceroute to example.com (1.2.3.4), 30 hops max\n 1  1.2.3.4  1.0 ms"
+        mock_run.return_value = mock_result
+
+        result = self.manager.traceroute("example.com")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["output"], mock_result.stdout)
+
+    @patch("subprocess.run")
+    def test_traceroute_failure(self, mock_run):
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stderr = "Error tracerouting"
+        mock_result.stdout = ""
+        mock_run.return_value = mock_result
+
+        result = self.manager.traceroute("example.com")
+        self.assertFalse(result["success"])
+        self.assertEqual(result["error"], "Error tracerouting")
+
     @patch("requests.get")
     def test_get_ip_info(self, mock_get):
         mock_response = MagicMock()

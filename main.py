@@ -18011,7 +18011,7 @@ def parse_args(argv=None):
     parser_net = subparsers.add_parser(
         "net-lab",
         aliases=["net"],
-        help="Network utilities (scan, dns, head, ping, ip)."
+        help="Network utilities (scan, dns, head, ping, traceroute, ip)."
     )
     net_subparsers = parser_net.add_subparsers(
         dest="action",
@@ -18037,6 +18037,11 @@ def parse_args(argv=None):
     parser_net_ping = net_subparsers.add_parser("ping", help="Ping host.")
     parser_net_ping.add_argument("host", help="Target host.")
     parser_net_ping.add_argument("--count", type=int, default=4, help="Ping count.")
+
+    # net-lab traceroute
+    parser_net_traceroute = net_subparsers.add_parser("traceroute", help="Traceroute host.")
+    parser_net_traceroute.add_argument("host", help="Target host.")
+    parser_net_traceroute.add_argument("--max-hops", type=int, default=30, help="Max hops (default 30).")
 
     # net-lab ip
     parser_net_ip = net_subparsers.add_parser("ip", help="Get IP info.")

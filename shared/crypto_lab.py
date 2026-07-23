@@ -434,7 +434,7 @@ def run_crypto_lab_logic(args) -> bool:
 
             data = None
             if args.input:
-                data = args.input
+                data = args.input.encode("utf-8")
             elif args.input_file:
                 path = Path(args.input_file)
                 if not path.exists():
@@ -511,6 +511,109 @@ def run_crypto_lab_logic(args) -> bool:
                     print(decrypted)  # Bytes repr
             return True
 
+
+        elif args.action == "fernet-keygen":
+            key = manager.generate_key()
+            if args.output:
+                Path(args.output).write_bytes(key)
+                print(f"Key saved to {args.output}")
+            else:
+                print(key.decode('utf-8'))
+            return True
+
+        elif args.action == "fernet-encrypt":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                path = Path(args.key_file)
+                if not path.exists():
+                    print(f"Error: Key file {path} not found.", file=sys.stderr)
+                    return False
+                key = path.read_bytes().strip()
+
+            if not key:
+                print("Error: Key required (--key or --key-file).", file=sys.stderr)
+                return False
+
+            data = None
+            if args.input:
+                data = args.input
+            elif args.input_file:
+                path = Path(args.input_file)
+                if not path.exists():
+                    print(f"Error: Input file {path} not found.", file=sys.stderr)
+                    return False
+                data = path.read_bytes()
+            else:
+                if not sys.stdin.isatty():
+                    try:
+                        data = sys.stdin.buffer.read()
+                    except Exception:
+                        data = sys.stdin.read().encode("utf-8")
+                else:
+                    print("Error: Input required.", file=sys.stderr)
+                    return False
+
+            try:
+                encrypted = manager.encrypt_data(data, key)
+            except Exception as e:
+                print(f"Error encrypting: {e}", file=sys.stderr)
+                return False
+
+            if args.output:
+                Path(args.output).write_bytes(encrypted)
+                print(f"Encrypted data saved to {args.output}")
+            else:
+                print(encrypted.decode("utf-8"))
+            return True
+
+        elif args.action == "fernet-decrypt":
+            key = None
+            if args.key:
+                key = args.key.encode("utf-8")
+            elif args.key_file:
+                path = Path(args.key_file)
+                if not path.exists():
+                    print(f"Error: Key file {path} not found.", file=sys.stderr)
+                    return False
+                key = path.read_bytes().strip()
+
+            if not key:
+                print("Error: Key required (--key or --key-file).", file=sys.stderr)
+                return False
+
+            data = None
+            if args.input:
+                data = args.input.encode("utf-8")
+            elif args.input_file:
+                path = Path(args.input_file)
+                if not path.exists():
+                    print(f"Error: Input file {path} not found.", file=sys.stderr)
+                    return False
+                data = path.read_bytes()
+            else:
+                if not sys.stdin.isatty():
+                    data = sys.stdin.buffer.read().strip()
+                else:
+                    print("Error: Input required.", file=sys.stderr)
+                    return False
+
+            try:
+                decrypted = manager.decrypt_data(data, key)
+            except Exception as e:
+                print(f"Error decrypting: {e}", file=sys.stderr)
+                return False
+
+            if args.output:
+                Path(args.output).write_bytes(decrypted)
+                print(f"Decrypted data saved to {args.output}")
+            else:
+                try:
+                    print(decrypted.decode("utf-8"))
+                except UnicodeDecodeError:
+                    print(decrypted)
+            return True
 
         elif args.action == "rsa-keygen":
             priv, pub = manager.generate_rsa_keypair()

@@ -127,6 +127,53 @@ def test_cli_gen_key(capsys):
     captured = capsys.readouterr()
     assert len(captured.out.strip()) > 0
 
+def test_cli_fernet_keygen(capsys):
+    args = MagicMock()
+    args.action = "fernet-keygen"
+    args.output = None
+
+    run_crypto_lab_logic(args)
+    captured = capsys.readouterr()
+    assert len(captured.out.strip()) > 0
+    assert captured.out.strip().endswith("=")
+
+def test_cli_fernet_encrypt_decrypt(tmp_path):
+    # Gen Key
+    manager = CryptoLabManager()
+    key = manager.generate_key()
+    key_file = tmp_path / "test.key"
+    key_file.write_bytes(key)
+
+    input_file = tmp_path / "input.txt"
+    input_file.write_text("secret")
+
+    enc_file = tmp_path / "enc.txt"
+    dec_file = tmp_path / "dec.txt"
+
+    # Encrypt
+    args_enc = MagicMock()
+    args_enc.action = "fernet-encrypt"
+    args_enc.key = None
+    args_enc.key_file = str(key_file)
+    args_enc.input = None
+    args_enc.input_file = str(input_file)
+    args_enc.output = str(enc_file)
+
+    assert run_crypto_lab_logic(args_enc)
+    assert enc_file.exists()
+
+    # Decrypt
+    args_dec = MagicMock()
+    args_dec.action = "fernet-decrypt"
+    args_dec.key = None
+    args_dec.key_file = str(key_file)
+    args_dec.input = None
+    args_dec.input_file = str(enc_file)
+    args_dec.output = str(dec_file)
+
+    assert run_crypto_lab_logic(args_dec)
+    assert dec_file.read_text() == "secret"
+
 def test_cli_encrypt_decrypt(tmp_path):
     # Gen Key
     manager = CryptoLabManager()

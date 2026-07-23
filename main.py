@@ -258,6 +258,7 @@ KNOWN_COMMANDS = [
     "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "macaroon-lab", "macaroon", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
+    "number-lab", "num",
     "http-status-lab", "http-status", "status-code",
     "math-lab", "math", "calc-lab", "calc", "semver-lab", "semver", "sys-lab", "sys", "log-lab", "ll", "sql-lab", "sql", "sqlformat-lab", "sqlformat", "sqllint", "duckdb-lab", "duckdb", "ddb",
     "sqlite-lab", "sqlite", "html-lab", "html", "html-entity-lab", "entity-lab", "entity", "html-entity", "html2md-lab", "html2md", "md2html-lab", "md2html", "xml2json-lab", "xml2json", "json2xml-lab", "json2xml", "csv2xml-lab", "csv2xml", "c2x", "seo-lab", "seo",
@@ -16457,7 +16458,27 @@ def parse_args(argv=None):
     parser_calc.add_argument("--tui", action="store_true", help="Launch the Textual TUI for Calc Lab")
     parser_calc.add_argument("expression", nargs="*", help="Mathematical expression to evaluate (or start REPL).")
 
+
+    # --- New 'number-lab' command ---
+    parser_number_lab = subparsers.add_parser("number-lab", aliases=["num"], help="Number Lab (Prime, Factors, Stats, Conversion)")
+    num_subparsers = parser_number_lab.add_subparsers(dest="action", help="Number Lab actions")
+    num_convert = num_subparsers.add_parser("convert", help="Convert numbers to different bases.")
+    num_convert.add_argument("number", type=str, help="The number to convert.")
+    num_convert.add_argument("--to-base", type=int, required=True, help="Target base (2, 8, 10, 16).")
+
+    num_prime = num_subparsers.add_parser("prime", help="Check if a number is prime.")
+    num_prime.add_argument("number", type=str, help="The number to check.")
+
+    num_factors = num_subparsers.add_parser("factors", help="Get prime factors of a number.")
+    num_factors.add_argument("number", type=str, help="The number to factorize.")
+
+    num_stats = num_subparsers.add_parser("stats", help="Get statistics for a list of numbers.")
+    num_stats.add_argument("numbers", type=str, nargs='+', help="List of numbers.")
+
+    num_tui = num_subparsers.add_parser("tui", help="Launch interactive TUI for Number Lab.")
+
     # --- New 'unit-lab' command ---
+
     parser_unit = subparsers.add_parser(
         "unit-lab",
         aliases=["unit"],
@@ -26157,7 +26178,18 @@ async def main():
         run_calc_lab(args)
         return
 
+
+    if args.command in ["number-lab", "num"]:
+        if getattr(args, "action", None) == "tui":
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-number-lab")
+            app.run()
+            return
+        from shared.number_lab import run_number_lab_logic
+        success = run_number_lab_logic(args)
+        sys.exit(0 if success else 1)
+
     if args.command in ["unit-lab", "unit"]:
+
         run_unit_lab(args)
         return
 

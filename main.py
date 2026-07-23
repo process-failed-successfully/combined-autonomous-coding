@@ -17612,6 +17612,26 @@ def parse_args(argv=None):
     parser_crypto_dec.add_argument("--key-file", help="Key file.")
     parser_crypto_dec.add_argument("--output", "-o", help="Output file.")
 
+    # crypto-lab fernet-keygen
+    parser_crypto_fernet_gen = crypto_subparsers.add_parser("fernet-keygen", help="Generate Fernet encryption key.")
+    parser_crypto_fernet_gen.add_argument("--output", "-o", help="Save key to file.")
+
+    # crypto-lab fernet-encrypt
+    parser_crypto_fernet_enc = crypto_subparsers.add_parser("fernet-encrypt", help="Encrypt data using Fernet.")
+    parser_crypto_fernet_enc.add_argument("--input", help="Input text.")
+    parser_crypto_fernet_enc.add_argument("--input-file", help="Input file.")
+    parser_crypto_fernet_enc.add_argument("--key", help="Key string.")
+    parser_crypto_fernet_enc.add_argument("--key-file", help="Key file.")
+    parser_crypto_fernet_enc.add_argument("--output", "-o", help="Output file.")
+
+    # crypto-lab fernet-decrypt
+    parser_crypto_fernet_dec = crypto_subparsers.add_parser("fernet-decrypt", help="Decrypt data using Fernet.")
+    parser_crypto_fernet_dec.add_argument("--input", help="Input text (base64 encoded if encrypted).")
+    parser_crypto_fernet_dec.add_argument("--input-file", help="Input file.")
+    parser_crypto_fernet_dec.add_argument("--key", help="Key string.")
+    parser_crypto_fernet_dec.add_argument("--key-file", help="Key file.")
+    parser_crypto_fernet_dec.add_argument("--output", "-o", help="Output file.")
+
     # crypto-lab random
     parser_crypto_rand = crypto_subparsers.add_parser("random", help="Generate random data.")
     parser_crypto_rand.add_argument("--length", type=int, default=32, help="Length.")

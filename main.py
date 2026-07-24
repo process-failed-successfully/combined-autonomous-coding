@@ -413,6 +413,7 @@ KNOWN_COMMANDS = [
     "case-lab", "case",
     "data-uri-lab", "data-uri",
     "jsonpatch-lab", "jsonpatch",
+    "awk-lab", "awk",
     "morse-lab", "morse",
     "roman-lab", "roman",
     "bitwise-lab", "bits",
@@ -1845,6 +1846,31 @@ def run_jsonpath_lab(args):
         sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         run_jsonpath_lab_logic(args)
+        sys.exit(0)
+    else:
+        print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
+        sys.exit(1)
+
+
+def run_awk_lab(args):
+    """Runs the AWK Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching AWK Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-awk")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    elif getattr(args, 'action', None) == 'evaluate':
+        from shared.awk_lab import run_awk_lab_logic
+        run_awk_lab_logic(args)
         sys.exit(0)
     else:
         print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
@@ -16380,6 +16406,18 @@ def parse_args(argv=None):
     jq_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jq_eval_parser.add_argument("expression", help="jq expression.")
 
+    # --- New 'awk-lab' command ---
+    parser_awk = subparsers.add_parser(
+        "awk-lab",
+        aliases=["awk"],
+        help="Evaluate AWK expressions."
+    )
+    awk_subparsers = parser_awk.add_subparsers(dest="action")
+    awk_tui_parser = awk_subparsers.add_parser("tui", help="Launch AWK Lab TUI.")
+    awk_eval_parser = awk_subparsers.add_parser("evaluate", help="Evaluate AWK script.")
+    awk_eval_parser.add_argument("input", help="Input text file path or '-' for stdin.")
+    awk_eval_parser.add_argument("script", help="AWK script.")
+
     # --- Token Lab command ---
     parser_token = subparsers.add_parser(
         "token-lab",
@@ -27022,6 +27060,10 @@ async def main():
 
     if args.command in ["xpath-lab", "xpath"]:
         run_xpath_lab(args)
+        return
+
+    if args.command in ["awk-lab", "awk"]:
+        run_awk_lab(args)
         return
 
     if args.command in ["jmespath-lab", "jmespath", "jp"]:

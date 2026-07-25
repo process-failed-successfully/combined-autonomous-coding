@@ -4056,6 +4056,27 @@ def run_toml2json_lab(args):
         sys.exit(0)
     sys.exit(0)
 
+def run_json2toml_lab(args):
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching JSON2TOML Lab TUI...")
+        app = AgentTUI(project_dir=Path("."), start_tab="tab-json2toml")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+    else:
+        from shared.json2toml_lab import run_json2toml_lab_logic
+        run_json2toml_lab_logic(args)
+        sys.exit(0)
+    sys.exit(0)
+
 
 def run_sys_lab(args):
     """Runs the Sys Lab."""
@@ -26294,7 +26315,7 @@ async def main():
             args.action = "json2toml"
         if getattr(args, "tui", False) or args.action == "tui" or not hasattr(args, 'input'):
             args.action = "tui"
-        run_toml2json_lab(args)
+        run_json2toml_lab(args)
         return
 
     if args.command in ["yaml2json-lab", "yaml2json", "y2j"]:

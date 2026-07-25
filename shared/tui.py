@@ -368,6 +368,7 @@ from shared.tui_json2graphql import Json2GraphQLLabTab
 from shared.tui_json2py import Json2PyLabTab
 from shared.tui_json2xml import Json2XmlTab
 from shared.tui_xml2csv import Xml2CsvTab
+from shared.tui_json2toml import Json2TomlLabTab
 from shared.tui_json2ts import Json2TsLabTab
 from shared.tui_json2zod import Json2ZodLabTab
 from shared.tui_json2go import Json2GoLabTab

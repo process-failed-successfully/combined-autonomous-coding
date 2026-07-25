@@ -182,6 +182,7 @@ from shared.tui_yaml2csv import Yaml2CsvTab
 from shared.tui_json2md import Json2MdTab
 from shared.tui_csv2md import Csv2MdTab
 from shared.tui_md2csv import Md2CsvTab
+from shared.tui_sse import SseLabTab
 from shared.tui_csv2toml import Csv2TomlTab
 from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_csv2yaml import Csv2YamlTab
@@ -4602,6 +4603,8 @@ class AgentTUI(App):
                 yield UserAgentLabTab()
             with TabPane("WS Lab", id="tab-ws-lab"):
                 yield WsLabTab()
+            with TabPane("SSE Lab", id="tab-sse-lab"):
+                yield SseLabTab()
             with TabPane("Webhook Lab", id="tab-webhook"):
                 yield WebhookLabTab(self.project_dir)
             with TabPane("Proxy Lab", id="tab-proxy"):

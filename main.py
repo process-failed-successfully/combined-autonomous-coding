@@ -142,6 +142,7 @@ from shared.enc_lab import run_enc_lab_logic
 from shared.rss_lab import run_rss_lab_logic
 from shared.fs_lab import run_fs_lab_logic
 from shared.ws_lab import run_ws_lab_logic
+from shared.sse_lab import run_sse_lab_logic
 from shared.webhook_lab import run_webhook_lab_logic
 from shared.hash_lab import run_hash_lab_logic
 from shared.random_lab import run_random_lab_logic
@@ -18754,6 +18755,16 @@ def parse_args(argv=None):
 
     fs_subparsers.add_parser("tui", help="Launch interactive TUI for FS Lab.")
 
+    # --- New 'sse-lab' command ---
+    parser_sse = subparsers.add_parser(
+        "sse-lab",
+        aliases=["sse"],
+        help="Server-Sent Events (SSE) Client."
+    )
+    parser_sse.add_argument("url", nargs="?", help="The SSE endpoint URL (e.g., http://localhost:8000/stream)")
+    parser_sse.add_argument("--header", "-H", action="append", help="Custom headers (e.g., -H 'Auth: Bearer token')")
+    parser_sse.add_argument("--tui", action="store_true", help="Open the SSE Lab TUI")
+
     # --- New 'ws-lab' command ---
     parser_ws = subparsers.add_parser(
         "ws-lab",
@@ -25696,6 +25707,10 @@ async def main():
 
     if args.command in ["ws-lab", "ws"]:
         await run_ws_lab_logic(args)
+        return
+
+    if args.command in ["sse-lab", "sse"]:
+        await run_sse_lab_logic(args)
         return
 
     if args.command in ["hash-lab", "hash"]:

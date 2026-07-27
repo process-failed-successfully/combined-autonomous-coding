@@ -262,6 +262,7 @@ from shared.tui_jwk import JwkLabTab
 
 from shared.tui_ksuid import KsuidLabTab
 from shared.tui_uuid import UuidLabTab
+from shared.tui_objectid import ObjectIdLabTab
 from shared.tui_cuid2 import Cuid2LabTab
 from shared.tui_nanoid import NanoIDLab
 from shared.tui_ulid import UlidLabTab
@@ -4617,6 +4618,8 @@ class AgentTUI(App):
                 yield KsuidLabTab()
             with TabPane("UUID Lab", id="tab-uuid"):
                 yield UuidLabTab()
+            with TabPane("ObjectId Lab", id="tab-objectid"):
+                yield ObjectIdLabTab()
             with TabPane("CUID2 Lab", id="tab-cuid2"):
                 yield Cuid2LabTab()
             with TabPane("TypeID Lab", id="tab-typeid"):

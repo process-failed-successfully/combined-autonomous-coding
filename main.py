@@ -256,7 +256,7 @@ KNOWN_COMMANDS = [
     "api-lab", "data-lab", "research", "serve", "scheduler", "chaos", "guardrails", "devtools",
     "standup", "presentation", "visualize", "network", "sanitize", "ide", "logic-lab",
     "gantt", "resume", "retro", "kanban", "smart-context", "port", "color-lab", "schema-lab",
-    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "macaroon-lab", "macaroon", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
+    "cidr-lab", "cidr", "cq", "code-query", "badges", "jwt-lab", "macaroon-lab", "macaroon", "paseto-lab", "paseto", "jwk-lab", "jwk", "ksuid-lab", "ksuid", "uuid-lab", "uuid", "objectid-lab", "objectid", "oid", "cuid2-lab", "cuid2", "typeid-lab", "typeid", "ulid-lab", "ulid", "sqids-lab", "sqids", "password-lab", "pwd-lab", "hashids-lab", "hashids", "argon2-lab", "argon2",
     "text-lab", "txt", "cert-lab", "cert", "url-lab", "url", "urlencode-lab", "urlencode", "urldecode-lab", "urldecode", "date-lab", "date", "time-lab", "time", "unit-lab", "unit", "converter-lab", "convert",
     "codec-lab", "codec", "currency-lab", "currency", "cur",
     "http-status-lab", "http-status", "status-code",
@@ -3352,6 +3352,22 @@ def run_uuid_lab(args):
     from shared.uuid_lab import run_uuid_lab_logic
     run_uuid_lab_logic(args)
     sys.exit(0)
+
+
+def run_objectid_lab(args):
+    """Runs the ObjectId Lab."""
+    if getattr(args, "action", None) == "tui":
+        print("Launching ObjectId Lab TUI...")
+        from shared.tui import AgentTUI
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-objectid")
+        if sys.platform == "win32":
+            import asyncio
+            asyncio.run(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    from shared.objectid_lab import run_objectid_lab_logic
+    run_objectid_lab_logic(args)
 
 
 def run_nanoid_lab(args):
@@ -15477,6 +15493,37 @@ def parse_args(argv=None):
     # ULID Lab
     # ==========================================
     # ==========================================
+    # ObjectId Lab
+    # ==========================================
+    parser_objectid = subparsers.add_parser(
+        "objectid-lab",
+        aliases=["objectid", "oid"],
+        help="ObjectId Generator and Inspector."
+    )
+    objectid_subparsers = parser_objectid.add_subparsers(
+        dest="action",
+        required=True,
+        help="Action to perform."
+    )
+
+    # objectid generate
+    parser_objectid_gen = objectid_subparsers.add_parser("generate", aliases=["gen"], help="Generate ObjectIds.")
+    parser_objectid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of ObjectIds to generate.")
+
+    # objectid inspect
+    parser_objectid_inspect = objectid_subparsers.add_parser("inspect", aliases=["info", "decode"], help="Inspect an ObjectId.")
+    parser_objectid_inspect.add_argument("objectid", help="The ObjectId to inspect.")
+
+    # objectid extract
+    parser_objectid_extract = objectid_subparsers.add_parser("extract", help="Extract ObjectIds from text.")
+    parser_objectid_extract.add_argument("--text", help="Text to extract from.")
+    parser_objectid_extract.add_argument("--file", help="File to extract from.")
+    parser_objectid_extract.add_argument("--unique", action="store_true", help="Return unique ObjectIds only.")
+
+    # objectid tui
+    parser_objectid_tui = objectid_subparsers.add_parser("tui", help="Launch ObjectId Lab TUI.")
+
+    # ==========================================
     # NanoID Lab
     # ==========================================
     parser_nanoid = subparsers.add_parser(
@@ -26090,6 +26137,10 @@ async def main():
 
     if args.command in ["uuid-lab", "uuid"]:
         run_uuid_lab(args)
+        return
+
+    if args.command in ["objectid-lab", "objectid", "oid"]:
+        run_objectid_lab(args)
         return
 
     if args.command in ["nanoid-lab", "nanoid"]:

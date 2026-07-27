@@ -68,6 +68,7 @@ dependencies = [
     "duckdb",
     "pymacaroons==0.13.0",
     "aiohttp",
+    "pymongo",
 ]
 requires-python = ">=3.11"
 

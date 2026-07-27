@@ -48,6 +48,27 @@ class TestRegexEscapeLab(unittest.TestCase):
         self.assertFalse(success)
         self.assertIn("Error: No action specified", mock_stderr.getvalue())
 
+    def test_main_parser(self):
+        import main
+
+        # Test encode parsing
+        args = main.parse_args(["regex-escape-lab", "--encode", "hello.world"])
+        self.assertEqual(args.command, "regex-escape-lab")
+        self.assertEqual(args.encode, "hello.world")
+        self.assertFalse(args.tui)
+
+        # Test decode parsing
+        args = main.parse_args(["regex-escape-lab", "--decode", "hello\\.world"])
+        self.assertEqual(args.command, "regex-escape-lab")
+        self.assertEqual(args.decode, "hello\\.world")
+        self.assertFalse(args.tui)
+
+        # Test tui parsing
+        args = main.parse_args(["regex-escape-lab", "--tui"])
+        self.assertEqual(args.command, "regex-escape-lab")
+        self.assertTrue(args.tui)
+
+
 class TestRegexEscapeLabTUI(unittest.IsolatedAsyncioTestCase):
 
     async def test_tui_render(self):

@@ -13817,6 +13817,29 @@ def parse_args(argv=None):
         help="Model to use (overrides default)."
     )
 
+    # --- New 'regex-escape-lab' command ---
+    parser_regex_escape = subparsers.add_parser(
+        "regex-escape-lab",
+        aliases=["regex-escape"],
+        help="Regex Escape Lab: Escape and unescape regex strings."
+    )
+    regex_escape_group = parser_regex_escape.add_mutually_exclusive_group(required=True)
+    regex_escape_group.add_argument(
+        "--encode",
+        type=str,
+        help="String to escape for use in a regex."
+    )
+    regex_escape_group.add_argument(
+        "--decode",
+        type=str,
+        help="String to unescape from a regex literal."
+    )
+    regex_escape_group.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch interactive TUI."
+    )
+
     # --- New 'cron-lab' command ---
     parser_arn = subparsers.add_parser(
         "arn-lab",

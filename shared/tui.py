@@ -188,6 +188,7 @@ from shared.tui_csv2json import Csv2JsonTab
 from shared.tui_csv2yaml import Csv2YamlTab
 from shared.tui_csv2xml import Csv2XmlLabTab
 from shared.tui_csv2html import Csv2HtmlLabTab
+from shared.tui_asn1 import Asn1LabTab
 from shared.tui_json2proto import Json2ProtoLabTab
 from shared.tui_kafka import KafkaLabTab
 from shared.tui_amqp import AmqpLabTab
@@ -5119,6 +5120,8 @@ class AgentTUI(App):
                 yield TreeLabTab()
             with TabPane("Pipeline Lab", id="tab-pipeline"):
                 yield PipelineLabTab()
+            with TabPane("ASN.1 Lab", id="tab-asn1"):
+                yield Asn1LabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():

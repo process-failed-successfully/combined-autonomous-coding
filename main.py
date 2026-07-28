@@ -3829,6 +3829,35 @@ def run_cert_lab(args):
     sys.exit(0 if success else 1)
 
 
+def run_asn1_lab(args):
+    """Manages ASN.1 lab operations."""
+    if getattr(args, "action", None) == "tui":
+        run_tui(args, "tab-asn1")
+        sys.exit(0)
+
+    if getattr(args, "action", None) != "decode":
+        print("Error: Invalid or missing action. Use 'decode' or 'tui'.", file=sys.stderr)
+        sys.exit(1)
+
+    from shared.asn1_lab import Asn1LabManager
+    manager = Asn1LabManager()
+
+    try:
+        with open(args.file, "r") as f:
+            payload = f.read()
+    except FileNotFoundError:
+        print(f"Error: File not found: {args.file}", file=sys.stderr)
+        sys.exit(1)
+
+    result = manager.decode(payload, getattr(args, "format", "auto"))
+    if result["success"]:
+        print(result["output"])
+        sys.exit(0)
+    else:
+        print(f"Error: {result['error']}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_codec_lab(args):
     """Runs the Codec Lab."""
     if getattr(args, "action", None) == "tui":
@@ -16309,6 +16338,23 @@ def parse_args(argv=None):
     # cert-lab tui
     cert_subparsers.add_parser("tui", help="Launch interactive TUI.")
 
+    # --- New 'asn1-lab' command ---
+    parser_asn1 = subparsers.add_parser(
+        "asn1-lab",
+        aliases=["asn1"],
+        help="ASN.1 decoding and inspection."
+    )
+    asn1_subparsers = parser_asn1.add_subparsers(
+        dest="action",
+        help="asn1-lab actions"
+    )
+    # asn1-lab decode
+    parser_asn1_decode = asn1_subparsers.add_parser("decode", help="Decode an ASN.1 file (PEM, Base64, or Hex).")
+    parser_asn1_decode.add_argument("file", help="File to decode.")
+    parser_asn1_decode.add_argument("--format", choices=["auto", "pem", "base64", "hex"], default="auto", help="Input format (default: auto).")
+    # asn1-lab tui
+    asn1_subparsers.add_parser("tui", help="Launch interactive TUI.")
+
     # --- New 'time-lab' command ---
     parser_time = subparsers.add_parser(
         "time-lab",
@@ -26269,6 +26315,8 @@ async def main():
 
     if args.command in ["cert-lab", "cert"]:
         run_cert_lab(args)
+    if args.command in ["asn1-lab", "asn1"]:
+        run_asn1_lab(args)
         return
 
     if args.command in ["codec-lab", "codec"]:

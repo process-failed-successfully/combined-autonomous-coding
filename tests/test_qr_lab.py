@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from shared.qr_lab import QRLabManager  # noqa: E402
+import shared.tui  # noqa: F401
 
 
 class TestQRLabManager(unittest.TestCase):

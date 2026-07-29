@@ -83,8 +83,9 @@ class TestQRLabManager(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             img_path = Path(tmpdir) / "test_decode.png"
-            # Generate the image
-            self.manager.generate(text_to_encode, output_path=img_path)
+            # Generate the image directly bypassing the CLI wrapper method
+            img = self.manager.generate_image(text_to_encode)
+            img.save(str(img_path))
 
             # Assert file exists
             self.assertTrue(img_path.exists())

@@ -67,3 +67,5 @@ duckdb
 pymemcache==4.0.0
 pymacaroons==0.13.0
 psycopg2-binary>=2.9.9
+pyasn1
+types-pyasn1

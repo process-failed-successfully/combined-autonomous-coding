@@ -70,6 +70,7 @@ dependencies = [
     "aiohttp",
     "pymongo",
     "opencv-python-headless",
+    "pyasn1",
 ]
 requires-python = ">=3.11"
 

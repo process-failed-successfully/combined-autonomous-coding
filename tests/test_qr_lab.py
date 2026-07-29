@@ -76,6 +76,25 @@ class TestQRLabManager(unittest.TestCase):
         self.assertIn("FN:Jane", vcard_minimal)
         self.assertNotIn("ORG:", vcard_minimal)
 
+    def test_decode_image(self):
+        import tempfile
+
+        text_to_encode = "https://example.com/test_decode"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            img_path = Path(tmpdir) / "test_decode.png"
+            # Generate the image
+            self.manager.generate(text_to_encode, output_path=img_path)
+
+            # Assert file exists
+            self.assertTrue(img_path.exists())
+
+            # Now decode it
+            results = self.manager.decode_image(img_path)
+
+            self.assertEqual(len(results), 1)
+            self.assertEqual(results[0], text_to_encode)
+
     @patch("shared.qr_lab.qrcode.QRCode")
     def test_generate_ascii(self, mock_qr_cls):
         mock_qr = MagicMock()

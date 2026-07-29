@@ -54,6 +54,31 @@ class QRLabManager:
         qr = self._create_qr(text, **kwargs)
         return self._create_image(qr, **kwargs)
 
+    def decode_image(self, image_path: Path) -> list[str]:
+        """Decodes QR code(s) from an image file."""
+        if not image_path.exists():
+            raise FileNotFoundError(f"Image file not found: {image_path}")
+
+        try:
+            import cv2
+        except ImportError:
+            raise ImportError("opencv-python-headless is required for decoding QR codes. Run 'pip install opencv-python-headless'.")
+
+        image = cv2.imread(str(image_path))
+        if image is None:
+            raise ValueError(f"Failed to read image at {image_path}")
+
+        detector = cv2.QRCodeDetector()
+        # Use detectAndDecodeMulti to find all QR codes
+        ret, decoded_info, points, straight_qrcode = detector.detectAndDecodeMulti(image)
+
+        if not ret or not decoded_info:
+            return []
+
+        # decoded_info is a tuple of strings
+        # Filter out empty strings which can happen if a QR code is detected but fails decoding
+        return [info for info in decoded_info if info]
+
     def generate_ascii(self, text: str, **kwargs) -> str:
         """Generates an ASCII string representation of the QR code."""
         qr = self._create_qr(text, **kwargs)
@@ -231,7 +256,18 @@ def run_qr_lab_logic(args):
         if hasattr(args, "back_color") and args.back_color:
             kwargs["back_color"] = args.back_color
 
-        if args.action == "gen":
+        if args.action == "decode":
+            img_path = Path(args.image)
+            results = manager.decode_image(img_path)
+
+            if not results:
+                console.print(f"[yellow]No QR codes detected in {img_path}[/yellow]")
+            else:
+                console.print(f"[green]Successfully decoded {len(results)} QR code(s):[/green]")
+                for i, result in enumerate(results):
+                    console.print(Panel(f"[bold]{result}[/bold]", title=f"QR Code {i+1}"))
+
+        elif args.action == "gen":
             output = Path(args.output) if args.output else None
             manager.generate(args.text, output_path=output, **kwargs)
 

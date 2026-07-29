@@ -71,6 +71,7 @@ dependencies = [
     "pymongo",
     "opencv-python-headless",
     "pyasn1",
+    "phonenumbers",
     "types-pyasn1",
 ]
 requires-python = ">=3.11"

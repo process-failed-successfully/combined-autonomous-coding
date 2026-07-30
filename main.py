@@ -15010,6 +15010,12 @@ def parse_args(argv=None):
     parser_cl_mix.add_argument("color2", help="Second color (hex, rgb).")
     parser_cl_mix.add_argument("--weight", "-w", type=float, default=0.5, help="Weight of second color (0.0 to 1.0). Default 0.5.")
 
+    # color-lab gradient
+    parser_cl_grad = color_lab_subparsers.add_parser("gradient", help="Generate a color gradient.")
+    parser_cl_grad.add_argument("color1", help="Start color.")
+    parser_cl_grad.add_argument("color2", help="End color.")
+    parser_cl_grad.add_argument("--steps", "-s", type=int, default=5, help="Number of steps in the gradient. Default 5.")
+
     # color-lab extract
     parser_cl_ext = color_lab_subparsers.add_parser("extract", help="Extract prominent colors from an image.")
     parser_cl_ext.add_argument("image", help="Image file path.")

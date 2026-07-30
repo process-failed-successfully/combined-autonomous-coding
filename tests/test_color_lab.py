@@ -62,6 +62,22 @@ class TestColorLab(unittest.TestCase):
         mixed = c1.mix(c2, 1.0)
         self.assertEqual(mixed.rgb, (255, 255, 255))
 
+    def test_gradient(self):
+        c1 = Color("#000000")
+        c2 = Color("#ffffff")
+
+        # 3 step gradient
+        grad = c1.gradient(c2, steps=3)
+        self.assertEqual(len(grad), 3)
+        self.assertEqual(grad[0].rgb, (0, 0, 0))
+        self.assertEqual(grad[1].rgb, (127, 127, 127))
+        self.assertEqual(grad[2].rgb, (255, 255, 255))
+
+        # 1 step (fallback to original color)
+        grad = c1.gradient(c2, steps=1)
+        self.assertEqual(len(grad), 1)
+        self.assertEqual(grad[0].rgb, (0, 0, 0))
+
     def test_cmyk(self):
         c = Color("#ff0000")  # Red
         # Cyan=0, Magenta=1, Yellow=1, Black=0

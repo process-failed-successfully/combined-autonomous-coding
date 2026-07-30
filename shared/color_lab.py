@@ -166,6 +166,17 @@ class Color:
 
         return Color(f"rgb({r},{g},{b})")
 
+    def gradient(self, other: 'Color', steps: int) -> List['Color']:
+        """Generates a gradient of colors between this color and another."""
+        if steps < 2:
+            return [self]
+
+        colors = []
+        for i in range(steps):
+            weight = i / (steps - 1)
+            colors.append(self.mix(other, weight))
+        return colors
+
     def palette(self, type: str) -> List['Color']:
         """Generates a palette based on this color."""
         h, s, l = self.hsl
@@ -313,6 +324,17 @@ def run_color_lab_logic(action: str, **kwargs):
             _print_color_swatch(c1, "Color 1")
             _print_color_swatch(c2, "Color 2")
             _print_color_swatch(result, "Result")
+
+        elif action == "gradient":
+            c1 = Color(kwargs["color1"])
+            c2 = Color(kwargs["color2"])
+            steps = int(kwargs.get("steps", 5))
+
+            gradient_colors = c1.gradient(c2, steps)
+
+            console.print(Panel(f"[bold]Gradient ({steps} steps)[/bold]"))
+            for i, c in enumerate(gradient_colors):
+                _print_color_swatch(c, f"Step {i+1}")
 
         elif action == "palette":
             base = Color(kwargs["base"])

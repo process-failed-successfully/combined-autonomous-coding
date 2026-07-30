@@ -87,7 +87,8 @@ class TestQRLabManager(unittest.TestCase):
             img_path = Path(tmpdir) / "test_decode.png"
             # Generate the image using bare qrcode library to avoid any mocked class state
             img = qrcode.make(text_to_encode)
-            img.save(str(img_path))
+            with open(str(img_path), "wb") as f:
+                img.save(f)
 
             # Assert file exists
             self.assertTrue(img_path.exists())

@@ -102,7 +102,7 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
 
                 # Check output
                 output = tab.query_one("#output-base64").text
-                status = tab.query_one("#lbl-encode-status").renderable
+                status = tab.query_one("#lbl-encode-status").render()
 
                 self.assertEqual(output, "base64output")
                 self.assertIn("successfully encoded", str(status))
@@ -113,7 +113,7 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(Base64ImgLabTab)
             # Click encode without typing
             await pilot.click("#btn-encode")
-            status = tab.query_one("#lbl-encode-status").renderable
+            status = tab.query_one("#lbl-encode-status").render()
             self.assertIn("Please provide a file path", str(status))
 
     async def test_decode_success(self):
@@ -128,7 +128,7 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
                 await pilot.press(*list("out.png"))
 
                 await pilot.click("#btn-decode")
-                status = tab.query_one("#lbl-decode-status").renderable
+                status = tab.query_one("#lbl-decode-status").render()
 
                 self.assertIn("successfully saved to out.png", str(status))
 
@@ -138,5 +138,5 @@ class TestBase64ImgLabTab(unittest.IsolatedAsyncioTestCase):
             tab = app.query_one(Base64ImgLabTab)
             # Click decode without typing
             await pilot.click("#btn-decode")
-            status = tab.query_one("#lbl-decode-status").renderable
+            status = tab.query_one("#lbl-decode-status").render()
             self.assertIn("Please provide a Base64 string", str(status))

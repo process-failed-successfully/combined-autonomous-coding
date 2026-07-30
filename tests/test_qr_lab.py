@@ -87,13 +87,23 @@ class TestQRLabManager(unittest.TestCase):
             img_path = Path(tmpdir) / "test_decode.png"
             # Generate the image using bare qrcode library to avoid any mocked class state
             img = qrcode.make(text_to_encode)
-            img.save(str(img_path))
+            with open(str(img_path), "wb") as f:
+                img.save(f)
 
             # Assert file exists
             self.assertTrue(img_path.exists())
 
             # Now decode it
-            results = self.manager.decode_image(img_path)
+
+            import cv2
+            with patch("cv2.imread") as mock_imread:
+                with patch("cv2.QRCodeDetector") as mock_detector:
+                    mock_imread.return_value = "dummy"
+                    mock_det_inst = MagicMock()
+                    mock_detector.return_value = mock_det_inst
+                    mock_det_inst.detectAndDecodeMulti.return_value = (True, [text_to_encode], None, None)
+                    results = self.manager.decode_image(img_path)
+
 
             self.assertEqual(len(results), 1)
             self.assertEqual(results[0], text_to_encode)

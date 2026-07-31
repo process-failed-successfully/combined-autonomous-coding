@@ -15711,6 +15711,10 @@ def parse_args(argv=None):
     # ksuid tui
     parser_ksuid_tui = ksuid_subparsers.add_parser("tui", help="Launch KSUID Lab TUI.")
 
+    # ksuid bulk
+    parser_ksuid_bulk = ksuid_subparsers.add_parser("bulk", help="Generate bulk KSUIDs.")
+    parser_ksuid_bulk.add_argument("count", type=int, help="Number of KSUIDs.")
+
     parser_uuid = subparsers.add_parser(
         "uuid-lab",
         aliases=["uuid"],

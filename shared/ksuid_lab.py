@@ -86,6 +86,15 @@ def run_ksuid_lab_logic(args):
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
+    elif args.action == "bulk":
+        try:
+            results = manager.generate(count=args.count)
+            for res in results:
+                print(res)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
     elif args.action == "inspect":
         info = manager.inspect(args.ksuid)
         if not info["valid"]:

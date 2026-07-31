@@ -44,6 +44,14 @@ def test_cli_ksuid_generate(mock_stdout):
     assert len([call for call in output if len(call[0][0].strip()) == 27]) == 2
 
 @patch('sys.stdout', new_callable=MagicMock)
+def test_cli_ksuid_bulk(mock_stdout):
+    args = argparse.Namespace(action="bulk", count=5)
+    run_ksuid_lab_logic(args)
+    output = mock_stdout.write.call_args_list
+    # Since write is called sequentially with a newline, we check for 5 full strings output
+    assert len([call for call in output if len(call[0][0].strip()) == 27]) == 5
+
+@patch('sys.stdout', new_callable=MagicMock)
 def test_cli_ksuid_inspect(mock_stdout):
     manager = KsuidLabManager()
     k = manager.generate()[0]

@@ -3039,6 +3039,11 @@ def run_mongo_lab(args):
 
 def run_redis_lab(args):
     """Runs the Redis Lab."""
+    if args.action == "tui":
+        print("Launching Redis Lab TUI...")
+        run_tui(args, start_tab="tab-redis")
+        return
+
     run_redis_lab_logic(args)
     sys.exit(0)
 
@@ -19807,6 +19812,9 @@ Examples:
 
     # redis-lab info
     redis_subparsers.add_parser("info", help="Get server info.")
+
+    # redis-lab tui
+    redis_subparsers.add_parser("tui", help="Launch interactive Redis Lab TUI.")
 
     # --- New 'memcached-lab' command ---
     parser_memcached = subparsers.add_parser(

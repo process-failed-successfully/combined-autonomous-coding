@@ -415,6 +415,7 @@ KNOWN_COMMANDS = [
     "data-uri-lab", "data-uri",
     "jsonpatch-lab", "jsonpatch",
     "awk-lab", "awk",
+    "sed-lab", "sed",
     "morse-lab", "morse",
     "roman-lab", "roman",
     "bitwise-lab", "bits",
@@ -1878,6 +1879,22 @@ def run_awk_lab(args):
         sys.exit(1)
 
 
+
+def run_sed_lab(args):
+    """Runs the SED Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        print("Launching SED Lab TUI...")
+        run_tui(args, start_tab="tab-sed")
+    elif getattr(args, 'action', None) == 'evaluate':
+        from shared.sed_lab import run_sed_lab_logic
+        if not run_sed_lab_logic(args):
+            sys.exit(1)
+        sys.exit(0)
+    else:
+        print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_xpath_lab(args):
     """Runs the XPath Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -2993,7 +3010,6 @@ def run_postgres_lab(args):
     """Runs the Postgres Lab."""
     if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
         print("Launching Postgres Lab TUI...")
-        from main import run_tui
         run_tui(args, start_tab="tab-postgres")
         return
 
@@ -16566,6 +16582,19 @@ def parse_args(argv=None):
     awk_eval_parser.add_argument("input", help="Input text file path or '-' for stdin.")
     awk_eval_parser.add_argument("script", help="AWK script.")
 
+    # --- New 'sed-lab' command ---
+    parser_sed = subparsers.add_parser(
+        "sed-lab",
+        aliases=["sed"],
+        help="Evaluate SED scripts."
+    )
+    sed_subparsers = parser_sed.add_subparsers(dest="action")
+    sed_tui_parser = sed_subparsers.add_parser("tui", help="Launch SED Lab TUI.")
+    sed_eval_parser = sed_subparsers.add_parser("evaluate", help="Evaluate SED scripts.")
+    sed_eval_parser.add_argument("input", help="Input file path or '-' for stdin.")
+    sed_eval_parser.add_argument("script", help="SED script.")
+
+
     # --- Token Lab command ---
     parser_token = subparsers.add_parser(
         "token-lab",
@@ -27232,6 +27261,10 @@ async def main():
 
     if args.command in ["awk-lab", "awk"]:
         run_awk_lab(args)
+        return
+
+    if args.command in ["sed-lab", "sed"]:
+        run_sed_lab(args)
         return
 
     if args.command in ["jmespath-lab", "jmespath", "jp"]:

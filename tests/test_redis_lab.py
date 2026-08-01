@@ -80,3 +80,15 @@ class TestRedisLabManager:
         keys = manager.scan_keys("*")
         assert "k1" in keys
         assert "k2" in keys
+
+    @patch('main.run_tui')
+    @patch('main.sys.exit')
+    def test_run_redis_lab_tui(self, mock_exit, mock_run_tui):
+        import main
+        args = MagicMock()
+        args.action = "tui"
+
+        main.run_redis_lab(args)
+
+        mock_run_tui.assert_called_once_with(args, start_tab="tab-redis")
+        mock_exit.assert_not_called()

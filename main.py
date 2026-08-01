@@ -1878,6 +1878,31 @@ def run_awk_lab(args):
         sys.exit(1)
 
 
+def run_sed_lab(args):
+    """Runs the SED Lab."""
+    if getattr(args, 'action', None) == 'tui':
+        from shared.tui import AgentTUI
+        print("Launching SED Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-sed")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    elif getattr(args, 'action', None) == 'evaluate':
+        from shared.sed_lab import run_sed_lab_logic
+        run_sed_lab_logic(args)
+        sys.exit(0)
+    else:
+        print("Error: Invalid action. Use 'tui' or 'evaluate'.", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_xpath_lab(args):
     """Runs the XPath Lab."""
     if getattr(args, 'action', None) == 'tui':
@@ -16566,6 +16591,18 @@ def parse_args(argv=None):
     awk_eval_parser.add_argument("input", help="Input text file path or '-' for stdin.")
     awk_eval_parser.add_argument("script", help="AWK script.")
 
+    # --- SED Lab command ---
+    parser_sed = subparsers.add_parser(
+        "sed-lab",
+        aliases=["sed"],
+        help="Evaluate SED expressions."
+    )
+    sed_subparsers = parser_sed.add_subparsers(dest="action")
+    sed_tui_parser = sed_subparsers.add_parser("tui", help="Launch SED Lab TUI.")
+    sed_eval_parser = sed_subparsers.add_parser("evaluate", help="Evaluate SED script.")
+    sed_eval_parser.add_argument("input", help="Input text file path or '-' for stdin.")
+    sed_eval_parser.add_argument("script", help="SED script.")
+
     # --- Token Lab command ---
     parser_token = subparsers.add_parser(
         "token-lab",
@@ -27232,6 +27269,10 @@ async def main():
 
     if args.command in ["awk-lab", "awk"]:
         run_awk_lab(args)
+        return
+
+    if args.command in ["sed-lab", "sed"]:
+        run_sed_lab(args)
         return
 
     if args.command in ["jmespath-lab", "jmespath", "jp"]:

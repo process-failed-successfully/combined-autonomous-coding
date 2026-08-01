@@ -330,6 +330,7 @@ from shared.tui_jq import JqLabTab
 from shared.tui_jmespath import JmesPathLabTab
 from shared.tui_xpath import XpathLabTab
 from shared.tui_awk import AwkLabTab
+from shared.tui_sed import SedLabTab
 from shared.tui_token import TokenLabTab
 from shared.tui_mime import MimeLabTab
 from shared.tui_branch_lab import BranchLabTab
@@ -5014,6 +5015,8 @@ class AgentTUI(App):
                 yield XpathLabTab(self.project_dir)
             with TabPane("AWK Lab", id="tab-awk"):
                 yield AwkLabTab()
+            with TabPane("SED Lab", id="tab-sed"):
+                yield SedLabTab()
             with TabPane("Token Lab", id="tab-token"):
                 yield TokenLabTab(self.project_dir)
             with TabPane("MAC Lab", id="tab-mac"):

@@ -13,6 +13,7 @@ authors = [
     {name = "User", email = "user@example.com"},
 ]
 dependencies = [
+    "pymysql",
     "cuid2>=2.0.0",
     "nanoid>=2.0.0",
     "typeid-python>=0.3.10",

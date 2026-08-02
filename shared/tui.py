@@ -4538,7 +4538,7 @@ class AgentTUI(App):
             with TabPane("Net Diag", id="tab-net-diag"):
                 yield NetDiagTab(self.project_dir)
             with TabPane("CIDR Lab", id="tab-cidr"):
-                yield CidrLabTab(self.project_dir)
+                yield CidrLabTab()
             with TabPane("Sniffer", id="tab-sniffer"):
                 yield SnifferLabTab(self.project_dir)
             with TabPane("PCAP Lab", id="tab-pcap"):
@@ -5023,8 +5023,6 @@ class AgentTUI(App):
                 yield TokenLabTab(self.project_dir)
             with TabPane("MAC Lab", id="tab-mac"):
                 yield MacLabTab()
-            with TabPane("CIDR Lab", id="tab-cidr"):
-                yield CidrLabTab()
             with TabPane("NTP Lab", id="tab-ntp"):
                 yield NtpLabTab()
             with TabPane("PKCE Lab", id="tab-pkce"):

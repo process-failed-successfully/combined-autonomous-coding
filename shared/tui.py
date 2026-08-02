@@ -116,10 +116,10 @@ from shared.tui_scheduler import SchedulerTab
 from shared.tui_kanban import KanbanBoard
 from shared.tui_network import NetworkTab
 from shared.tui_net_diag import NetDiagTab
-from shared.tui_cidr import CidrLabTab
 from shared.tui_cheatsheet import CheatsheetTab
 from shared.tui_mac import MacLabTab
 from shared.tui_ntp import NtpLabTab
+from shared.tui_cidr import CidrLabTab
 from shared.tui_pkce import PkceLabTab
 from shared.tui_saml import SamlLabTab
 from shared.tui_size import SizeLabTab
@@ -5023,6 +5023,8 @@ class AgentTUI(App):
                 yield TokenLabTab(self.project_dir)
             with TabPane("MAC Lab", id="tab-mac"):
                 yield MacLabTab()
+            with TabPane("CIDR Lab", id="tab-cidr"):
+                yield CidrLabTab()
             with TabPane("NTP Lab", id="tab-ntp"):
                 yield NtpLabTab()
             with TabPane("PKCE Lab", id="tab-pkce"):

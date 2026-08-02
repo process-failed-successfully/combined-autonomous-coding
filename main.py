@@ -15161,13 +15161,16 @@ def parse_args(argv=None):
     parser_cidr_lab = subparsers.add_parser(
         "cidr-lab",
         aliases=["cidr"],
-        help="CIDR and IP utilities (info, contains, overlaps, subnet)."
+        help="CIDR and IP utilities (info, contains, overlaps, subnet, tui)."
     )
     cidr_lab_subparsers = parser_cidr_lab.add_subparsers(
         dest="action",
         required=True,
         help="Action to perform."
     )
+
+    # cidr-lab tui
+    parser_cl_tui = cidr_lab_subparsers.add_parser("tui", help="Launch interactive CIDR Lab TUI.")
 
     # cidr-lab info
     parser_cl_info = cidr_lab_subparsers.add_parser("info", help="Get details about a CIDR block.")

@@ -125,6 +125,11 @@ def run_cidr_lab_logic(args):
     """
     manager = CidrLabManager()
 
+    if args.action == "tui":
+        from main import run_tui
+        run_tui(args, start_tab="tab-cidr")
+        return
+
     if args.action == "info":
         info = manager.get_info(args.cidr)
         if "error" in info:

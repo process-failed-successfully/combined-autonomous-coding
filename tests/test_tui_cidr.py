@@ -1,149 +1,105 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import asyncio
-from textual.widgets import Input, RichLog, DataTable, Label
-# Import the class under test
 from shared.tui_cidr import CidrLabTab
+from textual.app import App
+from textual.widgets import TabbedContent, RichLog
+
+class DummyApp(App):
+    def compose(self):
+        yield CidrLabTab()
+
+    async def on_mount(self):
+        self.notify = MagicMock()
 
 class TestCidrLabTab(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
-        # Patch CidrLabManager at the source where it is imported in tui_cidr
-        self.patcher = patch("shared.tui_cidr.CidrLabManager")
-        self.MockManager = self.patcher.start()
+    async def test_info_action(self):
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            tabs = app.query_one(TabbedContent)
+            tabs.active = "cidr-tab-info"
+            await pilot.pause()
 
-        # Instantiate the tab
-        self.tab = CidrLabTab()
-        self.mock_manager = self.MockManager.return_value
-        # Ensure the tab uses our mock instance
-        self.tab.manager = self.mock_manager
+            app.query_one("#cidr-info-input").value = "192.168.1.0/24"
 
-        # Mock Textual UI methods
-        self.tab.notify = MagicMock()
-        self.tab.query_one = MagicMock()
+            mock_info_res = {
+                "cidr": "192.168.1.0/24",
+                "netmask": "255.255.255.0",
+                "num_addresses": 256
+            }
 
-    async def asyncTearDown(self):
-        self.patcher.stop()
+            with patch('shared.tui_cidr.CidrLabManager.get_info', return_value=mock_info_res) as mock_info:
+                await pilot.click("#btn-cidr-info")
+                mock_info.assert_called_once_with("192.168.1.0/24")
+                log = app.query_one("#cidr-info-log", RichLog)
+                self.assertTrue(any("255.255.255.0" in line.text for line in log.lines))
 
-    async def test_run_info_success(self):
-        # Mock Inputs
-        cidr_input = MagicMock(spec=Input)
-        cidr_input.value = "192.168.1.0/24"
-        table = MagicMock(spec=DataTable)
+    async def test_contains_action(self):
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            tabs = app.query_one(TabbedContent)
+            tabs.active = "cidr-tab-contains"
+            await pilot.pause()
 
-        def query_side_effect(selector, type=None):
-            if selector == "#info-cidr": return cidr_input
-            if selector == "#info-table": return table
-            return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+            app.query_one("#cidr-contains-container").value = "10.0.0.0/8"
+            app.query_one("#cidr-contains-target").value = "10.1.2.3"
 
-        # Mock Manager Result
-        self.mock_manager.get_info.return_value = {
-            "cidr": "192.168.1.0/24",
-            "netmask": "255.255.255.0",
-            "first_host": "192.168.1.1"
-        }
+            mock_contains_res = {
+                "container": "10.0.0.0/8",
+                "target": "10.1.2.3",
+                "contains": True,
+                "type": "address"
+            }
 
-        # Run
-        await self.tab.run_info()
+            with patch('shared.tui_cidr.CidrLabManager.contains', return_value=mock_contains_res) as mock_contains:
+                await pilot.click("#btn-cidr-contains")
+                mock_contains.assert_called_once_with("10.0.0.0/8", "10.1.2.3")
+                log = app.query_one("#cidr-contains-log", RichLog)
+                self.assertTrue(any("contains address" in line.text for line in log.lines))
 
-        # Verify
-        self.mock_manager.get_info.assert_called_with("192.168.1.0/24")
-        table.clear.assert_called()
-        self.assertEqual(table.add_row.call_count, 3) # cidr, netmask, first_host
-        self.tab.notify.assert_called_with("Info loaded.")
+    async def test_overlaps_action(self):
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            tabs = app.query_one(TabbedContent)
+            tabs.active = "cidr-tab-overlaps"
+            await pilot.pause()
 
-    async def test_run_subnet_success(self):
-        # Mock Inputs
-        cidr_input = MagicMock(spec=Input)
-        cidr_input.value = "10.0.0.0/8"
-        prefix_input = MagicMock(spec=Input)
-        prefix_input.value = "16"
-        log = MagicMock(spec=RichLog)
+            app.query_one("#cidr-overlaps-1").value = "192.168.1.0/24"
+            app.query_one("#cidr-overlaps-2").value = "192.168.0.0/16"
 
-        def query_side_effect(selector, type=None):
-            if selector == "#subnet-cidr": return cidr_input
-            if selector == "#subnet-prefix": return prefix_input
-            if selector == "#subnet-log": return log
-            return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+            mock_overlaps_res = {
+                "cidr1": "192.168.1.0/24",
+                "cidr2": "192.168.0.0/16",
+                "overlaps": True
+            }
 
-        # Mock Manager Result
-        self.mock_manager.subnet.return_value = {
-            "count": 256,
-            "subnets": ["10.0.0.0/16", "10.1.0.0/16"]
-        }
+            with patch('shared.tui_cidr.CidrLabManager.overlaps', return_value=mock_overlaps_res) as mock_overlaps:
+                await pilot.click("#btn-cidr-overlaps")
+                mock_overlaps.assert_called_once_with("192.168.1.0/24", "192.168.0.0/16")
+                log = app.query_one("#cidr-overlaps-log", RichLog)
+                self.assertTrue(any("OVERLAP" in line.text for line in log.lines))
 
-        # Run
-        await self.tab.run_subnet()
+    async def test_subnet_action(self):
+        app = DummyApp()
+        async with app.run_test() as pilot:
+            tabs = app.query_one(TabbedContent)
+            tabs.active = "cidr-tab-subnet"
+            await pilot.pause()
 
-        # Verify
-        self.mock_manager.subnet.assert_called_with("10.0.0.0/8", 16)
-        log.write.assert_called()
-        args, _ = log.write.call_args_list[0]
-        self.assertIn("Calculating", args[0])
-        self.tab.notify.assert_called_with("Calculation complete.")
+            app.query_one("#cidr-subnet-base").value = "192.168.1.0/24"
+            app.query_one("#cidr-subnet-prefix").value = "25"
 
-    async def test_run_contains_true(self):
-        # Mock Inputs
-        cidr_input = MagicMock(spec=Input)
-        cidr_input.value = "192.168.0.0/16"
-        target_input = MagicMock(spec=Input)
-        target_input.value = "192.168.1.5"
-        lbl = MagicMock(spec=Label)
+            mock_subnet_res = {
+                "cidr": "192.168.1.0/24",
+                "new_prefix": 25,
+                "count": 2,
+                "subnets": ["192.168.1.0/25", "192.168.1.128/25"]
+            }
 
-        def query_side_effect(selector, type=None):
-            if selector == "#contains-cidr": return cidr_input
-            if selector == "#contains-target": return target_input
-            if selector == "#lbl-contains-result": return lbl
-            return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
+            with patch('shared.tui_cidr.CidrLabManager.subnet', return_value=mock_subnet_res) as mock_subnet:
+                await pilot.click("#btn-cidr-subnet")
+                mock_subnet.assert_called_once_with("192.168.1.0/24", 25)
+                log = app.query_one("#cidr-subnet-log", RichLog)
+                self.assertTrue(any("192.168.1.128/25" in line.text for line in log.lines))
 
-        # Mock Manager Result
-        self.mock_manager.contains.return_value = {
-            "contains": True,
-            "container": "192.168.0.0/16",
-            "target": "192.168.1.5"
-        }
-
-        # Run
-        await self.tab.run_contains()
-
-        # Verify
-        self.mock_manager.contains.assert_called_with("192.168.0.0/16", "192.168.1.5")
-        lbl.update.assert_called()
-        args, _ = lbl.update.call_args
-        self.assertIn("YES", args[0])
-
-    async def test_run_overlap_true(self):
-        # Mock Inputs
-        cidr1_input = MagicMock(spec=Input)
-        cidr1_input.value = "10.0.0.0/8"
-        cidr2_input = MagicMock(spec=Input)
-        cidr2_input.value = "10.1.0.0/16"
-        lbl = MagicMock(spec=Label)
-
-        def query_side_effect(selector, type=None):
-            if selector == "#overlap-cidr1": return cidr1_input
-            if selector == "#overlap-cidr2": return cidr2_input
-            if selector == "#lbl-overlap-result": return lbl
-            return MagicMock()
-        self.tab.query_one.side_effect = query_side_effect
-
-        # Mock Manager Result
-        self.mock_manager.overlaps.return_value = {
-            "overlaps": True,
-            "cidr1": "10.0.0.0/8",
-            "cidr2": "10.1.0.0/16"
-        }
-
-        # Run
-        await self.tab.run_overlap()
-
-        # Verify
-        self.mock_manager.overlaps.assert_called_with("10.0.0.0/8", "10.1.0.0/16")
-        lbl.update.assert_called()
-        args, _ = lbl.update.call_args
-        self.assertIn("OVERLAP DETECTED", args[0])
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

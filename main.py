@@ -3027,6 +3027,18 @@ def run_postgres_lab(args):
     if not success:
         sys.exit(1)
 
+def run_mysql_lab(args):
+    """Runs the MySQL Lab."""
+    if getattr(args, "tui", False) or getattr(args, "action", None) == "tui":
+        print("Launching MySQL Lab TUI...")
+        run_tui(args, start_tab="tab-mysql")
+        return
+
+    from shared.mysql_lab import run_mysql_lab_logic
+    success = run_mysql_lab_logic(args)
+    if not success:
+        sys.exit(1)
+
 def run_mongo_lab(args):
     """Runs the Mongo Lab."""
     if args.action == "tui":
@@ -19711,6 +19723,29 @@ Examples:
     parser_diff_lab.add_argument("--tui", action="store_true", help="Launch interactive Diff Lab TUI.")
 
 
+    # --- New 'mysql-lab' command ---
+    parser_mysql = subparsers.add_parser(
+        "mysql-lab",
+        aliases=["mysql", "mariadb"],
+        help="MySQL Database Lab utilities (query, tables, schema, tui)."
+    )
+    mysql_subparsers = parser_mysql.add_subparsers(dest="action", help="MySQL Lab actions")
+
+    mysql_query = mysql_subparsers.add_parser("query", help="Execute a SQL query")
+    mysql_query.add_argument("query", help="The SQL query to execute")
+    mysql_query.add_argument("--uri", help="MySQL connection URI (mysql://user:pass@host:port/db)")
+    mysql_query.add_argument("--format", choices=["json", "csv"], default="json", help="Output format")
+
+    mysql_tables = mysql_subparsers.add_parser("tables", help="List all tables in the database")
+    mysql_tables.add_argument("--uri", help="MySQL connection URI")
+
+    mysql_schema = mysql_subparsers.add_parser("schema", help="Get schema definition for tables")
+    mysql_schema.add_argument("--table", "-t", help="Specific table to get schema for (default: all)")
+    mysql_schema.add_argument("--uri", help="MySQL connection URI")
+
+    mysql_tui = mysql_subparsers.add_parser("tui", help="Launch the MySQL Lab TUI")
+    parser_mysql.add_argument("--tui", action="store_true", help="Launch the MySQL Lab TUI")
+
     # --- New 'postgres-lab' command ---
     parser_postgres = subparsers.add_parser(
         "postgres-lab",
@@ -25991,6 +26026,9 @@ async def main():
         run_diff_lab_logic(args)
         return
 
+
+    if args.command in ["mysql-lab", "mysql", "mariadb"]:
+        run_mysql_lab(args)
 
     if args.command in ["postgres-lab", "postgres", "pg"]:
         run_postgres_lab(args)

@@ -49,6 +49,29 @@ class TestQRLabManager(unittest.TestCase):
         geo = self.manager.generate_geo(37.7749, -122.4194)
         self.assertEqual(geo, "geo:37.7749,-122.4194")
 
+    def test_decode(self):
+        import qrcode
+        import tempfile
+        import os
+
+        # Create a temporary QR code image
+        test_data = "https://example.com/decode_test"
+        qr = qrcode.QRCode()
+        qr.add_data(test_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        fd, tmp_path = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        img.save(tmp_path)
+
+        try:
+            decoded_data = self.manager.decode(tmp_path)
+            self.assertEqual(decoded_data, test_data)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
     def test_generate_vcard(self):
         vcard = self.manager.generate_vcard(
             first_name="John",
@@ -140,6 +163,23 @@ class TestQRLabManager(unittest.TestCase):
         run_qr_lab_logic(args)
 
         mock_generate.assert_called_once_with("geo:10.0,20.0")
+
+    @patch("shared.qr_lab.QRLabManager.decode")
+    @patch("shared.qr_lab.console.print")
+    def test_run_qr_lab_logic_decode(self, mock_print, mock_decode):
+        from shared.qr_lab import run_qr_lab_logic
+
+        class Args:
+            action = "decode"
+            image = "test.png"
+
+        args = Args()
+        mock_decode.return_value = "decoded string"
+
+        run_qr_lab_logic(args)
+
+        mock_decode.assert_called_once_with("test.png")
+        mock_print.assert_called()
 
     @patch("shared.qr_lab.QRLabManager.generate")
     @patch("shared.qr_lab.console.print")

@@ -182,6 +182,21 @@ class QRLabManager:
         """Generates Geo URI."""
         return f"geo:{lat},{lon}"
 
+    def decode(self, image_path: str) -> str:
+        """Decodes a QR code from an image file."""
+        import cv2
+        img = cv2.imread(str(image_path))
+        if img is None:
+            raise Exception(f"Could not read image file: {image_path}")
+
+        detector = cv2.QRCodeDetector()
+        data, bbox, straight_qrcode = detector.detectAndDecode(img)
+
+        if not data:
+            raise Exception("No QR code found or could not decode it.")
+
+        return data
+
     def generate_vcard(self, first_name: str, last_name: str = "", org: str = "", title: str = "", phone: str = "", email: str = "", url: str = "") -> str:
         """Generates a VCard string."""
         lines = [
@@ -279,6 +294,15 @@ def run_qr_lab_logic(args):
             else:
                 console.print(f"Geo Config: [dim]{geo_str}[/dim]")
                 manager.generate(geo_str, **kwargs)
+
+        elif args.action == "decode":
+            image_path = args.image
+            try:
+                decoded_text = manager.decode(image_path)
+                console.print(f"Decoded QR Code data:\n[bold green]{decoded_text}[/bold green]")
+            except Exception as e:
+                console.print(f"[red]Error decoding QR code: {e}[/red]")
+                sys.exit(1)
 
         elif args.action == "vcard":
             vcard_str = manager.generate_vcard(

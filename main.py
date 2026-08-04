@@ -18518,6 +18518,10 @@ def parse_args(argv=None):
     parser_qr_vcard.add_argument("--drawer", choices=["square", "circle", "rounded", "vertical", "horizontal"], help="Shape of the QR code modules.")
     parser_qr_vcard.add_argument("--color-mask", choices=["solid", "radial", "square", "horizontal", "vertical"], help="Color gradient style.")
 
+    # qr-lab decode
+    parser_qr_decode = qr_subparsers.add_parser("decode", help="Decode a QR code from an image file.")
+    parser_qr_decode.add_argument("image", help="Path to the QR code image file to decode.")
+
     # qr-lab tui
     qr_subparsers.add_parser("tui", help="Launch interactive TUI.")
 

@@ -61,7 +61,8 @@ class TestQRLabManager(unittest.TestCase):
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
 
-        tmp_path = tempfile.mktemp(suffix=".png")
+        fd, tmp_path = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
         img.save(tmp_path)
 
         try:

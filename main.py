@@ -17587,9 +17587,19 @@ def parse_args(argv=None):
         aliases=["jsonpatch"],
         help="JSON Patch (RFC 6902) utilities."
     )
-    parser_jsonpatch.add_argument("--target", help="Target JSON string or file path.")
-    parser_jsonpatch.add_argument("--patch", help="Patch JSON string or file path.")
-    parser_jsonpatch.add_argument("--action", choices=["apply", "tui"], default="apply", help="Action to perform (default: apply).")
+    jsonpatch_subparsers = parser_jsonpatch.add_subparsers(dest="jsonpatch_action", help="JSON Patch commands (apply, diff)")
+
+    parser_jsonpatch_apply = jsonpatch_subparsers.add_parser("apply", help="Apply a JSON patch to a target JSON.")
+    parser_jsonpatch_apply.add_argument("--target", help="Target JSON string or file path.")
+    parser_jsonpatch_apply.add_argument("--patch", help="Patch JSON string or file path.")
+
+    parser_jsonpatch_diff = jsonpatch_subparsers.add_parser("diff", aliases=["make"], help="Generate a JSON patch from source to target.")
+    parser_jsonpatch_diff.add_argument("--source", help="Source JSON string or file path.")
+    parser_jsonpatch_diff.add_argument("--target", help="Target JSON string or file path.")
+
+    parser_jsonpatch_tui = jsonpatch_subparsers.add_parser("tui", help="Launch JSONPatch Lab TUI.")
+
+    # Keep global flags for backwards compatibility if needed
     parser_jsonpatch.add_argument("--tui", action="store_true", help="Launch JSONPatch Lab TUI.")
 
     # --- New 'ini-lab' command ---

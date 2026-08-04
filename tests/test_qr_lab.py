@@ -61,17 +61,15 @@ class TestQRLabManager(unittest.TestCase):
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
 
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
-            tmp_path = tmp_file.name
-
-        # Save outside the context manager to ensure the file is closed and written
+        tmp_path = tempfile.mktemp(suffix=".png")
         img.save(tmp_path)
 
         try:
             decoded_data = self.manager.decode(tmp_path)
             self.assertEqual(decoded_data, test_data)
         finally:
-            os.remove(tmp_path)
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
     def test_generate_vcard(self):
         vcard = self.manager.generate_vcard(

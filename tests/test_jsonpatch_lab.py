@@ -31,9 +31,43 @@ def test_jsonpatch_manager_apply_invalid_patch():
         manager.apply_patch(target, patch_data)
 
 
+def test_jsonpatch_manager_diff_strings():
+    manager = JsonPatchLabManager()
+    source = '{"foo": "bar"}'
+    target = '{"foo": "baz"}'
+    result = manager.diff(source, target)
+    assert len(result) == 1
+    assert result[0] == {"op": "replace", "path": "/foo", "value": "baz"}
+
+def test_jsonpatch_manager_diff_dicts():
+    manager = JsonPatchLabManager()
+    source = {"foo": "bar"}
+    target = {"foo": "bar", "baz": "qux"}
+    result = manager.diff(source, target)
+    assert len(result) == 1
+    assert result[0] == {"op": "add", "path": "/baz", "value": "qux"}
+
+def test_run_logic_diff_missing_args(capsys):
+    args = MagicMock(jsonpatch_action="diff", source=None, target="{}", tui=False)
+    with pytest.raises(SystemExit) as e:
+        run_jsonpatch_lab_logic(args)
+    assert e.value.code == 1
+    assert "Error: --source is required." in capsys.readouterr().err
+
+def test_run_logic_diff_valid_args(capsys):
+    source = '{"a": 1}'
+    target = '{"a": 2}'
+    args = MagicMock(jsonpatch_action="diff", source=source, target=target, tui=False)
+    with pytest.raises(SystemExit) as e:
+        run_jsonpatch_lab_logic(args)
+    assert e.value.code == 0
+    output = capsys.readouterr().out
+    assert '"op": "replace"' in output
+    assert '"value": 2' in output
+
 def test_run_logic_missing_args(capsys):
     # Missing target
-    args = MagicMock(action="apply", target=None, patch="[]", tui=False)
+    args = MagicMock(jsonpatch_action="apply", action="apply", target=None, patch="[]", tui=False)
     with pytest.raises(SystemExit) as e:
         run_jsonpatch_lab_logic(args)
     assert e.value.code == 1
@@ -44,7 +78,7 @@ def test_run_logic_valid_args(capsys):
     # Valid arguments string literals
     target = '{"a": 1}'
     patch_str = '[{"op": "replace", "path": "/a", "value": 2}]'
-    args = MagicMock(action="apply", target=target, patch=patch_str, tui=False)
+    args = MagicMock(jsonpatch_action="apply", action="apply", target=target, patch=patch_str, tui=False)
     with pytest.raises(SystemExit) as e:
         run_jsonpatch_lab_logic(args)
     assert e.value.code == 0
@@ -58,7 +92,7 @@ def test_run_logic_file_read(tmp_path, capsys):
     target_file.write_text('{"a": 1}')
     patch_file.write_text('[{"op": "replace", "path": "/a", "value": 2}]')
 
-    args = MagicMock(action="apply", target=str(target_file), patch=str(patch_file), tui=False)
+    args = MagicMock(jsonpatch_action="apply", action="apply", target=str(target_file), patch=str(patch_file), tui=False)
     with pytest.raises(SystemExit) as e:
         run_jsonpatch_lab_logic(args)
     assert e.value.code == 0

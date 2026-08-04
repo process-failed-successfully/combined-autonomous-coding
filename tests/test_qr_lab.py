@@ -62,8 +62,10 @@ class TestQRLabManager(unittest.TestCase):
         img = qr.make_image(fill_color="black", back_color="white")
 
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
-            img.save(tmp_file.name)
             tmp_path = tmp_file.name
+
+        # Save outside the context manager to ensure the file is closed and written
+        img.save(tmp_path)
 
         try:
             decoded_data = self.manager.decode(tmp_path)

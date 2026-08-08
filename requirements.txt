@@ -12,6 +12,10 @@ gitpython
 prometheus-client
 psutil
 platformdirs
+setuptools<70.0.0
+grpcio==1.63.0
+grpcio-status==1.63.0
+protobuf
 google-generativeai
 prometheus-client
 argcomplete

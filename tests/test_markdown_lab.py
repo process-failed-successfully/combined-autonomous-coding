@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import patch
-from pathlib import Path
+
 from shared.markdown_lab import MarkdownLabManager
+
 
 class TestMarkdownLabManager(unittest.TestCase):
     def setUp(self):
@@ -114,6 +115,27 @@ print("code")
         issues = self.manager.lint(text)
         self.assertEqual(len(issues), 1)
         self.assertEqual(issues[0]['type'], 'missing-alt-text')
+
+    def test_extract_code(self):
+        text = "Here is some code:\n```python\nprint('hello')\n```\nAnd more:\n```bash\necho 'world'\n```"
+        extracted = self.manager.extract(text, "code")
+        self.assertEqual(len(extracted), 2)
+        self.assertEqual(extracted[0], "print('hello')")
+        self.assertEqual(extracted[1], "echo 'world'")
+
+    def test_extract_links(self):
+        text = "Check out [Google](https://google.com) and [GitHub](https://github.com)."
+        extracted = self.manager.extract(text, "links")
+        self.assertEqual(len(extracted), 2)
+        self.assertEqual(extracted[0], "https://google.com")
+        self.assertEqual(extracted[1], "https://github.com")
+
+    def test_extract_images(self):
+        text = "Here is a logo: ![Logo](logo.png) and a picture: ![Pic](http://example.com/pic.jpg)"
+        extracted = self.manager.extract(text, "images")
+        self.assertEqual(len(extracted), 2)
+        self.assertEqual(extracted[0], "logo.png")
+        self.assertEqual(extracted[1], "http://example.com/pic.jpg")
 
     @patch('sys.exit')
     @patch('shared.tui.AgentTUI')

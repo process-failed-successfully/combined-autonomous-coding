@@ -248,6 +248,26 @@ class MarkdownLabManager:
 
         return issues
 
+    def extract(self, text: str, extract_type: str) -> List[str]:
+        """
+        Extracts specific elements from the markdown text.
+        Supported types: 'code', 'links', 'images'.
+        """
+        extracted = []
+        if extract_type == "code":
+            # Extract code blocks
+            for match in re.finditer(r'```[a-zA-Z0-9]*\n(.*?)\n```', text, re.DOTALL):
+                extracted.append(match.group(1).strip())
+        elif extract_type == "links":
+            # Extract URLs from markdown links [text](url)
+            for match in re.finditer(r'(?<!!)\[.*?\]\((.*?)\)', text):
+                extracted.append(match.group(1))
+        elif extract_type == "images":
+            # Extract URLs from markdown images ![alt](url)
+            for match in re.finditer(r'!\[.*?\]\((.*?)\)', text):
+                extracted.append(match.group(1))
+        return extracted
+
 
 def run_markdown_lab_logic(args):
     """
@@ -339,5 +359,22 @@ def run_markdown_lab_logic(args):
             for issue in issues:
                 print(f"  Line {issue['line']}: [{issue['type']}] {issue['message']}")
             return False
+
+    elif args.action == "extract":
+        text = get_input(args.file)
+        if text is None:
+            print("Error: Input required (file or stdin).", file=sys.stderr)
+            return False
+
+        if not args.type:
+            print("Error: Extract type required (--type).", file=sys.stderr)
+            return False
+
+        extracted = manager.extract(text, args.type)
+        if not extracted:
+            print(f"No {args.type} found.")
+        else:
+            for item in extracted:
+                print(item)
 
     return True

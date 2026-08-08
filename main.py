@@ -18260,6 +18260,11 @@ def parse_args(argv=None):
     parser_md_lint.add_argument("--file", "-f", help="Input file.")
     parser_md_lint.add_argument("--root", help="Root directory for link checking.")
 
+    # md-lab extract
+    parser_md_extract = md_subparsers.add_parser("extract", help="Extract elements from markdown.")
+    parser_md_extract.add_argument("--file", "-f", help="Input file.")
+    parser_md_extract.add_argument("--type", "-t", choices=["code", "links", "images"], help="Type of element to extract.")
+
     # md-lab tui
     parser_md_tui = md_subparsers.add_parser("tui", help="Launch the Markdown Lab TUI.")
 

@@ -402,6 +402,7 @@ from shared.tui_md2html import Md2HtmlTab
 from shared.tui_punycode import PunycodeLabTab
 from shared.tui_todos import TodosLabTab
 from shared.tui_alias import AliasLabTab
+from shared.tui_magnet import MagnetLabTab
 from shared.tui_json_schema import JsonSchemaTab
 from shared.tui_jsonl import JsonlLabTab
 from shared.tui_sqlformat import TabSqlFormat
@@ -5098,6 +5099,8 @@ class AgentTUI(App):
                 yield TodosLabTab(self.project_dir)
             with TabPane("Alias Lab", id="tab-alias"):
                 yield AliasLabTab()
+            with TabPane("Magnet Lab", id="tab-magnet"):
+                yield MagnetLabTab()
             with TabPane("JSON Schema", id="tab-json-schema"):
                 yield JsonSchemaTab()
             with TabPane("JSON Patch", id="tab-jsonpatch"):

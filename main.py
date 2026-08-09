@@ -100,6 +100,7 @@ from shared.yaml_lab import run_yaml_lab_logic
 from shared.yaml2json_lab import run_yaml2json_lab_logic
 from shared.yaml2csv_lab import run_yaml2csv_lab_logic
 from shared.xml2csv_lab import run_xml2csv_lab_logic
+from shared.magnet_lab import run_magnet_lab_logic
 from shared.toml2csv_lab import run_toml2csv_lab_logic
 from shared.xml2yaml_lab import run_xml2yaml_lab_logic
 from shared.xml2toml_lab import run_xml2toml_lab_logic
@@ -277,6 +278,7 @@ KNOWN_COMMANDS = [
     "svg-lab", "svg",
     "ical-lab", "ical", "ics",
     "markdown-lab", "md", "md-lab", "yaml-lab", "yaml", "ini-lab", "ini", "toml-lab", "toml", "net-lab", "net", "archive-lab", "arc", "makefile-lab", "makefile",
+    "magnet-lab", "magnet",
     "plist-lab", "plist", "plist2json", "json2plist",
     "props-lab", "props", "properties",
     "run2compose-lab", "run2compose", "r2c",
@@ -18280,6 +18282,32 @@ def parse_args(argv=None):
 
     parser_endian_tui = endian_subparsers.add_parser("tui", help="Launch interactive TUI for Endian Lab.")
 
+    # --- New 'magnet-lab' command ---
+    magnet_lab_parser = subparsers.add_parser(
+        "magnet-lab",
+        aliases=["magnet"],
+        help="Magnet URI Lab (parse, build, from-torrent, tui)."
+    )
+    magnet_lab_parser.add_argument("--tui", action="store_true", help="Launch the Textual TUI for Magnet Lab")
+    magnet_lab_subparsers = magnet_lab_parser.add_subparsers(dest="action", help="Magnet action to run")
+
+    # magnet-lab parse
+    magnet_parse_parser = magnet_lab_subparsers.add_parser("parse", help="Parse a magnet URI")
+    magnet_parse_parser.add_argument("--uri", type=str, required=True, help="Magnet URI to parse")
+
+    # magnet-lab build
+    magnet_build_parser = magnet_lab_subparsers.add_parser("build", help="Build a magnet URI")
+    magnet_build_parser.add_argument("--info-hash", type=str, required=True, help="40-char hex string or urn:btih:...")
+    magnet_build_parser.add_argument("--name", type=str, help="Display name (dn)")
+    magnet_build_parser.add_argument("--trackers", type=str, nargs="*", help="List of tracker URLs (tr)")
+
+    # magnet-lab from-torrent
+    magnet_from_torrent_parser = magnet_lab_subparsers.add_parser("from-torrent", help="Generate magnet URI from .torrent file")
+    magnet_from_torrent_parser.add_argument("--file", type=str, required=True, help="Path to .torrent file")
+
+    # magnet-lab tui
+    magnet_lab_subparsers.add_parser("tui", help="Launch the Textual TUI for Magnet Lab")
+
     # --- New 'net-lab' command ---
     parser_net = subparsers.add_parser(
         "net-lab",
@@ -25808,6 +25836,30 @@ async def main():
 
     if args.command in ["markdown-lab", "md", "md-lab"]:
         run_markdown_lab(args)
+        return
+
+    if args.command in ["magnet-lab", "magnet"]:
+        if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+            from shared.tui import AgentTUI
+            print("Launching Magnet Lab TUI...")
+            app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-magnet")
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                asyncio.ensure_future(app.run_async())
+            else:
+                app.run()
+                sys.exit(0)
+            return
+
+        if getattr(args, "action", None) is None:
+            print("Error: Action is required unless --tui flag is used.", file=sys.stderr)
+            sys.exit(1)
+
+        run_magnet_lab_logic(args)
         return
 
     if args.command in ["net-lab", "net"]:

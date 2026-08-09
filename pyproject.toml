@@ -71,6 +71,8 @@ dependencies = [
     "aiohttp",
     "pymongo",
     "setuptools",
+    "grpcio>=1.62.0",
+    "grpcio-status>=1.62.0",
 ]
 requires-python = ">=3.11"
 

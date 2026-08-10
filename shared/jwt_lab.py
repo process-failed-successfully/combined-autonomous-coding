@@ -213,6 +213,34 @@ class JWTManager:
         return decoded
 
     @staticmethod
+    def extract(text: str, unique: bool = False) -> list[str]:
+        """
+        Extracts valid JWTs from the given text.
+        """
+        import re
+        pattern = r'(?<![a-zA-Z0-9_-])(ey[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]*)'
+        matches = re.findall(pattern, text)
+
+        valid_jwts = []
+        for match in matches:
+            try:
+                JWTManager.decode_token(match)
+                valid_jwts.append(match)
+            except Exception:
+                pass
+
+        if unique:
+            seen = set()
+            unique_jwts = []
+            for token in valid_jwts:
+                if token not in seen:
+                    unique_jwts.append(token)
+                    seen.add(token)
+            return unique_jwts
+
+        return valid_jwts
+
+    @staticmethod
     def crack_token(token: str, wordlist_path: str) -> str | None:
         """
         Attempts to crack the secret of an HMAC JWT token using a wordlist.
@@ -312,6 +340,34 @@ def run_jwt_lab_logic(args) -> bool:
             except ValueError as e:
                 print(f"❌ Error: {e}", file=sys.stderr)
                 return False
+
+        elif args.action == "extract":
+            text_to_process = ""
+            if hasattr(args, 'file') and args.file:
+                from pathlib import Path
+                try:
+                    text_to_process = Path(args.file).read_text(encoding="utf-8")
+                except Exception as e:
+                    print(f"Error reading file: {e}", file=sys.stderr)
+                    return False
+            elif hasattr(args, 'text') and args.text:
+                text_to_process = args.text
+            elif not sys.stdin.isatty():
+                text_to_process = sys.stdin.read()
+            else:
+                print("Error: Provide text via --text, --file, or stdin.", file=sys.stderr)
+                return False
+
+            unique = getattr(args, 'unique', False)
+            jwts = manager.extract(text_to_process, unique=unique)
+
+            if not jwts:
+                print("No JWTs found.")
+                return True
+
+            for t in jwts:
+                print(t)
+            return True
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

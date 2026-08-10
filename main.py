@@ -15322,6 +15322,12 @@ def parse_args(argv=None):
     parser_jwt_crack.add_argument("token", help="The JWT token.")
     parser_jwt_crack.add_argument("--wordlist", required=True, help="Path to the dictionary/wordlist file.")
 
+    # jwt-lab extract
+    parser_jwt_extract = jwt_subparsers.add_parser("extract", help="Extract JWTs from text or a file.")
+    parser_jwt_extract.add_argument("--text", help="Text to extract from.")
+    parser_jwt_extract.add_argument("--file", help="File to extract from.")
+    parser_jwt_extract.add_argument("--unique", action="store_true", help="Return only unique JWTs.")
+
     # jwt-lab tui
     parser_jwt_tui = jwt_subparsers.add_parser("tui", help="Launch JWT Lab TUI.")
 

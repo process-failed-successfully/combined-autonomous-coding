@@ -270,5 +270,63 @@ class TestJWTManager(unittest.TestCase):
             os.remove(path)
 
 
+
+    def test_extract_basic(self):
+        token1 = self.manager.sign_token({"test": 1}, self.secret)
+        token2 = self.manager.sign_token({"test": 2}, self.secret)
+        text = f"Here is one token: {token1} and another one: {token2}."
+
+        extracted = self.manager.extract(text)
+        self.assertEqual(len(extracted), 2)
+        self.assertIn(token1, extracted)
+        self.assertIn(token2, extracted)
+
+    def test_extract_unique(self):
+        token1 = self.manager.sign_token({"test": 1}, self.secret)
+        text = f"Token A: {token1} and again {token1}."
+
+        extracted = self.manager.extract(text, unique=True)
+        self.assertEqual(len(extracted), 1)
+        self.assertEqual(extracted[0], token1)
+
+    def test_extract_invalid_skips(self):
+        token1 = self.manager.sign_token({"test": 1}, self.secret)
+        # Fake token with invalid base64 padding or signature
+        invalid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.invalid"
+        text = f"Valid: {token1} Invalid: {invalid_token}"
+
+        extracted = self.manager.extract(text)
+        self.assertEqual(len(extracted), 1)
+        self.assertEqual(extracted[0], token1)
+
+
+import sys
+from io import StringIO
+from shared.jwt_lab import run_jwt_lab_logic, JWTManager
+
+class TestJWTExtractCLI(unittest.TestCase):
+    def test_extract_cli_action(self):
+        manager = JWTManager()
+        token = manager.sign_token({"foo": "bar"}, "secret")
+
+        class Args:
+            action = "extract"
+            text = f"Token inside: {token}"
+            unique = False
+
+        args = Args()
+
+        # Capture stdout
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+
+        result = run_jwt_lab_logic(args)
+
+        output = sys.stdout.getvalue().strip()
+        sys.stdout = old_stdout
+
+        self.assertTrue(result)
+        self.assertEqual(output, token)
+
 if __name__ == '__main__':
     unittest.main()

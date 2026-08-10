@@ -69,3 +69,4 @@ pymacaroons==0.13.0
 psycopg2-binary>=2.9.9
 pymysql==1.2.0
 setuptools
+grpcio>=1.62.0

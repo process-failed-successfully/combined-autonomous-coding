@@ -30,7 +30,7 @@ dependencies = [
     "tenacity",
     "openai",
     "google-cloud-aiplatform",
-    "grpcio>=1.62.0",
+    "grpcio==1.62.0",
     "gitpython",
     "prometheus-client",
     "psutil",

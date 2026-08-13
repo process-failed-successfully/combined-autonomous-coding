@@ -61,6 +61,63 @@ class TestPDFLabManager(unittest.TestCase):
         mock_writer.write.assert_called_with(output)
         mock_writer.close.assert_called_once()
 
+    def test_encrypt(self):
+        mock_reader = MagicMock()
+        mock_page = MagicMock()
+        mock_reader.pages = [mock_page, mock_page]
+        self.mock_pypdf.PdfReader.return_value = mock_reader
+
+        mock_writer = MagicMock()
+        self.mock_pypdf.PdfWriter.return_value = mock_writer
+
+        with patch("builtins.open", mock_open()) as mock_file:
+            self.manager.encrypt("input.pdf", "output.pdf", "secret")
+
+            self.mock_pypdf.PdfReader.assert_called_with("input.pdf")
+            self.assertEqual(mock_writer.add_page.call_count, 2)
+            mock_writer.encrypt.assert_called_with("secret")
+            mock_file.assert_called_with("output.pdf", "wb")
+            mock_writer.write.assert_called()
+            mock_writer.close.assert_called()
+
+    def test_decrypt(self):
+        mock_reader = MagicMock()
+        mock_page = MagicMock()
+        mock_reader.pages = [mock_page]
+        mock_reader.is_encrypted = True
+        mock_reader.decrypt.return_value = True
+        self.mock_pypdf.PdfReader.return_value = mock_reader
+
+        mock_writer = MagicMock()
+        self.mock_pypdf.PdfWriter.return_value = mock_writer
+
+        with patch("builtins.open", mock_open()) as mock_file:
+            self.manager.decrypt("input.pdf", "output.pdf", "secret")
+
+            self.mock_pypdf.PdfReader.assert_called_with("input.pdf")
+            mock_reader.decrypt.assert_called_with("secret")
+            self.assertEqual(mock_writer.add_page.call_count, 1)
+            mock_file.assert_called_with("output.pdf", "wb")
+            mock_writer.write.assert_called()
+            mock_writer.close.assert_called()
+
+    def test_decrypt_not_encrypted(self):
+        mock_reader = MagicMock()
+        mock_reader.is_encrypted = False
+        self.mock_pypdf.PdfReader.return_value = mock_reader
+
+        with self.assertRaises(ValueError):
+            self.manager.decrypt("input.pdf", "output.pdf", "secret")
+
+    def test_decrypt_wrong_password(self):
+        mock_reader = MagicMock()
+        mock_reader.is_encrypted = True
+        mock_reader.decrypt.return_value = False
+        self.mock_pypdf.PdfReader.return_value = mock_reader
+
+        with self.assertRaises(ValueError):
+            self.manager.decrypt("input.pdf", "output.pdf", "wrong")
+
     def test_split_pdf(self):
         mock_reader = MagicMock()
         mock_page = MagicMock()

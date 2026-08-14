@@ -71,6 +71,8 @@ dependencies = [
     "aiohttp",
     "pymongo",
     "elasticsearch",
+    "grpcio>=1.69.0",
+    "grpcio-status>=1.69.0",
 ]
 requires-python = ">=3.11"
 

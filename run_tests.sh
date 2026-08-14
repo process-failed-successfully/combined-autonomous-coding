@@ -4,6 +4,7 @@ set -e # Exit on error
 echo "========================================"
 echo "  INSTALLING DEPENDENCIES"
 echo "========================================"
+pip install setuptools wheel
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 echo "========================================"

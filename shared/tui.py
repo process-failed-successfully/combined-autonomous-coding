@@ -251,6 +251,7 @@ from shared.tui_mysql import MysqlLabTab
 
 from shared.tui_redis import RedisLabTab
 from shared.tui_memcached import MemcachedLabTab
+from shared.tui_elastic import ElasticLabTab
 from shared.tui_pdf import PdfLabTab
 from shared.tui_grok import GrokLabTab
 from shared.tui_permissions import PermissionsLabTab
@@ -4571,6 +4572,8 @@ class AgentTUI(App):
                 yield RedisLabTab(self.project_dir)
             with TabPane("Memcached", id="tab-memcached"):
                 yield MemcachedLabTab()
+            with TabPane("Elasticsearch", id="tab-elastic"):
+                yield ElasticLabTab()
             with TabPane("Kafka", id="tab-kafka"):
                 yield KafkaLabTab(project_dir=self.project_dir)
 

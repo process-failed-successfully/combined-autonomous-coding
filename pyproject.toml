@@ -35,6 +35,7 @@ dependencies = [
     "psutil",
     "psycopg2-binary>=2.9.9",
     "platformdirs",
+    "protobuf<6.0.0",
     "jaraco.context>=6.1.0",
     "cryptography",
     "bcrypt",
@@ -70,6 +71,8 @@ dependencies = [
     "pymacaroons==0.13.0",
     "aiohttp",
     "pymongo",
+    "jsonpath-ng",
+    "tiktoken",
 ]
 requires-python = ">=3.11"
 

@@ -124,6 +124,7 @@ from shared.tui_pkce import PkceLabTab
 from shared.tui_saml import SamlLabTab
 from shared.tui_size import SizeLabTab
 from shared.tui_typegen import TypegenLabTab
+from shared.tui_extract import ExtractLabTab
 from shared.tui_hexdump import HexdumpLabTab
 from shared.tui_hash_validator import HashValidatorLabTab
 from shared.tui_snippets import SnippetsTab
@@ -4931,6 +4932,8 @@ class AgentTUI(App):
                 yield BandwidthLabTab()
             with TabPane("Typing Lab", id="tab-typing"):
                 yield TypingLabTab(self.project_dir)
+            with TabPane("Extract", id="tab-extract"):
+                yield ExtractLabTab(self.project_dir)
             with TabPane("Endian Lab", id="tab-endian"):
                 yield EndianLabTab()
             with TabPane("Browser Lab", id="tab-browser"):

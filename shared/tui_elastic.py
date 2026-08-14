@@ -2,9 +2,7 @@ import json
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Label, Input, Button, Static, TabbedContent, TabPane, DataTable, RichLog, TextArea
-from textual.reactive import reactive
 from textual import on
-from rich.text import Text
 from rich.syntax import Syntax
 
 from shared.elastic_lab import ElasticLabManager

@@ -423,6 +423,7 @@ KNOWN_COMMANDS = [
     "curl-lab", "curl",
     "sec-headers-lab", "sec-headers",
     "portscan-lab", "portscan", "pscan", "typegen-lab", "typegen",
+    "extract-lab", "extract", "ioc",
     "hash-validator-lab", "hash-validator", "hval",
     "stego-lab", "stego", "rot13-lab", "rot13", "size-lab", "size",
     "regex-escape-lab", "regex-escape",
@@ -20587,6 +20588,20 @@ Examples:
     parser_trace_analyze.add_argument("file", help="Path to trace file.")
     parser_trace_analyze.add_argument("--json", action="store_true", help="Output as JSON.")
 
+    # --- New 'extract-lab' command ---
+    parser_extract = subparsers.add_parser(
+        "extract-lab",
+        aliases=["extract", "ioc"],
+        help="Extract IoCs (IPs, URLs, Emails, Hashes, etc.) from text."
+    )
+    parser_extract.add_argument("text", nargs="?", help="The text to extract from")
+    parser_extract.add_argument("--type", "-t", default="all", help="The type of entity to extract (e.g., ipv4, url, email, all)")
+    parser_extract.add_argument("--file", "-f", help="Read input from a file instead of the command line argument")
+    parser_extract.add_argument("--unique", action="store_true", default=True, help="Deduplicate results (default: true)")
+    parser_extract.add_argument("--no-unique", action="store_false", dest="unique", help="Do not deduplicate results")
+    parser_extract.add_argument("--json", action="store_true", help="Output results in JSON format")
+    parser_extract.add_argument("--tui", action="store_true", help="Launch the TUI interface")
+
     # trace explain
     parser_trace_explain = trace_subparsers.add_parser("explain", help="Ask AI to explain an existing trace.")
     parser_trace_explain.add_argument("file", help="Path to trace file.")
@@ -27434,6 +27449,11 @@ async def main():
             return
 
         run_typegen_lab_logic(args)
+        return
+
+    if args.command in ["extract-lab", "extract", "ioc"]:
+        from shared.extract_lab import run_extract_lab_logic
+        run_extract_lab_logic(args)
         return
 
     if args.command in ["osv-lab", "osv", "vuln", "cve"]:

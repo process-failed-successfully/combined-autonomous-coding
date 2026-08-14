@@ -298,6 +298,7 @@ KNOWN_COMMANDS = [
     "postgres-lab", "postgres", "pg",
     "redis-lab", "redis", "cache",
     "memcached-lab", "memcached", "memcache",
+    "elastic-lab", "elastic", "es",
     "kafka-lab", "kafka",
     "github-lab", "github", "gh",
     "email-lab", "email", "mail", "smtp",
@@ -3068,6 +3069,17 @@ def run_memcached_lab(args):
 
     from shared.memcached_lab import run_memcached_lab_logic
     run_memcached_lab_logic(args)
+    sys.exit(0)
+
+
+def run_elastic_lab(args):
+    """Runs the Elastic Lab."""
+    if getattr(args, 'action', None) == 'tui' or getattr(args, 'tui', False):
+        run_tui(args, start_tab="tab-elastic")
+        return
+
+    from shared.elastic_lab import run_elastic_lab_logic
+    run_elastic_lab_logic(args)
     sys.exit(0)
 
 
@@ -19898,6 +19910,31 @@ Examples:
     memcached_subparsers.add_parser("stats", help="Get server stats.")
     memcached_subparsers.add_parser("tui", help="Launch Memcached Lab TUI.")
 
+    # --- New 'elastic-lab' command ---
+    parser_elastic = subparsers.add_parser(
+        "elastic-lab",
+        aliases=["elastic", "es"],
+        help="Elasticsearch utilities (connect, info, health, indices, search)."
+    )
+    parser_elastic.add_argument("--host", default="http://localhost:9200", help="Elasticsearch host URL (default: http://localhost:9200)")
+    parser_elastic.add_argument("--tui", action="store_true", help="Launch interactive Elasticsearch Lab TUI")
+    elastic_subparsers = parser_elastic.add_subparsers(
+        dest="action",
+        required=False,
+        help="Action to perform."
+    )
+
+    elastic_subparsers.add_parser("connect", help="Test connection.")
+    elastic_subparsers.add_parser("info", help="Get cluster info.")
+    elastic_subparsers.add_parser("health", help="Get cluster health.")
+    elastic_subparsers.add_parser("indices", help="List indices.")
+
+    parser_elastic_search = elastic_subparsers.add_parser("search", help="Search an index.")
+    parser_elastic_search.add_argument("--index", required=True, help="Index to search.")
+    parser_elastic_search.add_argument("--query", help="JSON query string (default: match_all).")
+
+    elastic_subparsers.add_parser("tui", help="Launch Elasticsearch Lab TUI.")
+
     # --- New 'kafka-lab' command ---
     parser_kafka = subparsers.add_parser(
         "kafka-lab",
@@ -26059,6 +26096,13 @@ async def main():
             print("Error: Missing action or --tui flag.", file=sys.stderr)
             sys.exit(1)
         run_memcached_lab(args)
+        return
+
+    if args.command in ["elastic-lab", "elastic", "es"]:
+        if not getattr(args, 'action', None) and not getattr(args, 'tui', False):
+            print("Error: Missing action or --tui flag.", file=sys.stderr)
+            sys.exit(1)
+        run_elastic_lab(args)
         return
 
     if args.command in ["kafka-lab", "kafka"]:

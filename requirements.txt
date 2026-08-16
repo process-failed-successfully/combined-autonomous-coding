@@ -7,7 +7,7 @@ PyYAML
 python-dotenv
 tenacity
 openai
-google-cloud-aiplatform>=1.61.0
+google-cloud-aiplatform>=1.62.0
 grpcio>=1.69.0
 grpcio-status>=1.69.0
 gitpython

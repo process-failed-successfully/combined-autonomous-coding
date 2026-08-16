@@ -31,7 +31,7 @@ dependencies = [
     "python-dotenv",
     "tenacity",
     "openai",
-    "google-cloud-aiplatform",
+    "google-cloud-aiplatform>=1.60.0",
     "gitpython",
     "prometheus-client",
     "psutil",

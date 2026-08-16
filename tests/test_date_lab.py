@@ -59,6 +59,27 @@ class TestDateLabManager(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIn("Could not parse date", result["error"])
 
+    def test_to_epoch(self):
+        result = self.manager.to_epoch("2023-10-25T00:00:00")
+        self.assertTrue(result["success"])
+        # Timestamp depends on TZ, so we just check it is an int
+        self.assertIsInstance(result["epoch"], int)
+
+    def test_to_epoch_invalid(self):
+        result = self.manager.to_epoch("not-a-date")
+        self.assertFalse(result["success"])
+
+    def test_from_epoch(self):
+        result = self.manager.from_epoch(1698192000)
+        self.assertTrue(result["success"])
+        self.assertIsInstance(result["date"], str)
+        self.assertTrue(result["date"].startswith("2023-10-2")) # Account for TZ differences
+
+    def test_from_epoch_invalid(self):
+        result = self.manager.from_epoch("not-a-number")
+        self.assertFalse(result["success"])
+        self.assertTrue(any(word in result["error"].lower() for word in ["type", "integer"]))
+
 
 # Adding textual TUI tests
 import pytest

@@ -111,6 +111,30 @@ class UuidLabManager:
         except ValueError:
             return False
 
+    def format(self, uuid_str: str, format_type: str = "standard") -> str:
+        """Formats a UUID into a specific string representation."""
+        try:
+            u = uuid.UUID(uuid_str)
+        except ValueError:
+            raise ValueError(f"Invalid UUID: {uuid_str}")
+
+        if format_type == "standard":
+            return str(u)
+        elif format_type == "hex":
+            return u.hex
+        elif format_type == "urn":
+            return u.urn
+        elif format_type == "int":
+            return str(u.int)
+        elif format_type == "base64":
+            import base64
+            return base64.b64encode(u.bytes).decode('ascii')
+        elif format_type == "base64url":
+            import base64
+            return base64.urlsafe_b64encode(u.bytes).decode('ascii').rstrip('=')
+        else:
+            raise ValueError(f"Unsupported format type: {format_type}")
+
     def extract(self, text: str, unique: bool = False) -> List[str]:
         """Extracts all valid UUIDs from the given text."""
         import re
@@ -185,6 +209,14 @@ def run_uuid_lab_logic(args):
              print(f"  Time MS: {info.get('time_ms')} (Unix Epoch)")
              if "timestamp_iso" in info:
                  print(f"  Date:    {info['timestamp_iso']}")
+
+    elif args.action in ("format", "fmt"):
+        try:
+            formatted = manager.format(args.uuid, format_type=getattr(args, 'type', 'standard'))
+            print(formatted)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.action == "validate":
         if manager.validate(args.uuid):

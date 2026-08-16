@@ -75,6 +75,53 @@ class TestUuidLabManager(unittest.TestCase):
         self.assertTrue(self.manager.validate(str(uuid.uuid4())))
         self.assertFalse(self.manager.validate("not-a-uuid"))
 
+    def test_format(self):
+        test_uuid_str = "123e4567-e89b-12d3-a456-426614174000"
+
+        # Test standard format
+        self.assertEqual(
+            self.manager.format(test_uuid_str, format_type="standard"),
+            "123e4567-e89b-12d3-a456-426614174000"
+        )
+
+        # Test hex format
+        self.assertEqual(
+            self.manager.format(test_uuid_str, format_type="hex"),
+            "123e4567e89b12d3a456426614174000"
+        )
+
+        # Test urn format
+        self.assertEqual(
+            self.manager.format(test_uuid_str, format_type="urn"),
+            "urn:uuid:123e4567-e89b-12d3-a456-426614174000"
+        )
+
+        # Test int format
+        self.assertEqual(
+            self.manager.format(test_uuid_str, format_type="int"),
+            str(uuid.UUID(test_uuid_str).int)
+        )
+
+        # Test base64 format
+        self.assertEqual(
+            self.manager.format(test_uuid_str, format_type="base64"),
+            "Ej5FZ+ibEtOkVkJmFBdAAA=="
+        )
+
+        # Test base64url format
+        self.assertEqual(
+            self.manager.format(test_uuid_str, format_type="base64url"),
+            "Ej5FZ-ibEtOkVkJmFBdAAA"
+        )
+
+        # Test invalid uuid
+        with self.assertRaises(ValueError):
+            self.manager.format("invalid-uuid", format_type="standard")
+
+        # Test unsupported format
+        with self.assertRaises(ValueError):
+            self.manager.format(test_uuid_str, format_type="unsupported")
+
     def test_extract_uuids(self):
         u1 = str(uuid.uuid4())
         u2 = str(uuid.uuid1())

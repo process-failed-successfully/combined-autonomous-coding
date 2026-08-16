@@ -65,6 +65,17 @@ def test_run_logic_diff_valid_args(capsys):
     assert '"op": "replace"' in output
     assert '"value": 2' in output
 
+def test_run_logic_diff_make_alias(capsys):
+    source = '{"a": 1}'
+    target = '{"a": 2}'
+    args = MagicMock(jsonpatch_action="make", source=source, target=target, tui=False)
+    with pytest.raises(SystemExit) as e:
+        run_jsonpatch_lab_logic(args)
+    assert e.value.code == 0
+    output = capsys.readouterr().out
+    assert '"op": "replace"' in output
+    assert '"value": 2' in output
+
 def test_run_logic_missing_args(capsys):
     # Missing target
     args = MagicMock(jsonpatch_action="apply", action="apply", target=None, patch="[]", tui=False)

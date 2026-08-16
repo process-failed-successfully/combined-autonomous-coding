@@ -14,7 +14,7 @@ gitpython
 prometheus-client
 psutil
 platformdirs
-google-generativeai
+google-generativeai>=0.8.6
 prometheus-client
 argcomplete
 watchdog

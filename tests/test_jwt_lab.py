@@ -6,7 +6,7 @@ import base64
 class TestJWTManager(unittest.TestCase):
     def setUp(self):
         self.manager = JWTManager()
-        self.payload = {"sub": "1234567890", "name": "John Doe", "iat": 1516239022}
+        self.payload = {"sub": "1234567890", "name": "John Doe", "iat": 1516239022, "admin": True}
         self.secret = "mysecret"
 
     def test_sign_and_verify_hs256(self):
@@ -45,6 +45,32 @@ class TestJWTManager(unittest.TestCase):
     def test_unsupported_algorithm(self):
         with self.assertRaises(ValueError):
             self.manager.sign_token(self.payload, self.secret, "UNKNOWNALG")
+
+    def test_extract_field_success(self):
+        token = self.manager.sign_token(self.payload, self.secret, "HS256")
+
+        # Extract simple string
+        sub = self.manager.extract_field(token, "payload.sub")
+        self.assertEqual(sub, "1234567890")
+
+        # Extract boolean
+        admin = self.manager.extract_field(token, "payload.admin")
+        self.assertEqual(admin, "True")
+
+        # Extract dict (should return JSON string)
+        header = self.manager.extract_field(token, "header")
+        import json
+        header_dict = json.loads(header)
+        self.assertEqual(header_dict["alg"], "HS256")
+
+    def test_extract_field_not_found(self):
+        token = self.manager.sign_token(self.payload, self.secret, "HS256")
+
+        with self.assertRaisesRegex(ValueError, "not found in token"):
+            self.manager.extract_field(token, "payload.nonexistent")
+
+        with self.assertRaisesRegex(ValueError, "not found in token"):
+            self.manager.extract_field(token, "nonexistent.field")
 
     def test_malformed_token(self):
         with self.assertRaises(ValueError):

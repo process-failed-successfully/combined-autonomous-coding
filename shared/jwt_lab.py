@@ -256,6 +256,29 @@ class JWTManager:
 
         return None
 
+
+    @staticmethod
+    def extract_field(token: str, field_path: str) -> str:
+        """
+        Extracts a specific field from the decoded token based on a dot-notated path.
+        Example: 'payload.sub', 'header.alg'
+        """
+        decoded = JWTManager.decode_token(token)
+
+        parts = field_path.split('.')
+        current = decoded
+
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                raise ValueError(f"Field '{field_path}' not found in token.")
+
+        if isinstance(current, (dict, list)):
+            import json
+            return json.dumps(current)
+        return str(current)
+
 def run_jwt_lab_logic(args) -> bool:
     manager = JWTManager()
 
@@ -293,6 +316,15 @@ def run_jwt_lab_logic(args) -> bool:
                 return True
             except ValueError as e:
                 print(f"❌ Verification Failed: {e}", file=sys.stderr)
+                return False
+
+        elif args.action == "extract":
+            try:
+                result = manager.extract_field(args.token, args.field)
+                print(result)
+                return True
+            except ValueError as e:
+                print(f"Error: {e}", file=sys.stderr)
                 return False
 
         elif args.action == "crack":

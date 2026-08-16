@@ -216,6 +216,7 @@ from shared.tui_base85 import Base85LabTab
 from shared.tui_a85 import A85LabTab
 from shared.tui_base45 import Base45LabTab
 from shared.tui_octal import OctalLabTab
+from shared.tui_magnet import MagnetLabTab
 from shared.tui_binary import BinaryLabTab
 from shared.tui_base62 import Base62LabTab
 from shared.tui_base64img import Base64ImgLabTab
@@ -5103,6 +5104,8 @@ class AgentTUI(App):
             with TabPane("JSON Patch", id="tab-jsonpatch"):
                 from shared.tui_jsonpatch import JsonPatchLabTab
                 yield JsonPatchLabTab()
+            with TabPane("Magnet", id="tab-magnet"):
+                yield MagnetLabTab()
             with TabPane("JSONL Lab", id="tab-jsonl"):
                 yield JsonlLabTab()
             yield GrokLabTab()

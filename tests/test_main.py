@@ -27,6 +27,13 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.action, 'json2toml')
         self.assertEqual(args.input, '{"a": 1}')
 
+    def test_parse_args_magnet_lab(self):
+        import main
+        args = main.parse_args(["magnet-lab", "parse", "--uri", "magnet:?xt=urn:btih:123"])
+        self.assertEqual(args.command, 'magnet-lab')
+        self.assertEqual(args.action, 'parse')
+        self.assertEqual(args.uri, 'magnet:?xt=urn:btih:123')
+
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:
             parse_args()

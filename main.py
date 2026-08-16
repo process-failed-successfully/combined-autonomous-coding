@@ -267,6 +267,7 @@ KNOWN_COMMANDS = [
     "hexdump-lab", "hexdump",
     "filetype-lab", "filetype", "magic-bytes",
     "bencode-lab", "bencode", "torrent",
+    "magnet-lab", "magnet",
     "robots-txt-lab", "robots", "robotstxt",
     "sitemap-lab", "sitemap",
     "caesar-lab", "caesar", "vigenere-lab", "vigenere", "atbash-lab", "atbash",
@@ -2628,6 +2629,27 @@ def run_bencode_lab(args):
 
     from shared.bencode_lab import run_bencode_lab_logic
     success = run_bencode_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+def run_magnet_lab(args):
+    """Runs the Magnet Lab."""
+    if hasattr(args, "action") and args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Magnet Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', None), start_tab="tab-magnet")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+
+    from shared.magnet_lab import run_magnet_lab_logic
+    success = run_magnet_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -16174,6 +16196,35 @@ def parse_args(argv=None):
     # bencode-lab tui
     bencode_lab_subparsers.add_parser("tui", help="Launch Bencode Lab TUI.")
 
+    # --- New 'magnet-lab' command ---
+    parser_magnet_lab = subparsers.add_parser(
+        "magnet-lab",
+        aliases=["magnet"],
+        help="Magnet URI generation and parsing tools."
+    )
+    magnet_lab_subparsers = parser_magnet_lab.add_subparsers(
+        dest="action",
+        help="Magnet Lab actions."
+    )
+
+    # magnet-lab parse
+    parser_ml_parse = magnet_lab_subparsers.add_parser("parse", help="Parse a Magnet URI.")
+    parser_ml_parse.add_argument("--uri", type=str, required=True, help="Magnet URI to parse.")
+
+    # magnet-lab build
+    parser_ml_build = magnet_lab_subparsers.add_parser("build", help="Build a Magnet URI.")
+    parser_ml_build.add_argument("--xt", type=str, help="Exact Topic (e.g. urn:btih:...)")
+    parser_ml_build.add_argument("--dn", type=str, help="Display Name")
+    parser_ml_build.add_argument("--xl", type=str, help="Exact Length (bytes)")
+    parser_ml_build.add_argument("--tr", type=str, action="append", help="Tracker URL (can be specified multiple times)")
+
+    # magnet-lab from-torrent
+    parser_ml_from_torrent = magnet_lab_subparsers.add_parser("from-torrent", help="Generate Magnet URI from .torrent file.")
+    parser_ml_from_torrent.add_argument("-f", "--file", type=str, required=True, help="Path to .torrent file.")
+
+    # magnet-lab tui
+    magnet_lab_subparsers.add_parser("tui", help="Launch Magnet Lab TUI.")
+
     # --- BIP39 Lab Parser ---
     parser_bip39_lab = subparsers.add_parser("bip39-lab", aliases=["bip39"], help="BIP39 Mnemonic Seed Generator and Validator")
     bip39_subparsers = parser_bip39_lab.add_subparsers(dest="bip39_action", help="BIP39 commands")
@@ -26397,6 +26448,10 @@ async def main():
         return
     if args.command in ["bencode-lab", "bencode", "torrent"]:
         run_bencode_lab(args)
+        return
+
+    if args.command in ["magnet-lab", "magnet"]:
+        run_magnet_lab(args)
         return
 
     if args.command in ["sitemap-lab", "sitemap"]:

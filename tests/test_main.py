@@ -14,6 +14,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.project_dir = Path(self.tmp_dir)
         self.spec_file = self.project_dir / "spec.txt"
         self.spec_file.write_text("Spec content")
+        import main
+        self.parser = main.get_parser()
 
     def tearDown(self):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):

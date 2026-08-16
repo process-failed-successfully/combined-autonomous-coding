@@ -34,6 +34,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.action, 'parse')
         self.assertEqual(args.uri, 'magnet:?xt=urn:btih:123')
 
+    def test_parse_args_jsonpatch_lab(self):
+        import main
+        args = main.parse_args(["jsonpatch-lab", "diff", "--source", "a.json", "--target", "b.json"])
+        self.assertEqual(args.command, 'jsonpatch-lab')
+        self.assertEqual(args.jsonpatch_action, 'diff')
+        self.assertEqual(args.source, 'a.json')
+        self.assertEqual(args.target, 'b.json')
+
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:
             parse_args()

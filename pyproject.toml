@@ -13,6 +13,8 @@ authors = [
     {name = "User", email = "user@example.com"},
 ]
 dependencies = [
+    "grpcio>=1.69.0",
+    "grpcio-status>=1.69.0",
     "pymysql",
     "cuid2>=2.0.0",
     "nanoid>=2.0.0",

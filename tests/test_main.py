@@ -27,6 +27,28 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.action, 'json2toml')
         self.assertEqual(args.input, '{"a": 1}')
 
+    def test_parse_args_jsonpatch_apply(self):
+        import main
+        args = main.parse_args(["jsonpatch-lab", "apply", "--target", '{"a": 1}', "--patch", '[{"op": "replace", "path": "/a", "value": 2}]'])
+        self.assertEqual(args.command, 'jsonpatch-lab')
+        self.assertEqual(args.jsonpatch_action, 'apply')
+        self.assertEqual(args.target, '{"a": 1}')
+        self.assertEqual(args.patch, '[{"op": "replace", "path": "/a", "value": 2}]')
+
+    def test_parse_args_jsonpatch_diff(self):
+        import main
+        args = main.parse_args(["jsonpatch-lab", "diff", "--source", '{"a": 1}', "--target", '{"a": 2}'])
+        self.assertEqual(args.command, 'jsonpatch-lab')
+        self.assertEqual(args.jsonpatch_action, 'diff')
+        self.assertEqual(args.source, '{"a": 1}')
+        self.assertEqual(args.target, '{"a": 2}')
+
+    def test_parse_args_jsonpatch_tui(self):
+        import main
+        args = main.parse_args(["jsonpatch-lab", "tui"])
+        self.assertEqual(args.command, 'jsonpatch-lab')
+        self.assertEqual(args.jsonpatch_action, 'tui')
+
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:
             parse_args()

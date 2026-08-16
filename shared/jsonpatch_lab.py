@@ -75,7 +75,7 @@ def run_jsonpatch_lab_logic(args):
         print("Error: No command specified for jsonpatch-lab (apply, diff, tui).", file=sys.stderr)
         sys.exit(1)
 
-    if action == "diff":
+    if action in ("diff", "make"):
         if not getattr(args, "source", None):
             print("Error: --source is required.", file=sys.stderr)
             sys.exit(1)

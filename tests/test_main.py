@@ -32,9 +32,20 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         # Test apply subcommand
         args_apply = main.parse_args(["jsonpatch-lab", "apply", "--target", '{"a": 1}', "--patch", '[]'])
         self.assertEqual(args_apply.jsonpatch_action, "apply")
+        self.assertEqual(args_apply.target, '{"a": 1}')
+        self.assertEqual(args_apply.patch, '[]')
+
         # Test diff subcommand
         args_diff = main.parse_args(["jsonpatch-lab", "diff", "--source", '{"a": 1}', "--target", '{"a": 2}'])
         self.assertEqual(args_diff.jsonpatch_action, "diff")
+        self.assertEqual(args_diff.source, '{"a": 1}')
+        self.assertEqual(args_diff.target, '{"a": 2}')
+
+        # Test make alias
+        args_make = main.parse_args(["jsonpatch-lab", "make", "--source", '{"a": 1}', "--target", '{"a": 2}'])
+        self.assertEqual(args_make.jsonpatch_action, "make")
+        self.assertEqual(args_make.source, '{"a": 1}')
+        self.assertEqual(args_make.target, '{"a": 2}')
 
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:

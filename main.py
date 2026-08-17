@@ -15317,6 +15317,11 @@ def parse_args(argv=None):
 
     parser_jwt_verify.add_argument("-v", "--verbose", action="store_true", help="Show decoded content if valid.")
 
+    # jwt-lab extract
+    parser_jwt_extract = jwt_subparsers.add_parser("extract", help="Extract a specific field from a JWT token (e.g. payload.sub).")
+    parser_jwt_extract.add_argument("token", help="The JWT token.")
+    parser_jwt_extract.add_argument("--field", "-f", required=True, help="Field to extract (e.g. header.alg, payload.sub).")
+
     # jwt-lab crack
     parser_jwt_crack = jwt_subparsers.add_parser("crack", help="Crack a JWT token's HMAC secret using a wordlist.")
     parser_jwt_crack.add_argument("token", help="The JWT token.")

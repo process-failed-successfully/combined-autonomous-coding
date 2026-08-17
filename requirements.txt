@@ -7,12 +7,12 @@ PyYAML
 python-dotenv
 tenacity
 openai
-google-cloud-aiplatform
+google-cloud-aiplatform>=1.62.0
 gitpython
 prometheus-client
 psutil
 platformdirs
-google-generativeai
+google-generativeai>=0.8.6
 prometheus-client
 argcomplete
 watchdog
@@ -68,3 +68,5 @@ pymemcache==4.0.0
 pymacaroons==0.13.0
 psycopg2-binary>=2.9.9
 pymysql==1.2.0
+grpcio>=1.69.0
+grpcio-status>=1.69.0

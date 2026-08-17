@@ -19,6 +19,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
+    def test_parse_args_jwt_extract(self):
+        import main
+        args = main.parse_args(["jwt-lab", "extract", "mytoken", "-f", "payload.sub"])
+        self.assertEqual(args.command, "jwt-lab")
+        self.assertEqual(args.action, "extract")
+        self.assertEqual(args.token, "mytoken")
+        self.assertEqual(args.field, "payload.sub")
+
     def test_parse_args_json2toml(self):
         # We can just test that the parser doesn't crash on json2toml-lab
         import main

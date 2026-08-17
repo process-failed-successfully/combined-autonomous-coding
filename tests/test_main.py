@@ -14,15 +14,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.project_dir = Path(self.tmp_dir)
         self.spec_file = self.project_dir / "spec.txt"
         self.spec_file.write_text("Spec content")
-        import main
-        self.parser = main.get_parser()
 
     def tearDown(self):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
     def test_parse_args_jwt_extract(self):
-        args = self.parser.parse_args(["jwt-lab", "extract", "mytoken", "-f", "payload.sub"])
+        import main
+        args = main.parse_args(["jwt-lab", "extract", "mytoken", "-f", "payload.sub"])
         self.assertEqual(args.command, "jwt-lab")
         self.assertEqual(args.action, "extract")
         self.assertEqual(args.token, "mytoken")

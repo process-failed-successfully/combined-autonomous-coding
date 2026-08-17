@@ -71,6 +71,23 @@ class DateLabTab(Container):
                         yield Label("[bold]Result[/bold]")
                         yield RichLog(id="date-info-result", wrap=True, highlight=True, markup=True)
 
+                # Epoch Pane
+                with TabPane("Epoch"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Convert Date to Epoch (YYYY-MM-DD or ISO 8601):")
+                        with Horizontal():
+                            yield Input(placeholder="e.g. 2023-10-25", id="epoch-date-input")
+                            yield Button("To Epoch", id="btn-to-epoch", variant="primary")
+
+                        yield Label("Convert Epoch to Date:")
+                        with Horizontal():
+                            yield Input(placeholder="e.g. 1698192000", id="epoch-timestamp-input")
+                            yield Button("From Epoch", id="btn-from-epoch", variant="warning")
+
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Result[/bold]")
+                        yield RichLog(id="epoch-result", wrap=True, highlight=True, markup=True)
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-date-add":
             self.do_arithmetic("add")
@@ -82,6 +99,10 @@ class DateLabTab(Container):
             self.do_info()
         elif event.button.id == "btn-date-format":
             self.do_format()
+        elif event.button.id == "btn-to-epoch":
+            self.do_to_epoch()
+        elif event.button.id == "btn-from-epoch":
+            self.do_from_epoch()
 
     def do_arithmetic(self, op: str) -> None:
         base_date = self.query_one("#date-arith-base", Input).value
@@ -169,3 +190,37 @@ class DateLabTab(Container):
             self.notify("Error formatting date.", severity="error")
         else:
             result_log.write(f"[bold green]Formatted:[/bold green] {res}")
+
+    def do_to_epoch(self) -> None:
+        date_str = self.query_one("#epoch-date-input", Input).value
+        result_log = self.query_one("#epoch-result", RichLog)
+
+        result_log.clear()
+
+        if not date_str:
+            self.notify("Date required.", severity="error")
+            return
+
+        res = self.manager.to_epoch(date_str)
+        if res.startswith("Error"):
+            result_log.write(f"[bold red]{res}[/bold red]")
+            self.notify("Error converting to epoch.", severity="error")
+        else:
+            result_log.write(f"[bold green]Epoch Timestamp:[/bold green] {res}")
+
+    def do_from_epoch(self) -> None:
+        epoch_str = self.query_one("#epoch-timestamp-input", Input).value
+        result_log = self.query_one("#epoch-result", RichLog)
+
+        result_log.clear()
+
+        if not epoch_str:
+            self.notify("Epoch timestamp required.", severity="error")
+            return
+
+        res = self.manager.from_epoch(epoch_str)
+        if res.startswith("Error"):
+            result_log.write(f"[bold red]{res}[/bold red]")
+            self.notify("Error converting from epoch.", severity="error")
+        else:
+            result_log.write(f"[bold green]Date:[/bold green] {res}")

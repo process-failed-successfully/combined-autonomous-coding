@@ -99,6 +99,23 @@ class DateLabManager:
         except ValueError as e:
             return f"Error: {e}"
 
+    def to_epoch(self, date_str: str) -> str:
+        """Converts a date string to a Unix timestamp."""
+        try:
+            dt = self._parse_date(date_str)
+            return str(int(dt.timestamp()))
+        except ValueError as e:
+            return f"Error: {e}"
+
+    def from_epoch(self, epoch_str: str) -> str:
+        """Converts a Unix timestamp to an ISO 8601 date string."""
+        try:
+            epoch = float(epoch_str)
+            dt = datetime.fromtimestamp(epoch)
+            return dt.isoformat()
+        except ValueError:
+            return "Error: Invalid epoch timestamp"
+
 def run_date_lab_logic(args) -> bool:
     """CLI handler for Date Lab."""
     manager = DateLabManager()
@@ -133,6 +150,22 @@ def run_date_lab_logic(args) -> bool:
 
     elif args.action == "format":
         print(manager.format_date(args.date, args.format))
+        return True
+
+    elif args.action == "to-epoch":
+        res = manager.to_epoch(args.date)
+        if res.startswith("Error"):
+            print(res, file=sys.stderr)
+            return False
+        print(res)
+        return True
+
+    elif args.action == "from-epoch":
+        res = manager.from_epoch(args.epoch)
+        if res.startswith("Error"):
+            print(res, file=sys.stderr)
+            return False
+        print(res)
         return True
 
     return False

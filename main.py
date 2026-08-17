@@ -16500,6 +16500,14 @@ def parse_args(argv=None):
     parser_date_format.add_argument("date", help="Date string.")
     parser_date_format.add_argument("format", help="Format string (e.g. '%%Y-%%m-%%d').")
 
+    # date-lab to-epoch
+    parser_date_to_epoch = date_subparsers.add_parser("to-epoch", help="Convert a date string to a Unix timestamp.")
+    parser_date_to_epoch.add_argument("date", help="Date string.")
+
+    # date-lab from-epoch
+    parser_date_from_epoch = date_subparsers.add_parser("from-epoch", help="Convert a Unix timestamp to a date string.")
+    parser_date_from_epoch.add_argument("epoch", help="Unix timestamp.")
+
     # date-lab tui
     parser_date_tui = date_subparsers.add_parser("tui", help="Launch Date Lab TUI.")
 

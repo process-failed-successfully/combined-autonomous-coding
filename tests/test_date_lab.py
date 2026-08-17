@@ -59,6 +59,28 @@ class TestDateLabManager(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIn("Could not parse date", result["error"])
 
+    def test_to_epoch(self):
+        # 2023-01-01T00:00:00Z -> 1672531200
+        result = self.manager.to_epoch("2023-01-01T00:00:00+00:00")
+        self.assertEqual(result, "1672531200")
+
+    def test_to_epoch_invalid(self):
+        result = self.manager.to_epoch("invalid")
+        self.assertTrue(result.startswith("Error"))
+
+    def test_from_epoch(self):
+        # 1672531200 -> 2023-01-01T00:00:00
+        # datetime.fromtimestamp uses local time by default, but we can verify isoformat
+        result = self.manager.from_epoch("1672531200")
+        # Since it uses local timezone, we just check that it's a valid isoformat string
+        # and has 2022/2023 depending on TZ
+        self.assertIn("T", result)
+        self.assertTrue(result.startswith("202"))
+
+    def test_from_epoch_invalid(self):
+        result = self.manager.from_epoch("invalid")
+        self.assertTrue(result.startswith("Error"))
+
 
 # Adding textual TUI tests
 import pytest

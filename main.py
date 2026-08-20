@@ -16442,8 +16442,12 @@ def parse_args(argv=None):
     parser_time_diff.add_argument("time2", help="Second time.")
 
     # time-lab epoch
-    parser_time_epoch = time_subparsers.add_parser("epoch", help="Get Unix timestamp.")
+    parser_time_epoch = time_subparsers.add_parser("epoch", aliases=["to-epoch"], help="Get Unix timestamp.")
     parser_time_epoch.add_argument("time", nargs="?", help="Time string (default: now).")
+
+    # time-lab from-epoch
+    parser_time_from_epoch = time_subparsers.add_parser("from-epoch", help="Convert Unix timestamp to date.")
+    parser_time_from_epoch.add_argument("epoch", help="Unix timestamp (seconds since epoch).")
 
     # time-lab zones
     parser_time_zones = time_subparsers.add_parser("zones", help="List timezones.")

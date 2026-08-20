@@ -48,6 +48,16 @@ class TestTimeLabManager(unittest.TestCase):
         epoch = self.manager.get_epoch(t)
         self.assertEqual(float(epoch), 1672531200.0)
 
+    def test_from_epoch(self):
+        # 1672531200 = 2023-01-01 00:00:00 UTC
+        epoch = "1672531200"
+        date_str = self.manager.from_epoch(epoch)
+        self.assertIn("2023-01-01T00:00:00", date_str)
+        self.assertIn("+00:00", date_str)
+
+        invalid = self.manager.from_epoch("invalid")
+        self.assertTrue(invalid.startswith("Error"))
+
     def test_list_zones(self):
         zones = self.manager.list_zones("UTC")
         self.assertIn("UTC", zones)

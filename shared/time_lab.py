@@ -74,6 +74,15 @@ class TimeLabManager:
         except ValueError:
             return f"Error: Could not parse time '{time_str}'."
 
+    def from_epoch(self, epoch_str: str) -> str:
+        """Converts a Unix timestamp to an ISO 8601 date string."""
+        try:
+            epoch = float(epoch_str)
+            dt = datetime.fromtimestamp(epoch, tz=timezone.utc)
+            return dt.isoformat()
+        except ValueError:
+            return "Error: Invalid epoch timestamp"
+
     def list_zones(self, search_term: Optional[str] = None) -> List[str]:
         """Lists available timezones, optionally filtered."""
         zones = sorted(list(zoneinfo.available_timezones()))
@@ -199,10 +208,17 @@ def run_time_lab_logic(args) -> bool:
         print("Time difference:")
         print(manager.diff_time(args.time1, args.time2))
 
-    elif args.action == "epoch":
+    elif args.action in ("epoch", "to-epoch"):
         # args.time is optional
         print("Epoch timestamp:")
         print(manager.get_epoch(args.time))
+
+    elif args.action == "from-epoch":
+        res = manager.from_epoch(args.epoch)
+        if res.startswith("Error"):
+            print(res, file=sys.stderr)
+            return False
+        print(res)
 
     elif args.action == "zones":
         print("Available Timezones:")

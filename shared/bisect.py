@@ -157,20 +157,21 @@ async def run_bisect_logic(
         full_output = []
 
         # Stream output
-        while True:
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
-                break
-            if line:
-                print(line, end="")
-                full_output.append(line)
-                # Check for "is the first bad commit"
-                # e.g. "b01d... is the first bad commit"
-                match = re.search(r"^([a-f0-9]+) is the first bad commit", line)
-                if match:
-                    bad_commit_hash = match.group(1)
+        with process.stdout:
+            while True:
+                line = process.stdout.readline()
+                if not line and process.poll() is not None:
+                    break
+                if line:
+                    print(line, end="")
+                    full_output.append(line)
+                    # Check for "is the first bad commit"
+                    # e.g. "b01d... is the first bad commit"
+                    match = re.search(r"^([a-f0-9]+) is the first bad commit", line)
+                    if match:
+                        bad_commit_hash = match.group(1)
 
-        rc = process.poll()
+        rc = process.wait()
 
         # 3. Cleanup
         subprocess.run([git_path, "bisect", "reset"], cwd=project_dir, check=True, capture_output=True)

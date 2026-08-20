@@ -41,6 +41,32 @@ class UlidLabManager:
         except ValueError:
             return False
 
+    def extract(self, text: str, unique: bool = False) -> List[str]:
+        """Extracts all valid ULIDs from the given text."""
+        import re
+        # ULID format: 26 characters (0-9, A-H, J-K, M-N, P-T, V-Z)
+        pattern = r'\b[0-9A-HJKMNP-TV-Z]{26}\b'
+        matches = re.findall(pattern, text, re.IGNORECASE)
+
+        valid_ulids = []
+        for match in matches:
+            # Reconstruct in uppercase as ULID strictly requires base32 character set
+            upper_match = match.upper()
+            if self.validate(upper_match):
+                valid_ulids.append(upper_match)
+
+        if unique:
+            # Preserve order while making unique
+            seen = set()
+            unique_ulids = []
+            for u in valid_ulids:
+                if u not in seen:
+                    unique_ulids.append(u)
+                    seen.add(u)
+            return unique_ulids
+
+        return valid_ulids
+
 
 def run_ulid_lab_logic(args):
     """CLI handler for ULID Lab."""
@@ -54,6 +80,33 @@ def run_ulid_lab_logic(args):
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
+
+    elif args.action == "extract":
+        text_to_process = ""
+        if hasattr(args, 'file') and args.file:
+            from pathlib import Path
+            try:
+                text_to_process = Path(args.file).read_text(encoding="utf-8")
+            except Exception as e:
+                print(f"Error reading file: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif hasattr(args, 'text') and args.text:
+            text_to_process = args.text
+        elif not sys.stdin.isatty():
+            text_to_process = sys.stdin.read()
+        else:
+            print("Error: Provide text via --text, --file, or stdin.", file=sys.stderr)
+            sys.exit(1)
+
+        unique = getattr(args, 'unique', False)
+        ulids = manager.extract(text_to_process, unique=unique)
+
+        if not ulids:
+            print("No ULIDs found.")
+            sys.exit(0)
+
+        for u in ulids:
+            print(u)
 
     elif args.action == "inspect":
         if not args.ulid:

@@ -166,7 +166,7 @@ async def run_bisect_logic(
                 full_output.append(line)
                 # Check for "is the first bad commit"
                 # e.g. "b01d... is the first bad commit"
-                match = re.search(r"^([a-f0-9]+) is the first bad commit", line)
+                match = re.search(r"^([a-f0-9a-zA-Z]+) is the first bad commit", line)
                 if match:
                     bad_commit_hash = match.group(1)
 
@@ -174,10 +174,6 @@ async def run_bisect_logic(
 
         # 3. Cleanup
         subprocess.run([git_path, "bisect", "reset"], cwd=project_dir, check=True, capture_output=True)
-
-        if rc != 0:
-            print("\n❌ Git bisect run failed (command returned error code).")
-            return False
 
         if bad_commit_hash:
             print(f"\n✅ Bisect Complete! The first bad commit is: {bad_commit_hash}")

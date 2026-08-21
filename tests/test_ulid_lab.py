@@ -31,6 +31,24 @@ class TestUlidLabManager(unittest.TestCase):
         self.assertTrue(self.manager.validate(valid_ulid))
         self.assertFalse(self.manager.validate("invalid"))
 
+    def test_extract(self):
+        u1 = self.manager.generate()[0]
+        u2 = self.manager.generate()[0]
+        u3 = self.manager.generate()[0].lower() # ensure it handles lowercase
+
+        text = f"Here is {u1}, and {u2}, also {u3}. Oh and {u1} again! Plus an invalid UUUUUUUUUUUUUUUUUUUUUUUUUU"
+
+        ulids = self.manager.extract(text)
+        self.assertEqual(len(ulids), 4)
+        self.assertEqual(ulids[0], u1.upper())
+        self.assertEqual(ulids[1], u2.upper())
+        self.assertEqual(ulids[2], u3.upper())
+        self.assertEqual(ulids[3], u1.upper())
+
+        unique_ulids = self.manager.extract(text, unique=True)
+        self.assertEqual(len(unique_ulids), 3)
+        self.assertEqual(unique_ulids, [u1.upper(), u2.upper(), u3.upper()])
+
 class TestUlidLabCli(unittest.TestCase):
     @patch('builtins.print')
     def test_run_logic_generate(self, mock_print):

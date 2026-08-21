@@ -85,10 +85,10 @@ fi
             agent_type="gemini"
         )
 
-        self.assertTrue(success)
-
         # The bad commit is self.commits[2]
         bad_hash = self.commits[2]
+
+        self.assertTrue(success, f"Bisect logic failed. Bad hash should be {bad_hash}")
 
         # Verify agent was called
         self.assertTrue(mock_agent_instance.run_agent_session.called)

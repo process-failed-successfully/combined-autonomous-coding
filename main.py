@@ -15716,6 +15716,11 @@ def parse_args(argv=None):
     parser_ulid_bulk = ulid_subparsers.add_parser("bulk", help="Generate bulk ULIDs.")
     parser_ulid_bulk.add_argument("count", type=int, help="Number of ULIDs.")
 
+    parser_ulid_extract = ulid_subparsers.add_parser("extract", help="Extract ULIDs from text or a file.")
+    parser_ulid_extract.add_argument("--text", help="Text to extract from.")
+    parser_ulid_extract.add_argument("--file", help="File to extract from.")
+    parser_ulid_extract.add_argument("--unique", action="store_true", help="Return only unique ULIDs.")
+
     # sqids lab
     parser_sqids = subparsers.add_parser(
         "sqids-lab",

@@ -31,6 +31,29 @@ class TestUlidLabManager(unittest.TestCase):
         self.assertTrue(self.manager.validate(valid_ulid))
         self.assertFalse(self.manager.validate("invalid"))
 
+    def test_extract_valid(self):
+        valid_ulid1 = self.manager.generate()[0]
+        valid_ulid2 = self.manager.generate()[0]
+        text = f"Here is one {valid_ulid1} and here is another {valid_ulid2}."
+        extracted = self.manager.extract(text)
+        self.assertEqual(len(extracted), 2)
+        self.assertEqual(extracted[0], valid_ulid1)
+        self.assertEqual(extracted[1], valid_ulid2)
+
+    def test_extract_invalid(self):
+        text = "This is a string with no ULIDs and a fake one 01HGN1X6M64Z4T2X292T8V0Z9O." # O is invalid
+        extracted = self.manager.extract(text)
+        self.assertEqual(len(extracted), 0)
+
+    def test_extract_unique(self):
+        valid_ulid = self.manager.generate()[0]
+        text = f"Here is one {valid_ulid} and here is the same {valid_ulid}."
+        extracted_all = self.manager.extract(text)
+        self.assertEqual(len(extracted_all), 2)
+        extracted_unique = self.manager.extract(text, unique=True)
+        self.assertEqual(len(extracted_unique), 1)
+        self.assertEqual(extracted_unique[0], valid_ulid)
+
 class TestUlidLabCli(unittest.TestCase):
     @patch('builtins.print')
     def test_run_logic_generate(self, mock_print):
@@ -69,6 +92,20 @@ class TestUlidLabCli(unittest.TestCase):
         run_ulid_lab_logic(args)
         mock_print.assert_called_with(f"✅ Valid ULID: {valid_ulid}")
         mock_exit.assert_called_with(0)
+
+    @patch('builtins.print')
+    def test_run_logic_extract(self, mock_print):
+        manager = UlidLabManager()
+        valid_ulid = manager.generate()[0]
+
+        args = MagicMock()
+        args.action = "extract"
+        args.text = f"test {valid_ulid}"
+        args.file = None
+        args.unique = False
+
+        run_ulid_lab_logic(args)
+        mock_print.assert_called_with(valid_ulid)
 
 if __name__ == '__main__':
     unittest.main()

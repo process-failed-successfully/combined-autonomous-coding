@@ -42,10 +42,24 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.action, "to-epoch")
         self.assertEqual(args.date, "2023-10-25")
 
+    def test_parse_args_date_to_epoch_alias(self):
+        import main
+        args = main.parse_args(["date", "to-epoch", "2023-10-25"])
+        self.assertEqual(args.command, "date")
+        self.assertEqual(args.action, "to-epoch")
+        self.assertEqual(args.date, "2023-10-25")
+
     def test_parse_args_date_from_epoch(self):
         import main
         args = main.parse_args(["date-lab", "from-epoch", "1698192000"])
         self.assertEqual(args.command, "date-lab")
+        self.assertEqual(args.action, "from-epoch")
+        self.assertEqual(args.epoch, "1698192000")
+
+    def test_parse_args_date_from_epoch_alias(self):
+        import main
+        args = main.parse_args(["date", "from-epoch", "1698192000"])
+        self.assertEqual(args.command, "date")
         self.assertEqual(args.action, "from-epoch")
         self.assertEqual(args.epoch, "1698192000")
 

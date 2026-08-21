@@ -1,5 +1,0 @@
-<<<<<<< SEARCH
-                    yield TextArea(id="json2graphql-output-ta", language="graphql", classes="h-full", read_only=True)
-=======
-                    yield TextArea(id="json2graphql-output-ta", language="javascript", classes="h-full", read_only=True)
->>>>>>> REPLACE

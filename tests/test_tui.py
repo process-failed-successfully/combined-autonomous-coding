@@ -51,7 +51,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(100, 100)) as pilot:
             # Check if TabbedContent exists
             self.assertIsInstance(app.query_one("#main-tabs"), TabbedContent)
             # Check if tabs are present by ID
@@ -70,7 +70,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(100, 100)) as pilot:
             # Switch to dashboard is default
             dashboard = app.query_one(DashboardTab)
             self.assertIsNotNone(dashboard)
@@ -94,7 +94,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(100, 100)) as pilot:
             # Switch to explorer tab
             tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-explorer"
@@ -128,7 +128,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         mock_get_logs.return_value = [log1, log2]
 
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(100, 100)) as pilot:
             # Switch to logs tab
             tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-logs"
@@ -151,7 +151,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(100, 100)) as pilot:
             tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-interact"
             await pilot.pause()
@@ -170,7 +170,7 @@ class TestTUI(unittest.IsolatedAsyncioTestCase):
         mock_services_tab.side_effect = lambda *args, **kwargs: Container()
         mock_otp_tab.side_effect = lambda *args, **kwargs: Container()
         app = AgentTUI(project_dir=self.project_dir)
-        async with app.run_test() as pilot:
+        async with app.run_test(size=(100, 100)) as pilot:
             tabbed_content = app.query_one("#main-tabs")
             tabbed_content.active = "tab-knowledge"
             await pilot.pause()

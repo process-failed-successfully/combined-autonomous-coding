@@ -53,22 +53,24 @@ class TestBisect(unittest.IsolatedAsyncioTestCase):
             shutil.rmtree(self.test_dir)
 
     @patch('shared.bisect.GeminiAgent')
-    async def test_bisect_run(self, MockAgent):
+    async def test_bisect_run(self, MockGemini):
         """Test the automated bisect flow."""
         # Setup mock agent
-        mock_agent_instance = MockAgent.return_value
+        mock_agent_instance = MockGemini.return_value
         mock_agent_instance.run_agent_session = AsyncMock(return_value=(True, "Analysis result", []))
 
         # We need a test script that fails if file content contains "bug"
         # Note: git bisect checkout might overwrite this file if not untracked/ignored?
         # But here 'test.sh' is untracked, so it stays across checkouts.
         test_script = self.test_dir / "test.sh"
-        test_script.write_text("""#!/bin/bash
-if grep -q "bug" file.txt; then
-  exit 1
-else
-  exit 0
-fi
+        test_script.write_text("""#!/usr/bin/env python3
+import sys
+with open("file.txt", "r") as f:
+    c = f.read()
+if "bug" in c:
+    sys.exit(1)
+else:
+    sys.exit(0)
 """)
         test_script.chmod(0o755)
 
@@ -81,7 +83,7 @@ fi
             project_dir=self.test_dir,
             good_commit=good_commit,
             bad_commit=bad_commit,
-            run_command=f"./test.sh",
+            run_command=str(self.test_dir.absolute() / "test.sh"),
             agent_type="gemini"
         )
 

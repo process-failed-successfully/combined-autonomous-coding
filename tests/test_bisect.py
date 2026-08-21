@@ -53,10 +53,10 @@ class TestBisect(unittest.IsolatedAsyncioTestCase):
             shutil.rmtree(self.test_dir)
 
     @patch('shared.bisect.GeminiAgent')
-    async def test_bisect_run(self, MockAgent):
+    async def test_bisect_run(self, MockGemini):
         """Test the automated bisect flow."""
         # Setup mock agent
-        mock_agent_instance = MockAgent.return_value
+        mock_agent_instance = MockGemini.return_value
         mock_agent_instance.run_agent_session = AsyncMock(return_value=(True, "Analysis result", []))
 
         # We need a test script that fails if file content contains "bug"
@@ -81,7 +81,7 @@ fi
             project_dir=self.test_dir,
             good_commit=good_commit,
             bad_commit=bad_commit,
-            run_command=f"./test.sh",
+            run_command=str(self.test_dir.absolute() / "test.sh"),
             agent_type="gemini"
         )
 

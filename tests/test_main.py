@@ -35,6 +35,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.action, 'json2toml')
         self.assertEqual(args.input, '{"a": 1}')
 
+    def test_parse_args_ulid_extract(self):
+        import main
+        args = main.parse_args(["ulid-lab", "extract", "--text", "some text with 01ARZ3NDEKTSV4RRFFQ69G5FAV", "--unique"])
+        self.assertEqual(args.command, 'ulid-lab')
+        self.assertEqual(args.action, 'extract')
+        self.assertEqual(args.text, "some text with 01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        self.assertTrue(args.unique)
+
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:
             parse_args()

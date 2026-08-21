@@ -165,8 +165,8 @@ async def run_bisect_logic(
                 print(line, end="")
                 full_output.append(line)
                 # Check for "is the first bad commit"
-                # e.g. "b01d... is the first bad commit"
-                match = re.search(r"^([a-f0-9]+) is the first bad commit", line)
+                # e.g. "b01d... is the first bad commit" or "b01d... is the first 'bad' commit" (Git 2.47+)
+                match = re.search(r"^([a-f0-9]+) is the first (?:'bad'|bad) commit", line)
                 if match:
                     bad_commit_hash = match.group(1)
 

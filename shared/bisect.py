@@ -157,6 +157,7 @@ async def run_bisect_logic(
         full_output = []
 
         # Stream output
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
         while True:
             line = process.stdout.readline()
             if not line and process.poll() is not None:
@@ -164,9 +165,11 @@ async def run_bisect_logic(
             if line:
                 print(line, end="")
                 full_output.append(line)
+
+                clean_line = ansi_escape.sub('', line)
                 # Check for "is the first bad commit"
                 # e.g. "b01d... is the first bad commit"
-                match = re.search(r"^([a-f0-9a-zA-Z]+) is the first bad commit", line)
+                match = re.search(r"^([a-f0-9a-zA-Z]+) is the first bad commit", clean_line)
                 if match:
                     bad_commit_hash = match.group(1)
 

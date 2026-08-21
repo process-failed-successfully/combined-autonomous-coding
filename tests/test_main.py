@@ -35,6 +35,20 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.action, 'json2toml')
         self.assertEqual(args.input, '{"a": 1}')
 
+    def test_parse_args_date_epoch(self):
+        import main
+        args = main.parse_args(["date-lab", "to-epoch", "2023-01-01"])
+        self.assertEqual(args.command, 'date-lab')
+        self.assertEqual(args.action, 'to-epoch')
+        self.assertEqual(args.date, '2023-01-01')
+
+    def test_parse_args_date_from_epoch(self):
+        import main
+        args = main.parse_args(["date-lab", "from-epoch", "1672531200"])
+        self.assertEqual(args.command, 'date-lab')
+        self.assertEqual(args.action, 'from-epoch')
+        self.assertEqual(args.epoch, '1672531200')
+
     def test_parse_args_ulid_extract(self):
         import main
         args = main.parse_args(["ulid-lab", "extract", "--text", "some text with 01ARZ3NDEKTSV4RRFFQ69G5FAV", "--unique"])

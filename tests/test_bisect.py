@@ -63,12 +63,14 @@ class TestBisect(unittest.IsolatedAsyncioTestCase):
         # Note: git bisect checkout might overwrite this file if not untracked/ignored?
         # But here 'test.sh' is untracked, so it stays across checkouts.
         test_script = self.test_dir / "test.sh"
-        test_script.write_text("""#!/bin/bash
-if grep -q "bug" file.txt; then
-  exit 1
-else
-  exit 0
-fi
+        test_script.write_text("""#!/usr/bin/env python3
+import sys
+with open("file.txt", "r") as f:
+    c = f.read()
+if "bug" in c:
+    sys.exit(1)
+else:
+    sys.exit(0)
 """)
         test_script.chmod(0o755)
 

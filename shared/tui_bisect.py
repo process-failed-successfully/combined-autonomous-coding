@@ -153,8 +153,8 @@ class BisectTab(Container):
                         status_lbl.update(f"[cyan]{line}[/cyan]")
 
                     # Check for culprit
-                    # "b01d... is the first bad commit"
-                    match = re.search(r"^([a-f0-9]+) is the first bad commit", line)
+                    # "b01d... is the first (?:'bad'|bad) commit"
+                    match = re.search(r"^([a-f0-9]+) is the first (?:'bad'|bad) commit", line)
                     if match:
                         bad_commit_hash = match.group(1)
                         log.write(f"\n[bold green]FOUND CULPRIT: {bad_commit_hash}[/bold green]")

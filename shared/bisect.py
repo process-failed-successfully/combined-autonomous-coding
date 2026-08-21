@@ -169,7 +169,7 @@ async def run_bisect_logic(
                 clean_line = ansi_escape.sub('', line)
                 # Check for "is the first bad commit"
                 # e.g. "b01d... is the first bad commit"
-                match = re.search(r"\b([a-f0-9a-zA-Z]{7,40})\b is the first bad commit", clean_line)
+                match = re.search(r"\b([a-f0-9a-zA-Z]{7,40})\b is the first (?:'bad'|bad) commit", clean_line)
                 if match:
                     bad_commit_hash = match.group(1)
 

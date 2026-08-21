@@ -27,6 +27,20 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.token, "mytoken")
         self.assertEqual(args.field, "payload.sub")
 
+    def test_parse_args_yq_evaluate(self):
+        import main
+        args = main.parse_args(["yq-lab", "evaluate", "input.yaml", ".name"])
+        self.assertEqual(args.command, "yq-lab")
+        self.assertEqual(args.action, "evaluate")
+        self.assertEqual(args.input, "input.yaml")
+        self.assertEqual(args.expression, ".name")
+
+        args = main.parse_args(["yq", "evaluate", "input.yaml", ".name"])
+        self.assertEqual(args.command, "yq")
+        self.assertEqual(args.action, "evaluate")
+        self.assertEqual(args.input, "input.yaml")
+        self.assertEqual(args.expression, ".name")
+
     def test_parse_args_json2toml(self):
         # We can just test that the parser doesn't crash on json2toml-lab
         import main

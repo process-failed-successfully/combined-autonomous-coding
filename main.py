@@ -406,6 +406,7 @@ KNOWN_COMMANDS = [
     "pack", "jsonpath-lab", "jpath", "jmespath-lab", "jmespath", "jp",
     "xpath-lab", "xpath",
     "jq-lab", "jq",
+    "yq-lab", "yq",
     "mime-lab", "mime",
     "branch-lab", "bl",
     "luhn-lab", "luhn",
@@ -16612,6 +16613,17 @@ def parse_args(argv=None):
     jq_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jq_eval_parser.add_argument("expression", help="jq expression.")
 
+    # --- New 'yq-lab' command ---
+    parser_yq = subparsers.add_parser(
+        "yq-lab",
+        aliases=["yq"],
+        help="Evaluate jq expressions on YAML data."
+    )
+    yq_subparsers = parser_yq.add_subparsers(dest="action")
+    yq_eval_parser = yq_subparsers.add_parser("evaluate", help="Evaluate jq expressions on YAML.")
+    yq_eval_parser.add_argument("input", help="Input YAML file path or '-' for stdin.")
+    yq_eval_parser.add_argument("expression", help="jq expression.")
+
     # --- New 'awk-lab' command ---
     parser_awk = subparsers.add_parser(
         "awk-lab",
@@ -27333,6 +27345,11 @@ async def main():
 
     if args.command in ["jq-lab", "jq"]:
         run_jq_lab(args)
+        return
+
+    if args.command in ["yq-lab", "yq"]:
+        from shared.yq_lab import run_yq_lab_logic
+        run_yq_lab_logic(args)
         return
 
     if args.command in ["xpath-lab", "xpath"]:

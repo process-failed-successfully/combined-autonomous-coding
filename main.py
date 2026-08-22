@@ -15785,7 +15785,7 @@ def parse_args(argv=None):
 
     # uuid generate
     parser_uuid_gen = uuid_subparsers.add_parser("generate", aliases=["gen"], help="Generate UUIDs.")
-    parser_uuid_gen.add_argument("--version", "-v", type=int, choices=[1, 3, 4, 5, 7], default=4, help="UUID version (default: 4).")
+    parser_uuid_gen.add_argument("--version", "-v", type=int, choices=[1, 3, 4, 5, 6, 7, 8], default=4, help="UUID version (default: 4).")
     parser_uuid_gen.add_argument("--count", "-c", type=int, default=1, help="Number of UUIDs to generate.")
     parser_uuid_gen.add_argument("--namespace", "-ns", help="Namespace for v3/v5 (DNS, URL, OID, X500, or UUID).")
     parser_uuid_gen.add_argument("--name", "-n", help="Name for v3/v5.")
@@ -19437,7 +19437,7 @@ Examples:
 
     # random-lab uuid
     parser_random_uuid = random_subparsers.add_parser("uuid", help="Generate UUIDs.")
-    parser_random_uuid.add_argument("--version", "-v", type=int, default=4, choices=[1, 4], help="UUID version.")
+    parser_random_uuid.add_argument("--version", "-v", type=int, default=4, choices=[1, 4, 6, 7, 8], help="UUID version.")
     parser_random_uuid.add_argument("--count", "-c", type=int, default=1, help="Number of items.")
 
     # random-lab coin

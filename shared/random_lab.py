@@ -101,15 +101,9 @@ class RandomLabManager:
 
     def generate_uuid(self, version: int = 4, count: int = 1) -> List[str]:
         """Generates UUIDs."""
-        results = []
-        for _ in range(count):
-            if version == 4:
-                results.append(str(uuid.uuid4()))
-            elif version == 1:
-                results.append(str(uuid.uuid1()))
-            else:
-                raise ValueError("Only UUID v1 and v4 are supported.")
-        return results
+        from shared.uuid_lab import UuidLabManager
+        manager = UuidLabManager()
+        return manager.generate(version=version, count=count)
 
     def flip_coin(self, count: int = 1) -> List[str]:
         """Flips a coin."""

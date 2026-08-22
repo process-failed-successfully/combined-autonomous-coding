@@ -36,6 +36,16 @@ class UuidLabManager:
                 u = uuid.uuid4()
             elif version == 5:
                 u = uuid.uuid5(ns_uuid, name)
+            elif version == 6:
+                u1 = uuid.uuid1()
+                t = u1.time
+                t_high = (t >> 12) & 0xFFFFFFFFFFFF
+                t_low = t & 0xFFF
+                b = bytearray(16)
+                b[0:6] = t_high.to_bytes(6, 'big')
+                b[6:8] = (0x6000 | t_low).to_bytes(2, 'big')
+                b[8:16] = u1.bytes[8:16]
+                u = uuid.UUID(bytes=bytes(b))
             elif version == 7:
                 import time
                 import os
@@ -48,6 +58,12 @@ class UuidLabManager:
                 b[7] = rand[1]
                 b[8] = 0x80 | (rand[2] & 0x3f)
                 b[9:] = rand[3:10]
+                u = uuid.UUID(bytes=bytes(b))
+            elif version == 8:
+                import os
+                b = bytearray(os.urandom(16))
+                b[6] = 0x80 | (b[6] & 0x0f)
+                b[8] = 0x80 | (b[8] & 0x3f)
                 u = uuid.UUID(bytes=bytes(b))
             else:
                 raise ValueError(f"Unsupported UUID version: {version}")
@@ -91,6 +107,23 @@ class UuidLabManager:
             except Exception:
                 pass
 
+        elif u.version == 6:
+            # Time is 100-nanosecond intervals since 1582-10-15
+            t_high = int.from_bytes(u.bytes[0:6], 'big')
+            t_low = int.from_bytes(u.bytes[6:8], 'big') & 0x0FFF
+            info["time"] = (t_high << 12) | t_low
+            info["clock_seq"] = ((u.bytes[8] & 0x3F) << 8) | u.bytes[9]
+            node = int.from_bytes(u.bytes[10:16], 'big')
+            info["node"] = node
+            info["mac"] = ':'.join(['{:02x}'.format((node >> ele) & 0xff) for ele in range(40, -1, -8)])
+
+            try:
+                ts = (info["time"] - 0x01b21dd213814000) / 1e7
+                from datetime import datetime
+                info["timestamp_iso"] = datetime.fromtimestamp(ts).isoformat()
+            except Exception:
+                pass
+
         elif u.version == 7:
             # Time is 48-bit Unix Epoch in milliseconds
             time_ms = int.from_bytes(u.bytes[:6], 'big')
@@ -100,6 +133,9 @@ class UuidLabManager:
                 info["timestamp_iso"] = datetime.fromtimestamp(time_ms / 1000.0).isoformat()
             except Exception:
                 pass
+
+        elif u.version == 8:
+            info["custom_data_hex"] = u.bytes.hex()
 
         return info
 
@@ -115,7 +151,7 @@ class UuidLabManager:
         """Extracts all valid UUIDs from the given text."""
         import re
         # UUID v1-v5 format regex
-        pattern = r'\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b'
+        pattern = r'\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\b'
         matches = re.findall(pattern, text)
 
         # Verify valid UUIDs (just in case)
@@ -181,10 +217,21 @@ def run_uuid_lab_logic(args):
              print(f"  Node:    {info['node']}")
              print(f"  MAC:     {info['mac']}")
 
+        elif info.get("version") == 6:
+             print(f"  Time:    {info['time']} (100-ns intervals since 1582-10-15)")
+             if "timestamp_iso" in info:
+                 print(f"  Date:    {info['timestamp_iso']}")
+             print(f"  Clock:   {info.get('clock_seq')}")
+             print(f"  Node:    {info.get('node')}")
+             print(f"  MAC:     {info.get('mac')}")
+
         elif info.get("version") == 7:
              print(f"  Time MS: {info.get('time_ms')} (Unix Epoch)")
              if "timestamp_iso" in info:
                  print(f"  Date:    {info['timestamp_iso']}")
+
+        elif info.get("version") == 8:
+             print(f"  Custom Data: {info.get('custom_data_hex')}")
 
     elif args.action == "validate":
         if manager.validate(args.uuid):

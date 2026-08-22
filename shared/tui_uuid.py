@@ -23,7 +23,7 @@ class UuidLabTab(Container):
 
                         with Horizontal():
                             yield Label("Version:")
-                            yield Select.from_values([1, 3, 4, 5, 7], id="select-uuid-version", value=4)
+                            yield Select.from_values([1, 3, 4, 5, 6, 7, 8], id="select-uuid-version", value=4)
                             yield Label("Count:")
                             yield Input(placeholder="1", id="input-uuid-count", type="integer", value="1")
 
@@ -128,10 +128,18 @@ class UuidLabTab(Container):
             log.write(f"Time: {info.get('timestamp_iso', info.get('time'))}")
             log.write(f"Node (MAC): {info.get('mac')}")
             log.write(f"Clock Seq: {info.get('clock_seq')}")
+        elif info.get("version") == 6:
+            log.write(f"\n[bold]v6 Specifics:[/bold]")
+            log.write(f"Time: {info.get('timestamp_iso', info.get('time'))}")
+            log.write(f"Node (MAC): {info.get('mac')}")
+            log.write(f"Clock Seq: {info.get('clock_seq')}")
         elif info.get("version") == 7:
             log.write(f"\n[bold]v7 Specifics:[/bold]")
             log.write(f"Time MS: {info.get('time_ms')} (Unix Epoch)")
             log.write(f"Date: {info.get('timestamp_iso')}")
+        elif info.get("version") == 8:
+            log.write(f"\n[bold]v8 Specifics:[/bold]")
+            log.write(f"Custom Data: {info.get('custom_data_hex')}")
 
         log.write(f"\nURN: {info['urn']}")
 

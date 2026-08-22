@@ -42,6 +42,39 @@ class TestUuidLabManager(unittest.TestCase):
         u2 = uuid.uuid5(uuid.NAMESPACE_DNS, name)
         self.assertEqual(str(u2), u)
 
+
+    def test_generate_v6(self):
+        results = self.manager.generate(version=6, count=5)
+        self.assertEqual(len(results), 5)
+        for u in results:
+            self.assertTrue(self.manager.validate(u))
+            obj = uuid.UUID(u)
+            self.assertEqual(obj.version, 6)
+
+    def test_generate_v8(self):
+        results = self.manager.generate(version=8, count=5)
+        self.assertEqual(len(results), 5)
+        for u in results:
+            self.assertTrue(self.manager.validate(u))
+            obj = uuid.UUID(u)
+            self.assertEqual(obj.version, 8)
+
+    def test_inspect_v6(self):
+        u = self.manager.generate(version=6)[0]
+        info = self.manager.inspect(u)
+        self.assertTrue(info["valid"])
+        self.assertEqual(info["version"], 6)
+        self.assertIn("time", info)
+        self.assertIn("mac", info)
+        self.assertIn("timestamp_iso", info)
+
+    def test_inspect_v8(self):
+        u = self.manager.generate(version=8)[0]
+        info = self.manager.inspect(u)
+        self.assertTrue(info["valid"])
+        self.assertEqual(info["version"], 8)
+        self.assertIn("custom_data_hex", info)
+
     def test_generate_v7(self):
         results = self.manager.generate(version=7, count=5)
         self.assertEqual(len(results), 5)

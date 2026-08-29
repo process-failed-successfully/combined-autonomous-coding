@@ -31,6 +31,8 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
+          # We must install older setuptools which provides pkg_resources for older grpcio to build
+          pip install "setuptools<70.0.0" wheel
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           pip install .
 
@@ -74,6 +76,8 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
+          # We must install older setuptools which provides pkg_resources for older grpcio to build
+          pip install "setuptools<70.0.0" wheel
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
           pip install .
 

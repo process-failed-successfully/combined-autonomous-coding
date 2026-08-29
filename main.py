@@ -2411,6 +2411,15 @@ def run_docs_lab(args):
     sys.exit(0)
 
 
+
+def run_pdf_lab(args):
+    """Runs the PDF Lab."""
+    if getattr(args, "action", None) == "tui":
+        run_tui(args, start_tab="tab-pdf")
+        return
+    from shared.pdf_lab import run_pdf_lab_logic
+    run_pdf_lab_logic(args)
+
 def run_qr_lab(args):
     """Runs the QR Lab."""
     run_qr_lab_logic(args)
@@ -18385,6 +18394,21 @@ def parse_args(argv=None):
     parser_pdf_split = pdf_subparsers.add_parser("split", help="Split PDF into pages.")
     parser_pdf_split.add_argument("file", help="Input PDF file.")
     parser_pdf_split.add_argument("output_dir", help="Output directory.")
+
+    # pdf-lab encrypt
+    parser_pdf_encrypt = pdf_subparsers.add_parser("encrypt", help="Encrypt a PDF with a password.")
+    parser_pdf_encrypt.add_argument("file", help="Input PDF file.")
+    parser_pdf_encrypt.add_argument("output", help="Output encrypted PDF file.")
+    parser_pdf_encrypt.add_argument("--password", "-p", help="Password for encryption (prompts if omitted).")
+
+    # pdf-lab decrypt
+    parser_pdf_decrypt = pdf_subparsers.add_parser("decrypt", help="Decrypt a PDF with a password.")
+    parser_pdf_decrypt.add_argument("file", help="Input encrypted PDF file.")
+    parser_pdf_decrypt.add_argument("output", help="Output decrypted PDF file.")
+    parser_pdf_decrypt.add_argument("--password", "-p", help="Password for decryption (prompts if omitted).")
+
+    # pdf-lab tui
+    pdf_subparsers.add_parser("tui", help="Launch PDF Lab TUI.")
 
     # --- New 'archive-lab' command ---
     parser_archive = subparsers.add_parser(

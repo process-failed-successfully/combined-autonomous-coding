@@ -15853,6 +15853,8 @@ def parse_args(argv=None):
     parser_pwd_passphrase = pwd_subparsers.add_parser("passphrase", help="Generate a secure random passphrase.")
     parser_pwd_passphrase.add_argument("-w", "--words", type=int, default=4, help="Number of words in passphrase (default: 4).")
     parser_pwd_passphrase.add_argument("-s", "--separator", type=str, default="-", help="Separator between words (default: '-').")
+    parser_pwd_passphrase.add_argument("-c", "--capitalize", action="store_true", help="Capitalize each word in the passphrase.")
+    parser_pwd_passphrase.add_argument("-n", "--include-number", action="store_true", help="Append a random digit to the end of the passphrase.")
 
     # password-lab generate
     parser_pwd_gen = pwd_subparsers.add_parser("generate", help="Generate a secure random password.")

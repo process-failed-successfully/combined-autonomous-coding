@@ -62,6 +62,11 @@ class TestPasswordLabTab(unittest.IsolatedAsyncioTestCase):
             app.query_one("#pwd-passphrase-words", Input).value = "5"
             app.query_one("#pwd-passphrase-separator", Input).value = "_"
 
+            # Since these checkboxes use textual's reactive values, we can toggle them
+            # or directly set .value = True
+            app.query_one("#pwd-passphrase-capitalize").value = True
+            app.query_one("#pwd-passphrase-number").value = True
+
             # Click generate
             await pilot.pause()
             app.query_one("#btn-pwd-passphrase", Button).press()
@@ -76,6 +81,13 @@ class TestPasswordLabTab(unittest.IsolatedAsyncioTestCase):
             # The passphrase part should have 4 separators
             passphrase_part = output.split("\n")[0].replace("Passphrase: ", "")
             self.assertEqual(passphrase_part.count("_"), 4)
+
+            # The first word should be capitalized
+            parts = passphrase_part.split("_")
+            self.assertTrue(parts[0][0].isupper())
+
+            # The last character should be a number
+            self.assertTrue(passphrase_part[-1].isdigit())
 
     async def test_hash_password(self):
         app = PasswordLabApp()

@@ -52,6 +52,17 @@ class TestPasswordLab(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.generate_passphrase(words=0)
 
+    def test_generate_passphrase_options(self):
+        # Test capitalize and include_number
+        pwd = self.manager.generate_passphrase(words=3, separator="-", capitalize=True, include_number=True)
+        # Should be exactly 3 words, capitalized, ending with a digit.
+        parts = pwd.split("-")
+        self.assertEqual(len(parts), 3)
+        self.assertTrue(parts[0][0].isupper())
+        self.assertTrue(parts[1][0].isupper())
+        self.assertTrue(parts[2][0].isupper())
+        self.assertTrue(pwd[-1].isdigit())
+
     def test_check_strength(self):
         # Weak
         res = self.manager.check_strength("12345")
@@ -150,8 +161,13 @@ class TestPasswordLab(unittest.TestCase):
             action = "passphrase"
             words = 5
             separator = "_"
+            capitalize = True
+            include_number = True
 
         run_password_lab_logic(Args())
 
         output = mock_stdout.getvalue().strip()
         self.assertEqual(output.count("_"), 4)
+        parts = output.split("_")
+        self.assertTrue(parts[0][0].isupper())
+        self.assertTrue(output[-1].isdigit())

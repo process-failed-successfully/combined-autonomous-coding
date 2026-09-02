@@ -39,6 +39,8 @@ class PasswordLabTab(Container):
                         yield Input(value="4", id="pwd-passphrase-words")
                         yield Label("Separator:")
                         yield Input(value="-", id="pwd-passphrase-separator")
+                        yield Checkbox("Capitalize Words", id="pwd-passphrase-capitalize", value=False)
+                        yield Checkbox("Include Number", id="pwd-passphrase-number", value=False)
                         yield Button("Generate Passphrase", id="btn-pwd-passphrase", variant="primary")
 
                     with Vertical(classes="stat-box"):
@@ -108,9 +110,16 @@ class PasswordLabTab(Container):
             return
 
         separator = self.query_one("#pwd-passphrase-separator", Input).value
+        capitalize = self.query_one("#pwd-passphrase-capitalize", Checkbox).value
+        include_number = self.query_one("#pwd-passphrase-number", Checkbox).value
 
         try:
-            pwd = self.manager.generate_passphrase(words=words, separator=separator)
+            pwd = self.manager.generate_passphrase(
+                words=words,
+                separator=separator,
+                capitalize=capitalize,
+                include_number=include_number
+            )
             strength = self.manager.check_strength(pwd)
             output = f"Passphrase: {pwd}\nEntropy: {strength['entropy']} bits"
             self.query_one("#pwd-passphrase-output", TextArea).text = output

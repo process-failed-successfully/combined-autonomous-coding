@@ -17981,6 +17981,20 @@ def parse_args(argv=None):
     parser_crypto_aes_dec.add_argument("--iv", required=True, help="IV used during encryption (hex format).")
     parser_crypto_aes_dec.add_argument("--tag", help="Authentication tag in hex (required for GCM mode).")
 
+    # crypto-lab chacha20-encrypt
+    parser_crypto_chacha20_enc = crypto_subparsers.add_parser("chacha20-encrypt", help="Encrypt data using ChaCha20-Poly1305.")
+    parser_crypto_chacha20_enc.add_argument("--key", required=True, help="ChaCha20 Key (32 bytes) in hex format.")
+    parser_crypto_chacha20_enc.add_argument("--text", help="Input text.")
+    parser_crypto_chacha20_enc.add_argument("--file", help="Input file.")
+    parser_crypto_chacha20_enc.add_argument("--nonce", help="Optional Nonce (12 bytes) in hex. Randomly generated if not provided.")
+
+    # crypto-lab chacha20-decrypt
+    parser_crypto_chacha20_dec = crypto_subparsers.add_parser("chacha20-decrypt", help="Decrypt data using ChaCha20-Poly1305.")
+    parser_crypto_chacha20_dec.add_argument("--key", required=True, help="ChaCha20 Key (32 bytes) in hex format.")
+    parser_crypto_chacha20_dec.add_argument("--input", help="Ciphertext (base64 encoded).")
+    parser_crypto_chacha20_dec.add_argument("--file", help="Ciphertext file (raw bytes).")
+    parser_crypto_chacha20_dec.add_argument("--nonce", required=True, help="Nonce (12 bytes) used during encryption (hex format).")
+
     # --- New 'image-lab' command ---
 
     parser_ocr = subparsers.add_parser(

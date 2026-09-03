@@ -347,3 +347,60 @@ def test_cli_aes_encrypt_decrypt(capsys):
     captured_dec = capsys.readouterr()
 
     assert captured_dec.out.strip() == test_str
+
+def test_chacha20_encrypt_decrypt(crypto_manager):
+    key = os.urandom(32)
+    test_str = "secret_chacha_data"
+
+    # Encrypt without nonce (randomly generated)
+    ciphertext, nonce = crypto_manager.chacha20_encrypt(test_str, key)
+    assert ciphertext is not None
+    assert len(nonce) == 12
+
+    # Decrypt
+    decrypted = crypto_manager.chacha20_decrypt(ciphertext, key, nonce)
+    assert decrypted.decode("utf-8") == test_str
+
+    # Test with predefined nonce
+    custom_nonce = os.urandom(12)
+    ciphertext2, nonce2 = crypto_manager.chacha20_encrypt(test_str, key, nonce=custom_nonce)
+    assert nonce2 == custom_nonce
+    decrypted2 = crypto_manager.chacha20_decrypt(ciphertext2, key, custom_nonce)
+    assert decrypted2.decode("utf-8") == test_str
+
+def test_cli_chacha20_encrypt_decrypt(capsys):
+    import base64
+    import json
+
+    key = os.urandom(32).hex()
+    test_str = "cli_chacha_secret_message"
+
+    # Encrypt
+    args_enc = MagicMock()
+    args_enc.action = "chacha20-encrypt"
+    args_enc.key = key
+    args_enc.text = test_str
+    args_enc.file = None
+    args_enc.nonce = None
+
+    run_crypto_lab_logic(args_enc)
+    captured_enc = capsys.readouterr()
+    result = json.loads(captured_enc.out)
+
+    ciphertext = result["ciphertext"]
+    nonce = result["nonce"]
+
+    assert ciphertext is not None
+    assert nonce is not None
+
+    # Decrypt
+    args_dec = MagicMock()
+    args_dec.action = "chacha20-decrypt"
+    args_dec.key = key
+    args_dec.input = ciphertext
+    args_dec.file = None
+    args_dec.nonce = nonce
+
+    run_crypto_lab_logic(args_dec)
+    captured_dec = capsys.readouterr()
+    assert captured_dec.out.strip() == test_str

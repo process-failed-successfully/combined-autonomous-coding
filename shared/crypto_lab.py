@@ -11,6 +11,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric import rsa, padding, ed25519
 from cryptography.hazmat.primitives import serialization, hashes, padding as symmetric_padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.exceptions import InvalidSignature
 
 class CryptoLabManager:
@@ -166,6 +167,44 @@ class CryptoLabManager:
             return data
         else:
             raise ValueError("Unsupported mode. Use GCM or CBC.")
+
+    def chacha20_encrypt(self, input_data: Union[str, bytes], key: bytes, nonce: bytes = None) -> tuple[bytes, bytes]:
+        """
+        Encrypts data using ChaCha20-Poly1305.
+        Key must be 32 bytes.
+        Nonce must be 12 bytes. If not provided, a random one is generated.
+        Returns (ciphertext (which includes tag at the end), nonce)
+        """
+        if isinstance(input_data, str):
+            input_data = input_data.encode("utf-8")
+
+        if len(key) != 32:
+            raise ValueError(f"ChaCha20-Poly1305 key must be exactly 32 bytes. Provided length: {len(key)}")
+
+        if nonce is None:
+            nonce = os.urandom(12)
+        elif len(nonce) != 12:
+            raise ValueError(f"ChaCha20-Poly1305 nonce must be exactly 12 bytes. Provided length: {len(nonce)}")
+
+        chacha = ChaCha20Poly1305(key)
+        ciphertext = chacha.encrypt(nonce, input_data, None)
+        return ciphertext, nonce
+
+    def chacha20_decrypt(self, ciphertext: bytes, key: bytes, nonce: bytes) -> bytes:
+        """
+        Decrypts data using ChaCha20-Poly1305.
+        Key must be 32 bytes.
+        Nonce must be 12 bytes.
+        """
+        if len(key) != 32:
+            raise ValueError(f"ChaCha20-Poly1305 key must be exactly 32 bytes. Provided length: {len(key)}")
+
+        if len(nonce) != 12:
+            raise ValueError(f"ChaCha20-Poly1305 nonce must be exactly 12 bytes. Provided length: {len(nonce)}")
+
+        chacha = ChaCha20Poly1305(key)
+        plaintext = chacha.decrypt(nonce, ciphertext, None)
+        return plaintext
 
     def generate_random(self, length: int = 32, type: str = "hex") -> str:
         """
@@ -811,6 +850,59 @@ def run_crypto_lab_logic(args) -> bool:
                 print(plaintext.decode('utf-8'))
             except UnicodeDecodeError:
                 print(plaintext.hex())
+            return True
+
+        elif args.action == "chacha20-encrypt":
+            key = bytes.fromhex(args.key)
+            nonce = bytes.fromhex(args.nonce) if args.nonce else None
+
+            data = None
+            if args.file:
+                data = Path(args.file).read_bytes()
+            elif args.text:
+                data = args.text
+            else:
+                if not sys.stdin.isatty():
+                    try:
+                        data = sys.stdin.buffer.read()
+                    except Exception:
+                        data = sys.stdin.read().encode("utf-8")
+                else:
+                    print("Error: Input text or file required.", file=sys.stderr)
+                    return False
+
+            ciphertext, final_nonce = manager.chacha20_encrypt(data, key, nonce)
+
+            result = {
+                "ciphertext": base64.b64encode(ciphertext).decode("utf-8"),
+                "nonce": final_nonce.hex()
+            }
+            import json
+            print(json.dumps(result, indent=2))
+            return True
+
+        elif args.action == "chacha20-decrypt":
+            key = bytes.fromhex(args.key)
+            nonce = bytes.fromhex(args.nonce)
+
+            ciphertext = None
+            if args.input:
+                ciphertext = base64.b64decode(args.input)
+            elif args.file:
+                ciphertext = Path(args.file).read_bytes()
+            else:
+                if not sys.stdin.isatty():
+                    ciphertext = base64.b64decode(sys.stdin.read().strip())
+                else:
+                    print("Error: Input ciphertext required.", file=sys.stderr)
+                    return False
+
+            plaintext = manager.chacha20_decrypt(ciphertext, key, nonce)
+
+            try:
+                print(plaintext.decode("utf-8"))
+            except UnicodeDecodeError:
+                print(plaintext)
             return True
 
         elif args.action == "random":

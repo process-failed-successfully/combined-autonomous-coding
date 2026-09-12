@@ -16381,6 +16381,14 @@ def parse_args(argv=None):
     parser_ul_diff.add_argument("url1", help="First URL to compare.")
     parser_ul_diff.add_argument("url2", help="Second URL to compare.")
 
+    # url-lab defang
+    parser_ul_defang = url_lab_subparsers.add_parser("defang", help="Defang a URL to make it safe to share.")
+    parser_ul_defang.add_argument("url", help="URL to defang.")
+
+    # url-lab refang
+    parser_ul_refang = url_lab_subparsers.add_parser("refang", help="Refang a defanged URL.")
+    parser_ul_refang.add_argument("url", help="URL to refang.")
+
     # --- New 'cert-lab' command ---
     parser_cert = subparsers.add_parser(
         "cert-lab",

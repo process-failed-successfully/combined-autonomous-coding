@@ -120,6 +120,37 @@ class UrlLabManager:
         new_parsed = parsed._replace(scheme=scheme, netloc=netloc, query=sorted_query)
         return urllib.parse.urlunparse(new_parsed)
 
+    def defang(self, url: str) -> str:
+        """Defangs a URL by replacing scheme and dots."""
+        # A simple defang implementation
+        defanged = url
+        if defanged.startswith("http://"):
+            defanged = "hxxp://" + defanged[7:]
+        elif defanged.startswith("https://"):
+            defanged = "hxxps://" + defanged[8:]
+
+        # Replace dots with [.]
+        # We need to be careful not to replace dots in the scheme
+        parts = defanged.split("://", 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+            rest = rest.replace(".", "[.]")
+            defanged = f"{scheme}://{rest}"
+        else:
+            defanged = defanged.replace(".", "[.]")
+        return defanged
+
+    def refang(self, url: str) -> str:
+        """Refangs a defanged URL."""
+        refanged = url
+        if refanged.startswith("hxxp://"):
+            refanged = "http://" + refanged[7:]
+        elif refanged.startswith("hxxps://"):
+            refanged = "https://" + refanged[8:]
+
+        refanged = refanged.replace("[.]", ".")
+        return refanged
+
     def diff(self, url1: str, url2: str) -> Dict[str, Any]:
         """Compares two URLs and returns the differences."""
         p1 = self.parse(url1)
@@ -240,5 +271,11 @@ def run_url_lab_logic(args):
     elif args.action == "diff":
         result = manager.diff(args.url1, args.url2)
         print(json.dumps(result, indent=2))
+
+    elif args.action == "defang":
+        print(manager.defang(args.url))
+
+    elif args.action == "refang":
+        print(manager.refang(args.url))
 
     sys.exit(0)

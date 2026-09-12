@@ -78,6 +78,17 @@ class UrlLabTab(Container):
                     yield Label("[bold]Unshorten Result (JSON)[/bold]")
                     yield RichLog(id="url-unshorten-log", wrap=True, highlight=True, markup=True)
 
+                with TabPane("Defang/Refang", id="url-tab-defang"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Enter URL to Defang/Refang:")
+                        yield Input(placeholder="http://malicious.com", id="url-defang-input")
+                        with Horizontal():
+                            yield Button("Defang", id="btn-url-defang", variant="warning")
+                            yield Button("Refang", id="btn-url-refang", variant="success")
+
+                    yield Label("[bold]Result[/bold]")
+                    yield RichLog(id="url-defang-log", wrap=True, highlight=True, markup=True)
+
     def on_mount(self) -> None:
         table = self.query_one("#url-params-table", DataTable)
         table.cursor_type = "row"
@@ -98,6 +109,10 @@ class UrlLabTab(Container):
             self.action_normalize()
         elif event.button.id == "btn-url-unshorten":
             self.action_unshorten()
+        elif event.button.id == "btn-url-defang":
+            self.action_defang()
+        elif event.button.id == "btn-url-refang":
+            self.action_refang()
 
     def action_parse(self) -> None:
         url = self.query_one("#url-parse-input", Input).value
@@ -132,6 +147,36 @@ class UrlLabTab(Container):
             log.write(result)
         except Exception as e:
             log.write(f"[red]Error: {e}[/red]")
+
+    def action_defang(self) -> None:
+        url = self.query_one("#url-defang-input", Input).value
+        log = self.query_one("#url-defang-log", RichLog)
+        log.clear()
+
+        if not url:
+            log.write("[red]Please enter a URL.[/red]")
+            return
+
+        try:
+            result = self.manager.defang(url)
+            log.write(result)
+        except Exception as e:
+            log.write(f"[red]Error defanging: {e}[/red]")
+
+    def action_refang(self) -> None:
+        url = self.query_one("#url-defang-input", Input).value
+        log = self.query_one("#url-defang-log", RichLog)
+        log.clear()
+
+        if not url:
+            log.write("[red]Please enter a URL.[/red]")
+            return
+
+        try:
+            result = self.manager.refang(url)
+            log.write(result)
+        except Exception as e:
+            log.write(f"[red]Error refanging: {e}[/red]")
 
     @work(exclusive=True)
     async def action_unshorten(self) -> None:

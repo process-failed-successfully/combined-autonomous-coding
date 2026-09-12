@@ -335,6 +335,18 @@ class TestRunUrlLabLogic(unittest.TestCase):
         self.assertEqual(result["trace"][0]["url"], "http://short.url")
         self.assertEqual(result["trace"][1]["url"], "http://final.com")
 
+    def test_defang(self):
+        manager = UrlLabManager()
+        self.assertEqual(manager.defang("http://example.com"), "hxxp://example[.]com")
+        self.assertEqual(manager.defang("https://malicious.com/foo.exe"), "hxxps://malicious[.]com/foo[.]exe")
+        self.assertEqual(manager.defang("malicious.com/foo.exe"), "malicious[.]com/foo[.]exe")
+
+    def test_refang(self):
+        manager = UrlLabManager()
+        self.assertEqual(manager.refang("hxxp://example[.]com"), "http://example.com")
+        self.assertEqual(manager.refang("hxxps://malicious[.]com/foo[.]exe"), "https://malicious.com/foo.exe")
+        self.assertEqual(manager.refang("malicious[.]com/foo[.]exe"), "malicious.com/foo.exe")
+
     def test_diff(self):
         manager = UrlLabManager()
         url1 = "http://example.com/api?foo=bar"
@@ -365,6 +377,30 @@ class TestRunUrlLabLogic(unittest.TestCase):
         self.assertIn('"added"', output)
         self.assertIn('"changed"', output)
 
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_defang(self, mock_stdout):
+        args = MagicMock()
+        args.action = "defang"
+        args.url = "http://example.com"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "hxxp://example[.]com")
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_run_refang(self, mock_stdout):
+        args = MagicMock()
+        args.action = "refang"
+        args.url = "hxxp://example[.]com"
+
+        with self.assertRaises(SystemExit) as cm:
+            run_url_lab_logic(args)
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(mock_stdout.getvalue().strip(), "http://example.com")
 
     @patch('shared.url_lab.requests.head')
     @patch('sys.stdout', new_callable=io.StringIO)

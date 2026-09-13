@@ -43,6 +43,10 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.input, "input.yaml")
         self.assertEqual(args.expression, ".name")
 
+        args_tui = main.parse_args(["yq-lab", "tui"])
+        self.assertEqual(args_tui.command, "yq-lab")
+        self.assertEqual(args_tui.action, "tui")
+
         args = main.parse_args(["yq", "evaluate", "input.yaml", ".name"])
         self.assertEqual(args.command, "yq")
         self.assertEqual(args.action, "evaluate")

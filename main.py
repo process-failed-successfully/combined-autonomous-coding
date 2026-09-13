@@ -9051,6 +9051,19 @@ def run_jq_lab(args):
         run_jq_lab_logic(args)
 
 
+def run_yq_lab(args):
+    """Runs the yq Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching yq Lab TUI...")
+        project_dir = getattr(args, "project_dir", Path.cwd())
+        app = AgentTUI(project_dir=project_dir, start_tab="tab-yq")
+        app.run()
+    else:
+        from shared.yq_lab import run_yq_lab_logic
+        run_yq_lab_logic(args)
+
+
 def run_tui(args, start_tab=None):
     """Starts the Textual TUI."""
     try:
@@ -16636,6 +16649,7 @@ def parse_args(argv=None):
         help="Evaluate jq expressions on YAML data."
     )
     yq_subparsers = parser_yq.add_subparsers(dest="action")
+    yq_tui_parser = yq_subparsers.add_parser("tui", help="Launch yq Lab TUI.")
     yq_eval_parser = yq_subparsers.add_parser("evaluate", help="Evaluate jq expressions on YAML.")
     yq_eval_parser.add_argument("input", help="Input YAML file path or '-' for stdin.")
     yq_eval_parser.add_argument("expression", help="jq expression.")
@@ -27378,8 +27392,7 @@ async def main():
         return
 
     if args.command in ["yq-lab", "yq"]:
-        from shared.yq_lab import run_yq_lab_logic
-        run_yq_lab_logic(args)
+        run_yq_lab(args)
         return
 
     if args.command in ["xpath-lab", "xpath"]:

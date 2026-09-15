@@ -58,6 +58,7 @@ from shared.tui_guardrails import GuardrailsTab
 from shared.tui_hash import HashLabTab
 from shared.tui_ip import IpLabTab
 from shared.tui_bencode import BencodeLabTab
+from shared.tui_magnet import MagnetLabTab
 from shared.tui_robots_txt import RobotsTxtLabTab
 from shared.tui_enc import EncLabTab
 from shared.tui_sitemap import SitemapLabTab
@@ -4409,6 +4410,8 @@ class AgentTUI(App):
                 yield IsbnLabTab()
             with TabPane("Bencode Lab", id="tab-bencode"):
                 yield BencodeLabTab()
+            with TabPane("Magnet Lab", id="tab-magnet"):
+                yield MagnetLabTab()
             yield RobotsTxtLabTab()
             yield OsvLabTab()
             with TabPane("Encoding Lab", id="tab-enc"):

@@ -21,7 +21,7 @@ class TestYqLabTab(unittest.IsolatedAsyncioTestCase):
         tab._mock_app = app
 
         try:
-            async with app.run_test() as pilot:
+            async with app.run_test(size=(100, 100)) as pilot:
                 await pilot.app.mount(tab)
                 await pilot.pause()
 

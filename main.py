@@ -663,8 +663,23 @@ def run_dict_lab(args):
 
 def run_emoji_lab(args):
     """Runs the Emoji Lab."""
-    run_emoji_lab_logic(args)
-    sys.exit(0)
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Emoji Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-emoji")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        run_emoji_lab_logic(args)
+        sys.exit(0)
 
 
 def run_css_lab(args):
@@ -21610,7 +21625,7 @@ Examples:
         aliases=["emoji", "emoj"],
         help="Emoji Search and Discovery Tool."
     )
-    parser_emoji.add_argument("action", choices=["search", "list", "random"], help="Action to perform.")
+    parser_emoji.add_argument("action", choices=["search", "list", "random", "tui"], help="Action to perform.")
     parser_emoji.add_argument("query", nargs="?", help="Search query (for 'search').")
     parser_emoji.add_argument("--limit", "-l", type=int, default=50, help="Limit results (for 'list').")
 

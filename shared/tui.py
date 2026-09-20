@@ -413,6 +413,7 @@ from shared.tui_fuzz import FuzzLabTab
 from shared.tui_filetype import FileTypeLabTab
 from shared.tui_seo import SeoLabTab
 from shared.tui_typeid import TypeIDLabTab
+from shared.tui_emoji import EmojiLabTab
 
 
 # Helper to get Git info safely
@@ -4365,6 +4366,8 @@ class AgentTUI(App):
                 yield NginxLabTab()
             elif self.start_tab == "tab-svg":
                 yield SvgLabTab(self.project_dir)
+            elif self.start_tab == "tab-emoji":
+                yield EmojiLabTab()
             with TabPane("Phonetic Lab", id="tab-phonetic"):
                 yield PhoneticLabTab(self.project_dir)
             with TabPane("Static Lab", id="tab-static"):

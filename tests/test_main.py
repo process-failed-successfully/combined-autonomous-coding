@@ -540,6 +540,20 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         output = f.getvalue()
         self.assertIn("completion_script", output)
 
+    def test_parse_args_magnet_parse(self):
+        import main
+        args = main.parse_args(["magnet-lab", "parse", "magnet:?xt=urn:btih:abc"])
+        self.assertEqual(args.command, "magnet-lab")
+        self.assertEqual(args.action, "parse")
+        self.assertEqual(args.uri, "magnet:?xt=urn:btih:abc")
+
+    def test_parse_args_magnet_build(self):
+        import main
+        args = main.parse_args(["magnet", "build", "--xt", "urn:btih:abc", "--dn", "name"])
+        self.assertEqual(args.command, "magnet")
+        self.assertEqual(args.action, "build")
+        self.assertEqual(args.xt, "urn:btih:abc")
+        self.assertEqual(args.dn, "name")
 
 if __name__ == "__main__":
     unittest.main()

@@ -84,7 +84,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args4.action, "tui")
     @patch('main.run_emoji_lab_logic')
     @patch('sys.exit')
-    @patch('main.AgentTUI')
+    @patch('shared.tui.AgentTUI')
     def test_run_emoji_lab(self, mock_agent_tui, mock_exit, mock_run_emoji_lab_logic):
         import main
         from main import run_emoji_lab

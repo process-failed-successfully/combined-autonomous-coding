@@ -65,7 +65,7 @@ class MagnetLabManager:
         info_dict = decoded["info"]
 
         encoded_info = BencodeManager.encode(info_dict)
-        info_hash = hashlib.sha1(encoded_info).hexdigest()
+        info_hash = hashlib.sha1(encoded_info, usedforsecurity=False).hexdigest()
         xt = f"urn:btih:{info_hash}"
 
         dn = None

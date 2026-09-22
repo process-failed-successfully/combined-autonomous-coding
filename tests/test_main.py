@@ -60,6 +60,60 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.command, 'json2toml-lab')
         self.assertEqual(args.action, 'json2toml')
         self.assertEqual(args.input, '{"a": 1}')
+    def test_parse_args_emoji_lab(self):
+        import main
+        # Primary command
+        args = main.parse_args(["emoji-lab", "search", "rocket"])
+        self.assertEqual(args.command, "emoji-lab")
+        self.assertEqual(args.action, "search")
+        self.assertEqual(args.query, "rocket")
+
+        # Aliases
+        args2 = main.parse_args(["emoji", "random"])
+        self.assertEqual(args2.command, "emoji")
+        self.assertEqual(args2.action, "random")
+
+        args3 = main.parse_args(["emoj", "list", "--limit", "10"])
+        self.assertEqual(args3.command, "emoj")
+        self.assertEqual(args3.action, "list")
+        self.assertEqual(args3.limit, 10)
+
+        # TUI action
+        args4 = main.parse_args(["emoji-lab", "tui"])
+        self.assertEqual(args4.command, "emoji-lab")
+        self.assertEqual(args4.action, "tui")
+    @patch('main.run_emoji_lab_logic')
+    @patch('sys.exit')
+    @patch('shared.tui.AgentTUI')
+    def test_run_emoji_lab(self, mock_agent_tui, mock_exit, mock_run_emoji_lab_logic):
+        import main
+        from main import run_emoji_lab
+
+        # Test non-tui action
+        args = MagicMock()
+        args.action = "search"
+        run_emoji_lab(args)
+        mock_run_emoji_lab_logic.assert_called_once_with(args)
+        mock_exit.assert_called_once_with(0)
+
+        mock_exit.reset_mock()
+        mock_run_emoji_lab_logic.reset_mock()
+
+        # Test tui action without running event loop
+        args.action = "tui"
+        args.project_dir = Path(".")
+        mock_app_instance = MagicMock()
+        mock_agent_tui.return_value = mock_app_instance
+
+        # We mock asyncio.get_running_loop to raise RuntimeError
+        with patch("asyncio.get_running_loop", side_effect=RuntimeError):
+            run_emoji_lab(args)
+
+        mock_agent_tui.assert_called_once_with(project_dir=args.project_dir, start_tab="tab-emoji")
+        mock_app_instance.run.assert_called_once()
+        mock_exit.assert_called_once_with(0)
+
+
 
     def test_parse_args(self):
         with patch("argparse.ArgumentParser.parse_args") as mock_parse:

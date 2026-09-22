@@ -612,7 +612,7 @@ def run_float_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         if getattr(args, 'action', None) is None:
             print("Error: Action is required unless --tui is specified.", file=sys.stderr)
@@ -676,7 +676,7 @@ def run_emoji_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         run_emoji_lab_logic(args)
         sys.exit(0)
@@ -1260,7 +1260,7 @@ def run_matrix_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.matrix_lab import run_matrix_lab_logic
     run_matrix_lab_logic(args)
@@ -1320,7 +1320,7 @@ def run_stats_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.stats_lab import run_stats_lab_logic
     run_stats_lab_logic(args)
@@ -1383,7 +1383,7 @@ def run_subtitle_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.subtitle_lab import run_subtitle_lab_logic
     run_subtitle_lab_logic(args)
@@ -1460,7 +1460,7 @@ def run_ip_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     success = run_ip_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -1488,7 +1488,7 @@ def run_luhn_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.luhn_lab import run_luhn_lab_logic
         run_luhn_lab_logic(args)
@@ -1663,7 +1663,7 @@ def run_roman_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.roman_lab import run_roman_lab_logic
         success = run_roman_lab_logic(args)
@@ -1685,7 +1685,7 @@ def run_har_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.har_lab import run_har_lab_logic
         run_har_lab_logic(args)
@@ -1706,7 +1706,7 @@ def run_morse_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         success = run_morse_lab_logic(args)
         sys.exit(0 if success else 1)
@@ -1727,7 +1727,7 @@ def run_snowflake_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         success = run_snowflake_lab_logic(args)
         sys.exit(0 if success else 1)
@@ -1748,7 +1748,7 @@ def run_bitwise_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.bitwise_lab import run_bitwise_lab_logic
         success = run_bitwise_lab_logic(args)
@@ -1770,7 +1770,7 @@ def run_case_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.string_case_lab import run_string_case_lab_logic
         run_string_case_lab_logic(args)
@@ -1793,7 +1793,7 @@ def run_iban_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.iban_lab import run_iban_lab_logic
         run_iban_lab_logic(args)
@@ -1815,7 +1815,7 @@ def run_isbn_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.isbn_lab import run_isbn_lab_logic
         run_isbn_lab_logic(args)
@@ -1860,7 +1860,7 @@ def run_jsonpath_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         run_jsonpath_lab_logic(args)
         sys.exit(0)
@@ -1884,7 +1884,7 @@ def run_awk_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         from shared.awk_lab import run_awk_lab_logic
         run_awk_lab_logic(args)
@@ -1909,7 +1909,7 @@ def run_sed_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         from shared.sed_lab import run_sed_lab_logic
         run_sed_lab_logic(args)
@@ -1934,7 +1934,7 @@ def run_xpath_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         run_xpath_lab_logic(args)
         sys.exit(0)
@@ -1958,7 +1958,7 @@ def run_jmespath_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     elif getattr(args, 'action', None) == 'evaluate':
         run_jmespath_lab_logic(args)
         sys.exit(0)
@@ -1982,7 +1982,7 @@ def run_token_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         success = run_token_lab_logic(args)
         sys.exit(0 if success else 1)
@@ -2037,7 +2037,7 @@ def run_diagram_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.diagram_lab import run_diagram_lab_logic
     run_diagram_lab_logic(args)
@@ -2107,7 +2107,7 @@ def run_sound_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.sound_lab import run_sound_lab_logic
     run_sound_lab_logic(args)
@@ -2332,7 +2332,7 @@ def run_chown_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.chown_lab import run_chown_lab_logic
         run_chown_lab_logic(args)
@@ -2354,7 +2354,7 @@ def run_permissions_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.permissions_lab import run_permissions_lab_logic
         run_permissions_lab_logic(args)
@@ -2447,7 +2447,7 @@ def run_barcode_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.barcode_lab import run_barcode_lab_logic
     run_barcode_lab_logic(args)
@@ -2481,7 +2481,7 @@ def run_fuzz_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     run_fuzz_lab_logic(args)
     sys.exit(0)
@@ -2575,7 +2575,7 @@ def run_http_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     run_http_lab_logic(args)
     sys.exit(0)
@@ -2596,7 +2596,7 @@ def run_sitemap_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.sitemap_lab import run_sitemap_lab_logic
     success = run_sitemap_lab_logic(args)
@@ -2617,7 +2617,7 @@ def run_robots_txt_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.robots_txt_lab import run_robots_txt_lab_logic
     success = run_robots_txt_lab_logic(args)
@@ -2640,7 +2640,7 @@ def run_bencode_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.bencode_lab import run_bencode_lab_logic
     success = run_bencode_lab_logic(args)
@@ -2662,7 +2662,7 @@ def run_msgpack_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.msgpack_lab import run_msgpack_lab_logic
     success = run_msgpack_lab_logic(args)
@@ -2684,7 +2684,7 @@ def run_bson_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.bson_lab import run_bson_lab_logic
     success = run_bson_lab_logic(args)
@@ -2706,7 +2706,7 @@ def run_lorem_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.lorem_lab import run_lorem_lab_logic
     success = run_lorem_lab_logic(args)
@@ -2728,7 +2728,7 @@ def run_cbor_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.cbor_lab import run_cbor_lab_logic
     success = run_cbor_lab_logic(args)
@@ -2760,7 +2760,7 @@ def run_geo_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     run_geo_lab_logic(args)
     sys.exit(0)
@@ -2815,7 +2815,7 @@ def run_magic_decode_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.magic_decode_lab import run_magic_decode_lab_logic
     success = run_magic_decode_lab_logic(args)
@@ -2860,7 +2860,7 @@ def run_pcap_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.pcap_lab import run_pcap_lab_logic
     run_pcap_lab_logic(args)
@@ -2888,7 +2888,7 @@ def run_fs_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     run_fs_lab_logic(args)
     sys.exit(0)
@@ -2943,7 +2943,7 @@ def run_random_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     run_random_lab_logic(args)
     sys.exit(0)
@@ -2976,7 +2976,7 @@ def run_pypi_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     success = run_pypi_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -3015,7 +3015,7 @@ def run_uni_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         success = run_uni_lab_logic(args)
         sys.exit(0 if success else 1)
@@ -3114,7 +3114,7 @@ def run_pgp_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.pgp_lab import run_pgp_lab_logic
         success = run_pgp_lab_logic(args)
@@ -3212,7 +3212,7 @@ def run_data_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         run_data_lab_logic(args)
         sys.exit(0)
@@ -3239,7 +3239,7 @@ def run_crypto_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     success = run_crypto_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -3277,7 +3277,7 @@ def run_ocr_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.ocr_lab import run_ocr_lab_logic
     run_ocr_lab_logic(args)
@@ -3384,7 +3384,7 @@ def run_ksuid_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.ksuid_lab import run_ksuid_lab_logic
     run_ksuid_lab_logic(args)
@@ -3405,7 +3405,7 @@ def run_uuid_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.uuid_lab import run_uuid_lab_logic
     run_uuid_lab_logic(args)
@@ -3444,7 +3444,7 @@ def run_nanoid_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     from shared.nanoid_lab import run_nanoid_lab_logic
     run_nanoid_lab_logic(args)
 
@@ -3464,7 +3464,7 @@ def run_sqids_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
         return
 
     from shared.sqids_lab import run_sqids_lab_logic
@@ -3487,7 +3487,7 @@ def run_ulid_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.ulid_lab import run_ulid_lab_logic
     run_ulid_lab_logic(args)
@@ -3537,7 +3537,7 @@ def run_text_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.text_lab import run_text_lab_logic
     success = run_text_lab_logic(args)
@@ -3559,7 +3559,7 @@ def run_http_status_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.http_status_lab import run_http_status_lab_logic
     success = run_http_status_lab_logic(args)
@@ -3581,7 +3581,7 @@ def run_markdown_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.markdown_lab import run_markdown_lab_logic
     success = run_markdown_lab_logic(args)
@@ -3631,7 +3631,7 @@ def run_html2jsx_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.html2jsx_lab import run_html2jsx_lab_logic
     run_html2jsx_lab_logic(args)
@@ -3653,7 +3653,7 @@ def run_html_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.html_lab import run_html_lab_logic
     run_html_lab_logic(args)
@@ -3675,7 +3675,7 @@ def run_html2md_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.html2md_lab import run_html2md_logic
     success = run_html2md_logic(args)
@@ -3697,7 +3697,7 @@ def run_md2html_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.md2html_lab import run_md2html_logic
     success = run_md2html_logic(args)
@@ -3719,7 +3719,7 @@ def run_seo_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.seo_lab import run_seo_lab_logic
     run_seo_lab_logic(args)
@@ -3741,7 +3741,7 @@ def run_xml2json_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.xml2json_lab import run_xml2json_lab_logic
     run_xml2json_lab_logic(args)
@@ -3763,7 +3763,7 @@ def run_json2py_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.json2py_lab import run_json2py_lab_logic
     success = run_json2py_lab_logic(args)
@@ -3784,7 +3784,7 @@ def run_json2xml_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.json2xml_lab import run_json2xml_lab_logic
     run_json2xml_lab_logic(args)
@@ -3806,7 +3806,7 @@ def run_xml_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.xml_lab import run_xml_lab_logic
     run_xml_lab_logic(args)
@@ -3828,7 +3828,7 @@ def run_url_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.url_lab import run_url_lab_logic
     run_url_lab_logic(args)
@@ -3850,7 +3850,7 @@ def run_urlencode_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.urlencode_lab import run_urlencode_lab_logic
     success = run_urlencode_lab_logic(args)
@@ -3931,7 +3931,7 @@ def run_codec_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.codec_lab import run_codec_lab_logic
     run_codec_lab_logic(args)
@@ -3953,7 +3953,7 @@ def run_converter_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         from shared.converter_lab import run_converter_lab_logic
         success = run_converter_lab_logic(args)
@@ -3975,7 +3975,7 @@ def run_time_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         success = run_time_lab_logic(args)
         sys.exit(0 if success else 1)
@@ -3996,7 +3996,7 @@ def run_math_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.math_lab import run_math_lab_logic
     success = run_math_lab_logic(args)
@@ -4018,7 +4018,7 @@ def run_unit_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     else:
         success = run_unit_lab_logic(args)
         sys.exit(0 if success else 1)
@@ -4087,7 +4087,7 @@ def run_json_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     run_json_lab_logic(args)
     sys.exit(0)
@@ -7477,7 +7477,7 @@ def run_a11y(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     from shared.a11y import _run_a11y_logic
     _run_a11y_logic(
@@ -9093,7 +9093,7 @@ def run_tui(args, start_tab=None):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
     except ImportError as e:
         print("Error: Could not import TUI dependencies. Please run 'pip install -r requirements-dev.txt'", file=sys.stderr)
         print(f"Details: {e}", file=sys.stderr)
@@ -22770,7 +22770,7 @@ def run_regex_escape_lab(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     success = run_regex_escape_lab_logic(args)
     sys.exit(0 if success else 1)
@@ -24322,7 +24322,7 @@ def run_mock(args):
             asyncio.ensure_future(app.run_async())
         else:
             app.run()
-        sys.exit(0)
+            sys.exit(0)
 
     elif args.action == "serve":
         from shared.mock_server import run_mock_server

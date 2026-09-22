@@ -35,6 +35,27 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.text, "hello 01M0JP56GDCXBEE1Z7A3MDJ0KJ")
         self.assertTrue(args.unique)
 
+
+    def test_parse_args_emoji(self):
+        import main
+        args = main.parse_args(["emoji-lab", "search", "smile"])
+        self.assertEqual(args.command, "emoji-lab")
+        self.assertEqual(args.action, "search")
+        self.assertEqual(args.query, "smile")
+
+        args = main.parse_args(["emoji", "list", "--limit", "10"])
+        self.assertEqual(args.command, "emoji")
+        self.assertEqual(args.action, "list")
+        self.assertEqual(args.limit, 10)
+
+        args = main.parse_args(["emoj", "random"])
+        self.assertEqual(args.command, "emoj")
+        self.assertEqual(args.action, "random")
+
+        args = main.parse_args(["emoji-lab", "tui"])
+        self.assertEqual(args.command, "emoji-lab")
+        self.assertEqual(args.action, "tui")
+
     def test_parse_args_yq_evaluate(self):
         import main
         args = main.parse_args(["yq-lab", "evaluate", "input.yaml", ".name"])

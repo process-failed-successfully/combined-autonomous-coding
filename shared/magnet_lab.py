@@ -47,7 +47,7 @@ class MagnetLabManager:
                 return {"error": "No info dictionary found in torrent."}
 
             info_encoded = b.encode(info)
-            info_hash = hashlib.sha1(info_encoded).hexdigest()
+            info_hash = hashlib.sha1(info_encoded).hexdigest()  # nosec B324
 
             xt = f"urn:btih:{info_hash}"
 

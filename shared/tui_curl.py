@@ -41,7 +41,7 @@ class CurlLabTab(ScrollableContainer):
                         with TabPane("Rust (reqwest)"):
                             yield TextArea(id="curl-output-rust", read_only=True)
                         with TabPane("Ruby (Net::HTTP)"):
-                            yield TextArea(id="curl-output-ruby", language="ruby", read_only=True)
+                            yield TextArea(id="curl-output-ruby", read_only=True)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-curl-convert":

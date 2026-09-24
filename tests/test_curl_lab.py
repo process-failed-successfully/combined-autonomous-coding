@@ -155,6 +155,25 @@ class TestCurlLabManager(unittest.TestCase):
         self.assertIn('"key": "value"', code)
         self.assertIn("request = request.body(body.to_owned());", code)
 
+    def test_to_ruby_net_http_post(self):
+        parsed = {
+            'url': 'https://api.example.com',
+            'method': 'POST',
+            'headers': {'Content-Type': 'application/json'},
+            'data': '{"key": "value"}',
+            'auth': ['user', 'pass']
+        }
+
+        code = self.manager.to_ruby_net_http(parsed)
+        self.assertIn("require 'net/http'", code)
+        self.assertIn('URI.parse("https://api.example.com")', code)
+        self.assertIn("http.use_ssl = true", code)
+        self.assertIn("request = Net::HTTP::Post.new", code)
+        self.assertIn('request["Content-Type"] = "application/json"', code)
+        self.assertIn('request.basic_auth("user", "pass")', code)
+        self.assertIn("request.body = <<~EOF", code)
+        self.assertIn('"key": "value"', code)
+
     def test_to_powershell_iwr(self):
         parsed = {
             'url': 'https://api.example.com',
@@ -220,6 +239,19 @@ class TestCurlLabCli(unittest.TestCase):
 
         self.assertIn('"url": "https://api.example.com"', output)
         self.assertIn('"method": "GET"', output)
+
+    @patch('sys.stdout', new_callable=io.StringIO)
+    def test_cli_ruby(self, mock_stdout):
+        args = MagicMock()
+        args.tui = False
+        args.command_str = "curl https://api.example.com"
+        args.target = "ruby"
+
+        run_curl_lab_logic(args)
+        output = mock_stdout.getvalue()
+
+        self.assertIn("require 'net/http'", output)
+        self.assertIn("Net::HTTP::Get.new", output)
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_cli_powershell(self, mock_stdout):

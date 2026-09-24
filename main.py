@@ -18818,7 +18818,7 @@ def parse_args(argv=None):
     )
     parser_curl.add_argument("--tui", action="store_true", help="Launch the TUI interface.")
     parser_curl.add_argument("command_str", nargs="?", help="The cURL command string to convert.")
-    parser_curl.add_argument("--target", choices=["python", "js", "go", "rust", "powershell", "json"], default="python", help="Target language for CLI conversion (default: python).")
+    parser_curl.add_argument("--target", choices=["python", "js", "go", "rust", "powershell", "ruby", "json"], default="python", help="Target language for CLI conversion (default: python).")
 
     # --- New 'sec-headers-lab' command ---
     parser_sec_headers = subparsers.add_parser(

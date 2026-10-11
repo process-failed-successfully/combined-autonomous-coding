@@ -152,6 +152,24 @@ class CryptoLabTab(Container):
                         yield Label("[bold]Output (Text or Base64)[/bold]")
                         yield TextArea(id="crypto-ed-output", read_only=True)
 
+                # ChaCha20
+                with TabPane("ChaCha20"):
+                    with Vertical(classes="stat-box"):
+                        yield Label("Key (Hex, 32 bytes):")
+                        yield Input(id="crypto-chacha-key", placeholder="64 hex characters")
+                        yield Label("Nonce (Hex, 12 bytes - optional for encryption):")
+                        yield Input(id="crypto-chacha-nonce", placeholder="24 hex characters")
+                        yield Label("Input (Text / Hex Ciphertext):")
+                        yield TextArea(id="crypto-chacha-input")
+                        with Horizontal():
+                            yield Button("Encrypt", id="btn-crypto-chacha-enc", variant="primary")
+                            yield Button("Decrypt", id="btn-crypto-chacha-dec", variant="warning")
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Output (Hex / Text)[/bold]")
+                        yield TextArea(id="crypto-chacha-output", read_only=True)
+                        yield Label("Generated Nonce (Hex - if Encrypting without one):")
+                        yield Input(id="crypto-chacha-out-nonce", read_only=True)
+
                 # Random
                 with TabPane("Random"):
                     with Horizontal(classes="stat-box"):
@@ -199,6 +217,55 @@ class CryptoLabTab(Container):
             self.do_ed_sign()
         elif event.button.id == "btn-crypto-ed-verify":
             self.do_ed_verify()
+        elif event.button.id == "btn-crypto-chacha-enc":
+            self.do_chacha_enc()
+        elif event.button.id == "btn-crypto-chacha-dec":
+            self.do_chacha_dec()
+
+    def do_chacha_enc(self) -> None:
+        key_str = self.query_one("#crypto-chacha-key", Input).value
+        nonce_str = self.query_one("#crypto-chacha-nonce", Input).value
+        text = self.query_one("#crypto-chacha-input", TextArea).text
+        out = self.query_one("#crypto-chacha-output", TextArea)
+        out_nonce = self.query_one("#crypto-chacha-out-nonce", Input)
+
+        if not key_str or not text:
+            self.notify("Key and Input required.", severity="error")
+            return
+
+        try:
+            key = bytes.fromhex(key_str)
+            nonce = bytes.fromhex(nonce_str) if nonce_str else None
+
+            ciphertext, final_nonce = self.manager.chacha20_encrypt(text.encode("utf-8"), key, nonce)
+            out.text = ciphertext.hex()
+            out_nonce.value = final_nonce.hex()
+            self.notify("ChaCha20 Encrypted.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
+
+    def do_chacha_dec(self) -> None:
+        key_str = self.query_one("#crypto-chacha-key", Input).value
+        nonce_str = self.query_one("#crypto-chacha-nonce", Input).value
+        text = self.query_one("#crypto-chacha-input", TextArea).text
+        out = self.query_one("#crypto-chacha-output", TextArea)
+        out_nonce = self.query_one("#crypto-chacha-out-nonce", Input)
+
+        if not key_str or not nonce_str or not text:
+            self.notify("Key, Nonce, and Input required.", severity="error")
+            return
+
+        try:
+            key = bytes.fromhex(key_str)
+            nonce = bytes.fromhex(nonce_str)
+            ciphertext = bytes.fromhex(text.strip())
+
+            plaintext = self.manager.chacha20_decrypt(ciphertext, key, nonce)
+            out.text = plaintext.decode("utf-8")
+            out_nonce.value = ""
+            self.notify("ChaCha20 Decrypted.")
+        except Exception as e:
+            self.notify(f"Error: {e}", severity="error")
 
     def do_hash(self) -> None:
         text = self.query_one("#crypto-hash-input", TextArea).text

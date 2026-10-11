@@ -180,6 +180,54 @@ class TestCryptoLabTab(unittest.TestCase):
         self.mock_manager.rsa_verify.assert_called()
         self.tab.notify.assert_called_with("Signature is VALID.", severity="information")
 
+    def test_do_chacha_enc(self):
+        # Setup mocks specifically for ChaCha encryption
+        self.mock_input.value = "00" * 32  # 32-byte hex key
+        self.mock_text_area.text = "secret"
+
+        def custom_query_one(selector, type=None):
+            if selector == "#crypto-chacha-key": return self.mock_input
+            if selector == "#crypto-chacha-nonce": return MagicMock(value="") # empty nonce
+            if selector == "#crypto-chacha-input": return self.mock_text_area
+            if selector == "#crypto-chacha-output": return self.mock_text_area
+            if selector == "#crypto-chacha-out-nonce": return self.mock_input
+            return MagicMock()
+
+        self.tab.query_one.side_effect = custom_query_one
+
+        self.mock_manager.chacha20_encrypt.return_value = (b"encrypted", b"nonce_val")
+
+        self.tab.do_chacha_enc()
+
+        self.mock_manager.chacha20_encrypt.assert_called_with(b"secret", bytes.fromhex("00" * 32), None)
+        self.assertEqual(self.mock_text_area.text, b"encrypted".hex())
+        self.assertEqual(self.mock_input.value, b"nonce_val".hex())
+        self.tab.notify.assert_called_with("ChaCha20 Encrypted.")
+
+    def test_do_chacha_dec(self):
+        # Setup mocks specifically for ChaCha decryption
+        self.mock_input.value = "00" * 32  # 32-byte hex key
+        self.mock_text_area.text = b"encrypted".hex()
+
+        def custom_query_one(selector, type=None):
+            if selector == "#crypto-chacha-key": return self.mock_input
+            if selector == "#crypto-chacha-nonce": return MagicMock(value=b"nonce_val".hex())
+            if selector == "#crypto-chacha-input": return self.mock_text_area
+            if selector == "#crypto-chacha-output": return self.mock_text_area
+            if selector == "#crypto-chacha-out-nonce": return self.mock_input
+            return MagicMock()
+
+        self.tab.query_one.side_effect = custom_query_one
+
+        self.mock_manager.chacha20_decrypt.return_value = b"secret"
+
+        self.tab.do_chacha_dec()
+
+        self.mock_manager.chacha20_decrypt.assert_called_with(b"encrypted", bytes.fromhex("00" * 32), b"nonce_val")
+        self.assertEqual(self.mock_text_area.text, "secret")
+        self.assertEqual(self.mock_input.value, "")
+        self.tab.notify.assert_called_with("ChaCha20 Decrypted.")
+
 
 if __name__ == '__main__':
     unittest.main()

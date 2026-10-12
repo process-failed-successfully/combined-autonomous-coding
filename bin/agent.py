@@ -127,6 +127,40 @@ def attach(name: str):
 
 
 @app.command()
+def inspect(name: str):
+    """Inspect detailed information about a session."""
+    client = get_docker_client()
+    try:
+        container = client.containers.get(name)
+
+        table = Table(title=f"Container Details: {name}", show_header=False)
+        table.add_column("Property", style="cyan", justify="right")
+        table.add_column("Value", style="green")
+
+        table.add_row("Name", container.name)
+        table.add_row("ID", container.short_id)
+        table.add_row("Status", container.status)
+
+        tags = ", ".join(container.image.tags) if hasattr(container, "image") and hasattr(container.image, "tags") else "None"
+        table.add_row("Image Tags", tags)
+
+        created = container.attrs.get("Created", "Unknown")
+        table.add_row("Created", created)
+
+        cmd_list = container.attrs.get("Config", {}).get("Cmd")
+        cmd_str = " ".join(cmd_list) if cmd_list else "None"
+        table.add_row("Command", cmd_str)
+
+        binds = container.attrs.get("HostConfig", {}).get("Binds", [])
+        binds_str = "\n".join(binds) if binds else "None"
+        table.add_row("Volumes (Binds)", binds_str)
+
+        console.print(table)
+    except docker.errors.NotFound:
+        console.print(f"[red]Container {name} not found.[/red]")
+
+
+@app.command()
 def logs(name: str):
     """View logs."""
     client = get_docker_client()

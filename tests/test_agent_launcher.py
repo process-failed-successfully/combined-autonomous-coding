@@ -94,6 +94,16 @@ def mock_docker_subprocess(monkeypatch):
             self.short_id = short_id
             self.status = status
 
+            self.attrs = {
+                "Created": "2023-01-01T00:00:00Z",
+                "HostConfig": {
+                    "Binds": ["/host/path:/container/path"]
+                },
+                "Config": {
+                    "Cmd": ["/bin/sh", "-c", "echo hello"]
+                }
+            }
+
             class MockImage:
                 def __init__(self, t):
                     self.tags = t
@@ -157,6 +167,22 @@ def test_stop_success():
     assert result.exit_code == 0
     assert "Stopping test_agent_run..." in result.stdout
     assert "test_agent_run stopped successfully" in result.stdout
+
+
+def test_inspect_success():
+    result = runner.invoke(app, ["inspect", "test_agent_run"])
+    assert result.exit_code == 0
+    assert "Container Details: test_agent_run" in result.stdout
+    assert "test_agent_run" in result.stdout
+    assert "2023-01-01T00:00:00Z" in result.stdout
+    assert "/host/path:/container/path" in result.stdout
+    assert "/bin/sh -c echo hello" in result.stdout
+
+
+def test_inspect_not_found():
+    result = runner.invoke(app, ["inspect", "nonexistent"])
+    assert result.exit_code == 0
+    assert "Container nonexistent not found" in result.stdout
 
 
 def test_run_command():

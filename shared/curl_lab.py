@@ -298,6 +298,56 @@ class CurlLabManager:
         lines.append("}")
         return "\n".join(lines)
 
+    def to_ruby_net_http(self, parsed: Dict[str, Any]) -> str:
+        """
+        Converts parsed cURL data into Ruby Net::HTTP code.
+        """
+        lines = [
+            "require 'net/http'",
+            "require 'uri'",
+            ""
+        ]
+
+        lines.append(f"uri = URI.parse({json.dumps(parsed['url'])})")
+        lines.append("http = Net::HTTP.new(uri.host, uri.port)")
+
+        if parsed['url'].startswith('https'):
+            lines.append("http.use_ssl = true")
+
+        method = parsed['method'].capitalize()
+        # Net::HTTP classes are like Net::HTTP::Get, Net::HTTP::Post
+        lines.append(f"request = Net::HTTP::{method}.new(uri.request_uri)")
+
+        if parsed['headers']:
+            for k, v in parsed['headers'].items():
+                lines.append(f"request[{json.dumps(k)}] = {json.dumps(v)}")
+
+        if parsed['auth']:
+            user, pwd = parsed['auth']
+            lines.append(f"request.basic_auth({json.dumps(user)}, {json.dumps(pwd)})")
+
+        if parsed['data'] is not None:
+            # Check if json
+            is_json = parsed['headers'].get('Content-Type', '').lower() == 'application/json'
+            if is_json:
+                try:
+                    json_data = json.loads(parsed['data'])
+                    json_str = json.dumps(json_data, indent=2)
+                    lines.append("request.body = <<~EOF")
+                    lines.append(json_str)
+                    lines.append("EOF")
+                except json.JSONDecodeError:
+                    lines.append(f"request.body = {json.dumps(parsed['data'])}")
+            else:
+                lines.append(f"request.body = {json.dumps(parsed['data'])}")
+
+        lines.append("")
+        lines.append("response = http.request(request)")
+        lines.append("puts response.code")
+        lines.append("puts response.read_body")
+
+        return "\n".join(lines)
+
     def to_powershell_iwr(self, parsed: Dict[str, Any]) -> str:
         """
         Converts parsed cURL data into PowerShell Invoke-WebRequest code.
@@ -388,12 +438,14 @@ def run_curl_lab_logic(args):
             print(manager.to_go_http(parsed))
         elif target == 'powershell':
             print(manager.to_powershell_iwr(parsed))
+        elif target == 'ruby':
+            print(manager.to_ruby_net_http(parsed))
         elif target == 'rust':
             print(manager.to_rust_reqwest(parsed))
         elif target == 'json':
             print(manager.to_json(parsed))
         else:
-            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, powershell, rust, json.", file=sys.stderr)
+            print(f"Error: Unknown target language '{target}'. Valid options: python, js, go, powershell, rust, ruby, json.", file=sys.stderr)
             sys.exit(1)
 
     except Exception as e:

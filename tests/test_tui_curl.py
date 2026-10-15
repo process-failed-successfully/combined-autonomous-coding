@@ -37,6 +37,9 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
         py_area = MagicMock(spec=TextArea)
         js_area = MagicMock(spec=TextArea)
         go_area = MagicMock(spec=TextArea)
+        ps_area = MagicMock(spec=TextArea)
+        rust_area = MagicMock(spec=TextArea)
+        ruby_area = MagicMock(spec=TextArea)
 
         def query_side_effect(selector, type=None):
             if selector == "#curl-input-area":
@@ -47,6 +50,12 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
                 return js_area
             if selector == "#curl-output-go":
                 return go_area
+            if selector == "#curl-output-ps":
+                return ps_area
+            if selector == "#curl-output-rust":
+                return rust_area
+            if selector == "#curl-output-ruby":
+                return ruby_area
             return MagicMock()
 
         self.tab.query_one.side_effect = query_side_effect
@@ -57,6 +66,9 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
         self.mock_manager.to_python_requests.return_value = "python_code"
         self.mock_manager.to_js_fetch.return_value = "js_code"
         self.mock_manager.to_go_http.return_value = "go_code"
+        self.mock_manager.to_powershell_iwr.return_value = "ps_code"
+        self.mock_manager.to_rust_reqwest.return_value = "rust_code"
+        self.mock_manager.to_ruby_net_http.return_value = "ruby_code"
 
         # Run conversion
         self.tab.convert_curl()
@@ -66,6 +78,9 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(py_area.text, "python_code")
         self.assertEqual(js_area.text, "js_code")
         self.assertEqual(go_area.text, "go_code")
+        self.assertEqual(ps_area.text, "ps_code")
+        self.assertEqual(rust_area.text, "rust_code")
+        self.assertEqual(ruby_area.text, "ruby_code")
         self.tab.app.notify.assert_called_with("cURL command successfully converted.")
 
     def test_convert_curl_empty_input(self):
@@ -116,6 +131,9 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
         py_area = MagicMock(spec=TextArea)
         js_area = MagicMock(spec=TextArea)
         go_area = MagicMock(spec=TextArea)
+        ps_area = MagicMock(spec=TextArea)
+        rust_area = MagicMock(spec=TextArea)
+        ruby_area = MagicMock(spec=TextArea)
 
         def query_side_effect(selector, type=None):
             if selector == "#curl-input-area":
@@ -126,6 +144,12 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
                 return js_area
             if selector == "#curl-output-go":
                 return go_area
+            if selector == "#curl-output-ps":
+                return ps_area
+            if selector == "#curl-output-rust":
+                return rust_area
+            if selector == "#curl-output-ruby":
+                return ruby_area
             return MagicMock()
 
         self.tab.query_one.side_effect = query_side_effect
@@ -138,6 +162,9 @@ class TestCurlLabTab(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(py_area.text, "")
         self.assertEqual(js_area.text, "")
         self.assertEqual(go_area.text, "")
+        self.assertEqual(ps_area.text, "")
+        self.assertEqual(rust_area.text, "")
+        self.assertEqual(ruby_area.text, "")
         self.tab.app.notify.assert_called_with("Fields cleared.")
 
 

@@ -40,6 +40,8 @@ class CurlLabTab(ScrollableContainer):
                             yield TextArea(id="curl-output-ps", disabled=True)
                         with TabPane("Rust (reqwest)"):
                             yield TextArea(id="curl-output-rust", read_only=True)
+                        with TabPane("Ruby (Net::HTTP)"):
+                            yield TextArea(id="curl-output-ruby", read_only=True)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-curl-convert":
@@ -63,12 +65,14 @@ class CurlLabTab(ScrollableContainer):
             go_code = self.manager.to_go_http(parsed)
             ps_code = self.manager.to_powershell_iwr(parsed)
             rust_code = self.manager.to_rust_reqwest(parsed)
+            ruby_code = self.manager.to_ruby_net_http(parsed)
 
             self.query_one("#curl-output-python", TextArea).text = py_code
             self.query_one("#curl-output-js", TextArea).text = js_code
             self.query_one("#curl-output-go", TextArea).text = go_code
             self.query_one("#curl-output-ps", TextArea).text = ps_code
             self.query_one("#curl-output-rust", TextArea).text = rust_code
+            self.query_one("#curl-output-ruby", TextArea).text = ruby_code
 
             self.app.notify("cURL command successfully converted.")
         except Exception as e:
@@ -81,4 +85,5 @@ class CurlLabTab(ScrollableContainer):
         self.query_one("#curl-output-go", TextArea).text = ""
         self.query_one("#curl-output-ps", TextArea).text = ""
         self.query_one("#curl-output-rust", TextArea).text = ""
+        self.query_one("#curl-output-ruby", TextArea).text = ""
         self.app.notify("Fields cleared.")

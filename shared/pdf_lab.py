@@ -1,4 +1,5 @@
 import sys
+import getpass
 from pathlib import Path
 try:
     import pypdf
@@ -56,6 +57,33 @@ class PDFLabManager:
             generated_files.append(str(output_filename))
         return generated_files
 
+    def encrypt(self, input_path, output_path, password):
+        """Encrypts a PDF file with a password."""
+        reader = pypdf.PdfReader(input_path)
+        writer = pypdf.PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        writer.encrypt(password)
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        writer.close()
+
+    def decrypt(self, input_path, output_path, password):
+        """Decrypts a PDF file with a password."""
+        reader = pypdf.PdfReader(input_path)
+        if not reader.is_encrypted:
+            raise ValueError(f"PDF {input_path} is not encrypted.")
+        if not reader.decrypt(password):
+            raise ValueError(f"Incorrect password for PDF {input_path}.")
+
+        writer = pypdf.PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        writer.close()
+
+
 def run_pdf_lab_logic(args):
     try:
         manager = PDFLabManager()
@@ -91,6 +119,20 @@ def run_pdf_lab_logic(args):
         elif args.action == "split":
             files = manager.split_pdf(args.file, args.output_dir)
             print(f"✅ Split {args.file} into {len(files)} pages in '{args.output_dir}'")
+
+        elif args.action == "encrypt":
+            password = args.password
+            if not password:
+                password = getpass.getpass("Enter password for encryption: ")
+            manager.encrypt(args.file, args.output, password)
+            print(f"✅ Encrypted {args.file} to {args.output}")
+
+        elif args.action == "decrypt":
+            password = args.password
+            if not password:
+                password = getpass.getpass("Enter password for decryption: ")
+            manager.decrypt(args.file, args.output, password)
+            print(f"✅ Decrypted {args.file} to {args.output}")
 
         return True
 

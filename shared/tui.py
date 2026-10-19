@@ -197,6 +197,7 @@ from shared.tui_mqtt import MqttLabTab
 from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
+from shared.tui_extract import ExtractLabTab
 from shared.tui_template import TemplateLabTab
 from shared.tui_ini2json import Ini2JsonLabTab
 from shared.tui_hashids import HashidsLabTab
@@ -4365,6 +4366,8 @@ class AgentTUI(App):
 
             elif self.start_tab == "tab-nginx":
                 yield NginxLabTab()
+            elif self.start_tab == "tab-extract":
+                yield ExtractLabTab()
             elif self.start_tab == "tab-svg":
                 yield SvgLabTab(self.project_dir)
             elif self.start_tab == "tab-emoji":

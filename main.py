@@ -434,7 +434,8 @@ KNOWN_COMMANDS = [
     "jsonl-lab", "jsonl",
     "pre-commit-lab", "precommit",
     "arn-lab", "arn", "slug-lab", "slug",
-    "size-compare-lab", "size-compare", "scmp"
+    "size-compare-lab", "size-compare", "scmp",
+    "extract-lab", "extract", "ioc"
 ]
 
 if FileSystemEventHandler:
@@ -556,6 +557,12 @@ def run_arn_lab(args):
     from shared.arn_lab import run_arn_lab_logic
     run_arn_lab_logic(args)
     sys.exit(0)
+
+def run_extract_lab(args):
+    """Runs the Extract Lab."""
+    from shared.extract_lab import run_extract_lab_logic
+    success = run_extract_lab_logic(args)
+    sys.exit(0 if success else 1)
 
 def run_calc_lab(args):
     """Runs the Calc Lab (Programmer's Calculator)."""
@@ -11995,6 +12002,16 @@ def parse_args(argv=None):
     parser_size_compare.add_argument("--text", help="JSON text to compare.")
     parser_size_compare.add_argument("--file", "-f", help="Path to JSON file to compare.")
     parser_size_compare.add_argument("--tui", action="store_true", help="Open Size Compare Lab TUI.")
+
+    # Extract Lab
+    parser_extract = subparsers.add_parser(
+        "extract-lab",
+        aliases=["extract", "ioc"],
+        help="Extract IoCs (IPs, URLs, Emails, Hashes) from text."
+    )
+    parser_extract.add_argument("--text", help="Text to extract IoCs from.")
+    parser_extract.add_argument("--tui", action="store_true", help="Open Extract Lab TUI.")
+    parser_extract.add_argument("--action", default="extract", help="Action to perform.")
 
     # --- New 'quiz' command ---
     parser_quiz = subparsers.add_parser(
@@ -27666,6 +27683,10 @@ async def main():
 
     if args.command in ["arn-lab", "arn"]:
         run_arn_lab(args)
+        return
+
+    if args.command in ["extract-lab", "extract", "ioc"]:
+        run_extract_lab(args)
         return
 
     if args.command in ["slug-lab", "slug"]:

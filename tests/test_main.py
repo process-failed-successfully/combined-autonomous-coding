@@ -27,6 +27,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.token, "mytoken")
         self.assertEqual(args.field, "payload.sub")
 
+    def test_parse_args_extract_lab_aliases(self):
+        import main
+        for alias in ["extract-lab", "extract", "ioc"]:
+            args = main.parse_args([alias, "--text", "some text"])
+            self.assertEqual(args.command, alias)
+            self.assertEqual(args.text, "some text")
+            self.assertEqual(args.action, "extract")
+
     def test_parse_args_ulid_extract(self):
         import main
         args = main.parse_args(["ulid-lab", "extract", "--text", "hello 01M0JP56GDCXBEE1Z7A3MDJ0KJ", "--unique"])

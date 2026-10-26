@@ -572,6 +572,13 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args4.command, "magnet")
         self.assertEqual(args4.action, "tui")
 
+    def test_env_tui_command_parsing(self):
+        """Test parsing of the 'env tui' command."""
+        args = parse_args(["env", "tui", "--project-dir", "test_dir"])
+        self.assertEqual(args.command, "env")
+        self.assertEqual(args.action, "tui")
+        self.assertEqual(str(args.project_dir), "test_dir")
+
 
 if __name__ == "__main__":
     unittest.main()

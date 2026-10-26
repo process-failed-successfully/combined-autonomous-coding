@@ -1,15 +1,15 @@
 from textual.app import ComposeResult
-from textual.widgets import Label, Button, DataTable, Input, RichLog
+from textual.widgets import Label, Button, DataTable, Input, RichLog, TabPane
 from textual.containers import Container, Vertical, Horizontal
 from textual import on
 from shared.env_manager import EnvManager
 from pathlib import Path
 
-class EnvTab(Container):
+class EnvTab(TabPane):
     """Tab for managing environment variables (.env)."""
 
     def __init__(self, project_dir: Path, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__("Env Lab", id="tab-env", **kwargs)
         self.project_dir = project_dir
         self.manager = EnvManager(project_dir)
 

@@ -55,6 +55,16 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args_tui.command, "yq-lab")
         self.assertEqual(args_tui.action, "tui")
 
+    def test_parse_args_syslog_lab(self):
+        args = main.parse_args(["syslog-lab", "parse", "<34>test"])
+        self.assertEqual(args.command, "syslog-lab")
+        self.assertEqual(args.action, "parse")
+        self.assertEqual(args.message, "<34>test")
+
+        args = main.parse_args(["syslog", "tui"])
+        self.assertEqual(args.command, "syslog")
+        self.assertEqual(args.action, "tui")
+
         args = main.parse_args(["yq", "evaluate", "input.yaml", ".name"])
         self.assertEqual(args.command, "yq")
         self.assertEqual(args.action, "evaluate")

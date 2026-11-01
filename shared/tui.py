@@ -87,6 +87,7 @@ from shared.tui_json2sql import Json2SqlTab
 from shared.tui_cookie import CookieLabTab
 from shared.tui_htpasswd import HtpasswdLabTab
 from shared.tui_entropy import EntropyLabTab
+from shared.tui_syslog import SyslogLabTab
 from shared.tui_terraform import TerraformTab
 from shared.tui_presentation import PresentationTab
 from shared.tui_proc import ProcLabTab
@@ -4290,6 +4291,7 @@ class AgentTUI(App):
         PaletteCommand("Go to QR Lab", "switch_tab_qr"),
         PaletteCommand("Go to OpenAPI Lab", "switch_tab_openapi"),
         PaletteCommand("Go to Magic Decode Lab", "switch_tab_magic_decode"),
+        PaletteCommand("Go to Syslog Lab", "switch_tab_syslog"),
     ]
 
     def __init__(self, project_dir: Path, start_tab: str = None, hex_file: str = None, **kwargs) -> None:
@@ -5069,6 +5071,8 @@ class AgentTUI(App):
                 yield SizeLabTab()
             with TabPane("Hexdump Lab", id="tab-hexdump"):
                 yield HexdumpLabTab()
+            with TabPane("Syslog Lab", id="tab-syslog"):
+                yield SyslogLabTab()
             with TabPane("Entropy Lab", id="tab-entropy"):
                 yield EntropyLabTab()
 
@@ -5195,6 +5199,9 @@ class AgentTUI(App):
 
     def action_switch_tab_jsonl(self) -> None:
         self.query_one(TabbedContent).active = "tab-jsonl"
+
+    def action_switch_tab_syslog(self) -> None:
+        self.query_one(TabbedContent).active = "tab-syslog"
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         # Handle dashboard buttons (bubble up)

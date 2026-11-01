@@ -324,6 +324,7 @@ KNOWN_COMMANDS = [
     "contract-lab", "contract",
     "ansible-lab", "ansible",
     "hex-lab", "hex",
+    "syslog-lab", "syslog",
     "speed-lab", "speed",
     "load-lab", "load",
     "ast-lab", "ast",
@@ -20861,6 +20862,21 @@ Examples:
     parser_ansible_init = ansible_subparsers.add_parser("init", help="Scaffold a new Ansible project.")
     parser_ansible_init.add_argument("name", nargs="?", help="Project name (creates a directory).")
 
+    # --- New 'syslog-lab' command ---
+    parser_syslog = subparsers.add_parser(
+        "syslog-lab",
+        aliases=["syslog"],
+        help="Syslog parsing utilities (RFC 3164, RFC 5424)."
+    )
+    syslog_subparsers = parser_syslog.add_subparsers(dest="action", help="Syslog Lab Actions")
+
+    # syslog-lab parse
+    parser_syslog_parse = syslog_subparsers.add_parser("parse", help="Parse a syslog message.")
+    parser_syslog_parse.add_argument("message", help="The raw syslog message to parse.")
+
+    # syslog-lab tui
+    syslog_subparsers.add_parser("tui", help="Launch interactive Syslog Lab TUI.")
+
     # --- New 'hex-lab' command ---
     parser_hex = subparsers.add_parser(
         "hex-lab",
@@ -26303,6 +26319,11 @@ async def main():
 
     if args.command in ["ansible-lab", "ansible"]:
         run_ansible_lab(args)
+        return
+
+    if args.command in ["syslog-lab", "syslog"]:
+        from shared.syslog_lab import run_syslog_lab_logic
+        run_syslog_lab_logic(args)
         return
 
     if args.command in ["hex-lab", "hex"]:

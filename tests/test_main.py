@@ -43,6 +43,18 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args.text, "hello 01M0JP56GDCXBEE1Z7A3MDJ0KJ")
         self.assertTrue(args.unique)
 
+    def test_parse_args_levenshtein_lab(self):
+        import main
+        args = main.parse_args(["levenshtein-lab", "distance", "foo", "bar"])
+        self.assertEqual(args.command, "levenshtein-lab")
+        self.assertEqual(args.action, "distance")
+        self.assertEqual(args.string1, "foo")
+        self.assertEqual(args.string2, "bar")
+
+        args2 = main.parse_args(["levenshtein", "tui"])
+        self.assertEqual(args2.command, "levenshtein")
+        self.assertEqual(args2.action, "tui")
+
     def test_parse_args_yq_evaluate(self):
         import main
         args = main.parse_args(["yq-lab", "evaluate", "input.yaml", ".name"])

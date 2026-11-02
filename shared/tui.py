@@ -330,6 +330,7 @@ from shared.tui_set import SetLabTab
 from shared.tui_schema import SchemaLabTab
 from shared.tui_jsonpath import JsonPathLabTab
 from shared.tui_jq import JqLabTab
+from shared.tui_levenshtein import LevenshteinLabTab
 from shared.tui_yq import YqLabTab
 from shared.tui_jmespath import JmesPathLabTab
 from shared.tui_xpath import XpathLabTab
@@ -5021,6 +5022,8 @@ class AgentTUI(App):
                 yield JsonPathLabTab(self.project_dir)
             with TabPane("jq Lab", id="tab-jq"):
                 yield JqLabTab(self.project_dir)
+            with TabPane("Levenshtein Lab", id="tab-levenshtein"):
+                yield LevenshteinLabTab(self.project_dir)
             with TabPane("yq Lab", id="tab-yq"):
                 yield YqLabTab(self.project_dir)
             with TabPane("JMESPath Lab", id="tab-jmespath"):

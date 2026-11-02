@@ -9098,6 +9098,18 @@ def run_jq_lab(args):
         run_jq_lab_logic(args)
 
 
+def run_levenshtein_lab(args):
+    """Runs the Levenshtein Lab."""
+    if args.action == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Levenshtein Lab TUI...")
+        app = AgentTUI(project_dir=args.project_dir, start_tab="tab-levenshtein")
+        app.run()
+    else:
+        from shared.levenshtein_lab import run_levenshtein_lab_logic
+        run_levenshtein_lab_logic(args)
+
+
 def run_yq_lab(args):
     """Runs the yq Lab."""
     if getattr(args, "action", None) == "tui":
@@ -16721,6 +16733,18 @@ def parse_args(argv=None):
     jq_eval_parser = jq_subparsers.add_parser("evaluate", help="Evaluate jq expressions.")
     jq_eval_parser.add_argument("input", help="Input JSON file path or '-' for stdin.")
     jq_eval_parser.add_argument("expression", help="jq expression.")
+
+    # --- New 'levenshtein-lab' command ---
+    parser_levenshtein = subparsers.add_parser(
+        "levenshtein-lab",
+        aliases=["levenshtein"],
+        help="Calculate Levenshtein distance and similarity."
+    )
+    levenshtein_subparsers = parser_levenshtein.add_subparsers(dest="action")
+    levenshtein_tui_parser = levenshtein_subparsers.add_parser("tui", help="Launch Levenshtein Lab TUI.")
+    levenshtein_distance_parser = levenshtein_subparsers.add_parser("distance", help="Calculate Levenshtein distance between two strings.")
+    levenshtein_distance_parser.add_argument("string1", help="First string.")
+    levenshtein_distance_parser.add_argument("string2", help="Second string.")
 
     # --- New 'yq-lab' command ---
     parser_yq = subparsers.add_parser(
@@ -27473,6 +27497,10 @@ async def main():
 
     if args.command in ["jq-lab", "jq"]:
         run_jq_lab(args)
+        return
+
+    if args.command in ["levenshtein-lab", "levenshtein"]:
+        run_levenshtein_lab(args)
         return
 
     if args.command in ["yq-lab", "yq"]:

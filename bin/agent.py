@@ -104,7 +104,7 @@ def list():
     containers = client.containers.list(all=True)
     count = 0
     for container in containers:
-        if "_agent_run" in container.name or "agent" in container.name:
+        if "_agent_run" in container.name:
             table.add_row(container.short_id, container.name, container.status, ", ".join(container.image.tags))
             count += 1
 
@@ -183,6 +183,66 @@ def stop(name: str):
         console.print(f"[green]{name} stopped successfully.[/green]")
     except docker.errors.NotFound:
         console.print(f"[red]Container {name} not found.[/red]")
+
+
+@app.command()
+def rm(
+    name: str = typer.Argument(..., help="Name or ID of the container to remove"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force the removal of a running container (uses SIGKILL)"),
+):
+    """Remove a session."""
+    client = get_docker_client()
+    try:
+        container = client.containers.get(name)
+        console.print(f"[cyan]Removing {name}...[/cyan]")
+        container.remove(force=force)
+        console.print(f"[green]{name} removed successfully.[/green]")
+    except docker.errors.NotFound:
+        console.print(f"[red]Container {name} not found.[/red]")
+    except Exception as e:
+        console.print(f"[red]Error removing {name}:[/red] {e}")
+
+
+@app.command()
+def clean(
+    force: bool = typer.Option(False, "--force", "-f", help="Force removal of all running containers as well"),
+):
+    """Remove all agent sessions."""
+    client = get_docker_client()
+    containers = client.containers.list(all=True)
+    count = 0
+    for container in containers:
+        if "_agent_run" in container.name:
+            if container.status == "running" and not force:
+                console.print(f"[yellow]Skipping running container {container.name}. Use --force to remove it.[/yellow]")
+                continue
+            try:
+                console.print(f"[cyan]Removing {container.name}...[/cyan]")
+                container.remove(force=force)
+                console.print(f"[green]{container.name} removed successfully.[/green]")
+                count += 1
+            except Exception as e:
+                console.print(f"[red]Error removing {container.name}:[/red] {e}")
+
+    if count == 0:
+        console.print("No removable agent sessions found.")
+    else:
+        console.print(f"[bold green]Successfully removed {count} agent sessions.[/bold green]")
+
+
+@app.command()
+def restart(name: str):
+    """Restart a session."""
+    client = get_docker_client()
+    try:
+        container = client.containers.get(name)
+        console.print(f"[cyan]Restarting {name}...[/cyan]")
+        container.restart()
+        console.print(f"[green]{name} restarted successfully.[/green]")
+    except docker.errors.NotFound:
+        console.print(f"[red]Container {name} not found.[/red]")
+    except Exception as e:
+        console.print(f"[red]Error restarting {name}:[/red] {e}")
 
 
 @config_app.command("set")

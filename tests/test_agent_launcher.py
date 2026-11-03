@@ -112,6 +112,12 @@ def mock_docker_subprocess(monkeypatch):
         def stop(self):
             pass
 
+        def remove(self, force=False):
+            pass
+
+        def restart(self):
+            pass
+
     class MockDockerClient:
         class MockContainers:
             def list(self, all=False):
@@ -190,3 +196,38 @@ def test_run_command():
     # With the mock, it should successfully pass through
     assert result.exit_code == 0
     assert "Agent started in background" in result.stdout
+
+
+def test_rm_success():
+    result = runner.invoke(app, ["rm", "test_agent_run"])
+    assert result.exit_code == 0
+    assert "Removing test_agent_run..." in result.stdout
+    assert "test_agent_run removed successfully" in result.stdout
+
+
+def test_rm_not_found():
+    result = runner.invoke(app, ["rm", "nonexistent"])
+    assert result.exit_code == 0
+    assert "Container nonexistent not found" in result.stdout
+
+
+def test_clean_success():
+    result = runner.invoke(app, ["clean", "--force"])
+    assert result.exit_code == 0
+    assert "Removing test_agent_run..." in result.stdout
+    assert "test_agent_run removed successfully" in result.stdout
+    assert "Successfully removed 1 agent sessions" in result.stdout
+
+
+def test_clean_without_force_skips_running():
+    result = runner.invoke(app, ["clean"])
+    assert result.exit_code == 0
+    assert "Skipping running container test_agent_run" in result.stdout
+    assert "No removable agent sessions found" in result.stdout
+
+
+def test_restart_success():
+    result = runner.invoke(app, ["restart", "test_agent_run"])
+    assert result.exit_code == 0
+    assert "Restarting test_agent_run..." in result.stdout
+    assert "test_agent_run restarted successfully" in result.stdout

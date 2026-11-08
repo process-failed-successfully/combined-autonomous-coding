@@ -375,6 +375,7 @@ KNOWN_COMMANDS = [
     "base64url-lab", "base64url", "b64url",
     "zlib-lab", "zlib", "compress", "inflate",
     "brotli-lab", "brotli", "zstd-lab", "zstd",
+    "syslog-lab", "syslog",
     "cookie-lab", "cookie",
     "base85-lab", "base85", "b85",
     "base91-lab", "base91", "b91",
@@ -2367,6 +2368,28 @@ def run_permissions_lab(args):
         from shared.permissions_lab import run_permissions_lab_logic
         run_permissions_lab_logic(args)
         sys.exit(0)
+
+
+def run_syslog_lab(args):
+    """Runs the Syslog Lab."""
+    if getattr(args, "action", None) == "tui":
+        from shared.tui import AgentTUI
+        print("Launching Syslog Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-syslog")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+        sys.exit(0)
+    else:
+        from shared.syslog_lab import run_syslog_lab_logic
+        success = run_syslog_lab_logic(args)
+        sys.exit(0 if success else 1)
 
 
 def run_systemd_lab(args):
@@ -21271,6 +21294,19 @@ Examples:
     parser_path_glob.add_argument("pattern", help="Glob pattern.")
     parser_path_glob.add_argument("--recursive", "-r", action="store_true", help="Recursive glob.")
 
+    # --- New 'syslog-lab' command ---
+    parser_syslog = subparsers.add_parser(
+        "syslog-lab",
+        aliases=["syslog"],
+        help="Syslog parsing lab.",
+    )
+    syslog_subparsers = parser_syslog.add_subparsers(dest="action", help="Syslog Lab Actions")
+
+    syslog_parse = syslog_subparsers.add_parser("parse", help="Parse syslog message")
+    syslog_parse.add_argument("--message", type=str, help="Syslog message to parse (or read from stdin)")
+
+    syslog_tui = syslog_subparsers.add_parser("tui", help="Launch TUI")
+
     # --- New 'systemd-lab' command ---
     parser_systemd = subparsers.add_parser(
         "systemd-lab",
@@ -27125,6 +27161,10 @@ async def main():
 
     if args.command in ["permissions-lab", "permissions", "perm", "chmod"]:
         run_permissions_lab(args)
+        return
+
+    if args.command in ["syslog-lab", "syslog"]:
+        run_syslog_lab(args)
         return
 
     if args.command in ["systemd-lab", "systemd", "service"]:

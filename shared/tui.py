@@ -158,6 +158,7 @@ from shared.tui_calendar import CalendarTab
 from shared.tui_otp import OtpLabTab
 from shared.tui_devtools import DevToolsTab
 from shared.tui_dependencies import DependenciesTab
+from shared.tui_syslog import SyslogLabTab
 from shared.tui_standup import StandupTab
 from shared.tui_frontend import FrontendTab
 from shared.tui_pgp import PGPLabTab
@@ -4403,6 +4404,7 @@ class AgentTUI(App):
                 yield PasswordLabTab()
             with TabPane("Systemd", id="tab-systemd"):
                 yield SystemdLabTab(self.project_dir)
+            yield SyslogLabTab()
             with TabPane("Cookie Lab", id="tab-cookie"):
                 yield CookieLabTab(project_dir=self.project_dir)
             with TabPane("Port Lab", id="tab-ports"):

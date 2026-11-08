@@ -35,6 +35,28 @@ class TestDateLabManager(unittest.TestCase):
         self.assertEqual(result["days"], -9)
         self.assertEqual(result["business_days"], -6)
 
+    def test_generate_range(self):
+        result = self.manager.generate_range("2023-01-01", "2023-01-05")
+        self.assertTrue(result["success"])
+        self.assertEqual(len(result["dates"]), 5)
+        self.assertEqual(result["dates"][0], "2023-01-01T00:00:00")
+        self.assertEqual(result["dates"][-1], "2023-01-05T00:00:00")
+
+    def test_generate_range_skip_weekends(self):
+        # 2023-01-01 is Sunday, 2023-01-07 is Saturday, 2023-01-08 is Sunday
+        result = self.manager.generate_range("2023-01-01", "2023-01-08", skip_weekends=True)
+        self.assertTrue(result["success"])
+        self.assertEqual(len(result["dates"]), 5)
+        self.assertEqual(result["dates"][0], "2023-01-02T00:00:00") # Monday
+        self.assertEqual(result["dates"][-1], "2023-01-06T00:00:00") # Friday
+
+    def test_generate_range_reverse(self):
+        result = self.manager.generate_range("2023-01-05", "2023-01-01")
+        self.assertTrue(result["success"])
+        self.assertEqual(len(result["dates"]), 5)
+        self.assertEqual(result["dates"][0], "2023-01-05T00:00:00")
+        self.assertEqual(result["dates"][-1], "2023-01-01T00:00:00")
+
     def test_get_info(self):
         result = self.manager.get_info("2024-02-29") # Leap year
         self.assertTrue(result["success"])

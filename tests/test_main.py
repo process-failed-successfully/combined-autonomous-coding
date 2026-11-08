@@ -35,6 +35,22 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(args.text, "some text")
             self.assertEqual(args.action, "extract")
 
+    def test_parse_args_date_lab_range(self):
+        import main
+        args = main.parse_args(["date-lab", "range", "2023-01-01", "2023-01-10", "--step-days", "2", "--skip-weekends"])
+        self.assertEqual(args.command, "date-lab")
+        self.assertEqual(args.action, "range")
+        self.assertEqual(args.start_date, "2023-01-01")
+        self.assertEqual(args.end_date, "2023-01-10")
+        self.assertEqual(args.step_days, 2)
+        self.assertTrue(args.skip_weekends)
+
+        args_alias = main.parse_args(["date", "range", "2023-01-01", "2023-01-10"])
+        self.assertEqual(args_alias.command, "date")
+        self.assertEqual(args_alias.action, "range")
+        self.assertEqual(args_alias.step_days, 1)
+        self.assertFalse(args_alias.skip_weekends)
+
     def test_parse_args_ulid_extract(self):
         import main
         args = main.parse_args(["ulid-lab", "extract", "--text", "hello 01M0JP56GDCXBEE1Z7A3MDJ0KJ", "--unique"])

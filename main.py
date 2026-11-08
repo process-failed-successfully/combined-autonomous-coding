@@ -16630,6 +16630,13 @@ def parse_args(argv=None):
     parser_date_from_epoch = date_subparsers.add_parser("from-epoch", help="Convert a Unix timestamp to a date string.")
     parser_date_from_epoch.add_argument("epoch", help="Unix timestamp.")
 
+    # date-lab range
+    parser_date_range = date_subparsers.add_parser("range", help="Generate a range of dates.")
+    parser_date_range.add_argument("start_date", help="Start date string.")
+    parser_date_range.add_argument("end_date", help="End date string.")
+    parser_date_range.add_argument("--step-days", type=int, default=1, help="Number of days to step.")
+    parser_date_range.add_argument("--skip-weekends", action="store_true", help="Skip weekends (Saturday and Sunday).")
+
     # date-lab tui
     parser_date_tui = date_subparsers.add_parser("tui", help="Launch Date Lab TUI.")
 

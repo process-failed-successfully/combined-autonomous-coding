@@ -1,7 +1,7 @@
 import json
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Input, Label, RichLog, Select, TabbedContent, TabPane
+from textual.widgets import Button, Input, Label, RichLog, Select, TabbedContent, TabPane, Checkbox
 from textual import on
 from shared.date_lab import DateLabManager
 
@@ -71,6 +71,28 @@ class DateLabTab(Container):
                         yield Label("[bold]Result[/bold]")
                         yield RichLog(id="date-info-result", wrap=True, highlight=True, markup=True)
 
+                # Range Pane
+                with TabPane("Range"):
+                    with Vertical(classes="stat-box"):
+                        with Horizontal():
+                            with Vertical():
+                                yield Label("Start Date:")
+                                yield Input(placeholder="e.g. 2023-10-01", id="date-range-start")
+                            with Vertical():
+                                yield Label("End Date:")
+                                yield Input(placeholder="e.g. 2023-10-10", id="date-range-end")
+
+                        with Horizontal():
+                            yield Input(placeholder="1", value="1", id="date-range-step", type="integer")
+                            yield Label("Step Days")
+                            yield Checkbox("Skip Weekends", id="date-range-skip-weekends")
+
+                        yield Button("Generate Range", id="btn-date-range", variant="primary")
+
+                    with Vertical(classes="stat-box"):
+                        yield Label("[bold]Result[/bold]")
+                        yield RichLog(id="date-range-result", wrap=True, highlight=True, markup=True)
+
                 # Epoch Pane
                 with TabPane("Epoch"):
                     with Vertical(classes="stat-box"):
@@ -103,6 +125,8 @@ class DateLabTab(Container):
             self.do_to_epoch()
         elif event.button.id == "btn-from-epoch":
             self.do_from_epoch()
+        elif event.button.id == "btn-date-range":
+            self.do_range()
 
     def do_arithmetic(self, op: str) -> None:
         base_date = self.query_one("#date-arith-base", Input).value
@@ -224,3 +248,30 @@ class DateLabTab(Container):
             self.notify("Error converting from epoch.", severity="error")
         else:
             result_log.write(f"[bold green]Date:[/bold green] {res}")
+
+    def do_range(self) -> None:
+        start_date = self.query_one("#date-range-start", Input).value
+        end_date = self.query_one("#date-range-end", Input).value
+        step_str = self.query_one("#date-range-step", Input).value or "1"
+        skip_weekends = self.query_one("#date-range-skip-weekends", Checkbox).value
+        result_log = self.query_one("#date-range-result", RichLog)
+
+        result_log.clear()
+
+        if not start_date or not end_date:
+            self.notify("Both start and end dates required.", severity="error")
+            return
+
+        try:
+            step_days = int(step_str)
+        except ValueError:
+            self.notify("Step days must be an integer.", severity="error")
+            return
+
+        res = self.manager.generate_range(start_date, end_date, step_days, skip_weekends)
+        if res.get("success"):
+            for d in res["dates"]:
+                result_log.write(d)
+        else:
+            result_log.write(f"[bold red]Error:[/bold red] {res.get('error')}")
+            self.notify("Error generating range.", severity="error")

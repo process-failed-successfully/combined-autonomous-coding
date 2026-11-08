@@ -38,6 +38,32 @@ class DateLabManager:
         except ValueError as e:
             return f"Error: {e}"
 
+    def generate_range(self, start_str: str, end_str: str, step_days: int = 1, skip_weekends: bool = False) -> Dict[str, Any]:
+        """Generates a list of dates between start and end."""
+        try:
+            start_dt = self._parse_date(start_str)
+            end_dt = self._parse_date(end_str)
+            if step_days <= 0:
+                raise ValueError("step_days must be > 0")
+
+            dates = []
+            curr = start_dt
+
+            if start_dt <= end_dt:
+                while curr <= end_dt:
+                    if not skip_weekends or curr.weekday() < 5:
+                        dates.append(curr.isoformat())
+                    curr += timedelta(days=step_days)
+            else:
+                while curr >= end_dt:
+                    if not skip_weekends or curr.weekday() < 5:
+                        dates.append(curr.isoformat())
+                    curr -= timedelta(days=step_days)
+
+            return {"success": True, "dates": dates}
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
+
     def diff_dates(self, date1_str: str, date2_str: str) -> Dict[str, Any]:
         """Calculates difference between two dates."""
         try:
@@ -166,6 +192,16 @@ def run_date_lab_logic(args) -> bool:
             print(res, file=sys.stderr)
             return False
         print(res)
+        return True
+
+    elif args.action == "range":
+        result = manager.generate_range(args.start_date, args.end_date, args.step_days, args.skip_weekends)
+        if result.get("success"):
+            for d in result["dates"]:
+                print(d)
+        else:
+            print(result["error"], file=sys.stderr)
+            return False
         return True
 
     return False

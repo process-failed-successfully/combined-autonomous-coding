@@ -22294,6 +22294,12 @@ Examples:
     svg_lab_parser.add_argument("--output", "-o", help="Output file (for minify)")
     svg_lab_parser.add_argument("--tui", action="store_true", help="Launch the SVG Lab TUI")
 
+    parser_syslog = subparsers.add_parser("syslog-lab", aliases=["syslog"], help="Syslog Lab: parse syslog messages")
+    syslog_subparsers = parser_syslog.add_subparsers(dest="action", required=True)
+    syslog_parse = syslog_subparsers.add_parser("parse", help="Parse a syslog message")
+    syslog_parse.add_argument("message", help="The syslog message to parse")
+    syslog_subparsers.add_parser("tui", help="Launch interactive Syslog Lab TUI")
+
     # --- Plugin Registration ---
     try:
         # Attempt to resolve project_dir from argv early for plugin loading
@@ -26633,6 +26639,22 @@ async def main():
         else:
             from shared.date_lab import run_date_lab_logic
             run_date_lab_logic(args)
+        return
+
+    if args.command in ["syslog-lab", "syslog"]:
+        if getattr(args, "action", None) == "tui":
+            run_tui(args, start_tab="tab-syslog-lab")
+        else:
+            from shared.syslog_lab import SyslogLabManager
+            manager = SyslogLabManager()
+            if getattr(args, "action", None) == "parse":
+                try:
+                    res = manager.parse(args.message)
+                    import json
+                    print(json.dumps(res, indent=2))
+                except Exception as e:
+                    print(f"Error parsing syslog message: {e}")
+                    sys.exit(1)
         return
 
     if args.command in ["math-lab", "math"]:

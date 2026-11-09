@@ -19,6 +19,18 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         if hasattr(self, "tmp_dir") and os.path.exists(self.tmp_dir):
             shutil.rmtree(self.tmp_dir)
 
+    def test_syslog_lab_command_parsing(self):
+        import main
+        for alias in ["syslog-lab", "syslog"]:
+            args = main.parse_args([alias, "parse", "<34>Oct 11 22:14:15 mymachine su: 'su root' failed"])
+            self.assertEqual(args.command, alias)
+            self.assertEqual(args.action, "parse")
+            self.assertEqual(args.message, "<34>Oct 11 22:14:15 mymachine su: 'su root' failed")
+
+            args_tui = main.parse_args([alias, "tui"])
+            self.assertEqual(args_tui.command, alias)
+            self.assertEqual(args_tui.action, "tui")
+
     def test_parse_args_jwt_extract(self):
         import main
         args = main.parse_args(["jwt-lab", "extract", "mytoken", "-f", "payload.sub"])

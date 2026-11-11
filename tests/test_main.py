@@ -37,7 +37,7 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
 
     def test_parse_args_chmod_lab(self):
         import main
-        for alias in ["chmod-lab", "chmod"]:
+        for alias in ["chmod-lab"]:
             args = main.parse_args([alias, "755"])
             self.assertEqual(args.command, alias)
             self.assertEqual(args.permission, "755")

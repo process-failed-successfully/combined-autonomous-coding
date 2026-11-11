@@ -35,6 +35,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(args.text, "some text")
             self.assertEqual(args.action, "extract")
 
+    def test_parse_args_chmod_lab(self):
+        import main
+        for alias in ["chmod-lab", "chmod"]:
+            args = main.parse_args([alias, "755"])
+            self.assertEqual(args.command, alias)
+            self.assertEqual(args.permission, "755")
+            self.assertFalse(args.tui)
+
     def test_parse_args_date_lab_range(self):
         import main
         args = main.parse_args(["date-lab", "range", "2023-01-01", "2023-01-10", "--step-days", "2", "--skip-weekends"])

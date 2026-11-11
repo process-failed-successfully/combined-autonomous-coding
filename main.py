@@ -371,6 +371,7 @@ KNOWN_COMMANDS = [
     "base91-lab", "base91", "b91",
     "punycode-lab", "punycode", "idn",
     "base64-lab", "base64", "b64",
+    "chmod-lab", "chmod",
     "base64img-lab", "base64img", "b64img",
     "base64url-lab", "base64url", "b64url",
     "zlib-lab", "zlib", "compress", "inflate",
@@ -19441,6 +19442,14 @@ Examples:
     parser_caesar.add_argument("--decode", "-d", action="store_true", help="Decode mode")
     parser_caesar.add_argument("--tui", action="store_true", help="Launch Caesar Lab TUI")
 
+    # chmod-lab
+    parser_chmod = subparsers.add_parser(
+        "chmod-lab", aliases=["chmod"],
+        help="Analyze and explain Unix file permissions."
+    )
+    parser_chmod.add_argument("permission", nargs="?", help="Permission string (e.g. 755 or rwxr-xr-x)")
+    parser_chmod.add_argument("--tui", action="store_true", help="Launch Chmod Lab TUI")
+
     # base64-lab
     parser_b64 = subparsers.add_parser(
         "base64-lab", aliases=["base64", "b64"],
@@ -27317,6 +27326,11 @@ async def main():
     if args.command in ["atbash-lab", "atbash"]:
         run_atbash_lab(args)
         return
+
+    if args.command in ["chmod-lab", "chmod"]:
+        from shared.chmod_lab import run_chmod_lab_logic
+        success = run_chmod_lab_logic(args)
+        sys.exit(0 if success else 1)
 
     if args.command in ["base64-lab", "base64", "b64"]:
         run_base64_lab(args)

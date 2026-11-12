@@ -35,6 +35,19 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(args.text, "some text")
             self.assertEqual(args.action, "extract")
 
+    def test_parse_args_syslog_lab_aliases(self):
+        import main
+        for alias in ["syslog-lab", "syslog"]:
+            args = main.parse_args([alias, "some message"])
+            self.assertEqual(args.command, alias)
+            self.assertEqual(args.action, "parse")
+            self.assertEqual(args.message, "some message")
+            self.assertFalse(args.tui)
+
+            args_tui = main.parse_args([alias, "--tui"])
+            self.assertEqual(args_tui.command, alias)
+            self.assertTrue(args_tui.tui)
+
     def test_parse_args_chmod_lab(self):
         import main
         for alias in ["chmod-lab"]:

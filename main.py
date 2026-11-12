@@ -436,7 +436,8 @@ KNOWN_COMMANDS = [
     "pre-commit-lab", "precommit",
     "arn-lab", "arn", "slug-lab", "slug",
     "size-compare-lab", "size-compare", "scmp",
-    "extract-lab", "extract", "ioc"
+    "extract-lab", "extract", "ioc",
+    "syslog-lab", "syslog"
 ]
 
 if FileSystemEventHandler:
@@ -1555,6 +1556,33 @@ def run_size_lab(args):
 
     from shared.size_lab import run_size_lab_logic
     success = run_size_lab_logic(args)
+    sys.exit(0 if success else 1)
+
+
+def run_syslog_lab_logic_wrapper(args):
+    """Runs the Syslog Lab."""
+    if getattr(args, "action", None) == "tui" or getattr(args, "tui", False):
+        from shared.tui import AgentTUI
+        print("Launching Syslog Lab TUI...")
+        app = AgentTUI(project_dir=getattr(args, 'project_dir', Path(".")), start_tab="tab-syslog")
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            asyncio.ensure_future(app.run_async())
+        else:
+            app.run()
+            sys.exit(0)
+        return
+
+    if not getattr(args, "message", None):
+        print("Error: Syslog message is required for parsing.", file=sys.stderr)
+        sys.exit(1)
+
+    from shared.syslog_lab import run_syslog_lab_logic
+    success = run_syslog_lab_logic(args)
     sys.exit(0 if success else 1)
 
 
@@ -12024,6 +12052,11 @@ def parse_args(argv=None):
     )
     parser_extract.add_argument("--text", help="Text to extract IoCs from.")
     parser_extract.add_argument("--tui", action="store_true", help="Open Extract Lab TUI.")
+
+    parser_syslog = subparsers.add_parser("syslog-lab", aliases=["syslog"], help="Parse Syslog Messages (RFC 3164 and RFC 5424)")
+    parser_syslog.add_argument("message", nargs="?", help="The syslog message to parse")
+    parser_syslog.add_argument("--action", choices=["parse", "tui"], default="parse", help="Action to perform")
+    parser_syslog.add_argument("--tui", action="store_true", help="Launch the Syslog Lab TUI")
     parser_extract.add_argument("--action", default="extract", help="Action to perform.")
 
     # --- New 'quiz' command ---
@@ -27736,6 +27769,10 @@ async def main():
 
     if args.command in ["extract-lab", "extract", "ioc"]:
         run_extract_lab(args)
+        return
+
+    if args.command in ["syslog-lab", "syslog"]:
+        run_syslog_lab_logic_wrapper(args)
         return
 
     if args.command in ["slug-lab", "slug"]:

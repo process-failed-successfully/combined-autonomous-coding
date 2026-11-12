@@ -198,6 +198,7 @@ from shared.tui_toml import TomlLabTab
 from shared.tui_yaml import YamlLabTab
 from shared.tui_xml import XmlLabTab
 from shared.tui_extract import ExtractLabTab
+from shared.tui_syslog import SyslogLabTab
 from shared.tui_template import TemplateLabTab
 from shared.tui_ini2json import Ini2JsonLabTab
 from shared.tui_hashids import HashidsLabTab
@@ -4369,6 +4370,8 @@ class AgentTUI(App):
                 yield NginxLabTab()
             elif self.start_tab == "tab-extract":
                 yield ExtractLabTab()
+            elif self.start_tab == "tab-syslog":
+                yield SyslogLabTab()
             elif self.start_tab == "tab-svg":
                 yield SvgLabTab(self.project_dir)
             elif self.start_tab == "tab-emoji":
@@ -5142,6 +5145,7 @@ class AgentTUI(App):
                 yield PipelineLabTab()
             with TabPane("ASN.1 Lab", id="tab-asn1"):
                 yield Asn1LabTab()
+            yield SyslogLabTab()
 
             # Plugin Tabs
             for title, widget in self.plugin_manager.get_tui_tabs():
